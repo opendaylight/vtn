@@ -12,17 +12,46 @@ package org.opendaylight.vtn.manager.internal;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.felix.dm.impl.ComponentImpl;
+
 import org.junit.After;
 import org.junit.Before;
+
+import org.opendaylight.vtn.manager.IVTNManagerAware;
+import org.opendaylight.vtn.manager.IVTNModeListener;
+import org.opendaylight.vtn.manager.MacMapConfig;
+import org.opendaylight.vtn.manager.PortMap;
+import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.VBridge;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VInterface;
+import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.VTenant;
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VlanMap;
+import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
+import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+
 import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
@@ -30,24 +59,20 @@ import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.packet.Ethernet;
+import org.opendaylight.controller.sal.packet.IDataPacketService;
+import org.opendaylight.controller.sal.packet.Packet;
+import org.opendaylight.controller.sal.packet.PacketResult;
+import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.vtn.manager.IVTNManagerAware;
-import org.opendaylight.vtn.manager.IVTNModeListener;
-import org.opendaylight.vtn.manager.PortMap;
-import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.VBridge;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VInterface;
-import org.opendaylight.vtn.manager.VTenant;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
-import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.topologymanager.ITopologyManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +84,7 @@ public class TestUseVTNManagerBase extends TestBase {
     protected GlobalResourceManager resMgr;
     protected TestStub stubObj;
     protected int stubMode;
+    private final boolean useHostTracker;
 
     /**
      * The number of milliseconds to wait for VTN events.
@@ -71,7 +97,18 @@ public class TestUseVTNManagerBase extends TestBase {
      * @param stub  An integer value to be passed to {@link TestStub}.
      */
     protected TestUseVTNManagerBase(int stub) {
+        this(stub, false);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param stub  An integer value to be passed to {@link TestStub}.
+     * @param ht    If {@code true}, use host tracker emulator.
+     */
+    protected TestUseVTNManagerBase(int stub, boolean ht) {
         stubMode = stub;
+        useHostTracker = ht;
     }
 
     @Before
@@ -81,7 +118,7 @@ public class TestUseVTNManagerBase extends TestBase {
         vtnMgr = new VTNManagerImpl();
         resMgr = new GlobalResourceManager();
         ComponentImpl c = new ComponentImpl(null, null, null);
-        stubObj = new TestStub(stubMode);
+        stubObj = new TestStub(stubMode, useHostTracker);
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -99,6 +136,9 @@ public class TestUseVTNManagerBase extends TestBase {
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(stubObj);
         startVTNManager(c);
+        if (stubObj.isHostTrackerEnabled()) {
+            vtnMgr.addHostListener(stubObj);
+        }
     }
 
     @After
@@ -124,6 +164,9 @@ public class TestUseVTNManagerBase extends TestBase {
      * @param c     ComponentImpl object.
      */
     protected void changeStubAndStartVTNManager(TestStub stub, ComponentImpl c) {
+        if (stubObj.isHostTrackerEnabled()) {
+            vtnMgr.removeHostListener(stubObj);
+        }
         resMgr.setClusterGlobalService(stub);
         resMgr.init(c);
         vtnMgr.setResourceManager(resMgr);
@@ -136,6 +179,9 @@ public class TestUseVTNManagerBase extends TestBase {
         vtnMgr.setForwardingRuleManager(stub);
         vtnMgr.setConnectionManager(stub);
         startVTNManager(c);
+        if (stub.isHostTrackerEnabled()) {
+            vtnMgr.addHostListener(stub);
+        }
     }
 
     /**
@@ -145,6 +191,9 @@ public class TestUseVTNManagerBase extends TestBase {
      */
     protected void stopVTNManager(boolean clearCache) {
         vtnMgr.stopping();
+        if (stubObj.isHostTrackerEnabled()) {
+            vtnMgr.removeHostListener(stubObj);
+        }
         if (clearCache) {
             vtnMgr.containerDestroy();
         }
@@ -419,11 +468,13 @@ public class TestUseVTNManagerBase extends TestBase {
         private int vIfChangedCalled = 0;
         private int vlanMapChangedCalled = 0;
         private int portMapChangedCalled = 0;
+        private int macMapChangedCalled = 0;
         VTNManagerAwareData<VTenantPath, VTenant> vtnChangedInfo = null;
         VTNManagerAwareData<VBridgePath, VBridge> vbrChangedInfo = null;
         VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo = null;
         VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo = null;
         VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo = null;
+        VTNManagerAwareData<VBridgePath, MacMapConfig> macMapChangedInfo = null;
 
         @Override
         public synchronized void vtnChanged(VTenantPath path, VTenant vtenant,
@@ -468,6 +519,17 @@ public class TestUseVTNManagerBase extends TestBase {
             portMapChangedCalled++;
             portMapChangedInfo = new VTNManagerAwareData<VBridgeIfPath, PortMap>(path, pmap, type,
                     portMapChangedCalled);
+            notify();
+        }
+
+        @Override
+        public synchronized void macMapChanged(VBridgePath path,
+                                               MacMapConfig mcconf,
+                                               UpdateType type) {
+            macMapChangedCalled++;
+            macMapChangedInfo =
+                new VTNManagerAwareData<VBridgePath, MacMapConfig>
+                (path, mcconf, type, macMapChangedCalled);
             notify();
         }
 
@@ -668,6 +730,47 @@ public class TestUseVTNManagerBase extends TestBase {
         }
 
         /**
+         * Check information notified by {@code macMapChanged()}.
+         *
+         * @param count     An expected number of times {@code macMapChanged()}
+         *                  was called.
+         * @param path      A {@link VBridgePath} expected to be notified.
+         * @param mcconf    A {@link MacMapConfig} expected to be notified.
+         * @param type      A type expected to be notified.
+         */
+        synchronized void checkMmapInfo(int count, VBridgePath path,
+                                        MacMapConfig mcconf, UpdateType type) {
+            if (macMapChangedCalled < count) {
+                long milli = EVENT_TIMEOUT;
+                long limit = System.currentTimeMillis() + milli;
+                do {
+                    try {
+                        wait(milli);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                    if (macMapChangedCalled >= count) {
+                        break;
+                    }
+                    milli = limit - System.currentTimeMillis();
+                } while (milli > 0);
+            }
+            assertEquals(count, macMapChangedCalled);
+
+            if (path != null) {
+                assertEquals(path, macMapChangedInfo.path);
+            }
+            if (mcconf != null) {
+                assertEquals(mcconf, macMapChangedInfo.obj);
+            }
+            if (type != null) {
+                assertEquals(type, macMapChangedInfo.type);
+            }
+            macMapChangedCalled = 0;
+            macMapChangedInfo = null;
+        }
+
+        /**
          * Check all methods not called.
          */
         public synchronized void checkAllNull() {
@@ -682,6 +785,8 @@ public class TestUseVTNManagerBase extends TestBase {
             assertNull(vlanMapChangedInfo);
             assertEquals(0, portMapChangedCalled);
             assertNull(portMapChangedInfo);
+            assertEquals(0, macMapChangedCalled);
+            assertNull(macMapChangedInfo);
         }
     }
 
@@ -870,5 +975,491 @@ public class TestUseVTNManagerBase extends TestBase {
         assertEquals(emsg, numFlows, db.size());
         assertEquals(emsg, expectedFlow, db.get(registeredFlow.getGroupId()));
         assertEquals(emsg, numFlowEntries, stubObj.getFlowEntries().size());
+    }
+
+    /**
+     * Verify contents of the specified {@link MacMapEvent} instance.
+     *
+     * @param ev      A {@link MacMapEvent} instance to be tested.
+     * @param path    An expected vBridge path.
+     * @param mcconf  An expected MAC mapping configuration.
+     * @param utype   An expected {@link UpdateType} instance.
+     * @param save    An expected boolean value configured in {@code ev}.
+     */
+    protected void checkEvent(MacMapEvent ev, VBridgePath path,
+                              MacMapConfig mcconf, UpdateType utype,
+                              boolean save) {
+        assertEquals(path, ev.getPath());
+        assertEquals(mcconf, ev.getObject());
+        assertEquals(mcconf, ev.getMacMapConfig());
+        assertEquals(utype, ev.getUpdateType());
+        assertEquals("MAC mapping", ev.getTypeName());
+        assertTrue(ev.isSingleThreaded(true));
+        assertTrue(ev.isSingleThreaded(false));
+
+        boolean saveConfig = (utype == UpdateType.REMOVED)
+            ? save : true;
+        assertEquals(saveConfig, ev.isSaveConfig());
+    }
+
+    /**
+     * Ensure that a broadcast packet was sent correctly.
+     *
+     * @param pkt   A broadcast packet sent to the managed network.
+     * @param pset  A set of {@link PortVlan} instances to which the specified
+     *              broadcast packet should be sent.
+     */
+    protected void checkBroadcastPacket(RawPacket pkt, Set<PortVlan> pset) {
+        IDataPacketService pktSrv = vtnMgr.getDataPacketService();
+        Packet decoded = pktSrv.decodeDataPacket(pkt);
+        PacketContext pctx = new PacketContext(pkt, (Ethernet)decoded);
+
+        // Packet.equals(Object) will not work if it contains byte array.
+        // So we need to compare serialized payload.
+        byte[] payload = null;
+        try {
+            payload = pctx.getPayload().serialize();
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        List<RawPacket> transmitted = stubObj.getTransmittedDataPacket();
+        if (pset == null || pset.isEmpty()) {
+            assertEquals(0, transmitted.size());
+            return;
+        }
+        assertEquals(pset.size(), transmitted.size());
+
+        Set<PortVlan> bcast = new HashSet<PortVlan>(pset);
+        for (RawPacket sent: transmitted) {
+            PacketContext spctx = checkPacket(sent, payload);
+            short vlan = spctx.getVlan();
+            NodeConnector nc = spctx.getOutgoingNodeConnector();
+            PortVlan pvlan = new PortVlan(nc, vlan);
+            assertTrue(bcast.remove(pvlan));
+        }
+        assertEquals(0, bcast.size());
+    }
+
+    /**
+     * Ensure that an unicast packet was sent correctly.
+     *
+     * @param pkt   An unicast packet sent to the managed network.
+     * @param port  A {@link NodeConnector} instance corresponding to the
+     *              destination switch port. {@code null} means that the
+     *              packet should be dropped.
+     * @param vlan  A VLAN ID of the destination network.
+     */
+    protected void checkUnicastPacket(RawPacket pkt, NodeConnector port,
+                                      short vlan) {
+        IDataPacketService pktSrv = vtnMgr.getDataPacketService();
+        Packet decoded = pktSrv.decodeDataPacket(pkt);
+        PacketContext pctx = new PacketContext(pkt, (Ethernet)decoded);
+
+        // Packet.equals(Object) will not work if it contains byte array.
+        // So we need to compare serialized payload.
+        byte[] payload = null;
+        try {
+            payload = pctx.getPayload().serialize();
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        List<RawPacket> transmitted = stubObj.getTransmittedDataPacket();
+        if (port == null) {
+            assertEquals(0, transmitted.size());
+            return;
+        }
+
+        assertEquals(1, transmitted.size());
+        RawPacket sent = transmitted.get(0);
+        PacketContext spctx = checkPacket(sent, payload);
+        NodeConnector nc = spctx.getOutgoingNodeConnector();
+        assertEquals(port, nc);
+        assertEquals(vlan, spctx.getVlan());
+    }
+
+    /**
+     * Ensure that the given raw packet has the same payload as the specified.
+     *
+     * @param pkt      A {@link RawPacket} to be tested.
+     *                 An outgoing node connector must be configured in the
+     *                 specified packet.
+     * @param payload  An array of bytes which represents the expected payload.
+     * @return  A {@link PacketContext} instance which contains the specified
+     *          packet.
+     */
+    protected PacketContext checkPacket(RawPacket pkt, byte[] payload) {
+        NodeConnector port = pkt.getOutgoingNodeConnector();
+        assertNotNull(port);
+        Packet decoded = stubObj.decodeDataPacket(pkt);
+        PacketContext pctx = new PacketContext((Ethernet)decoded, port);
+
+        try {
+            byte[] pld = pctx.getPayload().serialize();
+            if (!Arrays.equals(payload, pld)) {
+                StringBuilder builder =
+                    new StringBuilder("Unexpecetd payload: expected=");
+                for (byte b: payload) {
+                    builder.append(String.format("%02x", b & 0xff));
+                }
+                builder.append(", actual=");
+                for (byte b: pld) {
+                    builder.append(String.format("%02x", b & 0xff));
+                }
+                fail(builder.toString());
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return pctx;
+    }
+
+    /**
+     * Determine broadcast domain of the specified vBridge.
+     *
+     * @param path    A path to the vBridge.
+     * @param host    A {@link TestHost} instance which represents the source
+     *                host of a broadcast packet.
+     * @return  A set of {@link PortVlan} instances to which a broadcast packet
+     *          from {@code host} should be sent.
+     */
+    protected Set<PortVlan> getBroadcastNetwork(VBridgePath path,
+                                                TestHost host) {
+        Set<PortVlan> pset = new HashSet<PortVlan>();
+        Set<Node> vlanNodes = new HashSet<Node>();
+        IVTNResourceManager resMgr = vtnMgr.getResourceManager();
+
+        try {
+            // Test port mappings.
+            for (VInterface vif: vtnMgr.getBridgeInterfaces(path)) {
+                if (vif.getState() != VNodeState.UP) {
+                    continue;
+                }
+
+                VBridgeIfPath ifpath = new VBridgeIfPath(path, vif.getName());
+                PortMap pmap = vtnMgr.getPortMap(ifpath);
+                if (pmap == null) {
+                    continue;
+                }
+
+                NodeConnector port = pmap.getNodeConnector();
+                PortMapConfig pmconf = pmap.getConfig();
+                pset.add(new PortVlan(port, pmconf.getVlan()));
+            }
+
+            // Test MAC mapping.
+            MacMapPath mpath = new MacMapPath(path);
+            Set<PortVlan> nwSet = resMgr.getMacMappedNetworks(vtnMgr, mpath);
+            if (nwSet != null) {
+                pset.addAll(nwSet);
+            }
+
+            // Test VLAN mappings.
+            ISwitchManager swMgr = vtnMgr.getSwitchManager();
+            ITopologyManager topoMgr = vtnMgr.getTopologyManager();
+            String container = vtnMgr.getContainerName();
+            for (VlanMap vmap: vtnMgr.getVlanMaps(path)) {
+                short vlan = vmap.getVlan();
+                Node node = vmap.getNode();
+                if (node == null) {
+                    for (Node n: swMgr.getNodes()) {
+                        for (NodeConnector nc: swMgr.getUpNodeConnectors(n)) {
+                            if (swMgr.isSpecial(nc) ||
+                                topoMgr.isInternal(nc)) {
+                                continue;
+                            }
+                            PortVlan pvlan = new PortVlan(nc, vlan);
+                            if (!resMgr.isPortMapped(pvlan)) {
+                                pset.add(pvlan);
+                            }
+                        }
+                    }
+                    break;
+                }
+                if (vlanNodes.add(node)) {
+                    for (NodeConnector nc: swMgr.getUpNodeConnectors(node)) {
+                        if (swMgr.isSpecial(nc) || topoMgr.isInternal(nc)) {
+                            continue;
+                        }
+                        PortVlan pvlan = new PortVlan(nc, vlan);
+                        if (!resMgr.isPortMapped(pvlan)) {
+                            pset.add(pvlan);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Eliminate source VLAN network from the set.
+        pset.remove(host.getPortVlan());
+
+        return pset;
+    }
+
+    /**
+     * Return a {@link VTNFlow} instance which represents the specified flow.
+     *
+     * @param name  The name of the virtual tenant.
+     * @param src   A {@link TestHost} for the source host.
+     * @param dst   A {@link TestHost} for the destination host.
+     * @return  A {@link VTNFlow} instance is returned if found.
+     *          {@code null} is returned if not found.
+     */
+    protected VTNFlow getVTNFlow(String name, TestHost src, TestHost dst) {
+        final L2Host srcHost = src.getL2Host();
+        final L2Host dstHost = dst.getL2Host();
+        final List<VTNFlow> found = new ArrayList<VTNFlow>();
+
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(name);
+        VTNFlowMatch fmatch = new VTNFlowMatch() {
+            @Override
+            public boolean accept(VTNFlow vflow) {
+                ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+                if (srcHost.equals(edges.getLeft()) &&
+                    dstHost.equals(edges.getRight())) {
+                    found.add(vflow);
+                }
+                return false;
+            }
+
+            @Override
+            public String getDescription() {
+                StringBuilder builder = new StringBuilder("src=");
+                builder.append(srcHost).append(", dst=").append(dstHost);
+                return builder.toString();
+            }
+        };
+
+        assertNull(fdb.removeFlows(vtnMgr, fmatch));
+        int sz = found.size();
+        if (sz == 0) {
+            return null;
+        }
+
+        assertEquals(1, sz);
+        VTNFlow vflow = found.get(0);
+
+        // Ensure that all flow entries are installed.
+        for (FlowEntry fent: vflow.getFlowEntries()) {
+            assertTrue(stubObj.isInstalled(fent));
+        }
+
+        return vflow;
+    }
+
+    /**
+     * Ensure that the specified flow entry is installed.
+     *
+     * @param name   The name of the virtual tenant.
+     * @param vflow  A {@link VTNFlow} instance to be tested.
+     */
+    protected void checkVTNFlowInstalled(String name, VTNFlow vflow) {
+        final FlowGroupId gid = vflow.getGroupId();
+        final List<Boolean> found = new ArrayList<Boolean>(1);
+        VTNFlowMatch fmatch = new VTNFlowMatch() {
+            @Override
+            public boolean accept(VTNFlow vf) {
+                if (gid.equals(vf.getGroupId())) {
+                    found.add(Boolean.TRUE);
+                }
+                return false;
+            }
+
+            @Override
+            public String getDescription() {
+                return "gid=" + gid;
+            }
+        };
+
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(name);
+        assertNull(fdb.removeFlows(vtnMgr, fmatch));
+        assertFalse(found.isEmpty());
+
+        for (FlowEntry fent: vflow.getFlowEntries()) {
+            assertTrue(stubObj.isInstalled(fent));
+        }
+    }
+
+    /**
+     * Ensure that the specified flow entry is no longer installed.
+     *
+     * @param name   The name of the virtual tenant.
+     * @param vflow  A {@link VTNFlow} instance to be tested.
+     */
+    protected void checkVTNFlowUninstalled(String name, VTNFlow vflow) {
+        List<VTNFlow> flows = new ArrayList<VTNFlow>(1);
+        flows.add(vflow);
+
+        VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(name);
+        assertNull(fdb.removeFlows(vtnMgr, flows));
+
+        for (FlowEntry fent: vflow.getFlowEntries()) {
+            assertFalse(stubObj.isInstalled(fent));
+        }
+    }
+
+    /**
+     * Ensure that incoming packet is handled according to the virtual mapping
+     * configuration.
+     *
+     * @param bridges    A list of vBridge paths in the container.
+     * @param allHosts   A list of hosts to be tested.
+     * @param flowMap    A map which contains {@link VTNFlow} instances
+     *                   currently installed to the flow database.
+     * @param flowCount  The number of flow entries currently installed.
+     * @return  The number of flow entries after test is returned.
+     */
+    protected int checkMapping(List<VBridgePath> bridges,
+                               List<TestHost> allHosts,
+                               Map<FlowGroupId, VTNFlow> flowMap,
+                               int flowCount) {
+        // At first, try to learn all hosts without installing flow entries.
+        Map<TestHost, Set<PortVlan>> bcastMap =
+            new HashMap<TestHost, Set<PortVlan>>();
+        for (TestHost host: allHosts) {
+            checkMapping(bridges, host, flowCount, null, bcastMap);
+        }
+
+        // Send unicast packet.
+        int fcnt = flowCount;
+        for (TestHost src: allHosts) {
+            MapReference sref = src.getMapping();
+            VBridgePath bpath;
+            PacketResult pres;
+            if (sref == null) {
+                pres = PacketResult.IGNORED;
+                bpath = null;
+            } else {
+                pres = PacketResult.KEEP_PROCESSING;
+                VBridgePath mpath = sref.getPath();
+                bpath = new VBridgePath(mpath.getTenantName(),
+                                        mpath.getBridgeName());
+            }
+
+            for (TestHost dst: allHosts) {
+                NodeConnector dport = dst.getPort();
+                if (src.equals(dst) || src.getPort().equals(dport)) {
+                    continue;
+                }
+
+                VTNFlow oldVflow = (bpath == null)
+                    ? null : getVTNFlow(bpath.getTenantName(), src, dst);
+                MapReference dref = dst.getMapping();
+                RawPacket pkt = src.createArp(dst);
+                assertEquals(pres, vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+                flushFlowTasks();
+
+                if (bpath == null) {
+                    // Source host is not mapped.
+                    checkBroadcastPacket(pkt, null);
+                } else {
+                    String tname = bpath.getTenantName();
+                    VTNFlow vflow = getVTNFlow(tname, src, dst);
+                    if (dref != null && bpath.contains(dref.getPath())) {
+                        // Both source and destination host are mapped to the
+                        // same vBridge.
+                        assertNotNull(vflow);
+                        checkUnicastPacket(pkt, dport, dst.getVlan());
+                        assertEquals(oldVflow,
+                                     flowMap.put(vflow.getGroupId(), vflow));
+                        if (oldVflow == null) {
+                            fcnt += vflow.getFlowEntries().size();
+                        }
+                    } else {
+                        // Destination host is not mapped, or is mapped to
+                        // different vBridge.
+                        assertNull(oldVflow);
+                        assertNull(vflow);
+                        checkBroadcastPacket(pkt, bcastMap.get(src));
+                    }
+                }
+                stubObj.checkFlowCount(fcnt);
+            }
+        }
+
+        return fcnt;
+    }
+
+    /**
+     * Ensure that incoming packet is handled according to the virtual mapping
+     * configuration.
+     *
+     * @param bridges    A list of vBridge paths in the container.
+     * @param host       A {@link TestHost} instance to be tested.
+     * @param flowCount  The number of flow entries currently installed.
+     */
+    protected void checkMapping(List<VBridgePath> bridges, TestHost host,
+                                int flowCount) {
+        checkMapping(bridges, host, flowCount, null, null);
+    }
+
+    /**
+     * Ensure that incoming packet is handled according to the virtual mapping
+     * configuration.
+     *
+     * @param bridges    A list of vBridge paths in the container.
+     * @param host       A {@link TestHost} instance to be tested.
+     * @param flowCount  The number of flow entries currently installed.
+     * @param oldNw      A {@link PortVlan} instance which represents VLAN
+     *                   network expected to be removed from broadcast domain.
+     */
+    protected void checkMapping(List<VBridgePath> bridges, TestHost host,
+                                int flowCount, PortVlan oldNw) {
+        checkMapping(bridges, host, flowCount, oldNw, null);
+    }
+
+    /**
+     * Ensure that incoming packet is handled according to the virtual mapping
+     * configuration.
+     *
+     * @param bridges    A list of vBridge paths in the container.
+     * @param host       A {@link TestHost} instance to be tested.
+     * @param flowCount  The number of flow entries currently installed.
+     * @param oldNw      A {@link PortVlan} instance which represents VLAN
+     *                   network expected to be removed from broadcast domain.
+     * @param bcastMap   A map to store broadcast network.
+     */
+    private void checkMapping(List<VBridgePath> bridges, TestHost host,
+                              int flowCount, PortVlan oldNw,
+                              Map<TestHost, Set<PortVlan>> bcastMap) {
+        // Send a broadcast ARP request which probes unknown host.
+        byte[] unknownAddr = {(byte)192, (byte)168, (byte)200, (byte)254};
+        MapReference ref = host.getMapping();
+        Set<PortVlan> bcast;
+        PacketResult pres;
+        if (ref == null) {
+            pres = PacketResult.IGNORED;
+            bcast = null;
+        } else {
+            pres = PacketResult.KEEP_PROCESSING;
+            bcast = getBroadcastNetwork(ref.getPath(), host);
+            if (bcastMap != null) {
+                bcastMap.put(host, bcast);
+            }
+        }
+
+        RawPacket pkt = host.createArp(unknownAddr);
+        assertEquals(pres, vtnMgr.receiveDataPacket(pkt));
+        flushTasks();
+        flushFlowTasks();
+
+        if (oldNw != null) {
+            // PACKET_IN handler should remove this VLAN network from
+            // broadcast domain.
+            assertTrue(bcast.remove(oldNw));
+        }
+
+        checkBroadcastPacket(pkt, bcast);
+        for (VBridgePath bp: bridges) {
+            host.checkLearned(vtnMgr, bp);
+        }
+
+        // This should never install new flow entry.
+        stubObj.checkFlowCount(flowCount);
     }
 }

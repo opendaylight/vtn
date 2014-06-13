@@ -427,4 +427,90 @@ public interface IVTNManagerAware {
      *   </ul>
      */
     void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type);
+
+    /**
+     * Invoked when the information related to the
+     * {@linkplain <a href="package-summary.html#MAC-map">MAC mappping</a>}
+     * configured in
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
+     * the container is changed.
+     *
+     * <p>
+     *   If the MAC mapping configured in vBridge exists in the container
+     *   at the time of registering {@code IVTNManagerAware} listener in the
+     *   VTN Manager, then this method is called with specifying information
+     *   about each MAC mapping so that the existence of these can be
+     *   notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vBridgeChanged(VBridgePath, VBridge, UpdateType)}, which
+     *     notifies the existence of the vBridge wherein this MAC mapping is
+     *     configured, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     * <p>
+     *   Note that this method notifies only change of the MAC mapping
+     *   configuration. This method will not be called even if a new mapping
+     *   is established between host and the vBridge by MAC mapping.
+     * </p>
+     *
+     * @param path    A {@link VBridgePath} object that specifies the position
+     *                of the VBridge.
+     * @param mcconf  A {@link MacMapConfig} object which represents the MAC
+     *                mapping configuration information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new MAC mapping has
+     *       been configured.
+     *       <ul>
+     *         <li>
+     *           The position of the vBridge in which the MAC mapping is
+     *           configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the MAC mapping configuration is passed to
+     *           {@code mcmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified MAC
+     *       mapping has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the vBridge from which the MAC mapping is
+     *           removed is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the MAC mapping configuration just prior
+     *           to its removal is passed to {@code mcconf}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       MAC mapping has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vBridge in which the MAC mapping
+     *           is configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated MAC mapping configuration is
+     *           specified to {@code mcconf}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     * @since  Helium
+     */
+    void macMapChanged(VBridgePath path, MacMapConfig mcconf, UpdateType type);
 }

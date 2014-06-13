@@ -61,7 +61,6 @@ import org.opendaylight.controller.northbound.commons.exception.
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.Status;
 
 /**
@@ -761,17 +760,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
 
-        short vid;
-        if (vlan == null) {
-            vid = 0;
-        } else {
-            try {
-                vid = Short.parseShort(vlan);
-            } catch (NumberFormatException e) {
-                throw new BadRequestException("Invalid VLAN ID.");
-            }
-        }
-
+        short vid = parseVlanId(vlan);
         Node nd;
         if (node == null) {
             nd = null;
@@ -1023,23 +1012,6 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             return Response.ok().build();
         } catch (VTNException e) {
             throw getException(e.getStatus());
-        }
-    }
-
-    /**
-     * Parse a string representation of Ethernet address.
-     *
-     * @param str  A string representation of Ethernet address.
-     * @return  An {@code EthernetAddress} object.
-     * @throws BadRequestException
-     *    Invalid string is passed to {@code str}.
-     */
-    private EthernetAddress parseEthernetAddress(String str) {
-        try {
-            byte[] b = HexEncode.bytesFromHexString(str);
-            return new EthernetAddress(b);
-        } catch (Exception e) {
-            throw new BadRequestException("Invalid MAC address.");
         }
     }
 }

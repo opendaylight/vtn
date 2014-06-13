@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,38 +31,16 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import org.opendaylight.controller.clustering.services.IClusterContainerServices;
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
-import org.opendaylight.controller.sal.core.Config;
-import org.opendaylight.controller.sal.core.ConstructionException;
-import org.opendaylight.controller.sal.core.Edge;
-import org.opendaylight.controller.sal.core.Name;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.Property;
-import org.opendaylight.controller.sal.core.State;
-import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.packet.PacketResult;
-import org.opendaylight.controller.sal.packet.RawPacket;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
-import org.opendaylight.controller.topologymanager.ITopologyManager;
+import org.opendaylight.vtn.manager.DataLinkHost;
+import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
+import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -73,14 +53,54 @@ import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
+import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+
+import org.opendaylight.controller.clustering.services.IClusterContainerServices;
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.core.Config;
+import org.opendaylight.controller.sal.core.ConstructionException;
+import org.opendaylight.controller.sal.core.Edge;
+import org.opendaylight.controller.sal.core.Name;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
+import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.State;
+import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.packet.ARP;
+import org.opendaylight.controller.sal.packet.Ethernet;
+import org.opendaylight.controller.sal.packet.IEEE8021Q;
+import org.opendaylight.controller.sal.packet.Packet;
+import org.opendaylight.controller.sal.packet.PacketResult;
+import org.opendaylight.controller.sal.packet.RawPacket;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
+import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.topologymanager.ITopologyManager;
 
 /**
  * JUnit test for {@link VTNManagerImplTest}.
@@ -98,7 +118,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      * Construct a new instance.
      */
     public VTNManagerImplWithNodesTest() {
-        super(2);
+        super(2, true);
     }
 
     /**
@@ -169,11 +189,11 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         pmaps.put(ifpath1, null);
         pmaps.put(ifpath2, null);
         pmaps.put(ifpath3, null);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null, null);
 
         // add mapping
         Node node = NodeCreator.createOFNode(0L);
-        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
+        SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW,
                                          String.valueOf(10));
         PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
         st = vtnMgr.setPortMap(ifpath1, pmconf);
@@ -199,7 +219,61 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         vmaps.put(map, vlconf);
 
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        Set<DataLinkHost> allow = new HashSet<DataLinkHost>();
+        MacVlan mvlan = null;
+        for (int i = 0; i < 10; i++) {
+            long mac = 0x123456789aL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)i);
+            assertTrue(allow.add(dlh));
+            if (mvlan == null) {
+                try {
+                    mvlan = new MacVlan(dlh);
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+            }
+        }
+        assertNotNull(mvlan);
+
+        Set<DataLinkHost> deny = new HashSet<DataLinkHost>();
+        for (int i = 0; i < 5; i++) {
+            long mac = 0xaabbccddeeL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)(i >> 1));
+            assertTrue(deny.add(dlh));
+        }
+
+        NodeConnector edgePort = null;
+        ISwitchManager swMgr = vtnMgr.getSwitchManager();
+        ITopologyManager topoMgr = vtnMgr.getTopologyManager();
+        for (NodeConnector nc: swMgr.getUpNodeConnectors(node)) {
+            if (!(topoMgr.isInternal(nc) || swMgr.isSpecial(nc))) {
+                edgePort = nc;
+                break;
+            }
+        }
+        assertNotNull(edgePort);
+
+        MacMapConfig mcconf = new MacMapConfig(allow, deny);
+        try {
+            assertEquals(UpdateType.ADDED,
+                         vtnMgr.setMacMap(bpath, UpdateOperation.ADD, mcconf));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
+
+        // Activate one MAC mapping by sending a packet.
+        short vlan = mvlan.getVlan();
+        byte[] src = NetUtils.longToByteArray6(mvlan.getMacAddress());
+        byte[] dst = NetUtils.getBroadcastMACAddr();
+        byte[] srcIp = {(byte)192, (byte)168, (byte)100, (byte)1};
+        byte[] dstIp = {(byte)192, (byte)168, (byte)100, (byte)200};
+        RawPacket pkt = createARPRawPacket(src, dst, srcIp, dstIp,
+                                           (vlan > 0) ? vlan : -1, edgePort,
+                                           ARP.REQUEST);
+        assertEquals(PacketResult.KEEP_PROCESSING,
+                     vtnMgr.receiveDataPacket(pkt));
 
         brstates.put(bpath, VNodeState.UP);
         ifstates.put(ifpath1, VNodeState.UP);
@@ -212,7 +286,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // restart VTNManager and check configuration after restart.
         restartVTNManager(c);
 
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
         checkNodeState(tpath, brstates, ifstates);
 
         // add vlanmap to not existing node.
@@ -225,7 +299,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
         vmaps.put(map, vlconf);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         brstates.put(bpath, VNodeState.DOWN);
         checkNodeState(tpath, brstates, ifstates);
@@ -233,7 +307,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // start with having a configuration.
         // this case, startup with cache.
         restartVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
         checkNodeState(tpath, brstates, ifstates);
 
         // start after configuration files is removed.
@@ -241,20 +315,20 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
         checkNodeState(tpath, brstates, ifstates);
 
         // start after cache is cleared.
         // this case load from configuration files.
         stopVTNManager(true);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // start with no cluster service.
         stopVTNManager(true);
         vtnMgr.unsetClusterContainerService(stubObj);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // remove configuration files.
         stopVTNManager(true);
@@ -351,8 +425,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
         Node node = NodeCreator.createOFNode(0L);
-        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
-        String.valueOf(10));
+        SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                         String.valueOf(10));
         PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
 
         // apply a conflict PortMap configuration to 2 interfaces.
@@ -460,12 +534,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 try {
                     map = mgr.addVlanMap(bpath, vlconf);
                     if (node != null
-                            && node.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                            && node.getType() != NodeConnectorIDType.OPENFLOW) {
                         fail("throwing Exception was expected.");
                     }
                 } catch (VTNException e) {
                     if (node != null
-                            && node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                            && node.getType() == NodeConnectorIDType.OPENFLOW) {
                         unexpected(e);
                     } else {
                         // if node type is not OF, throwing a VTNException is expected.
@@ -481,7 +555,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 unexpected(e);
             }
             if (node == null
-                    || node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                    || node.getType() == NodeConnectorIDType.OPENFLOW) {
                 assertEquals((node == null) ? "" : node.toString(),
                              vlans.length, list.size());
                 VBridge brdg = null;
@@ -546,11 +620,11 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         Node node = NodeCreator.createOFNode(0L);
         SwitchPort[] ports = new SwitchPort[] {
-                new SwitchPort("port-10", NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
-                new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, "11"),
+                new SwitchPort("port-10", NodeConnectorIDType.OPENFLOW, "10"),
+                new SwitchPort(null, NodeConnectorIDType.OPENFLOW, "11"),
                 new SwitchPort("port-10", null, null),
                 new SwitchPort("port-10"),
-                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
+                new SwitchPort(NodeConnectorIDType.OPENFLOW, "13"),
         };
 
         for (SwitchPort port: ports) {
@@ -614,13 +688,13 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(mgr, tpath, mbpathlist, mifplist);
 
         node = NodeCreator.createOFNode(0L);
-        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
+        SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
         PortMapConfig pmconf = new PortMapConfig(node, port, (short) 0);
         st = mgr.setPortMap(ifp1, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         checkNodeStatus(mgr, bpath1, ifp1, VNodeState.UP, VNodeState.UP, pmconf.toString());
 
-        port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "11");
+        port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "11");
         pmconf = new PortMapConfig(node, port, (short) 0);
         st = mgr.setPortMap(ifp2, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -640,7 +714,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         pmconf.toString());
 
         mgr.modifyBridgeInterface(ifp1, new VInterfaceConfig(null, Boolean.FALSE), true);
-        port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
+        port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
         pmconf = new PortMapConfig(node, port, (short) 0);
         st = mgr.setPortMap(ifp1, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -652,7 +726,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // map a internal port to interface.
         SwitchPort portIn
-            = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "15");
+            = new SwitchPort(NodeConnectorIDType.OPENFLOW, "15");
         PortMapConfig pmconfIn = new PortMapConfig(node, portIn, (short) 0);
         st = mgr.setPortMap(ifp2, pmconfIn);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -665,7 +739,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // set duplicate portmap.
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, "vinterface3");
-        port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
+        port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
         pmconf = new PortMapConfig(node, port, (short) 0);
         st = mgr.addBridgeInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
         st = mgr.setPortMap(ifp3, pmconf);
@@ -797,9 +871,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         NodeConnector snc = null;
         try {
             node = new Node(Node.NodeIDType.PRODUCTION, "Node ID: 0");
-            nc = new NodeConnector(NodeConnector.NodeConnectorIDType.PRODUCTION,
+            nc = new NodeConnector(NodeConnectorIDType.PRODUCTION,
                                    "Node Connector ID: 0", node);
-            snc = new NodeConnector(NodeConnector.NodeConnectorIDType.CONTROLLER,
+            snc = new NodeConnector(NodeConnectorIDType.CONTROLLER,
                                     NodeConnector.SPECIALNODECONNECTORID, node);
         } catch (ConstructionException e) {
             unexpected(e);
@@ -1298,12 +1372,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 try {
                     vmap = mgr.addVlanMap(bpath, vlconf);
                     if (vnode != null
-                            && vnode.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                            && vnode.getType() != NodeConnectorIDType.OPENFLOW) {
                         fail("throwing Exception was expected.");
                     }
                 } catch (VTNException e) {
                     if (vnode != null
-                            && vnode.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                            && vnode.getType() == NodeConnectorIDType.OPENFLOW) {
                         unexpected(e);
                     } else {
                         // if node type is not OF,
@@ -1380,15 +1454,15 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         nodeSet.add(onode);
 
         SwitchPort[] ports = new SwitchPort[] {
-                new SwitchPort("port-10", NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
-                new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, "11"),
+                new SwitchPort("port-10", NodeConnectorIDType.OPENFLOW, "10"),
+                new SwitchPort(null, NodeConnectorIDType.OPENFLOW, "11"),
                 new SwitchPort("port-10", null, null),
                 new SwitchPort("port-10"),
-                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
+                new SwitchPort(NodeConnectorIDType.OPENFLOW, "13"),
         };
 
         SwitchPort portIn
-            = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "15");
+            = new SwitchPort(NodeConnectorIDType.OPENFLOW, "15");
         PortMapConfig pmconfIn = new PortMapConfig(cnode, portIn, (short) 0);
         NodeConnector ncIn
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)15), cnode);
@@ -1523,7 +1597,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         VBridgePath bpath2 = new VBridgePath(tname, bname2);
         VBridgeIfPath ifp2 = new VBridgeIfPath(tname, bname2, "vinterface");
         SwitchPort sp = new SwitchPort("port-10",
-                                       NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
+                                       NodeConnectorIDType.OPENFLOW, "10");
         NodeConnector nc
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)10), cnode);
         Map<String, Property> propMap = swMgr.getNodeConnectorProps(nc);
@@ -1568,7 +1642,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         pmconf.toString());
 
         // if mapped port is null.
-        sp = new SwitchPort("port-16", NodeConnector.NodeConnectorIDType.OPENFLOW, "16");
+        sp = new SwitchPort("port-16", NodeConnectorIDType.OPENFLOW, "16");
         pmconf = new PortMapConfig(cnode, sp, (short)0);
         st = mgr.setPortMap(ifp, pmconf);
         propMap = null;
@@ -1631,12 +1705,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 try {
                     map = mgr.addVlanMap(bpath, vlconf);
                     if (node != null
-                            && node.getType() != NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                            && node.getType() != NodeConnectorIDType.OPENFLOW) {
                         fail("throwing Exception was expected.");
                     }
                 } catch (VTNException e) {
                     if (node != null
-                            && node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                            && node.getType() == NodeConnectorIDType.OPENFLOW) {
                         unexpected(e);
                     } else {
                         continue;
@@ -1706,11 +1780,11 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         nodeSet.add(onode);
 
         SwitchPort[] ports = new SwitchPort[] {
-                new SwitchPort("port-10", NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
-                new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, "11"),
+                new SwitchPort("port-10", NodeConnectorIDType.OPENFLOW, "10"),
+                new SwitchPort(null, NodeConnectorIDType.OPENFLOW, "11"),
                 new SwitchPort("port-10", null, null),
                 new SwitchPort("port-10"),
-                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
+                new SwitchPort(NodeConnectorIDType.OPENFLOW, "13"),
         };
 
         for (Node cnode : nodeSet) {
@@ -1768,13 +1842,13 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                                     vmap = mgr.addVlanMap(bpath, vlconf);
                                     if (vmapNode != null
                                             && vmapNode.getType()
-                                                != NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                                                != NodeConnectorIDType.OPENFLOW) {
                                         fail("throwing Exception was expected.");
                                     }
                                 } catch (VTNException e) {
                                     if (vmapNode != null
                                             && vmapNode.getType()
-                                                == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+                                                == NodeConnectorIDType.OPENFLOW) {
                                         unexpected(e);
                                     } else {
                                         continue;
@@ -2103,7 +2177,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         Node node0 = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(null,
-                NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
+                NodeConnectorIDType.OPENFLOW, "10");
         PortMapConfig pmconf = new PortMapConfig(node0, port, (short) 0);
         Status st = mgr.setPortMap(ifp0, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -2305,7 +2379,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     VBridgeIfPath ifp = new VBridgeIfPath(tname, (i < 2) ? bname1 : bname2,
                                                             ifname);
 
-                    SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
+                    SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW,
                                                     String.valueOf(i + 10));
                     PortMapConfig pmconf = new PortMapConfig(node, port, setvlan);
                     st = mgr.setPortMap(ifp, pmconf);
@@ -2387,8 +2461,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 result = mgr.receiveDataPacket(inPkt);
                 assertEquals(emsg, PacketResult.IGNORED, result);
 
-                List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-                assertEquals(emsg, 0, transDatas.size());
+                List<RawPacket> dataList = stub.getTransmittedDataPacket();
+                assertEquals(emsg, 0, dataList.size());
                 iphost++;
             }
         }
@@ -2404,8 +2478,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.IGNORED, result);
-        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        List<RawPacket> dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // not Ethernet Packet
         Ethernet inPktDecoded = (Ethernet)stub.decodeDataPacket(inPkt);
@@ -2417,8 +2491,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         result = mgr.receiveDataPacket(arpPkt);
         assertEquals(PacketResult.IGNORED, result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // in case out PortVlan is not match.
         byte[] src2 = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
@@ -2441,10 +2515,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     (confVlan > 0) ? confVlan : -1, map.getNodeConnector());
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        transDatas = stub.getTransmittedDataPacket();
+        dataList = stub.getTransmittedDataPacket();
 
         // receive flood + probe packet to incoming nodeconnector.
-        assertEquals(mappedConnectors.get(bpath1).size(), transDatas.size());
+        assertEquals(mappedConnectors.get(bpath1).size(), dataList.size());
         MacTableEntry ent = table.get(MacAddressTable.getTableKey(dst));
         assertNull(ent);
 
@@ -2465,13 +2539,13 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 (confVlan > 0) ? confVlan : -1, map.getNodeConnector());
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        transDatas = stub.getTransmittedDataPacket();
+        dataList = stub.getTransmittedDataPacket();
 
         // 3 packets should be transmitted because MAC address table entries
         // relevant to the disabled interface are removed.
         //   - An ARP request to determine IP address of the source host.
         //   - Flooding to enabled interfaces except for incoming interface.
-        assertEquals(3, transDatas.size());
+        assertEquals(3, dataList.size());
 
         st = mgr.modifyBridgeInterface(ifp1,
                 new VInterfaceConfig(null, Boolean.TRUE), true);
@@ -2484,8 +2558,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // in case received disable vinterface.
         st = mgr.modifyBridgeInterface(ifp1,
@@ -2504,8 +2578,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // incoming packet form disabled NodeConnector is discarded.
         assertEquals(PacketResult.KEEP_PROCESSING, result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // remove tenant after test
         st = mgr.removeTenant(tpath);
@@ -2602,8 +2676,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         PacketResult result = mgr.receiveDataPacket(inPkt);
 
                         assertEquals(PacketResult.IGNORED, result);
-                        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-                        assertEquals(emsg, 0, transDatas.size());
+                        List<RawPacket> dataList = stub.getTransmittedDataPacket();
+                        assertEquals(emsg, 0, dataList.size());
                     }
                 }
 
@@ -2680,8 +2754,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         Node dnode = NodeCreator.createOFNode(Long.valueOf((long)2));
-        SwitchPort dport = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
-                String.valueOf(10));
+        SwitchPort dport = new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                          String.valueOf(10));
         st = mgr.setPortMap(difp, new PortMapConfig(dnode, dport, (short)0));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2708,8 +2782,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     String bname = (i < MAX_INTERFACE_VBRIDGE1) ? bname1 : bname2;
                     VBridgePath bpath = (i < MAX_INTERFACE_VBRIDGE1) ? bpath1 : bpath2;
                     VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-                    SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
-                                                    String.valueOf(i + 10));
+                    SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                                     String.valueOf(i + 10));
                     PortMapConfig pmconf = new PortMapConfig(node, port, setvlan);
                     st = mgr.setPortMap(ifp, pmconf);
                     assertEquals("(VBridgeIfPath)" + ifp.toString()
@@ -2810,8 +2884,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 PacketResult result = mgr.receiveDataPacket(inPkt);
                 assertEquals(emsg, PacketResult.IGNORED, result);
 
-                List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-                assertEquals(emsg, 0, transDatas.size());
+                List<RawPacket> dataList = stub.getTransmittedDataPacket();
+                assertEquals(emsg, 0, dataList.size());
                 iphost++;
             }
         }
@@ -2898,8 +2972,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     String ifname = "vinterface" + inode + (i + 10);
                     VBridgePath bpath = (i < MAX_INTERFACE_VBRIDGE1) ? bpath1 : bpath2;
                     VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-                    SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
-                                                    String.valueOf(i + 10));
+                    SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                                     String.valueOf(i + 10));
                     PortMapConfig pmconf = new PortMapConfig(node, port, vlan);
                     st = mgr.setPortMap(ifp, pmconf);
                     assertEquals("(VBridgeIfPath)" + ifp.toString()
@@ -2925,12 +2999,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             bpathset.add(bpaths2);
 
             mgr.findHost(null, bpaths1);
-            List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-            assertEquals(0, transDatas.size());
+            List<RawPacket> dataList = stub.getTransmittedDataPacket();
+            assertEquals(0, dataList.size());
 
             mgr.findHost(ia6, bpaths1);
-            transDatas = stub.getTransmittedDataPacket();
-            assertEquals(0, transDatas.size());
+            dataList = stub.getTransmittedDataPacket();
+            assertEquals(0, dataList.size());
 
             for (Set<VBridgePath> bpaths : bpathset) {
                 int numMapped = 0;
@@ -2955,10 +3029,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     mgr.findHost(ia, bpaths);
                 }
 
-                transDatas = stub.getTransmittedDataPacket();
-                assertEquals(numMapped, transDatas.size());
+                dataList = stub.getTransmittedDataPacket();
+                assertEquals(numMapped, dataList.size());
 
-                for (RawPacket raw : transDatas) {
+                for (RawPacket raw : dataList) {
                     String emsg = "(vlan)" + vlan
                             + ",(Outgoing nc)" + raw.getOutgoingNodeConnector().toString();
                     Ethernet pkt = (Ethernet)stub.decodeDataPacket(raw);
@@ -3002,10 +3076,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
                     mgr.probe(hnode);
 
-                    transDatas = stub.getTransmittedDataPacket();
-                    assertEquals(emsg, 1, transDatas.size());
+                    dataList = stub.getTransmittedDataPacket();
+                    assertEquals(emsg, 1, dataList.size());
 
-                    RawPacket raw = transDatas.get(0);
+                    RawPacket raw = dataList.get(0);
                     assertEquals(emsg, pv,
                             new PortVlan(raw.getOutgoingNodeConnector(), vlan));
 
@@ -3026,7 +3100,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         } catch (ConstructionException e) {
             unexpected(e);
         }
-        NodeConnector nc = NodeConnectorCreator.createNodeConnector(NodeConnector.NodeConnectorIDType.ONEPK,
+        NodeConnector nc = NodeConnectorCreator.createNodeConnector(NodeConnectorIDType.ONEPK,
                     "Port: 0", n);
         HostNodeConnector hnode = null;
         try {
@@ -3036,8 +3110,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         boolean result = mgr.probeHost(hnode);
         assertFalse(result);
-        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        List<RawPacket> dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // internal port
         n = NodeCreator.createOFNode(0L);
@@ -3050,8 +3124,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         result = mgr.probeHost(hnode);
         assertFalse(result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // IPv6 host
         innc = NodeConnectorCreator.createOFNodeConnector(
@@ -3063,8 +3137,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         result = mgr.probeHost(hnode);
         assertFalse(result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // nodeconnector is not mapped
         mgr.removeBridge(bpath2);
@@ -3077,8 +3151,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         result = mgr.probeHost(hnode);
         assertFalse(result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
         // in case if is disabled.
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname1, "vinterface010");
@@ -3101,8 +3175,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         result = mgr.probeHost(hnode);
         assertFalse(result);
-        transDatas = stub.getTransmittedDataPacket();
-        assertEquals(0, transDatas.size());
+        dataList = stub.getTransmittedDataPacket();
+        assertEquals(0, dataList.size());
 
 
         // if null case
@@ -3114,6 +3188,1345 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.stopping();
         result = mgr.probeHost(hnode);
         assertFalse(result);
+    }
+
+    /**
+     * Test case for MAC mapping.
+     *
+     * <ul>
+     *   <li>
+     *     Ensure that incoming packet can be handled by the MAC mapping.
+     *   </li>
+     *   <li>
+     *     Ensure that MAC address table is maintained correctly.
+     *   </li>
+     *   <li>
+     *     Ensure that VTN flow database is maintained correctly.
+     *   </li>
+     * </ul>
+     */
+    @Test
+    public void testMacMap() {
+        // Set up test environment.
+        VTNManagerImpl mgr = vtnMgr;
+        String container = mgr.getContainerName();
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        ITopologyManager topoMgr = mgr.getTopologyManager();
+        List<NodeConnector> edgePorts = new ArrayList<NodeConnector>();
+        List<TestHost> allHosts = new ArrayList<TestHost>();
+        Map<NodeConnector, List<TestHost>> portHosts =
+            new HashMap<NodeConnector, List<TestHost>>();
+        long macAddr1 = 1L;
+        long macAddr2 = 0xf00000000000L;
+        byte[] ipAddr = {(byte)192, (byte)168, (byte)100, (byte)1};
+        List<Node> nodeList = new ArrayList<Node>();
+
+        for (Node node: swMgr.getNodes()) {
+            nodeList.add(node);
+            int portCount = 0;
+            for (NodeConnector nc: swMgr.getUpNodeConnectors(node)) {
+                if (swMgr.isSpecial(nc) || topoMgr.isInternal(nc)) {
+                    continue;
+                }
+                List<TestHost> hostList = new ArrayList<TestHost>();
+                portHosts.put(nc, hostList);
+                edgePorts.add(nc);
+
+                // Add 2 MAC addresses, and share it on VLAN 0 and 1, and
+                // 1 MAC address on VLAN 2 and 3.
+                for (short vlan = 0; vlan <= 3; vlan++) {
+                    TestHost host = new TestHost(macAddr1, vlan, ipAddr, nc);
+                    hostList.add(host);
+                    allHosts.add(host);
+                    ipAddr[3]++;
+                    macAddr1++;
+
+                    if (vlan < 2) {
+                        host = new TestHost(macAddr2, vlan, ipAddr, nc);
+                        hostList.add(host);
+                        allHosts.add(host);
+                        ipAddr[3]++;
+                        macAddr2++;
+                    }
+                }
+
+                portCount++;
+                if (portCount >= 3) {
+                    break;
+                }
+            }
+        }
+
+        // Use one more switch port on node0.
+        Node node0 = nodeList.get(0);
+        NodeConnector additional0 = null;
+        for (NodeConnector nc: swMgr.getUpNodeConnectors(node0)) {
+            if (swMgr.isSpecial(nc) || topoMgr.isInternal(nc) ||
+                portHosts.containsKey(nc)) {
+                continue;
+            }
+            additional0 = nc;
+            assertNull(portHosts.put(nc, new ArrayList<TestHost>()));
+            break;
+        }
+        assertNotNull(additional0);
+
+        // Use one more switch port on node1.
+        Node node1 = nodeList.get(1);
+        NodeConnector additional1 = null;
+        for (NodeConnector nc: swMgr.getUpNodeConnectors(node1)) {
+            if (swMgr.isSpecial(nc) || topoMgr.isInternal(nc) ||
+                portHosts.containsKey(nc)) {
+                continue;
+            }
+
+            additional1 = nc;
+            List<TestHost> hostList = new ArrayList<TestHost>();
+            portHosts.put(nc, hostList);
+            edgePorts.add(nc);
+
+            // Add 2 more MAC addresses on each VLAN 1..3,
+            for (int i = 0; i < 2; i++) {
+                for (short vlan = 1; vlan <= 3; vlan++) {
+                    TestHost host = new TestHost(macAddr2, vlan, ipAddr, nc);
+                    hostList.add(host);
+                    allHosts.add(host);
+                    ipAddr[3]++;
+                    macAddr2++;
+                }
+            }
+            break;
+        }
+        assertNotNull(additional1);
+
+        // Create 1 tenant, and 5 vBridges.
+        String tname = "tenant";
+        VTenantPath tpath = new VTenantPath(tname);
+        List<VBridgePath> bridges = new ArrayList<VBridgePath>();
+        for (int i = 0; i < 5; i++) {
+            VBridgePath bpath = new VBridgePath(tpath, "bridge" + i);
+            bridges.add(bpath);
+        }
+        createTenantAndBridge(mgr, tpath, bridges);
+
+        // Configure VLAN mapping that maps VLAN 0 to bridges[0].
+        VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
+        VBridgePath bpath0 = bridges.get(0);
+        VlanMap vmap0 = null;
+        try {
+            vmap0 = mgr.addVlanMap(bpath0, vlconf);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        VlanMapPath vpath0 = new VlanMapPath(bpath0, vmap0.getId());
+
+        // Configure VLAN mapping that maps VLAN 1 on nodes[1] to bridges[1].
+        VBridgePath bpath1 = bridges.get(1);
+        vlconf = new VlanMapConfig(node1, (short)1);
+        VlanMap vmap1 = null;
+        try {
+            vmap1 = mgr.addVlanMap(bpath1, vlconf);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        VlanMapPath vpath1 = new VlanMapPath(bpath1, vmap1.getId());
+
+        flushTasks();
+        VNodeState nst = VNodeState.UP;
+        for (int i = 0; i < bridges.size(); i++) {
+            checkVBridgeStatus(mgr, bridges.get(i), 0, nst);
+            if (i == 1) {
+                nst = VNodeState.UNKNOWN;
+            }
+        }
+
+        for (TestHost host: allHosts) {
+            short vlan = host.getVlan();
+            MapReference ref;
+            if (vlan == 0) {
+                ref = new MapReference(MapType.VLAN, container, vpath0);
+            } else if (vlan == 1 && node1.equals(host.getNode())) {
+                ref = new MapReference(MapType.VLAN, container, vpath1);
+            } else {
+                ref = null;
+            }
+            host.setMapping(ref);
+        }
+
+        // Ensure that VLAN mappings are established.
+        Map<FlowGroupId, VTNFlow> flowMap =
+            new HashMap<FlowGroupId, VTNFlow>();
+        int flowCount = 0;
+        flowCount = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(flowCount != 0);
+
+        // Map VLAN 0 at edgePorts[0] and VLAN 1 at edgePorts[5] to bridges[2]
+        // using port mapping.
+        VBridgePath bpath2 = bridges.get(2);
+        Map<VBridgeIfPath, PortMap> interfaces2 =
+            new LinkedHashMap<VBridgeIfPath, PortMap>();
+        Set<PortVlan> pmap0Nw = new HashSet<PortVlan>();
+        int ifIdx = 0;
+        for (short vlan = 0; vlan <= 1; vlan++) {
+            NodeConnector port = (vlan == 0)
+                ? edgePorts.get(0) : edgePorts.get(5);
+            pmap0Nw.add(new PortVlan(port, vlan));
+
+            SwitchPort swPort = new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                               port.getNodeConnectorIDString());
+            PortMapConfig pmconf = new PortMapConfig(port.getNode(), swPort,
+                                                     vlan);
+            VBridgeIfPath ifpath = new VBridgeIfPath(bpath2, "if_" + vlan);
+            PortMap pmap = new PortMap(pmconf, port);
+            interfaces2.put(ifpath, pmap);
+
+            VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
+            Status st = mgr.addBridgeInterface(ifpath, ifconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+            st = mgr.setPortMap(ifpath, pmconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+
+            MapReference pref = new MapReference(MapType.PORT, container,
+                                                 ifpath);
+            for (TestHost host: portHosts.get(port)) {
+                if (host.getVlan() == vlan) {
+                    host.setMapping(pref);
+                }
+            }
+        }
+        flushTasks();
+        flushFlowTasks();
+        nst = VNodeState.UP;
+        for (int i = 0; i < bridges.size(); i++) {
+            checkVBridgeStatus(mgr, bridges.get(i), 0, nst);
+            if (i == 2) {
+                nst = VNodeState.UNKNOWN;
+            }
+        }
+
+        // MAC address entries and flow entries superseded by a new
+        // port mapping should be purged.
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+            L2Host in = edges.getLeft();
+            short ivlan = in.getHost().getVlan();
+            PortVlan pvlan = new PortVlan(in.getPort(), ivlan);
+            if (!pmap0Nw.contains(pvlan)) {
+                L2Host out = edges.getRight();
+                boolean matched;
+                if (out == null) {
+                    matched = true;
+                } else {
+                    short ovlan = out.getHost().getVlan();
+                    pvlan = new PortVlan(out.getPort(), ovlan);
+                    matched = pmap0Nw.contains(pvlan);
+                }
+                if (!matched) {
+                    checkVTNFlowInstalled(tname, vflow);
+                    continue;
+                }
+            }
+
+            checkVTNFlowUninstalled(tname, vflow);
+            flowCount -= vflow.getFlowEntries().size();
+            it.remove();
+        }
+
+        for (TestHost host: allHosts) {
+            MapReference ref = host.getMapping();
+            if (ref != null && ref.getMapType() == MapType.PORT) {
+                // MAC address entry for this host should be purged.
+                host.setMapping(null);
+            }
+            for (VBridgePath bp: bridges) {
+                host.checkLearned(mgr, bp);
+            }
+            host.setMapping(ref);
+        }
+
+        // Ensure that the port mapping is established.
+        int fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(fcnt > flowCount);
+        flowCount = fcnt;
+
+        // Configure MAC mapping into bridges[3].
+        VBridgePath bpath3 = bridges.get(3);
+        TestHost denied = null;
+        Set<DataLinkHost> allow = new HashSet<DataLinkHost>();
+        Set<DataLinkHost> deny = new HashSet<DataLinkHost>();
+        List<TestHost> allowedHosts = new ArrayList<TestHost>();
+        List<TestHost> deniedHosts = new ArrayList<TestHost>();
+        MacMapPath mpath = new MacMapPath(bpath3);
+        MapReference mref = new MapReference(MapType.MAC, container, mpath);
+        Set<L2Host> mmapEdges = new HashSet<L2Host>();
+        Set<L2Host> deniedEdges = new HashSet<L2Host>();
+
+        for (TestHost host: allHosts) {
+            short vlan = host.getVlan();
+            if (vlan == 1) {
+                MapReference ref = host.getMapping();
+                if (additional1.equals(host.getPort())) {
+                    // Reject hosts on `additional1' port.
+                    assertTrue(deny.add(host.getDataLinkHost()));
+                    deniedHosts.add(host);
+                    assertTrue(deniedEdges.add(host.getL2Host()));
+                    continue;
+                }
+                if (denied == null) {
+                    if (ref != null && vpath1.equals(ref.getPath())) {
+                        // Reject this host.
+                        assertTrue(deny.add(host.getDataLinkHost()));
+                        deniedHosts.add(host);
+                        assertTrue(deniedEdges.add(host.getL2Host()));
+                        denied = host;
+                        continue;
+                    }
+                }
+
+                // Port mapping always precedes MAC mapping.
+                if (ref == null || ref.getMapType() != MapType.PORT) {
+                    host.setMapping(mref);
+                    assertTrue(mmapEdges.add(host.getL2Host()));
+                    allowedHosts.add(host);
+                }
+            } else if (vlan == (short)2 && allow.size() < 5) {
+                // Map 5 hosts on VLAN 2.
+                assertTrue(allow.add(host.getDataLinkHost()));
+                host.setMapping(mref);
+                assertTrue(mmapEdges.add(host.getL2Host()));
+                allowedHosts.add(host);
+            }
+        }
+        assertEquals(3, deny.size());
+
+        // Map all hosts on VLAN 1 except for hosts in `deny'.
+        DataLinkHost mmapVlan1 = new EthernetHost((short)1);
+        assertTrue(allow.add(mmapVlan1));
+
+        MacMapConfig mcconf = new MacMapConfig(allow, deny);
+        try {
+            assertEquals(null, mgr.getMacMap(bpath3));
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath3, UpdateOperation.SET, mcconf));
+            MacMap mcmap = mgr.getMacMap(bpath3);
+            assertTrue(mcconf.equals(mcmap));
+            assertTrue(mcmap.getMappedHosts().isEmpty());
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // State of bridges[3] should be DOWN because no host is activated
+        // by MAC mapping.
+        nst = VNodeState.UP;
+        for (int i = 0; i < bridges.size(); i++) {
+            checkVBridgeStatus(mgr, bridges.get(i), 0, nst);
+            if (i == 2) {
+                nst = VNodeState.DOWN;
+            } else if (i == 3) {
+                nst = VNodeState.UNKNOWN;
+            }
+        }
+
+        // MAC address entries and flow entries superseded by a new MAC mapping
+        // should be purged.
+        Map<PortVlan, List<FlowGroupId>> vmapFlows =
+            new HashMap<PortVlan, List<FlowGroupId>>();
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+            L2Host in = edges.getLeft();
+            L2Host out = edges.getRight();
+            if (mmapEdges.contains(in) || mmapEdges.contains(out)) {
+                checkVTNFlowUninstalled(tname, vflow);
+                flowCount -= vflow.getFlowEntries().size();
+                it.remove();
+            } else {
+                checkVTNFlowInstalled(tname, vflow);
+                if (vflow.dependsOn(vpath1) &&
+                    (deniedEdges.contains(in) || deniedEdges.contains(out))) {
+                    // This flow will be removed when a host in incoming or
+                    // outgoing network is mapped by MAC mapping.
+                    FlowGroupId gid = vflow.getGroupId();
+                    PortVlan[] nw = {
+                        new PortVlan(in.getPort(), in.getHost().getVlan()),
+                        new PortVlan(out.getPort(), out.getHost().getVlan()),
+                    };
+                    for (PortVlan pvlan: nw) {
+                        List<FlowGroupId> groups = vmapFlows.get(pvlan);
+                        if (groups == null) {
+                            groups = new ArrayList<FlowGroupId>();
+                            vmapFlows.put(pvlan, groups);
+                        }
+                        groups.add(gid);
+                    }
+                }
+            }
+        }
+        stubObj.checkFlowCount(flowCount);
+
+        for (TestHost host: allHosts) {
+            MapReference ref = host.getMapping();
+            if (ref != null && ref.getMapType() == MapType.MAC) {
+                // MAC address entry for this host should be purged.
+                host.setMapping(null);
+            }
+            for (VBridgePath bp: bridges) {
+                host.checkLearned(mgr, bp);
+            }
+            host.setMapping(ref);
+        }
+
+        VTenant vtn = null;
+        List<VBridge> vbridges = new ArrayList<VBridge>();
+        List<VInterface> vif2 = new ArrayList<VInterface>();
+        try {
+            vtn = mgr.getTenant(tpath);
+            for (VBridgePath bpath: bridges) {
+                vbridges.add(mgr.getBridge(bpath));
+            }
+            for (VBridgeIfPath ipath: interfaces2.keySet()) {
+                vif2.add(mgr.getBridgeInterface(ipath));
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Add an IVTNManagerAware listener. This should report current
+        // configuration, including MAC mapping.
+        OrderedVTNListener listener = new OrderedVTNListener();
+        mgr.addVTNManagerAware(listener);
+        listener.checkEvent(VTNListenerType.VTN, tpath, vtn, UpdateType.ADDED);
+        for (int i = 0; i < bridges.size(); i++) {
+            VBridgePath bpath = bridges.get(i);
+            VBridge vbr = vbridges.get(i);
+            listener.checkEvent(VTNListenerType.VBRIDGE, bpath, vbr,
+                                UpdateType.ADDED);
+            if (i == 0) {
+                listener.checkEvent(VTNListenerType.VLANMAP, bpath, vmap0,
+                                    UpdateType.ADDED);
+            } else if (i == 1) {
+                listener.checkEvent(VTNListenerType.VLANMAP, bpath, vmap1,
+                                    UpdateType.ADDED);
+            } else if (i == 2) {
+                int idx = 0;
+                for (Map.Entry<VBridgeIfPath, PortMap> entry:
+                         interfaces2.entrySet()) {
+                    VBridgeIfPath ipath = entry.getKey();
+                    VInterface vif = vif2.get(idx);
+                    idx++;
+                    listener.checkEvent(VTNListenerType.VBRIDGE_IF, ipath,
+                                        vif, UpdateType.ADDED);
+                    PortMap pmap = entry.getValue();
+                    if (pmap != null) {
+                        listener.checkEvent(VTNListenerType.PORTMAP, ipath,
+                                            pmap, UpdateType.ADDED);
+                    }
+                }
+            } else if (i == 3) {
+                listener.checkEvent(VTNListenerType.MACMAP, bpath, mcconf,
+                                    UpdateType.ADDED);
+            }
+        }
+        listener.checkEmtpy();
+
+        // Activate MAC mapping by sending packet from mapped hosts.
+        IVTNResourceManager resMgr = mgr.getResourceManager();
+        assertNull(resMgr.getMacMappedNetworks(mgr, mpath));
+        CounterSet<PortVlan> mmapNw = null;
+        Map<MacVlan, NodeConnector> mmapHosts = null;
+        Set<MacAddressEntry> macEntries = new HashSet<MacAddressEntry>();
+        boolean active = false;
+        for (TestHost host: allowedHosts) {
+            assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+            assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+            host.setMapping(mref);
+            List<FlowGroupId> flowList = vmapFlows.get(host.getPortVlan());
+            List<VTNFlow> removedFlows = new ArrayList<VTNFlow>();
+            if (flowList != null) {
+                // VTN flows in this list should be purged when the MAC mapping
+                // for this host is activated.
+                for (FlowGroupId gid: flowList) {
+                    VTNFlow vflow = flowMap.remove(gid);
+                    if (vflow != null) {
+                        removedFlows.add(vflow);
+                        flowCount -= vflow.getFlowEntries().size();
+                    }
+                }
+            }
+            checkMapping(bridges, host, flowCount);
+            for (VTNFlow vflow: removedFlows) {
+                checkVTNFlowUninstalled(tname, vflow);
+            }
+
+            if (!active) {
+                // VBridge state should be changed to UP.
+                VBridge vbr = null;
+                try {
+                    vbr = mgr.getBridge(bpath3);
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+                assertEquals(VNodeState.UP, vbr.getState());
+                listener.checkEvent(VTNListenerType.VBRIDGE, bpath3, vbr,
+                                    UpdateType.CHANGED);
+                active = true;
+            }
+
+            PortVlan pvlan = host.getPortVlan();
+            if (mmapNw == null) {
+                mmapNw = new CounterSet<PortVlan>();
+            }
+            mmapNw.add(pvlan);
+            assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+            assertTrue(macEntries.add(host.getMacAddressEntry()));
+            if (mmapHosts == null) {
+                mmapHosts = new HashMap<MacVlan, NodeConnector>();
+            }
+            assertNull(mmapHosts.put(host.getMacVlan(), host.getPort()));
+
+            try {
+                MacMap mcmap = mgr.getMacMap(bpath3);
+                assertTrue(mcconf.equals(mcmap));
+                List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+                assertEquals(macEntries.size(), mclist.size());
+                assertTrue(macEntries.containsAll(mclist));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        assertTrue(active);
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+        listener.checkEmtpy();
+
+        // Determine mapping for hosts in deniedHosts.
+        boolean portBusy = false;
+        for (TestHost host: deniedHosts) {
+            if (mmapNw.contains(host.getPortVlan())) {
+                // This host should not be mapped by VLAN mapping because
+                // VLAN network is reserved by MAC mapping.
+                host.setMapping(null);
+                portBusy = true;
+            }
+        }
+        assertTrue(portBusy);
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(fcnt > flowCount);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        // Move 2 hosts on VLAN 2 in allowedHosts to `additional0'.
+        List<TestHost> movedHosts = new ArrayList<TestHost>();
+        List<MacAddressEntry> oldMacEntries = new ArrayList<MacAddressEntry>();
+        List<PortVlan> oldNw = new ArrayList<PortVlan>();
+        for (Iterator<TestHost> it = allowedHosts.iterator(); it.hasNext();) {
+            TestHost host = it.next();
+            if (host.getVlan() != 2) {
+                continue;
+            }
+
+            it.remove();
+            assertTrue(allHosts.remove(host));
+            NodeConnector port = host.getPort();
+            List<TestHost> hostList = portHosts.get(port);
+            assertTrue(hostList.remove(host));
+            assertTrue(oldMacEntries.add(host.getMacAddressEntry()));
+            oldNw.add(host.getPortVlan());
+
+            TestHost newHost = host.moveTo(additional0);
+            assertTrue(movedHosts.add(newHost));
+            assertTrue(allHosts.add(newHost));
+            hostList = portHosts.get(additional0);
+            assertTrue(hostList.add(newHost));
+            if (movedHosts.size() >= 2) {
+                break;
+            }
+        }
+        assertTrue(allowedHosts.addAll(movedHosts));
+
+        // Activate MAC mapping for moved hosts.
+        for (int i = 0; i < movedHosts.size(); i++) {
+            TestHost host = movedHosts.get(i);
+            PortVlan pvlan = host.getPortVlan();
+            mmapNw.add(pvlan);
+
+            // Determine VTN flows to be purged.
+            MacVlan mvlan = host.getMacVlan();
+            List<VTNFlow> removedFlows = new ArrayList<VTNFlow>();
+            for (Iterator<VTNFlow> it = flowMap.values().iterator();
+                 it.hasNext();) {
+                VTNFlow vflow = it.next();
+                if (vflow.dependsOn(mpath) && vflow.dependsOn(mvlan)) {
+                    it.remove();
+                    removedFlows.add(vflow);
+                    flowCount -= vflow.getFlowEntries().size();
+                }
+            }
+
+            // Determine VLAN network to be released.
+            PortVlan oldpv = oldNw.get(i);
+            if (!mmapNw.remove(oldpv)) {
+                oldpv = null;
+            }
+            checkMapping(bridges, host, flowCount, oldpv);
+            for (VTNFlow vflow: removedFlows) {
+                checkVTNFlowUninstalled(tname, vflow);
+            }
+
+            assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+            assertTrue(macEntries.add(host.getMacAddressEntry()));
+            assertTrue(macEntries.remove(oldMacEntries.get(i)));
+            mmapHosts.put(host.getMacVlan(), host.getPort());
+            assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+
+            try {
+                MacMap mcmap = mgr.getMacMap(bpath3);
+                assertTrue(mcconf.equals(mcmap));
+                List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+                assertEquals(macEntries.size(), mclist.size());
+                assertTrue(macEntries.containsAll(mclist));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        listener.checkEmtpy();
+
+        // Down `additional0' port.
+        Map<String, Property> propMap =
+            swMgr.getNodeConnectorProps(additional0);
+        propMap.put(State.StatePropName, new State(State.EDGE_DOWN));
+        mgr.notifyNodeConnector(additional0, UpdateType.CHANGED, propMap);
+        flushTasks();
+        flushFlowTasks();
+        listener.checkEmtpy();
+
+        mmapNw.removeCounter(new PortVlan(additional0, (short)2));
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+
+        // MAC address entry detected on `additional0' should be purged.
+        for (TestHost host: movedHosts) {
+            MapReference ref = host.getMapping();
+            host.setMapping(null);
+            for (VBridgePath bp: bridges) {
+                host.checkLearned(mgr, bp);
+            }
+            host.setMapping(ref);
+            assertEquals(host.getPort(), mmapHosts.remove(host.getMacVlan()));
+
+            MacAddressEntry ment = host.getMacAddressEntry();
+            assertTrue(macEntries.remove(ment));
+            try {
+                EthernetAddress eaddr = host.getEthernetAddress();
+                assertEquals(null, mgr.getMacMappedHost(bpath3, eaddr));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+
+        try {
+            List<MacAddressEntry> mclist = mgr.getMacMappedHosts(bpath3);
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // VTN flows on `additional0' should be purged.
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+            L2Host in = edges.getLeft();
+            L2Host out = edges.getRight();
+            if (additional0.equals(in.getPort()) ||
+                additional0.equals(out.getPort())) {
+                it.remove();
+                checkVTNFlowUninstalled(tname, vflow);
+                flowCount -= vflow.getFlowEntries().size();
+            }
+        }
+
+        // Up `additional0' port.
+        propMap.put(State.StatePropName, new State(State.EDGE_UP));
+        mgr.notifyNodeConnector(additional0, UpdateType.CHANGED, propMap);
+        flushTasks();
+        flushFlowTasks();
+        listener.checkEmtpy();
+
+        // Activate MAC mappings on `additional0' again.
+        for (int i = 0; i < movedHosts.size(); i++) {
+            TestHost host = movedHosts.get(i);
+            PortVlan pvlan = host.getPortVlan();
+            checkMapping(bridges, host, flowCount);
+
+            mmapNw.add(pvlan);
+            mmapHosts.put(host.getMacVlan(), host.getPort());
+            assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+            MacAddressEntry ment = host.getMacAddressEntry();
+            assertTrue(macEntries.add(ment));
+            try {
+                EthernetAddress eaddr = host.getEthernetAddress();
+                assertEquals(ment, mgr.getMacMappedHost(bpath3, eaddr));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+        listener.checkEmtpy();
+
+        for (TestHost host: movedHosts) {
+            mmapHosts.put(host.getMacVlan(), host.getPort());
+        }
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+
+        try {
+            List<MacAddressEntry> mclist = mgr.getMacMappedHosts(bpath3);
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Add one host in `allow' to `deny'.
+        TestHost tmpDenied = null;
+        Set<DataLinkHost> tmpDeny = new HashSet<DataLinkHost>(deny);
+        for (TestHost host: allowedHosts) {
+            DataLinkHost dh = host.getDataLinkHost();
+            if (allow.contains(dh)) {
+                tmpDenied = host;
+                assertEquals(host.getPort(),
+                             mmapHosts.remove(host.getMacVlan()));
+                PortVlan pvlan = host.getPortVlan();
+                mmapNw.remove(pvlan);
+                assertTrue(macEntries.remove(host.getMacAddressEntry()));
+                assertTrue(tmpDeny.add(dh));
+                break;
+            }
+        }
+        assertNotNull(tmpDenied);
+        tmpDenied.setMapping(null);
+
+        mcconf = new MacMapConfig(allow, tmpDeny);
+        try {
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath3, UpdateOperation.SET, mcconf));
+            MacMap mcmap = mgr.getMacMap(bpath3);
+            assertTrue(mcconf.equals(mcmap));
+            List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        listener.checkEvent(VTNListenerType.MACMAP, bpath3, mcconf,
+                            UpdateType.CHANGED);
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+        listener.checkEmtpy();
+
+        for (VBridgePath bp: bridges) {
+            tmpDenied.checkLearned(mgr, bp);
+        }
+
+        flushTasks();
+        flushFlowTasks();
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            MacVlan mvlan = tmpDenied.getMacVlan();
+            if (vflow.dependsOn(mpath) && vflow.dependsOn(mvlan)) {
+                it.remove();
+                checkVTNFlowUninstalled(tname, vflow);
+                flowCount -= vflow.getFlowEntries().size();
+            }
+        }
+
+        // Restore MAC mapping configuration.
+        mcconf = new MacMapConfig(allow, deny);
+        try {
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath3, UpdateOperation.SET, mcconf));
+            MacMap mcmap = mgr.getMacMap(bpath3);
+            assertTrue(mcconf.equals(mcmap));
+            List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+
+            PortVlan pvlan = tmpDenied.getPortVlan();
+            mmapNw.add(pvlan);
+            assertTrue(macEntries.add(tmpDenied.getMacAddressEntry()));
+            mmapHosts.put(tmpDenied.getMacVlan(), tmpDenied.getPort());
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        listener.checkEvent(VTNListenerType.MACMAP, bpath3, mcconf,
+                            UpdateType.CHANGED);
+
+        tmpDenied.setMapping(mref);
+        checkMapping(bridges, tmpDenied, flowCount);
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(fcnt > flowCount);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        // Map VLAN 2 at `additional0' by port mapping.
+        // This should inactivate MAC mappings for hosts in `movedHosts'.
+        MapReference pref2 = null;
+        {
+            short vlan = 2;
+            String pid = additional0.getNodeConnectorIDString();
+            SwitchPort swPort = new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                               pid);
+            PortMapConfig pmconf = new PortMapConfig(additional0.getNode(),
+                                                     swPort, vlan);
+            VBridgeIfPath ifpath = new VBridgeIfPath(bpath2, "if_" + vlan);
+            PortMap pmap = new PortMap(pmconf, additional0);
+            assertNull(interfaces2.put(ifpath, pmap));
+
+            VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
+            Status st = mgr.addBridgeInterface(ifpath, ifconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+            VInterface vif = new VInterface(ifpath.getInterfaceName(),
+                                            VNodeState.UNKNOWN,
+                                            VNodeState.UNKNOWN, ifconf);
+            listener.checkEvent(VTNListenerType.VBRIDGE_IF, ifpath,
+                                vif, UpdateType.ADDED);
+
+            st = mgr.setPortMap(ifpath, pmconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+            listener.checkEvent(VTNListenerType.PORTMAP, ifpath,
+                                pmap, UpdateType.ADDED);
+            vif = new VInterface(ifpath.getInterfaceName(), VNodeState.UP,
+                                 VNodeState.UP, ifconf);
+            vif2.add(vif);
+            listener.checkEvent(VTNListenerType.VBRIDGE_IF, ifpath,
+                                vif, UpdateType.CHANGED);
+            listener.checkEmtpy();
+            pref2 = new MapReference(MapType.PORT, container, ifpath);
+        }
+
+        flushTasks();
+        flushFlowTasks();
+
+        mmapNw.removeCounter(new PortVlan(additional0, (short)2));
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+
+        for (TestHost host: movedHosts) {
+            // MAC address entry should be purged.
+            host.setMapping(null);
+            for (VBridgePath bp: bridges) {
+                host.checkLearned(mgr, bp);
+            }
+            host.setMapping(pref2);
+
+            MacAddressEntry ment = host.getMacAddressEntry();
+            assertTrue(macEntries.remove(ment));
+            try {
+                EthernetAddress eaddr = host.getEthernetAddress();
+                assertEquals(null, mgr.getMacMappedHost(bpath3, eaddr));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            // Determine VTN flows to be purged.
+            for (Iterator<VTNFlow> it = flowMap.values().iterator();
+                 it.hasNext();) {
+                VTNFlow vflow = it.next();
+                MacVlan mvlan = host.getMacVlan();
+                if (vflow.dependsOn(mpath) && vflow.dependsOn(mvlan)) {
+                    it.remove();
+                    checkVTNFlowUninstalled(tname, vflow);
+                    flowCount -= vflow.getFlowEntries().size();
+                }
+            }
+            assertEquals(host.getPort(), mmapHosts.remove(host.getMacVlan()));
+        }
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(fcnt > flowCount);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        try {
+            List<MacAddressEntry> mclist = mgr.getMacMappedHosts(bpath3);
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Map 2 hosts on VLAN 2 with specifying MAC address.
+        // This should not affect flow entries.
+        int mapped = 0;
+        Set<DataLinkHost> allow1 = new HashSet<DataLinkHost>();
+        for (TestHost host: allowedHosts) {
+            short vlan = host.getVlan();
+            if (vlan != 1) {
+                continue;
+            }
+            DataLinkHost dh = host.getDataLinkHost();
+            assertTrue(allow1.add(dh));
+            assertTrue(allow.add(dh));
+            mapped++;
+            if (mapped >= 2) {
+                break;
+            }
+        }
+
+        try {
+            MacMapConfig mc = new MacMapConfig(allow1, null);
+            mcconf = new MacMapConfig(allow, deny);
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath3, UpdateOperation.ADD, mc));
+            MacMap mcmap = mgr.getMacMap(bpath3);
+            assertTrue(mcconf.equals(mcmap));
+            List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        listener.checkEvent(VTNListenerType.MACMAP, bpath3, mcconf,
+                            UpdateType.CHANGED);
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+        listener.checkEmtpy();
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertEquals(fcnt, flowCount);
+        listener.checkEmtpy();
+
+        // Configure MAC mapping into bridges[4].
+        VBridgePath bpath4 = bridges.get(4);
+        Set<DataLinkHost> allow4 = new HashSet<DataLinkHost>();
+        Set<DataLinkHost> deny4 = new HashSet<DataLinkHost>();
+        List<TestHost> allowedHosts4 = new ArrayList<TestHost>();
+        List<TestHost> deniedHosts4 = new ArrayList<TestHost>();
+        MacMapPath mpath4 = new MacMapPath(bpath4);
+        MapReference mref4 = new MapReference(MapType.MAC, container, mpath4);
+
+        // Map hosts on VLAN 3 using wildcard MAC address.
+        DataLinkHost mmapVlan3 = new EthernetHost((short)3);
+        assertTrue(allow4.add(mmapVlan3));
+
+        MacMapConfig mcconf4 = new MacMapConfig(allow4, null);
+        try {
+            assertEquals(null, mgr.getMacMap(bpath4));
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath4, UpdateOperation.SET,
+                                       MacMapAclType.ALLOW, allow4));
+            listener.checkEvent(VTNListenerType.MACMAP, bpath4, mcconf4,
+                                UpdateType.ADDED);
+            MacMap mcmap = mgr.getMacMap(bpath4);
+            assertTrue(mcconf4.equals(mcmap));
+            assertTrue(mcmap.getMappedHosts().isEmpty());
+
+            VBridge vbr = mgr.getBridge(bpath4);
+            assertEquals(VNodeState.DOWN, vbr.getState());
+            listener.checkEvent(VTNListenerType.VBRIDGE, bpath4, vbr,
+                                UpdateType.CHANGED);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        listener.checkEmtpy();
+
+        // Activate MAC mapping on bridges[4].
+        CounterSet<PortVlan> mmapNw4 = null;
+        Map<MacVlan, NodeConnector> mmapHosts4 = null;
+        Set<MacAddressEntry> macEntries4 = new HashSet<MacAddressEntry>();
+        active = false;
+        for (TestHost host: allHosts) {
+            if (host.getVlan() != 3) {
+                continue;
+            }
+
+            assertEquals(mmapNw4, resMgr.getMacMappedNetworks(mgr, mpath4));
+            assertEquals(mmapHosts4, resMgr.getMacMappedHosts(mgr, mpath4));
+            allowedHosts4.add(host);
+            host.setMapping(mref4);
+            checkMapping(bridges, host, flowCount);
+            if (!active) {
+                // VBridge state should be changed to UP.
+                VBridge vbr = null;
+                try {
+                    vbr = mgr.getBridge(bpath4);
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+                assertEquals(VNodeState.UP, vbr.getState());
+                listener.checkEvent(VTNListenerType.VBRIDGE, bpath4, vbr,
+                                    UpdateType.CHANGED);
+                active = true;
+            }
+
+            PortVlan pvlan = host.getPortVlan();
+            if (mmapNw4 == null) {
+                mmapNw4 = new CounterSet<PortVlan>();
+            }
+            mmapNw4.add(pvlan);
+            assertEquals(mmapNw4, resMgr.getMacMappedNetworks(mgr, mpath4));
+            assertTrue(macEntries4.add(host.getMacAddressEntry()));
+            if (mmapHosts4 == null) {
+                mmapHosts4 = new HashMap<MacVlan, NodeConnector>();
+            }
+            assertNull(mmapHosts4.put(host.getMacVlan(), host.getPort()));
+
+            try {
+                MacMap mcmap = mgr.getMacMap(bpath4);
+                assertTrue(mcconf4.equals(mcmap));
+                List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+                assertEquals(macEntries4.size(), mclist.size());
+                assertTrue(macEntries4.containsAll(mclist));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(fcnt > flowCount);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        // Map 2 hosts mapped to bridges[4] to bridges[3].
+        movedHosts.clear();
+        allow1.clear();
+        Set<MacVlan> purgeSet = new HashSet<MacVlan>();
+        for (Iterator<TestHost> it = allowedHosts4.iterator(); it.hasNext();) {
+            TestHost host = it.next();
+            DataLinkHost dh = host.getDataLinkHost();
+            assertTrue(allow.add(dh));
+            assertTrue(allow1.add(dh));
+            host.setMapping(mref);
+            movedHosts.add(host);
+            purgeSet.add(host.getMacVlan());
+            assertEquals(host.getPort(), mmapHosts4.remove(host.getMacVlan()));
+            mmapNw4.remove(host.getPortVlan());
+            assertTrue(macEntries4.remove(host.getMacAddressEntry()));
+            it.remove();
+            if (movedHosts.size() >= 2) {
+                break;
+            }
+        }
+        assertEquals(2, movedHosts.size());
+
+        mcconf = new MacMapConfig(allow, deny);
+        try {
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath3, UpdateOperation.ADD,
+                                       MacMapAclType.ALLOW, allow1));
+            listener.checkEvent(VTNListenerType.MACMAP, bpath3, mcconf,
+                                UpdateType.CHANGED);
+            MacMap mcmap = mgr.getMacMap(bpath3);
+            assertTrue(mcconf.equals(mcmap));
+            List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+            assertEquals(macEntries.size(), mclist.size());
+            assertTrue(macEntries.containsAll(mclist));
+
+            // MAC address entries in bridges[4] should be purged.
+            mclist = mgr.getMacMappedHosts(bpath4);
+            assertEquals(macEntries4.size(), mclist.size());
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+        assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+        assertEquals(mmapNw4, resMgr.getMacMappedNetworks(mgr, mpath4));
+        assertEquals(mmapHosts4, resMgr.getMacMappedHosts(mgr, mpath4));
+        listener.checkEmtpy();
+        flushTasks();
+        flushFlowTasks();
+
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            if (vflow.dependsOn(mpath4)) {
+                ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+                L2Host in = edges.getLeft();
+                L2Host out = edges.getRight();
+                if (purgeSet.contains(in.getHost()) ||
+                    purgeSet.contains(out.getHost())) {
+                    it.remove();
+                    checkVTNFlowUninstalled(tname, vflow);
+                    flowCount -= vflow.getFlowEntries().size();
+                }
+            }
+        }
+
+        // Activate MAC mapping for hosts in movedHosts.
+        for (TestHost host: movedHosts) {
+            assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+            assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+
+            checkMapping(bridges, host, flowCount);
+
+            mmapNw.add(host.getPortVlan());
+            assertNull(mmapHosts.put(host.getMacVlan(), host.getPort()));
+            assertEquals(mmapNw, resMgr.getMacMappedNetworks(mgr, mpath));
+            assertEquals(mmapHosts, resMgr.getMacMappedHosts(mgr, mpath));
+            assertTrue(macEntries.add(host.getMacAddressEntry()));
+
+            try {
+                MacMap mcmap = mgr.getMacMap(bpath3);
+                assertTrue(mcconf.equals(mcmap));
+                List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+                assertEquals(macEntries.size(), mclist.size());
+                assertTrue(macEntries.containsAll(mclist));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertTrue(fcnt > flowCount);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        // Map 3 hosts in allowedHosts4 explicitly.
+        // This should not affect flow entries.
+        for (TestHost host: allowedHosts4) {
+            DataLinkHost dh = host.getDataLinkHost();
+            assertTrue(allow4.add(dh));
+
+            mcconf4 = new MacMapConfig(allow4, null);
+            try {
+                assertEquals(UpdateType.CHANGED,
+                             mgr.setMacMap(bpath4, UpdateOperation.SET,
+                                           MacMapAclType.ALLOW, allow4));
+                listener.checkEvent(VTNListenerType.MACMAP, bpath4, mcconf4,
+                                    UpdateType.CHANGED);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            if (allow4.size() >= 4) {
+                break;
+            }
+        }
+
+        assertEquals(mmapNw4, resMgr.getMacMappedNetworks(mgr, mpath4));
+        assertEquals(mmapHosts4, resMgr.getMacMappedHosts(mgr, mpath4));
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertEquals(fcnt, flowCount);
+        listener.checkEmtpy();
+
+        // Remove wildcard mapping for VLAN 3.
+        purgeSet.clear();
+        assertTrue(allow4.remove(mmapVlan3));
+        assertEquals(3, allow4.size());
+        allow1.clear();
+        assertTrue(allow1.add(mmapVlan3));
+        mcconf4 = new MacMapConfig(allow4, null);
+        for (Iterator<TestHost> it = allowedHosts4.iterator(); it.hasNext();) {
+            TestHost host = it.next();
+            DataLinkHost dh = host.getDataLinkHost();
+            if (!allow4.contains(dh)) {
+                it.remove();
+                host.setMapping(null);
+                purgeSet.add(host.getMacVlan());
+                assertEquals(host.getPort(),
+                             mmapHosts4.remove(host.getMacVlan()));
+                mmapNw4.remove(host.getPortVlan());
+                assertTrue(macEntries4.remove(host.getMacAddressEntry()));
+            }
+        }
+        assertEquals(allow4.size(), allowedHosts4.size());
+
+        try {
+            MacMapConfig mc = new MacMapConfig(allow1, null);
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath4, UpdateOperation.REMOVE,
+                                       MacMapAclType.ALLOW, allow1));
+            listener.checkEvent(VTNListenerType.MACMAP, bpath4, mcconf4,
+                                UpdateType.CHANGED);
+            MacMap mcmap = mgr.getMacMap(bpath4);
+            assertTrue(mcconf4.equals(mcmap));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        assertEquals(mmapNw4, resMgr.getMacMappedNetworks(mgr, mpath4));
+        assertEquals(mmapHosts4, resMgr.getMacMappedHosts(mgr, mpath4));
+        listener.checkEmtpy();
+        flushTasks();
+        flushFlowTasks();
+
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            if (vflow.dependsOn(mpath4)) {
+                ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+                L2Host in = edges.getLeft();
+                L2Host out = edges.getRight();
+                if (purgeSet.contains(in.getHost()) ||
+                    purgeSet.contains(out.getHost())) {
+                    it.remove();
+                    checkVTNFlowUninstalled(tname, vflow);
+                    flowCount -= vflow.getFlowEntries().size();
+                }
+            }
+        }
+
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertEquals(flowCount, fcnt);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        // Remove MAC mapping configured in bridges[4].
+        for (Iterator<TestHost> it = allowedHosts4.iterator(); it.hasNext();) {
+            TestHost host = it.next();
+            DataLinkHost dh = host.getDataLinkHost();
+            UpdateType utype;
+            if (it.hasNext()) {
+                utype = UpdateType.CHANGED;
+                assertTrue(allow4.remove(dh));
+                mcconf4 = new MacMapConfig(allow4, null);
+            } else {
+                utype = UpdateType.REMOVED;
+                mcconf4 = new MacMapConfig(allow4, null);
+                assertTrue(allow4.remove(dh));
+            }
+
+            allow1.clear();
+            allow1.add(dh);
+            host.setMapping(null);
+            assertEquals(host.getPort(), mmapHosts4.remove(host.getMacVlan()));
+            mmapNw4.remove(host.getPortVlan());
+            assertTrue(macEntries4.remove(host.getMacAddressEntry()));
+
+            try {
+                MacMapConfig mc = new MacMapConfig(allow1, null);
+                assertEquals(utype,
+                             mgr.setMacMap(bpath4, UpdateOperation.REMOVE,
+                                           MacMapAclType.ALLOW, allow1));
+                listener.checkEvent(VTNListenerType.MACMAP, bpath4, mcconf4,
+                                    utype);
+
+                if (utype == UpdateType.REMOVED) {
+                    mmapNw4 = null;
+                    mmapHosts4 = null;
+                    VBridge vbr = mgr.getBridge(bpath4);
+                    assertEquals(VNodeState.UNKNOWN, vbr.getState());
+                    listener.checkEvent(VTNListenerType.VBRIDGE, bpath4, vbr,
+                                        UpdateType.CHANGED);
+                    assertNull(mgr.getMacMap(bpath4));
+                } else {
+                    MacMap mcmap = mgr.getMacMap(bpath4);
+                    assertTrue(mcconf4.equals(mcmap));
+                    List<MacAddressEntry> mclist = mcmap.getMappedHosts();
+                    assertEquals(macEntries4.size(), mclist.size());
+                    assertTrue(macEntries4.containsAll(mclist));
+                }
+
+                assertEquals(mmapNw4,
+                             resMgr.getMacMappedNetworks(mgr, mpath4));
+                assertEquals(mmapHosts4,
+                             resMgr.getMacMappedHosts(mgr, mpath4));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        listener.checkEmtpy();
+        flushTasks();
+        flushFlowTasks();
+
+        for (Iterator<VTNFlow> it = flowMap.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            if (vflow.dependsOn(mpath4)) {
+                it.remove();
+                checkVTNFlowUninstalled(tname, vflow);
+                flowCount -= vflow.getFlowEntries().size();
+            }
+        }
+
+        fcnt = checkMapping(bridges, allHosts, flowMap, flowCount);
+        assertEquals(flowCount, fcnt);
+        flowCount = fcnt;
+        listener.checkEmtpy();
+
+        try {
+            // Destroy all vBridges.
+            for (int i = 0; i < bridges.size(); i++) {
+                VBridgePath bpath = bridges.get(i);
+                VBridge vbr = mgr.getBridge(bpath);
+                Status st = mgr.removeBridge(bpath);
+                assertEquals(StatusCode.SUCCESS, st.getCode());
+
+                if (i == 0) {
+                    listener.checkEvent(VTNListenerType.VLANMAP, bpath, vmap0,
+                                        UpdateType.REMOVED);
+                } else if (i == 1) {
+                    listener.checkEvent(VTNListenerType.VLANMAP, bpath, vmap1,
+                                        UpdateType.REMOVED);
+                } else if (i == 2) {
+                    int idx = 0;
+                    for (Map.Entry<VBridgeIfPath, PortMap> entry:
+                             interfaces2.entrySet()) {
+                        VBridgeIfPath ipath = entry.getKey();
+                        PortMap pmap = entry.getValue();
+                        if (pmap != null) {
+                            listener.checkEvent(VTNListenerType.PORTMAP, ipath,
+                                                pmap, UpdateType.REMOVED);
+                        }
+
+                        VInterface vif = vif2.get(idx);
+                        idx++;
+                        listener.checkEvent(VTNListenerType.VBRIDGE_IF, ipath,
+                                            vif, UpdateType.REMOVED);
+                    }
+                } else if (i == 3) {
+                    listener.checkEvent(VTNListenerType.MACMAP, bpath, mcconf,
+                                        UpdateType.REMOVED);
+                    assertNull(resMgr.getMacMappedHosts(mgr, mpath));
+                    assertNull(resMgr.getMacMappedNetworks(mgr, mpath));
+                }
+
+                listener.checkEvent(VTNListenerType.VBRIDGE, bpath, vbr,
+                                    UpdateType.REMOVED);
+
+                flushTasks();
+                flushFlowTasks();
+                for (Iterator<VTNFlow> it = flowMap.values().iterator();
+                     it.hasNext();) {
+                    VTNFlow vflow = it.next();
+                    if (vflow.dependsOn(bpath)) {
+                        it.remove();
+                        checkVTNFlowUninstalled(tname, vflow);
+                        flowCount -= vflow.getFlowEntries().size();
+                    }
+                }
+                stubObj.checkFlowCount(flowCount);
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        listener.checkEmtpy();
+        assertEquals(0, flowCount);
+        assertTrue(flowMap.isEmpty());
+
+        // Destroy VTN.
+        try {
+            Status st = mgr.removeTenant(tpath);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+            listener.checkEvent(VTNListenerType.VTN, tpath, vtn,
+                                UpdateType.REMOVED);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        flushTasks();
+        listener.checkEmtpy();
     }
 
     // private methods.
@@ -3213,15 +4626,15 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         assertEquals(emsg, 0, entry.getInetAddresses().size());
                     }
 
-                    List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+                    List<RawPacket> dataList = stub.getTransmittedDataPacket();
 
                     if (ethtype.shortValue() == EtherTypes.IPv4.shortValue()) {
-                        assertEquals(emsg, mappedThis.size(), transDatas.size());
+                        assertEquals(emsg, mappedThis.size(), dataList.size());
                     } else {
-                        assertEquals(emsg, mappedThis.size() - 1, transDatas.size());
+                        assertEquals(emsg, mappedThis.size() - 1, dataList.size());
                     }
 
-                    for (RawPacket raw: transDatas) {
+                    for (RawPacket raw: dataList) {
                         Ethernet pkt = (Ethernet)stub.decodeDataPacket(raw);
                         String emsgPkt = emsg + ",(out packet)" + pkt.toString()
                                 + ",(in nc)" + raw.getIncomingNodeConnector()
@@ -3387,12 +4800,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         }
 
                         // Check output data packet.
-                        List<RawPacket> transDatas = stub.getTransmittedDataPacket();
+                        List<RawPacket> dataList = stub.getTransmittedDataPacket();
 
                         // IP address probe request should be sent.
-                        assertEquals(emsg, 2, transDatas.size());
+                        assertEquals(emsg, 2, dataList.size());
 
-                        for (RawPacket raw : transDatas) {
+                        for (RawPacket raw : dataList) {
                             Packet pkt = stub.decodeDataPacket(raw);
                             Ethernet eth = (Ethernet)pkt;
                             short outEthType;

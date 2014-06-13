@@ -73,6 +73,7 @@ import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
@@ -179,7 +180,9 @@ public class VTNManagerIT extends TestBase {
 
     private Bundle  implBundle;
 
-    // Configure the OSGi container
+    /**
+     * Configure the OSGi container
+     */
     @Configuration
     public Option[] config() {
         // Create configuration directory.
@@ -3017,6 +3020,7 @@ public class VTNManagerIT extends TestBase {
         VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo = null;
         VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo = null;
         VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo = null;
+        VTNManagerAwareData<VBridgePath, MacMapConfig> macMapChangedInfo = null;
 
         Update (UpdateType t, VTenantPath path, VTenant vtenant) {
             vtnChangedInfo = new VTNManagerAwareData<VTenantPath, VTenant>(path, vtenant, t);
@@ -3036,6 +3040,12 @@ public class VTNManagerIT extends TestBase {
 
         Update (UpdateType t, VBridgeIfPath path, PortMap pmap) {
             portMapChangedInfo = new VTNManagerAwareData<VBridgeIfPath, PortMap>(path, pmap, t);
+        }
+
+        Update (UpdateType t, VBridgePath path, MacMapConfig mcconf) {
+            macMapChangedInfo =
+                new VTNManagerAwareData<VBridgePath, MacMapConfig>
+                (path, mcconf, t);
         }
     }
 
@@ -3108,6 +3118,18 @@ public class VTNManagerIT extends TestBase {
         public void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type) {
             log.debug("VTNManager[{}] Got a port map changed for path:{} object:{}", path, pmap);
             Update u = new Update(type, path, pmap);
+            this.gotUpdates.add(u);
+            if (latch != null) {
+                this.latch.countDown();
+            }
+        }
+
+        @Override
+        public void macMapChanged(VBridgePath path, MacMapConfig mcconf,
+                                  UpdateType type) {
+            log.debug("VTNManager[{}] Got a MAC map changed for path: {} " +
+                      "object {}", path, mcconf);
+            Update u = new Update(type, path, mcconf);
             this.gotUpdates.add(u);
             if (latch != null) {
                 this.latch.countDown();
@@ -3277,6 +3299,23 @@ public class VTNManagerIT extends TestBase {
         @Override
         public void portMapChanged(VBridgeIfPath path, PortMap pmap,
                                    UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the MAC mapping configured
+         * in vBridge is changed.
+         *
+         * @param path    A {@link VBridgePath} object that specifies the
+         *                position of the VBridge.
+         * @param mcconf  A {@link MacMapConfig} object which represents
+         *                the MAC mapping configuration information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void macMapChanged(VBridgePath path, MacMapConfig mcconf,
+                                  UpdateType type) {
         }
     }
 

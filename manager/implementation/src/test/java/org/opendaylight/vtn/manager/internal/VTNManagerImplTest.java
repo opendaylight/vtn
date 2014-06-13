@@ -34,12 +34,18 @@ import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
+import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
+import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -60,8 +66,14 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowRemoveEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
+import org.opendaylight.vtn.manager.internal.cluster.MapType;
+import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeImpl;
@@ -89,6 +101,7 @@ import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.IDataPacketService;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.RawPacket;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
@@ -177,7 +190,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         pmaps.put(ifpath1, null);
         pmaps.put(ifpath2, null);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, null, null);
 
         // add mappings
         Node node = NodeCreator.createOFNode(0L);
@@ -198,26 +211,54 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // start with having a configuration.
         // this case, startup with cache.
         restartVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, null);
+
+        // Configure MAC mapping.
+        Set<DataLinkHost> allow = new HashSet<DataLinkHost>();
+        for (int i = 0; i < 10; i++) {
+            long mac = 0x123456789aL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)i);
+            assertTrue(allow.add(dlh));
+        }
+
+        Set<DataLinkHost> deny = new HashSet<DataLinkHost>();
+        for (int i = 0; i < 5; i++) {
+            long mac = 0xaabbccddeeL + i;
+            DataLinkHost dlh = createEthernetHost(mac, (short)(i >> 1));
+            assertTrue(deny.add(dlh));
+        }
+
+        MacMapConfig mcconf = new MacMapConfig(allow, deny);
+        try {
+            assertEquals(UpdateType.ADDED,
+                         vtnMgr.setMacMap(bpath, UpdateOperation.SET, mcconf));
+            assertNull(vtnMgr.setMacMap(bpath, UpdateOperation.SET, mcconf));
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
+        restartVTNManager(c);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // start after configuration files is removed.
         // because caches remain, setting is taken over.
         stopVTNManager(false);
         VTNManagerImpl.cleanUpConfigFile(containerName);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // start after cache is cleared
         // this case load from configuration files.
         stopVTNManager(true);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // start with no cluster service.
         stopVTNManager(true);
         vtnMgr.unsetClusterContainerService(stubObj);
         startVTNManager(c);
-        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps);
+        checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
         // remove configuration files.
         stopVTNManager(true);
@@ -2362,7 +2403,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
-
     /**
      * Test method for invalid cases of
      * {@link VTNManagerImpl#addVlanMap(VBridgePath, VlanMapConfig)},
@@ -2880,6 +2920,1205 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Test case for MAC mapping.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#getMacMap(VBridgePath)}</li>
+     *   <li>{@link VTNManagerImpl#getMacMapConfig(VBridgePath, MacMapAclType)}</li>
+     *   <li>{@link VTNManagerImpl#getMacMappedHosts(VBridgePath)}</li>
+     *   <li>{@link VTNManagerImpl#getMacMappedHost(VBridgePath, DataLinkAddress)}</li>
+     *   <li>{@link VTNManagerImpl#setMacMap(VBridgePath, UpdateOperation, MacMapConfig)}</li>
+     *   <li>{@link VTNManagerImpl#setMacMap(VBridgePath, UpdateOperation, MacMapAclType, Set)}</li>
+     * </ul>
+     * <p>
+     *   This method also has test cases for {@link GlobalResourceManager}
+     *   class related to MAC mapping.
+     * </p>
+     */
+    @Test
+    public void testMacMap() {
+        final int NUM_PORTS = 5;
+        final int MAX_PORT_IDX = NUM_PORTS - 1;
+
+        /**
+         * Test environment for MAC mapping.
+         */
+        class TestEnv {
+            private final List<NodeConnector> portList;
+
+            private final Map<Short, NodeConnector> mappedPorts =
+                new HashMap<Short, NodeConnector>();
+            private final Map<PortVlan, Integer>  mappedNetworks =
+                new HashMap<PortVlan, Integer>();
+
+            private Map<Long, MacAddressEntry>  mappedHosts =
+                new HashMap<Long, MacAddressEntry>();
+            private final Set<Short>  anyMap = new HashSet<Short>();
+
+            private final VBridgePath  bridgePath;
+            private MacMapConfig  config = new MacMapConfig(null, null);
+            private boolean  activated;
+
+            private final byte[]  dstAddr = {
+                (byte)192, (byte)168, (byte)20, (byte)254,
+            };
+
+            private TestEnv(VBridgePath path, int index,
+                            List<NodeConnector> ports) {
+                bridgePath = path;
+                portList = ports;
+            }
+
+            private void reset() {
+                mappedNetworks.clear();
+                mappedHosts.clear();
+                anyMap.clear();
+                activated = false;
+            }
+
+            private MacMapConfig update(Set<DataLinkHost> allow,
+                                        Set<DataLinkHost> deny) {
+                config = new MacMapConfig(allow, deny);
+                return config;
+            }
+
+            private void assign(int portIndex, short vlan) {
+                NodeConnector port = portList.get(portIndex);
+                assertNull(mappedPorts.put(vlan, port));
+            }
+
+            private NodeConnector getPort(short vlan) {
+                NodeConnector port = mappedPorts.get(vlan);
+                assertNotNull(port);
+                return port;
+            }
+
+            private void activate(byte[] src)
+                throws VTNException {
+                for (DataLinkHost dlh: config.getAllowedHosts()) {
+                    src[3]++;
+                    InetAddress ipaddr = createInetAddress(src);
+                    EthernetHost eh = (EthernetHost)dlh;
+                    EthernetAddress eaddr = eh.getAddress();
+                    short vlan = eh.getVlan();
+                    if (eaddr == null) {
+                        // Wildcard mapping will be tested later.
+                        assertTrue(anyMap.add(vlan));
+                    } else {
+                        activate(eaddr, vlan, ipaddr);
+                    }
+                }
+            }
+
+            private void activate(EthernetAddress eaddr, short vlan,
+                                  InetAddress ipaddr) throws VTNException {
+                byte[] srcMac = eaddr.getValue();
+                byte[] dstMac = NetUtils.getBroadcastMACAddr();
+                byte[] srcAddr = ipaddr.getAddress();
+                String emsg = "eaddr = " + eaddr + ", vlan = " + vlan;
+                NodeConnector port = mappedPorts.get(vlan);
+                assertNotNull(emsg, port);
+                short v = (vlan == 0) ? -1 : vlan;
+
+                // The specified source host must be mapped by the
+                // MAC mapping.
+                IVTNResourceManager resMgr = vtnMgr.getResourceManager();
+                MacMapPath mpath = new MacMapPath(bridgePath);
+                MacVlan mvlan = new MacVlan(srcMac, vlan);
+                String cname = vtnMgr.getContainerName();
+                MapReference ref = vtnMgr.getMapReference(mpath);
+                assertEquals(emsg, ref, resMgr.getMapReference(mvlan));
+                assertNull(emsg, vtnMgr.getMacMappedHost(bridgePath, eaddr));
+
+                // Ensure that the MAC mapping is not established.
+                PortVlan pvlan = new PortVlan(port, vlan);
+                checkNotMapped(ref, mvlan, pvlan);
+
+                // Send an ARP packet.
+                RawPacket pkt = createARPRawPacket(srcMac, dstMac, srcAddr,
+                                                   dstAddr, v, port,
+                                                   ARP.REQUEST);
+                assertEquals(emsg, PacketResult.KEEP_PROCESSING,
+                             vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+
+                MacAddressEntry ment =
+                    vtnMgr.getMacMappedHost(bridgePath, eaddr);
+                assertNotNull(emsg, ment);
+                assertEquals(emsg, eaddr, ment.getAddress());
+                assertEquals(emsg, vlan, ment.getVlan());
+                assertEquals(emsg, ment,
+                             vtnMgr.getMacEntry(bridgePath, eaddr));
+                Set<InetAddress> iset = new HashSet<InetAddress>();
+                assertTrue(emsg, iset.add(ipaddr));
+                assertEquals(emsg, iset, ment.getInetAddresses());
+                long mac = mvlan.getMacAddress();
+                assertNull(emsg, mappedHosts.put(mac, ment));
+
+                activated = true;
+                assertTrue(resMgr.hasMacMappedHost(vtnMgr, mpath));
+                assertEquals(port,
+                             resMgr.getMacMappedPort(vtnMgr, mpath, mvlan));
+                assertEquals(pvlan,
+                             resMgr.getMacMappedNetwork(vtnMgr, mpath, mac));
+                Integer cnt = mappedNetworks.get(pvlan);
+                if (cnt == null) {
+                    cnt = Integer.valueOf(1);
+                } else {
+                    cnt = Integer.valueOf(cnt.intValue() + 1);
+                }
+                mappedNetworks.put(pvlan, cnt);
+                assertEquals(mappedNetworks.keySet(),
+                             resMgr.getMacMappedNetworks(vtnMgr, mpath));
+                checkState();
+
+                // Send ARP packet again.
+                assertEquals(emsg, PacketResult.KEEP_PROCESSING,
+                             vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+                checkState();
+
+                // Specify unknown address to getMacMappedHost().
+                assertNull(vtnMgr.getMacMappedHost(bridgePath,
+                                                   new TestDataLink("addr")));
+                assertNull(vtnMgr.getMacMappedHost(bridgePath, null));
+            }
+
+            private long activateAny(long mac, byte[] src)
+                throws VTNException {
+                for (short vlan: anyMap) {
+                    EthernetAddress eaddr = createEthernetAddresses(mac);
+                    InetAddress ipaddr = createInetAddress(src);
+                    activate(eaddr, vlan, ipaddr);
+                    mac++;
+                }
+
+                return mac;
+            }
+
+            private boolean inactivate(short vlan) throws VTNException {
+                NodeConnector port = mappedPorts.get(vlan);
+                assertNotNull(port);
+
+                SpecificPortFilter filter = new SpecificPortFilter(port);
+                IVTNResourceManager resMgr = vtnMgr.getResourceManager();
+                MacMapPath mpath = new MacMapPath(bridgePath);
+                return resMgr.inactivateMacMap(vtnMgr, mpath, filter);
+            }
+
+            private void checkIgnored(EthernetHost host)
+                throws VTNException {
+                checkIgnored(host, null, null);
+            }
+
+            private void checkIgnored(EthernetHost host, NodeConnector port,
+                                      MapReference resv)
+                throws VTNException {
+                byte[] src = {
+                    (byte)192, (byte)168, (byte)50, (byte)1,
+                };
+                byte[] dst = {
+                    (byte)192, (byte)168, (byte)50, (byte)99,
+                };
+
+                EthernetAddress eaddr = host.getAddress();
+                short vlan = host.getVlan();
+                String emsg = "eaddr = " + eaddr + ", vlan = " + vlan;
+                if (port == null) {
+                    port = mappedPorts.get(vlan);
+                    if (port == null) {
+                        port = portList.get(0);
+                    }
+                }
+                short v = (vlan == 0) ? -1 : vlan;
+
+                // Send an ARP packet.
+                byte[] srcMac = eaddr.getValue();
+                byte[] dstMac = NetUtils.getBroadcastMACAddr();
+                RawPacket pkt = createARPRawPacket(srcMac, dstMac, src, dst,
+                                                   v, port, ARP.REQUEST);
+                assertEquals(emsg, PacketResult.IGNORED,
+                             vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+
+                MacMapPath mpath = new MacMapPath(bridgePath);
+                MapReference ref = vtnMgr.getMapReference(mpath);
+                MacVlan mvlan = new MacVlan(eaddr.getValue(), vlan);
+                PortVlan pvlan = new PortVlan(port, vlan);
+                checkNotMapped(ref, mvlan, pvlan, resv);
+                checkState();
+
+                // Send ARP packet again.
+                assertEquals(emsg, PacketResult.IGNORED,
+                             vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+                checkNotMapped(ref, mvlan, pvlan, resv);
+                checkState();
+            }
+
+            private void checkDuplicate(EthernetAddress eaddr, short vlan)
+                throws VTNException {
+                String emsg = "eaddr = " + eaddr + ", vlan = " + vlan;
+                byte[] srcMac = eaddr.getValue();
+                MacVlan mvlan = new MacVlan(srcMac, vlan);
+                long mac = mvlan.getMacAddress();
+                MacAddressEntry ment = mappedHosts.get(mac);
+                assertNotNull(emsg, ment);
+
+                Set<InetAddress> iset = ment.getInetAddresses();
+                InetAddress ipaddr = iset.iterator().next();
+
+                // Send ARP packet.
+                byte[] dstMac = NetUtils.getBroadcastMACAddr();
+                byte[] srcAddr = ipaddr.getAddress();
+                NodeConnector port = ment.getNodeConnector();
+                short v = (vlan == 0) ? -1 : vlan;
+                RawPacket pkt = createARPRawPacket(srcMac, dstMac, srcAddr,
+                                                   dstAddr, v, port,
+                                                   ARP.REQUEST);
+                for (int i = 0; i < 2; i++) {
+                    assertEquals(emsg, PacketResult.IGNORED,
+                                 vtnMgr.receiveDataPacket(pkt));
+                    flushTasks();
+                    checkState();
+                }
+            }
+
+            private void checkState() throws VTNException {
+                MacMap mcmap = vtnMgr.getMacMap(bridgePath);
+                assertNotNull(mcmap);
+                assertTrue(config.equals(mcmap));
+                List<MacAddressEntry> mlist = mcmap.getMappedHosts();
+                assertEquals(mappedHosts.size(), mlist.size());
+                HashSet<MacAddressEntry> mset =
+                    new HashSet<MacAddressEntry>(mappedHosts.values());
+                assertTrue(mset.containsAll(mlist));
+
+                mlist = vtnMgr.getMacEntries(bridgePath);
+                assertEquals(mappedHosts.size(), mlist.size());
+                assertTrue(mset.containsAll(mlist));
+            }
+
+            private void checkNotMapped(MapReference ref, MacVlan mvlan,
+                                        PortVlan pvlan)
+                throws VTNException {
+                checkNotMapped(ref, mvlan, pvlan, null);
+            }
+
+            private void checkNotMapped(MapReference ref, MacVlan mvlan,
+                                        PortVlan pvlan, MapReference resv)
+                throws VTNException {
+                IVTNResourceManager resMgr = vtnMgr.getResourceManager();
+                MacMapPath mpath = (MacMapPath)ref.getPath();
+                long mac = mvlan.getMacAddress();
+                assertEquals(activated,
+                             resMgr.hasMacMappedHost(vtnMgr, mpath));
+                assertNull(resMgr.getMacMappedPort(vtnMgr, mpath, mvlan));
+                assertNull(resMgr.getMacMappedNetwork(vtnMgr, mpath, mac));
+                Set<PortVlan> nw = (activated)
+                    ? mappedNetworks.keySet() : null;
+                assertEquals(nw, resMgr.getMacMappedNetworks(vtnMgr, mpath));
+
+                MapReference exref;
+                if (resv != null) {
+                    // The specified VLAN on a port should be reserved by
+                    // another mapping.
+                    exref = resv;
+                } else if (nw != null && nw.contains(pvlan)) {
+                    // The specified VLAN on a port should be reserved by
+                    // this MAC mapping.
+                    exref = ref;
+                } else {
+                    // The specified VLAN on a port should not be reserved by
+                    // any mapping.
+                    exref = null;
+                }
+                assertEquals(exref, resMgr.getMapReference(pvlan));
+
+                EthernetAddress eaddr = createEthernetAddresses(mac);
+                assertNull(vtnMgr.getMacEntry(bridgePath, eaddr));
+            }
+
+            private void checkInactivated(Set<DataLinkHost> hset)
+                throws VTNException {
+                List<MacVlan> removed = new ArrayList<MacVlan>();
+                Set<Short> unmapped = new HashSet<Short>();
+                for (DataLinkHost host: hset) {
+                    EthernetHost eh = (EthernetHost)host;
+                    short vlan = eh.getVlan();
+                    EthernetAddress eaddr = eh.getAddress();
+                    if (eaddr != null) {
+                        removed.add(new MacVlan(eaddr.getValue(), vlan));
+                    } else {
+                        // Wildcard mapping is inactivated.
+                        unmapped.add(vlan);
+                    }
+                }
+
+                Set<DataLinkHost> allow = config.getAllowedHosts();
+                for (MacAddressEntry ment: mappedHosts.values()) {
+                    short vlan = ment.getVlan();
+                    EthernetAddress eaddr = (EthernetAddress)ment.getAddress();
+                    DataLinkHost h = new EthernetHost(eaddr, vlan);
+                    if (unmapped.contains(vlan) && !allow.contains(h)) {
+                        removed.add(new MacVlan(eaddr.getValue(), vlan));
+                    }
+                }
+
+                for (MacVlan mvlan: removed) {
+                    long mac = mvlan.getMacAddress();
+                    short vlan = mvlan.getVlan();
+                    NodeConnector port = mappedPorts.get(vlan);
+                    assertNotNull(port);
+                    PortVlan pvlan = new PortVlan(port, vlan);
+                    MacAddressEntry ment = mappedHosts.remove(mac);
+                    if (ment != null) {
+                        assertEquals(port, ment.getNodeConnector());
+                        Integer cnt = mappedNetworks.remove(pvlan);
+                        assertNotNull(cnt);
+                        int c = cnt.intValue() - 1;
+                        if (c > 0) {
+                            mappedNetworks.put(pvlan, Integer.valueOf(c));
+                        }
+
+                        if (mappedHosts.isEmpty()) {
+                            activated = false;
+                        }
+                    }
+                }
+
+                MacMapPath mpath = new MacMapPath(bridgePath);
+                MapReference ref = vtnMgr.getMapReference(mpath);
+
+                for (MacVlan mvlan: removed) {
+                    short vlan = mvlan.getVlan();
+                    NodeConnector port = mappedPorts.get(vlan);
+                    assertNotNull(port);
+                    PortVlan pvlan = new PortVlan(port, vlan);
+                    checkNotMapped(ref, mvlan, pvlan);
+                }
+                checkState();
+            }
+
+            private void checkHostMoving(NodeConnector testPort)
+                throws VTNException {
+                for (MacAddressEntry ment: mappedHosts.values()) {
+                    checkHostMoving(ment, testPort);
+                }
+            }
+
+            private void checkHostMoving(MacAddressEntry ment,
+                                         NodeConnector testPort)
+                throws VTNException {
+                // Ensure that the specified MAC address entry is mapped by
+                // the MAC mapping.
+                String emsg = "ment = " + ment;
+                IVTNResourceManager resMgr = vtnMgr.getResourceManager();
+                MacMapPath mpath = new MacMapPath(bridgePath);
+                MapReference ref = vtnMgr.getMapReference(mpath);
+                EthernetAddress eaddr = (EthernetAddress)ment.getAddress();
+                short vlan = ment.getVlan();
+                byte[] srcMac = eaddr.getValue();
+                MacVlan mvlan = new MacVlan(srcMac, vlan);
+                NodeConnector port = ment.getNodeConnector();
+                assertEquals(emsg, port,
+                             resMgr.getMacMappedPort(vtnMgr, mpath, mvlan));
+                assertEquals(emsg, ment,
+                             vtnMgr.getMacMappedHost(bridgePath, eaddr));
+
+                // Send an ARP packet with changing incoming port.
+                Set<InetAddress> iset = ment.getInetAddresses();
+                InetAddress ipaddr = iset.iterator().next();
+                byte[] dstMac = NetUtils.getBroadcastMACAddr();
+                byte[] srcAddr = ipaddr.getAddress();
+                short v = (vlan == 0) ? -1 : vlan;
+                RawPacket pkt = createARPRawPacket(srcMac, dstMac, srcAddr,
+                                                   dstAddr, v, testPort,
+                                                   ARP.REQUEST);
+                assertEquals(emsg, PacketResult.KEEP_PROCESSING,
+                             vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+
+                // Ensure that the location of the host was changed.
+                MacAddressEntry newent =
+                    vtnMgr.getMacMappedHost(bridgePath, eaddr);
+                assertNotNull(emsg, newent);
+                assertEquals(emsg, eaddr, newent.getAddress());
+                assertEquals(emsg, vlan, newent.getVlan());
+                assertEquals(emsg, iset, newent.getInetAddresses());
+                assertEquals(emsg, testPort, newent.getNodeConnector());
+                assertEquals(emsg, newent,
+                             vtnMgr.getMacEntry(bridgePath, eaddr));
+                assertEquals(emsg, testPort,
+                             resMgr.getMacMappedPort(vtnMgr, mpath, mvlan));
+
+                long mac = mvlan.getMacAddress();
+                PortVlan pvlan = new PortVlan(testPort, vlan);
+                assertEquals(emsg, pvlan,
+                             resMgr.getMacMappedNetwork(vtnMgr, mpath, mac));
+                assertEquals(emsg, ref, resMgr.getMapReference(pvlan));
+
+                // Restore the location of the host.
+                pkt = createARPRawPacket(srcMac, dstMac, srcAddr, dstAddr, v,
+                                         port, ARP.REQUEST);
+                assertEquals(emsg, PacketResult.KEEP_PROCESSING,
+                             vtnMgr.receiveDataPacket(pkt));
+                flushTasks();
+
+                assertNull(emsg, resMgr.getMapReference(pvlan));
+                assertEquals(emsg, ment,
+                             vtnMgr.getMacMappedHost(bridgePath, eaddr));
+                assertEquals(emsg, ment,
+                             vtnMgr.getMacEntry(bridgePath, eaddr));
+                assertEquals(emsg, port,
+                             resMgr.getMacMappedPort(vtnMgr, mpath, mvlan));
+                pvlan = new PortVlan(port, vlan);
+                assertEquals(pvlan,
+                             resMgr.getMacMappedNetwork(vtnMgr, mpath, mac));
+                assertEquals(emsg, ref, resMgr.getMapReference(pvlan));
+                checkState();
+            }
+        }
+
+        VTNManagerImpl mgr = vtnMgr;
+        VTenantPath tpath = new VTenantPath("tenant");
+        VBridgePath bpath1 = new VBridgePath(tpath, "bridge_1");
+        VBridgePath bpath2 = new VBridgePath(tpath, "bridge_2");
+        List<VBridgePath> bpaths = new ArrayList<VBridgePath>();
+        bpaths.add(bpath1);
+        bpaths.add(bpath2);
+        createTenantAndBridge(mgr, tpath, bpaths);
+
+        long untestedMac = 0x007777777777L;
+        DataLinkHost untested = createEthernetHost(untestedMac, (short)0);
+        short untestedVlan = 4094;
+        Set<DataLinkHost> hset = new HashSet<DataLinkHost>();
+        assertTrue(hset.add(untested));
+        MacMapConfig mcconf = new MacMapConfig(hset, null);
+
+        //
+        // Test cases for illegal arguments.
+        //
+
+        // Pass illegal vBridge path.
+        bpaths.clear();
+        bpaths.add(null);
+        bpaths.add(new VBridgePath(tpath, null));
+        bpaths.add(new VBridgePath((String)null, "bridge"));
+        bpaths.add(new VBridgePath("tenant", null));
+        bpaths.add(new VBridgePath(tpath, "bridge_3"));
+        for (VBridgePath path: bpaths) {
+            StatusCode code =
+                (path != null && path.getTenantName() != null &&
+                 path.getBridgeName() != null)
+                ? StatusCode.NOTFOUND
+                : StatusCode.BADREQUEST;
+
+            errorGetMacMap(path, code);
+            errorGetMacMapConfig(path, MacMapAclType.ALLOW, code);
+            errorGetMacMappedHosts(path, code);
+            errorGetMacMappedHost(path, untested.getAddress(), code);
+            errorSetMacMap(path, UpdateOperation.SET, mcconf, code);
+            errorSetMacMap(path, UpdateOperation.SET, MacMapAclType.ALLOW, hset,
+                           code);
+        }
+
+        // Pass null operation.
+        errorSetMacMap(bpath1, null, mcconf, StatusCode.BADREQUEST);
+        errorSetMacMap(bpath1, null, MacMapAclType.ALLOW, hset,
+                       StatusCode.BADREQUEST);
+
+        // Pass null ACL type.
+        errorSetMacMap(bpath1, UpdateOperation.SET, null, hset,
+                       StatusCode.BADREQUEST);
+
+        // Pass a set of DataLinkHost which contains null.
+        {
+            assertTrue(hset.add(null));
+            MacMapConfig cf1 = new MacMapConfig(hset, null);
+            MacMapConfig cf2 = new MacMapConfig(null, hset);
+            for (UpdateOperation op: UpdateOperation.values()) {
+                errorSetMacMap(bpath1, op, cf1, StatusCode.BADREQUEST);
+                errorSetMacMap(bpath1, op, cf2, StatusCode.BADREQUEST);
+                errorSetMacMap(bpath1, op, MacMapAclType.ALLOW, hset,
+                               StatusCode.BADREQUEST);
+                errorSetMacMap(bpath1, op, MacMapAclType.DENY, hset,
+                               StatusCode.BADREQUEST);
+            }
+            assertTrue(hset.remove(null));
+        }
+
+        // Pass unsupported host information.
+        {
+            TestDataLink dladdr = new TestDataLink("addr");
+            TestDataLinkHost dh = new TestDataLinkHost(dladdr);
+            assertTrue(hset.add(dh));
+
+            MacMapConfig cf1 = new MacMapConfig(hset, null);
+            MacMapConfig cf2 = new MacMapConfig(null, hset);
+            for (UpdateOperation op: UpdateOperation.values()) {
+                errorSetMacMap(bpath1, op, cf1, StatusCode.BADREQUEST);
+                errorSetMacMap(bpath1, op, cf2, StatusCode.BADREQUEST);
+                errorSetMacMap(bpath1, op, MacMapAclType.ALLOW, hset,
+                               StatusCode.BADREQUEST);
+                errorSetMacMap(bpath1, op, MacMapAclType.DENY, hset,
+                               StatusCode.BADREQUEST);
+            }
+            assertTrue(hset.remove(dh));
+        }
+
+        MacMapConfig[] emptyCf = {
+            new MacMapConfig(null, null),
+            null,
+        };
+        Set<Set<DataLinkHost>> emptySet = new HashSet<Set<DataLinkHost>>();
+        emptySet.add(new HashSet<DataLinkHost>());
+        emptySet.add(null);
+
+        try {
+            // Getter methods should return null if the MAC mapping is not
+            // configured.
+            assertNull(mgr.getMacMap(bpath1));
+            assertNull(mgr.getMacMappedHosts(bpath1));
+            assertNull(mgr.getMacMappedHost(bpath1, untested.getAddress()));
+            assertNull(mgr.getMacMapConfig(bpath1, MacMapAclType.ALLOW));
+            assertNull(mgr.getMacMapConfig(bpath1, MacMapAclType.DENY));
+
+            // Empty data should be ignored.
+            hset.clear();
+            for (UpdateOperation op: UpdateOperation.values()) {
+                for (MacMapConfig cf: emptyCf) {
+                    assertNull(mgr.setMacMap(bpath1, op, cf));
+                }
+                for (MacMapAclType acl: MacMapAclType.values()) {
+                    for (Set<DataLinkHost> s: emptySet) {
+                        assertNull(mgr.setMacMap(bpath1, op, acl, s));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Create ports.
+        Node node = NodeCreator.createOFNode(0L);
+        List<NodeConnector> portList = new ArrayList<NodeConnector>();
+        for (short idx = 1; idx <= NUM_PORTS; idx++) {
+            NodeConnector port = NodeConnectorCreator.
+                createOFNodeConnector(Short.valueOf(idx), node);
+            portList.add(port);
+        }
+
+        // Create one more port for test case which changes the location of
+        // the host.
+        NodeConnector movePort = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)100), node);
+
+        // Determine location of MAC mapped hosts.
+        short anyVlan1 = 1000;
+        short anyVlan2 = 2000;
+
+        // bridge 1:
+        //   port 0, VLAN 0
+        //   port 1, VLAN 1
+        //   port 2, VLAN 2, VLAN 2000
+        //   port 3, VLAN 3
+        //   port 4, VLAN 1000
+        TestEnv env1 = new TestEnv(bpath1, 1, portList);
+        for (int i = 0; i < MAX_PORT_IDX; i++) {
+            env1.assign(i, (short)i);
+        }
+        env1.assign(MAX_PORT_IDX, anyVlan1);
+        env1.assign(2, anyVlan2);
+
+        // bridge 2:
+        //  port 0, VLAN 2000
+        //  port 1, VLAN 2
+        //  port 2, VLAN 3, VLAN 1000
+        //  port 3, VLAN 1
+        //  port 4, VLAN 0
+        TestEnv env2 = new TestEnv(bpath2, 2, portList);
+        env2.assign(0, anyVlan2);
+        env2.assign(1, (short)2);
+        env2.assign(2, (short)3);
+        env2.assign(3, (short)1);
+        env2.assign(3, anyVlan1);
+        env2.assign(4, (short)0);
+
+        // Construct a valid MAC mapping configuration.
+        Set<DataLinkHost> allow = new HashSet<DataLinkHost>();
+        assertTrue(allow.add(new EthernetHost(null, anyVlan1)));
+        for (int i = 0; i < 10; i++) {
+            long mac = 0x123456789aL + i;
+            short vlan = (short)(i % NUM_PORTS);
+            if (vlan == MAX_PORT_IDX) {
+                vlan = anyVlan2;
+            }
+            DataLinkHost dlh = createEthernetHost(mac, vlan);
+            assertTrue(allow.add(dlh));
+        }
+
+        // Add 3 mappings that supersede wildcard mapping.
+        assertTrue(allow.add(createEthernetHost(0x11L, anyVlan1)));
+        assertTrue(allow.add(createEthernetHost(0x22L, anyVlan1)));
+        assertTrue(allow.add(createEthernetHost(0xf0ffffffffffL, anyVlan1)));
+
+        Set<DataLinkHost> deny = new HashSet<DataLinkHost>();
+        for (int i = 0; i < 5; i++) {
+            long mac = 0xaabbccddeeL + i;
+            DataLinkHost dlh = createEthernetHost(mac, anyVlan1);
+            assertTrue(deny.add(dlh));
+
+            // The same MAC address can be configured to the denied host set.
+            dlh = createEthernetHost(mac, untestedVlan);
+            assertTrue(deny.add(dlh));
+        }
+
+        // Configure MAC mapping to the bridge 1 at once.
+        mcconf = new MacMapConfig(allow, deny);
+        try {
+            assertNull(mgr.getMacMap(bpath1));
+            assertNull(mgr.getMacMap(bpath2));
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET, mcconf));
+            assertNull(mgr.setMacMap(bpath1, UpdateOperation.SET, mcconf));
+
+            MacMap mcmap = mgr.getMacMap(bpath1);
+            assertNotNull(mcmap);
+            assertTrue(mcconf.equals(mcmap));
+            assertTrue(mcmap.getMappedHosts().isEmpty());
+            assertNull(mgr.getMacMap(bpath2));
+            mcconf = env1.update(allow, deny);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        UpdateOperation[] ops = {
+            UpdateOperation.ADD, UpdateOperation.SET,
+        };
+        try {
+            // Try to append the same hosts to the MAC mapping.
+            for (UpdateOperation op: ops) {
+                assertNull(mgr.setMacMap(bpath1, op, mcconf));
+                assertNull(mgr.setMacMap(bpath1, op, MacMapAclType.ALLOW,
+                                         allow));
+                assertNull(mgr.setMacMap(bpath1, op, MacMapAclType.DENY,
+                                         deny));
+            }
+            for (DataLinkHost dlh: allow) {
+                Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+                assertTrue(set.add(dlh));
+                assertNull(mgr.setMacMap(bpath1, UpdateOperation.ADD,
+                                         MacMapAclType.ALLOW, set));
+            }
+            for (DataLinkHost dlh: deny) {
+                Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+                assertTrue(set.add(dlh));
+                assertNull(mgr.setMacMap(bpath1, UpdateOperation.ADD,
+                                         MacMapAclType.DENY, set));
+            }
+
+            // ADD and REMOVE operation should ignore empty data.
+            UpdateOperation[] ops2 = {
+                UpdateOperation.ADD, UpdateOperation.REMOVE,
+            };
+            hset.clear();
+            for (UpdateOperation op: ops2) {
+                for (MacMapConfig cf: emptyCf) {
+                    assertNull(mgr.setMacMap(bpath1, op, cf));
+                }
+                for (MacMapAclType acl: MacMapAclType.values()) {
+                    for (Set<DataLinkHost> s: emptySet) {
+                        assertNull(mgr.setMacMap(bpath1, op, acl, s));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Try to map the same MAC address with specifying different
+        // VLAN ID.
+        for (DataLinkHost dlh: allow) {
+            EthernetAddress eaddr = (EthernetAddress)dlh.getAddress();
+            if (eaddr == null) {
+                continue;
+            }
+            DataLinkHost host = new EthernetHost(eaddr, (short)4095);
+            checkMacMapError(bpath1, mcconf, UpdateOperation.ADD,
+                             MacMapAclType.ALLOW, host, StatusCode.CONFLICT);
+        }
+
+        long[] badMacs = {
+            // Broadcast address
+            0xffffffffffffL,
+
+            // Multicast address
+            0x010000000001L,
+            0x0faabbccddeeL,
+
+            // Zero
+            0x000000000000L,
+        };
+        for (UpdateOperation op: ops) {
+            // Try to set bad MAC address to the MAC mapping configuration.
+            for (long mac: badMacs) {
+                DataLinkHost host = createEthernetHost(mac, (short)4093);
+                checkMacMapError(bpath1, mcconf, op, MacMapAclType.ALLOW,
+                                 host, StatusCode.BADREQUEST);
+                checkMacMapError(bpath1, mcconf, op, MacMapAclType.DENY,
+                                 host, StatusCode.BADREQUEST);
+            }
+
+            // Try to set NULL host to the denied host set.
+            for (short vlan = 0; vlan < 10; vlan++) {
+                DataLinkHost h = new EthernetHost(null, vlan);
+                checkMacMapError(bpath1, mcconf, op, MacMapAclType.DENY,
+                                 h, StatusCode.BADREQUEST);
+            }
+        }
+
+        // Configure MAC mapping to bridge 2.
+        UpdateType mmresult = UpdateType.ADDED;
+        Set<DataLinkHost> allow2 = new HashSet<DataLinkHost>();
+        Set<DataLinkHost> deny2 = new HashSet<DataLinkHost>();
+        MacMapConfig mcconf2 = null;
+        try {
+            Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+            UpdateType r;
+            long mac = 0xaaaaaaaaL;
+            for (DataLinkHost dlh: deny) {
+                set.clear();
+                assertTrue(set.add(dlh));
+                assertTrue(deny2.add(dlh));
+                DataLinkHost h = createEthernetHost(mac, anyVlan1);
+                mac++;
+                assertTrue(set.add(h));
+                assertTrue(deny2.add(h));
+                r = mgr.setMacMap(bpath2, UpdateOperation.ADD,
+                                  MacMapAclType.DENY, set);
+                assertEquals(mmresult, r);
+                mcconf2 = env2.update(null, deny2);
+                MacMap mcmap = mgr.getMacMap(bpath2);
+                assertNotNull(mcmap);
+                assertTrue(mcconf2.equals(mcmap));
+                assertTrue(mcmap.getMappedHosts().isEmpty());
+                mmresult = UpdateType.CHANGED;
+            }
+
+            for (int i = 0; i < 10; i++) {
+                set.clear();
+                if (i == 0) {
+                    DataLinkHost h = new EthernetHost(null, anyVlan2);
+                    assertTrue(set.add(h));
+                    assertTrue(allow2.add(h));
+                }
+
+                mac = 0xbaddcafeL + i;
+                short vlan = (short)(i % NUM_PORTS);
+                if (vlan == MAX_PORT_IDX) {
+                    vlan = anyVlan1;
+                }
+                DataLinkHost dlh = createEthernetHost(mac, vlan);
+                assertTrue(allow2.add(dlh));
+                assertTrue(set.add(dlh));
+
+                mac = 0xdeadbeefL + i;
+                DataLinkHost h = createEthernetHost(mac, vlan);
+                assertTrue(allow2.add(h));
+                assertTrue(set.add(h));
+                r = mgr.setMacMap(bpath2, UpdateOperation.ADD,
+                                  MacMapAclType.ALLOW, set);
+                assertEquals(mmresult, r);
+                mcconf2 = env2.update(allow2, deny2);
+                MacMap mcmap = mgr.getMacMap(bpath2);
+                assertNotNull(mcmap);
+                assertTrue(mcconf2.equals(mcmap));
+                assertTrue(mcmap.getMappedHosts().isEmpty());
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        // Try to map MAC addresses mapped to another vBridge.
+        for (UpdateOperation op: ops) {
+            for (DataLinkHost dlh: allow) {
+                Set<DataLinkHost> set = new HashSet<DataLinkHost>();
+                assertTrue(set.add(dlh));
+                errorSetMacMap(bpath2, op, MacMapAclType.ALLOW, set,
+                               StatusCode.CONFLICT);
+            }
+            errorSetMacMap(bpath2, op, MacMapAclType.ALLOW, allow,
+                           StatusCode.CONFLICT);
+            MacMapConfig cf = new MacMapConfig(allow, null);
+            errorSetMacMap(bpath2, op, cf, StatusCode.CONFLICT);
+        }
+
+        Set<DataLinkHost> allow1 = new HashSet<DataLinkHost>(allow);
+        Set<DataLinkHost> deny1 = new HashSet<DataLinkHost>(deny);
+
+        // Ensure that the MAC mapping configurations are not changed.
+        try {
+            MacMap mcmap = mgr.getMacMap(bpath1);
+            assertNotNull(mcmap);
+            assertTrue(mcconf.equals(mcmap));
+            assertTrue(mcmap.getMappedHosts().isEmpty());
+
+            mcmap = mgr.getMacMap(bpath2);
+            assertNotNull(mcmap);
+            assertTrue(mcconf2.equals(mcmap));
+            assertTrue(mcmap.getMappedHosts().isEmpty());
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        byte[] src1 = {(byte)192, (byte)168, (byte)100, (byte)0};
+        byte[] src2 = {(byte)192, (byte)168, (byte)200, (byte)0};
+        try {
+            // Activate MAC mapped hosts by sending ARP packet.
+            env1.activate(src1);
+            env2.activate(src2);
+
+            for (short vlan = 0; vlan < 30; vlan++) {
+                // Unconfigured MAC address should be ignored.
+                EthernetHost h = createEthernetHost(untestedMac, vlan);
+                env1.checkIgnored(h);
+                env2.checkIgnored(h);
+            }
+
+            // Test case for MAC addresses mapped by wildcard mapping.
+            long mac = 0x9988776655L;
+            for (int i = 0; i < 10; i++) {
+                mac = env1.activateAny(mac, src1);
+                mac = env2.activateAny(mac, src2);
+            }
+
+            // Test case for denied host set.
+            // All hosts denied by bridge 1 must be ignored because they are
+            // also denied by bridge 2.
+            for (DataLinkHost dlh: deny) {
+                env1.checkIgnored((EthernetHost)dlh);
+            }
+
+            for (DataLinkHost dlh: deny2) {
+                EthernetHost eh = (EthernetHost)dlh;
+                short vlan = eh.getVlan();
+                if (vlan == anyVlan1 && !deny.contains(dlh)) {
+                    // This should be mapped to bridge 1.
+                    EthernetAddress eaddr = eh.getAddress();
+                    src1[3]++;
+                    InetAddress ipaddr = createInetAddress(src1);
+                    env1.activate(eaddr, vlan, ipaddr);
+                } else {
+                    // This should be ignored.
+                    env1.checkIgnored((EthernetHost)dlh);
+                }
+            }
+
+            // Ensure that a host found on a switch port reserved by another
+            // MAC mapping is ignored.
+            NodeConnector port = env2.getPort(anyVlan1);
+            MapReference resv = mgr.getMapReference(new MacMapPath(bpath2));
+            mac = 0x005555555555L;
+            for (int i = 0; i < 10; i++) {
+                EthernetHost h = createEthernetHost(mac, anyVlan1);
+                env1.checkIgnored(h, port, resv);
+                mac++;
+            }
+
+            port = env1.getPort(anyVlan2);
+            resv = mgr.getMapReference(new MacMapPath(bpath1));
+            for (int i = 0; i < 10; i++) {
+                EthernetHost h = createEthernetHost(mac, anyVlan2);
+                env2.checkIgnored(h, port, resv);
+                mac++;
+            }
+
+            // Ensure that change of host location can be detected.
+            env1.checkHostMoving(movePort);
+            env2.checkHostMoving(movePort);
+
+            {
+                // Remove 1 MAC mapped host from bridge 1 which supersedes
+                // wildcard mapping for anyVlan1.
+                DataLinkHost any = new EthernetHost(null, anyVlan1);
+                assertTrue(allow.remove(any));
+                hset.clear();
+                for (Iterator<DataLinkHost> it = allow.iterator();
+                     it.hasNext();) {
+                    DataLinkHost h = it.next();
+                    if (((EthernetHost)h).getVlan() == anyVlan1) {
+                        hset.add(h);
+                        it.remove();
+                        break;
+                    }
+                }
+                assertTrue(allow.add(any));
+
+                assertEquals(UpdateType.CHANGED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           MacMapAclType.ALLOW, allow));
+                mcconf = env1.update(allow, deny);
+                env1.checkInactivated(hset);
+
+                // Remove 2 MAC mapped hosts from bridge 1 by MacMapConfig
+                // REMOVE operation. This operation will remove hosts mapped
+                // by wildcard mapping for anyVlan1.
+                hset.clear();
+                hset.add(any);
+                assertTrue(allow.remove(any));
+                for (Iterator<DataLinkHost> it = allow.iterator();
+                     it.hasNext();) {
+                    DataLinkHost h = it.next();
+                    if (((EthernetHost)h).getVlan() != anyVlan1) {
+                        hset.add(h);
+                        it.remove();
+                        break;
+                    }
+                }
+                MacMapConfig cf = new MacMapConfig(hset, null);
+                assertEquals(UpdateType.CHANGED,
+                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                           cf));
+                mcconf = env1.update(allow, deny);
+                env1.checkInactivated(hset);
+            }
+
+            // Remove more 2 MAC mapped hosts from bridge 1 by host set
+            // REMOVE operation.
+            {
+                hset.clear();
+                Iterator<DataLinkHost> it = allow.iterator();
+                for (int i = 0; i < 2; i++) {
+                    hset.add(it.next());
+                    it.remove();
+                }
+                assertEquals(UpdateType.CHANGED,
+                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                           MacMapAclType.ALLOW, hset));
+                mcconf = env1.update(allow, deny);
+                env1.checkInactivated(hset);
+            }
+
+            // Remove more 2 MAC mapped hosts from bridge 1 by MacMapConfig
+            // SET operation.
+            {
+                hset.clear();
+                Iterator<DataLinkHost> it = allow.iterator();
+                for (int i = 0; i < 2; i++) {
+                    hset.add(it.next());
+                    it.remove();
+                }
+                mcconf = env1.update(allow, deny);
+                assertEquals(UpdateType.CHANGED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           mcconf));
+                env1.checkInactivated(hset);
+            }
+
+            // Remove more 2 MAC mapped hosts from bridge 1 by host set
+            // SET operation.
+            {
+                hset.clear();
+                Iterator<DataLinkHost> it = allow.iterator();
+                for (int i = 0; i < 2; i++) {
+                    hset.add(it.next());
+                    it.remove();
+                }
+                mcconf = env1.update(allow, deny);
+                assertEquals(UpdateType.CHANGED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           MacMapAclType.ALLOW, allow));
+                env1.checkInactivated(hset);
+            }
+
+            // Remove all mapped hosts.
+            mcconf = env1.update(null, deny);
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       MacMapAclType.ALLOW, null));
+            env1.checkInactivated(allow);
+            assertTrue(mgr.getMacEntries(bpath1).isEmpty());
+
+            // Remove MAC mappig on bridge 1 by REMOVE operation.
+            mmresult = UpdateType.CHANGED;
+            boolean loop = true;
+            for (Iterator<DataLinkHost> it = deny.iterator(); loop;) {
+                DataLinkHost h = it.next();
+                loop = it.hasNext();
+                hset.clear();
+                hset.add(h);
+                if (!loop) {
+                    mmresult = UpdateType.REMOVED;
+                }
+
+                MacMapConfig cf = new MacMapConfig(null, hset);
+                assertEquals(mmresult,
+                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                           cf));
+            }
+            assertNull(mgr.getMacMap(bpath1));
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       MacMapAclType.DENY, deny));
+            mmresult = UpdateType.CHANGED;
+            loop = true;
+            for (Iterator<DataLinkHost> it = deny.iterator(); loop;) {
+                DataLinkHost h = it.next();
+                loop = it.hasNext();
+                hset.clear();
+                hset.add(h);
+                if (!loop) {
+                    mmresult = UpdateType.REMOVED;
+                }
+
+                assertEquals(mmresult,
+                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                           MacMapAclType.DENY, hset));
+            }
+            assertEquals(null, mgr.getMacMap(bpath1));
+
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       MacMapAclType.ALLOW, allow));
+            mmresult = UpdateType.CHANGED;
+            loop = true;
+            for (Iterator<DataLinkHost> it = allow.iterator(); loop;) {
+                DataLinkHost h = it.next();
+                loop = it.hasNext();
+                hset.clear();
+                hset.add(h);
+                if (!loop) {
+                    mmresult = UpdateType.REMOVED;
+                }
+
+                MacMapConfig cf = new MacMapConfig(hset, null);
+                assertEquals(mmresult,
+                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                           cf));
+            }
+            assertNull(mgr.getMacMap(bpath1));
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       MacMapAclType.ALLOW, allow));
+            mmresult = UpdateType.CHANGED;
+            loop = true;
+            for (Iterator<DataLinkHost> it = allow.iterator(); loop;) {
+                DataLinkHost h = it.next();
+                loop = it.hasNext();
+                hset.clear();
+                hset.add(h);
+                if (!loop) {
+                    mmresult = UpdateType.REMOVED;
+                }
+
+                assertEquals(mmresult,
+                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                           MacMapAclType.ALLOW, hset));
+            }
+            assertEquals(null, mgr.getMacMap(bpath1));
+
+            // Remove MAC mapping by SET operation.
+            mcconf = new MacMapConfig(allow, deny);
+            for (MacMapConfig cf: emptyCf) {
+                assertEquals(UpdateType.ADDED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           mcconf));
+                assertEquals(UpdateType.REMOVED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET, cf));
+                assertEquals(null, mgr.getMacMap(bpath1));
+            }
+
+            for (Set<DataLinkHost> s: emptySet) {
+                assertEquals(UpdateType.ADDED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           MacMapAclType.DENY, deny));
+                assertEquals(UpdateType.REMOVED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           MacMapAclType.DENY, s));
+                assertNull(mgr.getMacMap(bpath1));
+
+                assertEquals(UpdateType.ADDED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           MacMapAclType.ALLOW, allow));
+                assertEquals(UpdateType.REMOVED,
+                             mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                           MacMapAclType.ALLOW, s));
+            }
+
+            // Ensure that the same MAC address is not mapped to the vBridge.
+            hset.clear();
+            short targetVlan = 0;
+            Map<EthernetAddress, MacAddressEntry> entMap =
+                new HashMap<EthernetAddress, MacAddressEntry>();
+            for (DataLinkHost dlh: allow2) {
+                EthernetHost eh = (EthernetHost)dlh;
+                if (eh.getVlan() == targetVlan) {
+                    EthernetAddress eaddr = eh.getAddress();
+                    MacAddressEntry ment = vtnMgr.getMacEntry(bpath2, eaddr);
+                    assertNotNull(ment);
+                    assertNull(entMap.put(eaddr, ment));
+                    env2.checkDuplicate(eaddr, anyVlan2);
+                    assertTrue(hset.add(dlh));
+                }
+            }
+
+            // MAC address should be mapped if it is inactivated.
+            assertTrue(env2.inactivate(targetVlan));
+
+            // Above operation never purges network caches.
+            // So MAC address table entries need to be purged explicitly.
+            for (Map.Entry<EthernetAddress, MacAddressEntry> entry:
+                     entMap.entrySet()) {
+                EthernetAddress eaddr = entry.getKey();
+                MacAddressEntry ment = entry.getValue();
+                assertEquals(ment, vtnMgr.removeMacEntry(bpath2, eaddr));
+            }
+
+            env2.checkInactivated(hset);
+            for (DataLinkHost dlh: hset) {
+                EthernetAddress eaddr = (EthernetAddress)dlh.getAddress();
+                src2[3]++;
+                InetAddress ipaddr = createInetAddress(src2);
+                env2.activate(eaddr, anyVlan2, ipaddr);
+            }
+
+            // Remove MAC mapping on bridge 2.
+            assertEquals(UpdateType.REMOVED,
+                         mgr.setMacMap(bpath2, UpdateOperation.SET, null));
+            assertTrue(mgr.getMacEntries(bpath2).isEmpty());
+            for (MacMapConfig cf: emptyCf) {
+                assertNull(mgr.setMacMap(bpath2, UpdateOperation.SET, cf));
+            }
+
+            // Ensure that we can reproduce MAC mappings.
+            env1.reset();
+            env2.reset();
+            mcconf = env1.update(allow1, deny1);
+            mcconf2 = env2.update(allow2, deny2);
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET, mcconf));
+            assertEquals(UpdateType.ADDED,
+                         mgr.setMacMap(bpath2, UpdateOperation.ADD, mcconf2));
+            env1.checkState();
+            env2.checkState();
+
+            src1[3] = 0;
+            src2[3] = 0;
+            env1.activate(src1);
+            env2.activate(src2);
+
+            // Remove bridge 1.
+            mgr.removeBridge(bpath1);
+
+            // Remove tenant.
+            mgr.removeTenant(tpath);
+        } catch (Exception e) {
+            unexpected(e);
+        }
     }
 
     /**
@@ -4278,5 +5517,166 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Ensure that {@link VTNManagerImpl#getMacMap(VBridgePath)} fails.
+     *
+     * @param path  A {@link VBridgePath} instance to be passed.
+     * @param code  A {@link StatusCode} instance expected to be thrown via
+     *              an {@link VTNException}.
+     */
+    private void errorGetMacMap(VBridgePath path, StatusCode code) {
+        try {
+            vtnMgr.getMacMap(path);
+            fail("An exception must be thrown.");
+        } catch (VTNException e) {
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+        }
+    }
+
+    /**
+     * Ensure that
+     * {@link VTNManagerImpl#getMacMapConfig(VBridgePath, MacMapAclType)}
+     * fails.
+     *
+     * @param path  A {@link VBridgePath} instance to be passed.
+     * @param acl   A {@link MacMapAclType} instance to be passed.
+     * @param code  A {@link StatusCode} instance expected to be thrown via
+     *              an {@link VTNException}.
+     */
+    private void errorGetMacMapConfig(VBridgePath path, MacMapAclType acl,
+                                      StatusCode code) {
+        try {
+            vtnMgr.getMacMapConfig(path, acl);
+            fail("An exception must be thrown.");
+        } catch (VTNException e) {
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+        }
+    }
+
+    /**
+     * Ensure that
+     * {@link VTNManagerImpl#getMacMappedHosts(VBridgePath)}
+     * fails.
+     *
+     * @param path  A {@link VBridgePath} instance to be passed.
+     * @param code  A {@link StatusCode} instance expected to be thrown via
+     *              an {@link VTNException}.
+     */
+    private void errorGetMacMappedHosts(VBridgePath path, StatusCode code) {
+        try {
+            vtnMgr.getMacMappedHosts(path);
+            fail("An exception must be thrown.");
+        } catch (VTNException e) {
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+        }
+    }
+
+    /**
+     * Ensure that
+     * {@link VTNManagerImpl#getMacMappedHost(VBridgePath, DataLinkAddress)}
+     * fails.
+     *
+     * @param path  A {@link VBridgePath} instance to be passed.
+     * @param addr  A {@link DataLinkAddress} instance to be passed.
+     * @param code  A {@link StatusCode} instance expected to be thrown via
+     *              an {@link VTNException}.
+     */
+    private void errorGetMacMappedHost(VBridgePath path, DataLinkAddress addr,
+                                       StatusCode code) {
+        try {
+            vtnMgr.getMacMappedHost(path, addr);
+            fail("An exception must be thrown.");
+        } catch (VTNException e) {
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+        }
+    }
+
+    /**
+     * Ensure that
+     * {@link VTNManagerImpl#setMacMap(VBridgePath, UpdateOperation, MacMapConfig)}
+     * fails.
+     *
+     * @param path  A {@link VBridgePath} instance to be passed.
+     * @param op    A {@link UpdateOperation} instance to be passed.
+     * @param cf    A {@link MacMapConfig} instance to be passed.
+     * @param code  A {@link StatusCode} instance expected to be thrown via
+     *              an {@link VTNException}.
+     */
+    private void errorSetMacMap(VBridgePath path, UpdateOperation op,
+                                MacMapConfig cf, StatusCode code) {
+        try {
+            vtnMgr.setMacMap(path, op, cf);
+            fail("An exception must be thrown.");
+        } catch (VTNException e) {
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+        }
+    }
+
+    /**
+     * Ensure that
+     * {@link VTNManagerImpl#setMacMap(VBridgePath, UpdateOperation, MacMapAclType, Set)}
+     * fails.
+     *
+     * @param path  A {@link VBridgePath} instance to be passed.
+     * @param op    A {@link UpdateOperation} instance to be passed.
+     * @param acl   A {@link MacMapAclType} instance to be passed.
+     * @param set   A set of {@link DataLinkHost} instances to be passed.
+     * @param code  A {@link StatusCode} instance expected to be thrown via
+     *              an {@link VTNException}.
+     */
+    private void errorSetMacMap(VBridgePath path, UpdateOperation op,
+                                MacMapAclType acl, Set<DataLinkHost> set,
+                                StatusCode code) {
+        try {
+            vtnMgr.setMacMap(path, op, acl, set);
+            fail("An exception must be thrown.");
+        } catch (VTNException e) {
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+        }
+    }
+
+    /**
+     * Verify that the specified host can not be configured to the
+     * MAC mapping.
+     *
+     * @param path    A path to the vBridge.
+     * @param mcconf  A {@link MacMapConfig} instance which keeps current
+     *                MAC mapping configuration.
+     * @param op      A {@link UpdateOperation} to be performed.
+     * @param acl     A {@link MacMapAclType} which specifies the MAC mapping
+     *                ACL to be configured.
+     * @param host    A {@link DataLinkHost} instance to be tested.
+     * @param code    A {@link StatusCode} instance expected to be thrown
+     *                by a {@link VTNException}.
+     */
+    private void checkMacMapError(VBridgePath path, MacMapConfig mcconf,
+                                  UpdateOperation op, MacMapAclType acl,
+                                  DataLinkHost host, StatusCode code) {
+        MacMapConfig mc;
+        Set<DataLinkHost> set;
+        if (acl == MacMapAclType.ALLOW) {
+            set = mcconf.getAllowedHosts();
+            assertTrue(set.add(host));
+            mc = new MacMapConfig(set, mcconf.getDeniedHosts());
+        } else {
+            set = mcconf.getDeniedHosts();
+            assertTrue(set.add(host));
+            mc = new MacMapConfig(mcconf.getAllowedHosts(), set);
+        }
+
+        errorSetMacMap(path, op, mc, code);
+        errorSetMacMap(path, op, acl, set, code);
+
+        set.clear();
+        assertTrue(set.add(host));
+        errorSetMacMap(path, op, acl, set, code);
     }
 }

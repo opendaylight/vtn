@@ -44,13 +44,18 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.felix.dm.Component;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -68,6 +73,7 @@ import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -3044,10 +3050,12 @@ public class VTNManagerImpl
         StringBuilder builder = new StringBuilder(containerName);
         builder.append(':').append(path).append(": Unexpected exception");
 
-        String sep = ": ";
-        for (Object o: args) {
-            builder.append(sep).append(o);
-            sep = ", ";
+        if (args != null) {
+            String sep = ": ";
+            for (Object o: args) {
+                builder.append(sep).append(o);
+                sep = ", ";
+            }
         }
         log.error(builder.toString(), e);
     }
@@ -3167,6 +3175,16 @@ public class VTNManagerImpl
      */
     public MapReference getMapReference(VBridgeIfPath path) {
         return new MapReference(MapType.PORT, containerName, path);
+    }
+
+    /**
+     * Create a reference to the MAC mapping configured in this container.
+     *
+     * @param path  A path to the MAC mapping.
+     * @return      A reference to the MAC mapping.
+     */
+    public MapReference getMapReference(MacMapPath path) {
+        return new MapReference(MapType.MAC, containerName, path);
     }
 
     /**
@@ -3545,6 +3563,81 @@ public class VTNManagerImpl
             @Override
             public void run() {
                 listener.vlanMapChanged(path, vlmap, type);
+            }
+        };
+        postTask(r);
+    }
+
+    /**
+     * Call MAC mapping listeners on the calling thread.
+     *
+     * @param path    Path to the bridge associated with the MAC mapping.
+     * @param mcconf  Configuration information about the MAC mapping.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void notifyListeners(VBridgePath path, MacMapConfig mcconf,
+                                UpdateType type) {
+        String msg = "MAC mapping";
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}:{}: {} {}: {}", containerName, path, msg,
+                      type.getName(), mcconf);
+        } else {
+            LOG.info("{}:{}: {} {}", containerName, path, msg,
+                     type.getName());
+        }
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                listener.macMapChanged(path, mcconf, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append
+                    (": Unhandled exception in MAC mapping listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
+    }
+
+    /**
+     * Notify MAC mapping changes.
+     *
+     * @param path    Path to the bridge associated with the MAC mapping.
+     * @param mcconf  Configuration information about the MAC mapping.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void notifyChange(final VBridgePath path, final MacMapConfig mcconf,
+                             final UpdateType type) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                notifyListeners(path, mcconf, type);
+            }
+        };
+        postTask(r);
+    }
+
+    /**
+     * Notify MAC mapping changes.
+     *
+     * @param listener  VTN manager listener service.
+     * @param path      Path to the bridge associated with the MAC mapping.
+     * @param mcconf    Configuration information about the MAC mapping.
+     * @param type      {@code ADDED} if added.
+     *                  {@code REMOVED} if removed.
+     *                  {@code CHANGED} if changed.
+     */
+    public void notifyChange(final IVTNManagerAware listener,
+                             final VBridgePath path, final MacMapConfig mcconf,
+                             final UpdateType type) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                listener.macMapChanged(path, mcconf, type);
             }
         };
         postTask(r);
@@ -4047,6 +4140,34 @@ public class VTNManagerImpl
                 rdlock.lock();
                 try {
                     cleaner.purge(VTNManagerImpl.this, tenantName);
+                } finally {
+                    unlock(rdlock);
+                }
+            }
+        };
+        postTask(r);
+    }
+
+    /**
+     * Update internal state of the specified vBridge in this container.
+     *
+     * <p>
+     *   Note that vBridge state will be updated asynchronously.
+     * </p>
+     *
+     * @param path  A path to the vBridge.
+     */
+    void updateBridgeState(final VBridgePath path) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                Lock rdlock = rwLock.readLock();
+                rdlock.lock();
+                try {
+                    VTenantImpl vtn = getTenantImpl(path);
+                    vtn.updateBridgeState(VTNManagerImpl.this, path);
+                } catch (VTNException e) {
+                    // Ignore.
                 } finally {
                     unlock(rdlock);
                 }
@@ -4662,6 +4783,192 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return information about the MAC mapping configured in the specified
+     * vBridge.
+     *
+     * @param path   Path to the bridge.
+     * @return  A {@link MacMap} object which represents information about
+     *          the MAC mapping specified by {@code path}.
+     *          {@code null} is returned if the MAC mapping is not configured
+     *          in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public MacMap getMacMap(VBridgePath path) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getMacMap(this, path);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Return configuration information about MAC mapping in the specified
+     * vBridge.
+     *
+     * @param path     Path to the vBridge.
+     * @param aclType  The type of access control list.
+     * @return  A set of {@link DataLinkHost} instances which contains host
+     *          information in the specified access control list is returned.
+     *          {@code null} is returned if MAC mapping is not configured in
+     *          the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
+                                             MacMapAclType aclType)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getMacMapConfig(path, aclType);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Return a list of {@link MacAddressEntry} instances corresponding to
+     * all the MAC address information actually mapped by MAC mapping
+     * configured in the specified vBridge.
+     *
+     * @param path  Path to the vBridge.
+     * @return  A list of {@link MacAddressEntry} instances corresponding to
+     *          all the MAC address information actually mapped to the vBridge
+     *          specified by {@code path}.
+     *          {@code null} is returned if MAC mapping is not configured
+     *          in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<MacAddressEntry> getMacMappedHosts(VBridgePath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getMacMappedHosts(this, path);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Determine whether the host specified by the MAC address is actually
+     * mapped by MAC mapping configured in the specified vBridge.
+     *
+     * @param path  Path to the vBridge.
+     * @param addr  A {@link DataLinkAddress} instance which represents the
+     *              MAC address.
+     * @return  A {@link MacAddressEntry} instancw which represents information
+     *          about the host corresponding to {@code addr} is returned
+     *          if it is actually mapped to the specified vBridge by MAC
+     *          mapping.
+     *          {@code null} is returned if the MAC address specified by
+     *          {@code addr} is not mapped by MAC mapping, or MAC mapping is
+     *          not configured in the specified vBridge.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public MacAddressEntry getMacMappedHost(VBridgePath path,
+                                            DataLinkAddress addr)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getMacMappedHost(this, path, addr);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Change MAC mapping configuration as specified by {@link MacMapConfig}
+     * instance.
+     *
+     * @param path    A {@link VBridgePath} object that specifies the position
+     *                of the vBridge.
+     * @param op      A {@link UpdateOperation} instance which indicates
+     *                how to change the MAC mapping configuration.
+     * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
+     *                mapping configuration information.
+     * @return        A {@link UpdateType} object which represents the result
+     *                of the operation is returned.
+     *                {@code null} is returned if the configuration was not
+     *                changed.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+                                MacMapConfig mcconf) throws VTNException {
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            UpdateType type = vtn.setMacMap(this, path, op, mcconf);
+            if (type != null) {
+                tenantDB.put(vtn.getName(), vtn);
+                Status status = vtn.saveConfig(null);
+                if (!status.isSuccess()) {
+                    throw new VTNException(status);
+                }
+            }
+            return type;
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Change the access controll list for the specified MAC mapping.
+     *
+     * @param path      A {@link VBridgePath} object that specifies the
+     *                  position of the vBridge.
+     * @param op        A {@link UpdateOperation} instance which indicates
+     *                  how to change the MAC mapping configuration.
+     * @param aclType   The type of access control list.
+     * @param dlhosts   A set of {@link DataLinkHost} instances.
+     * @return          A {@link UpdateType} object which represents the result
+     *                  of the operation is returned.
+     *                  {@code null} is returned if the configuration was not
+     *                  changed.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+                                MacMapAclType aclType,
+                                Set<? extends DataLinkHost> dlhosts)
+        throws VTNException {
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            UpdateType type = vtn.setMacMap(this, path, op, aclType, dlhosts);
+            if (type != null) {
+                tenantDB.put(vtn.getName(), vtn);
+                Status status = vtn.saveConfig(null);
+                if (!status.isSuccess()) {
+                    throw new VTNException(status);
+                }
+            }
+            return type;
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
      * Initiate the discovery of a host base on its IP address.
      *
      * <p>
@@ -4779,7 +5086,7 @@ public class VTNManagerImpl
             }
 
             // Determine the virtual node that maps the given host.
-            MapReference ref = resourceManager.getMapReference(nc, vlan);
+            MapReference ref = resourceManager.getMapReference(dst, nc, vlan);
             if (ref != null && containerName.equals(ref.getContainerName())) {
                 VBridgePath path = ref.getPath();
                 VTenantImpl vtn = getTenantImpl(path);
@@ -5515,7 +5822,7 @@ public class VTNManagerImpl
 
             // Determine virtual network mapping that maps the packet.
             short vlan = pctx.getVlan();
-            MapReference ref = resourceManager.getMapReference(nc, vlan);
+            MapReference ref = resourceManager.getMapReference(src, nc, vlan);
             if (ref != null && containerName.equals(ref.getContainerName())) {
                 VBridgePath path = ref.getPath();
                 VTenantImpl vtn = getTenantImpl(path);

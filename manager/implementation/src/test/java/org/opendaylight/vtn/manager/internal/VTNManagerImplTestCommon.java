@@ -14,21 +14,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.Output;
-import org.opendaylight.controller.sal.action.SetVlanId;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
-import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.VBridge;
@@ -51,6 +40,20 @@ import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.Output;
+import org.opendaylight.controller.sal.action.SetVlanId;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchField;
+import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.packet.ARP;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
+
 /**
  * Common class for tests of {@link VTNManagerImpl}.
  */
@@ -62,6 +65,16 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
      */
     protected VTNManagerImplTestCommon(int stub) {
         super(stub);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param stub  An integer value to be passed to {@link TestStub}.
+     * @param ht    If {@code true}, use host tracker emulator.
+     */
+    protected VTNManagerImplTestCommon(int stub, boolean ht) {
+        super(stub, ht);
     }
 
     /**
@@ -123,9 +136,14 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
      *                  and {@link PortMapConfig}.
      * @param vmaps     A map between {@link VlanMap} expected to exist and
      *                  {@link VlanMapConfig}.
+     * @param mcconf    A {@link MacMapConfig} instance expected to be
+     *                  configured in the specified vBridge.
      */
-    protected void checkVTNconfig(VTNManagerImpl mgr, VTenantPath tpath, List<VBridgePath> bpathlist,
-            Map<VBridgeIfPath, PortMapConfig> pmaps, Map<VlanMap, VlanMapConfig> vmaps) {
+    protected void checkVTNconfig(VTNManagerImpl mgr, VTenantPath tpath,
+                                  List<VBridgePath> bpathlist,
+                                  Map<VBridgeIfPath, PortMapConfig> pmaps,
+                                  Map<VlanMap, VlanMapConfig> vmaps,
+                                  MacMapConfig mcconf) {
         VBridgePath bpath = bpathlist.get(0);
 
         List<VTenant> tlist = null;
@@ -180,6 +198,18 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                     assertEquals(ent.getValue().getNode(), vmap.getNode());
                 }
             }
+        }
+
+        try {
+            MacMap mcmap = mgr.getMacMap(bpath);
+            if (mcconf == null) {
+                assertNull(mcmap);
+            } else if (!mcconf.equals(mcmap)) {
+                fail("Unexpected MAC mapping: mcconf=" + mcconf +
+                     ", mcmap=" + mcmap);
+            }
+        } catch (VTNException e) {
+            unexpected(e);
         }
     }
 

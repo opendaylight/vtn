@@ -6,20 +6,28 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.EthernetHost;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.TestDataLink;
+import org.opendaylight.vtn.manager.internal.TestDataLinkHost;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * JUnit test for {@link MacVlan}.
@@ -84,6 +92,17 @@ public class MacVlanTest extends TestBase {
                 assertEquals(macLongVal, mv.getMacAddress());
                 assertEquals(vlan, mv.getVlan());
                 assertEquals(encoded, mv.getEncodedValue());
+
+                try {
+                    EthernetHost ehost = new EthernetHost(ea, vlan);
+                    mv = new MacVlan(ehost);
+                    assertEquals(macLongVal, mv.getMacAddress());
+                    assertEquals(vlan, mv.getVlan());
+                    assertEquals(encoded, mv.getEncodedValue());
+                    assertEquals(ehost, mv.getEthernetHost());
+                } catch (Exception e) {
+                    unexpected(e);
+                }
             }
         }
 
@@ -102,6 +121,71 @@ public class MacVlanTest extends TestBase {
         assertEquals(MASK_MAC, mvlan.getMacAddress());
         assertEquals(MASK_VLAN_ID, mvlan.getVlan());
         assertEquals(MASK_ENCODED, mvlan.getEncodedValue());
+
+        // Specify invalid DataLinkHost.
+        try {
+            mvlan = new MacVlan((EthernetHost)null);
+            fail("An exception must be thrown");
+        } catch (VTNException e) {
+            Status status = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, status.getCode());
+        }
+
+        TestDataLink dladdr = new TestDataLink("addr");
+        TestDataLinkHost dlhost = new TestDataLinkHost(dladdr);
+        try {
+            mvlan = new MacVlan(dlhost);
+            fail("An exception must be thrown");
+        } catch (VTNException e) {
+            Status status = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, status.getCode());
+        }
+
+        ArrayList<Long> invaddrs = new ArrayList<Long>();
+        invaddrs.add(0L);
+        invaddrs.add(MASK_MAC);
+        for (int i = 0; i < 10; i++) {
+            invaddrs.add((rand.nextLong() & MASK_MAC) | BIT_MULTICAST);
+        }
+        for (Long addr: invaddrs) {
+            byte[] raw = NetUtils.longToByteArray6(addr.longValue());
+            EthernetAddress eth = null;
+            try {
+                eth = new EthernetAddress(raw);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            EthernetHost ehost = new EthernetHost(eth, (short)0);
+            try {
+                mvlan = new MacVlan(dlhost);
+                fail("An exception must be thrown");
+            } catch (VTNException e) {
+                Status status = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, status.getCode());
+            }
+        }
+
+        for (short v = -10; v < 0; v++) {
+            EthernetHost ehost = new EthernetHost(null, v);
+            try {
+                mvlan = new MacVlan(dlhost);
+                fail("An exception must be thrown");
+            } catch (VTNException e) {
+                Status status = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, status.getCode());
+            }
+        }
+        for (short v = 4096; v < 4100; v++) {
+            EthernetHost ehost = new EthernetHost(null, v);
+            try {
+                mvlan = new MacVlan(dlhost);
+                fail("An exception must be thrown");
+            } catch (VTNException e) {
+                Status status = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, status.getCode());
+            }
+        }
     }
 
     /**

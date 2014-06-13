@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,14 +14,20 @@ import java.util.List;
 import java.util.Set;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
+import org.opendaylight.vtn.manager.MacMap;
+import org.opendaylight.vtn.manager.MacMapAclType;
+import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -29,12 +35,12 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
-import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VlanMap;
+import org.opendaylight.vtn.manager.VlanMapConfig;
 
 /**
  * Stub class for unit tests.
@@ -253,6 +259,45 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
+        return null;
+    }
+
+    @Override
+    public MacMap getMacMap(VBridgePath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
+                                             MacMapAclType aclType)
+        throws VTNException {
+        return null;
+    }
+
+    @Override
+    public List<MacAddressEntry> getMacMappedHosts(VBridgePath path)
+        throws VTNException {
+        return null;
+    }
+
+    @Override
+    public MacAddressEntry getMacMappedHost(VBridgePath path,
+                                            DataLinkAddress addr)
+        throws VTNException {
+        return null;
+    }
+
+    @Override
+    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+                                MacMapConfig mcconf) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+                                MacMapAclType aclType,
+                                Set<? extends DataLinkHost> dlhosts)
+        throws VTNException {
         return null;
     }
 

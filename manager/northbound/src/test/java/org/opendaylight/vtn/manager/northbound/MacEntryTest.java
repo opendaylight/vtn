@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,24 +27,6 @@ import org.opendaylight.vtn.manager.SwitchPort;
  * JUnit test for {@link MacEntry}.
  */
 public class MacEntryTest extends TestBase {
-
-    // The Test class which implemented DataLinkAddress class.
-    class TestDataLink extends DataLinkAddress {
-        private static final long serialVersionUID = 5664547077536394233L;
-
-        TestDataLink() {
-
-        }
-
-        TestDataLink(String name) {
-            super(name);
-        }
-
-        public TestDataLink clone() {
-            return new TestDataLink(this.getName());
-        }
-    }
-
     /**
      * Test case for {@link MacEntry#MacEntry(MacAddressEntry)} and getter
      * method
@@ -122,7 +104,7 @@ public class MacEntryTest extends TestBase {
     }
 
     /**
-     * test case for {@link MacEntry#equals(java.lang.Object)} and
+     * test case for {@link MacEntry#equals(Object)} and
      * {@link MacEntry#hashCode()}
      */
     @Test
