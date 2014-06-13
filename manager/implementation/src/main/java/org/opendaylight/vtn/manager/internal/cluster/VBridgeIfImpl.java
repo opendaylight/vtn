@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -55,7 +56,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5856439559947334819L;
+    private static final long serialVersionUID = 837863564886135278L;
 
     /**
      * Logger instance.
@@ -1257,5 +1258,16 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     @Override
     public boolean isEnabled() {
         return ifConfig.getEnabled().booleanValue();
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which indicates the packet was
+     * mapped by the port mapping.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     */
+    @Override
+    public VNodeRoute getIngressRoute() {
+        return new VNodeRoute(ifPath, VNodeRoute.Reason.PORTMAPPED);
     }
 }

@@ -30,7 +30,7 @@ public class FlowGroupId extends ClusterEventId {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6418514196357442175L;
+    private static final long serialVersionUID = -805627180286544301L;
 
     /**
      * Prefix of the flow group name.
@@ -41,6 +41,36 @@ public class FlowGroupId extends ClusterEventId {
      * The name of the virtual tenant to which the flow group belongs.
      */
     private final String  tenantName;
+
+    /**
+     * Construct a new instance from a string representation of
+     * {@code FlowGroupId} instance.
+     *
+     * @param str  A string representation of {@code FlowGroupId} instance.
+     * @return  A {@link FlowGroupId} is returned on success.
+     *          {@code null} is returned on failure.
+     * @throws NullPointerException
+     *    {@code str} is {@code null}.
+     */
+    public static final FlowGroupId fromString(String str) {
+        if (str.startsWith(NAME_PREFIX)) {
+            try {
+                int from = NAME_PREFIX.length();
+                int to = str.indexOf(SEPARATOR, from);
+                String tenant = str.substring(from, to);
+                int ipfrom = to + 1;
+                int ipto = str.indexOf(SEPARATOR, ipfrom);
+                String ip = str.substring(ipfrom, ipto);
+                String evid = str.substring(ipto + 1);
+                InetAddress iaddr = InetAddress.getByName(ip);
+                long id = Long.parseLong(evid);
+                return new FlowGroupId(iaddr, id, tenant);
+            } catch (Exception e) {
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Construct a new flow group ID.

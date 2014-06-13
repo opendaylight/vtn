@@ -24,7 +24,7 @@ import org.opendaylight.vtn.manager.VBridgePath;
  *   class.
  * </p>
  */
-public class VlanMapPath extends VBridgePath {
+public class VlanMapPath extends VBridgeMapPath {
     /**
      * Version number for serialization.
      */
@@ -45,7 +45,7 @@ public class VlanMapPath extends VBridgePath {
      * @throws NullPointerException  {@code bridgePath} is {@code null}.
      */
     public VlanMapPath(VBridgePath bridgePath, String mapId) {
-        super(bridgePath.getTenantName(), bridgePath.getBridgeName());
+        super(bridgePath);
         this.mapId = mapId;
     }
 

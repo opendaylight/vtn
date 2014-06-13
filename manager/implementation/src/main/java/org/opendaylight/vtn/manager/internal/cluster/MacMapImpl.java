@@ -30,6 +30,7 @@ import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
@@ -72,7 +73,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8543149423569724022L;
+    private static final long serialVersionUID = 2513638526695560805L;
 
     /**
      * Logger instance.
@@ -1339,8 +1340,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
                                                   long mac, short vlan,
                                                   NodeConnector port)
         throws VTNException {
-        VBridgePath bpath = new VBridgePath(mapPath.getTenantName(),
-                                            mapPath.getBridgeName());
+        VBridgePath bpath = mapPath.getBridgePath();
         MacAddressTable table = mgr.getMacAddressTable(bpath);
 
         Set<InetAddress> ipaddrs;
@@ -1456,9 +1456,9 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
     // VBridgeNode
 
     /**
-     * Return path to this interface.
+     * Return path to this MAC mapping.
      *
-     * @return  Path to the interface.
+     * @return  Path to this MAC mapping.
      */
     @Override
     public MacMapPath getPath() {
@@ -1474,6 +1474,17 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which indicates the packet was
+     * mapped by the MAC mapping.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     */
+    @Override
+    public VNodeRoute getIngressRoute() {
+        return new VNodeRoute(mapPath, VNodeRoute.Reason.MACMAPPED);
     }
 
     // Cloneable

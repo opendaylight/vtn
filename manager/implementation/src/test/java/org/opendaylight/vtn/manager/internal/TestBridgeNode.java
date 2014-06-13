@@ -10,6 +10,8 @@
 package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
 
 /**
@@ -25,6 +27,11 @@ public class TestBridgeNode implements VBridgeNode {
      * Determine whether this node is enabled or not.
      */
     private boolean  enabled = true;
+
+    /**
+     * The reason why the packet was forwarded.
+     */
+    private Reason  reason = Reason.FORWARDED;
 
     /**
      * Construct an empty instance.
@@ -60,6 +67,15 @@ public class TestBridgeNode implements VBridgeNode {
         enabled = en;
     }
 
+    /**
+     * Set the reason why the packet was forwarded.
+     *
+     * @param r  A {@link Reason} instance.
+     */
+    public void setRouteReason(Reason r) {
+        reason = r;
+    }
+
     // VBridgeNode
 
     /**
@@ -80,5 +96,16 @@ public class TestBridgeNode implements VBridgeNode {
     @Override
     public boolean isEnabled() {
         return enabled;
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which represents the ingress
+     * virtual node.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     */
+    @Override
+    public VNodeRoute getIngressRoute() {
+        return new VNodeRoute(bridgePath, reason);
     }
 }

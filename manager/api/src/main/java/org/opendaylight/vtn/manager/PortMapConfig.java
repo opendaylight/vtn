@@ -9,12 +9,9 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.io.Serializable;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -82,33 +79,11 @@ import org.opendaylight.controller.sal.core.Node;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "portmapconf")
 @XmlAccessorType(XmlAccessType.NONE)
-public class PortMapConfig implements Serializable {
+public class PortMapConfig extends PortLocation {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1752903499492179337L;
-
-    /**
-     * Node information corresponding to the physical switch to be mapped
-     * to the virtual interface.
-     *
-     * <ul>
-     *   <li>This element is mandatory.</li>
-     * </ul>
-     */
-    @XmlElement(required = true)
-    private Node  node;
-
-   /**
-     * Condition for identifying the port of the switch specified by
-     * <strong>node</strong> element.
-     *
-     * <ul>
-     *   <li>This element is mandatory.</li>
-     * </ul>
-     */
-    @XmlElement(name = "port", required = true)
-    private SwitchPort  port;
+    private static final long serialVersionUID = 2080057481251593961L;
 
     /**
      * VLAN ID to be mapped to the virtual interface.
@@ -149,33 +124,8 @@ public class PortMapConfig implements Serializable {
      *              should be mapped.
      */
     public PortMapConfig(Node node, SwitchPort port, short vlan) {
-        this.node = node;
-        this.port = port;
+        super(node, port);
         this.vlan = vlan;
-    }
-
-    /**
-     * Return the {@link Node} object corresponding to the physical switch
-     * to be mapped by the
-     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
-     *
-     * @return  The {@link Node} object corresponding to the physical switch
-     *          to be mapped.
-     */
-    public Node getNode() {
-        return node;
-    }
-
-    /**
-     * Return a {@link SwitchPort} object which identifies the physical switch
-     * port to be mapped by the
-     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}.
-     *
-     * @return  A {@link SwitchPort} object which identifies the physical
-     *          switch port to be mapped.
-     */
-    public SwitchPort getPort() {
-        return port;
     }
 
     /**
@@ -221,28 +171,12 @@ public class PortMapConfig implements Serializable {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof PortMapConfig)) {
+        if (!(o instanceof PortMapConfig) || !super.equals(o)) {
             return false;
         }
 
         PortMapConfig pmconf = (PortMapConfig)o;
-        if (vlan != pmconf.vlan) {
-            return false;
-        }
-
-        if (node == null) {
-            if (pmconf.node != null) {
-                return false;
-            }
-        } else if (!node.equals(pmconf.node)) {
-            return false;
-        }
-
-        if (port == null) {
-            return (pmconf.port == null);
-        }
-
-        return port.equals(pmconf.port);
+        return (vlan == pmconf.vlan);
     }
 
     /**
@@ -252,15 +186,7 @@ public class PortMapConfig implements Serializable {
      */
     @Override
     public int hashCode() {
-        int h = vlan;
-        if (node != null) {
-            h ^= node.hashCode();
-        }
-        if (port != null) {
-            h ^= port.hashCode();
-        }
-
-        return h;
+        return super.hashCode() ^ vlan;
     }
 
     /**
@@ -271,9 +197,12 @@ public class PortMapConfig implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("PortMapConfig[");
+        Node node = getNode();
         if (node != null) {
             builder.append("node=").append(node.toString()).append(',');
         }
+
+        SwitchPort port = getPort();
         if (port != null) {
             builder.append("port=").append(port.toString()).append(',');
         }

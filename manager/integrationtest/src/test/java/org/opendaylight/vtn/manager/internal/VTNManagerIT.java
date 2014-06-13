@@ -233,6 +233,7 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("org.opendaylight.controller", "clustering.stub").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "forwarding.staticrouting").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "statisticsmanager").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "statisticsmanager.implementation").versionAsInProject(),
 
                 // VTN Manager bundels
                 mavenBundle("org.opendaylight.vtn", "manager").versionAsInProject(),

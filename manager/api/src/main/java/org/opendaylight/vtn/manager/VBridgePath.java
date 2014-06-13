@@ -25,7 +25,7 @@ import java.util.List;
  *
  * @see  <a href="package-summary.html#vBridge">vBridge</a>
  */
-public class VBridgePath extends VTenantPath {
+public class VBridgePath extends VNodePath {
     /**
      * Version number for serialization.
      */

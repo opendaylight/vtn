@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
@@ -814,6 +815,80 @@ public class VTNFlowDatabase {
         }
 
         return false;
+    }
+
+    /**
+     * Return the number of VTN flows.
+     *
+     * @return  The number of VTN flows.
+     */
+    public synchronized int getFlowCount() {
+        return vtnFlows.size();
+    }
+
+    /**
+     * Return information about all VTN flows present in the VTN.
+     *
+     * @param mgr       VTN Manager service.
+     * @param streader  If a {@link StatsReader} instance is specified,
+     *                  this method returns detailed information about the VTN
+     *                  flow including statistics information.
+     *                  If {@code null} is specified, this method returns
+     *                  summarized information.
+     * @return  A list of {@link DataFlow} instances.
+     */
+    public List<DataFlow> getFlows(VTNManagerImpl mgr, StatsReader streader) {
+        boolean detail = (streader != null);
+        List<VTNFlow> flist;
+        synchronized (this) {
+            flist = new ArrayList<VTNFlow>(vtnFlows.values());
+        }
+
+        List<DataFlow> list = new ArrayList<DataFlow>(flist.size());
+        for (VTNFlow vflow: flist) {
+            DataFlow df = vflow.getDataFlow(mgr, detail);
+            if (detail) {
+                FlowEntry fent = vflow.getFlowEntries().get(0);
+                df.setStatistics(streader.get(fent));
+            }
+            list.add(df);
+        }
+
+        return list;
+    }
+
+    /**
+     * Return information about the specified VTN flow present in the VTN.
+     *
+     * @param mgr       VTN Manager service.
+     * @param gid       A {@link FlowGroupId} instance which specifies the
+     *                  VTN flow.
+     * @param streader  If a {@link StatsReader} instance is specified,
+     *                  this method returns detailed information about the VTN
+     *                  flow including statistics information.
+     *                  If {@code null} is specified, this method returns
+     *                  summarized information.
+     * @return  A {@link DataFlow} instance.
+     *          {@code null} is returned if the VTN flow was not found.
+     */
+    public DataFlow getFlow(VTNManagerImpl mgr, FlowGroupId gid,
+                            StatsReader streader) {
+        boolean detail = (streader != null);
+        VTNFlow vflow;
+        synchronized (this) {
+            vflow = groupFlows.get(gid);
+            if (vflow == null) {
+                return null;
+            }
+        }
+
+        DataFlow df = vflow.getDataFlow(mgr, detail);
+        if (detail) {
+            FlowEntry fent = vflow.getFlowEntries().get(0);
+            df.setStatistics(streader.get(fent));
+        }
+
+        return df;
     }
 
     /**
