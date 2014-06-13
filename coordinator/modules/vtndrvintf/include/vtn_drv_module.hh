@@ -19,7 +19,6 @@
 #include <driver/driver_command.hh>
 #include <vtn_drv_transaction_handle.hh>
 #include <driver/driver_interface.hh>
-#include <pfcxx/ipc_server.hh>
 #include <unc/unc_events.h>
 #include <string>
 #include <map>
@@ -45,6 +44,15 @@ enum ValDomainEventIndex {
 
 class VtnDrvIntf :public pfc::core::Module {
  public:
+  typedef std::map<unc_key_type_t, pfc_ipcstdef_t*> kt_map;
+  static kt_map key_map;
+  static kt_map val_map;
+
+  /**
+   * @brief  - Method to initialize pfc_ipcstdef_t pointer with keytype
+   * @retval - None
+   */
+  void  initialize_map(void);
   /**
    * @brief     : Constructor
    * @param[in] : pfc_modattr_t*

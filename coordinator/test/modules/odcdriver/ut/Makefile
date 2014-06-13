@@ -60,6 +60,7 @@ ODCDRIVER_SOURCES += odc_link.cc
 
 VTNCACHEUTIL_SOURCES = keytree.cc
 VTNCACHEUTIL_SOURCES += confignode.cc
+VTNCACHEUTIL_SOURCES += vtn_cache_mod.cc
 VTNDRVINTF_STUB_SOURCES += controller_fw.cc
 VTNDRVINTF_STUB_SOURCES += vtn_drv_module.cc
 

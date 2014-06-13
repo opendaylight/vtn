@@ -11,6 +11,8 @@
 
 namespace unc {
 namespace driver {
+std::map<unc_key_type_t, pfc_ipcstdef_t*>VtnDrvIntf::key_map;
+std::map<unc_key_type_t, pfc_ipcstdef_t*>VtnDrvIntf::val_map;
 
 VtnDrvIntf VtnDrvIntf::theInstance(NULL);
 
