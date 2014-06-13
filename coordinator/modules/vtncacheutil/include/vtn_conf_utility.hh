@@ -392,6 +392,628 @@ class  ConfUtil {
     ODC_FUNC_TRACE;
     return "ROOT";
   }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_FLOWLIST
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_flowlist_t  &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_FLOWLIST;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_FLOWLIST
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_flowlist_t &key,
+                                    const val_flowlist_t &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowlist_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_FLOWLIST
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_flowlist_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowlist_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_FLOWLIST
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_flowlist_t &key) {
+    ODC_FUNC_TRACE;
+    return "ROOT";
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_FLOWLIST_ENTRY
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_flowlist_entry_t  &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_FLOWLIST_ENTRY;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_FLOWLIST_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_flowlist_entry_t &key,
+                                    const val_flowlist_entry_t &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_FLOWLIST_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_flowlist_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowlist_key.flowlist_name));
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.sequence_num);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_FLOWLIST_ENTRY
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_flowlist_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowlist_key.flowlist_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VTN_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vtn_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VTN_FLOWFILTER;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VTN_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vtn_flowfilter_t &key,
+                                    const val_flowfilter_t &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTN_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vtn_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vtn_key.vtn_name));
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.input_direction);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VTN_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vtn_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vtn_key.vtn_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VTN_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vtn_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VTN_FLOWFILTER_ENTRY;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VTN_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vtn_flowfilter_entry_t &key,
+                                    const val_vtn_flowfilter_entry_t &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTN_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vtn_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_parent_key(key);
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%u", key.sequence_num);
+    pfc_log_trace("sequence number for vtnflowfilter entry : %s", buffer);
+    key_str += std::string(buffer);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VTN_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vtn_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowfilter_key.vtn_key.vtn_name));
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.flowfilter_key.input_direction);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VBR_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vbr_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VBR_FLOWFILTER;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VBR_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vbr_flowfilter_t &key,
+                                    const val_flowfilter_t  &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VBR_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vbr_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vbr_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.vbr_key.vbridge_name));
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.direction);
+    pfc_log_trace("direction for vtnflowfilter entry : %s", buff);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VBR_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vbr_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vbr_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.vbr_key.vbridge_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VBR_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vbr_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VBR_FLOWFILTER_ENTRY;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VBR_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vbr_flowfilter_entry_t &key,
+                                    const val_flowfilter_entry_t  &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VBR_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vbr_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_parent_key(key);
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.sequence_num);
+    pfc_log_trace("sequence for vtnflowfilter entry : %s", buff);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VBR_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vbr_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowfilter_key.vbr_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.flowfilter_key.vbr_key.vbridge_name));
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%u", key.flowfilter_key.direction);
+    key_str += std::string(buffer);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VBRIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vbr_if_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VBRIF_FLOWFILTER;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VBRIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vbr_if_flowfilter_t &key,
+                                    const pfcdrv_val_vbrif_vextif_t  &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VBRIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vbr_if_flowfilter_t  &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_parent_key(key);
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%u", key.direction);
+    key_str += std::string(buffer);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VBRIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vbr_if_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.if_key.vbr_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.if_key.vbr_key.vbridge_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.if_key.if_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VBRIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t get_key_type(
+      const key_vbr_if_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VBRIF_FLOWFILTER_ENTRY;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VBRIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vbr_if_flowfilter_entry_t &key,
+                                    const pfcdrv_val_flowfilter_entry_t  &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VBRIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vbr_if_flowfilter_entry_t  &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_parent_key(key);
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.sequence_num);
+    pfc_log_trace("sequence number for vbriflow-filter entry : %s", buff);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VBRIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vbr_if_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowfilter_key.if_key.vbr_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.flowfilter_key.if_key.vbr_key.vbridge_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.flowfilter_key.if_key.if_name));
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%u", key.flowfilter_key.direction);
+    key_str += std::string(buffer);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VTERMINAL
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vterm_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VTERMINAL;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VTERMINAL
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vterm_t &key,
+                                    const val_vterm_t  &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTERMINAL
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vterm_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                           (key.vterminal_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VTERMINAL
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vterm_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vtn_key.vtn_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VTERM_IF
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vterm_if_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VTERM_IF;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VTERM_IF
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vterm_if_t &key,
+                                    const val_vterm_if_t  &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTERM_IF
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vterm_if_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vterm_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.vterm_key.vterminal_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.if_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VTERM_IF
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vterm_if_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.vterm_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.vterm_key.vterminal_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VTERMIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t  get_key_type(const key_vterm_if_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VTERMIF_FLOWFILTER;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VTERMIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vterm_if_flowfilter_t &key,
+                                    const val_flowfilter_t &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTERMIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vterm_if_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_parent_key(key);
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%u", key.direction);
+    key_str += std::string(buffer);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VTERMIF_FLOWFILTER
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(const key_vterm_if_flowfilter_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.if_key.vterm_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.if_key.vterm_key.vterminal_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.if_key.if_name));
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the Keytype for UNC_KT_VTERMIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : unc_key_type_t
+   */
+  static unc_key_type_t get_key_type(
+      const key_vterm_if_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    return UNC_KT_VTERMIF_FLOWFILTER_ENTRY;
+  }
+
+  /**
+   * @brief       : This method returns the search Key for UNC_KT_VTERMIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_search_key(const key_vterm_if_flowfilter_entry_t &key,
+                                    const val_flowfilter_entry_t &val) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_key(key);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the name for UNC_KT_VTERMIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : string
+   */
+  static std::string get_key(const key_vterm_if_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str = get_parent_key(key);
+    char buff[10];
+    snprintf(buff, sizeof(buff), "%u", key.sequence_num);
+    pfc_log_trace("sequence number for vtremiflowfilter entry : %s", buff);
+    key_str += std::string(buff);
+    return key_str;
+  }
+
+  /**
+   * @brief       : This method returns the parent Key for UNC_KT_VTERMIF_FLOWFILTER_ENTRY
+   * @param [in]  : key
+   * @retval      : parent key - string
+   */
+  static std::string get_parent_key(
+      const key_vterm_if_flowfilter_entry_t &key) {
+    ODC_FUNC_TRACE;
+    std::string key_str(reinterpret_cast<const char*>
+                        (key.flowfilter_key.if_key.vterm_key.vtn_key.vtn_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.flowfilter_key.if_key.vterm_key.vterminal_name));
+    key_str += std::string(reinterpret_cast<const char*>
+                        (key.flowfilter_key.if_key.if_name));
+    char buffer[10];
+    snprintf(buffer, sizeof(buffer), "%u", key.flowfilter_key.direction);
+    key_str += std::string(buffer);
+    return key_str;
+  }
 };
 }  // namespace vtndrvcache
 }  // namespace unc

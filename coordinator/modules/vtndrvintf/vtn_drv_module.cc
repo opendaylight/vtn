@@ -13,6 +13,8 @@
 namespace unc {
 namespace driver {
 
+std::map<unc_key_type_t, pfc_ipcstdef_t*>VtnDrvIntf::key_map;
+std::map<unc_key_type_t, pfc_ipcstdef_t*>VtnDrvIntf::val_map;
 /**
  * @brief     : constructor
  */
@@ -29,10 +31,22 @@ VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
 VtnDrvIntf::~VtnDrvIntf() {
   ODC_FUNC_TRACE;
   std::map <unc_key_type_t, unc::driver::KtHandler*> ::iterator map_it;
+  std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_key;
   for (map_it = map_kt_.begin(); map_it != map_kt_.end(); map_it++) {
        delete (map_it)->second;
   }
   map_kt_.clear();
+  for (map_key = key_map.begin(); map_key != key_map.end(); map_key++) {
+    delete map_key->second;
+    map_key->second = NULL;
+  }
+  for (map_key = val_map.begin(); map_key != val_map.end(); map_key++) {
+    delete map_key->second;
+    map_key->second = NULL;
+  }
+
+  key_map.clear();
+  val_map.clear();
 }
 
 /**
@@ -49,6 +63,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
                                         conf_parser_.time_interval);
   PFC_ASSERT(ctrl_inst_ != NULL);
   set_controller_instance(ctrl_inst_);
+  initialize_map();
 
   create_handler<key_root_t, val_root_t>(UNC_KT_ROOT);
   create_handler<key_ctr_t, val_ctr_t>(UNC_KT_CONTROLLER);
@@ -58,6 +73,29 @@ pfc_bool_t VtnDrvIntf::init(void) {
       (UNC_KT_VBR_IF);
   create_handler<key_vlan_map_t, pfcdrv_val_vlan_map_t>
       (UNC_KT_VBR_VLANMAP);
+  create_handler<key_flowlist, val_flowlist>
+      (UNC_KT_FLOWLIST);
+  create_handler<key_flowlist_entry, val_flowlist_entry>
+      (UNC_KT_FLOWLIST_ENTRY);
+  create_handler<key_vtn_flowfilter, val_flowfilter>
+      (UNC_KT_VTN_FLOWFILTER);
+  create_handler<key_vtn_flowfilter_entry, val_vtn_flowfilter_entry>
+      (UNC_KT_VTN_FLOWFILTER_ENTRY);
+  create_handler<key_vbr_flowfilter, val_flowfilter>
+      (UNC_KT_VBR_FLOWFILTER);
+  create_handler<key_vbr_flowfilter_entry, val_flowfilter_entry>
+      (UNC_KT_VBR_FLOWFILTER_ENTRY);
+  create_handler<key_vbr_if_flowfilter, pfcdrv_val_vbrif_vextif>
+      (UNC_KT_VBRIF_FLOWFILTER);
+  create_handler<key_vbr_if_flowfilter_entry, pfcdrv_val_flowfilter_entry>
+      (UNC_KT_VBRIF_FLOWFILTER_ENTRY);
+  create_handler<key_vterm, val_vterm>(UNC_KT_VTERMINAL);
+  create_handler<key_vterm_if, val_vterm_if>(UNC_KT_VTERM_IF);
+  create_handler<key_vterm_if_flowfilter, val_flowfilter>
+      (UNC_KT_VTERMIF_FLOWFILTER);
+  create_handler<key_vterm_if_flowfilter_entry, val_flowfilter_entry>
+      (UNC_KT_VTERMIF_FLOWFILTER_ENTRY);
+
 
   unc::tclib::TcLibModule* tclib_obj =
       static_cast<unc::tclib::TcLibModule*>(pfc::core::Module::getInstance(
@@ -708,6 +746,47 @@ void VtnDrvIntf::create_handler(unc_key_type_t keytype)  {
           keytype,
           handler_));
 }
+}
+/**
+* @Description :Method to fill the map pfc_ipcstdef_t pointer against keytype
+* @param[in]   :NONE
+* @return      :NONE
+**/
+void  VtnDrvIntf::initialize_map() {
+  ODC_FUNC_TRACE;
+  POPULATE_STDEF(key_vtn, val_vtn, UNC_KT_VTN, stdefk_vtn, stdefv_vtn);
+  POPULATE_STDEF(key_vbr, val_vbr, UNC_KT_VBRIDGE, stdefk_vbr, stdefv_vbr);
+  POPULATE_STDEF(key_vbr_if, val_vbr_if, UNC_KT_VBR_IF, stdefk_vbrif,
+                 stdefv_vbrif);
+  POPULATE_STDEF(key_vlan_map, val_vlan_map, UNC_KT_VBR_VLANMAP, stdefk_vlan,
+                 stdefv_vlan);
+  POPULATE_STDEF(key_flowlist, val_flowlist, UNC_KT_FLOWLIST, stdefk_fl,
+                 stdefv_fl);
+  POPULATE_STDEF(key_flowlist_entry, val_flowlist_entry, UNC_KT_FLOWLIST_ENTRY,
+                 stdefk_fle, stdefv_fle);
+  POPULATE_STDEF(key_vtn_flowfilter, val_flowfilter, UNC_KT_VTN_FLOWFILTER,
+                 stdefk_ff, stdefv_ff);
+  POPULATE_STDEF(key_vtn_flowfilter_entry, val_vtn_flowfilter_entry,
+                 UNC_KT_VTN_FLOWFILTER_ENTRY, stdefk_vtn_fle, stdefv_vtn_fle);
+  POPULATE_STDEF(key_vbr_flowfilter, val_flowfilter, UNC_KT_VBR_FLOWFILTER,
+                 stdefk_vbr_fl, stdefv_vbr_fl);
+  POPULATE_STDEF(key_vbr_flowfilter_entry, val_flowfilter_entry,
+                 UNC_KT_VBR_FLOWFILTER_ENTRY, stdefk_vbr_fle, stdefv_vbr_fle);
+  POPULATE_STDEF(key_vbr_if_flowfilter, pfcdrv_val_vbrif_vextif,
+                 UNC_KT_VBRIF_FLOWFILTER, stdefk_vbrif_fl, stdefv_vbrif_fl);
+  POPULATE_STDEF(key_vbr_if_flowfilter_entry, pfcdrv_val_flowfilter_entry,
+                 UNC_KT_VBRIF_FLOWFILTER_ENTRY, stdefk_vbrif_fle,
+                 stdefv_vbrif_fle);
+  POPULATE_STDEF(key_vterm, val_vterm, UNC_KT_VTERMINAL, stdefk_vtrem,
+                 stdefv_vterm);
+  POPULATE_STDEF(key_vterm_if, val_vterm_if, UNC_KT_VTERM_IF, stdefk_vtrem_if,
+                 stdefv_vterm_if);
+  POPULATE_STDEF(key_vterm_if_flowfilter, val_flowfilter,
+                 UNC_KT_VTERMIF_FLOWFILTER, stdefk_vtrem_if_ff,
+                 stdefv_vterm_if_ff);
+  POPULATE_STDEF(key_vterm_if_flowfilter_entry, val_flowfilter_entry,
+                 UNC_KT_VTERMIF_FLOWFILTER_ENTRY, stdefk_vtrem_if_fle,
+                 stdefv_vterm_if_fle);
 }
 
 }  // namespace driver

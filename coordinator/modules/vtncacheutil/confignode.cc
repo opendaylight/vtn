@@ -8,6 +8,7 @@
  */
 #include "confignode.hh"
 #include "keytree.hh"
+#include "vtn_cache_mod.hh"
 
 namespace unc {
 namespace vtndrvcache {
@@ -20,44 +21,12 @@ namespace vtndrvcache {
  */
 std::string TypeToStrFun(unc_key_type_t search_type) {
   std::string TypeStr;
-  switch (search_type) {
-    case UNC_KT_ROOT:
-      TypeStr = std::string("UNC_KT_ROOT");
-      break;
-
-    case UNC_KT_VTN:
-      TypeStr = std::string("UNC_KT_VTN");
-      break;
-
-    case UNC_KT_VBRIDGE:
-      TypeStr = std::string("UNC_KT_VBRIDGE");
-      break;
-
-    case UNC_KT_VBR_IF:
-      TypeStr = std::string("UNC_KT_VBR_IF");
-      break;
-
-    case UNC_KT_VBR_VLANMAP:
-      TypeStr = std::string("UNC_KT_VBR_VLANMAP");
-      break;
-
-    case UNC_KT_SWITCH:
-      TypeStr = std::string("UNC_KT_SWITCH");
-      break;
-
-    case UNC_KT_PORT:
-      TypeStr = std::string("UNC_KT_PORT");
-      break;
-
-    case UNC_KT_LINK:
-      TypeStr = std::string("UNC_KT_LINK");
-      break;
-
-    default:
-      TypeStr = std::string("Unknown");
-      pfc_log_info("%s: key_type = %d", PFC_FUNCNAME,
-                   search_type);
-      break;
+  std::map<unc_key_type_t, std::string>::const_iterator search =
+      VtnDrvCacheMod::keyTypeStrMap.find(search_type);
+  if (search != VtnDrvCacheMod::keyTypeStrMap.end()) {
+    TypeStr = search->second;
+  } else {
+     TypeStr = std::string("Unknown");
   }
   return TypeStr;
 }
