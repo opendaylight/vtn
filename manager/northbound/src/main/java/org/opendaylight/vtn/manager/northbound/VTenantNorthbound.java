@@ -41,7 +41,6 @@ import org.codehaus.enunciate.jaxrs.ResponseHeaders;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
 
-import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
@@ -377,58 +376,6 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.removeTenant(path);
-        if (status.isSuccess()) {
-            return Response.ok().build();
-        }
-
-        throw getException(status);
-    }
-
-    /**
-     * Remove all flow entries in the specified VTN.
-     *
-     * <p>
-     *   This API is provided only for debugging purpose, and is available
-     *   only if the system property <strong>vtn.debug</strong> is defined as
-     *   <strong>true</strong>.
-     * </p>
-     *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @return Response as dictated by the HTTP Response Status code.
-     */
-    @Path("{tenantName}/flows")
-    @DELETE
-    @TypeHint(TypeHint.NO_CONTENT.class)
-    @StatusCodes({
-        @ResponseCode(code = HTTP_OK,
-                      condition = "Operation completed successfully."),
-        @ResponseCode(code = HTTP_UNAUTHORIZED,
-                      condition = "User is not authorized to perform this " +
-                      "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
-        @ResponseCode(code = HTTP_INTERNAL_ERROR,
-                      condition = "Fatal internal error occurred in the " +
-                      "VTN Manager."),
-        @ResponseCode(code = HTTP_UNAVAILABLE,
-                      condition = "One or more of mandatory controller " +
-                      "services, such as the VTN Manager, are unavailable.")})
-    public Response removeAllFlows(
-            @PathParam("containerName") String containerName,
-            @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        IVTNFlowDebugger debugger = getVTNFlowDebugger(containerName);
-        VTenantPath path = new VTenantPath(tenantName);
-        Status status = debugger.removeAllFlows(path);
         if (status.isSuccess()) {
             return Response.ok().build();
         }

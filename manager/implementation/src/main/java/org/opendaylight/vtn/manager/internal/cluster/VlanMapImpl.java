@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -53,7 +54,7 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6936105710286767846L;
+    private static final long serialVersionUID = 817003080891154790L;
 
     /**
      * Logger instance.
@@ -477,9 +478,9 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     // VBridgeNode
 
     /**
-     * Return path to this interface.
+     * Return path to this VLAN mapping.
      *
-     * @return  Path to the interface.
+     * @return  Path to this VLAN mapping.
      */
     @Override
     public VlanMapPath getPath() {
@@ -495,5 +496,16 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which indicates the packet was
+     * mapped by the VLAN mapping.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     */
+    @Override
+    public VNodeRoute getIngressRoute() {
+        return new VNodeRoute(mapPath, VNodeRoute.Reason.VLANMAPPED);
     }
 }

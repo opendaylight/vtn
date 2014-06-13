@@ -373,8 +373,19 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
         NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("1"), node);
         NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("2"), node);
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
+        match.setField(MatchType.DL_VLAN, (short)1);
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(node);
         actions.addOutput(outnc);
         flow.addFlow(vtnMgr, match, actions, 1);
@@ -4900,8 +4911,18 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                          node0);
         Match match = new Match();
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
         match.setField(MatchType.IN_PORT, innc);
         match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         int pri = 1;
@@ -5022,6 +5043,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         evIdSet.add(evIdLocal);
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
         for (FlowGroupId evid : evIdSet) {
             String emsg = evid.toString();
             VTNFlow flow = new VTNFlow(evid);
@@ -5036,6 +5065,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             Match match = new Match();
             match.setField(MatchType.IN_PORT, innc);
             match.setField(MatchType.DL_VLAN, (short) 1);
+            match.setField(MatchType.DL_SRC, src);
+            match.setField(MatchType.DL_DST, dst);
             ActionList actions = new ActionList(outnc.getNode());
             actions.addOutput(outnc);
             int pri = 1;
@@ -5051,7 +5082,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             flow.addDependency(pathSet);
 
             FlowEntry ingress = flow.getFlowEntries().get(0);
-
 
             // entry created.
             mgr.entryCreated(evid, VTNManagerImpl.CACHE_FLOWS, true);
@@ -5094,6 +5124,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
         match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         int pri = 1;
@@ -5302,8 +5334,18 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                              node);
             Match match = new Match();
+            byte[] src = {
+                (byte)0x00, (byte)0x11, (byte)0x22,
+                (byte)0x33, (byte)0x44, (byte)0x55,
+            };
+            byte[] dst = {
+                (byte)0xf0, (byte)0xfa, (byte)0xfb,
+                (byte)0xfc, (byte)0xfd, (byte)0xfe,
+            };
             match.setField(MatchType.IN_PORT, innc);
             match.setField(MatchType.DL_VLAN, (short) 1);
+            match.setField(MatchType.DL_SRC, src);
+            match.setField(MatchType.DL_DST, dst);
             ActionList actions = new ActionList(outnc.getNode());
             actions.addOutput(outnc);
             int pri = 1;
@@ -5403,8 +5445,18 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                          node0);
         Match match = new Match();
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
         match.setField(MatchType.IN_PORT, innc);
         match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         int pri = 1;

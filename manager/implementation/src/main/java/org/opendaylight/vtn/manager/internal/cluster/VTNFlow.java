@@ -12,13 +12,19 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.io.Serializable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.Collection;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.NodeRoute;
+import org.opendaylight.vtn.manager.PortLocation;
+import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
@@ -59,12 +65,17 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8156281482065842424L;
+    private static final long serialVersionUID = -4186545479876801784L;
 
     /**
      * The identifier of the flow group.
      */
     private final FlowGroupId  groupId;
+
+    /**
+     * Creation time of this VTN flow.
+     */
+    private long  creationTime;
 
     /**
      * Flow entries.
@@ -89,25 +100,12 @@ public class VTNFlow implements Serializable {
      *   Note that this field does not affect identify of this instance.
      * </p>
      */
-    private final Set<VTenantPath>  dependNodes = new HashSet<VTenantPath>();
+    private Set<VTenantPath>  dependNodes;
 
     /**
-     * A path to virtual node which maps the incoming flow.
-     *
-     * <p>
-     *   Note that this field does not affect identify of this instance.
-     * </p>
+     * A sequence of virtual packet routing.
      */
-    private VBridgePath  ingressPath;
-
-    /**
-     * A path to virtual node which maps the egress flow.
-     *
-     * <p>
-     *   Note that this field does not affect identify of this instance.
-     * </p>
-     */
-    private VBridgePath  egressPath;
+    private final List<VNodeRoute> virtualRoute = new ArrayList<VNodeRoute>();
 
     /**
      * Construct a new VTN flow object.
@@ -185,6 +183,56 @@ public class VTNFlow implements Serializable {
     }
 
     /**
+     * Return the idle timeout configured for the ingress flow.
+     *
+     * @return  The number of seconds configured as the idle timeout for the
+     *          ingress flow.
+     *          Note that zero is returned if no flow entry is configured.
+     */
+    public short getIdleTimeout() {
+        if (flowEntries.isEmpty()) {
+            return 0;
+        }
+
+        Flow ingress = flowEntries.get(0).getFlow();
+        return ingress.getIdleTimeout();
+    }
+
+    /**
+     * Return the hard timeout configured for the ingress flow.
+     *
+     * @return  The number of seconds configured as the hard timeout for the
+     *          ingress flow.
+     *          Note that zero is returned if no flow entry is configured.
+     */
+    public short getHardTimeout() {
+        if (flowEntries.isEmpty()) {
+            return 0;
+        }
+
+        Flow ingress = flowEntries.get(0).getFlow();
+        return ingress.getHardTimeout();
+    }
+
+    /**
+     * Return the creation time of this VTN flow in milliseconds.
+     *
+     * @return  The number of milliseconds between the creation time of this
+     *          VTN flow and 1970-1-1 00:00:00 UTC.
+     */
+    public long getCreationTime() {
+        return creationTime;
+    }
+
+    /**
+     * Fix up the VTN flow before installation.
+     */
+    public void fixUp() {
+        // Set creation time.
+        creationTime = System.currentTimeMillis();
+    }
+
+    /**
      * Add a flow entry that transmits a packet to the specified switch port
      * with setting VLAN ID.
      *
@@ -220,13 +268,93 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Add all virtual node paths in the given set to the dependency set.
+     * Add all virtual node paths in the given set to the additional dependency
+     * set.
      *
      * @param pathSet  A set of path to the virtual nodes on which this flow
      *                 depends.
      */
-    public void addDependency(Set<VTenantPath> pathSet) {
-        dependNodes.addAll(pathSet);
+   public void addDependency(Set<VTenantPath> pathSet) {
+       if (dependNodes == null) {
+           dependNodes = new HashSet<VTenantPath>();
+       }
+       dependNodes.addAll(pathSet);
+   }
+
+    /**
+     * Add the specified {@link VNodeRoute} to the tail of the virtual packet
+     * routing path.
+     *
+     * @param vroute  A {@link VNodeRoute} instance.
+     */
+    public void addVirtualRoute(VNodeRoute vroute) {
+        virtualRoute.add(vroute);
+    }
+
+    /**
+     * Add the specified sequence of {@link VNodeRoute} to the tail of the
+     * virtual packet routing path.
+     *
+     * @param c  A collection of {@link VNodeRoute} instances.
+     */
+    public void addVirtualRoute(Collection<VNodeRoute> c) {
+        virtualRoute.addAll(c);
+    }
+
+    /**
+     * Clear virtual packet route for this VTN flow.
+     *
+     * <p>
+     *   This method is used only for testing.
+     * </p>
+     */
+    public void clearVirtualRoute() {
+        virtualRoute.clear();
+    }
+
+    /**
+     * Set the specified virtual node as the egress node of this VTN flow.
+     *
+     * <p>
+     *   This method must be called after virtual packet routing path is
+     *   configured by {@link #addVirtualRoute(Collection)}.
+     * </p>
+     *
+     * @param path  A {@link VNodePath} instance which represents the location
+     *              of the egress node. Specifying {@code null} means that
+     *              this VTN flow always discards packets.
+     */
+    public void setEgressVNodePath(VNodePath path) {
+        if (path == null) {
+            // Append an empty route which represents a negative flow.
+            virtualRoute.add(new VNodeRoute());
+            return;
+        }
+
+        int sz = virtualRoute.size();
+        if (sz > 1) {
+            // A VNodePath which specifies the virtual mapping which
+            // established the egress flow must be always configured in the
+            // last VNodeRoute element of the virtual packet routing path.
+            int lastIndex = sz - 1;
+            VNodeRoute last = virtualRoute.get(lastIndex);
+            VNodePath lastPath = last.getPath();
+            if (path.equals(lastPath)) {
+                // The last route element already points the specified virtual
+                // mapping.
+                return;
+            }
+
+            if ((path instanceof VBridgeMapPath) && lastPath.contains(path)) {
+                // A path to the virtual mapping must be configured in the last
+                // virtual packet route.
+                VNodeRoute newLast = new VNodeRoute(path, last.getReason());
+                virtualRoute.set(lastIndex, newLast);
+                return;
+            }
+        }
+
+        virtualRoute.add(new VNodeRoute(path, Reason.FORWARDED));
     }
 
     /**
@@ -238,9 +366,18 @@ public class VTNFlow implements Serializable {
      *          virtual node specified by {@code path}.
      */
     public boolean dependsOn(VTenantPath path) {
-        return (path != null &&
-                (path.contains(ingressPath) || path.contains(egressPath) ||
-                 dependNodes.contains(path)));
+        if (path != null) {
+            for (VNodeRoute vroute: virtualRoute) {
+                if (path.contains(vroute.getPath())) {
+                    return true;
+                }
+            }
+            if (dependNodes != null) {
+                return dependNodes.contains(path);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -270,18 +407,13 @@ public class VTNFlow implements Serializable {
      * Return a path to virtual node which maps the ingress flow.
      *
      * @return  A path to virtual node which maps the ingress flow.
+     *          {@code null} is returned if this flow does not contain any
+     *          flow.
      */
-    public VBridgePath getIngressPath() {
-        return ingressPath;
-    }
-
-    /**
-     * Set a path to virtual node which maps the ingress flow.
-     *
-     * @param path  A path to virtual node which maps the ingress flow.
-     */
-    public void setIngressPath(VBridgePath path) {
-        ingressPath = path;
+    public VNodePath getIngressPath() {
+        return (virtualRoute.isEmpty())
+            ? null
+            : virtualRoute.get(0).getPath();
     }
 
     /**
@@ -291,17 +423,9 @@ public class VTNFlow implements Serializable {
      *          {@code null} is returned if this flow does not contain a
      *          egress flow.
      */
-    public VBridgePath getEgressPath() {
-        return egressPath;
-    }
-
-    /**
-     * Set a path to virtual node which maps the egress flow.
-     *
-     * @param path  A path to virtual node which maps the egress flow.
-     */
-    public void setEgressPath(VBridgePath path) {
-        egressPath = path;
+    public VNodePath getEgressPath() {
+        int sz = virtualRoute.size();
+        return (sz > 0) ? virtualRoute.get(sz - 1).getPath() : null;
     }
 
     /**
@@ -468,6 +592,24 @@ public class VTNFlow implements Serializable {
     }
 
     /**
+     * Get a {@link L2Host} instance which represents the incoming host
+     * address.
+     *
+     * @return  A {@link L2Host} instance which represents the incoming host
+     *          address. {@code null} is returned if this VTN flow contains
+     *          no flow entry.
+     */
+    public L2Host getSourceHost() {
+        if (flowEntries.isEmpty()) {
+            return null;
+        }
+
+        // Check ingress flow.
+        Match match = flowEntries.get(0).getFlow().getMatch();
+        return getSourceHost(match);
+    }
+
+    /**
      * Get two {@link L2Host} instance which represents host information
      * matched by edge flow entries.
      *
@@ -488,22 +630,80 @@ public class VTNFlow implements Serializable {
         // DL_SRC, DL_DST, IN_PORT, and DL_VLAN fields should be contained
         // in the ingress flow.
         Match match = flowEntries.get(0).getFlow().getMatch();
-        MatchField mf = match.getField(MatchType.IN_PORT);
-        NodeConnector inPort = (NodeConnector)mf.getValue();
-        mf = match.getField(MatchType.DL_SRC);
-        byte[] src = (byte[])mf.getValue();
-        mf = match.getField(MatchType.DL_VLAN);
-        short vlan = ((Short)mf.getValue()).shortValue();
-        L2Host in = new L2Host(src, vlan, inPort);
-
-        mf = match.getField(MatchType.DL_DST);
+        L2Host in = getSourceHost(match);
+        MatchField mf = match.getField(MatchType.DL_DST);
         byte[] dst = (byte[])mf.getValue();
+        short vlan = in.getHost().getVlan();
 
         // Check egress flow.
         List<Action> actions = flowEntries.get(sz - 1).getFlow().getActions();
         L2Host out = getDestinationHost(actions, dst, vlan);
 
         return new ObjectPair<L2Host, L2Host>(in, out);
+    }
+
+    /**
+     * Return a {@link DataFlow} instance which represents information about
+     * this VTN flow.
+     *
+     * @param mgr     VTN Manager service.
+     * @param detail  If {@code true} is specified, detailed information
+     *                is set into a returned {@link DataFlow} instance.
+     *                Otherwise summary of the data flow is set.
+     * @return  A {@link DataFlow} instance.
+     *          {@code null} is returned if this VTN flow does not contain
+     *          SAL flow.
+     */
+    public DataFlow getDataFlow(VTNManagerImpl mgr, boolean detail) {
+        int sz = flowEntries.size();
+        if (sz <= 0) {
+            return null;
+        }
+
+        // Determine ingress port.
+        // IN_PORT field should be contained in a flow entry.
+        FlowEntry ingress = flowEntries.get(0);
+        Flow iflow = ingress.getFlow();
+        MatchField mf = iflow.getMatch().getField(MatchType.IN_PORT);
+        NodeConnector inPort = (NodeConnector)mf.getValue();
+        PortLocation inLoc =
+            new PortLocation(inPort, mgr.getPortName(inPort));
+
+        // Flow timeout is configured only in the ingress flow.
+        short idle = iflow.getIdleTimeout();
+        short hard = iflow.getHardTimeout();
+
+        // Determine egress port.
+        Flow eflow = flowEntries.get(sz - 1).getFlow();
+        NodeConnector outPort = getOutputPort(eflow.getActions());
+        PortLocation outLoc = (outPort == null)
+            ? null
+            : new PortLocation(outPort, mgr.getPortName(outPort));
+
+        VNodePath inPath = getIngressPath();
+        VNodePath outPath = getEgressPath();
+        DataFlow df = new DataFlow(groupId.getEventId(), creationTime,
+                                   idle, hard, inPath, inLoc, outPath, outLoc);
+
+        if (detail) {
+            // Set information about ingress and egress flow entries.
+            df.setEdgeFlows(iflow, eflow);
+
+            // Set virtual packet route of the data flow.
+            df.setVirtualRoute(virtualRoute);
+
+            // Determine physical packet route of the data flow.
+            for (FlowEntry fent: flowEntries) {
+                NodeRoute nroute = getNodeRoute(mgr, fent.getFlow());
+                if (nroute == null) {
+                    df.clearPhysicalRoute();
+                    break;
+                }
+                df.addPhysicalRoute(nroute);
+            }
+        }
+
+        return df;
     }
 
     /**
@@ -552,6 +752,7 @@ public class VTNFlow implements Serializable {
         return -1;
     }
 
+
     /**
      * Determine the destination host configured in the specified list of
      * flow actions.
@@ -594,6 +795,75 @@ public class VTNFlow implements Serializable {
         }
 
         return (port == null) ? null : new L2Host(dst, vlan, port);
+    }
+
+    /**
+     * Determine the physical switch port configured in the first OUTPUT
+     * in the given action list.
+     *
+     * @param actions  A list of SAL actions.
+     * @return  A {@link NodeConnector} instance if found.
+     *          {@code null} if not found.
+     */
+    private NodeConnector getOutputPort(List<Action> actions) {
+        if (actions != null) {
+            for (Action action: actions) {
+                if (action instanceof Output) {
+                    Output out = (Output)action;
+                    return out.getPort();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Return a {@link NodeRoute} instance which represents the physical packet
+     * routing configured by the given SAL flow.
+     *
+     * @param mgr   VTN Manager service.
+     * @param flow  A SAL flow.
+     * @return  A {@link NodeRoute} instance.
+     *          {@code null} is returned if the given SAL flow discards the
+     *          packet.
+     */
+    private NodeRoute getNodeRoute(VTNManagerImpl mgr, Flow flow) {
+        // Determine egress port.
+        NodeConnector out = getOutputPort(flow.getActions());
+        if (out == null) {
+            return null;
+        }
+
+        // Determine ingress port.
+        // IN_PORT field should be contained in a flow entry.
+        MatchField mf = flow.getMatch().getField(MatchType.IN_PORT);
+        NodeConnector in = (NodeConnector)mf.getValue();
+        String inName = mgr.getPortName(in);
+        String outName = mgr.getPortName(out);
+
+        return new NodeRoute(in, inName, out, outName);
+    }
+
+    /**
+     * Get a {@link L2Host} instance which represents the incoming host
+     * address.
+     *
+     * @param match  A flow match configured in the ingress flow.
+     * @return  A {@link L2Host} instance which represents the incoming host
+     *          address.
+     */
+    private L2Host getSourceHost(Match match) {
+        // DL_SRC, IN_PORT, and DL_VLAN fields should be contained in the
+        // ingress flow.
+        MatchField mf = match.getField(MatchType.IN_PORT);
+        NodeConnector inPort = (NodeConnector)mf.getValue();
+        mf = match.getField(MatchType.DL_SRC);
+        byte[] src = (byte[])mf.getValue();
+        mf = match.getField(MatchType.DL_VLAN);
+        short vlan = ((Short)mf.getValue()).shortValue();
+
+        return new L2Host(src, vlan, inPort);
     }
 
     /**

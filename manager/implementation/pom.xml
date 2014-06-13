@@ -92,12 +92,17 @@
               org.opendaylight.controller.sal.match,
               org.opendaylight.controller.sal.packet,
               org.opendaylight.controller.sal.packet.address,
+              org.opendaylight.controller.sal.reader,
               org.opendaylight.controller.sal.routing,
               org.opendaylight.controller.sal.topology,
               org.opendaylight.controller.sal.utils,
+              org.opendaylight.controller.statisticsmanager,
               org.opendaylight.controller.switchmanager,
               org.opendaylight.controller.topologymanager,
               org.opendaylight.vtn.manager,
+              org.opendaylight.vtn.manager.flow,
+              org.opendaylight.vtn.manager.flow.action,
+              org.opendaylight.vtn.manager.flow.cond,
               org.apache.felix.dm,
               org.slf4j,
               org.osgi.framework
@@ -162,6 +167,11 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>connectionmanager</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>statisticsmanager</artifactId>
     </dependency>
   </dependencies>
 </project>

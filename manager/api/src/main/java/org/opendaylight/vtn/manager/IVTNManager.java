@@ -13,6 +13,9 @@ import java.net.InetAddress;
 import java.util.List;
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.flow.DataFlow;
+import org.opendaylight.vtn.manager.flow.DataFlowFilter;
+
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
@@ -2243,4 +2246,120 @@ public interface IVTNManager {
      *   </dl>
      */
     Status flushMacEntries(VBridgePath path);
+
+    /**
+     * Return information about all data flows present in the specified
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path    A {@link VTenantPath} object that specifies the position
+     *                of the VTN.
+     * @param mode    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
+     *                instance which specifies behavior of this method.
+     * @param filter  If a {@link DataFlowFilter} instance is specified,
+     *                only data flows that meet the condition specified by
+     *                {@link DataFlowFilter} instance is returned.
+     *                All data flows in the VTN is returned if {@code null}
+     *                is specified.
+     * @return  A list of {@link DataFlow} instances which represents
+     *          information about data flows.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path} or {@code mode}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
+                                DataFlowFilter filter)
+        throws VTNException;
+
+    /**
+     * Return information about the specified data flow in the
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path    A {@link VTenantPath} object that specifies the position
+     *                of the VTN.
+     * @param flowId  An identifier of the data flow.
+     * @param mode    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
+     *                instance which specifies behavior of this method.
+     * @return  A {@link DataFlow} instance which represents information
+     *          about the specified data flow.
+     *          {@code null} is returned if the specified data flow was not
+     *          found.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code flowId} or
+     *           {@code mode}.
+     *         </li>
+     *         <li>
+     *           An invalid flow identifier is passed to {@code flowId}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    DataFlow getDataFlow(VTenantPath path, long flowId, DataFlow.Mode mode)
+        throws VTNException;
+
+    /**
+     * Return the number of data flows present in the specified
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path  A {@link VTenantPath} object that specifies the position
+     *              of the VTN.
+     * @return  The number of data flows present in the specified VTN.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    int getDataFlowCount(VTenantPath path) throws VTNException;
 }

@@ -18,6 +18,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.core.NodeConnector;
+
 /**
  * {@code SwitchPort} class describes the location of port of physical switch.
  *
@@ -53,7 +55,7 @@ public class SwitchPort implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2599650909042057330L;
+    private static final long serialVersionUID = -6749678358471810294L;
 
     /**
      * The name of the physical switch port.
@@ -213,6 +215,24 @@ public class SwitchPort implements Serializable {
         this.name = name;
         this.type = type;
         this.id = id;
+    }
+
+    /**
+     * Construct a new {@code SwitchPort} instance which represents the
+     * location of the specified switch port.
+     *
+     * @param nc    A {@link NodeConnector} instance corresponding to the
+     *              switch port.
+     * @param name  The name of the switch port specified by {@code nc}.
+     *              {@code null} means that the port name is unavailable.
+     * @throws NullPointerException
+     *    {@code nc} is {@code null}.
+     * @since  Helium
+     */
+    public SwitchPort(NodeConnector nc, String name) {
+        this.name = name;
+        this.type = nc.getType();
+        this.id = nc.getNodeConnectorIDString();
     }
 
     /**

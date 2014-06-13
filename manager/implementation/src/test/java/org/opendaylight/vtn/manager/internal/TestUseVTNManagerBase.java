@@ -941,24 +941,63 @@ public class TestUseVTNManagerBase extends TestBase {
      * Added FlowEntry matches to IN_PORT and DL_VLAN and have action
      * output to port.
      *
-     * @param   flow        A {@link VTNFlow}.
-     * @param   inPort      An ingress {@link NodeConnector}.
-     * @param   inVlan      An incoming VLAN ID.
-     * @param   outPort     An outgoing {@link NodeConnector}.
-     * @param   priority    A priority of {@link FlowEntry}.
+     * @param mgr       VTN Manager service.
+     * @param flow      A {@link VTNFlow}.
+     * @param inPort    An ingress {@link NodeConnector}.
+     * @param src       A source MAC address.
+     * @param inVlan    An incoming VLAN ID.
+     * @param outPort   An outgoing {@link NodeConnector}.
+     * @param dst       A destination MAC address.
+     * @param priority  A priority of {@link FlowEntry}.
      * @return {@link VTNFlow}.
      */
     protected VTNFlow addFlowEntry(VTNManagerImpl mgr, VTNFlow flow,
-            NodeConnector inPort, short inVlan, NodeConnector outPort,
-            int priority) {
+                                   NodeConnector inPort, byte[] src,
+                                   short inVlan, NodeConnector outPort,
+                                   byte[] dst, int priority) {
         Match match = new Match();
         match.setField(MatchType.IN_PORT, inPort);
         match.setField(MatchType.DL_VLAN, inVlan);
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outPort.getNode());
         actions.addOutput(outPort);
         flow.addFlow(mgr, match, actions, priority);
 
         return flow;
+    }
+
+    /**
+     * Add FlowEntry to VTNFlow.
+     * Added FlowEntry matches to IN_PORT and DL_VLAN and have action
+     * output to port.
+     *
+     * <p>
+     *   Fixed MAC address is used for source and destination MAC address.
+     * </p>
+     *
+     * @param mgr       VTN Manager service.
+     * @param flow      A {@link VTNFlow}.
+     * @param inPort    An ingress {@link NodeConnector}.
+     * @param inVlan    An incoming VLAN ID.
+     * @param outPort   An outgoing {@link NodeConnector}.
+     * @param priority  A priority of {@link FlowEntry}.
+     * @return {@link VTNFlow}.
+     */
+    protected VTNFlow addFlowEntry(VTNManagerImpl mgr, VTNFlow flow,
+                                   NodeConnector inPort, short inVlan,
+                                   NodeConnector outPort, int priority) {
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
+
+        return addFlowEntry(mgr, flow, inPort, src, inVlan, outPort, dst,
+                            priority);
     }
 
     /**

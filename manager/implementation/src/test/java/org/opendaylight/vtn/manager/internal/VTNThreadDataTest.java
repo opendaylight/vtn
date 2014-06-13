@@ -89,11 +89,23 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         int numEntries1 = 0;
         int numEntries2 = 0;
         VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
+        short vlan = 0;
         for (NodeConnector innc : ncset0) {
             VTNFlow flow = fdb.create(vtnMgr);
 
             Match match = new Match();
             match.setField(MatchType.IN_PORT, innc);
+            match.setField(MatchType.DL_SRC, src);
+            match.setField(MatchType.DL_DST, dst);
+            match.setField(MatchType.DL_VLAN, vlan);
             ActionList actions = new ActionList(innc.getNode());
             actions.addOutput(outnc);
             flow.addFlow(vtnMgr, match, actions, pri);

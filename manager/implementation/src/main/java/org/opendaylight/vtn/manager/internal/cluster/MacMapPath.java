@@ -25,7 +25,7 @@ import org.opendaylight.vtn.manager.VBridgePath;
  *   class.
  * </p>
  */
-public class MacMapPath extends VBridgePath {
+public class MacMapPath extends VBridgeMapPath {
     /**
      * Version number for serialization.
      */
@@ -38,6 +38,6 @@ public class MacMapPath extends VBridgePath {
      * @throws NullPointerException  {@code bridgePath} is {@code null}.
      */
     public MacMapPath(VBridgePath bridgePath) {
-        super(bridgePath.getTenantName(), bridgePath.getBridgeName());
+        super(bridgePath);
     }
 }

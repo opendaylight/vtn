@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.Map;
 
+import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.controller.sal.core.Bandwidth;
@@ -143,6 +144,57 @@ public final class NodeUtils {
         Property bw =
             swMgr.getNodeConnectorProp(nc, Bandwidth.BandwidthPropName);
         return (bw == null);
+    }
+
+    /**
+     * Find a {@link NodeConnector} instance that meets the specified
+     * condition.
+     *
+     * @param mgr      VTN Manager service.
+     * @param node     A {@link Node} instance corresponding to a physical
+     *                 switch.
+     * @param port     A {@link SwitchPort} instance which specifies the
+     *                 condition to select switch port.
+     * @return  A {@link NodeConnector} instance if found.
+     *          {@code null} is returned if not found.
+     */
+    public static NodeConnector findPort(VTNManagerImpl mgr, Node node,
+                                         SwitchPort port) {
+        if (!mgr.exists(node)) {
+            return null;
+        }
+
+        ISwitchManager swMgr = mgr.getSwitchManager();
+        NodeConnector target = null;
+        String type = port.getType();
+        String id = port.getId();
+        if (type != null && id != null) {
+            // Try to construct a NodeConnector instance.
+            // This returns null if invalid parameter is specified.
+            target = NodeConnector.fromStringNoNode(type, id, node);
+            if (target == null) {
+                return null;
+            }
+        }
+
+        String name = port.getName();
+        if (name != null) {
+            // Search for a switch port by its name.
+            NodeConnector nc = swMgr.getNodeConnector(node, name);
+            if (nc == null || isSpecial(swMgr, nc, null)) {
+                return null;
+            }
+            if (target != null && !target.equals(nc)) {
+                nc = null;
+            }
+            return nc;
+        }
+
+        // Ensure that the detected NodeConnector exists.
+        if (target != null && !mgr.exists(target)) {
+            target = null;
+        }
+        return target;
     }
 
     /**

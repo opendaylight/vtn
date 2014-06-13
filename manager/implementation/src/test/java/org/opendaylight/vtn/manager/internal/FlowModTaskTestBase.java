@@ -420,27 +420,4 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         resMgr.setClusterGlobalService(cls);
         resMgr.init(cmp);
     }
-
-    /**
-     * Add {@link FlowEntry} to {@link VTNFlow}.
-     *
-     * @param   flow        A {@link VTNFlow}.
-     * @param   inPort      An ingress {@link NodeConnector}.
-     * @param   inVlan      An incoming VLAN ID.
-     * @param   outPort     An outgoing {@link NodeConnector}.
-     * @param   priority    A priority of {@link FlowEntry}.
-     * @return {@link VTNFlow}.
-     */
-    protected VTNFlow addFlowEntry(VTNManagerImpl mgr, VTNFlow flow,
-            NodeConnector inPort, short inVlan, NodeConnector outPort,
-            int priority) {
-        Match match = new Match();
-        match.setField(MatchType.IN_PORT, inPort);
-        match.setField(MatchType.DL_VLAN, inVlan);
-        ActionList actions = new ActionList(outPort.getNode());
-        actions.addOutput(outPort);
-        flow.addFlow(mgr, match, actions, priority);
-
-        return flow;
-    }
 }

@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
@@ -57,9 +58,14 @@ public class VTNFlowDatabase {
 
     /**
      * Flow entries in the VTN indexed by the name of the flow entry group.
+     *
+     * <p>
+     *   A cluster event ID configured in {@link FlowGroupId} is used as the
+     *   map key.
+     * </p>
      */
-    private final Map<FlowGroupId, VTNFlow>  groupFlows =
-        new HashMap<FlowGroupId, VTNFlow>();
+    private final Map<Long, VTNFlow>  groupFlows =
+        new HashMap<Long, VTNFlow>();
 
     /**
      * Flow entries in the VTN indexed by related node.
@@ -72,6 +78,13 @@ public class VTNFlowDatabase {
      */
     private final Map<NodeConnector, Set<VTNFlow>>  portFlows =
         new HashMap<NodeConnector, Set<VTNFlow>>();
+
+    /**
+     * Flow entries in the VTN indexed by the source host, which is represented
+     * by a pair of MAC address and VLAN ID.
+     */
+    private final Map<MacVlan, Set<VTNFlow>>  sourceHostFlows =
+        new HashMap<MacVlan, Set<VTNFlow>>();
 
     /**
      * Fix broken flow entry originated by Open vSwitch.
@@ -278,9 +291,10 @@ public class VTNFlowDatabase {
 
         // Remove this VTN flow from the database and the cluster cache.
         FlowGroupId gid = vflow.getGroupId();
-        groupFlows.remove(gid);
+        groupFlows.remove(gid.getEventId());
         removeNodeIndex(vflow);
         removePortIndex(vflow);
+        removeSourceHostIndex(vflow);
 
         ListIterator<FlowEntry> it = vflow.getFlowEntries().listIterator();
         if (!it.hasNext()) {
@@ -322,12 +336,13 @@ public class VTNFlowDatabase {
      * @param gid  Identifier of the flow entry group.
      */
     public synchronized void flowRemoved(VTNManagerImpl mgr, FlowGroupId gid) {
-        VTNFlow vflow = groupFlows.remove(gid);
+        VTNFlow vflow = groupFlows.remove(gid.getEventId());
         if (vflow != null) {
             // Clean up indices.
             removeFlowIndex(vflow);
             removeNodeIndex(vflow);
             removePortIndex(vflow);
+            removeSourceHostIndex(vflow);
         }
     }
 
@@ -433,9 +448,10 @@ public class VTNFlowDatabase {
             }
 
             // Remove this VTN flow from the database.
-            groupFlows.remove(gid);
+            groupFlows.remove(gid.getEventId());
             removeFlowIndex(vflow);
             removePortIndex(vflow);
+            removeSourceHostIndex(vflow);
             it.remove();
 
             // Collect flow entries to be uninstalled.
@@ -531,9 +547,10 @@ public class VTNFlowDatabase {
             }
 
             // Remove this VTN flow from the database.
-            groupFlows.remove(gid);
+            groupFlows.remove(gid.getEventId());
             removeFlowIndex(vflow);
             removeNodeIndex(vflow);
+            removeSourceHostIndex(vflow);
             it.remove();
 
             // Collect flow entries to be uninstalled.
@@ -604,9 +621,10 @@ public class VTNFlowDatabase {
                 }
 
                 // Remove this VTN flow from the database.
-                groupFlows.remove(gid);
+                groupFlows.remove(gid.getEventId());
                 removeFlowIndex(vflow);
                 removeNodeIndex(vflow);
+                removeSourceHostIndex(vflow);
                 it.remove();
 
                 // Collect flow entries to be uninstalled.
@@ -679,9 +697,10 @@ public class VTNFlowDatabase {
                 }
 
                 // Remove this VTN flow from the database.
-                groupFlows.remove(gid);
+                groupFlows.remove(gid.getEventId());
                 removeNodeIndex(vflow);
                 removePortIndex(vflow);
+                removeSourceHostIndex(vflow);
                 it.remove();
 
                 // Collect flow entries to be uninstalled.
@@ -705,13 +724,14 @@ public class VTNFlowDatabase {
     public synchronized boolean createIndex(VTNManagerImpl mgr, VTNFlow vflow) {
         // Create index by the group name.
         FlowGroupId gid = vflow.getGroupId();
-        VTNFlow old = groupFlows.put(gid, vflow);
+        Long flowId = Long.valueOf(gid.getEventId());
+        VTNFlow old = groupFlows.put(flowId, vflow);
         if (old != null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: VTN flow is already indexed: group={}",
                           mgr.getContainerName(), tenantName, gid);
             }
-            groupFlows.put(gid, old);
+            groupFlows.put(flowId, old);
             return false;
         }
 
@@ -725,7 +745,7 @@ public class VTNFlowDatabase {
                           ingress);
             }
             vtnFlows.put(ingress, old);
-            groupFlows.remove(gid);
+            groupFlows.remove(flowId);
             return false;
         }
 
@@ -746,6 +766,16 @@ public class VTNFlowDatabase {
             }
             vflows.add(vflow);
         }
+
+        // Create index by the source host.
+        L2Host src = vflow.getSourceHost();
+        MacVlan mvlan = src.getHost();
+        Set<VTNFlow> vflows = sourceHostFlows.get(mvlan);
+        if (vflows == null) {
+            vflows = new HashSet<VTNFlow>();
+            sourceHostFlows.put(mvlan, vflows);
+        }
+        vflows.add(vflow);
 
         return true;
     }
@@ -779,6 +809,7 @@ public class VTNFlowDatabase {
         groupFlows.clear();
         nodeFlows.clear();
         portFlows.clear();
+        sourceHostFlows.clear();
 
         // Uninstall flow entries in background.
         return collector.uninstall(mgr);
@@ -806,14 +837,94 @@ public class VTNFlowDatabase {
      */
     public synchronized boolean removeIndex(VTNManagerImpl mgr, VTNFlow vflow) {
         FlowGroupId gid = vflow.getGroupId();
-        if (groupFlows.remove(gid) != null) {
+        if (groupFlows.remove(gid.getEventId()) != null) {
             removeFlowIndex(vflow);
             removeNodeIndex(vflow);
             removePortIndex(vflow);
+            removeSourceHostIndex(vflow);
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Return the number of VTN flows.
+     *
+     * @return  The number of VTN flows.
+     */
+    public synchronized int getFlowCount() {
+        return vtnFlows.size();
+    }
+
+    /**
+     * Return information about all VTN flows present in the VTN.
+     *
+     * @param mgr       VTN Manager service.
+     * @param streader  If a {@link StatsReader} instance is specified,
+     *                  this method returns detailed information about the VTN
+     *                  flow including statistics information.
+     * @param filter    A {@link DataFlowFilterImpl} instance which selects
+     *                  data flows to be returned.
+     *                  All data flows will be selected if {@code null} is
+     *                  specified.
+     * @return  A list of {@link DataFlow} instances.
+     */
+    public List<DataFlow> getFlows(VTNManagerImpl mgr, StatsReader streader,
+                                   DataFlowFilterImpl filter) {
+        if (filter.isNotMatch()) {
+            // No data flow should be selected.
+            return new ArrayList<DataFlow>(0);
+        }
+
+        boolean detail = (streader != null);
+        List<VTNFlow> flist = getIndexedFlows(filter);
+        List<DataFlow> list = new ArrayList<DataFlow>(flist.size());
+        for (VTNFlow vflow: flist) {
+            if (filter.select(vflow)) {
+                DataFlow df = vflow.getDataFlow(mgr, detail);
+                if (detail) {
+                    FlowEntry fent = vflow.getFlowEntries().get(0);
+                    df.setStatistics(streader.get(fent));
+                }
+                list.add(df);
+            }
+        }
+
+        return list;
+    }
+
+    /**
+     * Return information about the specified VTN flow present in the VTN.
+     *
+     * @param mgr       VTN Manager service.
+     * @param flowId    An identifier which specifies the VTN flow.
+     * @param streader  If a {@link StatsReader} instance is specified,
+     *                  this method returns detailed information about the VTN
+     *                  flow including statistics information.
+     *                  If {@code null} is specified, this method returns
+     *                  summarized information.
+     * @return  A {@link DataFlow} instance.
+     *          {@code null} is returned if the VTN flow was not found.
+     */
+    public DataFlow getFlow(VTNManagerImpl mgr, long flowId,
+                            StatsReader streader) {
+        boolean detail = (streader != null);
+        VTNFlow vflow;
+        synchronized (this) {
+            vflow = groupFlows.get(flowId);
+            if (vflow == null) {
+                return null;
+            }
+        }
+
+        DataFlow df = vflow.getDataFlow(mgr, detail);
+        if (detail) {
+            FlowEntry fent = vflow.getFlowEntries().get(0);
+            df.setStatistics(streader.get(fent));
+        }
+
+        return df;
     }
 
     /**
@@ -860,5 +971,58 @@ public class VTNFlowDatabase {
                 }
             }
         }
+    }
+
+    /**
+     * Remove the given VTN flow from source host index.
+     *
+     * @param vflow  A VTN flow.
+     */
+    private synchronized void removeSourceHostIndex(VTNFlow vflow) {
+        L2Host host = vflow.getSourceHost();
+        if (host != null) {
+            MacVlan mvlan = host.getHost();
+            Set<VTNFlow> vflows = sourceHostFlows.get(mvlan);
+            if (vflows != null) {
+                vflows.remove(vflow);
+                if (vflows.isEmpty()) {
+                    sourceHostFlows.remove(mvlan);
+                }
+            }
+        }
+    }
+
+    /**
+     * Return a list of VTN flows indexed by the index specified by
+     * {@link DataFlowFilterImpl} instance.
+     *
+     * @param filter  A {@link DataFlowFilterImpl} instance.
+     * @return  A list of {@link VTNFlow} instance.
+     */
+    private synchronized List<VTNFlow>
+        getIndexedFlows(DataFlowFilterImpl filter) {
+        int index = filter.getIndexType();
+        Set<VTNFlow> fset;
+
+        if (index == DataFlowFilterImpl.INDEX_L2SRC) {
+            // Use source L2 host index.
+            MacVlan src = filter.getSourceHost();
+            fset = sourceHostFlows.get(src);
+        } else if (index == DataFlowFilterImpl.INDEX_PORT) {
+            // Use physical switch port index.
+            NodeConnector port = filter.getPort();
+            fset = portFlows.get(port);
+        } else if (index == DataFlowFilterImpl.INDEX_SWITCH) {
+            // Use physical switch index.
+            Node node = filter.getNode();
+            fset = nodeFlows.get(node);
+        } else {
+            // Scan all flows.
+            return new ArrayList<VTNFlow>(vtnFlows.values());
+        }
+
+        return (fset == null)
+            ? new ArrayList<VTNFlow>(0)
+            : new ArrayList<VTNFlow>(fset);
     }
 }

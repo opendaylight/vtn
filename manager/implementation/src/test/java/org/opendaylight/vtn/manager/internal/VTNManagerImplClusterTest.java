@@ -454,7 +454,18 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         NodeConnector outnc = NodeConnectorCreator
                 .createOFNodeConnector(Short.valueOf("2"), node);
         Match match = new Match();
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)0xfd, (byte)0xfe,
+        };
         match.setField(MatchType.IN_PORT, innc);
+        match.setField(MatchType.DL_VLAN, (short)0);
+        match.setField(MatchType.DL_SRC, src);
+        match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(node);
         actions.addOutput(outnc);
         flow.addFlow(vtnMgr, match, actions, 1);

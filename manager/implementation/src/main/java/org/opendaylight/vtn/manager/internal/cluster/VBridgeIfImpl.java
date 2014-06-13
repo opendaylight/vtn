@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -40,7 +41,6 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
 
 /**
  * Implementation of virtual interface attached to the virtual layer 2 bridge.
@@ -55,7 +55,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5856439559947334819L;
+    private static final long serialVersionUID = 837863564886135278L;
 
     /**
      * Logger instance.
@@ -340,7 +340,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         PortVlan pvlan = null;
 
         // Search for the node connector specified by the configuration.
-        NodeConnector nc = findNodeConnector(mgr, node, port);
+        NodeConnector nc = NodeUtils.findPort(mgr, node, port);
         if (nc != null) {
             if (nc.equals(mapped) && oldconf.getVlan() == vlan) {
                 // No need to change switch port mapping.
@@ -430,7 +430,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
                 // Try to establish port mapping.
                 Node node = pmconf.getNode();
                 SwitchPort port = pmconf.getPort();
-                NodeConnector nc = findNodeConnector(mgr, node, port);
+                NodeConnector nc = NodeUtils.findPort(mgr, node, port);
                 if (nc != null) {
                     mapPort(mgr, db, ist, nc, true);
                 }
@@ -975,51 +975,6 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     }
 
     /**
-     * Find a node connector that matches the specified condition.
-     *
-     * @param mgr      VTN Manager service.
-     * @param node     Node associated with the target switch.
-     * @param port     Switch port configuration.
-     * @return  A node connector that matches the specified condition.
-     *          {@code null} is returned if not found.
-     */
-    private NodeConnector findNodeConnector(VTNManagerImpl mgr, Node node,
-                                            SwitchPort port) {
-        if (!mgr.exists(node)) {
-            return null;
-        }
-
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        NodeConnector target = null;
-        String name = port.getName();
-        String type = port.getType();
-        String id = port.getId();
-        if (type != null && id != null) {
-            // This should never return null.
-            target = NodeConnector.fromStringNoNode(type, id, node);
-        }
-
-        if (name != null) {
-            // Search for a switch port by its name.
-            NodeConnector nc = swMgr.getNodeConnector(node, name);
-            if (nc == null || NodeUtils.isSpecial(swMgr, nc, null)) {
-                return null;
-            }
-            if (target != null && !target.equals(nc)) {
-                nc = null;
-            }
-            return nc;
-        }
-
-        assert target != null;
-        PortProperty pp = mgr.getPortProperty(target);
-        if (pp == null) {
-            target = null;
-        }
-        return target;
-    }
-
-    /**
      * Determine whether the node connector satisfies the condition specified
      * by the port map configuration.
      *
@@ -1257,5 +1212,16 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
     @Override
     public boolean isEnabled() {
         return ifConfig.getEnabled().booleanValue();
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which indicates the packet was
+     * mapped by the port mapping.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     */
+    @Override
+    public VNodeRoute getIngressRoute() {
+        return new VNodeRoute(ifPath, VNodeRoute.Reason.PORTMAPPED);
     }
 }

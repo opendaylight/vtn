@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
@@ -120,7 +120,7 @@ public final class MacMapCleaner
      *          corresponding to the specified host should be purged.
      */
     private boolean checkHost(MacVlan mvlan, NodeConnector port,
-                              VBridgePath mpath) {
+                              VNodePath mpath) {
         short vlan = mvlan.getVlan();
         PortVlan pvlan = new PortVlan(port, vlan);
         MapReference ref = resourceManager.getMapReference(pvlan);
@@ -243,7 +243,7 @@ public final class MacMapCleaner
         long mac = tent.getMacAddress();
         short vlan = tent.getVlan();
         NodeConnector port = tent.getPort();
-        VBridgePath path = tent.getEntryId().getMapPath();
+        VNodePath path = tent.getEntryId().getMapPath();
 
         return checkHost(new MacVlan(mac, vlan), port, path);
     }
