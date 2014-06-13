@@ -346,31 +346,16 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OVSDBInv
             return true;
         }
         if (newRow.getTableName().equals(Interface.NAME)) {
+            // We are NOT interested in Stats only updates
             Interface oldIntf = (Interface)oldRow;
-            if (oldIntf.getName() != null) {
-                return true;
-            }
-            if (oldIntf.getExternal_ids() != null) {
-                return true;
-            }
-            if (oldIntf.getMac() != null) {
-                return true;
-            }
-            if (oldIntf.getOfport() != null) {
-                return true;
-            }
-            if (oldIntf.getOptions() != null) {
-                return true;
-            }
-            if (oldIntf.getOther_config() != null) {
-                return true;
-            }
-            if (oldIntf.getType() != null) {
-                return true;
+            if (oldIntf.getName() == null && oldIntf.getExternal_ids() == null && oldIntf.getMac() == null &&
+                oldIntf.getOfport() == null && oldIntf.getOptions() == null && oldIntf.getOther_config() == null &&
+                oldIntf.getType() == null) {
+                LOG.trace("IGNORING Interface Update :{} ", newRow.toString());
+                return false;
             }
         }
-        LOG.trace("IGNORING Interface Update :{} ", newRow.toString());
-        return false;
+        return true;
     }
 
     /**
