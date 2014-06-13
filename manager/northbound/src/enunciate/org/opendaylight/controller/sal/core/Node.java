@@ -25,6 +25,13 @@ import javax.xml.bind.annotation.XmlRootElement;
  * <p>
  *   A node is identified by a pair of node type and node ID.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;"id": "00:00:00:00:00:00:00:01"
+ * }</pre>
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement

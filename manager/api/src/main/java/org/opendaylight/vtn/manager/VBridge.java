@@ -26,6 +26,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   passing {@code VBridge} object.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"name": "vbridge_1",
+ * &nbsp;&nbsp;"description": "Description about vBridge 1",
+ * &nbsp;&nbsp;"ageInterval": "600",
+ * &nbsp;&nbsp;"faults": "0",
+ * &nbsp;&nbsp;"state": "-1"
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#vBridge">vBridge</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

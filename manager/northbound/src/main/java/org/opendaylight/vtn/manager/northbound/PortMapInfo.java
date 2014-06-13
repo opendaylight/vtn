@@ -29,6 +29,25 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  *   This class is used to return information about the port mapping to
  *   REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"vlan": "100",
+ * &nbsp;&nbsp;"node": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "00:00:00:00:00:00:00:03"
+ * &nbsp;&nbsp;},
+ * &nbsp;&nbsp;"port": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"name": "port-1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "1"
+ * &nbsp;&nbsp;},
+ * &nbsp;&nbsp;"mapped": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "1"
+ * &nbsp;&nbsp;}
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "portmap")

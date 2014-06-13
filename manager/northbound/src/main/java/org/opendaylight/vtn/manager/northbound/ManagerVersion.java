@@ -27,6 +27,18 @@ import org.opendaylight.vtn.manager.BundleVersion;
  *   This class is used to return version information of the VTN Manager to
  *   REST client.
  * </p>
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"api": "1",
+ * &nbsp;&nbsp;"bundle": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"major": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"minor": "1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"micro": "0",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"qualifier": "SNAPSHOT"
+ * &nbsp;&nbsp;}
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "version")

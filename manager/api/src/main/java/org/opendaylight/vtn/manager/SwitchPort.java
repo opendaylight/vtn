@@ -36,6 +36,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   {@code SwitchPort} object.
  * </p>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;"id": "1",
+ * &nbsp;&nbsp;"name": "s1-eth1"
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#port-map">Port mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)

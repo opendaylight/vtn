@@ -20,6 +20,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
  * {@code IpAddress} class describes an IP address.
+ *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"address": "192.168.10.1"
+ * }</pre>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "inetAddress")

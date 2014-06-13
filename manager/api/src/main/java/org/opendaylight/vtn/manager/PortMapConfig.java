@@ -62,6 +62,21 @@ import org.opendaylight.controller.sal.core.Node;
  *   </li>
  * </ul>
  *
+ * <h4>Example JSON</h4>
+ * <pre class="prettyprint lang-json">
+ * {
+ * &nbsp;&nbsp;"vlan": 10,
+ * &nbsp;&nbsp;"node": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "00:00:00:00:00:00:00:01"
+ * &nbsp;&nbsp;},
+ * &nbsp;&nbsp;"port": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"type": "OF",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"id": "1",
+ * &nbsp;&nbsp;&nbsp;&nbsp;"name": "s1-eth1"
+ * &nbsp;&nbsp;}
+ * }</pre>
+ *
  * @see  <a href="package-summary.html#port-map">Port mapping</a>
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
