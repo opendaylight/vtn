@@ -52,11 +52,17 @@
         <configuration>
           <instructions>
             <Export-Package>
-              org.opendaylight.vtn.manager
+              org.opendaylight.vtn.manager,
+              org.opendaylight.vtn.manager.flow,
+              org.opendaylight.vtn.manager.flow.action,
+              org.opendaylight.vtn.manager.flow.cond
             </Export-Package>
             <Import-Package>
               org.opendaylight.controller.hosttracker.hostAware,
+              org.opendaylight.controller.sal.action,
               org.opendaylight.controller.sal.core,
+              org.opendaylight.controller.sal.flowprogrammer,
+              org.opendaylight.controller.sal.match,
               org.opendaylight.controller.sal.packet.address,
               org.opendaylight.controller.sal.utils,
               com.fasterxml.jackson.databind.annotation,

@@ -23,6 +23,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -620,7 +622,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
                 bn = "vbr";
             }
             VBridgeIfPath ipath = new VBridgeIfPath(tn, bn, "if");
-            flow.setIngressPath(ipath);
+            List<VNodeRoute> vroute = new ArrayList<VNodeRoute>();
+            vroute.add(new VNodeRoute(ipath, Reason.PORTMAPPED));
             edgePaths.add(ipath);
             vlan++;
             mac++;
@@ -631,8 +634,9 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
             assertNull(mvmap.put(ehost, outnc));
             VBridgePath bp = new VBridgePath("vtn_" + mac, "vbr");
             VlanMapPath vpath = new VlanMapPath(bp, "id");
-            flow.setEgressPath(vpath);
+            vroute.add(new VNodeRoute(vpath, Reason.FORWARDED));
             edgePaths.add(vpath);
+            flow.addVirtualRoute(vroute);
 
             ActionList actions = new ActionList(innc.getNode());
             actions.addOutput(outnc).addVlanId(vlan);

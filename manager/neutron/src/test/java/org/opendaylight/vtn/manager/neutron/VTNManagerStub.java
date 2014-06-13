@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.neutron;
 
 import java.net.InetAddress;
@@ -41,6 +42,7 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.flow.DataFlow;
 
 /**
  * Stub class for unit tests.
@@ -332,5 +334,21 @@ public class VTNManagerStub implements IVTNManager {
     @Override
     public Status flushMacEntries(VBridgePath path) {
         return null;
+    }
+
+    @Override
+    public List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode) {
+        return null;
+    }
+
+    @Override
+    public DataFlow getDataFlow(VTenantPath path, String flowId,
+                                DataFlow.Mode mode) {
+        return null;
+    }
+
+    @Override
+    public int getDataFlowCount(VTenantPath path) {
+        return 0;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,6 +44,7 @@ import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
 import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
+import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
@@ -232,6 +233,12 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setService(IDataPacketService.class).
                   setCallbacks("setDataPacketService",
                                "unsetDataPacketService").
+                  setRequired(true));
+
+            c.add(createContainerServiceDependency(containerName).
+                  setService(IStatisticsManager.class).
+                  setCallbacks("setStatisticsManager",
+                               "unsetStatisticsManager").
                   setRequired(true));
 
             // VTN manager can run without any host listener.

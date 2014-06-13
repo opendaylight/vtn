@@ -1186,6 +1186,11 @@
  *       IfIptoHost
  *     <dd style="margin-left: 2em;">
  *       This is used to refer the host information maintained in hosttracker.
+ *
+ *     <dt style="font-weight: bold; margin-top: 0.5em;">
+ *       IStatisticsManager
+ *     <dd style="margin-left: 2em;">
+ *       This is used to get flow statistics information. (Helium onwards)
  *   </dl>
  *
  *   <p>

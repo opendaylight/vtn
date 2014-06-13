@@ -63,6 +63,9 @@ public class FlowAddTask extends RemoteFlowModTask {
      */
     @Override
     protected boolean execute() {
+        // Fix up the VTN flow.
+        vtnFlow.fixUp();
+
         // This class expects that the given VTN flow has at least one flow
         // entry.
         List<FlowEntry> entries = new ArrayList<FlowEntry>();

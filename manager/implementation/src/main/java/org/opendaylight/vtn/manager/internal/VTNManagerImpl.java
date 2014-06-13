@@ -69,6 +69,7 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -140,6 +141,7 @@ import org.opendaylight.controller.sal.utils.ObjectWriter;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.topologymanager.ITopologyManager;
@@ -329,6 +331,11 @@ public class VTNManagerImpl
      * Data packet service instance.
      */
     private IDataPacketService  dataPacketService;
+
+    /**
+     * Statistics manager service.
+     */
+    private IStatisticsManager  statisticsManager;
 
     /**
      * Host tracker service instance.
@@ -1757,6 +1764,39 @@ public class VTNManagerImpl
     }
 
     /**
+     * Invoked when a statistics manager service is registered.
+     *
+     * @param service  Statistics manager service.
+     */
+    void setStatisticsManager(IStatisticsManager service) {
+        LOG.trace("{}: Set statistics manager service: {}", containerName,
+                  service);
+        statisticsManager = service;
+    }
+
+    /**
+     * Invoked when a statistics manager service is unregistered.
+     *
+     * @param service  Statistics manager service.
+     */
+    void unsetStatisticsManager(IStatisticsManager service) {
+        if (statisticsManager == service) {
+            LOG.trace("{}: Unset statistics manager service: {}",
+                      containerName, service);
+            statisticsManager = null;
+        }
+    }
+
+    /**
+     * Return statistics manager service instance.
+     *
+     * @return  Statistics manager service.
+     */
+    public IStatisticsManager getStatisticsManager() {
+        return statisticsManager;
+    }
+
+    /**
      * Invoked when a host tracker service is registered.
      *
      * @param service  Host tracker service.
@@ -2147,6 +2187,25 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return a VTN flow database for the VTN specified by the path.
+     *
+     * @param path  A {@link VTenantPath} object that specifies the position
+     *              of the VTN.
+     * @return  A VTN flow database.
+     * @throws VTNException  An error occurred.
+     */
+    private VTNFlowDatabase getTenantFlowDB(VTenantPath path)
+        throws VTNException {
+        String tenantName = getTenantName(path);
+        VTNFlowDatabase fdb = getTenantFlowDB(tenantName);
+        if (fdb == null) {
+            throw new VTNException(tenantNotFound(tenantName));
+        }
+
+        return fdb;
+    }
+
+    /**
      * Set remote flow modification request which wait for completion of flow
      * modification on remote cluster node.
      *
@@ -2336,6 +2395,20 @@ public class VTNManagerImpl
      */
     public PortProperty getPortProperty(NodeConnector nc) {
         return portDB.get(nc);
+    }
+
+    /**
+     * Return the name of the specified switch port.
+     *
+     * @param nc  A {@link NodeConnector} instance corresponding to the
+     *            physical switch port.
+     * @return  The name of the switch port.
+     *          {@code null} is returned if the port name could not be
+     *          determined.
+     */
+    public String getPortName(NodeConnector nc) {
+        PortProperty prop = portDB.get(nc);
+        return (prop == null) ? null : prop.getName();
     }
 
     /**
@@ -3990,6 +4063,31 @@ public class VTNManagerImpl
     }
 
     /**
+     * Create a {@link StatsReader} instance to read flow statistics.
+     *
+     * @param mode   A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
+     *               instance.
+     * @param cache  Specify {@code true} if you want to cache statistics in
+     *               a returned {@link StatsReader} instance.
+     * @return  A {@link StatsReader} instance.
+     *          {@code null} is returned if
+     *          {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode#SUMMARY}
+     *          is passed to {@code mode}.
+     * @throws VTNException   {@code mode} is {@code null}.
+     */
+    private StatsReader createStatsReader(DataFlow.Mode mode, boolean cache)
+        throws VTNException {
+        if (mode == DataFlow.Mode.SUMMARY) {
+            return null;
+        } else if (mode == null) {
+            throw new VTNException(argumentIsNull("Mode"));
+        }
+
+        boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
+        return new StatsReader(statisticsManager, update, cache);
+    }
+
+    /**
      * Put a new MAC address table entry to the cluster cache.
      *
      * <p>
@@ -5197,6 +5295,77 @@ public class VTNManagerImpl
         }
 
         return new Status(StatusCode.SUCCESS, null);
+    }
+
+    /**
+     * Return information about all data flows present in the specified VTN.
+     *
+     * @param path  A {@link VTenantPath} object that specifies the position
+     *              of the VTN.
+     * @param mode  A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
+     *              instance which specifies behavior of this method.
+     * @return  A list of {@link DataFlow} instances which represents
+     *          information about data flows.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode)
+        throws VTNException {
+        // We should not acquire lock here because succeeding method call may
+        // make requests to get flow statistics. Synchronization will be done
+        // by VTNFlowDatabase appropriately.
+        VTNFlowDatabase fdb = getTenantFlowDB(path);
+        StatsReader reader = createStatsReader(mode, true);
+        return fdb.getFlows(this, reader);
+    }
+
+    /**
+     * Return information about the specified data flow in the VTN.
+     *
+     * @param path    A {@link VTenantPath} object that specifies the position
+     *                of the VTN.
+     * @param flowId  An identifier of the data flow.
+     * @param mode    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
+     *                instance which specifies behavior of this method.
+     * @return  A {@link DataFlow} instance which represents information
+     *          about the specified data flow.
+     *          {@code null} is returned if the specified data flow was not
+     *          found.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public DataFlow getDataFlow(VTenantPath path, String flowId,
+                                DataFlow.Mode mode)
+        throws VTNException {
+        // Convert a string representation of flow ID into FlowGroupId.
+        if (flowId == null) {
+            throw new VTNException(argumentIsNull("Flow ID"));
+        }
+        FlowGroupId gid = FlowGroupId.fromString(flowId);
+        if (gid == null) {
+            return null;
+        }
+
+        // We should not acquire lock here because succeeding method call may
+        // make requests to get flow statistics. Synchronization will be done
+        // by VTNFlowDatabase appropriately.
+        VTNFlowDatabase fdb = getTenantFlowDB(path);
+        StatsReader reader = createStatsReader(mode, false);
+        return fdb.getFlow(this, gid, reader);
+    }
+
+    /**
+     * Return the number of data flows present in the specified VTN.
+     *
+     * @param path  A {@link VTenantPath} object that specifies the position
+     *              of the VTN.
+     * @return  The number of data flows present in the specified VTN.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public int getDataFlowCount(VTenantPath path) throws VTNException {
+        VTNFlowDatabase fdb = getTenantFlowDB(path);
+        return fdb.getFlowCount();
     }
 
     // IVTNFlowDebugger

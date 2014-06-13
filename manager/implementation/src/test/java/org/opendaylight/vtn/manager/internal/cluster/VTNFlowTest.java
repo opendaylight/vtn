@@ -21,6 +21,8 @@ import org.junit.experimental.categories.Category;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
@@ -223,8 +225,11 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
         // Set node path associated with the ingress flow.
         assertNull(vflow.getIngressPath());
-        vflow.setIngressPath(srcpath);
+        assertNull(vflow.getEgressPath());
+        VNodeRoute ivr = new VNodeRoute(srcpath, Reason.PORTMAPPED);
+        vflow.addVirtualRoute(ivr);
         assertEquals(srcpath, vflow.getIngressPath());
+        assertEquals(srcpath, vflow.getEgressPath());
         for (VTenantPath path: srcPaths) {
             assertTrue(vflow.dependsOn(path));
         }
@@ -233,8 +238,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         }
 
         // Set node path associated with the egress flow.
-        assertNull(vflow.getEgressPath());
-        vflow.setEgressPath(dstpath);
+        vflow.setEgressVNodePath(dstpath);
+        assertEquals(srcpath, vflow.getIngressPath());
         assertEquals(dstpath, vflow.getEgressPath());
         for (VTenantPath path: srcDstPaths) {
             assertTrue(vflow.dependsOn(path));
@@ -510,8 +515,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             testEquals(setMulti, vflowMul1, vflowMul2);
 
             // Node paths must not affect object identify.
-            vflowMul2.setIngressPath(ipath);
-            vflowMul2.setEgressPath(epath);
+            List<VNodeRoute> vroute = new ArrayList<VNodeRoute>();
+            vroute.add(new VNodeRoute(ipath, Reason.VLANMAPPED));
+            vflowMul2.addVirtualRoute(vroute);
+            vflowMul2.setEgressVNodePath(epath);
             assertFalse(setMulti.add(vflowMul2));
         }
 
@@ -587,8 +594,13 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                                 new VBridgePath(tpath3, "b" + vlan);
                             VBridgeIfPath ipath =
                                 new VBridgeIfPath(bpath3, "if" + vlan);
-                            vflow.setIngressPath(vpath);
-                            vflow.setEgressPath(ipath);
+                            List<VNodeRoute> vroute =
+                                new ArrayList<VNodeRoute>();
+                            vroute.add(new VNodeRoute(vpath,
+                                                      Reason.VLANMAPPED));
+                            vroute.add(new VNodeRoute(ipath,
+                                                      Reason.FORWARDED));
+                            vflow.addVirtualRoute(vroute);
                             VTenantPath[] paths = {
                                 tpath0, tpath1,
                                 tpath2, bpath2, vpath,

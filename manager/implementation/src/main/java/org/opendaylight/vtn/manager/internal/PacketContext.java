@@ -12,11 +12,14 @@ package org.opendaylight.vtn.manager.internal;
 import java.net.InetAddress;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -108,19 +111,20 @@ public class PacketContext {
     private NodeConnector  outgoing;
 
     /**
-     * Set of virtual node paths which handles this packet.
+     * Set of virtual node paths to be associated with the data flow.
      */
     private final Set<VTenantPath>  virtualNodes = new HashSet<VTenantPath>();
 
     /**
-     * A path to a virtual node which maps incoming flow.
+     * A sequence of virtual packet routing.
      */
-    private VBridgePath  sourceNodePath;
+    private final Map<VNodePath, VNodeRoute>  virtualRoute =
+        new LinkedHashMap<VNodePath, VNodeRoute>();
 
     /**
-     * A path to a virtual node which maps outgoing flow.
+     * A path to the virtual node that established the egress flow.
      */
-    private VBridgePath  destinationNodePath;
+    private VNodePath  egressNodePath;
 
     /**
      * Construct a new packet context.
@@ -501,25 +505,32 @@ public class PacketContext {
     }
 
     /**
-     * Set a path to virtual node which maps incoming flow.
+     * Append the specified virtual node hop to the virtual packet route.
      *
-     * @param path  A virtual node path.
+     * @param vroute  A {@link VNodeRoute} instance which represents a
+     *                routing to the virtual node.
      */
-    public void setSourceNodePath(VBridgePath path) {
-        sourceNodePath = path;
+    public void addNodeRoute(VNodeRoute vroute) {
+        virtualRoute.put(vroute.getPath(), vroute);
     }
 
     /**
-     * Set a path to virtual node which maps outgoing flow.
+     * Set the location of the egress node.
      *
-     * @param path  A virtual node path.
+     * @param path    A {@link VNodePath} instance which represents the
+     *                location of the egress node.
      */
-    public void setDestinationNodePath(VBridgePath path) {
-        destinationNodePath = path;
+    public void setEgressVNodePath(VNodePath path) {
+        egressNodePath = path;
     }
 
     /**
-     * Record a virtual node which handled this packet.
+     * Record a virtual node to be associated with the data flow.
+     *
+     * <p>
+     *   Node that the virtual node on the packet routing path does not need
+     *   to be associated with the data flow by this method.
+     * </p>
      *
      * @param path  A virtual node path.
      */
@@ -534,9 +545,11 @@ public class PacketContext {
      * @param vflow  A VTN flow.
      */
     public void setFlowDependency(VTNFlow vflow) {
-        // Set relevant virtual nodes.
-        vflow.setIngressPath(sourceNodePath);
-        vflow.setEgressPath(destinationNodePath);
+        // Set the virtual packet routing path.
+        vflow.addVirtualRoute(virtualRoute.values());
+        vflow.setEgressVNodePath(egressNodePath);
+
+        // Set additional dependencies.
         vflow.addDependency(virtualNodes);
     }
 }

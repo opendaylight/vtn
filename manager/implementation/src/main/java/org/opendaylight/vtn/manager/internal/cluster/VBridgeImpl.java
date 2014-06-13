@@ -1193,7 +1193,7 @@ public final class VBridgeImpl implements Serializable {
             }
 
             if (bnode.isEnabled()) {
-                pctx.setSourceNodePath(bnode.getPath());
+                pctx.addNodeRoute(bnode.getIngressRoute());
                 handlePacket(mgr, pctx, bnode);
             } else if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: " +
@@ -1969,7 +1969,7 @@ public final class VBridgeImpl implements Serializable {
             return null;
         }
 
-        pctx.setDestinationNodePath(bnode.getPath());
+        pctx.setEgressVNodePath(bnode.getPath());
 
         return tent;
     }

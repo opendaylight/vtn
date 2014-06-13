@@ -38,10 +38,13 @@ import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -561,22 +564,31 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
                 // Set source node path.
                 pctx.setFlowDependency(flow);
+                assertEquals(null, flow.getIngressPath());
+                assertEquals(null, flow.getEgressPath());
                 for (VTenantPath p: allPaths) {
                     assertFalse(flow.dependsOn(p));
                 }
-                pctx.setSourceNodePath(ipath1);
+                flow.clearVirtualRoute();
+
+                pctx.addNodeRoute(new VNodeRoute(ipath1, Reason.PORTMAPPED));
                 pctx.setFlowDependency(flow);
+                assertEquals(ipath1, flow.getIngressPath());
+                assertEquals(null, flow.getEgressPath());
                 assertTrue(dependPaths.add(ipath1));
                 assertTrue(dependPaths.add(bpath1));
                 assertTrue(dependPaths.add(tpath));
                 for (VTenantPath p: allPaths) {
                     assertEquals(dependPaths.contains(p), flow.dependsOn(p));
                 }
+                flow.clearVirtualRoute();
 
                 // Set destination node path.
-                pctx.setDestinationNodePath(vpath1);
+                pctx.setEgressVNodePath(vpath1);
                 pctx.setFlowDependency(flow);
                 assertTrue(dependPaths.add(vpath1));
+                assertEquals(ipath1, flow.getIngressPath());
+                assertEquals(vpath1, flow.getEgressPath());
                 for (VTenantPath p: allPaths) {
                     assertEquals(dependPaths.contains(p), flow.dependsOn(p));
                 }
@@ -585,7 +597,10 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 for (VTenantPath pth: new VTenantPath[]{ipath2, vpath2}) {
                     assertFalse(flow.dependsOn(pth));
                     pctx.addNodePath(pth);
+                    flow.clearVirtualRoute();
                     pctx.setFlowDependency(flow);
+                    assertEquals(ipath1, flow.getIngressPath());
+                    assertEquals(vpath1, flow.getEgressPath());
                     assertTrue(dependPaths.add(pth));
                     for (VTenantPath p: allPaths) {
                         assertEquals(dependPaths.contains(p),
