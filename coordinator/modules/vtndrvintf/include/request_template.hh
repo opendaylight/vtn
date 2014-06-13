@@ -140,15 +140,8 @@ class KtRequestHandler : public KtHandler {
   populate_response_header(pfc::core::ipc::ServerSession &sess,
                          unc::driver::odl_drv_response_header_t &resp_hdr);
 
-  /**
-   * @brief  - This method initializes map for STDEF
-   * @retval -  void
-   **/
-  void initialize_map();
 
   KtHandler* get_handler(unc_key_type_t keytype);
-  std::map<unc_key_type_t, pfc_ipcstdef_t*> key_map_;
-  std::map<unc_key_type_t, pfc_ipcstdef_t*> val_map_;
   kt_handler_map* kt_map_;
 };
 
@@ -158,20 +151,7 @@ class KtRequestHandler : public KtHandler {
  **/
 
 template<typename key, typename val>
-KtRequestHandler<key, val>::~KtRequestHandler() {
-     std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_it;
-     for (map_it = key_map_.begin(); map_it != key_map_.end(); map_it++) {
-                delete map_it->second;
-                map_it->second = NULL;
-     }
-     for (map_it = val_map_.begin(); map_it != val_map_.end(); map_it++) {
-                delete map_it->second;
-                map_it->second = NULL;
-     }
-
-     key_map_.clear();
-     val_map_.clear();
-}
+KtRequestHandler<key, val>::~KtRequestHandler() {}
 
   /**
    * @brief    - This method retrieves the Key struct from ConfigNode pointer
@@ -946,9 +926,8 @@ KtRequestHandler<key_root_t, val_root_t>::handle_response(
 
         void* key = get_key_struct(cfgnode);
         void* val = get_val_struct(cfgnode);
-        initialize_map();
-        pfc_ipcstdef_t* key_sdf =key_map_.find(keytype)->second;
-        pfc_ipcstdef_t* val_sdf =val_map_.find(keytype)->second;
+        pfc_ipcstdef_t* key_sdf =VtnDrvIntf::key_map.find(keytype)->second;
+        pfc_ipcstdef_t* val_sdf =VtnDrvIntf::val_map.find(keytype)->second;
         ret_code = sess.addOutput(*key_sdf, key);
         if (ret_code) {
           pfc_log_error("%s: addOutput failed for key_sdf with ret_code , %u",
@@ -1138,73 +1117,6 @@ KtRequestHandler<key, val>::populate_response_header(
 
   return UNC_RC_SUCCESS;
 }
-
-  /**
-   * @brief  - This method initializes map for STDEF
-   * @retval - void
-   **/
-template<typename key, typename val>
-void
-KtRequestHandler<key, val>::initialize_map() {
-  uint32_t loop = 0;
-  unc_key_type_t KT[] = {UNC_KT_VTN, UNC_KT_VBRIDGE, UNC_KT_VBR_IF,
-                                    UNC_KT_VBR_VLANMAP};
-  uint32_t kt_size = sizeof KT/sizeof(unc_key_type_t);
-  for (; loop < kt_size; loop++) {
-    switch (KT[loop]) {
-      case UNC_KT_VTN:
-        {
-          pfc_ipcstdef_t *stdef_k = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_k, key_vtn);
-          pfc_ipcstdef_t *stdef_v = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_v, val_vtn);
-          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                     stdef_k));
-          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                                     stdef_v));
-          break;
-        }
-      case UNC_KT_VBRIDGE:
-        {
-          pfc_ipcstdef_t *stdef_kvbr = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_kvbr, key_vbr);
-          pfc_ipcstdef_t *stdef_vbr = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_vbr, val_vbr);
-          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                             stdef_kvbr));
-          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                              stdef_vbr));
-          break;
-        }
-      case UNC_KT_VBR_IF:
-        {
-          pfc_ipcstdef_t *stdef_kvbrif = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_kvbrif, key_vbr_if);
-          pfc_ipcstdef_t *stdef_vbrif = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_vbrif, pfcdrv_val_vbr_if);
-          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                              stdef_kvbrif));
-          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                               stdef_vbrif));
-          break;
-        }
-      case UNC_KT_VBR_VLANMAP:
-        {
-          pfc_ipcstdef_t *stdef_kvbrvlanmap = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_kvbrvlanmap, key_vlan_map);
-          pfc_ipcstdef_t *stdef_vbrvlanmap = new pfc_ipcstdef_t;
-          PFC_IPC_STDEF_INIT(stdef_vbrvlanmap, val_vlan_map);
-          key_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                          stdef_kvbrvlanmap));
-          val_map_.insert(std::pair<unc_key_type_t, pfc_ipcstdef_t*>(KT[loop],
-                                                           stdef_vbrvlanmap));
-         break;
-        }
-      default:
-        break;
-    }
-  }
-}
-}  // namespace driver
-}  // namespace unc
+}  //  namespace driver
+}  //  namespace unc
 #endif

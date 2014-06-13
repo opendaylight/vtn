@@ -24,7 +24,6 @@ namespace driver {
 class DriverTxnInterface : public unc::tclib::TcLibInterface {
  public:
   typedef std::list<std::string> ::iterator ctr_iter;
-  typedef std::map<unc_key_type_t, pfc_ipcstdef_t*> kt_map;
   typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
   /**
    * @brief  - DriverTxnInterface constructor
@@ -394,12 +393,6 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
                                                    unc::tclib::TcControllerList
                                                    controllers);
   /**
-   * @brief  - Method to initialize pfc_ipcstdef_t pointer with keytype
-   * @retval - None
-   */
-  void  initialize_map(void);
-
-  /**
    * @brief       - Method to Abort the controller which failed in VOTE
    * @param[in]   - Tc controller list
    * @retval      - None
@@ -419,8 +412,6 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
 
  private:
   ControllerFramework* crtl_inst_;
-  kt_map key_map_;
-  kt_map val_map_;
   kt_handler_map kt_handler_map_;
 };
 }  // namespace driver
