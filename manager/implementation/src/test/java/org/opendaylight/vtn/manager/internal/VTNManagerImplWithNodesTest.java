@@ -93,7 +93,6 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
@@ -136,22 +135,19 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         c.setServiceProperties(properties);
 
         // create dummy file in startup directory.
-        String dir = GlobalConstants.STARTUPHOME.toString();
-        String prefix = VTenantImpl.CONFIG_FILE_PREFIX;
-        String suffix = VTenantImpl.CONFIG_FILE_SUFFIX;
+        File dir = getTenantConfigDir(containerName);
+        String suffix = ".conf";
         String[] dummyFileNames = new String[] {
-                prefix + containerName + "-" + suffix,
-                "vtn" + suffix,
-                prefix + containerName + "-" + "config",
-                "config",
-                prefix + containerName + "-" + "notexist" + suffix
+            suffix,
+            "vtn" + suffix,
+            "vtn.config",
+            "config",
+            "notexist" + suffix
         };
-        Set<File> fileSet = new HashSet<File>();
         for (String fileName : dummyFileNames) {
             File file = new File(dir, fileName);
             try {
-                file.createNewFile();
-                fileSet.add(file);
+                assertTrue(file.createNewFile());
             } catch (IOException e) {
                 unexpected(e);
             }
@@ -313,7 +309,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // start after configuration files is removed.
         // because caches remain, setting is taken over.
         stopVTNManager(false);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.cleanUp();
+        assertFalse(dir.exists());
         startVTNManager(c);
         checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
         checkNodeState(tpath, brstates, ifstates);
@@ -333,7 +331,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // remove configuration files.
         stopVTNManager(true);
         vtnMgr.setClusterContainerService(stubObj);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
         startVTNManager(c);
 
         // after cache is cleared, there is no configuration.
@@ -348,7 +346,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
 
         c = new ComponentImpl(null, null, null);
         c.setServiceProperties(null);
@@ -356,7 +354,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertFalse(vtnMgr.isAvailable());
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
 
         // in case not "default" container
         c = new ComponentImpl(null, null, null);
@@ -369,18 +367,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerNameTest);
-
-        // check dummy files exist.
-        for (File file : fileSet) {
-            if (file.getName()
-                    .equals(prefix + containerName + "-" + "notexist" + suffix)) {
-                assertFalse(file.toString(), file.exists());
-            } else {
-                assertTrue(file.toString(), file.exists());
-                file.delete();
-            }
-        }
+        ContainerConfig cfgTest = new ContainerConfig(containerNameTest);
+        cfgTest.cleanUp();
     }
 
     /**

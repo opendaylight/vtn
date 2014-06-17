@@ -273,7 +273,8 @@ public class Activator extends ComponentActivatorAbstractBase {
         super.containerDestroy(containerName);
 
         // Remove configuration files.
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.cleanUp();
 
         // Clean up resources registered to the resource manager service.
         IVTNResourceManager resMgr = (IVTNResourceManager)ServiceHelper.

@@ -25,6 +25,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.After;
 import org.junit.Assert;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
@@ -1327,6 +1328,67 @@ public abstract class TestBase extends Assert {
                 confdir = new File(pname);
             }
         }
+    }
+
+    /**
+     * Delete the specified directory recursively.
+     *
+     * @param file  A {@link File} instance which represents a file or
+     *              directory to be removed.
+     */
+    protected static void delete(File file) {
+        if (!file.exists()) {
+            return;
+        }
+
+        File[] files = file.listFiles();
+        if (files == null) {
+            // Delete the specified file.
+            file.delete();
+            return;
+        }
+
+        // Make the specified directory empty.
+        for (File f: files) {
+            delete(f);
+        }
+
+        // Delete the specified directory.
+        file.delete();
+    }
+
+    /**
+     * Return a path to the container configuration directory.
+     *
+     * @param container  The name of the container.
+     * @return  A {@link File} instance which represents the container
+     *          configuration directory.
+     */
+    protected static File getConfigDir(String container) {
+        File dir = new File(GlobalConstants.STARTUPHOME.toString(), container);
+        return new File(dir, "vtn");
+    }
+
+    /**
+     * Return a path to the tenant configuration directory.
+     *
+     * @param container  The name of the container.
+     * @return  A {@link File} instance which represents the tenant
+     *          configuration directory.
+     */
+    protected static File getTenantConfigDir(String container) {
+        File dir = getConfigDir(container);
+        return new File(dir, ContainerConfig.Type.TENANT.toString());
+    }
+
+    /**
+     * Delete configuration directory after test.
+     */
+    @After
+    public void deleteStartUpHome() {
+        String dir = GlobalConstants.STARTUPHOME.toString();
+        File file = new File(dir).getParentFile();
+        delete(file);
     }
 
     /**

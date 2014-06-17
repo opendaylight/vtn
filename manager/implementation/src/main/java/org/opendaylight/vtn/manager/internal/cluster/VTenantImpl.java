@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.io.Serializable;
 import java.io.ObjectInputStream;
 import java.io.IOException;
-import java.io.File;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -48,6 +47,7 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.internal.ContainerConfig;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
@@ -60,8 +60,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.ObjectWriter;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -78,23 +76,13 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7578447097898769278L;
+    private static final long serialVersionUID = -7485907801509242258L;
 
     /**
      * Logger instance.
      */
     private static final Logger  LOG =
         LoggerFactory.getLogger(VTenantImpl.class);
-
-    /**
-     * Prefix of configuration file name.
-     */
-    public static final String  CONFIG_FILE_PREFIX = "vtn-";
-
-    /**
-     * Suffix of configuration file name.
-     */
-    public static final String  CONFIG_FILE_SUFFIX = ".conf";
 
     /**
      * Maximum value of flow timeout value.
@@ -137,38 +125,6 @@ public final class VTenantImpl implements Serializable {
      */
     private transient ReentrantReadWriteLock  rwLock =
         new ReentrantReadWriteLock();
-
-    /**
-     * Return a path to the configuration file associated with the specified
-     * virtual tenant.
-     *
-     * @param containerName  The name of the container to which the tenant
-     *                       belongs.
-     * @param tenantName     The name of the tenant.
-     * @return  A path to the tenant configuration file.
-     */
-    public static String getConfigFilePath(String containerName,
-                                           String tenantName) {
-        String root = GlobalConstants.STARTUPHOME.toString();
-        StringBuilder builder = new StringBuilder(root);
-        builder.append(CONFIG_FILE_PREFIX).append(containerName).append('-').
-            append(tenantName).append(CONFIG_FILE_SUFFIX);
-
-        return builder.toString();
-    }
-
-    /**
-     * Remove the configuration file for the specified virtual tenant.
-     * @param containerName  The name of the container to which the tenant
-     *                       belongs.
-     * @param tenantName     The name of the tenant.
-     */
-    public static void deleteConfigFile(String containerName,
-                                        String tenantName) {
-        String path = VTenantImpl.getConfigFilePath(containerName, tenantName);
-        File file = new File(path);
-        file.delete();
-    }
 
     /**
      * Construct a virtual tenant instance.
@@ -932,9 +888,8 @@ public final class VTenantImpl implements Serializable {
      * @return  "Success" or failure reason.
      */
     public Status saveConfig(VTNManagerImpl mgr) {
-        ObjectWriter wtr = new ObjectWriter();
-        String path = VTenantImpl.getConfigFilePath(containerName, tenantName);
         Status status;
+        ContainerConfig cfg = new ContainerConfig(containerName);
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -945,7 +900,7 @@ public final class VTenantImpl implements Serializable {
                 }
             }
 
-            status = wtr.write(this, path);
+            status = cfg.save(ContainerConfig.Type.TENANT, tenantName, this);
             if (status.isSuccess()) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: Tenant saved", containerName,
@@ -1181,7 +1136,8 @@ public final class VTenantImpl implements Serializable {
      * @param mgr  VTN manager service.
      */
     public void destroy(VTNManagerImpl mgr) {
-        VTenantImpl.deleteConfigFile(containerName, tenantName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.delete(ContainerConfig.Type.TENANT, tenantName);
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();

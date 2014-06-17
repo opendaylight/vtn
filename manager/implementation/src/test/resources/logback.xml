@@ -32,6 +32,8 @@
           level="OFF"/>
   <logger name="org.opendaylight.vtn.manager.internal.LocalFlowRemoveTask"
           level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.ContainerConfig"
+          level="ERROR"/>
 
   <logger name="org.opendaylight.controller.sal.utils.ServiceHelper"
           level="OFF"/>

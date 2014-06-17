@@ -95,7 +95,6 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
@@ -166,22 +165,19 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
 
         // create dummy file in startup directory.
-        String dir = GlobalConstants.STARTUPHOME.toString();
-        String prefix = VTenantImpl.CONFIG_FILE_PREFIX;
-        String suffix = VTenantImpl.CONFIG_FILE_SUFFIX;
+        File dir = getTenantConfigDir(containerName);
+        String suffix = ".conf";
         String[] dummyFileNames = new String[] {
-                prefix + containerName + "-" + suffix,
-                "vtn" + suffix,
-                prefix + containerName + "-" + "config",
-                "config",
-                prefix + containerName + "-" + "notexist" + suffix
+            suffix,
+            "vtn" + suffix,
+            "vtn.config",
+            "config",
+            "notexist" + suffix
         };
-        Set<File> fileSet = new HashSet<File>();
         for (String fileName : dummyFileNames) {
             File file = new File(dir, fileName);
             try {
-                file.createNewFile();
-                fileSet.add(file);
+                assertTrue(file.createNewFile());
             } catch (IOException e) {
                 unexpected(e);
             }
@@ -275,7 +271,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         // start after configuration files is removed.
         // because caches remain, setting is taken over.
         stopVTNManager(false);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.cleanUp();
+        assertFalse(dir.exists());
         startVTNManager(c);
         checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
@@ -335,7 +333,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         vtnMgr.setClusterContainerService(stubObj);
 
         // remove configuration files.
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
         startVTNManager(c);
 
         // after cache is cleared, there is no configuration.
@@ -349,7 +347,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(0, tlist.size());
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
 
         c = new ComponentImpl(null, null, null);
         c.setServiceProperties(null);
@@ -357,7 +355,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertFalse(vtnMgr.isAvailable());
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
 
         // in case not "default" container
         c = new ComponentImpl(null, null, null);
@@ -370,18 +368,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerNameTest);
-
-        // check if dummy files exist.
-        for (File file : fileSet) {
-            if (file.getName()
-                    .equals(prefix + containerName + "-" + "notexist" + suffix)) {
-                assertFalse(file.toString(), file.exists());
-            } else {
-                assertTrue(file.toString(), file.exists());
-                file.delete();
-            }
-        }
+        ContainerConfig cfgTest = new ContainerConfig(containerNameTest);
+        cfgTest.cleanUp();
     }
 
     /**
@@ -414,7 +402,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
         stopVTNManager(false);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.cleanUp();
 
         ClusterEventMap clsmap = (ClusterEventMap)
             stubObj.getCache(VTNManagerImpl.CACHE_EVENT);
@@ -1366,12 +1355,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     private void executeVTenantEvent(VTNManagerImpl mgr, VTenantPath path,
                                      VTenantEvent event) {
         String tname = path.getTenantName();
-        String root = GlobalConstants.STARTUPHOME.toString();
-        String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName =
-            root + "vtn-" + "default" + "-" +  tname + ".conf";
-        File tenantList = new File(tenantListFileName);
-        File configFile = new File(configFileName);
+        File dir = getTenantConfigDir("default");
+        String configFileName = tname + ".conf";
+        File configFile = new File(dir, configFileName);
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
         InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
@@ -1383,19 +1369,11 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         for (ClusterEventId evId : evIdSet) {
             if (event.getUpdateType() == UpdateType.ADDED
                 || event.getUpdateType() == UpdateType.CHANGED) {
-                tenantList.delete();
                 configFile.delete();
                 if (event.getUpdateType() == UpdateType.ADDED) {
                     mgr.removeTenantFlowDB(tname);
                 }
             } else {
-                if (!tenantList.exists()) {
-                    try {
-                        tenantList.createNewFile();
-                    } catch (IOException e) {
-                        unexpected(e);
-                    }
-                }
                 if (!configFile.exists()) {
                     try {
                         configFile.createNewFile();
@@ -1412,11 +1390,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             flushTasks();
             if (event.getUpdateType() == UpdateType.ADDED
                     || event.getUpdateType() == UpdateType.CHANGED) {
-                assertFalse(tenantList.exists());
                 assertFalse(configFile.exists());
                 assertNull(mgr.getTenantFlowDB(tname));
             } else {
-                assertTrue(tenantList.exists());
                 assertTrue(configFile.exists());
                 assertNotNull(mgr.getTenantFlowDB(tname));
             }
@@ -1426,31 +1402,25 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             switch (event.getUpdateType()) {
             case ADDED:
                 if (evId == evidRemote) {
-                    assertTrue(tenantList.exists());
                     assertTrue(configFile.exists());
                     assertNotNull(mgr.getTenantFlowDB(tname));
                 } else {
-                    assertFalse(tenantList.exists());
                     assertFalse(configFile.exists());
                     assertNull(mgr.getTenantFlowDB(tname));
                 }
                 break;
             case CHANGED:
                 if (evId == evidRemote) {
-                    assertFalse(tenantList.exists());
                     assertTrue(configFile.exists());
                 } else {
-                    assertFalse(tenantList.exists());
                     assertFalse(configFile.exists());
                 }
                 break;
             case REMOVED:
                 if (evId == evidRemote) {
-                    assertTrue(tenantList.exists());
                     assertFalse(configFile.exists());
                     assertNull(mgr.getTenantFlowDB(tname));
                 } else {
-                    assertTrue(tenantList.exists());
                     assertTrue(configFile.exists());
                     assertNotNull(mgr.getTenantFlowDB(tname));
                 }
@@ -1474,12 +1444,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     private void executeVBridgeEvent(VTNManagerImpl mgr, VBridgePath path,
                                      VBridgeEvent event, boolean saveConfig) {
         String tname = path.getTenantName();
-        String root = GlobalConstants.STARTUPHOME.toString();
-        String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName =
-            root + "vtn-" + "default" + "-" +  tname + ".conf";
-        File tenantList = new File(tenantListFileName);
-        File configFile = new File(configFileName);
+        File dir = getTenantConfigDir("default");
+        String configFileName = tname + ".conf";
+        File configFile = new File(dir, configFileName);
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
         InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
@@ -1515,7 +1482,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             } else {
                 assertNotNull(mgr.getMacAddressTable(path));
             }
-            assertTrue(tenantList.exists());
         }
     }
 
@@ -1531,12 +1497,9 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     private void executeClusterEvent(VTNManagerImpl mgr, VTenantPath path,
                                      ClusterEvent event, boolean saveConfig) {
         String tname = path.getTenantName();
-        String root = GlobalConstants.STARTUPHOME.toString();
-        String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName =
-            root + "vtn-" + "default" + "-" +  tname + ".conf";
-        File tenantList = new File(tenantListFileName);
-        File configFile = new File(configFileName);
+        File dir = getTenantConfigDir("default");
+        String configFileName = tname + ".conf";
+        File configFile = new File(dir, configFileName);
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
         InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
@@ -1560,7 +1523,6 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             } else {
                 assertFalse(configFile.exists());
             }
-            assertTrue(tenantList.exists());
         }
     }
 

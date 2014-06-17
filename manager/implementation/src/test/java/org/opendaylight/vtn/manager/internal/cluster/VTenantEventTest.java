@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,7 +12,6 @@ import java.io.File;
 
 import org.junit.Test;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.VTNException;
@@ -63,15 +62,10 @@ public class VTenantEventTest extends VNodeEventTestBase {
      */
     @Test
     public void testEventReceived() {
-        String root = GlobalConstants.STARTUPHOME.toString();
+        File dir = getTenantConfigDir("default");
         String tenantName = "tenant";
-        String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName =
-            root + "vtn-" + "default" + "-" + tenantName + ".conf";
-        File tenantList = new File(tenantListFileName);
-        File configFile = new File(configFileName);
-
-        tenantList.delete();
+        String configFileName = tenantName + ".conf";
+        File configFile = new File(dir, configFileName);
         configFile.delete();
 
         // register stub.
@@ -102,14 +96,11 @@ public class VTenantEventTest extends VNodeEventTestBase {
             stub.checkVtnInfo(1, tpath, UpdateType.REMOVED);
             if (local == Boolean.FALSE) {
                 assertNull(vtnMgr.getTenantFlowDB(tpath.getTenantName()));
-                assertTrue(tenantList.exists());
                 assertFalse(configFile.exists());
             } else {
                 // if local, files are not modified.
-                assertTrue(tenantList.exists());
                 assertTrue(configFile.exists());
             }
-            tenantList.delete();
 
             tevent = new VTenantEvent(tpath, vtenant, UpdateType.ADDED);
             tevent.eventReceived(vtnMgr, local.booleanValue());
@@ -118,11 +109,9 @@ public class VTenantEventTest extends VNodeEventTestBase {
             stub.checkVtnInfo(1, tpath, UpdateType.ADDED);
             if (local == Boolean.FALSE) {
                 assertNotNull(vtnMgr.getTenantFlowDB(tpath.getTenantName()));
-                assertTrue(tenantList.exists());
                 assertTrue(configFile.exists());
             } else {
                 // if local, files are not modified.
-                assertFalse(tenantList.exists());
                 assertTrue(configFile.exists());
             }
             configFile.delete();
@@ -134,11 +123,9 @@ public class VTenantEventTest extends VNodeEventTestBase {
             stub.checkVtnInfo(1, tpath, UpdateType.CHANGED);
             if (local == Boolean.FALSE) {
                 assertNotNull(vtnMgr.getTenantFlowDB(tpath.getTenantName()));
-                assertTrue(tenantList.exists());
                 assertTrue(configFile.exists());
             } else {
                 // if local, files are not modified.
-                assertFalse(tenantList.exists());
                 assertFalse(configFile.exists());
             }
         }

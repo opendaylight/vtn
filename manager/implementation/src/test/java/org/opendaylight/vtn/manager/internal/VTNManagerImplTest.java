@@ -9,12 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -104,7 +100,6 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.routing.IRouting;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
@@ -147,22 +142,19 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
 
         // create dummy file in startup directory.
-        String dir = GlobalConstants.STARTUPHOME.toString();
-        String prefix = VTenantImpl.CONFIG_FILE_PREFIX;
-        String suffix = VTenantImpl.CONFIG_FILE_SUFFIX;
+        File dir = getTenantConfigDir(containerName);
+        String suffix = ".conf";
         String[] dummyFileNames = new String[] {
-                prefix + containerName + "-" + suffix,
-                "vtn" + suffix,
-                prefix + containerName + "-" + "config",
-                "config",
-                prefix + containerName + "-" + "notexist" + suffix
+            suffix,
+            "vtn" + suffix,
+            "vtn.config",
+            "config",
+            "notexist" + suffix
         };
-        Set<File> fileSet = new HashSet<File>();
         for (String fileName : dummyFileNames) {
             File file = new File(dir, fileName);
             try {
                 assertTrue(file.createNewFile());
-                fileSet.add(file);
             } catch (IOException e) {
                 unexpected(e);
             }
@@ -244,7 +236,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // start after configuration files is removed.
         // because caches remain, setting is taken over.
         stopVTNManager(false);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.cleanUp();
+        assertFalse(dir.exists());
         startVTNManager(c);
         checkVTNconfig(vtnMgr, tpath, bpathlist, pmaps, vmaps, mcconf);
 
@@ -263,7 +257,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // remove configuration files.
         stopVTNManager(true);
         vtnMgr.setClusterContainerService(stubObj);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
         startVTNManager(c);
 
         // after cache is cleared, there is no configuration.
@@ -277,7 +271,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(0, tlist.size());
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
 
         c = new ComponentImpl(null, null, null);
         c.setServiceProperties(null);
@@ -285,7 +279,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertFalse(vtnMgr.isAvailable());
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        cfg.cleanUp();
 
         // in case not "default" container
         c = new ComponentImpl(null, null, null);
@@ -298,18 +292,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
         stopVTNManager(true);
-        VTNManagerImpl.cleanUpConfigFile(containerNameTest);
-
-        // check dummy files exist.
-        for (File file : fileSet) {
-            if (file.getName()
-                    .equals(prefix + containerName + "-" + "notexist" + suffix)) {
-                assertFalse(file.toString(), file.exists());
-            } else {
-                assertTrue(file.toString(), file.exists());
-                file.delete();
-            }
-        }
+        ContainerConfig cfgTest = new ContainerConfig(containerNameTest);
+        cfgTest.cleanUp();
     }
 
     /**
@@ -343,7 +327,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // in case event cache remain.
         stopVTNManager(false);
-        VTNManagerImpl.cleanUpConfigFile(containerName);
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        cfg.cleanUp();
 
         ConcurrentMap<ClusterEventId, ClusterEvent> clsmap
             = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
@@ -4455,40 +4440,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Test method for {@link VTNManagerImpl#readObject(ObjectInputStream)}.
-     */
-    @Test
-    public void testReadObject() {
-        Object o = new VTenantPath("tenant");
-        byte[] bytes = null;
-        try {
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream(bout);
-
-            out.writeObject(o);
-            out.close();
-            bytes = bout.toByteArray();
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertTrue(bytes.length != 0);
-
-        // Deserialize the object.
-        Object newobj = null;
-        try {
-            ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
-            ObjectInputStream in = new ObjectInputStream(bin);
-            newobj = vtnMgr.readObject(in);
-            in.close();
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        assertNotSame(o, newobj);
-        assertEquals(o, newobj);
-    }
-
-    /**
      * Test method for {@link VTNManagerImpl#entryUpdated(ClusterEventId, Object, String, boolean)}.
      *
      * This tests {@link VTenantEvent}.
@@ -4496,19 +4447,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     @Test
     public void testCacheEntryChangeTenantEvent() {
         VTNManagerImpl mgr = vtnMgr;
-        String root = GlobalConstants.STARTUPHOME.toString();
-        String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName100 =
-            root + "vtn-" + "default" + "-" + "tenant100" + ".conf";
-        String configFileName =
-            root + "vtn-" + "default" + "-" + "tenant" + ".conf";
+        File tenantDir = getTenantConfigDir("default");
+        String configFileName100 = "tenant100.conf";
+        String configFileName = "tenant.conf";
 
         // create tenant
-        File tenantList = new File(tenantListFileName);
-        tenantList.delete();
-
-        File configFile = new File(configFileName);
-        File configFile100 = new File(configFileName100);
+        File configFile = new File(tenantDir, configFileName);
+        File configFile100 = new File(tenantDir, configFileName100);
         configFile.delete();
         configFile100.delete();
 
@@ -4523,20 +4468,17 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTenantConfig tconf = new VTenantConfig(null);
         VTenant vtenant = new VTenant("tenant", tconf);
         mgr.addTenant(tpath, tconf);
-        tenantList.delete();
         configFile.delete();
         configFile100.delete();
 
         VTenantEvent ev = new VTenantEvent(tpath, vtenant, UpdateType.ADDED);
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, true);
         flushTasks();
-        assertFalse(tenantList.exists());
         assertFalse(configFile.exists());
         assertFalse(configFile100.exists());
 
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
         flushTasks();
-        assertTrue(tenantList.exists());
         assertTrue(configFile.exists());
         assertFalse(configFile100.exists());
 
@@ -4545,24 +4487,20 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTenant vtenant100 = new VTenant("tenant100", tconf100);
         mgr.addTenant(tpath100, tconf100);
         flushTasks();
-        tenantList.delete();
         configFile.delete();
         configFile100.delete();
 
         ev = new VTenantEvent(tpath100, vtenant100, UpdateType.ADDED);
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, true);
         flushTasks();
-        assertFalse(tenantList.exists());
         assertFalse(configFile.exists());
         assertFalse(configFile100.exists());
 
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
         flushTasks();
-        assertTrue(tenantList.exists());
         assertFalse(configFile.exists());
         assertTrue(configFile100.exists());
 
-        tenantList.delete();
         configFile.delete();
         configFile100.delete();
 
@@ -4572,33 +4510,28 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         flushTasks();
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, false, true);
 
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
         flushTasks();
         checkFileExists(configFile, true, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, false, true);
 
         ev = new VTenantEvent(tpath100, vtenant100, UpdateType.CHANGED);
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, true);
         flushTasks();
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, false, true);
 
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
         flushTasks();
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, true, true);
-        checkFileExists(tenantList, false, true);
 
         mgr.removeTenant(tpath);
         mgr.removeTenant(tpath100);
         flushTasks();
 
         // delete
-        tenantList.delete();
         try {
             configFile.createNewFile();
             configFile100.createNewFile();
@@ -4611,26 +4544,22 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         flushTasks();
         checkFileExists(configFile, true, false);
         checkFileExists(configFile100, true, false);
-        checkFileExists(tenantList, false, true);
 
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
         flushTasks();
         checkFileExists(configFile, false, false);
         checkFileExists(configFile100, true, false);
-        checkFileExists(tenantList, true, true);
 
         ev = new VTenantEvent(tpath100, vtenant100, UpdateType.REMOVED);
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, true);
         flushTasks();
         checkFileExists(configFile, true, false);
         checkFileExists(configFile100, true, false);
-        checkFileExists(tenantList, false, true);
 
         mgr.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT, false);
         flushTasks();
         checkFileExists(configFile, true, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, true, true);
     }
 
     /**

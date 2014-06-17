@@ -538,7 +538,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         } else {
             File[] list = confdir.listFiles();
             for (File f : list) {
-                f.delete();
+                delete(f);
             }
         }
 

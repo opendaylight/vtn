@@ -9,10 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.util.ArrayList;
@@ -135,10 +131,7 @@ import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.IObjectReader;
 import org.opendaylight.controller.sal.utils.NetUtils;
-import org.opendaylight.controller.sal.utils.ObjectReader;
-import org.opendaylight.controller.sal.utils.ObjectWriter;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -152,7 +145,7 @@ import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
  * Implementation of VTN Manager service.
  */
 public class VTNManagerImpl
-    implements IVTNManager, IVTNFlowDebugger, IObjectReader,
+    implements IVTNManager, IVTNFlowDebugger,
                ICacheUpdateAware<ClusterEventId, Object>,
                IConfigurationContainerAware, IInventoryListener,
                ITopologyManagerAware, IContainerListener, IListenDataPacket,
@@ -229,12 +222,6 @@ public class VTNManagerImpl
      * The name of the cluster cache which keeps flow entries in the container.
      */
     static final String CACHE_FLOWS = "vtn.flows";
-
-    /**
-     * Pseudo tenant name used for the configuration file name which keeps
-     * a list of tenant names.
-     */
-    private static final String  FNAME_TENANT_NAMES = "tenant-names";
 
     /**
      * Polling interval, in milliseconds, to wait for completion of cluster
@@ -391,11 +378,6 @@ public class VTNManagerImpl
      * Single-threaded task queue runner which executes {@link FlowModTask}.
      */
     private TaskQueueThread  flowTaskThread;
-
-    /**
-     * The name of the file to keep virtual tenant names.
-     */
-    private String  tenantListFileName;
 
     /**
      * ARP handler emulator.
@@ -641,89 +623,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * An implementation of {@link FilenameFilter} which selects VTN
-     * configuration files.
-     */
-    private static final class ConfigFileNameFilter implements FilenameFilter {
-        /**
-         * A set of valid tenant names.
-         */
-        private final Set<String>  validTenants;
-
-        /**
-         * Prefix of VTN configuration file name.
-         */
-        private final String  prefix;
-
-        /**
-         * The length of {@link #prefix}.
-         */
-        private final int  prefixLength;
-
-        /**
-         * The minimum length of VTN configuration file name.
-         */
-        private final int  minimumLength;
-
-        /**
-         * Construct a new filename filter which selects configuration files
-         * for obsolete tenants.
-         *
-         * @param cname    The name of the container.
-         * @param nameSet  A set of valid virtual tenant names.
-         *                 If a non-{@code null} value is specified,
-         *                 this object selects tenant configuration files
-         *                 only if its name is not contained in the given set.
-         *                 In that case this filter never selects the tenant
-         *                 name list file even if the given set is empty.
-         *                 If {@code null} is specified, all configuration
-         *                 files, including the tenant name list file, are
-         *                 selected.
-         */
-        private ConfigFileNameFilter(String cname, Set<String> nameSet) {
-            validTenants = nameSet;
-            StringBuilder builder =
-                new StringBuilder(VTenantImpl.CONFIG_FILE_PREFIX);
-            builder.append(cname).append('-');
-            prefix = builder.toString();
-            prefixLength = prefix.length();
-            minimumLength = prefixLength +
-                VTenantImpl.CONFIG_FILE_SUFFIX.length();
-        }
-
-        /**
-         * Determine whether the specified file should be selected or not.
-         *
-         * @param dir   The directory in which the file was found.
-         * @param name  The name of the file.
-         * @return      {@code true} is returned if the specified file name
-         *              should be selected.
-         *              Otherwise {@code false} is returned.
-         */
-        @Override
-        public boolean accept(File dir, String name) {
-            if (!name.startsWith(prefix) ||
-                !name.endsWith(VTenantImpl.CONFIG_FILE_SUFFIX)) {
-                return false;
-            }
-
-            int len = name.length() - minimumLength;
-            if (len <= 0) {
-                return false;
-            }
-
-            if (validTenants == null) {
-                return true;
-            }
-
-            // Parse tenant name part in the filename.
-            String tname = name.substring(prefixLength, prefixLength + len);
-            return !(FNAME_TENANT_NAMES.equals(tname) ||
-                     validTenants.contains(tname));
-        }
-    }
-
-    /**
      * Function called by the dependency manager when all the required
      * dependencies are satisfied.
      *
@@ -744,6 +643,10 @@ public class VTNManagerImpl
         LOG.trace("{}: init() called", cname);
         containerName = cname;
 
+        // Initialize configuration directory for the container.
+        ContainerConfig cfg = new ContainerConfig(cname);
+        cfg.init();
+
         // Load static configuration.
         String root = GlobalConstants.STARTUPHOME.toString();
         vtnConfig = new VTNConfig(root, cname);
@@ -758,8 +661,6 @@ public class VTNManagerImpl
         }
 
         createCaches();
-        tenantListFileName =
-            VTenantImpl.getConfigFilePath(cname, FNAME_TENANT_NAMES);
 
         // Start VTN task thread.
         taskQueueThread = new TaskQueueThread("VTN Task Thread: " + cname);
@@ -2610,40 +2511,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Save a set of virtual tenant names.
-     *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
-     *
-     * @return  "Success" or failure reason.
-     */
-    private Status saveTenantNamesLocked() {
-        HashSet<String> nameSet = new HashSet<String>(tenantDB.keySet());
-        return saveTenantNames(nameSet);
-    }
-
-    /**
-     * Save a set of virtual tenant names.
-     *
-     * @param nameSet  A set of virtual tenant names.
-     * @return  "Success" or failure reason.
-     */
-    private synchronized Status saveTenantNames(Set<String> nameSet) {
-        ObjectWriter wtr = new ObjectWriter();
-        Status status = wtr.write(nameSet, tenantListFileName);
-        if (status.isSuccess()) {
-            LOG.debug("{}: Save tenant names: {}", containerName,
-                      tenantListFileName);
-            return status;
-        }
-
-        String msg = "Failed to save tenant names";
-        LOG.error("{}: {}", msg, status);
-        return new Status(StatusCode.INTERNALERROR, msg);
-    }
-
-    /**
      * Save virtual tenant configuration, and apply current configuration to
      * the VTN Manager.
      *
@@ -2766,15 +2633,12 @@ public class VTNManagerImpl
         // initialization.
         VTenantPath path = new VTenantPath(null);
         InetAddress myaddr = resourceManager.getControllerAddress();
+        ContainerConfig cfg = new ContainerConfig(containerName);
         if (waitForCache(path, myaddr)) {
             // Read tenant names.
-            ObjectReader rdr = new ObjectReader();
-            HashSet<String> nameSet = (HashSet<String>)
-                rdr.read(this, tenantListFileName);
-            if (nameSet != null) {
-                for (String name: nameSet) {
-                    loadTenantConfig(name);
-                }
+            List<String> nameList = cfg.getKeys(ContainerConfig.Type.TENANT);
+            for (String name: nameList) {
+                loadTenantConfig(cfg, name);
             }
 
             // Notify controllers in the cluster of completion of cluster
@@ -2794,24 +2658,20 @@ public class VTNManagerImpl
             }
 
             // Remove configuration files for obsolete tenants.
-            cleanUpConfigFile(containerName, names);
-
-            // Save a list of tenant names.
-            saveTenantNames(names);
+            cfg.deleteAll(ContainerConfig.Type.TENANT, names);
         }
     }
 
     /**
      * Load configuration for the specified virtual tenant.
      *
+     * @param cfg         A {@link ContainerConfig} instance.
      * @param tenantName  The name of the tenant.
      */
-    private void loadTenantConfig(String tenantName) {
-        String path = VTenantImpl.getConfigFilePath(containerName, tenantName);
-
+    private void loadTenantConfig(ContainerConfig cfg, String tenantName) {
         // Read tenant configuration.
-        ObjectReader rdr = new ObjectReader();
-        VTenantImpl newvtn = (VTenantImpl)rdr.read(this, path);
+        VTenantImpl newvtn =
+            (VTenantImpl)cfg.load(ContainerConfig.Type.TENANT, tenantName);
         if (newvtn != null) {
             VTenantImpl vtn = tenantDB.putIfAbsent(tenantName, newvtn);
             if (vtn == null) {
@@ -2861,44 +2721,6 @@ public class VTNManagerImpl
         if (!serviceAvailable) {
             throw new VTNException(StatusCode.NOSERVICE,
                                    "VTN service is not available");
-        }
-    }
-
-    /**
-     * Remove all configuration files associated with the container, including
-     * the tenant name list file.
-     *
-     * @param containerName  The name of the container.
-     */
-    static void cleanUpConfigFile(String containerName) {
-        cleanUpConfigFile(containerName, null);
-    }
-
-    /**
-     * Remove configuration files associated with the container.
-     *
-     * @param containerName  The name of the container.
-     * @param validTenants   A set of valid virtual tenant names.
-     *                       If a non-{@code null} value is specified, this
-     *                       method removes tenant configuration files only if
-     *                       its name is not contained in the given set.
-     *                       In that case this method never removes the tenant
-     *                       name list file even if the given set is empty.
-     *                       If {@code null} is specified, all configuration
-     *                       files, including the tenant name list file, are
-     *                       removed.
-     */
-    private static void cleanUpConfigFile(String containerName,
-                                          final Set<String> validTenants) {
-        ConfigFileNameFilter filter =
-            new ConfigFileNameFilter(containerName, validTenants);
-        File root = new File(GlobalConstants.STARTUPHOME.toString());
-        File[] files = root.listFiles(filter);
-        if (files != null) {
-            for (File f: files) {
-                LOG.debug("Delete configuration file: {}", f);
-                f.delete();
-            }
         }
     }
 
@@ -3868,7 +3690,6 @@ public class VTNManagerImpl
                 createTenantFlowDB(tenantName);
 
                 // Save configurations, and update VTN mode.
-                saveTenantNamesLocked();
                 saveTenantConfigLocked(tenantName);
                 updateVTNMode(true);
             } else {
@@ -3877,10 +3698,10 @@ public class VTNManagerImpl
                 removeTenantFlowDB(tenantName);
 
                 // Delete the virtual tenant configuration file.
-                VTenantImpl.deleteConfigFile(containerName, tenantName);
+                ContainerConfig cfg = new ContainerConfig(containerName);
+                cfg.delete(ContainerConfig.Type.TENANT, tenantName);
 
                 // Save tenant names, and update VTN mode.
-                saveTenantNamesLocked();
                 updateVTNMode(false);
 
                 // Purge canceled timer tasks.
@@ -4383,12 +4204,7 @@ public class VTNManagerImpl
             // Create a VTN flow database.
             createTenantFlowDB(tenantName);
 
-            Status status = saveTenantNamesLocked();
-            Status stConf = vtn.saveConfig(null);
-            if (status.isSuccess()) {
-                status = stConf;
-            }
-
+            Status status = vtn.saveConfig(null);
             VTenant vtenant = vtn.getVTenant();
             updateVTNMode(false);
             enqueueEvent(path, vtenant, UpdateType.ADDED);
@@ -4463,11 +4279,10 @@ public class VTNManagerImpl
                 VTNThreadData.removeFlows(this, fdb);
             }
 
-            Status status = saveTenantNamesLocked();
             data.setModeChanged();
             enqueueEvent(path, vtenant, UpdateType.REMOVED);
 
-            return status;
+            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -5423,24 +5238,6 @@ public class VTNManagerImpl
         return status;
     }
 
-    // IObjectReader
-
-    /**
-     * Read an object from the given input stream.
-     *
-     * @param ois  Input stream.
-     * @return     An object.
-     * @throws IOException
-     *    An I/O error occurred.
-     * @throws ClassNotFoundException
-     *    At least one necessary class was not found.
-     */
-    @Override
-    public Object readObject(ObjectInputStream ois)
-        throws IOException, ClassNotFoundException {
-        return ois.readObject();
-    }
-
     // ICacheUpdateAware
 
     /**
@@ -5609,19 +5406,14 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            Status failure = null;
+            Status status = new Status(StatusCode.SUCCESS, null);
             for (VTenantImpl vtn: tenantDB.values()) {
                 nameSet.add(vtn.getName());
 
                 Status st = vtn.saveConfig(null);
                 if (!st.isSuccess()) {
-                    failure = st;
+                    status = st;
                 }
-            }
-
-            Status status = saveTenantNames(nameSet);
-            if (failure != null) {
-                status = failure;
             }
 
             return status;

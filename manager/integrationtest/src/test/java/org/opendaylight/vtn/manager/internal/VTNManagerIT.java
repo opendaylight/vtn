@@ -104,7 +104,6 @@ import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.topology.IPluginInTopologyService;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.IObjectReader;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
@@ -168,7 +167,6 @@ public class VTNManagerIT extends TestBase {
 
     private IVTNManager vtnManager = null;
     private IVTNGlobal vtnGlobal = null;
-    private IObjectReader objReader = null;
     private ICacheUpdateAware<ClusterEventId, Object> cacheUpdateAware = null;
     private IConfigurationContainerAware  configContainerAware = null;
     private IInventoryListener inventoryListener = null;
@@ -323,7 +321,6 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(IVTNManager.class.getName());
         if (r != null) {
             this.vtnManager = (IVTNManager) bc.getService(r);
-            this.objReader = (IObjectReader) this.vtnManager ;
             this.cacheUpdateAware =
                 (ICacheUpdateAware<ClusterEventId, Object>) this.vtnManager;
             this.configContainerAware = (IConfigurationContainerAware) this.vtnManager;
@@ -4172,43 +4169,6 @@ public class VTNManagerIT extends TestBase {
     }
 
     /**
-     * test method for {@link IObjectReader}
-     */
-    @Test
-    public void testIObjectReader() {
-        log.info("Running testIObjectReader().");
-
-        Object o = new VTenantPath("tenant");
-        byte[] bytes = null;
-        try {
-            ByteArrayOutputStream bout = new ByteArrayOutputStream();
-            ObjectOutputStream out = new ObjectOutputStream(bout);
-
-            out.writeObject(o);
-            out.close();
-            bytes = bout.toByteArray();
-        } catch (Exception e) {
-            unexpected(e);
-        }
-        assertTrue(bytes.length != 0);
-
-        // Deserialize the object.
-        Object newobj = null;
-        try {
-            ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
-            ObjectInputStream in = new ObjectInputStream(bin);
-            newobj = objReader.readObject(in);
-            in.close();
-        } catch (Exception e) {
-            unexpected(e);
-        }
-
-        assertNotSame(o, newobj);
-        assertEquals(o, newobj);
-
-    }
-
-    /**
      * test method for {@link ICacheUpdateAware}
      *
      * @throws InterruptedException  Test was interrupted.
@@ -4218,23 +4178,23 @@ public class VTNManagerIT extends TestBase {
         log.info("Running testICacheUpdateAware().");
 
         IVTNManager mgr = vtnManager;
-        String root = GlobalConstants.STARTUPHOME.toString();
-        String tenantListFileName = root + "vtn-default-tenant-names.conf";
-        String configFileName100 = root + "vtn-" + "default" + "-" + "tenant100" + ".conf";
-        String configFileName = root + "vtn-" + "default" + "-" + "tenant" + ".conf";
+        String containerName = "default";
+        File containerDir = new File(GlobalConstants.STARTUPHOME.toString(),
+                                     containerName);
+        File vtnDir = new File(containerDir, "vtn");
+        File tenantDir = new File(vtnDir, "TENANT");
+        String configFileName100 = "tenant100.conf";
+        String configFileName = "tenant.conf";
 
         Dictionary<String, Object> props = new Hashtable<String, Object>();
         VTNManagerAware listener = new VTNManagerAware();
         ServiceRegistration svReg =
             ServiceHelper.registerServiceWReg(IVTNManagerAware.class,
-                                              "default", listener, props);
+                                              containerName, listener, props);
 
         // create tenant
-        File tenantList = new File(tenantListFileName);
-        tenantList.delete();
-
-        File configFile = new File(configFileName);
-        File configFile100 = new File(configFileName100);
+        File configFile = new File(tenantDir, configFileName);
+        File configFile100 = new File(tenantDir, configFileName100);
         configFile.delete();
         configFile100.delete();
 
@@ -4251,14 +4211,12 @@ public class VTNManagerIT extends TestBase {
         VTenant vtenant = new VTenant("tenant", tconf);
         mgr.addTenant(tpath, tconf);
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
-        tenantList.delete();
         configFile.delete();
         configFile100.delete();
 
         VTenantEvent ev = new VTenantEvent(tpath, vtenant, UpdateType.ADDED);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       true);
-        assertFalse(tenantList.exists());
         assertFalse(configFile.exists());
         assertFalse(configFile100.exists());
 
@@ -4266,7 +4224,6 @@ public class VTNManagerIT extends TestBase {
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
-        assertTrue(tenantList.exists());
         assertTrue(configFile.exists());
         assertFalse(configFile100.exists());
 
@@ -4276,14 +4233,12 @@ public class VTNManagerIT extends TestBase {
         res = listener.restart(1);
         mgr.addTenant(tpath100, tconf100);
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
-        tenantList.delete();
         configFile.delete();
         configFile100.delete();
 
         ev = new VTenantEvent(tpath100, vtenant100, UpdateType.ADDED);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       true);
-        assertFalse(tenantList.exists());
         assertFalse(configFile.exists());
         assertFalse(configFile100.exists());
 
@@ -4291,11 +4246,9 @@ public class VTNManagerIT extends TestBase {
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       false);
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
-        assertTrue(tenantList.exists());
         assertFalse(configFile.exists());
         assertTrue(configFile100.exists());
 
-        tenantList.delete();
         configFile.delete();
         configFile100.delete();
 
@@ -4305,7 +4258,6 @@ public class VTNManagerIT extends TestBase {
                                       true);
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, false, true);
 
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
@@ -4313,14 +4265,12 @@ public class VTNManagerIT extends TestBase {
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, true, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, false, true);
 
         ev = new VTenantEvent(tpath100, vtenant100, UpdateType.CHANGED);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       true);
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, false, true);
 
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
@@ -4328,7 +4278,6 @@ public class VTNManagerIT extends TestBase {
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, false, true);
         checkFileExists(configFile100, true, true);
-        checkFileExists(tenantList, false, true);
 
         res = listener.restart(2);
         mgr.removeTenant(tpath);
@@ -4336,7 +4285,6 @@ public class VTNManagerIT extends TestBase {
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
 
         // delete
-        tenantList.delete();
         try {
             configFile.createNewFile();
             configFile100.createNewFile();
@@ -4349,7 +4297,6 @@ public class VTNManagerIT extends TestBase {
                                       true);
         checkFileExists(configFile, true, false);
         checkFileExists(configFile100, true, false);
-        checkFileExists(tenantList, false, true);
 
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
@@ -4357,14 +4304,12 @@ public class VTNManagerIT extends TestBase {
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, false, false);
         checkFileExists(configFile100, true, false);
-        checkFileExists(tenantList, true, true);
 
         ev = new VTenantEvent(tpath100, vtenant100, UpdateType.REMOVED);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
                                       true);
         checkFileExists(configFile, true, false);
         checkFileExists(configFile100, true, false);
-        checkFileExists(tenantList, false, true);
 
         res = listener.restart(1);
         cacheUpdateAware.entryUpdated(evid, ev, VTNManagerImpl.CACHE_EVENT,
@@ -4372,7 +4317,6 @@ public class VTNManagerIT extends TestBase {
         assertTrue(res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
         checkFileExists(configFile, true, true);
         checkFileExists(configFile100, false, true);
-        checkFileExists(tenantList, true, true);
 
         svReg.unregister();
     }
