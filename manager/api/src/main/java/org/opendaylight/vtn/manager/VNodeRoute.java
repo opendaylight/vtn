@@ -282,7 +282,15 @@ public final class VNodeRoute implements Serializable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(path, reason);
+        int h = 0;
+        if (path != null) {
+            h = path.hashCode();
+        }
+        if (reason != null) {
+            h += reason.toString().hashCode() * 31;
+        }
+
+        return h;
     }
 
     /**

@@ -154,8 +154,9 @@ public class MapReference implements Serializable, Comparable<MapReference> {
      */
     @Override
     public int hashCode() {
-        return mapType.hashCode() ^ containerName.hashCode() ^
-            vnodePath.hashCode();
+        return mapType.toString().hashCode() +
+            (containerName.hashCode() * 17) +
+            (vnodePath.hashCode() * 31);
     }
 
     /**
