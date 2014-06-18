@@ -1,0 +1,89 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_4bffb8aa",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_utility.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 395,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-18T08:22:24Z",
+      "side": 1,
+      "message": "Please revisit the get_key, get_search_key and get_parent_key for reuse",
+      "revId": "950b6cadcade9a66e6e0f81b171fd971f0b94a08",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_cb13c80b",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_utility.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 405,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-18T08:22:24Z",
+      "side": 1,
+      "message": "In all places the get_search_key simply invoked get_key(), Can we avoid get_search_key method completely and use get_key instead?",
+      "revId": "950b6cadcade9a66e6e0f81b171fd971f0b94a08",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_0b0a10d2",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_utility.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 459,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-18T08:22:24Z",
+      "side": 1,
+      "message": "Can the key_str be avoided as simpley return get_key?",
+      "revId": "950b6cadcade9a66e6e0f81b171fd971f0b94a08",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_8bf5c0cc",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_utility.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 469,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-18T08:22:24Z",
+      "side": 1,
+      "message": "can the below line be modified as \n get_parent_key(key)",
+      "revId": "950b6cadcade9a66e6e0f81b171fd971f0b94a08",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_2b04b4be",
+        "filename": "coordinator/modules/vtncacheutil/include/vtn_conf_utility.hh",
+        "patchSetId": 3
+      },
+      "lineNbr": 484,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-06-18T08:22:24Z",
+      "side": 1,
+      "message": "Can the below implementation be replaced as \nreturn get_key(key.flowlist_key)",
+      "revId": "950b6cadcade9a66e6e0f81b171fd971f0b94a08",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
