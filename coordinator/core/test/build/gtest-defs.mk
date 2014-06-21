@@ -25,7 +25,7 @@ include $(BLDDIR)/exec-defs.mk
 
 GTEST_INCDIR	:= $(shell $(GTEST_CONFIG) --includedir)
 GTEST_INCDIR	:= $(filter-out /usr/include, $(abspath $(GTEST_INCDIR)))
-CPPFLAGS	+= $(GTEST_INCDIR:%=-I%)
+CPPFLAGS	+= $(GTEST_INCDIR:%=-I%) -DHEAVY_LOAD_TEST
 
 GTEST_CXXFLAGS	:= $(shell $(GTEST_CONFIG) --cxxflags)
 CXXFLAGS	+= $(GTEST_CXXFLAGS)
