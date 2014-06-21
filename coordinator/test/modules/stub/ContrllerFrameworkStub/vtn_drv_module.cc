@@ -7,7 +7,11 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
+#include <vtn_cache_mod.hh>
 #include "vtn_drv_module.hh"
+
+static bool  drvcache_initialized = false;
+static unc::vtndrvcache::VtnDrvCacheMod drvcache(NULL);
 
 namespace unc {
 namespace driver {
@@ -22,6 +26,11 @@ VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
 
 void
 VtnDrvIntf::stub_loadVtnDrvModule(void) {
+  if (!drvcache_initialized) {
+    // Initialize vtncacheutil module.
+    drvcache.init();
+    drvcache_initialized = true;
+  }
   pfc::core::Module::vtndrv = &theInstance;
 }
 

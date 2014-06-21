@@ -727,7 +727,7 @@ TEST(append_physical_attribute_configuration_list,
 }
 //  Append one switch and one port individual to keytree with
 //  append_Physical_attribute_node method
-TEST(append_Physical_attribute_node, switch_port_success) {
+TEST(append_physical_attribute_node, switch_port_success) {
   int operation = 1;
   KeyTree* KeyTree_obj = NULL;
   KeyTree_obj = KeyTree::create_cache();
@@ -768,7 +768,7 @@ TEST(append_Physical_attribute_node, switch_port_success) {
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 }
 //  Append switch/port in keytree with empty
-TEST(append_Physical_attribute_node, append_empty_switch) {
+TEST(append_physical_attribute_node, append_empty_switch) {
   KeyTree* KeyTree_obj;
   KeyTree_obj = KeyTree::create_cache();
   //  add single empty switch to  cache using
@@ -781,7 +781,7 @@ TEST(append_Physical_attribute_node, append_empty_switch) {
   EXPECT_EQ(ret, UNC_DRV_RC_ERR_GENERIC);
 }
 //  append port, which parent is not found in cache,return failure
-TEST(append_Physical_attribute_node, switch_port_failure) {
+TEST(append_physical_attribute_node, switch_port_failure) {
   int operation = 1;
   KeyTree* KeyTree_obj = NULL;
   KeyTree_obj = KeyTree::create_cache();
@@ -825,7 +825,7 @@ TEST(append_Physical_attribute_node, switch_port_failure) {
 }
 //  append switch, which is already exist  in cache,ignore the configuration and
 //  return success
-TEST(append_Physical_attribute_node, switch_port_exist_success) {
+TEST(append_physical_attribute_node, switch_port_exist_success) {
   int operation = 1;
   KeyTree* KeyTree_obj = NULL;
   KeyTree_obj = KeyTree::create_cache();

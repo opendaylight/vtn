@@ -259,9 +259,6 @@ TEST(odcdriver_link, test_link_data_add_resp_dynamically) {
   ctr->physical_port_cache = unc::vtndrvcache::KeyTree::create_cache();
 
   pfc_bool_t cache_empty = PFC_TRUE;
-  const pfc_modattr_t *temp = NULL;
-  unc::vtndrvcache::VtnDrvCacheMod init_obj(temp);
-  init_obj.init();
   unc::odcdriver::OdcLink obj_link(conf_file);
   EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
 

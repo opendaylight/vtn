@@ -14,10 +14,30 @@
 
 namespace unc {
 namespace vtndrvcache {
+
+// Initialize vtncacheutil module before all tests.
+class DrvCacheEnvironment
+  : public ::testing::Environment
+{
+public:
+  explicit DrvCacheEnvironment() : drvcache(NULL) {}
+
+  void SetUp(void)
+  {
+    drvcache.init();
+  }
+
+  void TearDown(void) {}
+
+private:
+  VtnDrvCacheMod  drvcache;
+};
+
+static DrvCacheEnvironment    *drvCacheEnv = new DrvCacheEnvironment();
+static ::testing::Environment  *globalEnv =
+  ::testing::AddGlobalTestEnvironment(drvCacheEnv);
+
 TEST(TypeToStrFun, keytype) {
-  const pfc_modattr_t *temp = NULL;
-  VtnDrvCacheMod init_obj(temp);
-  init_obj.init();
   std::string ret = TypeToStrFun(UNC_KT_VTN);
   EXPECT_EQ(ret, "UNC_KT_VTN");
 
