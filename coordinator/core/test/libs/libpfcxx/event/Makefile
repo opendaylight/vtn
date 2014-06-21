@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -8,7 +8,7 @@
 #
 
 ##
-## Makefile that drives the tests for libpfc timer.
+## Makefile that drives the tests for libpfcxx event.
 ##
 
 GTEST_SRCROOT	:= ../../../..
