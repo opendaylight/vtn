@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -8,13 +8,13 @@
 #
 
 ##
-## Makefile that drives the tests for libpfc timer.
+## Makefile that drives the tests for libpfc event.
 ##
 
 GTEST_SRCROOT	:= ../../../..
 include $(GTEST_SRCROOT)/test/build/gtest-defs.mk
 
-EXEC_NAME	:= libpfc_timer_test
+EXEC_NAME	:= libpfc_event_test
 
 CXX_SOURCES	= $(wildcard *.cc)
 C_SOURCES	= $(wildcard *.c)

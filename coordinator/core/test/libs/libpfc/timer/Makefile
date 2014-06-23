@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2013 NEC Corporation
+# Copyright (c) 2010-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -14,7 +14,7 @@
 GTEST_SRCROOT	:= ../../../..
 include $(GTEST_SRCROOT)/test/build/gtest-defs.mk
 
-EXEC_NAME	:= libpfc_event_test
+EXEC_NAME	:= libpfc_timer_test
 
 CXX_SOURCES	= $(wildcard *.cc)
 
