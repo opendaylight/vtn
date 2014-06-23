@@ -1,0 +1,8 @@
+Code-Review+1: Giovanni Meo <gmeo@cisco.com>
+Code-Review+2: Hideyuki Tai <h-tai@cd.jp.nec.com>
+Verified+1: jenkins-vtn <jenkins-vtn@opendaylight.org>
+Submitted-by: Hideyuki Tai <h-tai@cd.jp.nec.com>
+Submitted-at: Mon, 23 Jun 2014 07:39:38 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/8233
+Project: vtn
+Branch: refs/heads/stable/hydrogen
