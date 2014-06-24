@@ -172,11 +172,12 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
         // test createFrame()
         Ethernet newether;
+        short ethType = EtherTypes.ARP.shortValue();
         if (vlan <= 0) {
-            desc = convertForDescription(ether, nc, (short) 0);
+            desc = convertForDescription(ether, ethType, nc, (short) 0);
             newether = pc.createFrame((short) 0);
         } else {
-            desc = convertForDescription(ether, nc, vlan);
+            desc = convertForDescription(ether, ethType, nc, vlan);
             newether = pc.createFrame(vlan);
         }
         assertEquals(msg, desc, pc.getDescription(nc));
@@ -197,7 +198,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             pctxp = new PacketContext(null, ether);
             newvlan = vlan;
         }
-        desc = convertForDescription(ether, nc, newvlan);
+        desc = convertForDescription(ether, ethType, nc, newvlan);
         newether = pctxp.createFrame(newvlan);
         assertEquals(msg, desc, pctxp.getDescription(nc));
         assertEquals(msg, newether, pctxp.getFrame());
@@ -231,7 +232,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             assertEquals(msg, ether, pctxp.getFrame());
             newvlan = vlan;
         }
-        desc = convertForDescription(ether, nc, newvlan);
+        desc = convertForDescription(ether, ethType, nc, newvlan);
         newether = pctxp.createFrame(newvlan);
         assertEquals(msg, desc, pctxp.getDescription(nc));
         arp = getPayload(newether, EtherTypes.ARP, (vlan > 0) ? vlan : -1, msg);
@@ -307,11 +308,12 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
         // test createFrame()
         Ethernet newether;
+        short ethType = EtherTypes.ARP.shortValue();
         if (vlan < 0) {
-            desc = convertForDescription(ether, nc, (short) 0);
+            desc = convertForDescription(ether, ethType, nc, (short) 0);
             newether = pctx.createFrame((short) 0);
         } else {
-            desc = convertForDescription(ether, nc, vlan);
+            desc = convertForDescription(ether, ethType, nc, vlan);
             newether = pctx.createFrame(vlan);
         }
         assertEquals(msg, desc, pctx.getDescription(nc));
@@ -659,21 +661,23 @@ public class PacketContextTest extends TestUseVTNManagerBase {
     /**
      * Create a string to compare description.
      *
-     * @param ether a Ethernet Object
-     * @param port  a NodeConnector
+     * @param ether An Ethernet Object
+     * @param type  An Ethernet type.
+     * @param port  A NodeConnector
      * @param vlan  VLAN ID
      * @return  A brief description of the specified ethernet frame.
      */
-    private String convertForDescription(Ethernet ether, NodeConnector port, short vlan) {
+    private String convertForDescription(Ethernet ether, short type,
+                                         NodeConnector port, short vlan) {
         String srcmac = HexEncode.bytesToHexStringFormat(ether.getSourceMACAddress());
         String dstmac = HexEncode.bytesToHexStringFormat(ether.getDestinationMACAddress());
-        int type = ether.getEtherType() & 0xffff;
+        int itype = (int)type & 0xffff;
 
         StringBuilder builder = new StringBuilder("src=");
         builder.append(srcmac).append(", dst=")
                .append(dstmac).append(", port=")
                .append(port).append(", type=0x")
-               .append(Integer.toHexString(type))
+               .append(Integer.toHexString(itype))
                .append(", vlan=").append(vlan);
 
         return builder.toString();

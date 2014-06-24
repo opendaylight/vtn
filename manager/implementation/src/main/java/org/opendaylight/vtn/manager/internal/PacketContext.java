@@ -26,16 +26,25 @@ import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
+import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
+import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
+import org.opendaylight.vtn.manager.internal.packet.TcpPacket;
+import org.opendaylight.vtn.manager.internal.packet.UdpPacket;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
+import org.opendaylight.controller.sal.packet.ICMP;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.RawPacket;
+import org.opendaylight.controller.sal.packet.TCP;
+import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
@@ -65,34 +74,9 @@ public class PacketContext {
     private final RawPacket  rawPacket;
 
     /**
-     * IEEE 802.1Q header.
-     */
-    private final IEEE8021Q  vlanTag;
-
-    /**
      * Decoded ethernet frame.
      */
-    private final Ethernet  etherFrame;
-
-    /**
-     * Payload of the packet.
-     */
-    private final Packet  payload;
-
-    /**
-     * Unparsed payload.
-     */
-    private final byte[]  rawPayload;
-
-    /**
-     * Source MAC address.
-     */
-    private byte[]  sourceAddress;
-
-    /**
-     * Destination MAC address.
-     */
-    private byte[]  destinationAddress;
+    private final EtherPacket  etherFrame;
 
     /**
      * Source IP address.
@@ -127,6 +111,18 @@ public class PacketContext {
     private VNodePath  egressNodePath;
 
     /**
+     * An {@link Inet4Packet} instance which represents the IPv4 packet in the
+     * payload.
+     */
+    private Inet4Packet  inet4Packet;
+
+    /**
+     * A {@link CachedPacket} instance which represents the layer 4 protocol
+     * data.
+     */
+    private CachedPacket  l4Packet;
+
+    /**
      * Construct a new packet context.
      *
      * @param raw    A received raw packet.
@@ -134,21 +130,7 @@ public class PacketContext {
      */
     PacketContext(RawPacket raw, Ethernet ether) {
         rawPacket = raw;
-        etherFrame = ether;
-
-        Packet parent = ether;
-        Packet pld = ether.getPayload();
-        if (pld instanceof IEEE8021Q) {
-            // This packet has a VLAN tag.
-            vlanTag = (IEEE8021Q)pld;
-            pld = vlanTag.getPayload();
-            parent = vlanTag;
-        } else {
-            vlanTag = null;
-        }
-
-        payload = pld;
-        rawPayload = parent.getRawPayload();
+        etherFrame = new EtherPacket(ether);
     }
 
     /**
@@ -168,6 +150,16 @@ public class PacketContext {
      * @return  An ethernet frame.
      */
     public Ethernet getFrame() {
+        return etherFrame.getPacket();
+    }
+
+    /**
+     * Return an {@link EtherPacket} instance which represents the Ethernet
+     * frame.
+     *
+     * @return  An {@link EtherPacket} instance.
+     */
+    public EtherPacket getEtherPacket() {
         return etherFrame;
     }
 
@@ -177,10 +169,7 @@ public class PacketContext {
      * @return  The source MAC address.
      */
     public byte[] getSourceAddress() {
-        if (sourceAddress == null) {
-            sourceAddress = etherFrame.getSourceMACAddress();
-        }
-        return sourceAddress;
+        return etherFrame.getSourceAddress();
     }
 
     /**
@@ -189,10 +178,7 @@ public class PacketContext {
      * @return  The destination MAC address.
      */
     public byte[] getDestinationAddress() {
-        if (destinationAddress == null) {
-            destinationAddress = etherFrame.getDestinationMACAddress();
-        }
-        return destinationAddress;
+        return etherFrame.getDestinationAddress();
     }
 
     /**
@@ -204,6 +190,7 @@ public class PacketContext {
     public byte[] getSourceIpAddress() {
         byte[] sip = sourceInetAddress;
         if (sip == null) {
+            Packet payload = etherFrame.getPayload();
             if (payload instanceof ARP) {
                 ARP arp = (ARP)payload;
                 if (arp.getProtocolType() == EtherTypes.IPv4.shortValue()) {
@@ -242,7 +229,7 @@ public class PacketContext {
      * @return  A payload.
      */
     public Packet getPayload() {
-        return payload;
+        return etherFrame.getPayload();
     }
 
     /**
@@ -287,7 +274,7 @@ public class PacketContext {
      *          packet.
      */
     public short getVlan() {
-        return (vlanTag == null) ? 0 : vlanTag.getVid();
+        return etherFrame.getVlan();
     }
 
     /**
@@ -299,10 +286,12 @@ public class PacketContext {
      */
     public Ethernet createFrame(short vlan) {
         Ethernet ether = new Ethernet();
-        ether.setSourceMACAddress(getSourceAddress()).
-            setDestinationMACAddress(getDestinationAddress());
+        ether.setSourceMACAddress(etherFrame.getSourceAddress()).
+            setDestinationMACAddress(etherFrame.getDestinationAddress());
 
-        short ethType;
+        short ethType = (short)etherFrame.getEtherType();
+        IEEE8021Q vlanTag = etherFrame.getVlanTag();
+        Packet payload = etherFrame.getPayload();
         if (vlan != 0 || (vlanTag != null && vlanTag.getVid() == 0)) {
             // Add a VLAN tag.
             // We don't strip VLAN tag with zero VLAN ID because PCP field
@@ -312,11 +301,9 @@ public class PacketContext {
             if (vlanTag != null) {
                 cfi = vlanTag.getCfi();
                 pcp = vlanTag.getPcp();
-                ethType = vlanTag.getEtherType();
             } else {
                 cfi = (byte)0;
                 pcp = (byte)0;
-                ethType = etherFrame.getEtherType();
             }
             tag.setCfi(cfi).setPcp(pcp).setVid(vlan).setEtherType(ethType);
             ether.setEtherType(EtherTypes.VLANTAGGED.shortValue());
@@ -324,21 +311,24 @@ public class PacketContext {
             // Set payload to IEEE 802.1Q header.
             if (payload != null) {
                 tag.setPayload(payload);
-            } else if (rawPacket != null) {
-                tag.setRawPayload(rawPayload);
+            } else {
+                byte[] rawPayload = etherFrame.getRawPayload();
+                if (rawPayload != null) {
+                    tag.setRawPayload(rawPayload);
+                }
             }
 
             // Set IEEE 802.1Q header as payload.
             ether.setPayload(tag);
         } else {
-            ethType = (vlanTag == null)
-                ? etherFrame.getEtherType()
-                : vlanTag.getEtherType();
             ether.setEtherType(ethType);
             if (payload != null) {
                 ether.setPayload(payload);
-            } else if (rawPayload != null) {
-                ether.setRawPayload(rawPayload);
+            } else {
+                byte[] rawPayload = etherFrame.getRawPayload();
+                if (rawPayload != null) {
+                    ether.setRawPayload(rawPayload);
+                }
             }
         }
 
@@ -402,11 +392,23 @@ public class PacketContext {
     /**
      * Create a brief description of the ethernet frame in this context.
      *
+     * @return  A brief description of the ethernet frame in ths context.
+     */
+    public String getDescription() {
+        return getDescription((NodeConnector)null);
+    }
+
+    /**
+     * Create a brief description of the ethernet frame in this context.
+     *
      * @param port  A node connector associated with the ethernet frame.
      * @return  A brief description of the ethernet frame in ths context.
      */
     public String getDescription(NodeConnector port) {
-        return getDescription(etherFrame, port, getVlan());
+        return getDescription(etherFrame.getSourceAddress(),
+                              etherFrame.getDestinationAddress(),
+                              etherFrame.getEtherType(), port,
+                              etherFrame.getVlan());
     }
 
     /**
@@ -419,20 +421,80 @@ public class PacketContext {
      */
     public String getDescription(Ethernet ether, NodeConnector port,
                                  short vlan) {
-        String srcmac = HexEncode.
-            bytesToHexStringFormat(ether.getSourceMACAddress());
-        String dstmac = HexEncode.
-            bytesToHexStringFormat(ether.getDestinationMACAddress());
-        int type = (int)ether.getEtherType() & ETHER_TYPE_MASK;
+        return getDescription(ether.getSourceMACAddress(),
+                              ether.getDestinationMACAddress(),
+                              (int)ether.getEtherType() & ETHER_TYPE_MASK,
+                              port, vlan);
+    }
+
+    /**
+     * Create a brief description of the ethernet frame.
+     *
+     * @param src    The source MAC address.
+     * @param dst    The destination MAC address.
+     * @param type   The ethernet type.
+     * @param port   A node connector associated with the ethernet frame.
+     * @param vlan   VLAN ID.
+     * @return  A brief description of the specified ethernet frame.
+     */
+    public String getDescription(byte[] src, byte[] dst, int type,
+                                 NodeConnector port, short vlan) {
+        String srcmac = HexEncode.bytesToHexStringFormat(src);
+        String dstmac = HexEncode.bytesToHexStringFormat(dst);
 
         StringBuilder builder = new StringBuilder("src=");
         builder.append(srcmac).
-            append(", dst=").append(dstmac).
-            append(", port=").append(port).
-            append(", type=0x").append(Integer.toHexString(type)).
+            append(", dst=").append(dstmac);
+        if (port != null) {
+            builder.append(", port=").append(port);
+        }
+        builder.append(", type=0x").append(Integer.toHexString(type)).
             append(", vlan=").append((int)vlan);
 
         return builder.toString();
+    }
+
+    /**
+     * Return an {@link Inet4Packet} instance which represents the IPv4 packet
+     * in the payload.
+     *
+     * @return  An {@link Inet4Packet} instance if the Ethernet frame contains
+     *          an IPv4 paclet. Otherwise {@code null}.
+     */
+    public Inet4Packet getInet4Packet() {
+        if (inet4Packet == null && isIPv4()) {
+            Packet packet = etherFrame.getPayload();
+            if (packet instanceof IPv4) {
+                inet4Packet = new Inet4Packet((IPv4)packet);
+            }
+        }
+
+        return inet4Packet;
+    }
+
+    /**
+     * Return a {@link CachedPacket} instance which represents layer 4
+     * protocol data.
+     *
+     * @return  A {@link CachedPacket} instance if found.
+     *          {@code null} if not found.
+     */
+    public CachedPacket getL4Packet() {
+        if (l4Packet == null) {
+            Inet4Packet ipv4 = getInet4Packet();
+            if (ipv4 != null) {
+                Packet payload = ipv4.getPacket().getPayload();
+                if (payload instanceof TCP) {
+                    l4Packet = new TcpPacket((TCP)payload);
+                } else if (payload instanceof UDP) {
+                    l4Packet = new UdpPacket((UDP)payload);
+                } else if (payload instanceof ICMP) {
+                    l4Packet = new IcmpPacket((ICMP)payload);
+                }
+            }
+        }
+
+        return l4Packet;
     }
 
     /**
@@ -441,7 +503,7 @@ public class PacketContext {
      * @return  {@code true} is returned only if this packet is an IPv4 packet.
      */
     public boolean isIPv4() {
-        return (payload instanceof IPv4);
+        return (etherFrame.getEtherType() == EtherTypes.IPv4.intValue());
     }
 
     /**
@@ -450,11 +512,11 @@ public class PacketContext {
      * @param mgr  VTN Manager service.
      */
     public void probeInetAddress(VTNManagerImpl mgr) {
-        if (payload instanceof IPv4) {
+        Inet4Packet ipv4 = getInet4Packet();
+        if (ipv4 != null) {
             // Send an ARP request to the source address of this packet.
-            IPv4 ipv4 = (IPv4)payload;
             int srcIp = ipv4.getSourceAddress();
-            byte[] dst = getSourceAddress();
+            byte[] dst = etherFrame.getSourceAddress();
             byte[] tpa = NetUtils.intToByteArray4(srcIp);
             short vlan = getVlan();
             Ethernet ether = mgr.createArpRequest(dst, tpa, vlan);
@@ -492,8 +554,8 @@ public class PacketContext {
         //   - Destination MAC address
         //   - VLAN ID
         //   - Incoming port
-        match.setField(MatchType.DL_SRC, getSourceAddress());
-        match.setField(MatchType.DL_DST, getDestinationAddress());
+        match.setField(MatchType.DL_SRC, etherFrame.getSourceAddress());
+        match.setField(MatchType.DL_DST, etherFrame.getDestinationAddress());
 
         // This code expects MatchType.DL_VLAN_NONE is zero.
         match.setField(MatchType.DL_VLAN, getVlan());

@@ -15,6 +15,8 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
+import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -1726,7 +1728,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code null}
      *     <dd>
-     *       Configuration of existing MAC mapping is not changed.
+     *       Configuration of existing MAC mapping was not changed.
      *   </dl>
      * @throws VTNException  An error occurred.
      *   The following are the main {@code StatusCode} set in {@link Status}
@@ -1898,7 +1900,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code null}
      *     <dd>
-     *       Configuration of existing MAC mapping is not changed.
+     *       Configuration of existing MAC mapping was not changed.
      *   </dl>
      * @throws VTNException  An error occurred.
      *   The following are the main {@code StatusCode} set in {@link Status}
@@ -2362,4 +2364,344 @@ public interface IVTNManager {
      * @since  Helium
      */
     int getDataFlowCount(VTenantPath path) throws VTNException;
+
+    /**
+     * Return a list of flow conditions configured in the container.
+     *
+     * @return  A list of {@link FlowCondition} instances corresponding to
+     *          all flow conditions configured in the container.
+     *          An empty list is returned if no flow condition is configured.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<FlowCondition> getFlowConditions() throws VTNException;
+
+    /**
+     * Return information about the flow condition specified by the name.
+     *
+     * @param name  The name of the flow condition.
+     * @return  A {@link FlowCondition} instance which represents information
+     *          about the flow condition specified by {@code name}.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>{@code null} is passed to {@code name}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Flow condition specified by {@code name} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    FlowCondition getFlowCondition(String name) throws VTNException;
+
+    /**
+     * Create or modify the flow condition.
+     *
+     * <ul>
+     *   <li>
+     *     If the flow condition specified by {@code name} does not exist,
+     *     a new flow condition will be associated with {@code name} in the
+     *     container.
+     *   </li>
+     *   <li>
+     *     If the flow condition specified by {@code name} already exists,
+     *     it will be modified as specified by {@code fcond}.
+     *   </li>
+     * </ul>
+     *
+     * @param name
+     *   The name of the flow condition.
+     *   <p style="margin-left: 1em;">
+     *     The name of the flow condition must be a string that meets the
+     *     following conditions.
+     *   </p>
+     *   <ul>
+     *     <li>
+     *       The length of the name must be greater than <strong>0</strong>
+     *       and less than <strong>32</strong>.
+     *     </li>
+     *     <li>
+     *       The name must consist of US-ASCII alphabets, numbers, and
+     *       underscore ({@code '_'}).
+     *     </li>
+     *     <li>
+     *       The name must start with an US-ASCII alphabet or number.
+     *     </li>
+     *   </ul>
+     * @param fcond
+     *   A {@link FlowCondition} instance which specifies the configuration
+     *   of the flow condition.
+     *   <ul>
+     *     <li>
+     *       The name of the flow condition configured in {@code fcond} is
+     *       always ignored. The name is determined by {@code name} argument.
+     *     </li>
+     *     <li>
+     *       Each {@link FlowMatch} instance in {@code fcond} must have an
+     *       unique match index.
+     *     </li>
+     *     <li>
+     *       The flow condition will match every packet if {@code fcond} does
+     *       not contain {@link FlowMatch} instance.
+     *     </li>
+     *     <li>
+     *       {@code null} implies an empty flow condition that matches every
+     *       packet.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       Flow condition was newly configured in the container.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing flow condition in the container was
+     *       changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing flow condition was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code name}.
+     *         </li>
+     *         <li>
+     *           Incorrect flow condition name is passed to {@code name}.
+     *         </li>
+     *         <li>
+     *           A {@link FlowCondition} instance passed to {@code fcond}
+     *           contains invalid configuration.
+     *         </li>
+     *         <li>
+     *           Duplicate match index is configured in {@link FlowMatch}
+     *           instance in {@code fcond}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setFlowCondition(String name, FlowCondition fcond)
+        throws VTNException;
+
+    /**
+     * Remove the flow condition specified by the name.
+     *
+     * @param name  The name of the flow condition to be removed.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>{@code null} is passed to {@code name}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Flow condition specified by {@code name} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removeFlowCondition(String name);
+
+    /**
+     * Return a {@link FlowMatch} instance configured in the flow condition
+     * specified by the flow condition name and match index.
+     *
+     * @param name   The name of the flow condition.
+     * @param index  The match index that specifies flow match condition
+     *               in the flow condition.
+     * @return  A {@link FlowMatch} instance which represents a flow match
+     *          condition.
+     *          {@code null} is returned if no flow match condition is
+     *          configured at the specified match index.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>{@code null} is passed to {@code name}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Flow condition specified by {@code name} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    FlowMatch getFlowConditionMatch(String name, int index)
+        throws VTNException;
+
+    /**
+     * Configure a flow match condition into the flow condition specified
+     * by the flow condition name and match index.
+     *
+     * <ul>
+     *   <li>
+     *     If no flow match condition is associated with the specified match
+     *     index in the flow condition, a new flow match condition will be
+     *     associated with the specified match index in the flow condition.
+     *   </li>
+     *   <li>
+     *     If the flow match condition is already associated with the
+     *     specified match index in the flow condition, the contents of the
+     *     flow match condition will be modified as specified by {@code match}.
+     *   </li>
+     * </ul>
+     *
+     * @param name   The name of the flow condition.
+     * @param index
+     *   The match index that specifies flow match condition in the flow
+     *   condition.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>1</strong> to <strong>65535</strong>.
+     *     </li>
+     *   </ul>
+     * @param match
+     *   A {@link FlowMatch} instance which represents a flow match condition
+     *   to be configured.
+     *   <ul>
+     *     <li>
+     *       The match index configured in {@code match} is always ignored.
+     *       The match index is determined by {@code index} argument.
+     *     </li>
+     *     <li>
+     *       {@code null} implies an empty flow match condition that matches
+     *       every packet.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       Flow match condition was newly configured in the flow condition.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing flow match condition in the flow
+     *       condition was changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing flow match condition was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code name}.
+     *         </li>
+     *         <li>
+     *           Match index specified by {@code index} is out of valid range.
+     *         </li>
+     *         <li>
+     *           A {@link FlowMatch} instance passed to {@code match} contains
+     *           invalid configuration.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setFlowConditionMatch(String name, int index, FlowMatch match)
+        throws VTNException;
+
+    /**
+     * Remove the flow match condition specified by the flow condition name
+     * and match index.
+     *
+     * @param name   The name of the flow condition.
+     * @param index  The match index that specifies flow match condition
+     *               in the flow condition.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. {@code null} is returned if the flow match condition
+     *     specified by {@code index} does not exist in the flow condition
+     *     specified by {@code name}.
+     *     Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>{@code null} is passed to {@code name}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Flow condition specified by {@code name} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removeFlowConditionMatch(String name, int index);
 }

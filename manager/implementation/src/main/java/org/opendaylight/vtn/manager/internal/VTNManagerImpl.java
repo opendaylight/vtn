@@ -9,11 +9,12 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.net.InetAddress;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Dictionary;
 import java.util.EnumSet;
@@ -26,9 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -67,9 +67,14 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
+import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowCondImpl;
+import org.opendaylight.vtn.manager.internal.cluster.FlowConditionEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
+import org.opendaylight.vtn.manager.internal.cluster.FlowMatchImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
@@ -209,6 +214,11 @@ public class VTNManagerImpl
     static final String CACHE_ISL = "vtn.isl";
 
     /**
+     * The name of the cluster cache which keeps flow conditions.
+     */
+    static final String CACHE_FLOWCOND = "vtn.flowcond";
+
+    /**
      * The name of the cluster cache which keeps MAC address table entries.
      */
     static final String CACHE_MAC = "vtn.mac";
@@ -275,6 +285,11 @@ public class VTNManagerImpl
      * </p>
      */
     private ConcurrentMap<NodeConnector, VNodeState>  islDB;
+
+    /**
+     * Keeps flow conditions configured in this container.
+     */
+    private ConcurrentMap<String, FlowCondImpl> flowCondDB;
 
     /**
      * Keeps all MAC address table entries in this container.
@@ -807,6 +822,7 @@ public class VTNManagerImpl
             clusterEvent =
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
             flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
+            flowCondDB = new ConcurrentHashMap<String, FlowCondImpl>();
             macAddressDB = null;
             return;
         }
@@ -820,6 +836,7 @@ public class VTNManagerImpl
         createCache(cluster, CACHE_NODES, cmode);
         createCache(cluster, CACHE_PORTS, cmode);
         createCache(cluster, CACHE_ISL, cmode);
+        createCache(cluster, CACHE_FLOWCOND, cmode);
 
         tenantDB = (ConcurrentMap<String, VTenantImpl>)
             getCache(cluster, CACHE_TENANT);
@@ -831,6 +848,8 @@ public class VTNManagerImpl
             getCache(cluster, CACHE_PORTS);
         islDB = (ConcurrentMap<NodeConnector, VNodeState>)
             getCache(cluster, CACHE_ISL);
+        flowCondDB = (ConcurrentMap<String, FlowCondImpl>)
+            getCache(cluster, CACHE_FLOWCOND);
 
         InetAddress ipaddr = resourceManager.getControllerAddress();
         if (ipaddr.isLoopbackAddress()) {
@@ -2514,10 +2533,6 @@ public class VTNManagerImpl
      * Save virtual tenant configuration, and apply current configuration to
      * the VTN Manager.
      *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
-     *
      * @param tenantName  The name of the virtual tenant.
      */
     public void saveTenantConfig(String tenantName) {
@@ -2635,10 +2650,14 @@ public class VTNManagerImpl
         InetAddress myaddr = resourceManager.getControllerAddress();
         ContainerConfig cfg = new ContainerConfig(containerName);
         if (waitForCache(path, myaddr)) {
-            // Read tenant names.
-            List<String> nameList = cfg.getKeys(ContainerConfig.Type.TENANT);
-            for (String name: nameList) {
+            // Load VTN configurations.
+            for (String name: cfg.getKeys(ContainerConfig.Type.TENANT)) {
                 loadTenantConfig(cfg, name);
+            }
+
+            // Load flow conditions.
+            for (String name: cfg.getKeys(ContainerConfig.Type.FLOWCOND)) {
+                loadFlowCondition(cfg, name);
             }
 
             // Notify controllers in the cluster of completion of cluster
@@ -2659,6 +2678,16 @@ public class VTNManagerImpl
 
             // Remove configuration files for obsolete tenants.
             cfg.deleteAll(ContainerConfig.Type.TENANT, names);
+
+            // Update configuration files for flow conditions.
+            names.clear();
+            for (FlowCondImpl fc: flowCondDB.values()) {
+                fc.saveConfig(this);
+                names.add(fc.getName());
+            }
+
+            // Remove configuration files for obsolete flow conditions.
+            cfg.deleteAll(ContainerConfig.Type.FLOWCOND, names);
         }
     }
 
@@ -2680,6 +2709,28 @@ public class VTNManagerImpl
                 vtn = newvtn;
             }
             vtn.resume(this);
+        }
+    }
+
+    /**
+     * Load the specified flow condition from the file.
+     *
+     * @param cfg   A {@link ContainerConfig} instance.
+     * @param name  The name of the flow condition.
+     */
+    private void loadFlowCondition(ContainerConfig cfg, String name) {
+        FlowCondImpl newfc = (FlowCondImpl)
+            cfg.load(ContainerConfig.Type.FLOWCOND, name);
+        if (newfc != null) {
+            FlowCondImpl fc = flowCondDB.putIfAbsent(name, newfc);
+            if (fc == null) {
+                String fmt = "{}: Flow condition was loaded: {}";
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace(fmt, containerName, fc);
+                } else {
+                    LOG.info(fmt, containerName, name);
+                }
+            }
         }
     }
 
@@ -2891,6 +2942,18 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return a failure status that indicates the specified flow condition
+     * does not exist.
+     *
+     * @param name  The name of the flow condition.
+     * @return  A failure status.
+     */
+    private Status flowConditionNotFound(String name) {
+        String msg = name + ": Flow condition does not exist";
+        return new Status(StatusCode.NOTFOUND, msg);
+    }
+
+    /**
      * Return a failure status which represents a {@code null} is specified
      * unexpectedly.
      *
@@ -2942,6 +3005,58 @@ public class VTNManagerImpl
         }
 
         return vtn;
+    }
+
+    /**
+     * Ensure that the specified flow condition name is not null.
+     *
+     * @param name  The name of the flow condition.
+     * @throws VTNException  An error occurred.
+     */
+    private void checkFlowConditionName(String name) throws VTNException {
+        if (name == null) {
+            throw new VTNException(argumentIsNull("Flow condition name"));
+        }
+    }
+
+    /**
+     * Return the flow condition instance associated with the given name.
+     *
+     * <p>
+     *   This method must be called with the VTN Manager lock.
+     * </p>
+     *
+     * @param name  The name of the flow condition.
+     * @return  A flow condition associated with the specified name.
+     * @throws VTNException  An error occurred.
+     */
+    private FlowCondImpl getFlowCondImpl(String name) throws VTNException {
+        FlowCondImpl fc = flowCondDB.get(name);
+        if (fc == null) {
+            throw new VTNException(flowConditionNotFound(name));
+        }
+
+        return fc;
+    }
+
+    /**
+     * Return the flow condition instance associated with the given name.
+     *
+     * <ul>
+     *   <li>
+     *     This method ensures that the specified name is not {@code null}.
+     *   </li>
+     *   <li>This method must be called with the VTN Manager lock.</li>
+     * </ul>
+     *
+     * @param name  The name of the flow condition.
+     * @return  A flow condition associated with the specified name.
+     * @throws VTNException  An error occurred.
+     */
+    private FlowCondImpl getFlowCondImplCheck(String name)
+        throws VTNException {
+        checkFlowConditionName(name);
+        return getFlowCondImpl(name);
     }
 
     /**
@@ -3713,6 +3828,75 @@ public class VTNManagerImpl
     }
 
     /**
+     * Called when a flow condition was added, removed, or changed by
+     * remote cluster node.
+     *
+     * @param name   The name of the flow condition.
+     * @param index  The match index which specifies the flow match condition
+     *               in the flow condition. A negative value is specified if
+     *               the target is flow condition itself.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     *               {@code CHANGED} if changed.
+     */
+    public void updateFlowCondition(String name, int index, UpdateType type) {
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        final ContainerConfig.Type cfgType = ContainerConfig.Type.FLOWCOND;
+
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            FlowCondImpl fc = null;
+            if (type == UpdateType.REMOVED && index < 0) {
+                // Delete the configuration file for the flow condition.
+                cfg.delete(cfgType, name);
+
+                if (index < 0) {
+                    LOG.info("{}:{}: Flow condition was removed.",
+                             containerName, name);
+                } else {
+                    LOG.info("{}:{}.{}: Flow match condition was removed.",
+                             containerName, name, index);
+                }
+
+                return;
+            }
+
+            // Save the configuration for the flow condition.
+            fc = flowCondDB.get(name);
+            if (fc == null) {
+                LOG.debug("{}:{}: Ignore phantom event of the " +
+                          "flow condition: index={}", containerName,
+                          name, index);
+                return;
+            }
+
+            fc.saveConfig(this);
+            if (!LOG.isTraceEnabled()) {
+                // Record a simple informational log.
+                if (index < 0) {
+                    LOG.info("{}:{}: Flow condition was {}.",
+                             containerName, name, type.getName());
+                } else {
+                    LOG.info("{}:{}.{}: Flow match condition was {}.",
+                             containerName, name, index, type.getName());
+                }
+                return;
+            }
+
+            if (index < 0) {
+                LOG.trace("{}:{}: Flow condition was {}: {}",
+                          containerName, name, type.getName(), fc);
+            } else {
+                LOG.trace("{}:{}.{}: Flow match condition was {}: {}",
+                          containerName, name, index, type.getName(), fc);
+            }
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
      * Change VTN mode if needed.
      *
      * <p>
@@ -4135,22 +4319,20 @@ public class VTNManagerImpl
      */
     @Override
     public List<VTenant> getTenants() throws VTNException {
-        // Sort tenants by their name.
-        TreeMap<String, VTenantImpl> tree;
+        ArrayList<VTenant> list;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            tree = new TreeMap(tenantDB);
+            list = new ArrayList<VTenant>(tenantDB.size());
+            for (VTenantImpl vtn: tenantDB.values()) {
+                list.add(vtn.getVTenant());
+            }
         } finally {
             rdlock.unlock();
         }
 
-        ArrayList<VTenant> list = new ArrayList<VTenant>();
-        for (VTenantImpl vtn: tree.values()) {
-            list.add(vtn.getVTenant());
-        }
-        list.trimToSize();
-
+        // Sort tenants by their name.
+        Collections.sort(list, new VTenantComparator());
         return list;
     }
 
@@ -5194,6 +5376,305 @@ public class VTNManagerImpl
         return fdb.getFlowCount();
     }
 
+    /**
+     * Return a list of flow conditions configured in the container.
+     *
+     * @return  A list of {@link FlowCondition} instances corresponding to
+     *          all flow conditions configured in the container.
+     *          An empty list is returned if no flow condition is configured.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<FlowCondition> getFlowConditions() throws VTNException {
+        ArrayList<FlowCondition> list;
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            list = new ArrayList<FlowCondition>(flowCondDB.size());
+            for (FlowCondImpl fc: flowCondDB.values()) {
+                list.add(fc.getFlowCondition());
+            }
+        } finally {
+            rdlock.unlock();
+        }
+
+        // Sort flow conditions by their name.
+        Collections.sort(list, new FlowConditionComparator());
+        return list;
+    }
+
+    /**
+     * Return information about the flow condition specified by the name.
+     *
+     * @param name  The name of the flow condition.
+     * @return  A {@link FlowCondition} instance which represents information
+     *          about the flow condition specified by {@code name}.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public FlowCondition getFlowCondition(String name) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            FlowCondImpl fc = getFlowCondImplCheck(name);
+            return fc.getFlowCondition();
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Create or modify the flow condition.
+     *
+     * @param name   The name of the flow condition.
+     * @param fcond  A {@link FlowCondition} instance which specifies the
+     *               configuration of the flow condition.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setFlowCondition(String name, FlowCondition fcond)
+        throws VTNException {
+        VTNManagerImpl.checkName("Flow condition", name);
+
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            checkUpdate();
+
+            UpdateType result;
+            FlowCondImpl fc;
+            while (true) {
+                FlowCondImpl oldfc = flowCondDB.get(name);
+                if (oldfc == null) {
+                    // Create a new flow condition.
+                    fc = new FlowCondImpl(name, fcond);
+                    if (flowCondDB.putIfAbsent(name, fc) == null) {
+                        result = UpdateType.ADDED;
+                        break;
+                    }
+                } else {
+                    // Update existing flow condition.
+                    fc = oldfc.clone();
+                    List<FlowMatch> matches = (fcond == null)
+                        ? null : fcond.getMatches();
+                    if (!fc.setMatches(matches)) {
+                        // No change was made to flow condition.
+                        return null;
+                    }
+
+                    if (flowCondDB.replace(name, oldfc, fc)) {
+                        result = UpdateType.CHANGED;
+                        break;
+                    }
+                }
+            }
+
+            Status status = fc.saveConfig(this);
+            if (!status.isSuccess()) {
+                throw new VTNException(status);
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}:{}: Flow condition was {}: {}",
+                          containerName, name, result.getName(), fcond);
+            } else {
+                LOG.info("{}:{}: Flow condition was {}.",
+                         containerName, name, result.getName());
+            }
+            FlowConditionEvent.raise(this, name, result);
+
+            return result;
+        } finally {
+            unlock(wrlock);
+        }
+    }
+
+    /**
+     * Remove the flow condition specified by the name.
+     *
+     * @param name  The name of the flow condition to be removed.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removeFlowCondition(String name) {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            checkFlowConditionName(name);
+            checkUpdate();
+
+            FlowCondImpl fc = flowCondDB.remove(name);
+            if (fc == null) {
+                return flowConditionNotFound(name);
+            }
+
+            fc.destroy(this);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}:{}: Flow condition was removed: {}",
+                          containerName, name, fc.getFlowCondition());
+            } else {
+                LOG.info("{}:{}: Flow condition was removed.",
+                         containerName, name);
+            }
+            FlowConditionEvent.raise(this, name, UpdateType.REMOVED);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            unlock(wrlock);
+        }
+
+        return new Status(StatusCode.SUCCESS, null);
+    }
+
+    /**
+     * Return a {@link FlowMatch} instance configured in the flow condition
+     * specified by the flow condition name and match index.
+     *
+     * @param name   The name of the flow condition.
+     * @param index  The match index that specifies flow match condition
+     *               in the flow condition.
+     * @return  A {@link FlowMatch} instance which represents a flow match
+     *          condition.
+     *          {@code null} is returned if no flow match condition is
+     *          configured at the specified match index.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public FlowMatch getFlowConditionMatch(String name, int index)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            FlowCondImpl fc = getFlowCondImplCheck(name);
+            return fc.getMatch(index);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Configure a flow match condition into the flow condition specified
+     * by the flow condition name and match index.
+     *
+     * @param name   The name of the flow condition.
+     * @param index  The match index that specifies flow match condition in
+     *               the flow condition.
+     * @param match  A {@link FlowMatch} instance which represents a flow
+     *               match condition to be configured.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setFlowConditionMatch(String name, int index,
+                                            FlowMatch match)
+        throws VTNException {
+        checkFlowConditionName(name);
+
+        // Complete FlowMatch instance.
+        FlowMatch mt;
+        if (match == null) {
+            // Create an empty flow match.
+            mt = new FlowMatch(index, null, null, null);
+        } else {
+            // Ensure that the match index is assigned.
+            mt = match.assignIndex(index);
+        }
+
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            checkUpdate();
+
+            UpdateType result;
+            FlowCondImpl fc, oldfc;
+            do {
+                oldfc = getFlowCondImpl(name);
+                fc = oldfc.clone();
+                result = fc.setMatch(mt);
+                if (result == null) {
+                    // No change was made to flow condition.
+                    return null;
+                }
+            } while (!flowCondDB.replace(name, oldfc, fc));
+
+            Status status = fc.saveConfig(this);
+            if (!status.isSuccess()) {
+                throw new VTNException(status);
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}:{}.{}: Flow match condition was {}: {}",
+                          containerName, name, index, result.getName(), mt);
+            } else {
+                LOG.info("{}:{}.{}: Flow match condition was {}.",
+                         containerName, name, index, result.getName());
+            }
+            FlowConditionEvent.raise(this, name, index, result);
+
+            return result;
+        } finally {
+            unlock(wrlock);
+        }
+    }
+
+    /**
+     * Remove the flow match condition specified by the flow condition name
+     * and match index.
+     *
+     * @param name   The name of the flow condition.
+     * @param index  The match index that specifies flow match condition
+     *               in the flow condition.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removeFlowConditionMatch(String name, int index) {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            checkFlowConditionName(name);
+            checkUpdate();
+
+            FlowCondImpl fc, oldfc;
+            FlowMatchImpl fm;
+            do {
+                oldfc = getFlowCondImpl(name);
+                fc = oldfc.clone();
+                fm = fc.removeMatch(index);
+                if (fm == null) {
+                    // No change was made to flow condition.
+                    return null;
+                }
+            } while (!flowCondDB.replace(name, oldfc, fc));
+
+            Status status = fc.saveConfig(this);
+            if (status.isSuccess()) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}:{}.{}: " +
+                              "Flow match condition was removed: {}",
+                              containerName, name, index, fm);
+                } else {
+                    LOG.info("{}:{}.{}: Flow match condition was removed.",
+                             containerName, name, index);
+                }
+
+                FlowConditionEvent.raise(this, name, index,
+                                         UpdateType.REMOVED);
+            }
+
+            return status;
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            unlock(wrlock);
+        }
+    }
+
     // IVTNFlowDebugger
 
     /**
@@ -5402,15 +5883,22 @@ public class VTNManagerImpl
      */
     @Override
     public Status saveConfiguration() {
-        HashSet<String> nameSet = new HashSet<String>();
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             Status status = new Status(StatusCode.SUCCESS, null);
-            for (VTenantImpl vtn: tenantDB.values()) {
-                nameSet.add(vtn.getName());
 
+            // Save VTN configurations.
+            for (VTenantImpl vtn: tenantDB.values()) {
                 Status st = vtn.saveConfig(null);
+                if (!st.isSuccess()) {
+                    status = st;
+                }
+            }
+
+            // Save flow condition configurations.
+            for (FlowCondImpl fc: flowCondDB.values()) {
+                Status st = fc.saveConfig(this);
                 if (!st.isSuccess()) {
                     status = st;
                 }

@@ -33,6 +33,10 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  * This class describes the condition to select packets by protocol header
  * fields.
  *
+ * <p>
+ *   A {@code FlowMatch} instance matches every packet if it is empty.
+ * </p>
+ *
  * <h4>Example JSON</h4>
  * <pre class="prettyprint lang-json">
  * {
@@ -67,7 +71,7 @@ public final class FlowMatch implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5480507922005106178L;
+    private static final long serialVersionUID = 9066937093639999897L;
 
     /**
      * This element describes the Ethernet header fields to match against
@@ -94,6 +98,31 @@ public final class FlowMatch implements Serializable {
      *   <li>
      *     In JSON notation, this element must be wrapped by
      *     <strong>inetMatch</strong> element.
+     *   </li>
+     *   <li>
+     *     If this element is configured, the VTN Manager will complement
+     *     corresponding Ethernet type in <strong>ethernet</strong> element
+     *     if it is not configured.
+     *     For example, if an <strong>inet4</strong> element is configured in
+     *     <strong>flowmatch</strong> element, the VTN Manager behaves
+     *     as follows.
+     *     <ul>
+     *       <li>
+     *         If <strong>ethernet</strong> element is missing, the VTN Manager
+     *         will add an <strong>ethernet</strong> element which specifies
+     *         2048 as Ethernet type.
+     *       </li>
+     *       <li>
+     *         If <strong>ethernet</strong> element does not have
+     *         <strong>type</strong> attribute, the VTN manager will add
+     *         <strong>type</strong> attribute which specifies 2048 as
+     *         Ethernet type.
+     *       </li>
+     *       <li>
+     *         If the Ethernet type configured in <strong>ethernet</strong>
+     *         element is not 2048, the VTN Manager treats it as invalid.
+     *       </li>
+     *     </ul>
      *   </li>
      * </ul>
      */
@@ -133,6 +162,34 @@ public final class FlowMatch implements Serializable {
      *     In JSON notation, this element must be wrapped by
      *     <strong>l4Match</strong> element.
      *   </li>
+     *   <li>
+     *     If this element is configured, the VTN Manager will complement
+     *     corresponding IP protocol number in <strong>inet4</strong> element
+     *     if it is not configured.
+     *     For example, if a <strong>tcp</strong> element is configured in
+     *     <strong>flowmatch</strong> element, the VTN Manager behaves
+     *     as follows.
+     *     <ul>
+     *       <li>
+     *         If <strong>inet4</strong> element is missing, the VTN Manager
+     *         will add an <strong>inet4</strong> element which specifies 6 as
+     *         IP protocol number.
+     *         In this case, the VTN Manager may also add an
+     *         <strong>ethernet</strong> element as described in documents for
+     *         <strong>inet4</strong> element.
+     *       </li>
+     *       <li>
+     *         If <strong>inet4</strong> element does not have
+     *         <strong>protocol</strong> attribute, the VTN manager will add
+     *         <strong>protocol</strong> attribute which specifies 6 as
+     *         IP protocol number.
+     *       </li>
+     *       <li>
+     *         If the IP protocol number configured in <strong>inet4</strong>
+     *         element is not 6, the VTN Manager treats it as invalid.
+     *       </li>
+     *     </ul>
+     *   </li>
      * </ul>
      */
     @XmlElements({
@@ -147,7 +204,7 @@ public final class FlowMatch implements Serializable {
      * <ul>
      *   <li>
      *     The range of value that can be specified is from
-     *     <strong>0</strong> to <strong>4095</strong>.
+     *     <strong>1</strong> to <strong>65535</strong>.
      *   </li>
      *   <li>
      *     This value is used to determine order of match evaluation.
@@ -307,6 +364,11 @@ public final class FlowMatch implements Serializable {
     /**
      * Construct a new instance without specifying index.
      *
+     * <p>
+     *   This constructor is used to create a {@code FlowMatch} instance
+     *   used to configure flow condition.
+     * </p>
+     *
      * @param ether  A {@link EthernetMatch} instance which describes the
      *               condition for Ethernet header.
      *               {@code null} means that no condition for Ethernet header
@@ -319,6 +381,7 @@ public final class FlowMatch implements Serializable {
      *               for layer 4 protocol header.
      *               {@code null} means that no condition for layer 4 protocol
      *               is specified.
+     * @see #FlowMatch(int, EthernetMatch, InetMatch, L4Match)
      */
     public FlowMatch(EthernetMatch ether, InetMatch ip, L4Match l4) {
         ethernetMatch = ether;
@@ -328,6 +391,53 @@ public final class FlowMatch implements Serializable {
 
     /**
      * Construct a new instance with specifying index.
+     *
+     * <p>
+     *   This constructor is used to create a {@code FlowMatch} instance
+     *   used to configure flow condition.
+     * </p>
+     * <ul>
+     *   <li>
+     *     If an {@link InetMatch} instance is passed to {@code ip} parameter,
+     *     the VTN Manager will complement corresponding Ethernet type if
+     *     if it is not specified by an {@link EthernetMatch} instance.
+     *     For example, if an {@link Inet4Match} instance is passed to
+     *     {@code ip} parameter, the VTN Manager behaves as follows.
+     *     <ul>
+     *       <li>
+     *         If {@code null} is specified to {@code ether} parameter,
+     *         or the Ethernet type is not specified in {@link EthernetMatch}
+     *         instance, the VTN Manager will add the condition to match
+     *         Ethernet type 2048 into the flow match condition.
+     *       </li>
+     *       <li>
+     *         If the Ethernet type configured in {@code ether} is not 2048,
+     *         the VTN Manager treats it as invalid.
+     *       </li>
+     *     </ul>
+     *   </li>
+     *   <li>
+     *     If a {@link L4Match} instance is passed to {@code l4} parameter,
+     *     the VTN Manager will complement corresponding IP protocol number
+     *     if it is not specified by {@link InetMatch} instance.
+     *     For example, if a {@link TcpMatch} instance is passed to {@code l4}
+     *     parameter, the VTN Manager behaves as follows.
+     *     <ul>
+     *       <li>
+     *         If {@code null} is specified to {@code ip} parameter, or
+     *         IP protocol number is not specified in {@link InetMatch}
+     *         instance, the VTN Manager will add the condition to match
+     *         IP protocol number 6 into the flow match condition.
+     *         In this case, the VTN Manager may also add the condition for
+     *         Ethernet type as described above.
+     *       </li>
+     *       <li>
+     *         If the IP protocol number configured in {@code ip} is not 6,
+     *         the VTN Manager treats it as invalid.
+     *       </li>
+     *     </ul>
+     *   </li>
+     * </ul>
      *
      * @param index  An index value to be assigned to a new instance.
      * @param ether  A {@link EthernetMatch} instance which describes the
@@ -345,7 +455,7 @@ public final class FlowMatch implements Serializable {
      */
     public FlowMatch(int index, EthernetMatch ether, InetMatch ip,
                      L4Match l4) {
-        matchIndex = index;
+        matchIndex = Integer.valueOf(index);
         ethernetMatch = ether;
         inetMatch = ip;
         l4Match = l4;
@@ -354,12 +464,30 @@ public final class FlowMatch implements Serializable {
     /**
      * Return an index value assigned to this instance.
      *
-     * @return  An {@link Integer} instance which represents an  index value
+     * @return  An {@link Integer} instance which represents an index value
      *          assigned to this instance.
      *          {@code null} is returned if no index is assigned.
      */
     public Integer getIndex() {
         return matchIndex;
+    }
+
+    /**
+     * Assign a match index to {@link FlowMatch} instance.
+     *
+     * <p>
+     *   If the specified index is already assigned to this instance, this
+     *   method returns this instance. Otherwise, this method returns a copy
+     *   of this instance with setting the specified index.
+     * </p>
+     *
+     * @param index  A match index to be assigned.
+     * @return  A {@code FlowMatch} instance.
+     */
+    public FlowMatch assignIndex(int index) {
+        return (matchIndex != null && matchIndex.intValue() == index)
+            ? this
+            : new FlowMatch(index, ethernetMatch, inetMatch, l4Match);
     }
 
     /**
@@ -483,11 +611,11 @@ public final class FlowMatch implements Serializable {
             sep = ",";
         }
         if (inetMatch != null) {
-            builder.append(sep).append(",inet=").append(inetMatch.toString());
+            builder.append(sep).append("inet=").append(inetMatch.toString());
             sep = ",";
         }
         if (l4Match != null) {
-            builder.append(sep).append(",l4=").append(l4Match.toString());
+            builder.append(sep).append("L4=").append(l4Match.toString());
         }
         builder.append(']');
 

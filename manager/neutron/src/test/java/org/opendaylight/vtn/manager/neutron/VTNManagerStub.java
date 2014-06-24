@@ -44,6 +44,8 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
+import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 
 /**
  * Stub class for unit tests.
@@ -356,4 +358,39 @@ public class VTNManagerStub implements IVTNManager {
         return true;
     }
 
+    @Override
+    public List<FlowCondition> getFlowConditions() {
+        return null;
+    }
+
+    @Override
+    public FlowCondition getFlowCondition(String name) {
+        return null;
+    }
+
+    @Override
+    public UpdateType setFlowCondition(String name, FlowCondition fcond) {
+        return null;
+    }
+
+    @Override
+    public Status removeFlowCondition(String name) {
+        return null;
+    }
+
+    @Override
+    public FlowMatch getFlowConditionMatch(String name, int index) {
+        return null;
+    }
+
+    @Override
+    public UpdateType setFlowConditionMatch(String name, int index,
+                                            FlowMatch match) {
+        return null;
+    }
+
+    @Override
+    public Status removeFlowConditionMatch(String name, int index) {
+        return null;
+    }
 }
