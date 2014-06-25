@@ -336,13 +336,13 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
 
         VTNModeListenerStub stub = new VTNModeListenerStub();
         vtnMgr.addVTNModeListener(stub);
-        stub.checkCalledInfo(1);
+        stub.checkCalledInfo(1, Boolean.FALSE);
 
         // create tenant and bridges
         VTenantPath tpath = new VTenantPath("tenant");
         Status st = vtnMgr.addTenant(tpath, new VTenantConfig("desc"));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub.checkCalledInfo(1);
+        stub.checkCalledInfo(1, Boolean.TRUE);
 
         ReentrantReadWriteLock  rwLock = new ReentrantReadWriteLock();
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
@@ -350,7 +350,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         // setModeChanged() and cleanup() are called in removeTenant().
         st = vtnMgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        stub.checkCalledInfo(1);
+        stub.checkCalledInfo(1, Boolean.FALSE);
 
         data = VTNThreadData.create(rwLock.writeLock());
         data.cleanUp(vtnMgr);
@@ -400,6 +400,10 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         private int calledCount = 0;
         private Boolean oldactive = null;
 
+        /**
+         * The number of milliseconds to wait for VTN events.
+         */
+        private static final long  EVENT_TIMEOUT = 10000L;
 
         @Override
         public synchronized void vtnModeChanged(boolean active) {
@@ -410,7 +414,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
 
         private synchronized int getCalledCount(int expected) {
             if (calledCount < expected) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {
@@ -432,7 +436,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
 
         private synchronized Boolean getCalledArg() {
             if (oldactive == null) {
-                long milli = 1000;
+                long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
                 do {
                     try {

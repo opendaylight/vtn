@@ -2182,8 +2182,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         pmapAware.checkPmapInfo(3, ifp2, pmconf, UpdateType.ADDED);
         mgr.removeVTNManagerAware(pmapAware);
 
-        mgr.addVTNManagerAware(awareStub);
         flushTasks();
+        mgr.addVTNManagerAware(awareStub);
         awareStub.checkVtnInfo(1, tpath, UpdateType.ADDED);
         awareStub.checkVbrInfo(1, bpath, UpdateType.ADDED);
         awareStub.checkVIfInfo(3, ifp2, UpdateType.ADDED);
@@ -3585,6 +3585,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         // Add an IVTNManagerAware listener. This should report current
         // configuration, including MAC mapping.
         OrderedVTNListener listener = new OrderedVTNListener();
+        flushTasks();
         mgr.addVTNManagerAware(listener);
         listener.checkEvent(VTNListenerType.VTN, tpath, vtn, UpdateType.ADDED);
         for (int i = 0; i < bridges.size(); i++) {
