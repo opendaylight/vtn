@@ -2120,8 +2120,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         pmapAware.checkPmapInfo(3, ifp2, pmconf, UpdateType.ADDED);
         mgr.removeVTNManagerAware(pmapAware);
 
-        mgr.addVTNManagerAware(awareStub);
         flushTasks();
+        mgr.addVTNManagerAware(awareStub);
         awareStub.checkVtnInfo(1, tpath, UpdateType.ADDED);
         awareStub.checkVbrInfo(1, bpath, UpdateType.ADDED);
         awareStub.checkVIfInfo(3, ifp2, UpdateType.ADDED);

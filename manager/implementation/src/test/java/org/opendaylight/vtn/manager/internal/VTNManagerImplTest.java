@@ -908,15 +908,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNModeListenerStub stub1 = new VTNModeListenerStub();
         VTNModeListenerStub stub2 = new VTNModeListenerStub();
 
+        mgr.addVTNModeListener(stub1);
+        stub1.checkCalledInfo(1, Boolean.FALSE);
+
         VTenantPath tpath = new VTenantPath("tenant");
         Status st = mgr.addTenant(tpath, new VTenantConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
         flushTasks();
-        stub1.checkCalledInfo(0);
-        stub2.checkCalledInfo(0);
-
-        mgr.addVTNModeListener(stub1);
         stub1.checkCalledInfo(1, Boolean.TRUE);
+        stub2.checkCalledInfo(0);
 
         mgr.addVTNModeListener(stub2);
         stub2.checkCalledInfo(1, Boolean.TRUE);
