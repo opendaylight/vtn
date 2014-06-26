@@ -218,7 +218,7 @@ public abstract class InetAddressAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        int h = getClass().hashCode();
+        int h = getClass().getName().hashCode();
         if (address != null) {
             h ^= address.hashCode();
         }

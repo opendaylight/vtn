@@ -104,7 +104,7 @@ public abstract class TpPortAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        return getClass().hashCode() ^ port;
+        return getClass().getName().hashCode() ^ port;
     }
 
     /**

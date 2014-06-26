@@ -531,9 +531,10 @@ public abstract class InetMatch implements Serializable {
      */
     @Override
     public final int hashCode() {
-        return Objects.hash(sourceAddress, destinationAddress,
-                            sourceSuffix, destinationSuffix,
-                            protocol, dscp);
+        int h = getClass().getName().hashCode();
+        return h + Objects.hash(sourceAddress, destinationAddress,
+                                sourceSuffix, destinationSuffix,
+                                protocol, dscp);
     }
 
     /**

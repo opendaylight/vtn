@@ -172,7 +172,7 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
      */
     @Override
     public int hashCode() {
-        int h = getClass().hashCode();
+        int h = getClass().getName().hashCode();
         if (tenantName != null) {
             h ^= tenantName.hashCode();
         }

@@ -179,7 +179,7 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        return getClass().hashCode() ^ Arrays.hashCode(address);
+        return getClass().getName().hashCode() ^ Arrays.hashCode(address);
     }
 
     /**

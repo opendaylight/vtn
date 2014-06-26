@@ -174,7 +174,8 @@ public abstract class PortProtoMatch extends L4Match {
      */
     @Override
     public final int hashCode() {
-        return Objects.hash(sourcePort, destinationPort);
+        int h = getClass().getName().hashCode();
+        return h + Objects.hash(sourcePort, destinationPort);
     }
 
     /**
