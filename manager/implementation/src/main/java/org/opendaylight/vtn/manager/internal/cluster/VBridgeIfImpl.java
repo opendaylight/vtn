@@ -946,7 +946,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             }
 
             // Currently only OpenFlow node connector is supported.
-            if (!NodeUtils.isNodeConnectorSupported(type, id)) {
+            if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
                 String msg = "Unsupported node connector type";
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }

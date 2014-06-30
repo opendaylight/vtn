@@ -1181,7 +1181,7 @@ public class VTNManagerImpl
             return null;
         }
 
-        if (NodeUtils.isSpecial(switchManager, nc, propMap)) {
+        if (switchManager.isSpecial(nc)) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}: addPort: Ignore special port {}, {}",
                           containerName, nc, propMap);
@@ -2881,7 +2881,7 @@ public class VTNManagerImpl
         }
 
         if (checkType) {
-            NodeUtils.checkNodeType(type, id);
+            NodeUtils.checkNodeType(type);
         }
     }
 
@@ -2923,7 +2923,7 @@ public class VTNManagerImpl
         }
 
         if (checkType) {
-            NodeUtils.checkNodeConnectorType(type, id);
+            NodeUtils.checkNodeConnectorType(type);
         }
 
         checkNode(nc.getNode(), checkType);
@@ -6262,8 +6262,8 @@ public class VTNManagerImpl
             }
 
             // Ensure that the packet was sent by an OpenFlow node. */
-            NodeUtils.checkNodeType(node.getType(), node.getID());
-            NodeUtils.checkNodeConnectorType(nc.getType(), nc.getID());
+            NodeUtils.checkNodeType(node.getType());
+            NodeUtils.checkNodeConnectorType(nc.getType());
 
             if (islDB.containsKey(nc)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",

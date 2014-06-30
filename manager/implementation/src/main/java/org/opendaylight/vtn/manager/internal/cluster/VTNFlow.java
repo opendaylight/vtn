@@ -27,7 +27,6 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.L2Host;
-import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -552,8 +551,7 @@ public class VTNFlow implements Serializable {
 
                     // Eliminate special port from port index in order to
                     // reduce index size.
-                    if (swMgr == null ||
-                        !NodeUtils.isSpecial(swMgr, port, null)) {
+                    if (swMgr == null || !swMgr.isSpecial(port)) {
                         flowPorts.add(port);
                     }
                 }
