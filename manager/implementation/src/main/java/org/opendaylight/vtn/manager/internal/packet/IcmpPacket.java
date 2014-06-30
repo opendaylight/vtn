@@ -9,6 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
+import java.util.Set;
+
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ICMP;
 import org.opendaylight.controller.sal.utils.NetUtils;
 
@@ -83,5 +87,27 @@ public final class IcmpPacket implements CachedPacket {
     @Override
     public ICMP getPacket() {
         return packet;
+    }
+
+    /**
+     * Configure match fields to test ICMP header in this packet.
+     *
+     * @param match   A {@link Match} instance.
+     * @param fields  A set of {@link MatchType} instances corresponding to
+     *                match fields to be tested.
+     */
+    @Override
+    public void setMatch(Match match, Set<MatchType> fields) {
+        MatchType mt = MatchType.TP_SRC;
+        if (fields.contains(mt)) {
+            // Test ICMP type.
+            match.setField(mt, getType());
+        }
+
+        mt = MatchType.TP_DST;
+        if (fields.contains(mt)) {
+            // Test ICMP code.
+            match.setField(mt, getCode());
+        }
     }
 }

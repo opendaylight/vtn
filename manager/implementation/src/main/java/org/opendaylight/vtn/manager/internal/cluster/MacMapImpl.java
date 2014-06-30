@@ -41,6 +41,7 @@ import org.opendaylight.vtn.manager.internal.MacMapConflictException;
 import org.opendaylight.vtn.manager.internal.MacMapDuplicateException;
 import org.opendaylight.vtn.manager.internal.MacMapGoneException;
 import org.opendaylight.vtn.manager.internal.MacMapPortBusyException;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.NodePortFilter;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.SpecificPortFilter;
@@ -1120,7 +1121,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
             MacVlan dup = e.getDuplicate();
             long mac = mvlan.getMacAddress();
             StringBuilder builder = new StringBuilder("MAC address(");
-            builder.append(VTNManagerImpl.formatMacAddress(mac)).
+            builder.append(MiscUtils.formatMacAddress(mac)).
                 append(") on VLAN ").append((int)dup.getVlan()).
                 append(" is already mapped");
             emsg = builder.toString();
@@ -1234,7 +1235,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
      * @return  An error status.
      */
     private Status operationCannotBeNull() {
-        return VTNManagerImpl.argumentIsNull("Operation");
+        return MiscUtils.argumentIsNull("Operation");
     }
 
     /**
@@ -1244,7 +1245,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
      * @return  An error status.
      */
     private Status aclCannotBeNull() {
-        return VTNManagerImpl.argumentIsNull("ACL type");
+        return MiscUtils.argumentIsNull("ACL type");
     }
 
     /**
@@ -1255,7 +1256,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
      * @return  An error status.
      */
     private Status duplicatedMacAddress(long mac) {
-        String maddr = VTNManagerImpl.formatMacAddress(mac);
+        String maddr = MiscUtils.formatMacAddress(mac);
         StringBuilder builder = new StringBuilder("MAC address(");
         builder.append(maddr).append(" is duplicated in allowed set");
         return new Status(StatusCode.BADREQUEST, builder.toString());
@@ -1286,7 +1287,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
      * @return  An error status.
      */
     private Status alreadyMapped(long mac) {
-        String maddr = VTNManagerImpl.formatMacAddress(mac);
+        String maddr = MiscUtils.formatMacAddress(mac);
         StringBuilder builder = new StringBuilder("MAC address(");
         builder.append(maddr).append(") is already mapped to this vBridge");
         return new Status(StatusCode.CONFLICT, builder.toString());

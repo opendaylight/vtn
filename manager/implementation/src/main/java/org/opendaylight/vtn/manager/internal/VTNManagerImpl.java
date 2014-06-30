@@ -32,8 +32,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +47,9 @@ import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
 import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
+import org.opendaylight.vtn.manager.PathMap;
+import org.opendaylight.vtn.manager.PathPolicy;
+import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.UpdateOperation;
@@ -71,6 +72,8 @@ import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
+import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapEvent;
+import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowCondImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowConditionEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -79,10 +82,11 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
+import org.opendaylight.vtn.manager.internal.cluster.PathPolicyEvent;
+import org.opendaylight.vtn.manager.internal.cluster.PathPolicyImpl;
 import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
@@ -107,15 +111,13 @@ import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
-import org.opendaylight.controller.sal.core.Config;
 import org.opendaylight.controller.sal.core.ContainerFlow;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.IContainerListener;
-import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.core.Property;
-import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
@@ -135,7 +137,6 @@ import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
@@ -150,7 +151,7 @@ import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
  * Implementation of VTN Manager service.
  */
 public class VTNManagerImpl
-    implements IVTNManager, IVTNFlowDebugger,
+    implements IVTNManager, IVTNFlowDebugger, RouteResolver,
                ICacheUpdateAware<ClusterEventId, Object>,
                IConfigurationContainerAware, IInventoryListener,
                ITopologyManagerAware, IContainerListener, IListenDataPacket,
@@ -161,30 +162,14 @@ public class VTNManagerImpl
     static final Logger  LOG = LoggerFactory.getLogger(VTNManagerImpl.class);
 
     /**
-     * Maximum length of the resource name.
-     */
-    private static final int RESOURCE_NAME_MAXLEN = 31;
-
-    /**
      * Maximum lifetime, in milliseconds, of a cluster event.
      */
     private static final long CLUSTER_EVENT_LIFETIME = 1000L;
 
     /**
-     * Regular expression that matches valid resource name.
-     */
-    private static final Pattern RESOURCE_NAME_REGEX =
-        Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
-
-    /**
      * The number of bytes in an IPv4 address.
      */
     static final int  IPV4_ADDRLEN = 4;
-
-    /**
-     * The number of bits in an integer value.
-     */
-    static final int  NBITS_INT = 32;
 
     /**
      * Cluster cache name associated with {@link #tenantDB}.
@@ -219,6 +204,16 @@ public class VTNManagerImpl
     static final String CACHE_FLOWCOND = "vtn.flowcond";
 
     /**
+     * The name of the cluster cache which keeps path policies.
+     */
+    static final String CACHE_PATHPOLICY = "vtn.pathpolicy";
+
+    /**
+     * The name of the cluster cache which keeps container path maps.
+     */
+    static final String CACHE_PATHMAP = "vtn.pathmap";
+
+    /**
      * The name of the cluster cache which keeps MAC address table entries.
      */
     static final String CACHE_MAC = "vtn.mac";
@@ -238,6 +233,11 @@ public class VTNManagerImpl
      * cache initialization.
      */
     private static final long  CACHE_INIT_POLLTIME = 100L;
+
+    /**
+     * Default link cost used when the specified path policy does not exist.
+     */
+    private static final long  DEFAULT_LINK_COST = 1L;
 
     /**
      * Keeps virtual tenant configurations in a container.
@@ -289,7 +289,17 @@ public class VTNManagerImpl
     /**
      * Keeps flow conditions configured in this container.
      */
-    private ConcurrentMap<String, FlowCondImpl> flowCondDB;
+    private ConcurrentMap<String, FlowCondImpl>  flowCondDB;
+
+    /**
+     * Keeps path policies configured in this container.
+     */
+    private ConcurrentMap<Integer, PathPolicyImpl>  pathPolicyDB;
+
+    /**
+     * Keeps container path maps configured in this container.
+     */
+    private ConcurrentMap<Integer, ContainerPathMapImpl>  pathMapDB;
 
     /**
      * Keeps all MAC address table entries in this container.
@@ -304,6 +314,12 @@ public class VTNManagerImpl
      * </p>
      */
     private ConcurrentMap<MacTableEntryId, MacTableEntry> macAddressDB;
+
+    /**
+     * Interface between path policy and SAL routing.
+     */
+    private final Map<Integer, PathPolicyMap>  pathPolicyMap =
+        new HashMap<Integer, PathPolicyMap>();
 
     /**
      * Cluster container service instance.
@@ -698,6 +714,14 @@ public class VTNManagerImpl
         // Initialize VTN flow databases.
         initFlowDatabase();
 
+        // Current path policy implementation uses the global routing table
+        // for max throughput. It should be initialized here because it is
+        // global and it can be initialized only one time.
+        PathPolicyMap ppmap =
+            new PathPolicyMap(this, PathPolicyImpl.POLICY_ID);
+        ppmap.register();
+        pathPolicyMap.put(Integer.valueOf(PathPolicyImpl.POLICY_ID), ppmap);
+
         if (inContainerMode || tenantDB.isEmpty()) {
             // Start ARP handler emulator.
             arpHandler = new ArpHandler(this);
@@ -823,6 +847,8 @@ public class VTNManagerImpl
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
             flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
             flowCondDB = new ConcurrentHashMap<String, FlowCondImpl>();
+            pathPolicyDB = new ConcurrentHashMap<Integer, PathPolicyImpl>();
+            pathMapDB = new ConcurrentHashMap<Integer, ContainerPathMapImpl>();
             macAddressDB = null;
             return;
         }
@@ -837,6 +863,8 @@ public class VTNManagerImpl
         createCache(cluster, CACHE_PORTS, cmode);
         createCache(cluster, CACHE_ISL, cmode);
         createCache(cluster, CACHE_FLOWCOND, cmode);
+        createCache(cluster, CACHE_PATHPOLICY, cmode);
+        createCache(cluster, CACHE_PATHMAP, cmode);
 
         tenantDB = (ConcurrentMap<String, VTenantImpl>)
             getCache(cluster, CACHE_TENANT);
@@ -850,6 +878,10 @@ public class VTNManagerImpl
             getCache(cluster, CACHE_ISL);
         flowCondDB = (ConcurrentMap<String, FlowCondImpl>)
             getCache(cluster, CACHE_FLOWCOND);
+        pathPolicyDB = (ConcurrentMap<Integer, PathPolicyImpl>)
+            getCache(cluster, CACHE_PATHPOLICY);
+        pathMapDB = (ConcurrentMap<Integer, ContainerPathMapImpl>)
+            getCache(cluster, CACHE_PATHMAP);
 
         InetAddress ipaddr = resourceManager.getControllerAddress();
         if (ipaddr.isLoopbackAddress()) {
@@ -952,6 +984,9 @@ public class VTNManagerImpl
             cluster.destroyCache(CACHE_NODES);
             cluster.destroyCache(CACHE_PORTS);
             cluster.destroyCache(CACHE_ISL);
+            cluster.destroyCache(CACHE_FLOWCOND);
+            cluster.destroyCache(CACHE_PATHPOLICY);
+            cluster.destroyCache(CACHE_PATHMAP);
             cluster.destroyCache(CACHE_EVENT);
             cluster.destroyCache(CACHE_FLOWS);
 
@@ -1077,7 +1112,7 @@ public class VTNManagerImpl
     private boolean addNode(Node node, boolean verify) {
         if (verify) {
             try {
-                checkNode(node);
+                NodeUtils.checkNode(node);
             } catch (VTNException e) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("{}: addNode: Ignore invalid node {}: {}",
@@ -1172,7 +1207,7 @@ public class VTNManagerImpl
     private UpdateType addPort(NodeConnector nc,
                                Map<String, Property> propMap) {
         try {
-            checkNodeConnector(nc);
+            NodeUtils.checkNodeConnector(nc);
         } catch (VTNException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}: addPort: Ignore invalid port {}: {}",
@@ -1189,22 +1224,7 @@ public class VTNManagerImpl
             return null;
         }
 
-        String name;
-        boolean enabled;
-        if (propMap == null) {
-            name = null;
-            enabled = false;
-        } else {
-            Name nm = (Name)propMap.get(Name.NamePropName);
-            name = (nm == null) ? null : nm.getValue();
-
-            Config cf = (Config)propMap.get(Config.ConfigPropName);
-            State st = (State)propMap.get(State.StatePropName);
-            enabled =
-                (cf != null && cf.getValue() == Config.ADMIN_UP &&
-                 st != null && st.getValue() == State.EDGE_UP);
-        }
-        PortProperty pp = new PortProperty(name, enabled);
+        PortProperty pp = new PortProperty(propMap);
         PortProperty old = portDB.putIfAbsent(nc, pp);
         if (old == null) {
             addNode(nc.getNode(), false);
@@ -1934,6 +1954,24 @@ public class VTNManagerImpl
     }
 
     /**
+     * Return the flow condition DB.
+     *
+     * @return  The flow condition DB.
+     */
+    public ConcurrentMap<String, FlowCondImpl> getFlowCondDB() {
+        return flowCondDB;
+    }
+
+    /**
+     * Let the specified VTN visible to other controllers in the cluster.
+     *
+     * @param vtn  A virtual tenant.
+     */
+    public void export(VTenantImpl vtn) {
+        tenantDB.put(vtn.getName(), vtn);
+    }
+
+    /**
      * Return a {@link VTNConfig} object which contains static configuration.
      *
      * @return  A {@link VTNConfig} object.
@@ -2302,10 +2340,6 @@ public class VTNManagerImpl
     /**
      * Determine whether the given physical switch port is enabled or not.
      *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
-     *
      * @param port  Node connector associated with physical switch port.
      * @return  {@code true} is returned if the given physical switch port
      *          is enabled. Otherwise {@code false} is returned.
@@ -2317,10 +2351,6 @@ public class VTNManagerImpl
 
     /**
      * Return property of the specified physical switch port.
-     *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
      *
      * @param nc  Node connector associated with physical switch port.
      * @return  {@code PortProperty} object which represents switch port
@@ -2534,12 +2564,14 @@ public class VTNManagerImpl
      * the VTN Manager.
      *
      * @param tenantName  The name of the virtual tenant.
+     * @return  A {@link VTenantImpl} instance corresponding to the specified
+     *          tenant name. {@code null} is returned if not fonud.
      */
-    public void saveTenantConfig(String tenantName) {
+    public VTenantImpl saveTenantConfig(String tenantName) {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            saveTenantConfigLocked(tenantName);
+            return saveTenantConfigLocked(tenantName);
         } finally {
             rdlock.unlock();
         }
@@ -2554,12 +2586,16 @@ public class VTNManagerImpl
      * </p>
      *
      * @param tenantName  The name of the virtual tenant.
+     * @return  A {@link VTenantImpl} instance corresponding to the specified
+     *          tenant name. {@code null} is returned if not fonud.
      */
-    private void saveTenantConfigLocked(String tenantName) {
+    private VTenantImpl saveTenantConfigLocked(String tenantName) {
         VTenantImpl vtn = tenantDB.get(tenantName);
         if (vtn != null) {
             vtn.saveConfig(this);
         }
+
+        return vtn;
     }
 
     /**
@@ -2636,7 +2672,8 @@ public class VTNManagerImpl
             }
         }
 
-        LOG.trace("{}: Became configuration provider", containerName);
+        LOG.trace("{}: Became configuration provider: {}",
+                  containerName, myaddr);
         return true;
     }
 
@@ -2658,6 +2695,16 @@ public class VTNManagerImpl
             // Load flow conditions.
             for (String name: cfg.getKeys(ContainerConfig.Type.FLOWCOND)) {
                 loadFlowCondition(cfg, name);
+            }
+
+            // Load path policies.
+            for (String name: cfg.getKeys(ContainerConfig.Type.PATHPOLICY)) {
+                loadPathPolicy(cfg, name);
+            }
+
+            // Load container path maps.
+            for (String name: cfg.getKeys(ContainerConfig.Type.PATHMAP)) {
+                loadContainerPathMap(cfg, name);
             }
 
             // Notify controllers in the cluster of completion of cluster
@@ -2688,6 +2735,26 @@ public class VTNManagerImpl
 
             // Remove configuration files for obsolete flow conditions.
             cfg.deleteAll(ContainerConfig.Type.FLOWCOND, names);
+
+            // Update configuration files for path policies.
+            names.clear();
+            for (PathPolicyImpl pp: pathPolicyDB.values()) {
+                pp.saveConfig(this);
+                names.add(Integer.toString(pp.getPolicyId()));
+            }
+
+            // Remove configuration files for obsolete path policies.
+            cfg.deleteAll(ContainerConfig.Type.PATHPOLICY, names);
+
+            // Update configuration files for container path maps.
+            names.clear();
+            for (ContainerPathMapImpl cpm: pathMapDB.values()) {
+                cpm.saveConfig(this);
+                names.add(Integer.toString(cpm.getIndex()));
+            }
+
+            // Remove configuration files for obsolete container path maps.
+            cfg.deleteAll(ContainerConfig.Type.PATHMAP, names);
         }
     }
 
@@ -2735,6 +2802,66 @@ public class VTNManagerImpl
     }
 
     /**
+     * Load the specified path policy from the file.
+     *
+     * @param cfg   A {@link ContainerConfig} instance.
+     * @param name  A string representation of the path policy ID.
+     */
+    private void loadPathPolicy(ContainerConfig cfg, String name) {
+        Integer id;
+        try {
+            id = Integer.valueOf(name);
+        } catch (Exception e) {
+            return;
+        }
+
+        PathPolicyImpl newpp = (PathPolicyImpl)
+            cfg.load(ContainerConfig.Type.PATHPOLICY, name);
+        if (newpp != null) {
+            PathPolicyImpl pp = pathPolicyDB.putIfAbsent(id, newpp);
+            if (pp == null) {
+                String msg = "Path policy was loaded";
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}.{}: {}: {}", containerName, name, msg,
+                              newpp);
+                } else {
+                    LOG.info("{}.{}: {}.", containerName, name, msg);
+                }
+            }
+        }
+    }
+
+    /**
+     * Load the specified container path map from the file.
+     *
+     * @param cfg   A {@link ContainerConfig} instance.
+     * @param name  A string representation of the path map index.
+     */
+    private void loadContainerPathMap(ContainerConfig cfg, String name) {
+        Integer id;
+        try {
+            id = Integer.valueOf(name);
+        } catch (Exception e) {
+            return;
+        }
+
+        ContainerPathMapImpl newcpm = (ContainerPathMapImpl)
+            cfg.load(ContainerConfig.Type.PATHMAP, name);
+        if (newcpm != null) {
+            ContainerPathMapImpl cpm = pathMapDB.putIfAbsent(id, newcpm);
+            if (cpm == null) {
+                String msg = "Container path map was loaded";
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}.{}: {}: {}", containerName, name, msg,
+                              newcpm);
+                } else {
+                    LOG.info("{}.{}: {}.", containerName, name, msg);
+                }
+            }
+        }
+    }
+
+    /**
      * Check whether the VTN configuration can be updated or not.
      *
      * <p>
@@ -2759,7 +2886,8 @@ public class VTNManagerImpl
      */
     private void checkTenantConfig(VTenantConfig tconf) throws VTNException {
         if (tconf == null) {
-            throw new VTNException(argumentIsNull("Tenant configuration"));
+            throw new VTNException(MiscUtils.
+                                   argumentIsNull("Tenant configuration"));
         }
     }
 
@@ -2773,160 +2901,6 @@ public class VTNManagerImpl
             throw new VTNException(StatusCode.NOSERVICE,
                                    "VTN service is not available");
         }
-    }
-
-    /**
-     * Return a hash code of the given long integer value.
-     *
-     * @param value  A long integer value.
-     * @return  A hash code of the given value.
-     */
-    public static int hashCode(long value) {
-        return (int)(value ^ (value >>> NBITS_INT));
-    }
-
-    /**
-     * Convert a long value which represents a MAC address into a string.
-     *
-     * @param mac  A long value which represents a MAC address.
-     * @return  A string representation of MAC address.
-     */
-    public static String formatMacAddress(long mac) {
-        byte[] addr = NetUtils.longToByteArray6(mac);
-        return HexEncode.bytesToHexStringFormat(addr);
-    }
-
-    /**
-     * Check the specified resource name.
-     *
-     * @param desc  Brief description of the resource.
-     * @param name  The name of the resource.
-     * @throws VTNException  The specified name is invalid.
-     */
-    public static void checkName(String desc, String name)
-        throws VTNException {
-        if (name == null) {
-            Status status = argumentIsNull(desc + " name");
-            throw new VTNException(status);
-        }
-
-        if (name.isEmpty()) {
-            Status status = new Status(StatusCode.BADREQUEST,
-                                       desc + " name cannot be empty");
-            throw new VTNException(status);
-        }
-
-        int len = name.length();
-        if (len > RESOURCE_NAME_MAXLEN) {
-            Status status = new Status(StatusCode.BADREQUEST,
-                                       desc + " name is too long");
-            throw new VTNException(status);
-        }
-
-        Matcher m = RESOURCE_NAME_REGEX.matcher(name);
-        if (!m.matches()) {
-            Status status = new Status(StatusCode.BADREQUEST, desc +
-                                       " name contains invalid character");
-            throw new VTNException(status);
-        }
-    }
-
-    /**
-     * Check the specified VLAN ID.
-     *
-     * @param vlan  VLAN ID.
-     * @throws VTNException  The specified VLAN ID is invalid.
-     */
-    public static void checkVlan(short vlan) throws VTNException {
-        if (((long)vlan & ~MacVlan.MASK_VLAN_ID) != 0L) {
-            String msg = "Invalid VLAN ID: " + vlan;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
-    }
-
-    /**
-     * Check the specified node.
-     *
-     * @param node  Node to be tested.
-     * @throws VTNException  The specified node is invalid.
-     */
-    public static void checkNode(Node node) throws VTNException {
-        // Currently only OpenFlow node is supported.
-        checkNode(node, true);
-    }
-
-    /**
-     * Check the specified node.
-     *
-     * @param node       Node to be tested.
-     * @param checkType  {@code true} means that this method should check
-     *                   whether the type of the given node is supported or
-     *                   not.
-     *                   {@code false} means that the caller does not care
-     *                   about node type.
-     * @throws VTNException  The specified node is invalid.
-     */
-    public static void checkNode(Node node, boolean checkType)
-        throws VTNException {
-        if (node == null) {
-            Status status = argumentIsNull("Node");
-            throw new VTNException(status);
-        }
-
-        String type = node.getType();
-        Object id = node.getID();
-        if (type == null || id == null) {
-            String msg = "Broken node is specified";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
-
-        if (checkType) {
-            NodeUtils.checkNodeType(type);
-        }
-    }
-
-    /**
-     * Check the specified node connector.
-     *
-     * @param nc  Node connector to be tested.
-     * @throws VTNException  The specified node is invalid.
-     */
-    public static void checkNodeConnector(NodeConnector nc)
-        throws VTNException {
-        // Currently only OpenFlow node is supported.
-        checkNodeConnector(nc, true);
-    }
-
-    /**
-     * Check the specified node connector.
-     *
-     * @param nc         Node connector to be tested.
-     * @param checkType  {@code true} means that this method should check
-     *                   whether the type of the given node connector is
-     *                   supported or not.
-     *                   {@code false} means that the caller does not care
-     *                   about node connector type.
-     * @throws VTNException  The specified node is invalid.
-     */
-    public static void checkNodeConnector(NodeConnector nc, boolean checkType)
-        throws VTNException {
-        if (nc == null) {
-            Status status = argumentIsNull("Node connector");
-            throw new VTNException(status);
-        }
-
-        String type = nc.getType();
-        Object id = nc.getID();
-        if (type == null || id == null) {
-            String msg = "Broken node connector is specified";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
-
-        if (checkType) {
-            NodeUtils.checkNodeConnectorType(type);
-        }
-
-        checkNode(nc.getNode(), checkType);
     }
 
     /**
@@ -2954,15 +2928,15 @@ public class VTNManagerImpl
     }
 
     /**
-     * Return a failure status which represents a {@code null} is specified
-     * unexpectedly.
+     * Return a failure status that indicates the specified path policy
+     * does not exist.
      *
-     * @param desc  Brief description of the argument.
-     * @return  A failure reason.
+     * @param id  The identifier of the path policy.
+     * @return  A failure status.
      */
-    public static Status argumentIsNull(String desc) {
-        String msg = desc + " cannot be null";
-        return new Status(StatusCode.BADREQUEST, msg);
+    private Status pathPolicyNotFound(Integer id) {
+        String msg = id + ": Path policy does not exist";
+        return new Status(StatusCode.NOTFOUND, msg);
     }
 
     /**
@@ -2974,12 +2948,12 @@ public class VTNManagerImpl
      */
     private String getTenantName(VTenantPath path) throws VTNException {
         if (path == null) {
-            throw new VTNException(argumentIsNull("Path"));
+            throw new VTNException(MiscUtils.argumentIsNull("Path"));
         }
 
         String tenantName = path.getTenantName();
         if (tenantName == null) {
-            throw new VTNException(argumentIsNull("Tenant name"));
+            throw new VTNException(MiscUtils.argumentIsNull("Tenant name"));
         }
 
         return tenantName;
@@ -3015,7 +2989,8 @@ public class VTNManagerImpl
      */
     private void checkFlowConditionName(String name) throws VTNException {
         if (name == null) {
-            throw new VTNException(argumentIsNull("Flow condition name"));
+            throw new VTNException(MiscUtils.
+                                   argumentIsNull("Flow condition name"));
         }
     }
 
@@ -3057,6 +3032,47 @@ public class VTNManagerImpl
         throws VTNException {
         checkFlowConditionName(name);
         return getFlowCondImpl(name);
+    }
+
+    /**
+     * Return the path policy instance associated with the given ID.
+     *
+     * <p>
+     *   This method must be called with holding the VTN Manager lock.
+     * </p>
+     *
+     * @param id  The identifier of the path policy.
+     * @return  A path policy associated with the specified ID.
+     * @throws VTNException  An error occurred.
+     */
+    private PathPolicyImpl getPathPolicyImpl(Integer id) throws VTNException {
+        PathPolicyImpl pp = pathPolicyDB.get(id);
+        if (pp == null) {
+            throw new VTNException(pathPolicyNotFound(id));
+        }
+
+        return pp;
+    }
+
+    /**
+     * Update internal state of the routing table corresponding to the
+     * specified path policy.
+     *
+     * <p>
+     *   This method must be called with holding the VTN Manager lock.
+     * </p>
+     *
+     * @param id  The identifier of the path policy.
+     */
+    private void updatePathPolicyMap(Integer id) {
+        PathPolicyMap ppmap = pathPolicyMap.get(id);
+        if (ppmap != null) {
+            ppmap.reset();
+            return;
+        }
+
+        // This should never happen.
+        LOG.warn("{}: {}: Path policy map not found.", containerName, id);
     }
 
     /**
@@ -3846,7 +3862,6 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            FlowCondImpl fc = null;
             if (type == UpdateType.REMOVED && index < 0) {
                 // Delete the configuration file for the flow condition.
                 cfg.delete(cfgType, name);
@@ -3863,7 +3878,7 @@ public class VTNManagerImpl
             }
 
             // Save the configuration for the flow condition.
-            fc = flowCondDB.get(name);
+            FlowCondImpl fc = flowCondDB.get(name);
             if (fc == null) {
                 LOG.debug("{}:{}: Ignore phantom event of the " +
                           "flow condition: index={}", containerName,
@@ -3894,6 +3909,221 @@ public class VTNManagerImpl
         } finally {
             rdlock.unlock();
         }
+    }
+
+    /**
+     * Called when a path policy was added, removed, or changed by remote
+     * cluster node.
+     *
+     * @param id    The identifier of the path policy.
+     * @param type  {@code ADDED} if added.
+     *              {@code REMOVED} if removed.
+     *              {@code CHANGED} if changed.
+     */
+    public void updatePathPolicy(int id, UpdateType type) {
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        final ContainerConfig.Type cfgType = ContainerConfig.Type.PATHPOLICY;
+
+        Integer pid = Integer.valueOf(id);
+        String name = Integer.toString(id);
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            if (type == UpdateType.REMOVED) {
+                // Delete the configuration file for the path policy.
+                cfg.delete(cfgType, name);
+                LOG.info("{}:{}: Path policy was removed.",
+                         containerName, name);
+
+                return;
+            }
+
+            // Reset internal state of the routing table.
+            updatePathPolicyMap(pid);
+
+            // Save the configuration for the path policy.
+            PathPolicyImpl pp = pathPolicyDB.get(pid);
+            if (pp == null) {
+                LOG.debug("{}:{}: Ignore phantom event of the path policy.",
+                          containerName, name);
+                return;
+            }
+
+            pp.saveConfig(this);
+            LOG.info("{}:{}: Path policy was {}.",
+                     containerName, name, type.getName());
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Called when a container path map was added, removed, or changed by
+     * remote cluster node.
+     *
+     * @param index  The index of the container path map.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     *               {@code CHANGED} if changed.
+     */
+    public void updateContainerPathMap(int index, UpdateType type) {
+        ContainerConfig cfg = new ContainerConfig(containerName);
+        final ContainerConfig.Type cfgType = ContainerConfig.Type.PATHMAP;
+        Integer key = Integer.valueOf(index);
+        String name = key.toString();
+
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            if (type == UpdateType.REMOVED) {
+                // Delete the configuration file for the container path map.
+                cfg.delete(cfgType, name);
+                LOG.info("{}.{}: Container path map was removed.",
+                         containerName, name);
+
+                return;
+            }
+
+            // Save the configuration for the container path map.
+            ContainerPathMapImpl cpm = pathMapDB.get(key);
+            if (cpm == null) {
+                LOG.debug("{}.{}: Ignore phantom event of the " +
+                          "container path map.", containerName, name);
+                return;
+            }
+
+            cpm.saveConfig(this);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}.{}: Container path map was {}: {}",
+                          containerName, name, type.getName(), cpm);
+            } else {
+                LOG.trace("{}.{}: Container path map was {}.",
+                          containerName, name, type.getName());
+            }
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Called when a VTN path map was added, removed, or changed by remote
+     * cluster node.
+     *
+     * @param tname  The name of the virtual tenant.
+     * @param index  The index of the container path map.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     *               {@code CHANGED} if changed.
+     */
+    public void updateVTenantPathMap(String tname, int index,
+                                     UpdateType type) {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            // Save the VTN configuration.
+            VTenantImpl vtn = saveTenantConfigLocked(tname);
+            if (vtn == null) {
+                LOG.debug("{}:{}.{}: Ignore phantom event of the VTN path map.",
+                          containerName, tname, index);
+                return;
+            }
+
+            // REVISIT: trace logging.
+            LOG.trace("{}:{}.{}: VTN path map was {}.",
+                      containerName, tname, index, type.getName());
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return the link cost determined by the path policy.
+     *
+     * @param id    The identifier of the path policy.
+     * @param port  A {@link NodeConnector} instance corresponding to the
+     *              switch port.
+     * @return    A {@link Long} instance which represents the link cost.
+     */
+    public Long getLinkCost(Integer id, NodeConnector port) {
+        // VTN Manager lock should never be held here because this method will
+        // be called with holding the SAL routing service lock.
+        PathPolicyImpl pp = pathPolicyDB.get(id);
+        if (pp == null) {
+            LOG.debug("{}: Path policy not found: id={}, port={}",
+                      containerName, id, port);
+            return Long.valueOf(DEFAULT_LINK_COST);
+        }
+
+        return pp.getCost(this, port);
+    }
+
+    /**
+     * Determine whether the specified path policy exists or not.
+     *
+     * <p>
+     *   This method must be called with holding the VTN Manager lock.
+     * </p>
+     *
+     * @param id  The identifier of the path policy.
+     * @return    {@code true} if exists. Otherwise {@code false}.
+     */
+    public boolean pathPolicyExists(Integer id) {
+        return pathPolicyDB.containsKey(id);
+    }
+
+    /**
+     * Return a packet route resolver associated with the specified
+     * path policy ID.
+     *
+     * <p>
+     *   This method must be called with holding the VTN Manager lock.
+     * </p>
+     *
+     * @param id  The identifier of the path policy.
+     * @return  A {@link RouteResolver} instance if found.
+     *          {@code null} if not found.
+     */
+    public RouteResolver getRouteResolver(int id) {
+        if (id == PathPolicyImpl.POLICY_DEFAULT) {
+            return this;
+        }
+
+        Integer key = Integer.valueOf(id);
+        return pathPolicyMap.get(key);
+    }
+
+    /**
+     * Evaluate the container path map list against the specified packet.
+     *
+     * <p>
+     *   This method must be called with holding the VTN Manager lock.
+     * </p>
+     *
+     * @param pctx   The context of the ARP packet to send.
+     * @param tconf  The configuration for the virtual tenant.
+     * @return  A {@link RouteResolver} instance is returned if a path map in
+     *          the container path map list matched the packet.
+     *          The default route resolver is returned if no container path
+     *          map patched the packet.
+     */
+    public RouteResolver evalPathMap(PacketContext pctx, VTenantConfig tconf) {
+        if (!pathMapDB.isEmpty()) {
+            // Sort container path maps in ascending order of indices.
+            ArrayList<ContainerPathMapImpl> list =
+                new ArrayList<ContainerPathMapImpl>(pathMapDB.values());
+            Collections.sort(list, new PathMapImplComparator());
+            for (ContainerPathMapImpl cpm: list) {
+                RouteResolver rr = cpm.evaluate(this, pctx);
+                if (rr != null) {
+                    return rr;
+                }
+            }
+        }
+
+        // Set flow timeout in the virtual tenant configuration.
+        pctx.setFlowTimeout(tconf.getIdleTimeout(),
+                            tconf.getHardTimeout());
+        return this;
     }
 
     /**
@@ -4098,7 +4328,7 @@ public class VTNManagerImpl
         if (mode == DataFlow.Mode.SUMMARY) {
             return null;
         } else if (mode == null) {
-            throw new VTNException(argumentIsNull("Mode"));
+            throw new VTNException(MiscUtils.argumentIsNull("Mode"));
         }
 
         boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
@@ -4374,7 +4604,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             // Ensure the given tenant name is valid.
-            checkName("Tenant", tenantName);
+            MiscUtils.checkName("Tenant", tenantName);
 
             VTenantImpl vtn = new VTenantImpl(containerName, tenantName,
                                               tconf);
@@ -4420,12 +4650,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            if (!vtn.setVTenantConfig(this, path, tconf, all)) {
-                return new Status(StatusCode.SUCCESS, "Not modified");
-            }
-
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.setVTenantConfig(this, path, tconf, all);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4524,9 +4749,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            vtn.addBridge(this, path, bconf);
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.addBridge(this, path, bconf);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4554,12 +4777,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            if (!vtn.modifyBridge(this, path, bconf, all)) {
-                return new Status(StatusCode.SUCCESS, "Not modified");
-            }
-
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.modifyBridge(this, path, bconf, all);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4582,9 +4800,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            vtn.removeBridge(this, path);
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.removeBridge(this, path);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4649,9 +4865,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            vtn.addBridgeInterface(this, path, iconf);
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.addBridgeInterface(this, path, iconf);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4680,12 +4894,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            if (!vtn.modifyBridgeInterface(this, path, iconf, all)) {
-                return new Status(StatusCode.SUCCESS, "Not modified");
-            }
-
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.modifyBridgeInterface(this, path, iconf, all);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4708,9 +4917,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            vtn.removeBridgeInterface(this, path);
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.removeBridgeInterface(this, path);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4802,13 +5009,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            VlanMap vlmap = vtn.addVlanMap(this, path, vlconf);
-            tenantDB.put(vtn.getName(), vtn);
-            Status status = vtn.saveConfig(null);
-            if (!status.isSuccess()) {
-                throw new VTNException(status);
-            }
-            return vlmap;
+            return vtn.addVlanMap(this, path, vlconf);
         } finally {
             data.cleanUp(this);
         }
@@ -4830,9 +5031,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            vtn.removeVlanMap(this, path, mapId);
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.removeVlanMap(this, path, mapId);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4880,9 +5079,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            vtn.setPortMap(this, path, pmconf);
-            tenantDB.put(vtn.getName(), vtn);
-            return vtn.saveConfig(null);
+            return vtn.setPortMap(this, path, pmconf);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -5021,15 +5218,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            UpdateType type = vtn.setMacMap(this, path, op, mcconf);
-            if (type != null) {
-                tenantDB.put(vtn.getName(), vtn);
-                Status status = vtn.saveConfig(null);
-                if (!status.isSuccess()) {
-                    throw new VTNException(status);
-                }
-            }
-            return type;
+            return vtn.setMacMap(this, path, op, mcconf);
         } finally {
             data.cleanUp(this);
         }
@@ -5062,15 +5251,7 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            UpdateType type = vtn.setMacMap(this, path, op, aclType, dlhosts);
-            if (type != null) {
-                tenantDB.put(vtn.getName(), vtn);
-                Status status = vtn.saveConfig(null);
-                if (!status.isSuccess()) {
-                    throw new VTNException(status);
-                }
-            }
-            return type;
+            return vtn.setMacMap(this, path, op, aclType, dlhosts);
         } finally {
             data.cleanUp(this);
         }
@@ -5158,7 +5339,7 @@ public class VTNManagerImpl
         NodeConnector nc = host.getnodeConnector();
         try {
             checkService();
-            checkNodeConnector(nc);
+            NodeUtils.checkNodeConnector(nc);
         } catch (VTNException e) {
             Status status = e.getStatus();
             LOG.debug("{}: probeHost: Ignore request for {}: {}",
@@ -5436,10 +5617,9 @@ public class VTNManagerImpl
     @Override
     public UpdateType setFlowCondition(String name, FlowCondition fcond)
         throws VTNException {
-        VTNManagerImpl.checkName("Flow condition", name);
+        MiscUtils.checkName("Flow condition", name);
 
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -5471,6 +5651,11 @@ public class VTNManagerImpl
                 }
             }
 
+            // REVISIT: Select flow entries affected by the change.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
+
             Status status = fc.saveConfig(this);
             if (!status.isSuccess()) {
                 throw new VTNException(status);
@@ -5487,7 +5672,7 @@ public class VTNManagerImpl
 
             return result;
         } finally {
-            unlock(wrlock);
+            data.cleanUp(this);
         }
     }
 
@@ -5500,8 +5685,7 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeFlowCondition(String name) {
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkFlowConditionName(name);
             checkUpdate();
@@ -5509,6 +5693,11 @@ public class VTNManagerImpl
             FlowCondImpl fc = flowCondDB.remove(name);
             if (fc == null) {
                 return flowConditionNotFound(name);
+            }
+
+            // REVISIT: Select flow entries affected by the change.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
             }
 
             fc.destroy(this);
@@ -5524,7 +5713,7 @@ public class VTNManagerImpl
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            unlock(wrlock);
+            data.cleanUp(this);
         }
 
         return new Status(StatusCode.SUCCESS, null);
@@ -5585,8 +5774,8 @@ public class VTNManagerImpl
             mt = match.assignIndex(index);
         }
 
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkUpdate();
 
@@ -5601,6 +5790,11 @@ public class VTNManagerImpl
                     return null;
                 }
             } while (!flowCondDB.replace(name, oldfc, fc));
+
+            // REVISIT: Select flow entries affected by the change.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
 
             Status status = fc.saveConfig(this);
             if (!status.isSuccess()) {
@@ -5618,7 +5812,7 @@ public class VTNManagerImpl
 
             return result;
         } finally {
-            unlock(wrlock);
+            data.cleanUp(this);
         }
     }
 
@@ -5634,8 +5828,8 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeFlowConditionMatch(String name, int index) {
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
             checkFlowConditionName(name);
             checkUpdate();
@@ -5651,6 +5845,11 @@ public class VTNManagerImpl
                     return null;
                 }
             } while (!flowCondDB.replace(name, oldfc, fc));
+
+            // REVISIT: Select flow entries affected by the change.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
 
             Status status = fc.saveConfig(this);
             if (status.isSuccess()) {
@@ -5671,7 +5870,633 @@ public class VTNManagerImpl
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
-            unlock(wrlock);
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Return a list of path policy identifiers present in the container.
+     *
+     * @return  A list of {@link Integer} instances corresponding to all the
+     *          path policies present in the container.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<Integer> getPathPolicyIds() throws VTNException {
+        ArrayList<Integer> list;
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            list = new ArrayList<Integer>(pathPolicyDB.keySet());
+        } finally {
+            rdlock.unlock();
+        }
+
+        // Sort path policy IDs.
+        Collections.sort(list);
+        return list;
+    }
+
+    /**
+     * Return the configuration of the specified path policy.
+     *
+     * @param id  The identifier of the path policy.
+     * @return  A {@link PathPolicy} instance which contains the configuration
+     *          of the specified path policy.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public PathPolicy getPathPolicy(int id) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            PathPolicyImpl pp = getPathPolicyImpl(Integer.valueOf(id));
+            return pp.getPathPolicy();
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Create or modify the path policy.
+     *
+     * @param id      The identifier of the path policy.
+     * @param policy  A {@link PathPolicy} instance which specifies the
+     *                configuration of the path policy.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setPathPolicy(int id, PathPolicy policy)
+        throws VTNException {
+        Integer pid = Integer.valueOf(id);
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            UpdateType result;
+            PathPolicyImpl pp;
+            while (true) {
+                PathPolicyImpl oldpp = pathPolicyDB.get(pid);
+                if (oldpp == null) {
+                    // Create a new path policy.
+                    pp = new PathPolicyImpl(id, policy);
+                    if (pathPolicyDB.putIfAbsent(pid, pp) == null) {
+                        result = UpdateType.ADDED;
+                        break;
+                    }
+                } else {
+                    // Update existing path policy.
+                    pp = oldpp.clone();
+                    if (!pp.setPathPolicy(policy)) {
+                        // No change was made to path policy.
+                        return null;
+                    }
+
+                    if (pathPolicyDB.replace(pid, oldpp, pp)) {
+                        result = UpdateType.CHANGED;
+                        break;
+                    }
+                }
+            }
+
+            // Remove all flows that was routed by the specified path policy.
+            PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb, fmatch);
+            }
+
+            updatePathPolicyMap(pid);
+
+            Status status = pp.saveConfig(this);
+            if (!status.isSuccess()) {
+                throw new VTNException(status);
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}.{}: Path policy was {}: {}",
+                          containerName, pid, result.getName(), policy);
+            } else {
+                LOG.info("{}.{}: Path policy was {}.",
+                         containerName, pid, result.getName());
+            }
+            PathPolicyEvent.raise(this, id, result);
+
+            return result;
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the path policy specified by the identifier.
+     *
+     * @param id  The identifier of the path policy to be removed.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removePathPolicy(int id) {
+        Integer pid = Integer.valueOf(id);
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            PathPolicyImpl pp = pathPolicyDB.remove(pid);
+            if (pp == null) {
+                return pathPolicyNotFound(pid);
+            }
+
+            // Remove all flows that was routed by the specified path policy.
+            PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb, fmatch);
+            }
+
+            pp.destroy(this);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}.{}: Path policy was removed: {}",
+                          containerName, pid, pp.getPathPolicy());
+            } else {
+                LOG.info("{}.{}: Path policy was removed.",
+                         containerName, pid);
+            }
+            PathPolicyEvent.raise(this, id, UpdateType.REMOVED);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+
+        return new Status(StatusCode.SUCCESS, null);
+    }
+
+
+    /**
+     * Return the default link cost configured in the specified path policy.
+     *
+     * @param id  The identifier of the path policy.
+     * @return    The default link cost configured in the specified path policy
+     *            is returned. {@link PathPolicy#COST_UNDEF} means that the
+     *            default cost should be determined by link speed.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public long getPathPolicyDefaultCost(int id) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            PathPolicyImpl pp = getPathPolicyImpl(Integer.valueOf(id));
+            return pp.getDefaultCost();
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Change the default link cost for the specified path policy.
+     *
+     * @param id    The identifier of the path policy.
+     * @param cost  The default cost value to be set.
+     * @return  {@code true} if the default cost was changed.
+     *          {@code false} if not changed.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public boolean setPathPolicyDefaultCost(int id, long cost)
+        throws VTNException {
+        Integer pid = Integer.valueOf(id);
+
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            Long old;
+            PathPolicyImpl pp, oldpp;
+            do {
+                oldpp = getPathPolicyImpl(pid);
+                pp = oldpp.clone();
+                old = pp.setDefaultCost(cost);
+                if (old == null) {
+                    // No change was made to flow condition.
+                    return false;
+                }
+            } while (!pathPolicyDB.replace(pid, oldpp, pp));
+
+            // Remove all flows that was routed by the specified path policy.
+            PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb, fmatch);
+            }
+
+            updatePathPolicyMap(pid);
+
+            Status status = pp.saveConfig(this);
+            if (!status.isSuccess()) {
+                throw new VTNException(status);
+            }
+
+            LOG.info("{}.{}: Default path cost was changed: {} -> {}",
+                     containerName, pid, old, cost);
+            PathPolicyEvent.raise(this, id, UpdateType.CHANGED);
+
+            return true;
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Return the cost of transmitting a packet from the specified switch port
+     * configured in the specified path policy.
+     *
+     * @param id    The identifier of the path policy.
+     * @param ploc  A {@link PortLocation} instance which specifies the
+     *              location of the physical switch port.
+     * @return  The cost of transmitting a packet from the specified physical
+     *          switch port. Zero is returned if {@code ploc} is not configured
+     *          in the specified path policy.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public long getPathPolicyCost(int id, PortLocation ploc)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            PathPolicyImpl pp = getPathPolicyImpl(Integer.valueOf(id));
+            return pp.getPathCost(ploc);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Associate the cost of transmitting a packet with the specified switch
+     * port in the specified path policy.
+     *
+     * <p>
+     *   The specified cost value is used when a packet is transmitted from the
+     *   switch port specified by a {@link PortLocation} instance.
+     * </p>
+     *
+     * @param id    The identifier of the path policy to be removed.
+     * @param ploc  A {@link PortLocation} instance which specifies the
+     *              location of the physical switch port.
+     * @param cost  The cost of transmitting a packet.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setPathPolicyCost(int id, PortLocation ploc, long cost)
+        throws VTNException {
+        Integer pid = Integer.valueOf(id);
+
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            UpdateType result;
+            PathPolicyImpl pp, oldpp;
+            do {
+                oldpp = getPathPolicyImpl(pid);
+                pp = oldpp.clone();
+                result = pp.setPathCost(ploc, cost);
+                if (result == null) {
+                    // No change was made to path policy.
+                    return null;
+                }
+            } while (!pathPolicyDB.replace(pid, oldpp, pp));
+
+            // Remove all flows that was routed by the specified path policy.
+            PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb, fmatch);
+            }
+
+            updatePathPolicyMap(pid);
+
+            Status status = pp.saveConfig(this);
+            if (!status.isSuccess()) {
+                throw new VTNException(status);
+            }
+
+            LOG.info("{}.{}: Path policy cost was {}: {} -> {}",
+                     containerName, pid, result.getName(), ploc, cost);
+            PathPolicyEvent.raise(this, id, UpdateType.CHANGED);
+
+            return result;
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the cost associated with the specified switch port in the
+     * specified path policy.
+     *
+     * @param id    The identifier of the path policy to be removed.
+     * @param ploc  A {@link PortLocation} instance which specifies the
+     *              location of the physical switch port.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removePathPolicyCost(int id, PortLocation ploc) {
+        Integer pid = Integer.valueOf(id);
+
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            PathPolicyImpl pp, oldpp;
+            Long old;
+            do {
+                oldpp = getPathPolicyImpl(pid);
+                pp = oldpp.clone();
+                old = pp.removePathCost(ploc);
+                if (old == null) {
+                    // No change was made to flow condition.
+                    return null;
+                }
+            } while (!pathPolicyDB.replace(pid, oldpp, pp));
+
+            // Remove all flows that was routed by the specified path policy.
+            PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb, fmatch);
+            }
+
+            updatePathPolicyMap(pid);
+
+            Status status = pp.saveConfig(this);
+            if (status.isSuccess()) {
+                LOG.info("{}.{}: Path policy cost was removed: {} -> {}",
+                         containerName, pid, ploc, old);
+                PathPolicyEvent.raise(this, id, UpdateType.CHANGED);
+            }
+
+            return status;
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Return a list of container path maps configured in the container.
+     *
+     * @return  A list of {@link PathMap} instances corresponding to all
+     *          container path maps configured in the container.
+     *          An empty list is returned if no container path map is
+     *          configured.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<PathMap> getPathMaps() throws VTNException {
+        ArrayList<PathMap> list;
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            list = new ArrayList<PathMap>(pathMapDB.size());
+            for (ContainerPathMapImpl cpm: pathMapDB.values()) {
+                list.add(cpm.getPathMap());
+            }
+        } finally {
+            unlock(rdlock);
+        }
+
+        // Sort path maps by their indices.
+        Collections.sort(list, new PathMapComparator());
+        return list;
+    }
+
+    /**
+     * Return information about the container path map specified by the index
+     * number.
+     *
+     * @param index  The index value which specifies the path map in the
+     *               container.
+     * @return  A {@link PathMap} instance corresponding to the specified
+     *          container path map is returned.
+     *          {@code null} is returned if the specified path map does not
+     *          exist in the container.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public PathMap getPathMap(int index) throws VTNException {
+        Integer key = Integer.valueOf(index);
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            ContainerPathMapImpl cpm = pathMapDB.get(key);
+            return (cpm == null) ? null : cpm.getPathMap();
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Create or modify the container path map specified by the index number.
+     *
+     * @param index  The index value which specifies the path map in the
+     *               container.
+     * @param pmap   A {@link PathMap} instance which specifies the
+     *               configuration of the path map.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setPathMap(int index, PathMap pmap) throws VTNException {
+        ContainerPathMapImpl cpm = new ContainerPathMapImpl(index, pmap);
+        Integer key = Integer.valueOf(index);
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            UpdateType result;
+            ContainerPathMapImpl oldcpm = pathMapDB.put(key, cpm);
+            if (oldcpm == null) {
+                result = UpdateType.ADDED;
+            } else if (oldcpm.equals(cpm)) {
+                // No change was made to path map.
+                return null;
+            } else {
+                result = UpdateType.CHANGED;
+            }
+
+            // REVISIT: Select flow entries affected by the change.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
+
+            Status status = cpm.saveConfig(this);
+            if (!status.isSuccess()) {
+                throw new VTNException(status);
+            }
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}.{}: Container path map was {}: {}",
+                          containerName, key, result.getName(), pmap);
+            } else {
+                LOG.info("{}.{}: Container path map was {}.",
+                         containerName, key, result.getName());
+            }
+            ContainerPathMapEvent.raise(this, index, result);
+
+            return result;
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the container path map specified by the index number.
+     *
+     * @param index  The index value which specifies the path map in the
+     *               container.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removePathMap(int index) {
+        Integer key = Integer.valueOf(index);
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            ContainerPathMapImpl cpm = pathMapDB.remove(key);
+            if (cpm == null) {
+                return null;
+            }
+
+            // REVISIT: Select flow entries affected by the change.
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                VTNThreadData.removeFlows(this, fdb);
+            }
+
+            cpm.destroy(this);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}.{}: Container path map was removed: {}",
+                          containerName, key, cpm.getPathMap());
+            } else {
+                LOG.info("{}.{}: Container path map was removed.",
+                         containerName, key);
+            }
+            ContainerPathMapEvent.raise(this, index, UpdateType.REMOVED);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+
+        return new Status(StatusCode.SUCCESS, null);
+    }
+
+    /**
+     * Return a list of VTN path maps configured in the VTN.
+     *
+     * @param path  A {@link VTenantPath} object that specifies the position
+     *              of the VTN.
+     * @return  A list of {@link PathMap} instances corresponding to all
+     *          VTN path maps configured in the VTN.
+     *          An empty list is returned if no VTN path map is configured.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<PathMap> getPathMaps(VTenantPath path) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getPathMaps();
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Return information about the VTN path map specified by the index number.
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @param index  The index value which specifies the path map in the VTN.
+     * @return  A {@link PathMap} instance corresponding to the specified
+     *          VTN path map is returned.
+     *          {@code null} is returned if the specified path map does not
+     *          exist in the VTN.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public PathMap getPathMap(VTenantPath path, int index)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getPathMap(index);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Create or modify the VTN path map specified by the index number.
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @param index  The index value which specifies the path map in the VTN.
+     * @param pmap   A {@link PathMap} instance which specifies the
+     *               configuration of the path map.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setPathMap(VTenantPath path, int index, PathMap pmap)
+        throws VTNException {
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.setPathMap(this, index, pmap);
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the VTN path map specified by the index number.
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @param index  The index value which specifies the path map in the VTN.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removePathMap(VTenantPath path, int index) {
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.removePathMap(this, index);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
         }
     }
 
@@ -5717,6 +6542,16 @@ public class VTNManagerImpl
         }
 
         return status;
+    }
+
+    // RouteResolver
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Path getRoute(Node src, Node dst) {
+        return routing.getRoute(src, dst);
     }
 
     // ICacheUpdateAware
@@ -6207,7 +7042,7 @@ public class VTNManagerImpl
             // Here we need to accept non-OpenFlow packet.
             // Node connector type check should be done only if the VTN is
             // active.
-            checkNodeConnector(nc, false);
+            NodeUtils.checkNodeConnector(nc, false);
         } catch (VTNException e) {
             Status status = e.getStatus();
             LOG.error("{}: Ignore packet: {}", containerName,

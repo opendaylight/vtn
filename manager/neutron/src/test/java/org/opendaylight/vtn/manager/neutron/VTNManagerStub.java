@@ -26,6 +26,9 @@ import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
 import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
+import org.opendaylight.vtn.manager.PathMap;
+import org.opendaylight.vtn.manager.PathPolicy;
+import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.UpdateOperation;
@@ -391,6 +394,93 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status removeFlowConditionMatch(String name, int index) {
+        return null;
+    }
+
+    @Override
+    public List<Integer> getPathPolicyIds() {
+        return null;
+    }
+
+    @Override
+    public PathPolicy getPathPolicy(int id) {
+        return null;
+    }
+
+    @Override
+    public UpdateType setPathPolicy(int id, PathPolicy policy) {
+        return null;
+    }
+
+    @Override
+    public Status removePathPolicy(int id) {
+        return null;
+    }
+
+    @Override
+    public long getPathPolicyDefaultCost(int id) {
+        return 0;
+    }
+
+    @Override
+    public boolean setPathPolicyDefaultCost(int id, long cost) {
+        return false;
+    }
+
+    @Override
+    public long getPathPolicyCost(int id, PortLocation ploc) {
+        return 1;
+    }
+
+    @Override
+    public UpdateType setPathPolicyCost(int id, PortLocation ploc, long cost) {
+        return null;
+    }
+
+    @Override
+    public Status removePathPolicyCost(int id, PortLocation ploc) {
+        return null;
+    }
+
+    @Override
+    public List<PathMap> getPathMaps() throws VTNException {
+        return null;
+    }
+
+    @Override
+    public PathMap getPathMap(int index) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public UpdateType setPathMap(int index, PathMap pmap) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status removePathMap(int index) {
+        return null;
+    }
+
+    @Override
+    public List<PathMap> getPathMaps(VTenantPath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public PathMap getPathMap(VTenantPath path, int index)
+        throws VTNException {
+        return null;
+    }
+
+    @Override
+    public UpdateType setPathMap(VTenantPath path, int index, PathMap pmap)
+        throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status removePathMap(VTenantPath path, int index) {
         return null;
     }
 }

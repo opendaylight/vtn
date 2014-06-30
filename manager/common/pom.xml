@@ -61,7 +61,7 @@
     <jackson.version>2.3.2</jackson.version>
     <jettison.version>1.3.3</jettison.version>
     <jersey.version>1.17</jersey.version>
-    <checkstyle.version>2.10</checkstyle.version>
+    <checkstyle.version>2.12</checkstyle.version>
     <jxr.version>2.3</jxr.version>
     <apiviz.version>1.3.2.GA</apiviz.version>
     <properties-maven.version>1.0-alpha-2</properties-maven.version>

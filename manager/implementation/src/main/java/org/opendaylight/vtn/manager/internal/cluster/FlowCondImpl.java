@@ -47,7 +47,7 @@ public final class FlowCondImpl implements Serializable, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -156762956849289435L;
+    private static final long serialVersionUID = -8740384891077272459L;
 
     /**
      * Logger instance.
@@ -268,7 +268,8 @@ public final class FlowCondImpl implements Serializable, Cloneable {
             status = cfg.save(ContainerConfig.Type.FLOWCOND, name, this);
             if (status.isSuccess()) {
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}: Flow condition saved", container, name);
+                    LOG.trace("{}:{}: Flow condition was saved",
+                              container, name);
                 }
                 return status;
             }
@@ -452,13 +453,19 @@ public final class FlowCondImpl implements Serializable, Cloneable {
      */
     @Override
     public FlowCondImpl clone() {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
         try {
             FlowCondImpl fc = (FlowCondImpl)super.clone();
-            fc.matches = new TreeMap<Integer, FlowMatchImpl>(matches);
+            fc.rwLock = new ReentrantReadWriteLock();
+            fc.matches = (NavigableMap<Integer, FlowMatchImpl>)
+                ((TreeMap<Integer, FlowMatchImpl>)matches).clone();
             return fc;
         } catch (CloneNotSupportedException e) {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
+        } finally {
+            rdlock.unlock();
         }
     }
 }

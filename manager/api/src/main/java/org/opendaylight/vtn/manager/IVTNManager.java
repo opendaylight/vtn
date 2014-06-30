@@ -2704,4 +2704,736 @@ public interface IVTNManager {
      * @since  Helium
      */
     Status removeFlowConditionMatch(String name, int index);
+
+    /**
+     * Return a list of path policy identifiers present in the container.
+     *
+     * @return  A list of {@link Integer} instances corresponding to all the
+     *          path policies present in the container.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<Integer> getPathPolicyIds() throws VTNException;
+
+    /**
+     * Return the configuration of the specified path policy.
+     *
+     * @param id  The identifier of the path policy.
+     * @return  A {@link PathPolicy} instance which contains the configuration
+     *          of the specified path policy.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    PathPolicy getPathPolicy(int id) throws VTNException;
+
+    /**
+     * Create or modify the path policy.
+     *
+     * <ul>
+     *   <li>
+     *     If the path policy specified by {@code id} does not exist,
+     *     a new path policy will be associated with {@code id} in the
+     *     container.
+     *   </li>
+     *   <li>
+     *     If the path policy specified by {@code id} already exists,
+     *     it will be modified as specified by {@code policy}.
+     *   </li>
+     * </ul>
+     *
+     * @param id
+     *   The identifier of the path policy.
+     *   <p style="margin-left: 1em;">
+     *     Currently only one path policy can be configured in the container.
+     *     So <strong>1</strong> must be specified to this parameter.
+     *   </p>
+     * @param policy
+     *   A {@link PathPolicy} instance which specifies the configuration of
+     *   the path policy.
+     *   <ul>
+     *     <li>
+     *       The identifier of the path policy configured in {@code policy} is
+     *       always ignored. The identifier is determined by {@code id}
+     *       argument.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       Path policy was newly configured in the container.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing path policy in the container was
+     *       changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing path policy was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           Invalid identifier is passed to {@code id}.
+     *         </li>
+     *         <li>
+     *           {@code null} is passed to {@code policy}.
+     *         </li>
+     *         <li>
+     *           A {@link PathPolicy} instance passed to {@code policy}
+     *           contains invalid configuration.
+     *         </li>
+     *         <li>
+     *           Duplicate {@link PortLocation} instance is configured in
+     *           {@link PathCost} instance in {@code policy}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setPathPolicy(int id, PathPolicy policy) throws VTNException;
+
+    /**
+     * Remove the path policy specified by the identifier.
+     *
+     * @param id  The identifier of the path policy to be removed.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removePathPolicy(int id);
+
+    /**
+     * Return the default link cost configured in the specified path policy.
+     *
+     * @param id  The identifier of the path policy.
+     * @return    The default link cost configured in the specified path policy
+     *            is returned. {@link PathPolicy#COST_UNDEF} means that the
+     *            default cost should be determined by link speed.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    long getPathPolicyDefaultCost(int id) throws VTNException;
+
+    /**
+     * Change the default link cost for the specified path policy.
+     *
+     * @param id    The identifier of the path policy.
+     * @param cost
+     *   The default cost value to be set.
+     *   <ul>
+     *     <li>
+     *       The value must be {@link PathPolicy#COST_UNDEF} or a positive
+     *       value.
+     *     </li>
+     *     <li>
+     *       Specifying {@link PathPolicy#COST_UNDEF} means that the default
+     *       cost should be determined by link speed.
+     *       If {@link PathPolicy#COST_UNDEF} is specified, the default cost
+     *       is calculated by the following formula.
+     *       <blockquote>
+     *         10,000,000,000,000 / (<i>link speed (bps)</i>)
+     *       </blockquote>
+     *     </li>
+     *   </ul>
+     * @return  {@code true} if the default cost was changed.
+     *          {@code false} if not changed.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>Invalid cost value is passed to {@code cost}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    boolean setPathPolicyDefaultCost(int id, long cost) throws VTNException;
+
+    /**
+     * Return the cost of transmitting a packet from the specified switch port
+     * configured in the specified path policy.
+     *
+     * <p>
+     *   This method searches for the link cost associated with the specified
+     *   {@link PortLocation} instance in the specified path policy.
+     * </p>
+     *
+     * @param id    The identifier of the path policy.
+     * @param ploc  A {@link PortLocation} instance which specifies the
+     *              location of the physical switch port.
+     * @return  The cost of transmitting a packet from the specified physical
+     *          switch port. {@link PathPolicy#COST_UNDEF} is returned if
+     *          {@code ploc} is not configured in the specified path policy.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    long getPathPolicyCost(int id, PortLocation ploc) throws VTNException;
+
+    /**
+     * Associate the cost of transmitting a packet with the specified switch
+     * port in the specified path policy.
+     *
+     * <p>
+     *   The specified cost value is used when a packet is transmitted from the
+     *   switch port specified by a {@link PortLocation} instance.
+     * </p>
+     *
+     * @param id    The identifier of the path policy to be removed.
+     * @param ploc  A {@link PortLocation} instance which specifies the
+     *              location of the physical switch port.
+     * @param cost
+     *   The cost of transmitting a packet.
+     *   <ul>
+     *     <li>
+     *       The cost value must be greater than zero.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       A {@link PortLocation} instance passed to {@code ploc} was
+     *       newly configured in the specified path policy.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       The cost associated with {@code ploc} in the specified path policy
+     *       was changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       The cost associated with {@code ploc} in the specified path policy
+     *       was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code ploc}.
+     *         </li>
+     *         <li>
+     *           A {@link PortLocation} instance passed to {@code ploc}
+     *           contains invalid configuration.
+     *         </li>
+     *         <li>
+     *           A value less than 1 is passed to {@code cost}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setPathPolicyCost(int id, PortLocation ploc, long cost)
+        throws VTNException;
+
+    /**
+     * Remove the cost associated with the specified switch port in the
+     * specified path policy.
+     *
+     * @param id    The identifier of the path policy to be removed.
+     * @param ploc  A {@link PortLocation} instance which specifies the
+     *              location of the physical switch port.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. {@code null} is returned if the switch port location
+     *     specified {@code ploc} is not configured in the path policy
+     *     specified by {@code id}.
+     *     Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>{@code null} is passed to {@code ploc}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removePathPolicyCost(int id, PortLocation ploc);
+
+    /**
+     * Return a list of container path maps configured in the container.
+     *
+     * @return  A list of {@link PathMap} instances corresponding to all
+     *          container path maps configured in the container.
+     *          An empty list is returned if no container path map is
+     *          configured.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<PathMap> getPathMaps() throws VTNException;
+
+    /**
+     * Return information about the container path map specified by the index
+     * number.
+     *
+     * @param index  The index value which specifies the path map in the
+     *               container.
+     * @return  A {@link PathMap} instance corresponding to the specified
+     *          container path map is returned.
+     *          {@code null} is returned if the specified path map does not
+     *          exist in the container.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    PathMap getPathMap(int index) throws VTNException;
+
+    /**
+     * Create or modify the container path map specified by the index number.
+     *
+     * <ul>
+     *   <li>
+     *     If the container path map specified by {@code index} does not exist,
+     *     a new container path map will be associated with {@code index} in
+     *     the container.
+     *   </li>
+     *   <li>
+     *     If the container path map specified by {@code index} already exists,
+     *     it will be modified as specified by {@code pmap}.
+     *   </li>
+     * </ul>
+     *
+     * @param index
+     *   The index value which specifies the path map in the container.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>1</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       This value is used to determine order of evaluation.
+     *       Path maps in the container path map list are evaluated in
+     *       ascending order of indices assigned to path maps.
+     *     </li>
+     *   </ul>
+     * @param pmap
+     *   A {@link PathMap} instance which specifies the configuration of the
+     *   path map.
+     *   <ul>
+     *     <li>
+     *       The index of the path map configured in {@code pmap} is always
+     *       ignored. The index number is determined by {@code index} argument.
+     *     </li>
+     *     <li>
+     *       Note that this API does not check whether the
+     *       {@link PathMap#getFlowConditionName() flow condition}
+     *       configured in {@code pmap} actually exists or not.
+     *       The path map will be invalidated if the specified flow condition
+     *       does not exist.
+     *     </li>
+     *     <li>
+     *     <li>
+     *       Note that this API does not check whether the
+     *       {@link PathMap#getPathPolicyId() path policy} configured in
+     *       {@code pmap} actually exists or not.
+     *       The path map will be invalidated if the specified path policy
+     *       does not exist.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       Path map was newly configured in the container.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing path map in the container was
+     *       changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing path map was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code pmap}.</li>
+     *         <li>
+     *           The index number specified by {@code index} is out of valid
+     *           range.
+     *         </li>
+     *         <li>
+     *           A {@link PathMap} instance passed to {@code pmap}
+     *           contains invalid configuration.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setPathMap(int index, PathMap pmap) throws VTNException;
+
+    /**
+     * Remove the container path map specified by the index number.
+     *
+     * @param index  The index value which specifies the path map in the
+     *               container.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. {@code null} is returned if the specified path map does not
+     *     exist. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removePathMap(int index);
+
+    /**
+     * Return a list of VTN path maps configured in the VTN.
+     *
+     * @param path  A {@link VTenantPath} object that specifies the position
+     *              of the VTN.
+     * @return  A list of {@link PathMap} instances corresponding to all
+     *          VTN path maps configured in the VTN.
+     *          An empty list is returned if no VTN path map is configured.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<PathMap> getPathMaps(VTenantPath path) throws VTNException;
+
+    /**
+     * Return information about the VTN path map specified by the index number.
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @param index  The index value which specifies the path map in the VTN.
+     * @return  A {@link PathMap} instance corresponding to the specified
+     *          VTN path map is returned.
+     *          {@code null} is returned if the specified path map does not
+     *          exist in the VTN.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    PathMap getPathMap(VTenantPath path, int index) throws VTNException;
+
+    /**
+     * Create or modify the VTN path map specified by the index number.
+     *
+     * <ul>
+     *   <li>
+     *     If the VTN path map specified by {@code index} does not exist,
+     *     a new VTN path map will be associated with {@code index} in the VTN.
+     *   </li>
+     *   <li>
+     *     If the VTN path map specified by {@code index} already exists,
+     *     it will be modified as specified by {@code pmap}.
+     *   </li>
+     * </ul>
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @param index
+     *   The index value which specifies the path map in the VTN.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>1</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       This value is used to determine order of evaluation.
+     *       Path maps in the VTN path map list are evaluated in ascending
+     *       order of indices assigned to path maps.
+     *     </li>
+     *   </ul>
+     * @param pmap
+     *   A {@link PathMap} instance which specifies the configuration of the
+     *   path map.
+     *   <ul>
+     *     <li>
+     *       The index of the path map configured in {@code pmap} is always
+     *       ignored. The index number is determined by {@code index} argument.
+     *     </li>
+     *     <li>
+     *       Note that this API does not check whether the
+     *       {@link PathMap#getFlowConditionName() flow condition}
+     *       configured in {@code pmap} actually exists or not.
+     *       The path map will be invalidated if the specified flow condition
+     *       does not exist.
+     *     </li>
+     *     <li>
+     *     <li>
+     *       Note that this API does not check whether the
+     *       {@link PathMap#getPathPolicyId() path policy} configured in
+     *       {@code pmap} actually exists or not.
+     *       The path map will be invalidated if the specified path policy
+     *       does not exist.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       Path map was newly configured in the VTN.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing path map in the VTN was changed.n
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing path map was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path} or {@code pmap}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *         <li>
+     *           The index number specified by {@code index} is out of valid
+     *           range.
+     *         </li>
+     *         <li>
+     *           A {@link PathMap} instance passed to {@code pmap}
+     *           contains invalid configuration.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setPathMap(VTenantPath path, int index, PathMap pmap)
+        throws VTNException;
+
+    /**
+     * Remove the VTN path map specified by the index number.
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @param index  The index value which specifies the path map in the VTN.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. {@code null} is returned if the specified path map does not
+     *     exist. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removePathMap(VTenantPath path, int index);
 }

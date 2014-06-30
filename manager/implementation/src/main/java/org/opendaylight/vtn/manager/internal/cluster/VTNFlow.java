@@ -64,7 +64,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4186545479876801784L;
+    private static final long serialVersionUID = -1867917266947872180L;
 
     /**
      * The identifier of the flow group.
@@ -73,6 +73,10 @@ public class VTNFlow implements Serializable {
 
     /**
      * Creation time of this VTN flow.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
      */
     private long  creationTime;
 
@@ -83,14 +87,31 @@ public class VTNFlow implements Serializable {
 
     /**
      * Set of nodes related to this flow.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
      */
     private transient Set<Node>  flowNodes = new HashSet<Node>();
 
     /**
      * Set of switch ports related to this flow.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
      */
     private transient Set<NodeConnector>  flowPorts =
         new HashSet<NodeConnector>();
+
+    /**
+     * Path policy identifier that determined the packet route of this flow.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
+     */
+    private int  pathPolicy;
 
     /**
      * Set of virtual node paths on which this flow depends.
@@ -103,6 +124,10 @@ public class VTNFlow implements Serializable {
 
     /**
      * A sequence of virtual packet routing.
+     *
+     * <p>
+     *   Note that this field does not affect identify of this instance.
+     * </p>
      */
     private final List<VNodeRoute> virtualRoute = new ArrayList<VNodeRoute>();
 
@@ -702,6 +727,24 @@ public class VTNFlow implements Serializable {
         }
 
         return df;
+    }
+
+    /**
+     * Set the identifier of the path policy which routed this flow.
+     *
+     * @param id  The identifier of the path policy.
+     */
+    public void setPathPolicy(int id) {
+        pathPolicy = id;
+    }
+
+    /**
+     * Return the identifier of the path policy which routed this flow.
+     *
+     * @return  The identifier of the path policy.
+     */
+    public int getPathPolicy() {
+        return pathPolicy;
     }
 
     /**

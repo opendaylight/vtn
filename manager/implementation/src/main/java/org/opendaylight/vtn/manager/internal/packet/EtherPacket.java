@@ -9,6 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
+import java.util.Set;
+
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
@@ -257,5 +261,38 @@ public final class EtherPacket implements CachedPacket {
     @Override
     public Ethernet getPacket() {
         return packet;
+    }
+
+    /**
+     * Configure match fields to test Ethernet header in this packet.
+     *
+     * @param match   A {@link Match} instance.
+     * @param fields  A set of {@link MatchType} instances corresponding to
+     *                match fields to be tested.
+     */
+    @Override
+    public void setMatch(Match match, Set<MatchType> fields) {
+        // Source and destination MAC address, and VLAN ID fields are
+        // mandatory.
+        match.setField(MatchType.DL_SRC, getSourceAddress());
+        match.setField(MatchType.DL_DST, getDestinationAddress());
+
+        // This code expects MatchType.DL_VLAN_NONE is zero.
+        short vid = getVlan();
+        match.setField(MatchType.DL_VLAN, vid);
+
+        // Test VLAN priority only if this packet has a VLAN tag.
+        if (vid != MatchType.DL_VLAN_NONE) {
+            MatchType type = MatchType.DL_VLAN_PR;
+            if (fields.contains(type)) {
+                match.setField(type, getVlanPriority());
+            }
+        }
+
+        MatchType type = MatchType.DL_TYPE;
+        if (fields.contains(type)) {
+            // Test Ethernet type.
+            match.setField(type, (short)etherType);
+        }
     }
 }

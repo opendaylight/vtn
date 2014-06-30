@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.flow.cond.InetMatch;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
 
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
@@ -192,17 +193,22 @@ public final class Inet4MatchImpl extends InetMatchImpl {
         }
 
         // Test source IP address.
-        if (source != null && !source.match(ipv4.getSourceAddress())) {
-            return false;
+        if (source != null) {
+            pctx.addMatchField(MatchType.NW_SRC);
+            if (!source.match(ipv4.getSourceAddress())) {
+                return false;
+            }
         }
 
         // Test destination IP address.
-        if (destination != null &&
-            !destination.match(ipv4.getDestinationAddress())) {
-            return false;
+        if (destination != null) {
+            pctx.addMatchField(MatchType.NW_DST);
+            if (!destination.match(ipv4.getDestinationAddress())) {
+                return false;
+            }
         }
 
-        return match(ipv4.getProtocol(), ipv4.getDscp());
+        return match(pctx, ipv4.getProtocol(), ipv4.getDscp());
     }
 
     // InetMatchImpl

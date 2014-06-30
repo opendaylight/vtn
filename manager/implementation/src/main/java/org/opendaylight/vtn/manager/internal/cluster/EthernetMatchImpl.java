@@ -11,10 +11,11 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
 
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
@@ -140,7 +141,7 @@ public final class EthernetMatchImpl implements PacketMatch {
             vlan = VLAN_ANY;
         } else {
             vlan = s.shortValue();
-            VTNManagerImpl.checkVlan(vlan);
+            MiscUtils.checkVlan(vlan);
         }
 
         Byte b = match.getVlanPriority();
@@ -293,16 +294,6 @@ public final class EthernetMatchImpl implements PacketMatch {
     }
 
     /**
-     * Construct a hash code from a long integer value.
-     *
-     * @param value  A long integer value.
-     * @return  A hash code for the specified value.
-     */
-    private int hashCode(long value) {
-        return (int)(value ^ (value >>> Integer.SIZE));
-    }
-
-    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -331,8 +322,8 @@ public final class EthernetMatchImpl implements PacketMatch {
      */
     @Override
     public int hashCode() {
-        return hashCode(sourceAddress) +
-            (hashCode(destinationAddress) * 7) +
+        return MiscUtils.hashCode(sourceAddress) +
+            (MiscUtils.hashCode(destinationAddress) * 7) +
             (etherType * 13) + ((int)vlan * 17) * (vlanPriority * 31);
     }
 
@@ -347,12 +338,12 @@ public final class EthernetMatchImpl implements PacketMatch {
         String sep = "";
         if (sourceAddress != MAC_ANY) {
             builder.append(sep).append("src=").
-                append(VTNManagerImpl.formatMacAddress(sourceAddress));
+                append(MiscUtils.formatMacAddress(sourceAddress));
             sep = ",";
         }
         if (destinationAddress != MAC_ANY) {
             builder.append(sep).append("dst=").
-                append(VTNManagerImpl.formatMacAddress(destinationAddress));
+                append(MiscUtils.formatMacAddress(destinationAddress));
             sep = ",";
         }
         if (etherType != ETHTYPE_ANY) {
@@ -387,6 +378,9 @@ public final class EthernetMatchImpl implements PacketMatch {
     public boolean match(PacketContext pctx) {
         EtherPacket ether = pctx.getEtherPacket();
 
+        // We don't need to DL_SRC, DL_DST, DL_VLAN fields to PacketContext
+        // because they are mandatory.
+
         // Test source MAC address.
         if (sourceAddress != MAC_ANY &&
             sourceAddress != ether.getSourceMacAddress()) {
@@ -400,8 +394,11 @@ public final class EthernetMatchImpl implements PacketMatch {
         }
 
         // Test Ethernet type.
-        if (etherType != ETHTYPE_ANY && etherType != ether.getEtherType()) {
-            return false;
+        if (etherType != ETHTYPE_ANY) {
+            pctx.addMatchField(MatchType.DL_TYPE);
+            if (etherType != ether.getEtherType()) {
+                return false;
+            }
         }
 
         // Test VLAN ID.
@@ -411,9 +408,11 @@ public final class EthernetMatchImpl implements PacketMatch {
             }
 
             // Test VLAN priority only if the packet has a VLAN tag.
-            if (vlanPriority != VLANPRI_ANY &&
-                vlanPriority != ether.getVlanPriority()) {
-                return false;
+            if (vlanPriority != VLANPRI_ANY) {
+                pctx.addMatchField(MatchType.DL_VLAN_PR);
+                if (vlanPriority != ether.getVlanPriority()) {
+                    return false;
+                }
             }
         }
 

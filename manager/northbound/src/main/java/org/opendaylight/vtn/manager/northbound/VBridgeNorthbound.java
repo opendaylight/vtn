@@ -55,8 +55,6 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 
 import org.opendaylight.controller.northbound.commons.exception.
-    BadRequestException;
-import org.opendaylight.controller.northbound.commons.exception.
     ResourceNotFoundException;
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
@@ -765,10 +763,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         if (node == null) {
             nd = null;
         } else {
-            nd = Node.fromString(node);
-            if (nd == null) {
-                throw new BadRequestException("Invalid node.");
-            }
+            nd = parseNode(node);
         }
 
         VlanMapConfig vlconf = new VlanMapConfig(nd, vid);

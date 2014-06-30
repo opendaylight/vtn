@@ -30,6 +30,7 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
@@ -327,13 +328,13 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
         }
 
         Node node = pmconf.getNode();
-        VTNManagerImpl.checkNode(node);
+        NodeUtils.checkNode(node);
 
         short vlan = pmconf.getVlan();
-        VTNManagerImpl.checkVlan(vlan);
+        MiscUtils.checkVlan(vlan);
 
         SwitchPort port = pmconf.getPort();
-        checkSwitchPort(node, port);
+        NodeUtils.checkSwitchPort(port, node);
 
         NodeConnector mapped = ist.getMappedPort();
         IVTNResourceManager resMgr = mgr.getResourceManager();
@@ -920,57 +921,6 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             PortMap pmap = new PortMap(pmconf, mapped);
             PortMapEvent.removed(mgr, ifPath, pmap, true);
             setState(mgr, db, ist, VNodeState.UNKNOWN);
-        }
-    }
-
-    /**
-     * Ensure that the switch port configuration is valid.
-     *
-     * @param node  The target node.
-     * @param port  Switch port configuration to be tested.
-     * @throws VTNException  An error occurred.
-     */
-    private void checkSwitchPort(Node node, SwitchPort port)
-        throws VTNException {
-        if (port == null) {
-            Status status = VTNManagerImpl.argumentIsNull("Switch port");
-            throw new VTNException(status);
-        }
-
-        String type = port.getType();
-        if (type != null) {
-            String id = port.getId();
-            if (id == null) {
-                String msg = "Port type must be specified with port ID";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
-            }
-
-            // Currently only OpenFlow node connector is supported.
-            if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
-                String msg = "Unsupported node connector type";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
-            }
-
-            // Ensure that we can construct a NodeConnector instance.
-            NodeConnector nc = NodeConnector.fromStringNoNode(type, id, node);
-            if (nc == null) {
-                String msg = "Broken node connector is specified";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
-            }
-        } else if (port.getId() != null) {
-            String msg = "Port ID must be specified with port type";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
-
-        String name = port.getName();
-        if (name == null) {
-            if (type == null) {
-                String msg = "Switch port cannot be empty";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
-            }
-        } else if (name.isEmpty()) {
-            String msg = "Port name cannot be empty";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
         }
     }
 

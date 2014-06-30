@@ -13,6 +13,7 @@ import java.net.InetAddress;
 import java.io.Serializable;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -94,18 +95,11 @@ public final class Inet4AddressMatch implements Serializable {
      * Return an {@link InetAddress} instance configured in this instance.
      *
      * @return  An {@link InetAddress} instance.
+     * @throws IllegalStateException
+     *    An error occurred.
      */
     public InetAddress getInetAddress() {
-        byte[] addr = NetUtils.intToByteArray4(address);
-        try {
-            return InetAddress.getByAddress(addr);
-        } catch (Exception e) {
-            // This should never happen.
-            StringBuilder builder =
-                new StringBuilder("Unexpected exception: addr=");
-            builder.append(Integer.toHexString(address));
-            throw new IllegalStateException(builder.toString(), e);
-        }
+        return MiscUtils.toInetAddress(address);
     }
 
     /**

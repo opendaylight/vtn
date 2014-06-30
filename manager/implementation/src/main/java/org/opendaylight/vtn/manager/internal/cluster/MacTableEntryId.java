@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.net.InetAddress;
 
 import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 
 /**
  * {@code MacTableEntryId} describes an identifier of a MAC address table
@@ -129,7 +129,7 @@ public class MacTableEntryId extends ClusterEventId {
     @Override
     public int hashCode() {
         return super.hashCode() ^ mapPath.hashCode() ^
-            VTNManagerImpl.hashCode(macAddress);
+            MiscUtils.hashCode(macAddress);
     }
 
     /**
@@ -141,7 +141,7 @@ public class MacTableEntryId extends ClusterEventId {
     public String toString() {
         StringBuilder builder = new StringBuilder(mapPath.toString());
         builder.append(SEPARATOR).
-            append(VTNManagerImpl.formatMacAddress(macAddress)).
+            append(MiscUtils.formatMacAddress(macAddress)).
             append(SEPARATOR).append(super.toString());
         return builder.toString();
     }

@@ -208,7 +208,7 @@ public final class FlowMatch implements Serializable {
      *   </li>
      *   <li>
      *     This value is used to determine order of match evaluation.
-     *     Conditions in a <strong>flowcondition</strong> element is
+     *     Conditions in a <strong>flowcondition</strong> element are
      *     evaluated in ascending order of indices assigned to
      *     <strong>flowmatch</strong> elements.
      *   </li>
@@ -473,7 +473,7 @@ public final class FlowMatch implements Serializable {
     }
 
     /**
-     * Assign a match index to {@link FlowMatch} instance.
+     * Assign a match index to {@code FlowMatch} instance.
      *
      * <p>
      *   If the specified index is already assigned to this instance, this

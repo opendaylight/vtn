@@ -565,7 +565,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 assertEquals(sameVlan, flow.dependsOn(new MacVlan(dst, vlan)));
 
                 // Set source node path.
-                pctx.setFlowDependency(flow);
+                pctx.fixUp(flow);
                 assertEquals(null, flow.getIngressPath());
                 assertEquals(null, flow.getEgressPath());
                 for (VTenantPath p: allPaths) {
@@ -574,7 +574,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 flow.clearVirtualRoute();
 
                 pctx.addNodeRoute(new VNodeRoute(ipath1, Reason.PORTMAPPED));
-                pctx.setFlowDependency(flow);
+                pctx.fixUp(flow);
                 assertEquals(ipath1, flow.getIngressPath());
                 assertEquals(null, flow.getEgressPath());
                 assertTrue(dependPaths.add(ipath1));
@@ -587,7 +587,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
                 // Set destination node path.
                 pctx.setEgressVNodePath(vpath1);
-                pctx.setFlowDependency(flow);
+                pctx.fixUp(flow);
                 assertTrue(dependPaths.add(vpath1));
                 assertEquals(ipath1, flow.getIngressPath());
                 assertEquals(vpath1, flow.getEgressPath());
@@ -600,7 +600,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                     assertFalse(flow.dependsOn(pth));
                     pctx.addNodePath(pth);
                     flow.clearVirtualRoute();
-                    pctx.setFlowDependency(flow);
+                    pctx.fixUp(flow);
                     assertEquals(ipath1, flow.getIngressPath());
                     assertEquals(vpath1, flow.getEgressPath());
                     assertTrue(dependPaths.add(pth));

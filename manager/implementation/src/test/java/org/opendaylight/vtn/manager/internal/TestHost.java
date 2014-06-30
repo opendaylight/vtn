@@ -404,7 +404,7 @@ public class TestHost extends TestBase {
     public String toString() {
         StringBuilder builder = new StringBuilder("TestHost[");
         builder.append("mvlan=").
-            append(VTNManagerImpl.formatMacAddress(macAddress)).
+            append(MiscUtils.formatMacAddress(macAddress)).
             append(", ipaddr=").append(inetAddress).
             append(", pvlan=").append(portVlan).append(']');
 

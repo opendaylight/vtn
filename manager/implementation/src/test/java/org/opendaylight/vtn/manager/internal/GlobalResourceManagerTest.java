@@ -2558,6 +2558,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
         mgr.setResourceManager(resMgr);
         mgr.setClusterContainerService(stubObj);
+        mgr.setRouting(stubObj);
         mgr.init(c);
         mgr.clearDisabledNode();
         vtnManagers.add(mgr);

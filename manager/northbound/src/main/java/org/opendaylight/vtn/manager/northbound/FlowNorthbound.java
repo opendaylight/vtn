@@ -41,8 +41,6 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 
-import org.opendaylight.controller.northbound.commons.exception.
-    BadRequestException;
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
@@ -653,7 +651,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *                  connector corresponding to the physical switch port.
      * @param portName  The name of the physical switch port.
      * @return  A {@link DataFlowFilter} instance.
-     * @throws BadRequestException
+     * @throws org.opendaylight.controller.northbound.commons.exception.BadRequestException
      *    Invalid parameter is specified.
      */
     private DataFlowFilter createFilter(String srcMac, String srcVlan,
@@ -669,12 +667,8 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         }
 
         if (nodeStr != null) {
-            Node node = Node.fromString(nodeStr);
-            if (node == null) {
-                throw new BadRequestException("Invalid node: " + nodeStr);
-            }
-
             // Specify the physical switch.
+            Node node = parseNode(nodeStr);
             filter.setNode(node);
 
             // Determine whether the switch port is specified or not.

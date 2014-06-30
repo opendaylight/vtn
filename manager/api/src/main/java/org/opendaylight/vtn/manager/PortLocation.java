@@ -71,10 +71,13 @@ public class PortLocation implements Serializable {
      * <strong>node</strong> element.
      *
      * <ul>
-     *   <li>This element is mandatory.</li>
+     *   <li>
+     *     If omitted, this instance represents all ports within the physical
+     *     switch specified by <strong>node</strong> element.
+     *   </li>
      * </ul>
      */
-    @XmlElement(required = true)
+    @XmlElement
     private SwitchPort  port;
 
     /**
@@ -90,7 +93,9 @@ public class PortLocation implements Serializable {
      * @param node  {@link Node} object corresponding to the physical switch
      *              to be mapped by the port mapping.
      * @param port  A {@link SwitchPort} object that specifies the port within
-     *              {@code node}.
+     *              {@code node}. If {@code null} is specified, a new instance
+     *              will represent all ports within the physical switch
+     *              specified by {@code node}.
      */
     public PortLocation(Node node, SwitchPort port) {
         this.node = node;

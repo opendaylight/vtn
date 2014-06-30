@@ -16,6 +16,7 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.TcpPacket;
 
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
@@ -94,6 +95,7 @@ public final class TcpMatchImpl extends PortProtoMatchImpl {
         L4PortMatch dst = getDestinationPort();
 
         if (src != null) {
+            pctx.addMatchField(MatchType.TP_SRC);
             int port = tcp.getSourcePort();
             if (!src.match(port)) {
                 return false;
@@ -101,6 +103,7 @@ public final class TcpMatchImpl extends PortProtoMatchImpl {
         }
 
         if (dst != null) {
+            pctx.addMatchField(MatchType.TP_DST);
             int port = tcp.getDestinationPort();
             if (!dst.match(port)) {
                 return false;

@@ -18,12 +18,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Test;
+
+import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.internal.RouteResolver;
+import org.opendaylight.vtn.manager.internal.TestBase;
+
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.routing.IRouting;
-import org.opendaylight.vtn.manager.VNodeState;
-import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
  * JUnit test for {@link VBridgeState}.
@@ -34,7 +37,7 @@ public class VBridgeStateTest extends TestBase {
     /**
      * Mock-up of the routing service.
      */
-    private final class TestRouting implements IRouting {
+    private final class TestRouting implements IRouting, RouteResolver {
         /**
          * Current set of routing.
          */
@@ -51,6 +54,9 @@ public class VBridgeStateTest extends TestBase {
             routingMap.put(path, edge);
         }
 
+        // RouteResolver
+
+        // IRouting
         @Override
         public Path getRoute(Node src, Node dst) {
             ObjectPair<Node, Node> path = new ObjectPair<Node, Node>(src, dst);

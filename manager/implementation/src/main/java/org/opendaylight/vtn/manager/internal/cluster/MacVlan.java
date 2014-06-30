@@ -14,7 +14,7 @@ import java.io.Serializable;
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
@@ -125,7 +125,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      */
     public MacVlan(DataLinkHost dlhost) throws VTNException {
         if (dlhost == null) {
-            Status s = VTNManagerImpl.argumentIsNull("Data link layer host");
+            Status s = MiscUtils.argumentIsNull("Data link layer host");
             throw new VTNException(s);
         }
 
@@ -144,7 +144,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
         }
 
         short vlan = ehost.getVlan();
-        VTNManagerImpl.checkVlan(vlan);
+        MiscUtils.checkVlan(vlan);
         encodedValue = encode(mac, vlan);
     }
 
@@ -219,7 +219,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
 
         if (mac != UNDEFINED) {
             builder.append("addr=").
-                append(VTNManagerImpl.formatMacAddress(mac)).append(',');
+                append(MiscUtils.formatMacAddress(mac)).append(',');
         }
         builder.append("vlan=").append((int)vlan);
     }
@@ -266,7 +266,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
 
         StringBuilder builder = new StringBuilder(badaddr);
         builder.append(" cannot be specified: ").
-            append(VTNManagerImpl.formatMacAddress(mac));
+            append(MiscUtils.formatMacAddress(mac));
         throw new VTNException(StatusCode.BADREQUEST, builder.toString());
     }
 
@@ -296,7 +296,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      */
     @Override
     public int hashCode() {
-        return VTNManagerImpl.hashCode(encodedValue);
+        return MiscUtils.hashCode(encodedValue);
     }
 
     /**

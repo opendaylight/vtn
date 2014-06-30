@@ -1026,7 +1026,7 @@ public class MacAddressTable {
     private Long getTableKey(DataLinkAddress dladdr) throws VTNException {
         if (!(dladdr instanceof EthernetAddress)) {
             if (dladdr == null) {
-                Status status = VTNManagerImpl.argumentIsNull("MAC address");
+                Status status = MiscUtils.argumentIsNull("MAC address");
                 throw new VTNException(status);
             }
             return null;

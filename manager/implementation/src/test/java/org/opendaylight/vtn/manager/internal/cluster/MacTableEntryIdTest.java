@@ -20,8 +20,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
  * JUnit Test for {@link MacTableEntryId}.
@@ -64,7 +64,7 @@ public class MacTableEntryIdTest extends TestBase {
             for (long mac: macAddrs) {
                 ClusterEventId.setLocalAddress(null);
                 String emsg = "(VBridgePath)" + path.toString()
-                    + ",(MAC Address)" + VTNManagerImpl.formatMacAddress(mac);
+                    + ",(MAC Address)" + MiscUtils.formatMacAddress(mac);
 
                 // Create object by MacTableEntryId(VBridgePath, long).
                 cev = new MacTableEntryId(path, mac);
@@ -180,7 +180,7 @@ public class MacTableEntryIdTest extends TestBase {
 
         for (VBridgePath path: bridgePaths) {
             for (long mac: macAddrs) {
-                String macStr = VTNManagerImpl.formatMacAddress(mac);
+                String macStr = MiscUtils.formatMacAddress(mac);
 
                 // Create object by MacTableEntryId(VBridgePath, long).
                 MacTableEntryId cev = new MacTableEntryId(path, mac);

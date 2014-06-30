@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
@@ -106,6 +107,13 @@ public class PacketContext {
         new LinkedHashMap<VNodePath, VNodeRoute>();
 
     /**
+     * A set of {@link MatchType} instances which represents match fields
+     * to be configured.
+     */
+    private final EnumSet<MatchType>  matchFields =
+        EnumSet.noneOf(MatchType.class);
+
+    /**
      * A path to the virtual node that established the egress flow.
      */
     private VNodePath  egressNodePath;
@@ -121,6 +129,21 @@ public class PacketContext {
      * data.
      */
     private CachedPacket  l4Packet;
+
+    /**
+     * Route resolver for this packet.
+     */
+    private RouteResolver  routeResolver;
+
+    /**
+     * Idle timeout for this flow.
+     */
+    private int  idleTimeout;
+
+    /**
+     * Hard timeout for this flow.
+     */
+    private int  hardTimeout;
 
     /**
      * Construct a new packet context.
@@ -541,6 +564,15 @@ public class PacketContext {
     }
 
     /**
+     * Add match field to be configured into a flow entry.
+     *
+     * @param type  A match type to be added.
+     */
+    public void addMatchField(MatchType type) {
+        matchFields.add(type);
+    }
+
+    /**
      * Create match for a flow entry.
      *
      * @param inPort  A node connector associated with incoming switch port.
@@ -549,19 +581,18 @@ public class PacketContext {
     public Match createMatch(NodeConnector inPort) {
         Match match = new Match();
 
-        // The following match types are mandatory:
-        //   - Source MAC address
-        //   - Destination MAC address
-        //   - VLAN ID
-        //   - Incoming port
-        match.setField(MatchType.DL_SRC, etherFrame.getSourceAddress());
-        match.setField(MatchType.DL_DST, etherFrame.getDestinationAddress());
-
-        // This code expects MatchType.DL_VLAN_NONE is zero.
-        match.setField(MatchType.DL_VLAN, getVlan());
-
-        // Set incoming port.
+        // Incoming port field is mandatory.
         match.setField(MatchType.IN_PORT, inPort);
+
+        etherFrame.setMatch(match, matchFields);
+        Inet4Packet ipv4 = getInet4Packet();
+        if (ipv4 != null) {
+            ipv4.setMatch(match, matchFields);
+            CachedPacket l4 = getL4Packet();
+            if (l4 != null) {
+                l4.setMatch(match, matchFields);
+            }
+        }
 
         return match;
     }
@@ -601,17 +632,63 @@ public class PacketContext {
     }
 
     /**
-     * Add network elements relevant to this packet to the dependency set of
-     * the given VTN flow.
+     * Fix up the VTN flow for installation.
      *
      * @param vflow  A VTN flow.
      */
-    public void setFlowDependency(VTNFlow vflow) {
+    public void fixUp(VTNFlow vflow) {
         // Set the virtual packet routing path.
         vflow.addVirtualRoute(virtualRoute.values());
         vflow.setEgressVNodePath(egressNodePath);
 
         // Set additional dependencies.
         vflow.addDependency(virtualNodes);
+
+        // Set flow timeout.
+        vflow.setTimeout(idleTimeout, hardTimeout);
+    }
+
+    /**
+     * Set route resolver for this packet.
+     *
+     * @param rr  A {@link RouteResolver} instance.
+     */
+    public void setRouteResolver(RouteResolver rr) {
+        routeResolver = rr;
+    }
+
+    /**
+     * Return route resolver for this packet.
+     *
+     * @return  A {@link RouteResolver} instance.
+     */
+    public RouteResolver getRouteResolver() {
+        return routeResolver;
+    }
+
+    /**
+     * Set timeout for an ingress flow.
+     *
+     * <p>
+     *   This method does nothing if no flow entry is added.
+     * </p>
+     *
+     * @param idle  An idle timeout for an ingress flow.
+     * @param hard  A hard timeout for an ingress flow.
+     */
+    public void setFlowTimeout(int idle, int hard) {
+        idleTimeout = idle;
+        hardTimeout = hard;
+    }
+
+    /**
+     * Return a priority value for flow entries.
+     *
+     * @param mgr  VTN Manager service.
+     * @return  A flow priority value.
+     */
+    public int getFlowPriority(VTNManagerImpl mgr) {
+        int pri = mgr.getVTNConfig().getL2FlowPriority();
+        return (pri + matchFields.size());
     }
 }

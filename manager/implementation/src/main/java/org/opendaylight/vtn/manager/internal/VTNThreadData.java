@@ -198,6 +198,30 @@ public final class VTNThreadData {
     }
 
     /**
+     * Remove all VTN flows accepted by the specified {@link VTNFlowMatch}
+     * instance.
+     *
+     * <p>
+     *   Flow removing will be executed in background.
+     *   If a {@code VTNThreadData} is bound to the calling thread,
+     *   the calling thread will wait for completion of flow removing
+     *   when {@link #cleanUp(VTNManagerImpl)} is called.
+     * </p>
+     *
+     * @param mgr         VTN Manager service.
+     * @param fdb  VTN flow database object associated with the virtual tenant.
+     * @param fmatch      A {@link VTNFlowMatch} instance which determines
+     *                    VTN flows to be removed.
+     *                    Specifying {@code null} results in undefined
+     *                    behavior.
+     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, VTNFlowMatch)
+     */
+    public static void removeFlows(VTNManagerImpl mgr, VTNFlowDatabase fdb,
+                                   VTNFlowMatch fmatch) {
+        addTask(fdb.removeFlows(mgr, fmatch));
+    }
+
+    /**
      * Remove all VTN flows in the virtual tenant.
      *
      * <p>

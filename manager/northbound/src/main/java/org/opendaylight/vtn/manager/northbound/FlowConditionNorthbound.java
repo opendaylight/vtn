@@ -141,14 +141,18 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *
      * <ul>
      *   <li>
-     *     If the flow condition specified by {@code condName} does not exist,
-     *     a new flow condition will be associated with {@code condName} in the
-     *     container specified by {@code containerName}.
+     *     If the flow condition specified by
+     *     <span style="text-decoration: underline;">{condName}</span> does
+     *     not exist, a new flow condition will be associated with
+     *     <span style="text-decoration: underline;">{condName}</span> in the
+     *     container specified by
+     *     <span style="text-decoration: underline;">{containerName}</span>.
      *   </li>
      *   <li>
-     *     If the flow condition specified by {@code condName} already exists,
-     *     it will be modified as specified by <strong>flowcondition</strong>
-     *     element.
+     *     If the flow condition specified by
+     *     <span style="text-decoration: underline;">{condName}</span> already
+     *     exists, it will be modified as specified by
+     *     <strong>flowcondition</strong> element.
      *   </li>
      * </ul>
      *
@@ -177,7 +181,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *       <strong>name</strong> attribute in the
      *       <strong>flowcondition</strong> element is always ignored.
      *       The name of the flow condition is determined by the
-     *       <span style="text-decoration: underline;">condName</span>
+     *       <span style="text-decoration: underline;">{condName}</span>
      *       parameter.
      *     </li>
      *     <li>
@@ -316,7 +320,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
 
     /**
      * Return information about the specified flow match condition configured
-     * inthe specified flow condition.
+     * in the specified flow condition.
      *
      * @param containerName  The name of the container.
      * @param condName       The name of the flow condition.
@@ -374,16 +378,17 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      * <ul>
      *   <li>
      *     If no flow match condition is associated with the match index
-     *     specified by <span style="text-decoration: underline;">index</span>
-     *     parameter in the flow condition, a new flow match condition will be
+     *     specified by
+     *     <span style="text-decoration: underline;">{index}</span> parameter
+     *     in the flow condition, a new flow match condition will be
      *     associated with
-     *    <span style="text-decoration: underline;">index</span> in the
+     *    <span style="text-decoration: underline;">{index}</span> in the
      *    flow condition.
      *   </li>
      *   <li>
      *     If the flow match condition is already associated with the match
      *     index specified by
-     *     <span style="text-decoration: underline;">index</span> parameter
+     *     <span style="text-decoration: underline;">{index}</span> parameter
      *     in the flow condition, the contents of the specified flow match
      *     condition will be modified as specified by
      *     <strong>flowmatch</strong> element.
@@ -413,7 +418,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *       <strong>index</strong> attribute in the <strong>flowmatch</strong>
      *       element is always ignored.
      *       The match index is determined by the
-     *       <span style="text-decoration: underline;">index</span> parameter.
+     *       <span style="text-decoration: underline;">{index}</span> parameter.
      *     </li>
      *     <li>
      *       If no condition to match packets is configured in
@@ -448,8 +453,8 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       "in Request body.</li>" +
                       "<li>Incorrect flow condition name is specified to " +
                       "<u>{condName}</u>.</li>" +
-                      "<li>Match index specified by <u>index</u> parameter " +
-                      "is out of valid range.</li>" +
+                      "<li>Match index specified by <u>{index}</u> " +
+                      "parameter is out of valid range.</li>" +
                       "<li>Incorrect value is configured in " +
                       "<strong>flowmatch</strong>.</li>" +
                       "</ul>"),

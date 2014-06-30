@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -44,7 +45,6 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
@@ -52,8 +52,10 @@ import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.VTNConfig;
+import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
@@ -67,7 +69,6 @@ import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -318,10 +319,10 @@ public final class VBridgeImpl implements Serializable {
                       VInterfaceConfig iconf) throws VTNException {
         // Ensure the given interface name is valid.
         String ifName = path.getInterfaceName();
-        VTNManagerImpl.checkName("Interface", ifName);
+        MiscUtils.checkName("Interface", ifName);
 
         if (iconf == null) {
-            Status status = VTNManagerImpl.
+            Status status = MiscUtils.
                 argumentIsNull("Interface configuration");
             throw new VTNException(status);
         }
@@ -364,7 +365,7 @@ public final class VBridgeImpl implements Serializable {
                             VInterfaceConfig iconf, boolean all)
         throws VTNException {
         if (iconf == null) {
-            Status status = VTNManagerImpl.
+            Status status = MiscUtils.
                 argumentIsNull("Interface configuration");
             throw new VTNException(status);
         }
@@ -399,8 +400,7 @@ public final class VBridgeImpl implements Serializable {
         try {
             String ifName = path.getInterfaceName();
             if (ifName == null) {
-                Status status = VTNManagerImpl.
-                    argumentIsNull("Interface name");
+                Status status = MiscUtils.argumentIsNull("Interface name");
                 throw new VTNException(status);
             }
 
@@ -472,18 +472,18 @@ public final class VBridgeImpl implements Serializable {
     VlanMap addVlanMap(VTNManagerImpl mgr, VlanMapConfig vlconf)
         throws VTNException {
         if (vlconf == null) {
-            Status status = VTNManagerImpl.
+            Status status = MiscUtils.
                 argumentIsNull("VLAN mapping configiguration");
             throw new VTNException(status);
         }
 
         short vlan = vlconf.getVlan();
-        VTNManagerImpl.checkVlan(vlan);
+        MiscUtils.checkVlan(vlan);
 
         // Create ID for this VLAN mapping.
         Node node = vlconf.getNode();
         if (node != null) {
-            VTNManagerImpl.checkNode(node);
+            NodeUtils.checkNode(node);
         }
         String id = createVlanMapId(node, vlan);
 
@@ -523,7 +523,7 @@ public final class VBridgeImpl implements Serializable {
     void removeVlanMap(VTNManagerImpl mgr, String mapId)
         throws VTNException {
         if (mapId == null) {
-            Status status = VTNManagerImpl.argumentIsNull("Mapping ID");
+            Status status = MiscUtils.argumentIsNull("Mapping ID");
             throw new VTNException(status);
         }
 
@@ -578,7 +578,7 @@ public final class VBridgeImpl implements Serializable {
      */
     VlanMap getVlanMap(String mapId) throws VTNException {
         if (mapId == null) {
-            Status status = VTNManagerImpl.argumentIsNull("Mapping ID");
+            Status status = MiscUtils.argumentIsNull("Mapping ID");
             throw new VTNException(status);
         }
 
@@ -611,7 +611,7 @@ public final class VBridgeImpl implements Serializable {
      */
     VlanMap getVlanMap(VlanMapConfig vlconf) throws VTNException {
         if (vlconf == null) {
-            Status status = VTNManagerImpl.
+            Status status = MiscUtils.
                 argumentIsNull("VLAN map configiguration");
             throw new VTNException(status);
         }
@@ -1226,8 +1226,11 @@ public final class VBridgeImpl implements Serializable {
             }
 
             // Remove resolved node paths from the set of faulted node paths.
+            // We can use the default route resolver here because it is used
+            // to determine only whether a packet is reachable from source to
+            // destination.
             List<ObjectPair<Node, Node>> resolved =
-                bst.removeResolvedPath(mgr.getRouting());
+                bst.removeResolvedPath(mgr);
             if (LOG.isInfoEnabled()) {
                 for (ObjectPair<Node, Node> npath: resolved) {
                     LOG.info("{}:{}: Path fault resolved: {} -> {}",
@@ -1607,10 +1610,31 @@ public final class VBridgeImpl implements Serializable {
     @SuppressWarnings("unused")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
+        // Read serialized fields.
+        // Note that this lock needs to be acquired here because this instance
+        // is not yet visible.
         in.defaultReadObject();
 
         // Reset the lock.
         rwLock = new ReentrantReadWriteLock();
+    }
+
+    /**
+     * Serialize this object and write it to the given output stream.
+     *
+     * @param out  An output stream.
+     * @throws IOException
+     *    An I/O error occurred.
+     */
+    @SuppressWarnings("unused")
+    private void writeObject(ObjectOutputStream out) throws IOException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            out.defaultWriteObject();
+        } finally {
+            rdlock.unlock();
+        }
     }
 
     /**
@@ -1652,7 +1676,7 @@ public final class VBridgeImpl implements Serializable {
         throws VTNException {
         String ifName = path.getInterfaceName();
         if (ifName == null) {
-            Status status = VTNManagerImpl.argumentIsNull("Interface name");
+            Status status = MiscUtils.argumentIsNull("Interface name");
             throw new VTNException(status);
         }
 
@@ -1850,8 +1874,8 @@ public final class VBridgeImpl implements Serializable {
         Node dnode = outgoing.getNode();
         Path path;
         if (!snode.equals(dnode)) {
-            IRouting routing = mgr.getRouting();
-            path = routing.getRoute(snode, dnode);
+            RouteResolver rr = pctx.getRouteResolver();
+            path = rr.getRoute(snode, dnode);
             if (path == null) {
                 if (addFaultedPath(mgr, snode, dnode)) {
                     LOG.error("{}:{}: Path fault: {} -> {}",
@@ -1998,8 +2022,7 @@ public final class VBridgeImpl implements Serializable {
         pctx.purgeObsoleteFlow(mgr, fdb);
 
         NodeConnector incoming = pctx.getIncomingNodeConnector();
-        VTNConfig vc = mgr.getVTNConfig();
-        int pri = vc.getL2FlowPriority();
+        int pri = pctx.getFlowPriority(mgr);
         VTNFlow vflow = fdb.create(mgr);
         Match match;
         if (path != null) {
@@ -2024,13 +2047,8 @@ public final class VBridgeImpl implements Serializable {
         actions.addVlanId(outVlan).addOutput(outgoing);
         vflow.addFlow(mgr, match, actions, pri);
 
-        // Set flow timeout.
-        VTenantConfig tconf = parent.getVTenantConfig();
-        vflow.setTimeout(tconf.getIdleTimeout(), tconf.getHardTimeout());
-
-        // Set flow dependency which specifies network elements relevant to
-        // this VTN flow.
-        pctx.setFlowDependency(vflow);
+        // Fix up the VTN flow.
+        pctx.fixUp(vflow);
 
         // Install flow entries.
         fdb.install(mgr, vflow);

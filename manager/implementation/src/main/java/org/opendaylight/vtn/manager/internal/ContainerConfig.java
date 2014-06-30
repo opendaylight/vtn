@@ -66,7 +66,17 @@ public final class ContainerConfig implements IObjectReader {
         /**
          * Indicates the configuration of the flow condition.
          */
-        FLOWCOND;
+        FLOWCOND,
+
+        /**
+         * Indicates the configuration of the path policy.
+         */
+        PATHPOLICY,
+
+        /**
+         * Indicates the configuration of the container path map list.
+         */
+        PATHMAP;
     }
 
     /**

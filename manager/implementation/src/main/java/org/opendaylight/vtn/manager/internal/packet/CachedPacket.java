@@ -9,6 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
+import java.util.Set;
+
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Packet;
 
 /**
@@ -22,4 +26,13 @@ public interface CachedPacket {
      * @return  A {@link Packet} instance.
      */
     Packet getPacket();
+
+    /**
+     * Configure match fields to test protocol header in this packet.
+     *
+     * @param match   A {@link Match} instance.
+     * @param fields  A set of {@link MatchType} instances corresponding to
+     *                match fields to be tested.
+     */
+    void setMatch(Match match, Set<MatchType> fields);
 }

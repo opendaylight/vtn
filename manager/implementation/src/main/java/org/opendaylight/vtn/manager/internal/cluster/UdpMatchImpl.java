@@ -16,6 +16,7 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.UdpPacket;
 
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
@@ -93,12 +94,14 @@ public final class UdpMatchImpl extends PortProtoMatchImpl {
         L4PortMatch dst = getDestinationPort();
 
         if (src != null) {
+            pctx.addMatchField(MatchType.TP_SRC);
             int port = udp.getSourcePort();
             if (!src.match(port)) {
                 return false;
             }
         }
         if (dst != null) {
+            pctx.addMatchField(MatchType.TP_DST);
             int port = udp.getDestinationPort();
             if (!dst.match(port)) {
                 return false;

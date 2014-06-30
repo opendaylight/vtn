@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 
 /**
  * {@code ClusterEventId} describes an identifier of cluster cache event.
@@ -180,7 +180,7 @@ public class ClusterEventId implements Serializable {
      */
     @Override
     public int hashCode() {
-        return controllerAddress.hashCode() ^ VTNManagerImpl.hashCode(eventId);
+        return controllerAddress.hashCode() ^ MiscUtils.hashCode(eventId);
     }
 
     /**

@@ -16,6 +16,7 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
 
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -195,11 +196,13 @@ public final class IcmpMatchImpl extends L4MatchImpl {
 
         IcmpPacket icmp = (IcmpPacket)packet;
         if (type >= 0) {
+            pctx.addMatchField(MatchType.TP_SRC);
             if (type != icmp.getType()) {
                 return false;
             }
         }
         if (code >= 0) {
+            pctx.addMatchField(MatchType.TP_DST);
             if (code != icmp.getCode()) {
                 return false;
             }

@@ -9,6 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
+import java.util.Set;
+
+import org.opendaylight.controller.sal.match.Match;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
@@ -79,4 +83,28 @@ public abstract class PortProtoPacket implements CachedPacket {
      *          number.
      */
     public abstract short getRawDestinationPort();
+
+    // CachedPacket
+
+    /**
+     * Configure match fields to test TCP/UDP header in this packet.
+     *
+     * @param match   A {@link Match} instance.
+     * @param fields  A set of {@link MatchType} instances corresponding to
+     *                match fields to be tested.
+     */
+    @Override
+    public final void setMatch(Match match, Set<MatchType> fields) {
+        MatchType type = MatchType.TP_SRC;
+        if (fields.contains(type)) {
+            // Test source port number.
+            match.setField(type, (short)getSourcePort());
+        }
+
+        type = MatchType.TP_DST;
+        if (fields.contains(type)) {
+            // Test destination port number.
+            match.setField(type, (short)getDestinationPort());
+        }
+    }
 }

@@ -12,7 +12,9 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
+import org.opendaylight.vtn.manager.internal.PacketContext;
 
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -184,17 +186,28 @@ public abstract class InetMatchImpl implements PacketMatch {
      * Determine whether the IP protocol number and DSCP field match the
      * condition described by this instance.
      *
+     * @param pctx   The context of the packet to be tested.
      * @param proto  An IP protocol number to be tested.
      * @param ds     A DSCP field value to be tested.
      * @return  {@code true} is returned if the specified arguments match the
      *          condition. Otherwise {@code false} is returned.
      */
-    public final boolean match(short proto, byte ds) {
-        if (protocol >= 0 && protocol != proto) {
-            return false;
+    public final boolean match(PacketContext pctx, short proto, byte ds) {
+        if (protocol >= 0) {
+            pctx.addMatchField(MatchType.NW_PROTO);
+            if (protocol != proto) {
+                return false;
+            }
         }
 
-        return (dscp < 0 || dscp == ds);
+        if (dscp >= 0) {
+            pctx.addMatchField(MatchType.NW_TOS);
+            if (dscp != ds) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

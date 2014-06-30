@@ -36,6 +36,7 @@ import org.opendaylight.controller.northbound.commons.exception.
     UnauthorizedException;
 import org.opendaylight.controller.northbound.commons.utils.NorthboundUtils;
 import org.opendaylight.controller.sal.authorization.Privilege;
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
@@ -227,5 +228,43 @@ public abstract class VTNNorthBoundBase {
         } catch (NumberFormatException e) {
             throw new BadRequestException("Invalid VLAN ID.");
         }
+    }
+
+    /**
+     * Convert the specified string into a {@link Node} instance.
+     *
+     * @param str  A string representation of a {@link Node} instance.
+     * @return     A {@link Node} instance.
+     * @throws BadRequestException
+     *    Invalid string is passed to {@code str}.
+     */
+    protected Node parseNode(String str) {
+        Node node = Node.fromString(str);
+        if (node == null) {
+            throw new BadRequestException("Invalid node: " + str);
+        }
+
+        return node;
+    }
+
+    /**
+     * Convert the specified string into a {@link Node} instance.
+     *
+     * @param type  Type of the node corresponding to the physical switch.
+     * @param id    A string which represents identifier of the node
+     *              corresponding to the physical switch.
+     * @return      A {@link Node} instance.
+     * @throws BadRequestException
+     *    Invalid string is passed to {@code type} or {@code id}.
+     */
+    protected Node parseNode(String type, String id) {
+        Node node = Node.fromString(type, id);
+        if (node == null) {
+            StringBuilder builder = new StringBuilder("Invalid node: ");
+            builder.append(type).append('|').append(id);
+            throw new BadRequestException(builder.toString());
+        }
+
+        return node;
     }
 }

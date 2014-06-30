@@ -17,10 +17,10 @@ import java.util.Set;
 import java.util.HashSet;
 
 import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.internal.RouteResolver;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.Path;
-import org.opendaylight.controller.sal.routing.IRouting;
 
 /**
  * {@code VBridgeState} class keeps runtime state of the virtual L2 bridge.
@@ -157,10 +157,10 @@ public class VBridgeState implements Serializable {
      *   after the call of this method.
      * </p>
      *
-     * @param routing  Routing service.
+     * @param rr A {@link RouteResolver} instance.
      * @return  A list of resolved node paths.
      */
-    List<ObjectPair<Node, Node>> removeResolvedPath(IRouting routing) {
+    List<ObjectPair<Node, Node>> removeResolvedPath(RouteResolver rr) {
         List<ObjectPair<Node, Node>> removed =
             new ArrayList<ObjectPair<Node, Node>>();
         for (Iterator<ObjectPair<Node, Node>> it = faultedPaths.iterator();
@@ -168,7 +168,7 @@ public class VBridgeState implements Serializable {
             ObjectPair<Node, Node> npath = it.next();
             Node snode = npath.getLeft();
             Node dnode = npath.getRight();
-            Path path = routing.getRoute(snode, dnode);
+            Path path = rr.getRoute(snode, dnode);
             if (path != null) {
                 removed.add(npath);
                 it.remove();
