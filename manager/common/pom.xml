@@ -719,6 +719,18 @@
         <version>7.0.42</version>
       </dependency>
 
+      <!-- OpenDaylight openflowplugin -->
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin</groupId>
+        <artifactId>openflowplugin</artifactId>
+        <version>0.0.3-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin</groupId>
+        <artifactId>openflowplugin-controller-config</artifactId>
+        <version>0.0.3-SNAPSHOT</version>
+      </dependency>
+
       <!-- OpenDaylight OVSDB project -->
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>

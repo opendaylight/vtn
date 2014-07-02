@@ -36,6 +36,7 @@
       </binaries>
     </moduleSet>
   </moduleSets>
+
   <fileSets>
     <fileSet>
       <includes>
@@ -44,6 +45,12 @@
       <excludes>
         <exclude>opendaylight/plugins/org.opendaylight.controller.arphandler-*.jar</exclude>
         <exclude>opendaylight/plugins/org.opendaylight.controller.samples.*.jar</exclude>
+        <exclude>opendaylight/run.sh</exclude>
+
+        <!-- Exclude configuration files for sample applications. -->
+        <exclude>
+          opendaylight/configuration/initial/*sample*.xml
+        </exclude>
       </excludes>
       <directory>${project.build.directory}/generated-resources</directory>
       <outputDirectory>/</outputDirectory>
@@ -52,8 +59,71 @@
       <includes>
         <include>configuration/vtn.ini</include>
       </includes>
-      <directory>src/resources</directory>
+      <directory>src/main/resources</directory>
       <outputDirectory>/opendaylight</outputDirectory>
     </fileSet>
+
+    <!-- Install openflowplugin configuration file. -->
+    <fileSet>
+      <directory>
+        ${project.build.directory}/provided-configs/initial
+      </directory>
+      <outputDirectory>
+        opendaylight/configuration/initial.available
+      </outputDirectory>
+      <excludes>
+        <exclude>**/META-INF/**</exclude>
+      </excludes>
+    </fileSet>
   </fileSets>
+
+  <!-- Copy openflowplugin and ovsdb. -->
+  <dependencySets>
+    <dependencySet>
+      <excludes>
+        <exclude>ch.qos.logback:*</exclude>
+        <exclude>com.sun.jersey:*</exclude>
+        <exclude>equinoxSDK381:*</exclude>
+        <exclude>org.opendaylight.controller:*</exclude>
+        <exclude>org.osgi:*</exclude>
+        <exclude>org.slf4j:*</exclude>
+        <exclude>stax:*</exclude>
+        <exclude>io.netty:netty-all</exclude>
+        <exclude>commons-lang:*</exclude>
+        <exclude>commons-collections:*</exclude>
+        <exclude>javax.portlet:*</exclude>
+        <exclude>
+          org.opendaylight.openflowplugin:openflowplugin-controller-config
+        </exclude>
+      </excludes>
+      <outputDirectory>opendaylight/plugins</outputDirectory>
+      <outputFileNameMapping>
+        ${artifact.groupId}.${artifact.artifactId}-${artifact.version}${dashClassifier?}.${artifact.extension}
+      </outputFileNameMapping>
+      <unpack>false</unpack>
+      <scope>runtime</scope>
+      <useTransitiveDependencies>true</useTransitiveDependencies>
+      <useTransitiveFiltering>true</useTransitiveFiltering>
+      <useProjectArtifact>false</useProjectArtifact>
+    </dependencySet>
+  </dependencySets>
+
+  <files>
+    <!-- Copy run.sh in controller distribution as run_controller.sh. -->
+    <file>
+      <source>
+        ${project.build.directory}/generated-resources/opendaylight/run.sh
+      </source>
+      <outputDirectory>/opendaylight</outputDirectory>
+      <destName>run_controller.sh</destName>
+      <fileMode>0755</fileMode>
+    </file>
+
+    <!-- Install run.sh. -->
+    <file>
+      <source>src/main/resources/run.sh</source>
+      <outputDirectory>/opendaylight</outputDirectory>
+      <fileMode>0755</fileMode>
+    </file>
+  </files>
 </assembly>

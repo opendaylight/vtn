@@ -49,6 +49,17 @@
       <type>zip</type>
       <classifier>osgipackage</classifier>
     </dependency>
+
+    <!-- OpenDaylight openflowplugin -->
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowplugin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowplugin-controller-config</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>ovsdb</artifactId>
@@ -101,21 +112,24 @@
              <ignorePermissions>false</ignorePermissions>
             </configuration>
           </execution>
+
+          <!-- Copy configuration file for openflowplugin. -->
           <execution>
-            <id>copy-ovsdb</id>
+            <id>unpack-configs</id>
             <phase>generate-resources</phase>
             <goals>
-              <goal>copy</goal>
+              <goal>unpack-dependencies</goal>
             </goals>
             <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.opendaylight.ovsdb</groupId>
-                  <artifactId>ovsdb</artifactId>
-                  <type>jar</type>
-                  <outputDirectory>${project.build.directory}/generated-resources/opendaylight/plugins</outputDirectory>
-                </artifactItem>
-              </artifactItems>
+              <outputDirectory>
+                ${project.build.directory}/provided-configs
+              </outputDirectory>
+              <includeArtifactIds>
+                openflowplugin-controller-config
+              </includeArtifactIds>
+              <includes>**\/*.xml</includes>
+              <excludeTransitive>true</excludeTransitive>
+              <ignorePermissions>false</ignorePermissions>
             </configuration>
           </execution>
         </executions>
