@@ -26,15 +26,28 @@ INIT_AVAIL=initial.available
 
 help()
 {
-    $RUN_CONTROLLER -help | \
-        sed 's,\[-help\],[-help] [-of13] [-bundlefilter <filter>],' |
-        sed "s,$RUN_CONTROLLER,$0,"
+    cat <<EOF
+Usage: $0 [options]
+
+Common Options:
+EOF
+    $RUN_CONTROLLER -help | sed -e '/^For other information type/i\
+Additional Options:\
+\
+     of10             [-of10]\
+     of13             [-of13]\
+'
     exit 1
 }
 
 ARGS=
 while [ $# -ne 0 ]; do
     case "$1" in
+        -of10)
+            # Use legacy AD-SAL openflow plugin.
+            OF13=0
+            ;;
+
         -of13)
             # Use MD-SAL openflow plugin.
             OF13=1
