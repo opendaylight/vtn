@@ -81,30 +81,18 @@
   <!-- Copy openflowplugin and ovsdb. -->
   <dependencySets>
     <dependencySet>
-      <excludes>
-        <exclude>ch.qos.logback:*</exclude>
-        <exclude>com.sun.jersey:*</exclude>
-        <exclude>equinoxSDK381:*</exclude>
-        <exclude>org.opendaylight.controller:*</exclude>
-        <exclude>org.osgi:*</exclude>
-        <exclude>org.slf4j:*</exclude>
-        <exclude>stax:*</exclude>
-        <exclude>io.netty:netty-all</exclude>
-        <exclude>commons-lang:*</exclude>
-        <exclude>commons-collections:*</exclude>
-        <exclude>javax.portlet:*</exclude>
-        <exclude>
-          org.opendaylight.openflowplugin:openflowplugin-controller-config
-        </exclude>
-      </excludes>
+      <includes>
+        <include>org.opendaylight.openflowjava:*</include>
+        <include>org.opendaylight.openflowplugin:openflowplugin</include>
+        <include>org.opendaylight.ovsdb:*</include>
+      </includes>
       <outputDirectory>opendaylight/plugins</outputDirectory>
       <outputFileNameMapping>
         ${artifact.groupId}.${artifact.artifactId}-${artifact.version}${dashClassifier?}.${artifact.extension}
       </outputFileNameMapping>
       <unpack>false</unpack>
       <scope>runtime</scope>
-      <useTransitiveDependencies>true</useTransitiveDependencies>
-      <useTransitiveFiltering>true</useTransitiveFiltering>
+      <useTransitiveDependencies>false</useTransitiveDependencies>
       <useProjectArtifact>false</useProjectArtifact>
     </dependencySet>
   </dependencySets>
