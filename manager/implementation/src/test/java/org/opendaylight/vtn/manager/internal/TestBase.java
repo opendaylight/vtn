@@ -58,6 +58,22 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  * Abstract base class for JUnit tests.
  */
 public abstract class TestBase extends Assert {
+  /**
+   * String Declaration for Mac Unavilable.
+   */
+   protected static final String MAC_UNAVAILABLE = "MAC mapping is unavailable: ";
+  /**
+   * String Declaration for Mac Used .
+   */
+   protected static final String MAC_USED = "Same MAC address is already mapped: host={";
+  /**
+   * String Declaration for Mac Inactivated .
+   */
+   protected static final String MAC_INACTIVATED = "MAC mapping has been inactivated: host={";
+  /**
+   * String Declaration for Switch Reserved .
+   */
+   protected static final String SWITCH_RESERVED = "switch port is reserved: host={";
     /**
      * Throw an error which indicates an unexpected throwable is caught.
      *
@@ -1540,3 +1556,4 @@ public abstract class TestBase extends Assert {
         }
     }
 }
+
