@@ -16,7 +16,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the specified data layer
+ * This class describes a flow action that sets the specified data layer
  * address into the packet as the destination address.
  *
  * <h4>Example JSON</h4>

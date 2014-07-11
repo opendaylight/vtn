@@ -17,7 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the specified value into the
+ * This class describes a flow action that sets the specified value into the
  * DSCP field in the IP packet.
  *
  * <h4>Example JSON</h4>
@@ -105,7 +105,7 @@ public final class SetDscpAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetDscpAction.class.hashCode() ^ (int)dscp;
+        return SetDscpAction.class.getName().hashCode() ^ (int)dscp;
     }
 
     /**

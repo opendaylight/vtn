@@ -17,7 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the specified VLAN ID into
+ * This class describes a flow action that sets the specified VLAN ID into
  * the packet.
  *
  * <h4>Example JSON</h4>
@@ -111,7 +111,7 @@ public final class SetVlanIdAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetVlanIdAction.class.hashCode() ^ (int)vlan;
+        return SetVlanIdAction.class.getName().hashCode() ^ (int)vlan;
     }
 
     /**

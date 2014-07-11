@@ -56,7 +56,7 @@ public final class DropAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return DropAction.class.hashCode();
+        return DropAction.class.getName().hashCode();
     }
 
     /**

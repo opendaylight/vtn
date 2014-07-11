@@ -17,7 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the specified ICMP type
+ * This class describes a flow action that sets the specified ICMP type
  * into the ICMP header in IPv4 packet.
  *
  * <h4>Example JSON</h4>
@@ -105,7 +105,7 @@ public final class SetIcmpTypeAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetIcmpTypeAction.class.hashCode() ^ (int)type;
+        return SetIcmpTypeAction.class.getName().hashCode() ^ (int)type;
     }
 
     /**

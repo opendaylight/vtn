@@ -56,7 +56,7 @@ public final class PopVlanAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return PopVlanAction.class.hashCode();
+        return PopVlanAction.class.getName().hashCode();
     }
 
     /**

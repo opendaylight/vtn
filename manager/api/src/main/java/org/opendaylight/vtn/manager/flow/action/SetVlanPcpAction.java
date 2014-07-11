@@ -17,7 +17,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the specified VLAN priority
+ * This class describes a flow action that sets the specified VLAN priority
  * into the packet.
  *
  * <h4>Example JSON</h4>
@@ -105,7 +105,7 @@ public final class SetVlanPcpAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetVlanPcpAction.class.hashCode() ^ (int)priority;
+        return SetVlanPcpAction.class.getName().hashCode() ^ (int)priority;
     }
 
     /**

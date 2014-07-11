@@ -18,7 +18,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the specified IPv4 address
+ * This class describes a flow action that sets the specified IPv4 address
  * into the IPv4 packet as the source address.
  *
  * <h4>Example JSON</h4>
