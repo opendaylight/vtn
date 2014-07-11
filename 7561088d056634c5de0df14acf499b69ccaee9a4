@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_2294aa41",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/IStatisticsManagerStub.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 310,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-07-11T09:30:46Z",
+      "side": 1,
+      "message": "This comment is treated as an illegal doclet \"@THis\".",
+      "revId": "7561088d056634c5de0df14acf499b69ccaee9a4",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_82b816c9",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/TestBase.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 76,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-07-11T09:30:46Z",
+      "side": 1,
+      "message": "This patch actually adds above 4 constants, but indentation of existing code is also changed. You should not do that.\nPlease keep indentation of existing code.",
+      "revId": "7561088d056634c5de0df14acf499b69ccaee9a4",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_4280cef6",
+        "filename": "manager/northbound/src/test/java/org/opendaylight/vtn/manager/northbound/DataFlowListTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 32,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-07-11T09:30:46Z",
+      "side": 1,
+      "message": "\"DataFlowListList\" should be \"DataFlowList\".",
+      "revId": "7561088d056634c5de0df14acf499b69ccaee9a4",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
