@@ -153,10 +153,8 @@ public final class ContainerConfig implements IObjectReader {
         File file = getPath(type, key);
         ObjectReader rdr = new ObjectReader();
         Object obj = rdr.read(this, file.getPath());
-        if (obj == null) {
-            if (delete(file)) {
-                LOG.warn("Delete broken configuration file: {}", file);
-            }
+        if (obj == null && delete(file)) {
+            LOG.warn("Delete broken configuration file: {}", file);
         }
         return obj;
     }

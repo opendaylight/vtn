@@ -218,22 +218,19 @@ public final class DataFlowFilterImpl {
             }
         }
 
-        if (port != null && indexType != INDEX_PORT) {
-            // Check whether the VTN flow depends on the specified switch port
-            // or not.
-            if (!vflow.getFlowPorts().contains(port)) {
-                // Switch port does not match.
-                return false;
-            }
+        // Check whether the VTN flow depends on the specified switch port
+        // or not.
+        if (port != null && indexType != INDEX_PORT &&
+            !vflow.getFlowPorts().contains(port)) {
+            // Switch port does not match.
+            return false;
         }
 
-        if (node != null && indexType != INDEX_SWITCH) {
-            // Check whether the VTN flow depends on the specified switch
-            // or not.
-            if (!vflow.getFlowNodes().contains(node)) {
-                // Switch does not match.
-                return false;
-            }
+        // Check whether the VTN flow depends on the specified switch or not.
+        if (node != null && indexType != INDEX_SWITCH &&
+            !vflow.getFlowNodes().contains(node)) {
+            // Switch does not match.
+            return false;
         }
 
         return true;

@@ -172,14 +172,15 @@ public abstract class PortProtoMatchImpl extends L4MatchImpl {
     public final String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append('[');
-        String sep = ",";
+        String sep = "";
 
         if (sourcePort != null) {
             builder.append("src=").append(sourcePort.toString());
             sep = ",";
         }
         if (destinationPort != null) {
-            builder.append("dst=").append(destinationPort.toString());
+            builder.append(sep).append("dst=").
+                append(destinationPort.toString());
         }
         builder.append(']');
 
