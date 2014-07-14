@@ -79,10 +79,12 @@
     </dependency>
 
     <!-- OpenDaylight ovsdb -->
+    <!--
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>ovsdb</artifactId>
     </dependency>
+    -->
   </dependencies>
 
   <build>

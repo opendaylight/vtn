@@ -78,13 +78,13 @@
     </fileSet>
   </fileSets>
 
-  <!-- Copy openflowplugin and ovsdb. -->
+  <!-- Copy artifacts on which the VTN Manager depends. -->
   <dependencySets>
     <dependencySet>
       <includes>
         <include>org.opendaylight.openflowjava:*</include>
         <include>org.opendaylight.openflowplugin:openflowplugin</include>
-        <include>org.opendaylight.ovsdb:*</include>
+        <!-- <include>org.opendaylight.ovsdb:*</include> -->
       </includes>
       <outputDirectory>opendaylight/plugins</outputDirectory>
       <outputFileNameMapping>

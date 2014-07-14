@@ -4183,6 +4183,7 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("org.opendaylight.controller", "sal.networkconfiguration.implementation").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "connectionmanager").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "connectionmanager.implementation").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "networkconfig.neutron").versionAsInProject(),
 
                 mavenBundle("org.opendaylight.controller", "switchmanager").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "switchmanager.implementation").versionAsInProject(),
@@ -4216,6 +4217,7 @@ public class VtnNorthboundIT extends TestBase {
                 // VTN Manager bundels
                 mavenBundle("org.opendaylight.vtn", "manager").versionAsInProject(),
                 mavenBundle("org.opendaylight.vtn", "manager.northbound").versionAsInProject(),
+                mavenBundle("org.opendaylight.vtn", "manager.neutron").versionAsInProject(),
                 mavenBundle("org.opendaylight.vtn", "manager.implementation").versionAsInProject(),
 
                 mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
@@ -4229,6 +4231,7 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("commons-io", "commons-io").versionAsInProject(),
 
                 mavenBundle("commons-fileupload", "commons-fileupload").versionAsInProject(),
+                mavenBundle("commons-net", "commons-net").versionAsInProject(),
 
                 mavenBundle("equinoxSDK381", "javax.servlet").versionAsInProject(),
                 mavenBundle("equinoxSDK381", "javax.servlet.jsp").versionAsInProject(),
