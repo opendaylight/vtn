@@ -152,6 +152,12 @@ public class VTNManagerIT extends TestBase {
         "org.opendaylight.vtn.manager.implementation";
 
     /**
+     * The name of the package that provides stub OSGi services.
+     */
+    private static final String STUB_PACKAGE =
+        "org.opendaylight.vtn.manager.integrationtest.internal";
+
+    /**
      * The number of seconds to wait for the latch to be counted down to zero.
      */
     private static final long  LATCH_TIMEOUT = 10L;
@@ -232,10 +238,13 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("org.opendaylight.controller", "forwarding.staticrouting").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "statisticsmanager").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "statisticsmanager.implementation").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "networkconfig.neutron").versionAsInProject(),
 
                 // VTN Manager bundels
                 mavenBundle("org.opendaylight.vtn", "manager").versionAsInProject(),
                 mavenBundle("org.opendaylight.vtn", "manager.implementation").versionAsInProject(),
+                mavenBundle("org.opendaylight.vtn", "manager.neutron").versionAsInProject(),
+
                 // require myself for testing with openflow stub
                 bundle(new File("./target/classes").toURI().toString()),
 
@@ -258,6 +267,7 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("com.fasterxml.jackson.core", "jackson-annotations").versionAsInProject(),
                 mavenBundle("com.fasterxml.jackson.core", "jackson-core").versionAsInProject(),
                 mavenBundle("com.fasterxml.jackson.core", "jackson-databind").versionAsInProject(),
+                mavenBundle("commons-net", "commons-net").versionAsInProject(),
 
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-container-native"),
                 mavenBundle("org.ops4j.pax.exam", "pax-exam-junit4"),
@@ -2507,11 +2517,10 @@ public class VTNManagerIT extends TestBase {
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
         assertNotNull(swmgr);
 
-        r = bc.getServiceReference(IPluginInInventoryService.class.getName());
-        assertNotNull(r);
-        IPluginInInventoryService pinIVS = (IPluginInInventoryService)(bc.getService(r));
-        assertNotNull(pinIVS);
-
+        IPluginInInventoryService pinIVS =
+            getStubService(IPluginInInventoryService.class,
+                           GlobalConstants.DEFAULT.toString());
+        assertTrue(pinIVS instanceof InventoryService);
 
         List<Node> existNodes = new ArrayList<Node>();
         existNodes.addAll(swmgr.getNodes());
@@ -2576,9 +2585,9 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
 
-        IPluginInDataPacketService pinDPS = (IPluginInDataPacketService)ServiceHelper
-            .getInstance(IPluginInDataPacketService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pinDPS);
+        IPluginInDataPacketService pinDPS =
+            getStubService(IPluginInDataPacketService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertTrue(pinDPS instanceof DataPacketServices);
         DataPacketServices dps = (DataPacketServices)pinDPS;
 
@@ -2783,9 +2792,9 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
 
-        IPluginInDataPacketService pinDPS = (IPluginInDataPacketService)ServiceHelper
-            .getInstance(IPluginInDataPacketService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pinDPS);
+        IPluginInDataPacketService pinDPS =
+            getStubService(IPluginInDataPacketService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertTrue(pinDPS instanceof DataPacketServices);
         DataPacketServices dps = (DataPacketServices)pinDPS;
 
@@ -3491,14 +3500,16 @@ public class VTNManagerIT extends TestBase {
         Update up = null;
         res = listener.restart(2);
 
-        ServiceRegistration updateServiceReg =
-                ServiceHelper.registerServiceWReg(IVTNManagerAware.class, "default",
-                                                    listener, props);
+        ServiceRegistration updateServiceReg = ServiceHelper.
+            registerServiceWReg(IVTNManagerAware.class,
+                                GlobalConstants.DEFAULT.toString(),
+                                listener, props);
         assertNotNull(updateServiceReg);
 
-        ServiceRegistration updateServiceRegRepeated =
-                ServiceHelper.registerServiceWReg(IVTNManagerAware.class, "default",
-                                                    listenerRepeated, props);
+        ServiceRegistration updateServiceRegRepeated = ServiceHelper.
+            registerServiceWReg(IVTNManagerAware.class,
+                                GlobalConstants.DEFAULT.toString(),
+                                listenerRepeated, props);
         assertNotNull(updateServiceRegRepeated);
         res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
 
@@ -4178,7 +4189,7 @@ public class VTNManagerIT extends TestBase {
         log.info("Running testICacheUpdateAware().");
 
         IVTNManager mgr = vtnManager;
-        String containerName = "default";
+        String containerName = GlobalConstants.DEFAULT.toString();
         File containerDir = new File(GlobalConstants.STARTUPHOME.toString(),
                                      containerName);
         File vtnDir = new File(containerDir, "vtn");
@@ -4188,9 +4199,9 @@ public class VTNManagerIT extends TestBase {
 
         Dictionary<String, Object> props = new Hashtable<String, Object>();
         VTNManagerAware listener = new VTNManagerAware();
-        ServiceRegistration svReg =
-            ServiceHelper.registerServiceWReg(IVTNManagerAware.class,
-                                              containerName, listener, props);
+        ServiceRegistration svReg = ServiceHelper.
+            registerServiceWReg(IVTNManagerAware.class, containerName,
+                                listener, props);
 
         // create tenant
         File configFile = new File(tenantDir, configFileName);
@@ -4680,22 +4691,22 @@ public class VTNManagerIT extends TestBase {
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // Get FlowProgrammerService from openflow stub
-        r = bc.getServiceReference(IPluginInFlowProgrammerService.class.getName());
-        IPluginInFlowProgrammerService pinFPS = (IPluginInFlowProgrammerService)(bc.getService(r));
-        assertNotNull(pinFPS);
+        IPluginInFlowProgrammerService pinFPS =
+            getStubService(IPluginInFlowProgrammerService.class);
         assertTrue(pinFPS instanceof FlowProgrammerService);
         FlowProgrammerService fps = (FlowProgrammerService)pinFPS;
 
         // Get InventoryService from openflow stub
-        IPluginInInventoryService pinIVS = (IPluginInInventoryService)ServiceHelper
-                .getInstance(IPluginInInventoryService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pinIVS);
+        IPluginInInventoryService pinIVS =
+            getStubService(IPluginInInventoryService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertTrue(pinIVS instanceof InventoryService);
         InventoryService ivs = (InventoryService)pinIVS;
 
         // Get TopologyService from openflow stub
-        IPluginInTopologyService pinTPS = (IPluginInTopologyService)ServiceHelper
-                .getInstance(IPluginInTopologyService.class, GlobalConstants.DEFAULT.toString(), this);
+        IPluginInTopologyService pinTPS =
+            getStubService(IPluginInTopologyService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertNotNull(pinTPS);
         assertTrue(pinTPS instanceof TopologyServices);
         TopologyServices tps = (TopologyServices)pinTPS;
@@ -5116,23 +5127,22 @@ public class VTNManagerIT extends TestBase {
         waiter.await();
 
         // Get FlowProgrammerService from openflow stub
-        ServiceReference r = bc.getServiceReference(IPluginInFlowProgrammerService.class.getName());
-        IPluginInFlowProgrammerService pinFPS = (IPluginInFlowProgrammerService)(bc.getService(r));
-        assertNotNull(pinFPS);
+        IPluginInFlowProgrammerService pinFPS =
+            getStubService(IPluginInFlowProgrammerService.class);
         assertTrue(pinFPS instanceof FlowProgrammerService);
         FlowProgrammerService fps = (FlowProgrammerService)pinFPS;
 
         // Get InventoryService from openflow stub
-        IPluginInInventoryService pinIVS = (IPluginInInventoryService)ServiceHelper
-                .getInstance(IPluginInInventoryService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pinIVS);
+        IPluginInInventoryService pinIVS =
+            getStubService(IPluginInInventoryService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertTrue(pinIVS instanceof InventoryService);
         InventoryService ivs = (InventoryService)pinIVS;
 
         // Get TopologyService from openflow stub
-        IPluginInTopologyService pinTPS = (IPluginInTopologyService)ServiceHelper
-                .getInstance(IPluginInTopologyService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pinTPS);
+        IPluginInTopologyService pinTPS =
+            getStubService(IPluginInTopologyService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertTrue(pinTPS instanceof TopologyServices);
         TopologyServices tps = (TopologyServices)pinTPS;
 
@@ -5250,9 +5260,9 @@ public class VTNManagerIT extends TestBase {
         ServiceReference r = bc.getServiceReference(ISwitchManager.class.getName());
         ISwitchManager swmgr = (ISwitchManager)(bc.getService(r));
 
-        IPluginInDataPacketService pinDPS = (IPluginInDataPacketService)ServiceHelper
-            .getInstance(IPluginInDataPacketService.class, GlobalConstants.DEFAULT.toString(), this);
-        assertNotNull(pinDPS);
+        IPluginInDataPacketService pinDPS =
+            getStubService(IPluginInDataPacketService.class,
+                           GlobalConstants.DEFAULT.toString());
         assertTrue(pinDPS instanceof DataPacketServices);
         DataPacketServices dps = (DataPacketServices)pinDPS;
 
@@ -5429,8 +5439,10 @@ public class VTNManagerIT extends TestBase {
 
         VTNModeListenerStub stub = new VTNModeListenerStub();
         Dictionary<String, Object> props = new Hashtable<String, Object>();
-        ServiceRegistration listenerSeriveceReg
-            = ServiceHelper.registerServiceWReg(IVTNModeListener.class, "default", stub, props);
+        ServiceRegistration listenerSeriveceReg = ServiceHelper.
+            registerServiceWReg(IVTNModeListener.class,
+                                GlobalConstants.DEFAULT.toString(),
+                                stub, props);
 
         assertEquals(1, stub.getCalledCount());
         assertEquals(false, stub.getCalledArg());
@@ -5496,5 +5508,60 @@ public class VTNManagerIT extends TestBase {
             st = mgr.addBridgeInterface(ifpath, ifconf);
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
+    }
+
+    /**
+     * Return a global stub OSGi service provided by this integration test
+     * package.
+     *
+     * @param T    Type of service.
+     * @param cls  The class of registered OSGi service.
+     * @return     A OSGi service instance.
+     */
+    private <T> T getStubService(Class<T> cls) {
+        try {
+            for (ServiceReference<T> ref: bc.getServiceReferences(cls, null)) {
+                T service = bc.getService(ref);
+                if (service != null) {
+                    Class<?> icls = service.getClass();
+                    Package pkg = icls.getPackage();
+                    if (STUB_PACKAGE.equals(pkg.getName())) {
+                        return service;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        return null;
+    }
+
+    /**
+     * Return a container-specific stub OSGi service provided by this
+     * integration test package.
+     *
+     * @param T          Type of service.
+     * @param cls        The class of registered OSGi service.
+     * @param container  The name of the container.
+     * @return     A OSGi service instance.
+     */
+    private <T> T getStubService(Class<T> cls, String container) {
+        StringBuilder builder = new StringBuilder("(containerName=");
+        String f = builder.append(container).append(')').toString();
+        try {
+            for (ServiceReference<T> ref: bc.getServiceReferences(cls, f)) {
+                T service = bc.getService(ref);
+                if (service != null) {
+                    Class<?> icls = service.getClass();
+                    Package pkg = icls.getPackage();
+                    if (STUB_PACKAGE.equals(pkg.getName())) {
+                        return service;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        return null;
     }
 }
