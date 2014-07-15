@@ -16,7 +16,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 /**
- * This class describes a flow action that set the source port number into the
+ * This class describes a flow action that sets the source port number into the
  * transport layer header in the packet.
  *
  * <h4>Example JSON</h4>

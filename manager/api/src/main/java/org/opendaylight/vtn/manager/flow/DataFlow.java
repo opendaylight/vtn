@@ -404,6 +404,8 @@ public final class DataFlow implements Serializable {
      *   </li>
      *   <li>
      *     This element is omitted if a list of flow actions is not configured.
+     *     An empty action list is configured if this data flow forwards
+     *     packets without any modification.
      *   </li>
      * </ul>
      */
