@@ -138,7 +138,6 @@ import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NetUtils;
-import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
@@ -365,6 +364,16 @@ public class VTNManagerImpl
      * Connection manager service instance.
      */
     private IConnectionManager  connectionManager;
+
+    /**
+     * Container manager service instance.
+     *
+     * <p>
+     *   Note that {@code null} is set unless this instance is associated with
+     *   the default container.
+     * </p>
+     */
+    private IContainerManager  containerManager;
 
     /**
      * Host listeners.
@@ -682,11 +691,9 @@ public class VTNManagerImpl
         String root = GlobalConstants.STARTUPHOME.toString();
         vtnConfig = new VTNConfig(root, cname);
 
-        if (cname.equals(GlobalConstants.DEFAULT.toString())) {
-            IContainerManager ctMgr = (IContainerManager)ServiceHelper.
-                getGlobalInstance(IContainerManager.class, this);
-            inContainerMode =
-                (ctMgr != null && ctMgr.hasNonDefaultContainer());
+        if (containerManager != null) {
+            assert containerName.equals(GlobalConstants.DEFAULT.toString());
+            inContainerMode = containerManager.inContainerMode();
         } else {
             inContainerMode = false;
         }
@@ -1800,6 +1807,41 @@ public class VTNManagerImpl
      */
     public IConnectionManager getConnectionManager() {
         return connectionManager;
+    }
+
+    /**
+     * Invoked when a container manager service is registered.
+     *
+     * @param service  Container manager service.
+     */
+    void setContainerManager(IContainerManager service) {
+        LOG.trace("{}: Set container manager service: {}", containerName,
+                  service);
+        containerManager = service;
+    }
+
+    /**
+     * Invoked when a container manager service is unregistered.
+     *
+     * @param service  Container manager service.
+     */
+    void unsetContainerManager(IContainerManager service) {
+        if (containerManager == service) {
+            LOG.trace("{}: Unset container manager service: {}",
+                      containerName, service);
+            containerManager = null;
+        }
+    }
+
+    /**
+     * Return container manager service instance.
+     *
+     * @return  Container manager service.
+     *          Note that {@code null} is always returned unless this instance
+     *          is associated with the default container.
+     */
+    public IContainerManager getContainerManager() {
+        return containerManager;
     }
 
     /**
@@ -4153,9 +4195,6 @@ public class VTNManagerImpl
             }
         } else if (arpHandler == null) {
             // Inactivate VTN, and start ARP handler emulator.
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb);
-            }
             arpHandler = new ArpHandler(this);
             if (sync) {
                 notifyListeners(false);
@@ -5508,6 +5547,13 @@ public class VTNManagerImpl
     public List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
                                        DataFlowFilter filter)
         throws VTNException {
+        if (inContainerMode) {
+            // No flow entry is active in container mode.
+            // It's harmless to access inContainerMode flag without holding
+            // rmLock.
+            return new ArrayList<DataFlow>(0);
+        }
+
         // We should not acquire lock here because succeeding method call may
         // make requests to get flow statistics. Synchronization will be done
         // by VTNFlowDatabase appropriately.
@@ -5535,6 +5581,13 @@ public class VTNManagerImpl
     public DataFlow getDataFlow(VTenantPath path, long flowId,
                                 DataFlow.Mode mode)
         throws VTNException {
+        if (inContainerMode) {
+            // No flow entry is active in container mode.
+            // It's harmless to access inContainerMode flag without holding
+            // rmLock.
+            return null;
+        }
+
         // We should not acquire lock here because succeeding method call may
         // make requests to get flow statistics. Synchronization will be done
         // by VTNFlowDatabase appropriately.
@@ -5553,6 +5606,13 @@ public class VTNManagerImpl
      */
     @Override
     public int getDataFlowCount(VTenantPath path) throws VTNException {
+        if (inContainerMode) {
+            // No flow entry is active in container mode.
+            // It's harmless to access inContainerMode flag without holding
+            // rmLock.
+            return 0;
+        }
+
         VTNFlowDatabase fdb = getTenantFlowDB(path);
         return fdb.getFlowCount();
     }
@@ -7211,6 +7271,18 @@ public class VTNManagerImpl
      */
     @Override
     public void flowRemoved(Node node, Flow flow) {
+        if (containerManager != null && containerManager.inContainerMode()) {
+            // The given flow was removed by forwarding rule manager, and it
+            // will be restored when the controller exits the container mode.
+            // Note that we can not use inContainerMode variable here because
+            // containerModeUpdated() handler for FRM will be called before
+            // the VTN Manager.
+            assert containerName.equals(GlobalConstants.DEFAULT.toString());
+            LOG.trace("{}: Ignore FLOW_REMOVED during container mode: " +
+                      "node={}, flow={}", containerName, node, flow);
+            return;
+        }
+
         LOG.trace("{}: flowRemoved() called: node={}, flow={}",
                   containerName, node, flow);
 
