@@ -40,6 +40,9 @@ import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices.cacheMode;
 import org.opendaylight.controller.connectionmanager.ConnectionMgmtScheme;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
+import org.opendaylight.controller.containermanager.ContainerConfig;
+import org.opendaylight.controller.containermanager.ContainerFlowConfig;
+import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowConfig;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
@@ -72,6 +75,7 @@ import org.opendaylight.controller.sal.packet.LinkEncap;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.routing.IRouting;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
@@ -99,7 +103,7 @@ public class TestStub
     implements IClusterGlobalServices, IClusterContainerServices,
                ISwitchManager, ITopologyManager, IDataPacketService, IRouting,
                IForwardingRulesManager, IfIptoHost, IConnectionManager,
-               IfHostListener {
+               IfHostListener, IContainerManager {
     /**
      * The name of the cluster cache which keeps revision identifier of
      * configuration per mapping type.
@@ -1399,6 +1403,102 @@ public class TestStub
     @Override
     public Set<InetAddress> getControllers(Node node) {
         return null;
+    }
+
+    // IContainerManager
+
+    @Override
+    public Status addContainer(ContainerConfig configObject) {
+        return null;
+    }
+
+    @Override
+    public Status removeContainer(ContainerConfig configObject) {
+        return null;
+    }
+
+    @Override
+    public Status removeContainer(String containerName) {
+        return null;
+    }
+
+    @Override
+    public Status addContainerEntry(String containerName,
+                                    List<String> portList) {
+        return null;
+    }
+
+    @Override
+    public Status removeContainerEntry(String containerName,
+                                       List<String> portList) {
+        return null;
+    }
+
+    @Override
+    public Status addContainerFlows(String containerName,
+                                    List<ContainerFlowConfig> configObject) {
+        return null;
+    }
+
+    @Override
+    public Status removeContainerFlows(String containerName,
+                                       List<ContainerFlowConfig> configObject) {
+        return null;
+    }
+
+    @Override
+    public Status removeContainerFlows(String containerName, Set<String> name) {
+        return null;
+    }
+
+    @Override
+    public List<ContainerConfig> getContainerConfigList() {
+        return null;
+    }
+
+    @Override
+    public ContainerConfig getContainerConfig(String containerName) {
+        return null;
+    }
+
+    @Override
+    public List<String> getContainerNameList() {
+        return null;
+    }
+
+    @Override
+    public boolean doesContainerExist(String ContainerId) {
+        return GlobalConstants.DEFAULT.toString().equals(ContainerId);
+    }
+
+    @Override
+    public Map<String, List<ContainerFlowConfig>> getContainerFlows() {
+        return null;
+    }
+
+    @Override
+    public List<ContainerFlowConfig> getContainerFlows(String containerName) {
+        return null;
+    }
+
+    @Override
+    public List<String> getContainerFlowNameList(String containerName) {
+        return null;
+    }
+
+    @Override
+    public boolean hasNonDefaultContainer() {
+        return false;
+    }
+
+    @Override
+    public List<String> getContainerNames() {
+        return null;
+    }
+
+    @Override
+    public boolean inContainerMode() {
+        return false;
     }
 
     // additional method for control stub

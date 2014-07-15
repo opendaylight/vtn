@@ -81,6 +81,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
+import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
@@ -691,6 +692,33 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         mgr.setConnectionManager(org);
         assertSame(org, mgr.getConnectionManager());
+    }
+
+    /**
+     * Test method for
+     * {@link VTNManagerImpl#setContainerManager(IContainerManager)},
+     * {@link VTNManagerImpl#unsetContainerManager(IContainerManager)},
+     * {@link VTNManagerImpl#getContainerManager()}
+     * .
+     */
+    @Test
+    public void testSetUnsetContainerManager() {
+        VTNManagerImpl mgr = vtnMgr;
+        IContainerManager org = mgr.getContainerManager();
+        TestStub stub = new TestStub();
+        TestStub stub2 = new TestStub();
+
+        mgr.setContainerManager(stub);
+        assertSame(stub, mgr.getContainerManager());
+
+        mgr.unsetContainerManager(stub2);
+        assertSame(stub, mgr.getContainerManager());
+
+        mgr.unsetContainerManager(stub);
+        assertNull(mgr.getContainerManager());
+
+        mgr.setContainerManager(org);
+        assertSame(org, mgr.getContainerManager());
     }
 
     /**
