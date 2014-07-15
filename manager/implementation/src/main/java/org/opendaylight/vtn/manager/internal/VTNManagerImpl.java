@@ -125,7 +125,6 @@ import org.opendaylight.controller.sal.utils.IObjectReader;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.ObjectReader;
 import org.opendaylight.controller.sal.utils.ObjectWriter;
-import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
@@ -332,6 +331,16 @@ public class VTNManagerImpl
      * Connection manager service instance.
      */
     private IConnectionManager  connectionManager;
+
+    /**
+     * Container manager service instance.
+     *
+     * <p>
+     *   Note that {@code null} is set unless this instance is associated with
+     *   the default container.
+     * </p>
+     */
+    private IContainerManager  containerManager;
 
     /**
      * Host listeners.
@@ -733,11 +742,9 @@ public class VTNManagerImpl
         String root = GlobalConstants.STARTUPHOME.toString();
         vtnConfig = new VTNConfig(root, cname);
 
-        if (cname.equals(GlobalConstants.DEFAULT.toString())) {
-            IContainerManager ctMgr = (IContainerManager)ServiceHelper.
-                getGlobalInstance(IContainerManager.class, this);
-            inContainerMode =
-                (ctMgr != null && ctMgr.hasNonDefaultContainer());
+        if (containerManager != null) {
+            assert containerName.equals(GlobalConstants.DEFAULT.toString());
+            inContainerMode = containerManager.inContainerMode();
         } else {
             inContainerMode = false;
         }
@@ -1782,6 +1789,41 @@ public class VTNManagerImpl
     }
 
     /**
+     * Invoked when a container manager service is registered.
+     *
+     * @param service  Container manager service.
+     */
+    void setContainerManager(IContainerManager service) {
+        LOG.trace("{}: Set container manager service: {}", containerName,
+                  service);
+        containerManager = service;
+    }
+
+    /**
+     * Invoked when a container manager service is unregistered.
+     *
+     * @param service  Container manager service.
+     */
+    void unsetContainerManager(IContainerManager service) {
+        if (containerManager == service) {
+            LOG.trace("{}: Unset container manager service: {}",
+                      containerName, service);
+            containerManager = null;
+        }
+    }
+
+    /**
+     * Return container manager service instance.
+     *
+     * @return  Container manager service.
+     *          Note that {@code null} is always returned unless this instance
+     *          is associated with the default container.
+     */
+    public IContainerManager getContainerManager() {
+        return containerManager;
+    }
+
+    /**
      * Invoked when a host listener is registered.
      *
      * @param service  Host listener service.
@@ -2136,6 +2178,18 @@ public class VTNManagerImpl
 
             if (done != null) {
                 remoteFlowRequests.remove(done);
+            }
+        }
+    }
+
+    /**
+     * Collect inactive flows and remove them in background.
+     */
+    public void cleanUpRemovedFlows() {
+        if (clusterService.amICoordinator()) {
+            RemovedFlowMatch fmatch = new RemovedFlowMatch(fwRuleManager);
+            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                fdb.removeFlows(this, fmatch);
             }
         }
     }
@@ -3643,9 +3697,6 @@ public class VTNManagerImpl
             }
         } else if (arpHandler == null) {
             // Inactivate VTN, and start ARP handler emulator.
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb);
-            }
             arpHandler = new ArpHandler(this);
             if (sync) {
                 notifyListeners(false);
@@ -5442,6 +5493,20 @@ public class VTNManagerImpl
      */
     @Override
     public void flowRemoved(Node node, Flow flow) {
+        if (containerManager != null && containerManager.inContainerMode()) {
+            // The given flow was removed by forwarding rule manager, and it
+            // will be restored when the controller exits the container mode.
+            // Note that we can not use inContainerMode variable here because
+            // containerModeUpdated() handler for FRM may be called before
+            // the VTN Manager. Although this code may miss FLOW_REMOVED
+            // notifications actually sent by OF switch, they will be fixed
+            // when the controller quits the container mode.
+            assert containerName.equals(GlobalConstants.DEFAULT.toString());
+            LOG.trace("{}: Ignore FLOW_REMOVED during container mode: " +
+                      "node={}, flow={}", containerName, node, flow);
+            return;
+        }
+
         LOG.trace("{}: flowRemoved() called: node={}, flow={}",
                   containerName, node, flow);
 

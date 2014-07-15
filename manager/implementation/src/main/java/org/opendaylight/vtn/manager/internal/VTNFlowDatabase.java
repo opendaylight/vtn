@@ -587,6 +587,53 @@ public class VTNFlowDatabase {
     }
 
     /**
+     * Remove all VTN flows accepted by the specified {@link VTNFlowMatch}
+     * instance.
+     *
+     * <p>
+     *   Flow uninstallation will be executed in background.
+     *   The caller can wait for completion of flow uninstallation by using
+     *   returned {@link FlowRemoveTask} object.
+     * </p>
+     *
+     * @param mgr     VTN Manager service.
+     * @param fmatch  A {@link VTNFlowMatch} instance which determines VTN
+     *                flows to be removed.
+     *                Specifying {@code null} results in undefined behavior.
+     * @return  A {@link FlowRemoveTask} object that will execute the actual
+     *          work is returned. {@code null} is returned if there is no flow
+     *          entry to be removed.
+     */
+    public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
+                                                   VTNFlowMatch fmatch) {
+        FlowCollector collector = new FlowCollector();
+        for (Iterator<VTNFlow> it = vtnFlows.values().iterator();
+             it.hasNext();) {
+            VTNFlow vflow = it.next();
+            if (fmatch.accept(vflow)) {
+                FlowGroupId gid = vflow.getGroupId();
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{}:{}: Remove VTN flow accepted by filter" +
+                              "({}): group={}", mgr.getContainerName(),
+                              tenantName, fmatch.getDescription(), gid);
+                }
+
+                // Remove this VTN flow from the database.
+                groupFlows.remove(gid.getEventId());
+                removeNodeIndex(vflow);
+                removePortIndex(vflow);
+                it.remove();
+
+                // Collect flow entries to be uninstalled.
+                collector.collect(mgr, vflow);
+            }
+        }
+
+        // Uninstall flow entries in background.
+        return collector.uninstall(mgr);
+    }
+
+    /**
      * Create indices for the specified VTN flow.
      *
      * @param mgr    VTN Manager service.

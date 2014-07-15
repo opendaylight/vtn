@@ -564,6 +564,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
         vtnMgr.setHostTracker(stubObj);
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(stubObj);
+        vtnMgr.setContainerManager(stubObj);
         vtnMgr.init(c);
         vtnMgr.clearDisabledNode();
     }
