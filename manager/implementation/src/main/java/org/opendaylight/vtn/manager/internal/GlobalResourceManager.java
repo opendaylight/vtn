@@ -255,7 +255,7 @@ public class GlobalResourceManager
                     throw e;
                 }
 
-                throw new CacheRetryException();
+                throw new CacheRetryException(e);
             }
 
             if (changed) {
@@ -1368,7 +1368,6 @@ public class GlobalResourceManager
      * @param ref  A reference to the virtual mapping.
      */
     private void purge(VTNManagerImpl mgr, MapReference ref) {
-        String container = mgr.getContainerName();
         VBridgePath path = ref.getPath();
         PathMapCleaner cleaner = new PathMapCleaner(path);
         cleaner.purge(mgr, null);
@@ -1383,7 +1382,6 @@ public class GlobalResourceManager
      *               VLAN network on a switch port.
      */
     private void purge(VTNManagerImpl mgr, VBridgePath path, PortVlan pvlan) {
-        String container = mgr.getContainerName();
         NodeConnector port = pvlan.getNodeConnector();
         short vlan = pvlan.getVlan();
 

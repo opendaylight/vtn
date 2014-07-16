@@ -421,7 +421,6 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
         protected void remove(Set<? extends DataLinkHost> dlhosts)
             throws VTNException {
             Set<MacVlan> removed = getRemovedSet();
-            HashSet<Long> macSet = new HashSet<Long>();
             for (DataLinkHost dlhost: dlhosts) {
                 MacVlan mvlan = new MacVlan(dlhost);
                 if (allowedHosts.contains(mvlan)) {
@@ -1171,7 +1170,8 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
             MacVlan host = e.getHost();
             MapReference ref = e.getMapReference();
             assert ref.getMapType() == MapType.MAC;
-            throw new VTNException(alreadyMapped(host, ref.getAbsolutePath()));
+            throw new VTNException
+                (alreadyMapped(host, ref.getAbsolutePath()), e);
         }
 
         return removing;

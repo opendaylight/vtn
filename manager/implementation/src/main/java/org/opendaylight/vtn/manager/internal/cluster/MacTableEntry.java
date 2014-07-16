@@ -388,15 +388,11 @@ public class MacTableEntry implements Serializable {
             append(",vlan=").append((int)vlan).
             append(",ipaddr={");
 
-        char sep = 0;
+        String sep = "";
         synchronized (this) {
             for (InetAddress ipaddr: ipAddresses) {
-                if (sep == 0) {
-                    sep = ',';
-                } else {
-                    builder.append(sep);
-                }
-                builder.append(ipaddr.getHostAddress());
+                builder.append(sep).append(ipaddr.getHostAddress());
+                sep = ",";
             }
         }
 

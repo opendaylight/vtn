@@ -50,7 +50,6 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
-import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
@@ -489,8 +488,6 @@ public final class VBridgeImpl implements Serializable {
 
         // Create a VLAN mapping instance.
         VlanMapImpl vmap = new VlanMapImpl(bridgePath, id, vlconf);
-
-        VlanMapPath path = vmap.getPath();
         NodeVlan nvlan = new NodeVlan(node, vlan);
 
         Lock wrlock = rwLock.writeLock();
@@ -793,7 +790,7 @@ public final class VBridgeImpl implements Serializable {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            MacMapImpl mmap = prepareMacMap(op);
+            MacMapImpl mmap = prepareMacMap();
             MacMapConfig newconf = mmap.setMacMap(mgr, op, mcconf);
             return commitMacMap(mgr, mmap, newconf);
         } finally {
@@ -822,7 +819,7 @@ public final class VBridgeImpl implements Serializable {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            MacMapImpl mmap = prepareMacMap(op);
+            MacMapImpl mmap = prepareMacMap();
             MacMapConfig newconf = mmap.setMacMap(mgr, op, aclType, dlhosts);
             return commitMacMap(mgr, mmap, newconf);
         } finally {
@@ -1259,7 +1256,6 @@ public final class VBridgeImpl implements Serializable {
      */
     void destroy(VTNManagerImpl mgr, boolean retain) {
         VBridge vbridge = getVBridge(mgr);
-        IVTNResourceManager resMgr = mgr.getResourceManager();
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
@@ -1541,13 +1537,9 @@ public final class VBridgeImpl implements Serializable {
      *   lock.
      * </p>
      *
-     * @param op  A {@link UpdateOperation} instance which indicates
-     *            how to change the MAC mapping configuration.
      * @return    A {@link MacMapImpl} instance.
-     * @throws VTNException  An error occurred.
      */
-    private MacMapImpl prepareMacMap(UpdateOperation op)
-        throws VTNException {
+    private MacMapImpl prepareMacMap() {
         MacMapImpl mmap = macMap;
         if (mmap == null) {
             mmap = new MacMapImpl(bridgePath);
