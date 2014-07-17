@@ -14,6 +14,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Dictionary;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,6 +57,7 @@ import org.opendaylight.controller.clustering.services.CacheConfigException;
 import org.opendaylight.controller.clustering.services.CacheExistException;
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
+import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
@@ -135,6 +137,7 @@ public class TestUseVTNManagerBase extends TestBase {
         vtnMgr.setHostTracker(stubObj);
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(stubObj);
+        vtnMgr.setContainerManager(stubObj);
         startVTNManager(c);
         if (stubObj.isHostTrackerEnabled()) {
             vtnMgr.addHostListener(stubObj);
@@ -153,6 +156,18 @@ public class TestUseVTNManagerBase extends TestBase {
      * startup VTNManager.
      */
     protected void startVTNManager(ComponentImpl c) {
+        Dictionary<?, ?> props = c.getServiceProperties();
+        if (props != null) {
+            String name = (String)props.get("containerName");
+            IContainerManager ctmgr = vtnMgr.getContainerManager();
+            if (GlobalConstants.DEFAULT.toString().equals(name)) {
+                if (ctmgr == null) {
+                    vtnMgr.setContainerManager(stubObj);
+                }
+            } else if (ctmgr != null) {
+                vtnMgr.unsetContainerManager(ctmgr);
+            }
+        }
         vtnMgr.init(c);
         vtnMgr.clearDisabledNode();
     }
@@ -178,6 +193,7 @@ public class TestUseVTNManagerBase extends TestBase {
         vtnMgr.setHostTracker(stub);
         vtnMgr.setForwardingRuleManager(stub);
         vtnMgr.setConnectionManager(stub);
+        vtnMgr.setContainerManager(stub);
         startVTNManager(c);
         if (stub.isHostTrackerEnabled()) {
             vtnMgr.addHostListener(stub);

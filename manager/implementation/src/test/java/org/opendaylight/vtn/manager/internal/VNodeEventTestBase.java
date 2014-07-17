@@ -62,6 +62,7 @@ public class VNodeEventTestBase extends TestUseVTNManagerBase {
         vtnMgr.setHostTracker(stubObj);
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(stubObj);
+        vtnMgr.setContainerManager(stubObj);
         startVTNManager(c);
     }
 

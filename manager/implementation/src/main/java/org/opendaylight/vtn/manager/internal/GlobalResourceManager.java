@@ -2322,8 +2322,17 @@ public class GlobalResourceManager
         } catch (Exception e) {
             LOG.error(containerName + ": Failed to clean up resource", e);
         }
-    }
 
+        if (vtnManagers.size() == 1) {
+            // The controller quits the container mode.
+            // Some FLOW_REMOVED notifications might be ignored when the
+            // controller entered the container mode.
+            // So we need to clean up them.
+            VTNManagerImpl mgr =
+                vtnManagers.get(GlobalConstants.DEFAULT.toString());
+            mgr.cleanUpRemovedFlows();
+        }
+    }
 
     /**
      * {@inheritDoc}
