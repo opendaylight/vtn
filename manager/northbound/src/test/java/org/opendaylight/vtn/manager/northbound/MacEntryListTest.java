@@ -30,7 +30,7 @@ public class MacEntryListTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         List<Set<InetAddress>> ips = createInetAddresses();
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         List<NodeConnector> connectors = createNodeConnectors(3, false);
@@ -71,7 +71,7 @@ public class MacEntryListTest extends TestBase {
      */
     @Test
     public void testEquals() {
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         List<Set<InetAddress>> ips = createInetAddresses();
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         List<NodeConnector> connectors = createNodeConnectors(3, false);
@@ -126,7 +126,7 @@ public class MacEntryListTest extends TestBase {
     @Test
     public void testJAXB() {
         String rootName = "macentries";
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         List<Set<InetAddress>> ips = createInetAddresses();
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         List<NodeConnector> connectors = createNodeConnectors(3, false);

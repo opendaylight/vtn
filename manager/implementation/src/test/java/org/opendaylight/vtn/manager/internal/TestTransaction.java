@@ -22,9 +22,6 @@ import javax.transaction.SystemException;
 import javax.transaction.Synchronization;
 import javax.transaction.xa.XAResource;
 
-import org.opendaylight.controller.clustering.services.IClusterServices.
-    cacheMode;
-
 /**
  * An implementation of {@link Transaction} for test.
  */
@@ -52,28 +49,28 @@ public class TestTransaction implements Transaction {
     /**
      * A message for a exception caused due to {@link Mode#FAIL_BEGIN}.
      */
-    public final static String  ERR_FAIL_BEGIN =
+    public static final String  ERR_FAIL_BEGIN =
         "Transaction begin failure test.";
 
     /**
      * A message for a exception caused due to {@link Mode#FAIL_ABORT}.
      */
-    public final static String  ERR_FAIL_ABORT = "Transaction abort test.";
+    public static final String  ERR_FAIL_ABORT = "Transaction abort test.";
 
     /**
      * Status value which indicates the transaction is active.
      */
-    public final static int  STATUS_ACTIVE = 0;
+    public static final int  STATUS_ACTIVE = 0;
 
     /**
      * Status value which indicates the transaction is committed.
      */
-    public final static int  STATUS_COMMITTED = 1;
+    public static final int  STATUS_COMMITTED = 1;
 
     /**
      * Status value which indicates the transaction is rollbacked.
      */
-    public final static int  STATUS_ROLLBACKED = 2;
+    public static final int  STATUS_ROLLBACKED = 2;
 
     /**
      * Keep transaction test mode.

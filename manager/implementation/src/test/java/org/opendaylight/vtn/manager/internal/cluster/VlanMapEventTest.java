@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,15 +16,14 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
  * JUnit test for {@link VlanMapEvent}.
  *
  * <p>
  *   Test case for methods except for
- *   {@link VlanMapEvent#eventReceived(VTNManagerImpl, boolean)}.
- *   Test for {@link VlanMapEvent#eventReceived(VTNManagerImpl, boolean)} is
+ *   {@link VlanMapEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)}.
+ *   Test for {@link VlanMapEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)} is
  *   implemented in {@code VTNManagerImplClusterTest}.
  * </p>
  */
@@ -45,14 +44,13 @@ public class VlanMapEventTest extends VNodeEventTestBase {
                 for (short vlan : vlans) {
                     for (UpdateType utype : UpdateType.values()) {
                         for (Boolean save : createBooleans(false)) {
-                            String emsg = "(name)" + bname
-                                    + ",(id)" + id + ",(node)" + node
-                                    + ",(vlan)" + vlan
-                                    + ",(updateType)" + utype
-                                    + ",(save)" + save;
+                            String emsg = "(name)" + bname +
+                                ",(id)" + id + ",(node)" + node +
+                                ",(vlan)" + vlan +
+                                ",(updateType)" + utype +
+                                ",(save)" + save;
 
-
-                            VlanMap vmap = new VlanMap(id, node ,vlan);
+                            VlanMap vmap = new VlanMap(id, node, vlan);
 
                             switch (utype) {
                             case ADDED:
@@ -72,8 +70,7 @@ public class VlanMapEventTest extends VNodeEventTestBase {
                             List<ClusterEvent> events = getClusterEvent();
 
                             assertEquals(emsg, 1, events.size());
-                            VlanMapEvent event
-                                = (VlanMapEvent) events.get(0);
+                            VlanMapEvent event = (VlanMapEvent)events.get(0);
 
                             checkVlanMapEvent(event, bpath, vmap, utype, save,
                                               emsg);
@@ -101,13 +98,13 @@ public class VlanMapEventTest extends VNodeEventTestBase {
                 for (short vlan : vlans) {
                     for (UpdateType utype : UpdateType.values()) {
                         for (Boolean save : createBooleans(false)) {
-                            String emsg = "(name)" + bname
-                                    + ",(id)" + id + ",(node)" + node
-                                    + ",(vlan)" + vlan
-                                    + ",(updateType)" + utype
-                                    + ",(save)" + save;
+                            String emsg = "(name)" + bname +
+                                ",(id)" + id + ",(node)" + node +
+                                ",(vlan)" + vlan +
+                                ",(updateType)" + utype +
+                                ",(save)" + save;
 
-                            VlanMap vmap = new VlanMap(id, node ,vlan);
+                            VlanMap vmap = new VlanMap(id, node, vlan);
 
                             switch (utype) {
                             case ADDED:
@@ -127,11 +124,11 @@ public class VlanMapEventTest extends VNodeEventTestBase {
                             List<ClusterEvent> events = getClusterEvent();
 
                             assertEquals(emsg, 1, events.size());
-                            VlanMapEvent event
-                                = (VlanMapEvent) events.get(0);
+                            VlanMapEvent event = (VlanMapEvent)
+                                events.get(0);
 
-                            VlanMapEvent newEvent
-                                = (VlanMapEvent) eventSerializeTest(event);
+                            VlanMapEvent newEvent = (VlanMapEvent)
+                                eventSerializeTest(event);
 
                             checkVlanMapEvent(newEvent, bpath, vmap, utype, save,
                                               emsg);

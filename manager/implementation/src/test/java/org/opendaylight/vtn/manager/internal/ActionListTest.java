@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -52,8 +52,9 @@ public class ActionListTest extends TestBase {
                 regActs = actList.get();
                 if (vlan == 0) {
                     assertTrue(emsg, regActs.contains(new PopVlan()));
-                } else if (vlan > 0){
-                    assertTrue(emsg, regActs.contains(new SetVlanId((int) vlan)));
+                } else if (vlan > 0) {
+                    assertTrue(emsg,
+                               regActs.contains(new SetVlanId((int)vlan)));
                 } else {
                     numOutput--;
                 }

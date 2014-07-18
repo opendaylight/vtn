@@ -310,8 +310,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link NodeConnector}.
      */
-    protected static List<NodeConnector>
-        createNodeConnectors(int num, boolean setNull) {
+    protected static List<NodeConnector> createNodeConnectors(
+        int num, boolean setNull) {
         ArrayList<NodeConnector> list = new ArrayList<NodeConnector>();
         if (setNull) {
             list.add(null);
@@ -375,8 +375,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link SwitchPort}.
      */
-    protected static List<SwitchPort>
-        createSwitchPorts(int num, boolean setNull) {
+    protected static List<SwitchPort> createSwitchPorts(
+        int num, boolean setNull) {
         ArrayList<SwitchPort> list = new ArrayList<SwitchPort>();
         if (setNull) {
             list.add(null);
@@ -466,19 +466,19 @@ public abstract class TestBase extends Assert {
     protected static List<EthernetAddress> createEthernetAddresses(boolean setNull) {
         List<EthernetAddress> list = new ArrayList<EthernetAddress>();
         byte [][] addrbytes = {
-            new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x00,
-                        (byte) 0x00, (byte) 0x00, (byte) 0x01},
-            new byte[] {(byte) 0x12, (byte) 0x34, (byte) 0x56,
-                        (byte) 0x78, (byte) 0x9a, (byte) 0xbc},
-            new byte[] {(byte) 0xfe, (byte) 0xdc, (byte) 0xba,
-                        (byte) 0x98, (byte) 0x76, (byte) 0x54}
+            new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                        (byte)0x00, (byte)0x00, (byte)0x01},
+            new byte[] {(byte)0x12, (byte)0x34, (byte)0x56,
+                        (byte)0x78, (byte)0x9a, (byte)0xbc},
+            new byte[] {(byte)0xfe, (byte)0xdc, (byte)0xba,
+                        (byte)0x98, (byte)0x76, (byte)0x54}
         };
 
         if (setNull) {
             list.add(null);
         }
 
-        for(byte[] addr: addrbytes) {
+        for (byte[] addr: addrbytes) {
             try {
                 EthernetAddress ea;
                 ea = new EthernetAddress(addr);
@@ -506,8 +506,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link InetAddress} set.
      */
-    protected static List<Set<InetAddress>>
-        createInetAddresses(boolean setNull) {
+    protected static List<Set<InetAddress>> createInetAddresses(
+        boolean setNull) {
         List<Set<InetAddress>> list = new ArrayList<Set<InetAddress>>();
         String[][] arrays = {
             {"0.0.0.0"},
@@ -543,7 +543,7 @@ public abstract class TestBase extends Assert {
      * @param nc    A node connector.
      * @return A {@link RawPacket} object.
      */
-    protected RawPacket createRawPacket (Ethernet eth, NodeConnector nc) {
+    protected RawPacket createRawPacket(Ethernet eth, NodeConnector nc) {
         RawPacket raw = null;
         try {
             raw = new RawPacket(eth.serialize());
@@ -565,8 +565,8 @@ public abstract class TestBase extends Assert {
      * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
      * @return  A {@link Ethernet} object.
      */
-    protected Ethernet createIPv4Packet (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan) {
-
+    protected Ethernet createIPv4Packet(byte[] src, byte[] dst, byte[] sender,
+                                        byte [] target, short vlan) {
         IPv4 ip = new IPv4();
         ip.setVersion((byte)4).
             setIdentification((short)5).
@@ -575,7 +575,7 @@ public abstract class TestBase extends Assert {
             setTotalLength((short)84).
             setFlags((byte)2).
             setFragmentOffset((short)0).
-            setTtl((byte) 64);
+            setTtl((byte)64);
 
         try {
             ip.setDestinationAddress(InetAddress.getByAddress(target));
@@ -591,7 +591,7 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan).
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
                 setEtherType(EtherTypes.IPv4.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
@@ -614,7 +614,9 @@ public abstract class TestBase extends Assert {
      * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
      * @return  A {@link Ethernet} object.
      */
-    protected Ethernet createARPPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, short arptype) {
+    protected Ethernet createARPPacket(byte[] src, byte[] dst, byte[] sender,
+                                       byte [] target, short vlan,
+                                       short arptype) {
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
             setProtocolType(EtherTypes.IPv4.shortValue()).
@@ -631,7 +633,7 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan).
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
                 setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
@@ -656,8 +658,12 @@ public abstract class TestBase extends Assert {
      * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
      * @return  A {@link PacketContext}.
      */
-    protected RawPacket createARPRawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc, short arptype) {
-        return createRawPacket(createARPPacket(src, dst, sender, target, vlan, arptype), nc);
+    protected RawPacket createARPRawPacket(byte[] src, byte[] dst,
+                                           byte[] sender, byte[] target,
+                                           short vlan, NodeConnector nc,
+                                           short arptype) {
+        return createRawPacket(createARPPacket(src, dst, sender, target,
+                                               vlan, arptype), nc);
     }
 
     /**
@@ -671,8 +677,11 @@ public abstract class TestBase extends Assert {
      * @param nc        A node connector
      * @return  A {@link PacketContext}.
      */
-    protected RawPacket createIPv4RawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc) {
-        return createRawPacket(createIPv4Packet(src, dst, sender, target, vlan), nc);
+    protected RawPacket createIPv4RawPacket(byte[] src, byte[] dst,
+                                            byte[] sender, byte[] target,
+                                            short vlan, NodeConnector nc) {
+        return createRawPacket(createIPv4Packet(src, dst, sender, target, vlan),
+                               nc);
     }
 
     /**

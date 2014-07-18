@@ -47,17 +47,13 @@ import org.opendaylight.controller.sal.reader.IPluginInReadService;
 import org.opendaylight.controller.sal.reader.NodeConnectorStatistics;
 import org.opendaylight.controller.sal.reader.NodeDescription;
 import org.opendaylight.controller.sal.reader.NodeTableStatistics;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 /**
  * Stub Implementation for IPluginInReadService used by SAL
  *
  *
  */
 public class ReadService implements IPluginInReadService {
-    private static final Logger logger = LoggerFactory
-            .getLogger(ReadService.class);
-
     /**
      * Function called by the dependency manager when all the required
      * dependencies are satisfied
@@ -98,7 +94,7 @@ public class ReadService implements IPluginInReadService {
         fn1.setByteCount(100);
         fn1.setDurationNanoseconds(400);
         fn1.setDurationSeconds(40);
-        fn1.setTableId((byte) 0x1);
+        fn1.setTableId((byte)0x1);
         fn1.setPacketCount(200);
         return fn1;
     }
@@ -108,7 +104,8 @@ public class ReadService implements IPluginInReadService {
 
         ArrayList<FlowOnNode> list = new ArrayList<FlowOnNode>();
         ArrayList<Action> actionList = new ArrayList<Action>();
-        actionList.add(new Drop()); //IT assumes this is first element
+        //IT assumes this is first element
+        actionList.add(new Drop());
         actionList.add(new Loopback());
         actionList.add(new Flood());
         actionList.add(new FloodAll());
@@ -120,8 +117,8 @@ public class ReadService implements IPluginInReadService {
         } catch (ConstructionException e) {
 
         }
-        byte dst[] = { (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5 };
-        byte src[] = { (byte) 5, (byte) 4, (byte) 3, (byte) 2, (byte) 1 };
+        byte[] dst = {(byte)1, (byte)2, (byte)3, (byte)4, (byte)5};
+        byte[] src = {(byte)5, (byte)4, (byte)3, (byte)2, (byte)1};
         actionList.add(new SetDlSrc(src));
         actionList.add(new SetDlDst(dst));
         actionList.add(new SetDlType(10));
@@ -137,13 +134,13 @@ public class ReadService implements IPluginInReadService {
             actionList.add(new SetNwSrc(InetAddress.getByName("2.2.2.2")));
             actionList.add(new SetNwDst(InetAddress.getByName("1.1.1.1")));
         } catch (UnknownHostException e) {
-
         }
         actionList.add(new SetNwTos(0x10));
         actionList.add(new SetTpSrc(4201));
         actionList.add(new SetTpDst(8080));
 
-        short priority = 3500; //IT assumes this value
+        //IT assumes this value
+        short priority = 3500;
         for (Action a : actionList) {
             Flow flow = new Flow();
             Match match = new Match();
@@ -158,15 +155,15 @@ public class ReadService implements IPluginInReadService {
             actions.add(a);
             flow.setActions(actions);
             flow.setPriority(priority++);
-            flow.setIdleTimeout((short) 1000);
-            flow.setHardTimeout((short) 2000);
+            flow.setIdleTimeout((short)1000);
+            flow.setHardTimeout((short)2000);
             flow.setId(12345);
 
             FlowOnNode fn1 = new FlowOnNode(flow);
             fn1.setByteCount(100);
             fn1.setDurationNanoseconds(400);
             fn1.setDurationSeconds(40);
-            fn1.setTableId((byte) 0x1);
+            fn1.setTableId((byte)0x1);
             fn1.setPacketCount(200);
 
             list.add(fn1);

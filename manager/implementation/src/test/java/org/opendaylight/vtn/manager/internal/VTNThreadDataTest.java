@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.junit.Test;
@@ -52,13 +51,13 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
     }
 
     /**
-     * Test method for {@link VTNThreadData#create(Lock)}.
+     * Test method for {@link VTNThreadData#create(java.util.concurrent.locks.Lock)}.
      */
     @Test
     public void testCreateAndRemove() {
         // create tenant and bridges
         VTenantPath tpath = new VTenantPath("tenant");
-        VTenantPath tpath_dummy = new VTenantPath("dummytenant");
+        VTenantPath tpathDummy = new VTenantPath("dummytenant");
         VBridgePath bpath1 = new VBridgePath(tpath.getTenantName(), "bridge1");
         VBridgePath bpath2 = new VBridgePath(tpath.getTenantName(), "bridge2");
 
@@ -73,13 +72,12 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
 
         // add flow entries.
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
-                                                              false));
-        Set<NodeConnector> ncset0
-            = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
-        NodeConnector outnc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                         node0);
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)5, false));
+        Set<NodeConnector> ncset0 = NodeConnectorCreator.
+            createOFNodeConnectorSet(portIds0, node0);
+        NodeConnector outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)15), node0);
         int pri = 1;
         Set<VTNFlow> flows = new HashSet<VTNFlow>();
         Set<VTenantPath> pathSet = new HashSet<VTenantPath>();
@@ -137,7 +135,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         ReentrantReadWriteLock  rwLock = new ReentrantReadWriteLock();
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
 
-        VTNThreadData.removeFlows(vtnMgr, tpath_dummy);
+        VTNThreadData.removeFlows(vtnMgr, tpathDummy);
         data.cleanUp(vtnMgr);
         assertEquals(numEntries1 + numEntries2, db.size());
         assertEquals(numEntries1 + numEntries2, stubObj.getFlowEntries().size());

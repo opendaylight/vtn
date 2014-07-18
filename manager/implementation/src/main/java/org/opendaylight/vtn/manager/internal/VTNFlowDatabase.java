@@ -999,8 +999,8 @@ public class VTNFlowDatabase {
      * @param filter  A {@link DataFlowFilterImpl} instance.
      * @return  A list of {@link VTNFlow} instance.
      */
-    private synchronized List<VTNFlow>
-        getIndexedFlows(DataFlowFilterImpl filter) {
+    private synchronized List<VTNFlow> getIndexedFlows(
+        DataFlowFilterImpl filter) {
         int index = filter.getIndexType();
         Set<VTNFlow> fset;
 

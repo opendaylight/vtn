@@ -81,7 +81,7 @@ public class VBridgeStateTest extends TestBase {
         }
 
         @Override
-        public Path getRoute(Node src, Node dst, Short Bw) {
+        public Path getRoute(Node src, Node dst, Short bw) {
             return getRoute(src, dst);
         }
 
@@ -95,7 +95,7 @@ public class VBridgeStateTest extends TestBase {
         }
 
         @Override
-        public void initMaxThroughput(Map<Edge, Number> EdgeWeightMap) {
+        public void initMaxThroughput(Map<Edge, Number> edgeWeightMap) {
         }
     }
 

@@ -9,31 +9,18 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.controller.sal.core.Bandwidth;
-import org.opendaylight.controller.sal.core.Config;
-import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.Property;
-import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
 
 import static org.opendaylight.vtn.manager.internal.NodeUtils.checkNodeType;
 import static

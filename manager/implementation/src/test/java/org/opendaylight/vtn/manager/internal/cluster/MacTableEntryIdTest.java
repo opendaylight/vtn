@@ -11,14 +11,12 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.net.InetAddress;
 import java.net.Inet4Address;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -142,9 +140,9 @@ public class MacTableEntryIdTest extends TestBase {
             for (long mac: macAddrs) {
                 // Create object by MacTableEntryId(VBridgePath, long).
                 MacTableEntryId cev1 = new MacTableEntryId(path, mac);
-                MacTableEntryId cev2 = new MacTableEntryId
-                    (cev1.getControllerAddress(), cev1.getEventId(), path,
-                     mac);
+                MacTableEntryId cev2 =
+                    new MacTableEntryId(cev1.getControllerAddress(),
+                                        cev1.getEventId(), path, mac);
                 testEquals(cevSet, cev1, cev2);
 
                 // Create object by

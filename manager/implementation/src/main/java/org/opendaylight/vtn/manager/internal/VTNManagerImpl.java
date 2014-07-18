@@ -3545,8 +3545,8 @@ public class VTNManagerImpl
                 listener.vBridgeInterfaceChanged(path, viface, type);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder(containerName);
-                builder.append
-                    (": Unhandled exception in bridge interface listener: ").
+                builder.append(
+                    ": Unhandled exception in bridge interface listener: ").
                     append(listener).append(": ").append(e.toString());
                 LOG.error(builder.toString(), e);
             }
@@ -3613,8 +3613,8 @@ public class VTNManagerImpl
                 listener.vlanMapChanged(path, vlmap, type);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder(containerName);
-                builder.append
-                    (": Unhandled exception in VLAN mapping listener: ").
+                builder.append(
+                    ": Unhandled exception in VLAN mapping listener: ").
                     append(listener).append(": ").append(e.toString());
                 LOG.error(builder.toString(), e);
             }
@@ -3686,8 +3686,8 @@ public class VTNManagerImpl
                 listener.macMapChanged(path, mcconf, type);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder(containerName);
-                builder.append
-                    (": Unhandled exception in MAC mapping listener: ").
+                builder.append(
+                    ": Unhandled exception in MAC mapping listener: ").
                     append(listener).append(": ").append(e.toString());
                 LOG.error(builder.toString(), e);
             }
@@ -3754,8 +3754,8 @@ public class VTNManagerImpl
                 listener.portMapChanged(path, pmap, type);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder(containerName);
-                builder.append
-                    (": Unhandled exception in port mapping listener: ").
+                builder.append(
+                    ": Unhandled exception in port mapping listener: ").
                     append(listener).append(": ").append(e.toString());
                 LOG.error(builder.toString(), e);
             }
@@ -3817,8 +3817,8 @@ public class VTNManagerImpl
                     } catch (Exception e) {
                         StringBuilder builder =
                             new StringBuilder(containerName);
-                        builder.append
-                            (": Unhandled exception in host listener: ").
+                        builder.append(
+                            ": Unhandled exception in host listener: ").
                             append(listener).append(": ").append(e.toString());
                         LOG.error(builder.toString(), e);
                     }
@@ -5006,7 +5006,7 @@ public class VTNManagerImpl
      * @throws VTNException  An error occurred.
      */
     @Override
-     public VlanMap getVlanMap(VBridgePath path, String mapId)
+    public VlanMap getVlanMap(VBridgePath path, String mapId)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();

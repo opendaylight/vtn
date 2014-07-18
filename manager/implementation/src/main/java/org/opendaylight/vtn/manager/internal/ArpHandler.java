@@ -83,8 +83,8 @@ public class ArpHandler {
     /**
      * Ongoing ARP requests.
      */
-    private final ConcurrentMap<ObjectPair<InetAddress, Short>, Requestor>
-        arpRequestors =
+    private final ConcurrentMap<ObjectPair<InetAddress, Short>,
+        Requestor> arpRequestors =
         new ConcurrentHashMap<ObjectPair<InetAddress, Short>, Requestor>();
 
     /**

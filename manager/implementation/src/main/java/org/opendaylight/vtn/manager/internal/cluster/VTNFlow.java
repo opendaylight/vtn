@@ -298,12 +298,12 @@ public class VTNFlow implements Serializable {
      * @param pathSet  A set of path to the virtual nodes on which this flow
      *                 depends.
      */
-   public void addDependency(Set<VTenantPath> pathSet) {
-       if (dependNodes == null) {
-           dependNodes = new HashSet<VTenantPath>();
-       }
-       dependNodes.addAll(pathSet);
-   }
+    public void addDependency(Set<VTenantPath> pathSet) {
+        if (dependNodes == null) {
+            dependNodes = new HashSet<VTenantPath>();
+        }
+        dependNodes.addAll(pathSet);
+    }
 
     /**
      * Add the specified {@link VNodeRoute} to the tail of the virtual packet

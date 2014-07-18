@@ -22,7 +22,6 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.controller.clustering.services.IClusterServicesCommon;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,9 +30,9 @@ public class VTenantTest extends TestBase {
             for (String desc: createStrings("desc")) {
                 for (Integer iv: createIntegers(-2, 5)) {
                     for (Integer hv: createIntegers(-2, 5)) {
-                        String emsg = "(name)" + name + "(desc)"+ desc
-                                + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
-                                + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+                        String emsg = "(name)" + name + "(desc)" + desc +
+                            ",(iv)" + ((iv == null) ? "null" : iv.intValue()) +
+                            ",(hv)" + ((hv == null) ? "null" : hv.intValue());
 
                         VTenantConfig tconf =
                             createVTenantConfig(desc, iv, hv);
@@ -179,9 +179,9 @@ public class VTenantTest extends TestBase {
      */
     private void jaxbTimeoutTest(String name, String desc, Integer idle,
                                  Integer hard) {
-        StringBuilder builder = new StringBuilder
-            ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-             "<vbridge");
+        StringBuilder builder = new StringBuilder(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+            "<vbridge");
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }

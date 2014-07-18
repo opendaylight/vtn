@@ -202,8 +202,8 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
             return new EthernetHost(eaddr, vlan);
         } catch (Exception e) {
             // This should never happen.
-            throw new IllegalStateException
-                ("Unable to create EthernetHost", e);
+            throw new IllegalStateException("Unable to create EthernetHost",
+                                            e);
         }
     }
 

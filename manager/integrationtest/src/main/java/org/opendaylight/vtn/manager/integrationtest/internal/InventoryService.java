@@ -43,54 +43,47 @@ import org.opendaylight.controller.sal.inventory.IPluginOutInventoryService;
  *
  */
 public class InventoryService implements IPluginInInventoryService {
-    private static final Logger logger = LoggerFactory
-            .getLogger(InventoryService.class);
+    private static final Logger LOG = LoggerFactory.
+        getLogger(InventoryService.class);
 
-    private ConcurrentMap<Node, Map<String, Property>> nodeProps; // properties
-                                                                  // are
-                                                                  // maintained
-                                                                  // in global
-                                                                  // container
-                                                                  // only
-    private ConcurrentMap<NodeConnector, Map<String, Property>> nodeConnectorProps; // properties
-                                                                                    // are
-                                                                                    // maintained
-                                                                                    // in
-                                                                                    // global
-                                                                                    // container
-                                                                                    // only
+    // properties are maintained in global container only
+    private ConcurrentMap<Node, Map<String, Property>> nodeProps;
+
+    // properties are maintained in global container only
+    private ConcurrentMap<NodeConnector, Map<String, Property>> nodeConnectorProps;
+
     private final Set<IPluginOutInventoryService> pluginOutInventoryServices =
-            new CopyOnWriteArraySet<IPluginOutInventoryService>();
+        new CopyOnWriteArraySet<IPluginOutInventoryService>();
 
     private InventoryService global = null;
 
     public void setPluginOutInventoryServices(IPluginOutInventoryService service) {
-        logger.debug("Got a service set request {}", service);
+        LOG.debug("Got a service set request {}", service);
         if (this.pluginOutInventoryServices != null) {
             this.pluginOutInventoryServices.add(service);
         }
     }
 
     public void unsetPluginOutInventoryServices(IPluginOutInventoryService service) {
-        logger.debug("Got a service UNset request");
+        LOG.debug("Got a service UNset request");
         if (this.pluginOutInventoryServices != null) {
             this.pluginOutInventoryServices.remove(service);
         }
     }
 
     public void setInstanceForGlobal(IPluginInInventoryService ivs) {
-        logger.debug("Got the global service set request {}", ivs);
+        LOG.debug("Got the global service set request {}", ivs);
         if (ivs == null) {
             return;
         }
 
         if (ivs != this && ivs instanceof InventoryService) {
-            this.global = (InventoryService) ivs;
+            this.global = (InventoryService)ivs;
         }
     }
 
     public void unsetInstanceForGlobal(IPluginInInventoryService ivs) {
-        logger.debug("Got the global service UNset request");
+        LOG.debug("Got the global service UNset request");
         if (ivs == null) {
             return;
         }
@@ -104,7 +97,7 @@ public class InventoryService implements IPluginInInventoryService {
      *
      */
     void init() {
-        logger.trace("openflow stub InventoryService init called");
+        LOG.trace("openflow stub InventoryService init called");
         nodeProps = new ConcurrentHashMap<Node, Map<String, Property>>();
         nodeConnectorProps = new ConcurrentHashMap<NodeConnector, Map<String, Property>>();
 
@@ -133,13 +126,13 @@ public class InventoryService implements IPluginInInventoryService {
     private static Map<String, Property> getDefaultNodeProps() {
         Map<String, Property> propMap = new HashMap<String, Property>();
 
-        Tables t = new Tables((byte) 1);
+        Tables t = new Tables((byte)1);
         propMap.put(Tables.TablesPropName, t);
-        Capabilities c = new Capabilities((int) 3);
+        Capabilities c = new Capabilities((int)3);
         propMap.put(Capabilities.CapabilitiesPropName, c);
-        Actions a = new Actions((int) 2);
+        Actions a = new Actions((int)2);
         propMap.put(Actions.ActionsPropName, a);
-        Buffers b = new Buffers((int) 1);
+        Buffers b = new Buffers((int)1);
         propMap.put(Buffers.BuffersPropName, b);
         Long connectedSinceTime = 100000L;
         TimeStamp timeStamp = new TimeStamp(connectedSinceTime,
@@ -222,21 +215,21 @@ public class InventoryService implements IPluginInInventoryService {
      * connection is local
      */
     void started() {
-        logger.trace("openflow stub InventoryService started called");
+        LOG.trace("openflow stub InventoryService started called");
         // update sal and discovery
         for (IPluginOutInventoryService service : pluginOutInventoryServices) {
-            logger.debug("Adding Node and NodeConnectors to service {}", service);
+            LOG.debug("Adding Node and NodeConnectors to service {}", service);
             for (Node node : nodeProps.keySet()) {
                 Set<Property> props = new HashSet<Property>(nodeProps.get(node)
                         .values());
                 service.updateNode(node, UpdateType.ADDED, props);
-                logger.trace("Adding Node {} with props {}", node, props);
+                LOG.trace("Adding Node {} with props {}", node, props);
             }
             for (NodeConnector nc : nodeConnectorProps.keySet()) {
                 Set<Property> props = new HashSet<Property>(nodeConnectorProps.get(nc)
                         .values());
                 service.updateNodeConnector(nc, UpdateType.ADDED, props);
-                logger.trace("Adding NodeConnectors {} with props {}", nc, props);
+                LOG.trace("Adding NodeConnectors {} with props {}", nc, props);
             }
         }
     }
@@ -255,8 +248,9 @@ public class InventoryService implements IPluginInInventoryService {
      * Add node
      */
     public void addNode(Node node, Collection<NodeConnector> connectors) {
-        logger.trace("openflow stub InventoryService" + ((this.global == null) ? "(global)" : "")
-                + " addNode(Node, Collection) called");
+        LOG.trace("openflow stub InventoryService" +
+                  ((this.global == null) ? "(global)" : "") +
+                  " addNode(Node, Collection) called");
 
         // sanity check
         if (node == null || connectors == null || connectors.isEmpty()) {
@@ -265,7 +259,7 @@ public class InventoryService implements IPluginInInventoryService {
 
         for (NodeConnector nc : connectors) {
             if (nc.getNode() != node) {
-                logger.debug("There is NO relationship between specified Node and NodeConnector(s).");
+                LOG.debug("There is NO relationship between specified Node and NodeConnector(s).");
                 return;
             }
         }
@@ -276,7 +270,8 @@ public class InventoryService implements IPluginInInventoryService {
         for (IPluginOutInventoryService service : pluginOutInventoryServices) {
             Set<Property> props = new HashSet<Property>(propMap.values());
             service.updateNode(node, UpdateType.ADDED, props);
-            logger.debug("Adding Node {} with props {} to {}", node, props, service);
+            LOG.debug("Adding Node {} with props {} to {}",
+                      node, props, service);
         }
 
         Map<String, Property> ncPropMap = getDefaultConnectorProps();
@@ -286,7 +281,8 @@ public class InventoryService implements IPluginInInventoryService {
             for (IPluginOutInventoryService service : pluginOutInventoryServices) {
                 Set<Property> ncProps = new HashSet<Property>(ncPropMap.values());
                 service.updateNodeConnector(nc, UpdateType.ADDED, ncProps);
-                logger.debug("Adding NodeConnectors {} with props {} to {}", nc, ncProps, service);
+                LOG.debug("Adding NodeConnectors {} with props {} to {}",
+                          nc, ncProps, service);
             }
         }
 
@@ -300,8 +296,9 @@ public class InventoryService implements IPluginInInventoryService {
      * Add node
      */
     public void addNode(Map<Node, Collection<NodeConnector>> mapConnectors) {
-        logger.trace("openflow stub InventoryService" + ((this.global == null) ? "(global)" : "")
-                + " addNode(Map) called");
+        LOG.trace("openflow stub InventoryService" +
+                  ((this.global == null) ? "(global)" : "") +
+                  " addNode(Map) called");
 
         // sanity check
         if (mapConnectors == null || mapConnectors.isEmpty()) {
@@ -314,7 +311,7 @@ public class InventoryService implements IPluginInInventoryService {
             }
             for (NodeConnector nc : entry.getValue()) {
                 if (!entry.getKey().equals(nc.getNode())) {
-                    logger.debug("There is NO relationship between specified Node and NodeConnector(s).");
+                    LOG.debug("There is NO relationship between specified Node and NodeConnector(s).");
                     return;
                 }
             }
@@ -330,8 +327,9 @@ public class InventoryService implements IPluginInInventoryService {
      * Remove node
      */
     public void removeNode(Node node) {
-        logger.trace("openflow stub InventoryService" + ((this.global == null) ? "(global)" : "")
-                + " removeNode(Node) called");
+        LOG.trace("openflow stub InventoryService" +
+                  ((this.global == null) ? "(global)" : "") +
+                  " removeNode(Node) called");
 
         // sanity check
         if (node == null) {
@@ -348,14 +346,14 @@ public class InventoryService implements IPluginInInventoryService {
         for (NodeConnector nc : connectors) {
             for (IPluginOutInventoryService service : pluginOutInventoryServices) {
                 service.updateNodeConnector(nc, UpdateType.REMOVED, null);
-                logger.debug("Removed NodeConnectors {} from {}", nc, service);
+                LOG.debug("Removed NodeConnectors {} from {}", nc, service);
             }
             nodeConnectorProps.remove(nc);
         }
 
         for (IPluginOutInventoryService service : pluginOutInventoryServices) {
             service.updateNode(node, UpdateType.REMOVED, null);
-            logger.debug("Adding Node {} from {}", node, service);
+            LOG.debug("Adding Node {} from {}", node, service);
         }
         nodeProps.remove(node);
 
@@ -366,8 +364,9 @@ public class InventoryService implements IPluginInInventoryService {
     }
 
     public void removeNode(Collection<Node> nodes) {
-        logger.trace("openflow stub InventoryService" + ((this.global == null) ? "(global)" : "")
-                + " removeNode(Collection) called");
+        LOG.trace("openflow stub InventoryService" +
+                  ((this.global == null) ? "(global)" : "") +
+                  " removeNode(Collection) called");
         if (nodes == null) {
             return;
         }

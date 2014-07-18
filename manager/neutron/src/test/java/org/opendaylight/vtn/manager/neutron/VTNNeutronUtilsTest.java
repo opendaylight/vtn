@@ -205,7 +205,7 @@ public class VTNNeutronUtilsTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                      utils.isBridgeInterfaceExist(tenantID, bridgeID, portID));
 
-        tenantID =VTNManagerStub.TENANT_1_NAME;
+        tenantID = VTNManagerStub.TENANT_1_NAME;
         bridgeID = "a";
         portID = "a";
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,

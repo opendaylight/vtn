@@ -41,12 +41,12 @@ public class VTenantEventTest extends VNodeEventTestBase {
                             = createVTenantConfig(desc, iv, hv);
                         VTenant vtenant = new VTenant(tname, tconf);
                         for (UpdateType utype : UpdateType.values()) {
-                            String emsg = "(VTenantPath)" + tpath.toString()
-                                    + ",(desc)" + desc  + ",(iv)" + iv
-                                    + ",(hv)" + hv;
+                            String emsg = "(VTenantPath)" + tpath.toString() +
+                                ",(desc)" + desc  + ",(iv)" + iv +
+                                ",(hv)" + hv;
 
-                            VTenantEvent tevent
-                                    = new VTenantEvent(tpath, vtenant, utype);
+                            VTenantEvent tevent =
+                                new VTenantEvent(tpath, vtenant, utype);
                             checkVTenantEvent(tevent, tpath, tconf, utype, emsg);
                         }
                     }
@@ -82,7 +82,7 @@ public class VTenantEventTest extends VNodeEventTestBase {
         try {
             vtenant = vtnMgr.getTenant(tpath);
         } catch (VTNException e) {
-           unexpected(e);
+            unexpected(e);
         }
         flushTasks();
         stub.checkVtnInfo(1, tpath, UpdateType.ADDED);
@@ -149,10 +149,10 @@ public class VTenantEventTest extends VNodeEventTestBase {
                                     + ",(desc)" + desc  + ",(iv)" + iv
                                     + ",(hv)" + hv;
 
-                            VTenantEvent tevent
-                                = new VTenantEvent(tpath, vtenant, utype);
-                            VTenantEvent newobj
-                                = (VTenantEvent) eventSerializeTest(tevent);
+                            VTenantEvent tevent =
+                                new VTenantEvent(tpath, vtenant, utype);
+                            VTenantEvent newobj =
+                                (VTenantEvent)eventSerializeTest(tevent);
 
                             checkVTenantEvent(newobj, tpath, tconf, utype, emsg);
                         }

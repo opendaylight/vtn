@@ -40,5 +40,15 @@ public class TestDataLinkHost extends DataLinkHost {
     public boolean equals(Object o) {
         return ((o instanceof TestDataLinkHost) && super.equals(o));
     }
+
+    /**
+     * Return the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    @Override
+    public int hashCode() {
+        return getClass().hashCode() * super.hashCode();
+    }
 }
 

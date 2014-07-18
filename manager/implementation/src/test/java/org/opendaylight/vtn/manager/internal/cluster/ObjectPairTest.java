@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -64,10 +64,10 @@ public class ObjectPairTest extends TestBase {
                 ObjectPair<String, String> p2 =
                         new ObjectPair<String, String>(str2, str1);
 
-                if(str1 != null && !str1.equals(str2)) {
+                if (str1 != null && !str1.equals(str2)) {
                     assertFalse(p1.equals(p2));
                 }
-                if(str2 != null && !str2.equals(str1)) {
+                if (str2 != null && !str2.equals(str1)) {
                     assertFalse(p2.equals(p1));
                 }
 

@@ -676,7 +676,7 @@ public class GlobalResourceManagerTest extends TestBase {
         ComponentImpl c = new ComponentImpl(null, null, null);
         GlobalResourceManager grsc = new GlobalResourceManager();
         TestStub stubObj = new TestStub(0);
-        IClusterGlobalServices cs = (IClusterGlobalServices) stubObj;
+        IClusterGlobalServices cs = (IClusterGlobalServices)stubObj;
 
         Hashtable<String, String> properties = new Hashtable<String, String>();
         properties.put("containerName", "default");
@@ -685,12 +685,12 @@ public class GlobalResourceManagerTest extends TestBase {
         grsc.destroy();
         grsc.init(c);
 
-        ConcurrentMap<Short, String> vmap
-            = (ConcurrentMap<Short, String>) cs.getCache(CACHE_VLANMAP);
+        ConcurrentMap<Short, String> vmap = (ConcurrentMap<Short, String>)
+            cs.getCache(CACHE_VLANMAP);
         assertNull(vmap);
 
-        ConcurrentMap<Short, String> pmap
-            = (ConcurrentMap<Short, String>) cs.getCache(CACHE_PORTMAP);
+        ConcurrentMap<Short, String> pmap = (ConcurrentMap<Short, String>)
+            cs.getCache(CACHE_PORTMAP);
         assertNull(pmap);
 
         InetAddress loopback = InetAddress.getLoopbackAddress();
@@ -720,17 +720,17 @@ public class GlobalResourceManagerTest extends TestBase {
             Timer tm = grsc.getTimer();
             assertNotNull(tm);
 
-            vmap = (ConcurrentMap<Short, String>) cs.getCache(CACHE_VLANMAP);
+            vmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_VLANMAP);
             assertNotNull(vmap);
             assertEquals(0, vmap.size());
 
-            pmap = (ConcurrentMap<Short, String>) cs.getCache(CACHE_PORTMAP);
+            pmap = (ConcurrentMap<Short, String>)cs.getCache(CACHE_PORTMAP);
             assertNotNull(pmap);
             assertEquals(0, pmap.size());
 
             evid = new  ClusterEventId();
-            if (service.getMyAddress() != null
-                    && !service.getMyAddress().equals(loopback)) {
+            if (service.getMyAddress() != null &&
+                !service.getMyAddress().equals(loopback)) {
                 assertEquals(service.getMyAddress(), evid.getControllerAddress());
             } else {
                 assertEquals(loopback, evid.getControllerAddress());
@@ -842,36 +842,39 @@ public class GlobalResourceManagerTest extends TestBase {
 
             // Register VLAN mapping with the same VLAN ID and a specific
             // node.
-            NodeVlan nvlan0_0 = new NodeVlan(node0, vlan);
-            String mapId0_0 = createVlanMapId(nvlan0_0);
-            VlanMapPath vpath0_0 = new VlanMapPath(bpathnew, mapId0_0);
+            NodeVlan nvlan0Node0 = new NodeVlan(node0, vlan);
+            String mapId0Node0 = createVlanMapId(nvlan0Node0);
+            VlanMapPath vpath0Node0 = new VlanMapPath(bpathnew, mapId0Node0);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(otherMgr, vpath0_0, nvlan0_0, true);
-                mappings.put(nvlan0_0, vpath0_0);
+                ref = grsc.registerVlanMap(otherMgr, vpath0Node0, nvlan0Node0,
+                                           true);
+                mappings.put(nvlan0Node0, vpath0Node0);
             } catch (Exception e) {
                 unexpected(e);
             }
             revision = checkRevision(revMap, true, revision, updateFailure);
             assertEquals(null, ref);
             checkMapCache(cs, MapType.VLAN, containerName, vpath, nvlan0);
-            checkMapCache(cs, MapType.VLAN, other, vpath0_0, nvlan0_0);
+            checkMapCache(cs, MapType.VLAN, other, vpath0Node0, nvlan0Node0);
 
             // add with different VLAN ID
-            NodeVlan nvlan4095_0 = new NodeVlan(node0, (short)4095);
-            String mapId4095_0 = createVlanMapId(nvlan4095_0);
-            VlanMapPath vpath4095_0 = new VlanMapPath(bpathnew, mapId4095_0);
+            NodeVlan nvlan4095Node0 = new NodeVlan(node0, (short)4095);
+            String mapId4095Node0 = createVlanMapId(nvlan4095Node0);
+            VlanMapPath vpath4095Node0 =
+                new VlanMapPath(bpathnew, mapId4095Node0);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath4095_0, nvlan4095_0, true);
-                mappings.put(nvlan4095_0, vpath4095_0);
+                ref = grsc.registerVlanMap(mgr, vpath4095Node0, nvlan4095Node0,
+                                           true);
+                mappings.put(nvlan4095Node0, vpath4095Node0);
             } catch (Exception e) {
                 unexpected(e);
             }
             revision = checkRevision(revMap, true, revision, updateFailure);
             assertEquals(null, ref);
-            checkMapCache(cs, MapType.VLAN, containerName, vpath4095_0,
-                          nvlan4095_0);
+            checkMapCache(cs, MapType.VLAN, containerName, vpath4095Node0,
+                          nvlan4095Node0);
 
             try {
                 revMap.activateTest(updateFailure);
@@ -882,7 +885,7 @@ public class GlobalResourceManagerTest extends TestBase {
             }
             revision = checkRevision(revMap, true, revision, updateFailure);
             checkMapCache(cs, MapType.VLAN, null, null, nvlan0);
-            checkMapCache(cs, MapType.VLAN, other, vpath0_0, nvlan0_0);
+            checkMapCache(cs, MapType.VLAN, other, vpath0Node0, nvlan0Node0);
 
             // check if other setting exist after unregister entry a VLAN ID == 0
             NodeVlan nvlan4095 = new NodeVlan(null, (short)4095);
@@ -899,22 +902,22 @@ public class GlobalResourceManagerTest extends TestBase {
             assertEquals(null, ref);
             checkMapCache(cs, MapType.VLAN, containerName, vpath4095,
                           nvlan4095);
-            checkMapCache(cs, MapType.VLAN, containerName, vpath4095_0,
-                          nvlan4095_0);
+            checkMapCache(cs, MapType.VLAN, containerName, vpath4095Node0,
+                          nvlan4095Node0);
 
             // Try to register VLAN mapping with specifying VLAN:0 again.
             try {
-                VlanMapPath p = new VlanMapPath(bpath, mapId0_0);
+                VlanMapPath p = new VlanMapPath(bpath, mapId0Node0);
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, p, nvlan0_0, true);
+                ref = grsc.registerVlanMap(mgr, p, nvlan0Node0, true);
             } catch (Exception e) {
                 unexpected(e);
             }
             revision = checkRevision(revMap, false, revision, updateFailure);
-            required = new MapReference(MapType.VLAN, other, vpath0_0);
+            required = new MapReference(MapType.VLAN, other, vpath0Node0);
             assertEquals(required, ref);
             checkMapCache(cs, MapType.VLAN, null, null, nvlan0);
-            checkMapCache(cs, MapType.VLAN, other, vpath0_0, nvlan0_0);
+            checkMapCache(cs, MapType.VLAN, other, vpath0Node0, nvlan0Node0);
 
             try {
                 revMap.activateTest(updateFailure);
@@ -926,16 +929,17 @@ public class GlobalResourceManagerTest extends TestBase {
             revision = checkRevision(revMap, true, revision, updateFailure);
             assertEquals(null, ref);
             checkMapCache(cs, MapType.VLAN, containerName, vpath, nvlan0);
-            checkMapCache(cs, MapType.VLAN, other, vpath0_0, nvlan0_0);
+            checkMapCache(cs, MapType.VLAN, other, vpath0Node0, nvlan0Node0);
 
             // Try to map VLAN:4095 on Node:1 to bpath.
-            NodeVlan nvlan4095_1 = new NodeVlan(node1, (short)4095);
-            String mapId4095_1 = createVlanMapId(nvlan4095_1);
-            VlanMapPath vpath4095_1 = new VlanMapPath(bpath, mapId4095_1);
+            NodeVlan nvlan4095Node1 = new NodeVlan(node1, (short)4095);
+            String mapId4095Node1 = createVlanMapId(nvlan4095Node1);
+            VlanMapPath vpath4095Node1 = new VlanMapPath(bpath, mapId4095Node1);
             try {
                 revMap.activateTest(updateFailure);
-                ref = grsc.registerVlanMap(mgr, vpath4095_1, nvlan4095_1, true);
-                mappings.put(nvlan4095_1, vpath4095_1);
+                ref = grsc.registerVlanMap(mgr, vpath4095Node1, nvlan4095Node1,
+                                           true);
+                mappings.put(nvlan4095Node1, vpath4095Node1);
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -943,28 +947,29 @@ public class GlobalResourceManagerTest extends TestBase {
             assertEquals(null, ref);
             checkMapCache(cs, MapType.VLAN, containerName, vpath4095,
                           nvlan4095);
-            checkMapCache(cs, MapType.VLAN, containerName, vpath4095_0,
-                          nvlan4095_0);
-            checkMapCache(cs, MapType.VLAN, containerName, vpath4095_1,
-                          nvlan4095_1);
+            checkMapCache(cs, MapType.VLAN, containerName, vpath4095Node0,
+                          nvlan4095Node0);
+            checkMapCache(cs, MapType.VLAN, containerName, vpath4095Node1,
+                          nvlan4095Node1);
 
             // Unregister VLAN:0 on Node:0.
             try {
                 revMap.activateTest(updateFailure);
-                grsc.unregisterVlanMap(otherMgr, vpath0_0, nvlan0_0, true);
-                mappings.put(nvlan0_0, vpath0_0);
+                grsc.unregisterVlanMap(otherMgr, vpath0Node0, nvlan0Node0,
+                                       true);
+                mappings.put(nvlan0Node0, vpath0Node0);
             } catch (Exception e) {
                 unexpected(e);
             }
             revision = checkRevision(revMap, true, revision, updateFailure);
             checkMapCache(cs, MapType.VLAN, containerName, vpath, nvlan0);
-            checkMapCache(cs, MapType.VLAN, null, null, nvlan0_0);
+            checkMapCache(cs, MapType.VLAN, null, null, nvlan0Node0);
 
             // Try to unregister VLAN mapping which does not exist.
             NodeVlan[] invalid = {
                 new NodeVlan(null, (short)1),
                 new NodeVlan(node0, (short)1),
-                nvlan0_0,
+                nvlan0Node0,
             };
 
             for (NodeVlan nv: invalid) {
@@ -996,7 +1001,7 @@ public class GlobalResourceManagerTest extends TestBase {
 
             try {
                 NodeVlan[] nvlans = {
-                    nvlan0, nvlan4095, nvlan4095_0, nvlan4095_1
+                    nvlan0, nvlan4095, nvlan4095Node0, nvlan4095Node1
                 };
                 int size = nvlans.length;
                 assertEquals(size, vmap.size());
@@ -1024,7 +1029,7 @@ public class GlobalResourceManagerTest extends TestBase {
      */
     @Test
     public void testRegisterPortMap() {
-        short[] vlans = { 0, 10, 4095 };
+        short[] vlans = {0, 10, 4095};
         List<String> containerNames = new ArrayList<String>();
         containerNames.add("default");
         containerNames.add("tenant");
@@ -1843,12 +1848,12 @@ public class GlobalResourceManagerTest extends TestBase {
             mgr = managers.get(3);
             bpath = bridges.get(6);
             node = nodes.get(0);
-            MapReference vmap0_0 = addVlanMap(grsc, mgr, bpath, node,
-                                              (short)0);
+            MapReference vmap0Node0 = addVlanMap(grsc, mgr, bpath, node,
+                                                 (short)0);
             for (NodeConnector nc: nodePorts.get(node)) {
                 for (MacVlan mvlan: portHosts.get(nc)) {
                     if (mvlan.getVlan() == 0) {
-                        expected.put(mvlan, vmap0_0);
+                        expected.put(mvlan, vmap0Node0);
                     }
                 }
             }
@@ -1860,11 +1865,11 @@ public class GlobalResourceManagerTest extends TestBase {
             mgr = managers.get(1);
             VBridgeIfPath ipath = interfaces.get(1);
             NodeConnector port = allPorts.get(4);
-            MapReference pmap0_4 = addPortMap(grsc, mgr, ipath, port,
-                                              (short)0);
+            MapReference pmap0Port4 = addPortMap(grsc, mgr, ipath, port,
+                                                 (short)0);
             for (MacVlan mvlan: portHosts.get(port)) {
                 if (mvlan.getVlan() == 0) {
-                    expected.put(mvlan, pmap0_4);
+                    expected.put(mvlan, pmap0Port4);
                 }
             }
             checkMapReference(grsc, allHosts, unmappedHosts, expected);
@@ -1872,11 +1877,11 @@ public class GlobalResourceManagerTest extends TestBase {
             // Map VLAN 2 on port[4] to interface[4] in container[0].
             mgr = managers.get(0);
             ipath = interfaces.get(4);
-            MapReference pmap1_4 = addPortMap(grsc, mgr, ipath, port,
-                                              (short)2);
+            MapReference pmap2Port4 = addPortMap(grsc, mgr, ipath, port,
+                                                 (short)2);
             for (MacVlan mvlan: portHosts.get(port)) {
                 if (mvlan.getVlan() == 2) {
-                    expected.put(mvlan, pmap1_4);
+                    expected.put(mvlan, pmap2Port4);
                 }
             }
             checkMapReference(grsc, allHosts, unmappedHosts, expected);
@@ -2074,11 +2079,11 @@ public class GlobalResourceManagerTest extends TestBase {
                     }
                 }
             }
-            MapReference pmap0_13 = addPortMap(grsc, mgr1, ipath, port,
-                                               (short)0);
+            MapReference pmap0If13 = addPortMap(grsc, mgr1, ipath, port,
+                                                (short)0);
             for (MacVlan mvlan: portHosts.get(port)) {
                 if (mvlan.getVlan() == 0) {
-                    expected.put(mvlan, pmap0_13);
+                    expected.put(mvlan, pmap0If13);
                     assertNull(grsc.getMacMappedPort(mgr, mpath, mvlan));
                 }
             }
@@ -2153,8 +2158,8 @@ public class GlobalResourceManagerTest extends TestBase {
             assertEquals(null, ref);
             checkMapCache(cs, MapType.VLAN, containerName, vpath0, nvlan0);
 
-            NodeConnector nc = NodeConnectorCreator
-                    .createOFNodeConnector(Short.valueOf((short) 10), node0);
+            NodeConnector nc = NodeConnectorCreator.
+                createOFNodeConnector(Short.valueOf((short)10), node0);
             String ifname = "interface";
             VBridgeIfPath bifpath = new VBridgeIfPath(tname, bname, ifname);
             PortVlan pv = new PortVlan(nc, vlan);
@@ -2294,7 +2299,7 @@ public class GlobalResourceManagerTest extends TestBase {
             }
 
             @Override
-            synchronized public void run() {
+            public synchronized void run() {
                 latch.countDown();
                 await(waitTime, TimeUnit.SECONDS);
             }
@@ -2336,9 +2341,8 @@ public class GlobalResourceManagerTest extends TestBase {
     @Test
     public void testGetRemoteClusterSize() {
         InetAddress loopbackAddr = InetAddress.getLoopbackAddress();
-        InetAddress otherAddr
-            = getInetAddressFromAddress(new byte[] {(byte) 10, (byte) 0,
-                                                    (byte) 1, (byte) 99});
+        InetAddress otherAddr = getInetAddressFromAddress(
+            new byte[] {(byte)10, (byte)0, (byte)1, (byte)99});
 
         ComponentImpl c = new ComponentImpl(null, null, null);
         GlobalResourceManager grsc = new GlobalResourceManager();
@@ -2434,7 +2438,8 @@ public class GlobalResourceManagerTest extends TestBase {
         NodeConnector nc = NodeConnectorCreator
                 .createOFNodeConnector(Short.valueOf("10"), node);
         InetAddress loopback = InetAddress.getLoopbackAddress();
-        MacTableEntry entLoopback = new MacTableEntry(eid, nc, (short) 0, loopback);
+        MacTableEntry entLoopback = new MacTableEntry(eid, nc, (short)0,
+                                                      loopback);
 
         vtnMgr.putMacTableEntry(entLoopback);
 
@@ -2442,17 +2447,19 @@ public class GlobalResourceManagerTest extends TestBase {
         assertEquals(0, entries.size());
 
         InetAddress ipaddr
-            = getInetAddressFromAddress(new byte[] {(byte) 192, (byte) 168,
-                                                    (byte) 0, (byte) 2});
+            = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
+                                                    (byte)0, (byte)2});
         mac = 2L;
         MacTableEntryId eidRemote = new MacTableEntryId(ipaddr, 2L, bpath, mac);
-        MacTableEntry entRemote = new MacTableEntry(eidRemote, nc, (short) 0, ipaddr);
+        MacTableEntry entRemote = new MacTableEntry(eidRemote, nc, (short)0,
+                                                    ipaddr);
 
-        ipaddr = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
-                                                        (byte) 0, (byte) 3});
+        ipaddr = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
+                                                       (byte)0, (byte)3});
         mac = 3L;
-        MacTableEntryId eidRemote2 = new MacTableEntryId(ipaddr, 3L, bpath, mac);
-        MacTableEntry entRemote2 = new MacTableEntry(eidRemote2, nc, (short) 0,
+        MacTableEntryId eidRemote2 = new MacTableEntryId(ipaddr, 3L, bpath,
+                                                         mac);
+        MacTableEntry entRemote2 = new MacTableEntry(eidRemote2, nc, (short)0,
                                                      ipaddr);
 
         vtnMgr.putMacTableEntry(entRemote);

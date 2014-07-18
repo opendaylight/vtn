@@ -32,7 +32,7 @@ public class IpAddressSetTest extends TestBase {
             addrSet = new HashSet<IpAddress>();
             if (ipset != null && ipset.size() != 0) {
                 for (InetAddress ip: ipset) {
-                   addrSet.add(new IpAddress(ip));
+                    addrSet.add(new IpAddress(ip));
                 }
                 IpAddressSet iaddrs = new IpAddressSet(ipset);
                 assertEquals(addrSet, iaddrs.getAddresses());
@@ -74,8 +74,8 @@ public class IpAddressSetTest extends TestBase {
     public void testJAXB() {
         List<Set<InetAddress>> ips = createInetAddresses(false);
         for (Set<InetAddress> ipset: ips) {
-                IpAddressSet iaddrs = new IpAddressSet(ipset);
-                jaxbTest(iaddrs, "inetAddresses");
+            IpAddressSet iaddrs = new IpAddressSet(ipset);
+            jaxbTest(iaddrs, "inetAddresses");
         }
     }
 }

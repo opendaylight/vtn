@@ -22,7 +22,6 @@ import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.vtn.manager.internal.PacketContext;
 
 /**
  * Abstract base class for JUnit tests.
@@ -82,7 +81,7 @@ public abstract class TestBase extends Assert {
      * @param nc    A node connector.
      * @return A {@link RawPacket} object.
      */
-    protected RawPacket createRawPacket (Ethernet eth, NodeConnector nc) {
+    protected RawPacket createRawPacket(Ethernet eth, NodeConnector nc) {
         RawPacket raw = null;
         try {
             raw = new RawPacket(eth.serialize());
@@ -105,7 +104,9 @@ public abstract class TestBase extends Assert {
      * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
      * @return  A {@link Ethernet} object.
      */
-    protected Ethernet createARPPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, short arptype) {
+    protected Ethernet createARPPacket(byte[] src, byte[] dst, byte[] sender,
+                                       byte [] target, short vlan,
+                                       short arptype) {
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
             setProtocolType(EtherTypes.IPv4.shortValue()).
@@ -122,7 +123,7 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan).
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
                 setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
@@ -144,10 +145,14 @@ public abstract class TestBase extends Assert {
      * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
      * @param nc        A node connector
      * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  A {@link PacketContext}.
+     * @return  A {@link org.opendaylight.vtn.manager.internal.PacketContext}.
      */
-    protected RawPacket createARPRawPacket (byte[] src, byte[] dst, byte[] sender, byte [] target, short vlan, NodeConnector nc, short arptype) {
-        return createRawPacket(createARPPacket(src, dst, sender, target, vlan, arptype), nc);
+    protected RawPacket createARPRawPacket(byte[] src, byte[] dst,
+                                           byte[] sender, byte [] target,
+                                           short vlan, NodeConnector nc,
+                                           short arptype) {
+        return createRawPacket(createARPPacket(src, dst, sender, target,
+                                               vlan, arptype), nc);
     }
 
     /**

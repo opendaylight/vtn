@@ -79,6 +79,9 @@
 
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal</javadoc.exclude>
+
+    <!-- Default checkstyle configuration -->
+    <vtn.checkstyle.xml>vtn/checkstyle.xml</vtn.checkstyle.xml>
   </properties>
 
   <repositories>
@@ -109,6 +112,19 @@
       </releases>
     </repository>
   </repositories>
+
+  <profiles>
+    <profile>
+      <!-- Run strict coding style check -->
+      <id>strictcheck</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <vtn.checkstyle.xml>vtn/checkstyle_strict.xml</vtn.checkstyle.xml>
+      </properties>
+    </profile>
+  </profiles>
 
   <reporting>
     <excludeDefaults>true</excludeDefaults>
@@ -154,7 +170,7 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>${checkstyle.version}</version>
         <configuration>
-          <configLocation>vtn/checkstyle.xml</configLocation>
+          <configLocation>vtn/checkstyle_report.xml</configLocation>
         </configuration>
       </plugin>
 
@@ -246,12 +262,12 @@
         </executions>
         <configuration>
           <failsOnError>true</failsOnError>
-          <configLocation>vtn/space_and_tabs_checks.xml</configLocation>
+          <configLocation>${vtn.checkstyle.xml}</configLocation>
           <consoleOutput>true</consoleOutput>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <sourceDirectory>${project.basedir}</sourceDirectory>
           <includes>**\/*.java,**\/*.xml,**\/*.ini,**\/*.sh,**\/*.bat</includes>
-          <excludes>target\/</excludes>
+          <excludes>**\/target\/</excludes>
         </configuration>
       </plugin>
 

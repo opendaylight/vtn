@@ -11,8 +11,6 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
-import java.util.TreeSet;
 
 import org.junit.Test;
 
@@ -33,7 +31,7 @@ public class L2HostTest extends TestBase {
     @Test
     public void testGetter() {
         short[] vlans = new short[] {0, 1, 1000, 4095};
-        for (EthernetAddress ea : createEthernetAddresses()){
+        for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan : vlans) {
                 for (NodeConnector port: createNodeConnectors(10, false)) {
                     byte[] addr = (ea == null) ? null : ea.getValue();
@@ -61,7 +59,7 @@ public class L2HostTest extends TestBase {
     @Test
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
-        short vlans[] = {0, 1, 10, 1000, 4095};
+        short[] vlans = {0, 1, 10, 1000, 4095};
         List<EthernetAddress> ethers = createEthernetAddresses();
         List<NodeConnector> ports = createNodeConnectors(10, false);
 
@@ -93,7 +91,7 @@ public class L2HostTest extends TestBase {
     public void testToString() {
         String prefix = "L2Host[";
         String suffix = "]";
-        short vlans[] = {0, 1, 10, 1000, 4095};
+        short[] vlans = {0, 1, 10, 1000, 4095};
 
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan: vlans) {

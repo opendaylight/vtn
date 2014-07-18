@@ -141,9 +141,9 @@ public final class NodeRoute implements Serializable {
                      NodeConnector outport, String outname) {
         Node nd = inport.getNode();
         if (!nd.equals(outport.getNode())) {
-            throw new IllegalArgumentException
-                ("Input and output port must belong to the same switch: " +
-                 inport + ", " + outport);
+            throw new IllegalArgumentException(
+                "Input and output port must belong to the same switch: " +
+                inport + ", " + outport);
         }
 
         node = nd;

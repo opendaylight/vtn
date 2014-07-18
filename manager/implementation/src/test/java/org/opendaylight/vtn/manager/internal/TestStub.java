@@ -286,8 +286,7 @@ public class TestStub
                         ((srcnode.getID().equals(Long.valueOf(1)) &&
                           dstnode.getID().equals(Long.valueOf(2))) ||
                          (srcnode.getID().equals(Long.valueOf(2)) &&
-                          dstnode.getID().equals(Long.valueOf(1))))
-                       ) {
+                          dstnode.getID().equals(Long.valueOf(1))))) {
                         continue;
                     }
 
@@ -359,26 +358,26 @@ public class TestStub
                     } else if (stubMode == 3 &&
                                (srcnode.getID().equals(Long.valueOf(2)) &&
                                 dstnode.getID().equals(Long.valueOf(1)))) {
-                           tail = nodeConnectorNames.get(srcnode).get("port-16");
-                           head = nodeConnectorNames.get(node0).get("port-16");
-                           Edge edge = null;
-                           try {
-                               edge = new Edge(tail, head);
-                           } catch (ConstructionException e) {
-                               Assert.fail("Bad edge: tail=" + tail +
-                                           ", head =" + head);
-                           }
-                           edglist.add(edge);
+                        tail = nodeConnectorNames.get(srcnode).get("port-16");
+                        head = nodeConnectorNames.get(node0).get("port-16");
+                        Edge edge = null;
+                        try {
+                            edge = new Edge(tail, head);
+                        } catch (ConstructionException e) {
+                            Assert.fail("Bad edge: tail=" + tail +
+                                        ", head =" + head);
+                        }
+                        edglist.add(edge);
 
-                           tail = nodeConnectorNames.get(node0).get("port-15");
-                           head = nodeConnectorNames.get(dstnode).get("port-15");
-                           try {
-                               edge = new Edge(tail, head);
-                           } catch (ConstructionException e) {
-                               Assert.fail("Bad edge: tail=" + tail +
-                                           ", head =" + head);
-                           }
-                           edglist.add(edge);
+                        tail = nodeConnectorNames.get(node0).get("port-15");
+                        head = nodeConnectorNames.get(dstnode).get("port-15");
+                        try {
+                            edge = new Edge(tail, head);
+                        } catch (ConstructionException e) {
+                            Assert.fail("Bad edge: tail=" + tail +
+                                        ", head =" + head);
+                        }
+                        edglist.add(edge);
                     }
                     map.put(dstnode, edglist);
                     nodeEdges.put(srcnode, map);
@@ -550,7 +549,7 @@ public class TestStub
 
     @Override
     public boolean amICoordinator() {
-      return true;
+        return true;
     }
 
     // ISwitchManager
@@ -581,7 +580,7 @@ public class TestStub
 
     @Override
     public List<Switch> getNetworkDevices() {
-       return null;
+        return null;
     }
 
     @Override
@@ -789,7 +788,7 @@ public class TestStub
     @Override
     public byte[] getControllerMAC() {
         return new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
-                            (byte)0xCC, (byte)0xCC, (byte)0xCC};
+                           (byte)0xCC, (byte)0xCC, (byte)0xCC};
     }
 
     @Override
@@ -997,7 +996,7 @@ public class TestStub
     }
 
     @Override
-    public Path getRoute(Node src, Node dst, Short Bw) {
+    public Path getRoute(Node src, Node dst, Short bw) {
         return null;
     }
 
@@ -1012,7 +1011,7 @@ public class TestStub
     }
 
     @Override
-    public void initMaxThroughput(Map<Edge, Number> EdgeWeightMap) {
+    public void initMaxThroughput(Map<Edge, Number> edgeWeightMap) {
 
     }
 
@@ -1265,11 +1264,13 @@ public class TestStub
             byte [] ip = new byte[] {(byte)192, (byte)168, (byte)0, (byte)251};
             if (Arrays.equals(tgt, ip)) {
 
-                byte [] mac = new byte [] { 0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
+                byte [] mac = new byte [] {0x00, 0x00, 0x00, 0x11, 0x22, 0x33};
                 Node node = NodeCreator.createOFNode(Long.valueOf(0));
-                NodeConnector nc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"), node);
+                NodeConnector nc = NodeConnectorCreator.
+                    createOFNodeConnector(Short.valueOf("10"), node);
                 try {
-                    hnode = new HostNodeConnector(mac, networkAddress, nc, (short) 0);
+                    hnode = new HostNodeConnector(mac, networkAddress, nc,
+                                                  (short)0);
                 } catch (ConstructionException e) {
                     return null;
                 }
@@ -1389,8 +1390,8 @@ public class TestStub
     }
 
     @Override
-    public Node connect (String connectionIdentifier,
-                         Map<ConnectionConstants, String> params) {
+    public Node connect(String connectionIdentifier,
+                        Map<ConnectionConstants, String> params) {
         return null;
     }
 
@@ -1467,8 +1468,8 @@ public class TestStub
     }
 
     @Override
-    public boolean doesContainerExist(String ContainerId) {
-        return GlobalConstants.DEFAULT.toString().equals(ContainerId);
+    public boolean doesContainerExist(String containerId) {
+        return GlobalConstants.DEFAULT.toString().equals(containerId);
     }
 
     @Override

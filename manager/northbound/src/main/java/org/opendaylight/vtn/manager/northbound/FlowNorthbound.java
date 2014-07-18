@@ -216,8 +216,8 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         DataFlowFilter filter = createFilter(srcMac, srcVlan, nodeStr,
                                              portType, portId, portName);
         try {
-            return new DataFlowList
-                (mgr.getDataFlows(path, DataFlow.Mode.SUMMARY, filter));
+            return new DataFlowList(
+                mgr.getDataFlows(path, DataFlow.Mode.SUMMARY, filter));
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }

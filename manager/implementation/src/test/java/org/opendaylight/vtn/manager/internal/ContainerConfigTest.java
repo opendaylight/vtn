@@ -12,9 +12,7 @@ package org.opendaylight.vtn.manager.internal;
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -24,6 +22,11 @@ import org.opendaylight.controller.sal.utils.Status;
  * JUnit test for {@link ContainerConfig}.
  */
 public class ContainerConfigTest extends TestBase {
+    /**
+     * The number of test keys.
+     */
+    private static final int  NUM_KEYS = 100;
+
     /**
      * Test case for {@link ContainerConfig#init()} and
      * {@link ContainerConfig#cleanUp()}.
@@ -154,7 +157,6 @@ public class ContainerConfigTest extends TestBase {
         HashMap<ContainerConfig.Type, Map<String, Long>> saved =
             new HashMap<>();
         ContainerConfig.Type[] types = ContainerConfig.Type.values();
-        final int NUM_KEYS = 100;
         for (ContainerConfig.Type type: types) {
             HashMap<String, Long> map = new HashMap<>();
             assertNull(saved.put(type, map));
@@ -234,7 +236,6 @@ public class ContainerConfigTest extends TestBase {
         assertTrue(cfg.deleteAll(ContainerConfig.Type.TENANT, null));
 
         // Construct test data and save.
-        final int NUM_KEYS = 100;
         long nano = System.nanoTime();
         HashSet<String> retain = new HashSet<>();
         HashMap<String, Long> saved = new HashMap<>();
@@ -257,7 +258,7 @@ public class ContainerConfigTest extends TestBase {
         assertEquals(retain, new HashSet<String>(cfg.getKeys(type)));
 
         // Remove all files.
-        assertTrue(cfg.deleteAll(ContainerConfig.Type.TENANT, null));;
+        assertTrue(cfg.deleteAll(ContainerConfig.Type.TENANT, null));
         assertEquals(0, cfg.getKeys(type).size());
     }
 }

@@ -28,16 +28,16 @@ import org.slf4j.LoggerFactory;
  * Represents the openflow plugin component in charge of programming the flows
  * the flow programming and relay them to functional modules above SAL.
  */
-public class FlowProgrammerService implements IPluginInFlowProgrammerService
-{
-    private static final Logger logger = LoggerFactory
-            .getLogger(FlowProgrammerService.class);
+public class FlowProgrammerService implements IPluginInFlowProgrammerService {
+    private static final Logger LOG = LoggerFactory.
+        getLogger(FlowProgrammerService.class);
 
-    private final Map<Node, CountDownLatch> mapLatch= new HashMap<Node, CountDownLatch>();
+    private final Map<Node, CountDownLatch> mapLatch =
+        new HashMap<Node, CountDownLatch>();
     private final Map<Node, List<Flow>> mapNF = new HashMap<Node, List<Flow>>();
 
     void init() {
-        logger.debug("openflow stub FlowProgrammerService init called.");
+        LOG.debug("openflow stub FlowProgrammerService init called.");
     }
 
     /**
@@ -66,21 +66,19 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
     void stop() {
     }
 
-
     /**
      * Synchronously add a flow to the network node
      *
      * @param node
      * @param flow
      */
-    public Status addFlow(Node node, Flow flow){
-        logger.debug("openflow stub FlowProgrammerService addFlow called.");
+    public Status addFlow(Node node, Flow flow) {
+        LOG.debug("openflow stub FlowProgrammerService addFlow called.");
 
         addFlowInternal(node, flow);
 
         return new Status(StatusCode.SUCCESS);
     }
-
 
     /**
      * Synchronously modify existing flow on the switch
@@ -89,8 +87,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * @param oldFlow
      * @param newFlow
      */
-    public Status modifyFlow(Node node, Flow oldFlow, Flow newFlow){
-        logger.debug("openflow stub FlowProgrammerService modifyFlow called.");
+    public Status modifyFlow(Node node, Flow oldFlow, Flow newFlow) {
+        LOG.debug("openflow stub FlowProgrammerService modifyFlow called.");
         return new Status(StatusCode.SUCCESS);
     }
     /**
@@ -99,8 +97,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * @param node
      * @param flow
      */
-    public Status removeFlow(Node node, Flow flow){
-        logger.debug("openflow stub FlowProgrammerService removeFlow called.");
+    public Status removeFlow(Node node, Flow flow) {
+        LOG.debug("openflow stub FlowProgrammerService removeFlow called.");
 
         removeFlowInternal(node, flow);
 
@@ -114,8 +112,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * @param flow
      * @param rid
      */
-    public Status addFlowAsync(Node node, Flow flow, long rid){
-        logger.debug("openflow stub FlowProgrammerService addFlowAsync called.");
+    public Status addFlowAsync(Node node, Flow flow, long rid) {
+        LOG.debug("openflow stub FlowProgrammerService addFlowAsync called.");
 
         addFlowInternal(node, flow);
 
@@ -130,8 +128,9 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * @param newFlow
      * @param rid
      */
-    public Status modifyFlowAsync(Node node, Flow oldFlow, Flow newFlow, long rid){
-        logger.debug("openflow stub FlowProgrammerService modifyFlowAsync called.");
+    public Status modifyFlowAsync(Node node, Flow oldFlow, Flow newFlow,
+                                  long rid) {
+        LOG.debug("openflow stub FlowProgrammerService modifyFlowAsync called.");
         return new Status(StatusCode.SUCCESS);
     }
 
@@ -142,8 +141,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      * @param flow
      * @param rid
      */
-    public Status removeFlowAsync(Node node, Flow flow, long rid){
-        logger.debug("openflow stub FlowProgrammerService removeFlowAsync called.");
+    public Status removeFlowAsync(Node node, Flow flow, long rid) {
+        LOG.debug("openflow stub FlowProgrammerService removeFlowAsync called.");
 
         removeFlowInternal(node, flow);
 
@@ -155,8 +154,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      *
      * @param node
      */
-    public Status removeAllFlows(Node node){
-        logger.debug("openflow stub FlowProgrammerService removeAllFlow called.");
+    public Status removeAllFlows(Node node) {
+        LOG.debug("openflow stub FlowProgrammerService removeAllFlow called.");
         return new Status(StatusCode.SUCCESS);
     }
 
@@ -166,8 +165,8 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      *
      * @param node
      */
-    public Status syncSendBarrierMessage(Node node){
-        logger.debug("openflow stub FlowProgrammerService syncSendBarrierMessage called.");
+    public Status syncSendBarrierMessage(Node node) {
+        LOG.debug("openflow stub FlowProgrammerService syncSendBarrierMessage called.");
         return new Status(StatusCode.SUCCESS);
     }
 
@@ -176,18 +175,18 @@ public class FlowProgrammerService implements IPluginInFlowProgrammerService
      *
      * @param node
      */
-    public Status asyncSendBarrierMessage(Node node){
-        logger.debug("openflow stub FlowProgrammerService asyncSendBarrierMessage called.");
+    public Status asyncSendBarrierMessage(Node node) {
+        LOG.debug("openflow stub FlowProgrammerService asyncSendBarrierMessage called.");
         return new Status(StatusCode.SUCCESS);
     }
 
     public CountDownLatch setLatch(Node node, int expectedAddFlows) {
-        logger.trace("setLatch called.");
+        LOG.trace("setLatch called.");
         if (node == null) {
             return null;
         }
 
-        logger.trace("Start waiting for {} flow(s) to add to {}.", expectedAddFlows, node);
+        LOG.trace("Start waiting for {} flow(s) to add to {}.", expectedAddFlows, node);
         CountDownLatch latch = new CountDownLatch(expectedAddFlows);
         mapLatch.put(node, latch);
         return latch;

@@ -12,7 +12,6 @@ import org.apache.felix.dm.Component;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.connection.IPluginInConnectionService;
-import org.opendaylight.controller.sal.connection.IPluginOutConnectionService;
 import org.opendaylight.controller.sal.flowprogrammer.IPluginInFlowProgrammerService;
 import org.opendaylight.controller.sal.inventory.IPluginInInventoryService;
 import org.opendaylight.controller.sal.inventory.IPluginOutInventoryService;
@@ -34,8 +33,8 @@ import java.util.Hashtable;
  *
  */
 public class Activator extends ComponentActivatorAbstractBase {
-    protected static final Logger logger = LoggerFactory
-            .getLogger(Activator.class);
+    private static final Logger LOG = LoggerFactory.
+        getLogger(Activator.class);
 
     /**
      * Function called when the activator starts just after some initializations
@@ -44,7 +43,7 @@ public class Activator extends ComponentActivatorAbstractBase {
      */
     @Override
     public void init() {
-        logger.debug("openflow stub activator init called.");
+        LOG.debug("openflow stub activator init called.");
     }
 
     /**
@@ -67,14 +66,13 @@ public class Activator extends ComponentActivatorAbstractBase {
      */
     @Override
     public Object[] getImplementations() {
-        logger.debug("openflow stub activator getImplementations called.");
-        Object[] res =
-            {
-                ReadService.class,
-                InventoryService.class,
-                TopologyServices.class,
-                DataPacketServices.class
-            };
+        LOG.debug("openflow stub activator getImplementations called.");
+        Object[] res = {
+            ReadService.class,
+            InventoryService.class,
+            TopologyServices.class,
+            DataPacketServices.class
+        };
         return res;
     }
 
@@ -95,7 +93,7 @@ public class Activator extends ComponentActivatorAbstractBase {
      */
     @Override
     public void configureInstance(Component c, Object imp, String containerName) {
-        logger.debug("openflow stub activator configureInstance called.");
+        LOG.debug("openflow stub activator configureInstance called.");
         if (imp.equals(ReadService.class)) {
             // export the service to be used by SAL
             Dictionary<String, Object> props = new Hashtable<String, Object>();
@@ -122,7 +120,7 @@ public class Activator extends ComponentActivatorAbstractBase {
                     .setRequired(true));
         }
 
-        if(imp.equals(TopologyServices.class)){
+        if (imp.equals(TopologyServices.class)) {
             Dictionary<String, Object> props = new Hashtable<String, Object>();
             props.put(GlobalConstants.PROTOCOLPLUGINTYPE.toString(), Node.NodeIDType.OPENFLOW);
             c.setInterface(IPluginInTopologyService.class.getName(), props);
@@ -144,20 +142,19 @@ public class Activator extends ComponentActivatorAbstractBase {
 
     @Override
     public Object[] getGlobalImplementations() {
-        logger.debug("openflow stub activator getGlobalImplementations called.");
-        Object[] res =
-            {
-                FlowProgrammerService.class,
-                InventoryService.class,
-                DataPacketServices.class,
-                ConnectionServices.class
-            };
+        LOG.debug("openflow stub activator getGlobalImplementations called.");
+        Object[] res = {
+            FlowProgrammerService.class,
+            InventoryService.class,
+            DataPacketServices.class,
+            ConnectionServices.class
+        };
         return res;
     }
 
     @Override
-    public void configureGlobalInstance(Component c, Object imp){
-        logger.debug("openflow stub activator configureGlobalInstance called.");
+    public void configureGlobalInstance(Component c, Object imp) {
+        LOG.debug("openflow stub activator configureGlobalInstance called.");
         if (imp.equals(FlowProgrammerService.class)) {
             // export the service to be used by SAL
             Dictionary<String, Object> props = new Hashtable<String, Object>();

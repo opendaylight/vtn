@@ -25,7 +25,7 @@ public class EthernetHostTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (short vlan: vlans) {
             for (EthernetAddress eaddr: createEthernetAddresses()) {
                 EthernetHost ehost = new EthernetHost(eaddr, vlan);
@@ -46,7 +46,7 @@ public class EthernetHostTest extends TestBase {
     @Test
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         List<EthernetAddress> eaddrs = createEthernetAddresses();
         for (EthernetAddress eaddr: eaddrs) {
             for (short vlan: vlans) {
@@ -67,7 +67,7 @@ public class EthernetHostTest extends TestBase {
     public void testToString() {
         String prefix = "EthernetHost[";
         String suffix = "]";
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             for (short vlan: vlans) {
                 EthernetHost ehost = new EthernetHost(eaddr, vlan);
@@ -85,7 +85,7 @@ public class EthernetHostTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             for (short vlan: vlans) {
                 EthernetHost ehost = new EthernetHost(eaddr, vlan);

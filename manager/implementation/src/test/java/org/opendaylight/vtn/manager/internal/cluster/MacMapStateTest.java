@@ -257,23 +257,21 @@ public class MacMapStateTest extends TestBase {
             }
         }
 
-        {
-            Set<PortVlan> nw = mst.getNetworks();
-            Map<MacVlan, NodeConnector> hosts = mst.getActiveHosts();
-            assertEquals(nwMap.getNetworks(), nw);
-            assertEquals(hostMap, hosts);
+        Set<PortVlan> nw = mst.getNetworks();
+        Map<MacVlan, NodeConnector> hosts = mst.getActiveHosts();
+        assertEquals(nwMap.getNetworks(), nw);
+        assertEquals(hostMap, hosts);
 
-            // Ensure that the MacMapState is never changed even if returned
-            // Set/Map are cleared.
-            assertFalse(nw.isEmpty());
-            assertFalse(hosts.isEmpty());
-            nw.clear();
-            hosts.clear();
-            assertTrue(nw.isEmpty());
-            assertTrue(hosts.isEmpty());
-            assertEquals(nwMap.getNetworks(), mst.getNetworks());
-            assertEquals(hostMap, mst.getActiveHosts());
-        }
+        // Ensure that the MacMapState is never changed even if returned
+        // Set/Map are cleared.
+        assertFalse(nw.isEmpty());
+        assertFalse(hosts.isEmpty());
+        nw.clear();
+        hosts.clear();
+        assertTrue(nw.isEmpty());
+        assertTrue(hosts.isEmpty());
+        assertEquals(nwMap.getNetworks(), mst.getNetworks());
+        assertEquals(hostMap, mst.getActiveHosts());
 
         // Move all hosts to one port.
         NodeConnector newPort = unusedPortList.get(0);
@@ -371,14 +369,14 @@ public class MacMapStateTest extends TestBase {
             nwMap.removeForce(pvlan);
 
             assertFalse(mst.hasMapping(pvlan));
-            Map<MacVlan, NodeConnector> hosts = hostMap;
-            Set<PortVlan> nw = nwMap.getNetworks();
-            if (nw.isEmpty()) {
-                nw = null;
-                hosts = null;
+            Map<MacVlan, NodeConnector> hmap1 = hostMap;
+            Set<PortVlan> nw1 = nwMap.getNetworks();
+            if (nw1.isEmpty()) {
+                nw1 = null;
+                hmap1 = null;
             }
-            assertEquals(nw, mst.getNetworks());
-            assertEquals(hosts, mst.getActiveHosts());
+            assertEquals(nw1, mst.getNetworks());
+            assertEquals(hmap1, mst.getActiveHosts());
 
             for (MacVlan mvlan: removed) {
                 assertNull(mst.getDuplicate(mvlan));
@@ -441,14 +439,14 @@ public class MacMapStateTest extends TestBase {
             assertEquals(inactivated, released.isEmpty());
             assertEquals(removedMap, removeHosts(hostMap, filter));
             assertEquals(released, nwMap.removeForce(filter));
-            Map<MacVlan, NodeConnector> hosts = hostMap;
-            Set<PortVlan> nw = nwMap.getNetworks();
-            if (nw.isEmpty()) {
-                nw = null;
-                hosts = null;
+            Map<MacVlan, NodeConnector> hmap1 = hostMap;
+            Set<PortVlan> nw1 = nwMap.getNetworks();
+            if (nw1.isEmpty()) {
+                nw1 = null;
+                hmap1 = null;
             }
-            assertEquals(nw, mst.getNetworks());
-            assertEquals(hosts, mst.getActiveHosts());
+            assertEquals(nw1, mst.getNetworks());
+            assertEquals(hmap1, mst.getActiveHosts());
 
             for (Map.Entry<MacVlan, NodeConnector> entry:
                      removedMap.entrySet()) {
@@ -962,8 +960,9 @@ public class MacMapStateTest extends TestBase {
      * @param pvlan    A {@link PortVlan} instance.
      * @return  A map which contains removed entries is returned.
      */
-    private Map<MacVlan, NodeConnector>
-        removeHosts(Map<MacVlan, NodeConnector> hostMap, PortVlan pvlan) {
+    private Map<MacVlan, NodeConnector> removeHosts(
+        Map<MacVlan, NodeConnector> hostMap, PortVlan pvlan) {
+
         Map<MacVlan, NodeConnector> removed =
             new HashMap<MacVlan, NodeConnector>();
         NodeConnector targetPort = pvlan.getNodeConnector();
@@ -990,8 +989,9 @@ public class MacMapStateTest extends TestBase {
      *                 ports.
      * @return  A map which contains removed entries is returned.
      */
-    private Map<MacVlan, NodeConnector>
-        removeHosts(Map<MacVlan, NodeConnector> hostMap, PortFilter filter) {
+    private Map<MacVlan, NodeConnector> removeHosts(
+        Map<MacVlan, NodeConnector> hostMap, PortFilter filter) {
+
         Map<MacVlan, NodeConnector> removed =
             new HashMap<MacVlan, NodeConnector>();
         for (Iterator<Map.Entry<MacVlan, NodeConnector>>

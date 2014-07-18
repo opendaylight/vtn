@@ -152,7 +152,7 @@ public class VTNNeutronUtils {
                 UUID fromUUID = UUID.fromString(id);
                 String toUUID = fromUUID.toString();
                 isValid = toUUID.equalsIgnoreCase(id);
-            } catch(IllegalArgumentException e) {
+            } catch (IllegalArgumentException e) {
                 LOG.error("IllegalArgumentExecption for id - {}", id);
                 isValid = false;
             }
@@ -191,7 +191,7 @@ public class VTNNeutronUtils {
             // remove the version byte
             tKey.deleteCharAt(UUID_VERSION_POS);
             key = tKey.toString();
-        } catch(IllegalArgumentException ile) {
+        } catch (IllegalArgumentException ile) {
             LOG.error("Invalid UUID - {}", id);
             key = null;
         }
@@ -244,7 +244,7 @@ public class VTNNeutronUtils {
             if (toUUID.equalsIgnoreCase(tmpStr)) {
                 key = convertUUIDToKey(tmpStr);
             }
-        } catch(IndexOutOfBoundsException ibe) {
+        } catch (IndexOutOfBoundsException ibe) {
             LOG.error("Execption! Invalid UUID - {}", id);
             key = null;
         } catch (IllegalArgumentException iae) {

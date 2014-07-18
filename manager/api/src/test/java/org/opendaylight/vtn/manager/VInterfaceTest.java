@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -223,9 +223,9 @@ public class VInterfaceTest extends TestBase {
     private void jaxbStateTest(String name, String desc, Boolean enabled,
                                Integer state, Integer estate,
                                VNodeState required, VNodeState reqestate) {
-        StringBuilder builder = new StringBuilder
-            ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-             "<interface");
+        StringBuilder builder = new StringBuilder(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+            "<interface");
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }

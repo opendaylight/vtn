@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -47,7 +47,7 @@ public class PortMapConfigTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
         List<Node> nodes = createNodes(5);
         List<SwitchPort> ports = createSwitchPorts(10);
-        short vlans[] = {-100, 0, 1, 100, 4095, 10000};
+        short[] vlans = {-100, 0, 1, 100, 4095, 10000};
         for (Node node: nodes) {
             for (SwitchPort port: ports) {
                 for (short vlan: vlans) {
@@ -70,7 +70,7 @@ public class PortMapConfigTest extends TestBase {
     public void testToString() {
         String prefix = "PortMapConfig[";
         String suffix = "]";
-        short vlans[] = {-10, 0, 10, 100, 4095};
+        short[] vlans = {-10, 0, 10, 100, 4095};
         for (Node node: createNodes(5)) {
             for (SwitchPort port: createSwitchPorts(10)) {
                 for (short vlan: vlans) {
@@ -91,7 +91,7 @@ public class PortMapConfigTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {-10, 0, 10, 100, 4095};
+        short[] vlans = {-10, 0, 10, 100, 4095};
         for (Node node: createNodes(5)) {
             for (SwitchPort port: createSwitchPorts(10)) {
                 for (short vlan: vlans) {
@@ -107,7 +107,7 @@ public class PortMapConfigTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        short vlans[] = {-10, 0, 10, 100, 4095};
+        short[] vlans = {-10, 0, 10, 100, 4095};
         for (Node node: createNodes(5)) {
             for (SwitchPort port: createSwitchPorts(10)) {
                 for (short vlan: vlans) {

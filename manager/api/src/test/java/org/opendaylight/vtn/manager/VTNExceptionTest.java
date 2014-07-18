@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -68,7 +68,7 @@ public class VTNExceptionTest extends TestBase {
         assertEquals(null, e.getStatus());
 
         VTNException et = new VTNException(StatusCode.INTERNALERROR, "message");
-        e = new VTNException((Status) null, et);
+        e = new VTNException((Status)null, et);
         assertEquals(et, e.getCause());
         assertEquals(null, e.getMessage());
         assertEquals(null, e.getStatus());

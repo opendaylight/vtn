@@ -120,7 +120,7 @@ public class MacMapInfoTest extends TestBase {
         List<MacAddressEntry> mlist = new ArrayList<MacAddressEntry>();
         list.add(null);
 
-        short vlans[] = {0, 4095};
+        short[] vlans = {0, 4095};
         for (NodeConnector nc: createNodeConnectors(2, false)) {
             for (Set<InetAddress> ipset: createInetAddresses()) {
                 for (short vlan : vlans) {

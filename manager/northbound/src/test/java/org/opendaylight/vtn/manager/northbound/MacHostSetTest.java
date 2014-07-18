@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +40,7 @@ public class MacHostSetTest extends TestBase {
         List<DataLinkHost> list = new ArrayList<DataLinkHost>();
         Set<MacHost> expected = new HashSet<MacHost>();
 
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             for (short vlan: vlans) {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);
@@ -71,7 +70,7 @@ public class MacHostSetTest extends TestBase {
         List<DataLinkHost> list1 = new ArrayList<DataLinkHost>();
         List<DataLinkHost> list2 = new ArrayList<DataLinkHost>();
         List<EthernetAddress> addresses = createEthernetAddresses();
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: addresses) {
             for (short vlan : vlans) {
                 DataLinkHost dh1 = new EthernetHost(eaddr, vlan);
@@ -102,7 +101,7 @@ public class MacHostSetTest extends TestBase {
         jaxbTest(mhset, rootName);
 
         List<DataLinkHost> list = new ArrayList<DataLinkHost>();
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             for (short vlan: vlans) {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);

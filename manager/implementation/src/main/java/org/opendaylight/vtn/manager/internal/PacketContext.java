@@ -367,8 +367,8 @@ public class PacketContext {
     public void addObsoleteEntry(MacTableEntry tent) {
         long mac = tent.getMacAddress();
         MacVlan mvlan = new MacVlan(mac, tent.getVlan());
-        obsoleteHosts.add(new ObjectPair<MacVlan, NodeConnector>
-                          (mvlan, tent.getPort()));
+        obsoleteHosts.add(new ObjectPair<MacVlan, NodeConnector>(
+                              mvlan, tent.getPort()));
     }
 
     /**

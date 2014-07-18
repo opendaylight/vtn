@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,15 +18,14 @@ import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
  * JUnit test for {@link PortMapEvent}.
  *
  * <p>
  *   Test case for methods except for
- *   {@link PortMapEvent#eventReceived(VTNManagerImpl, boolean)}.
- *   Test for {@link PortMapEvent#eventReceived(VTNManagerImpl, boolean)} is
+ *   {@link PortMapEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)}.
+ *   Test for {@link PortMapEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)} is
  *   implemented in {@code VTNManagerImplClusterTest}.
  * </p>
  */
@@ -57,13 +56,13 @@ public class PortMapEventTest extends VNodeEventTestBase {
                             pmconf = new PortMapConfig(null, null, vlan);
                         } else if (nc.getType()
                                 == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                            Short id = (Short) nc.getID();
+                            Short id = (Short)nc.getID();
                             SwitchPort sp = new SwitchPort(nc.getType(),
                                                            id.toString());
                             pmconf = new PortMapConfig(nc.getNode(), sp, vlan);
                         } else {
                             SwitchPort sp = new SwitchPort(nc.getType(),
-                                                           (String) nc.getID());
+                                                           (String)nc.getID());
                             pmconf = new PortMapConfig(nc.getNode(), sp, vlan);
                         }
                         PortMap pmap = new PortMap(pmconf, nc);
@@ -88,7 +87,7 @@ public class PortMapEventTest extends VNodeEventTestBase {
                         List<ClusterEvent> events = getClusterEvent();
 
                         assertEquals(emsg, 1, events.size());
-                        PortMapEvent event = (PortMapEvent) events.get(0);
+                        PortMapEvent event = (PortMapEvent)events.get(0);
 
                         checkPortMapEvent(event, ifpath, pmap, utype, save, emsg);
 
@@ -125,13 +124,13 @@ public class PortMapEventTest extends VNodeEventTestBase {
                             pmconf = new PortMapConfig(null, null, vlan);
                         } else if (nc.getType()
                                 == NodeConnector.NodeConnectorIDType.OPENFLOW) {
-                            Short id = (Short) nc.getID();
+                            Short id = (Short)nc.getID();
                             SwitchPort sp = new SwitchPort(nc.getType(),
                                                            id.toString());
                             pmconf = new PortMapConfig(nc.getNode(), sp, vlan);
                         } else {
                             SwitchPort sp = new SwitchPort(nc.getType(),
-                                                           (String) nc.getID());
+                                                           (String)nc.getID());
                             pmconf = new PortMapConfig(nc.getNode(), sp, vlan);
                         }
                         PortMap pmap = new PortMap(pmconf, nc);
@@ -156,10 +155,9 @@ public class PortMapEventTest extends VNodeEventTestBase {
                         List<ClusterEvent> events = getClusterEvent();
 
                         assertEquals(emsg, 1, events.size());
-                        PortMapEvent event
-                            = (PortMapEvent) events.get(0);
-                        PortMapEvent newEvent
-                            = (PortMapEvent) eventSerializeTest(event);
+                        PortMapEvent event = (PortMapEvent)events.get(0);
+                        PortMapEvent newEvent =
+                            (PortMapEvent)eventSerializeTest(event);
 
                         checkPortMapEvent(newEvent, ifpath, pmap, utype, save, emsg);
 

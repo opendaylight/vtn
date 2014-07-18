@@ -79,7 +79,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                          node0);
         int pri = 1;
 
-        flow = addFlowEntry(vtnMgr, flow, inncIngress, (short) 1,
+        flow = addFlowEntry(vtnMgr, flow, inncIngress, (short)1,
                             outncIngress, pri);
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
@@ -110,7 +110,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         NodeConnector outnc
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                          node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.SUCCEEDED, task.getResult(timeout));
@@ -149,7 +149,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
@@ -171,7 +171,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node2);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node2);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
@@ -191,14 +191,15 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         // ingress + remote
         // in this case fail to add remote flow entry.
         VTNFlow flowRemote = fdb.create(vtnMgr);
-        flowRemote = addFlowEntry(vtnMgr, flowRemote, inncIngress, (short) 1,
+        flowRemote = addFlowEntry(vtnMgr, flowRemote, inncIngress, (short)1,
                                   outncIngress, pri);
 
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
-        flowRemote = addFlowEntry(vtnMgr, flowRemote, innc, (short) 1, outnc, pri);
+        flowRemote = addFlowEntry(vtnMgr, flowRemote, innc, (short)1, outnc,
+                                  pri);
 
         task = new FlowAddTask(vtnMgr, flowRemote);
         task.run();
@@ -211,7 +212,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
@@ -223,7 +224,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node2);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node2);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
@@ -271,7 +272,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
             = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                          node0);
         int pri = 1;
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         fdb.createIndex(vtnMgr, flow);
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
@@ -284,7 +285,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(timeout));
@@ -351,7 +352,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
             (byte)0xfc, (byte)0xfd, (byte)0xfe,
         };
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
@@ -364,14 +365,14 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         // + remote entry.
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
@@ -442,7 +443,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node2);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node2);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         rent = null;
         it = flow.getFlowEntries().iterator();
@@ -476,7 +477,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         fdb.createIndex(vtnMgr, flow);
         task = new FlowAddTask(vtnMgr, flow);
@@ -519,7 +520,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
             (byte)0xfc, (byte)0xfd, (byte)0xfe,
         };
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
 
@@ -532,7 +533,7 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         fdb.createIndex(vtnMgr, flow);
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
@@ -553,14 +554,14 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("12"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
 
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("13"),
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("14"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         fdb.createIndex(vtnMgr, flow);
         task = new FlowAddTask(vtnMgr, flow);

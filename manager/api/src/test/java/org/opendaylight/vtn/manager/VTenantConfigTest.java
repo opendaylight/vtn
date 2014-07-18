@@ -26,7 +26,7 @@ public class VTenantConfigTest extends TestBase {
         for (String desc: createStrings("description")) {
             for (Integer iv: createIntegers(-2, 5)) {
                 for (Integer hv: createIntegers(-2, 5)) {
-                    String emsg = "(desc)"+ desc
+                    String emsg = "(desc)" + desc
                             + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
                             + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
 

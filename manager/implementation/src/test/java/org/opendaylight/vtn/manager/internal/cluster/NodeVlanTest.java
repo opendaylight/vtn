@@ -44,7 +44,7 @@ public class NodeVlanTest extends TestBase {
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
         List<Node> nodes = createNodes(10);
-        short vlans[] = {-10, -1, 0, 1, 10, 100, 4095, 10000};
+        short[] vlans = {-10, -1, 0, 1, 10, 100, 4095, 10000};
         for (Node node: nodes) {
             for (short vlan: vlans) {
                 NodeVlan nk1 = new NodeVlan(node, vlan);
@@ -65,7 +65,7 @@ public class NodeVlanTest extends TestBase {
     public void testToString() {
         String prefix = "NodeVlan[";
         String suffix = "]";
-        short vlans[] = {-10, -1, 0, 1, 10, 100, 4095, 10000};
+        short[] vlans = {-10, -1, 0, 1, 10, 100, 4095, 10000};
         for (Node node: createNodes(10)) {
             for (short vlan: vlans) {
                 NodeVlan nvlan = new NodeVlan(node, vlan);
@@ -88,7 +88,7 @@ public class NodeVlanTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {-10, -1, 0, 1, 10, 100, 4095, 10000};
+        short[] vlans = {-10, -1, 0, 1, 10, 100, 4095, 10000};
         for (Node node: createNodes(10)) {
             for (short vlan: vlans) {
                 NodeVlan nvlan = new NodeVlan(node, vlan);

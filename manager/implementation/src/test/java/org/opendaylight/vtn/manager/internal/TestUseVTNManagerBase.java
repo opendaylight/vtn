@@ -44,7 +44,6 @@ import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
-import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
@@ -344,7 +343,7 @@ public class TestUseVTNManagerBase extends TestBase {
         }
 
         @Override
-        synchronized public void run() {
+        public synchronized void run() {
             latch.countDown();
             await(waitTime, TimeUnit.SECONDS);
         }
@@ -358,7 +357,7 @@ public class TestUseVTNManagerBase extends TestBase {
         }
     }
 
-    private final String CONFIG_FILE_NAME = "vtnmanager.ini";
+    private static final String CONFIG_FILE_NAME = "vtnmanager.ini";
 
     /**
      * setup configuration file and restart VTN Manager
@@ -544,8 +543,8 @@ public class TestUseVTNManagerBase extends TestBase {
                                                UpdateType type) {
             macMapChangedCalled++;
             macMapChangedInfo =
-                new VTNManagerAwareData<VBridgePath, MacMapConfig>
-                (path, mcconf, type, macMapChangedCalled);
+                new VTNManagerAwareData<VBridgePath, MacMapConfig>(
+                    path, mcconf, type, macMapChangedCalled);
             notify();
         }
 
@@ -829,7 +828,7 @@ public class TestUseVTNManagerBase extends TestBase {
          * get times hostListener called.
          * @return the number of times hostListener was called.
          */
-        synchronized int getHostListenerCalled () {
+        synchronized int getHostListenerCalled() {
             int ret = hostListenerCalled;
             hostListenerCalled = 0;
             return  ret;
@@ -1184,7 +1183,6 @@ public class TestUseVTNManagerBase extends TestBase {
                                                 TestHost host) {
         Set<PortVlan> pset = new HashSet<PortVlan>();
         Set<Node> vlanNodes = new HashSet<Node>();
-        IVTNResourceManager resMgr = vtnMgr.getResourceManager();
 
         try {
             // Test port mappings.

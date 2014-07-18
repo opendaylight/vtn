@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,15 +18,14 @@ import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
  * JUnit test for {@link VBridgeEvent}.
  *
  * <p>
  *   Test case for methods except for
- *   {@link VBridgeEvent#eventReceived(VTNManagerImpl, boolean)}.
- *   Test for {@link VBridgeEvent#eventReceived(VTNManagerImpl, boolean)} is
+ *   {@link VBridgeEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)}.
+ *   Test for {@link VBridgeEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)} is
  *   implemented in {@code VTNManagerImplClusterTest}.
  * </p>
  */
@@ -87,8 +86,8 @@ public class VBridgeEventTest extends VNodeEventTestBase {
                                     List<ClusterEvent> events = getClusterEvent();
 
                                     assertEquals(emsg, 1, events.size());
-                                    VBridgeEvent event
-                                        = (VBridgeEvent) events.get(0);
+                                    VBridgeEvent event = (VBridgeEvent)
+                                        events.get(0);
 
                                     checkVBridgeEvent(event, bpath, vbridge,
                                                       state, utype, save, emsg);
@@ -158,10 +157,10 @@ public class VBridgeEventTest extends VNodeEventTestBase {
                                     List<ClusterEvent> events = getClusterEvent();
 
                                     assertEquals(emsg, 1, events.size());
-                                    VBridgeEvent event
-                                        = (VBridgeEvent) events.get(0);
-                                    VBridgeEvent newEvent
-                                        = (VBridgeEvent) eventSerializeTest(event);
+                                    VBridgeEvent event = (VBridgeEvent)
+                                        events.get(0);
+                                    VBridgeEvent newEvent = (VBridgeEvent)
+                                        eventSerializeTest(event);
 
                                     checkVBridgeEvent(newEvent, bpath, vbridge,
                                                       state, utype, save, emsg);

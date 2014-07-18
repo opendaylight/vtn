@@ -58,7 +58,7 @@ public class MacTableEntryTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = {-10, 0, 1, 100, 4095};
+        short[] vlans = {-10, 0, 1, 100, 4095};
 
         for (VBridgePath path: bridgePaths) {
             VBridgePath bpath = new VBridgePath(path.getTenantName(),
@@ -259,7 +259,7 @@ public class MacTableEntryTest extends TestBase {
     public void testToString() {
         String prefix = "MacTableEntry[";
         String suffix = "]";
-        short vlans[] = {-10, 0, 1, 100, 4095};
+        short[] vlans = {-10, 0, 1, 100, 4095};
 
         for (VBridgePath path: bridgePaths) {
             for (EthernetAddress ea: createEthernetAddresses(false)) {
@@ -283,7 +283,7 @@ public class MacTableEntryTest extends TestBase {
                             }
 
                             String id = "id=" + me.getEntryId();
-                            String p ="port=" + nc.toString();
+                            String p = "port=" + nc.toString();
                             String v = "vlan=" + vlan;
                             String i = "ipaddr=" + toString(ips);
                             String required = joinStrings(prefix, suffix, ",",
@@ -315,7 +315,7 @@ public class MacTableEntryTest extends TestBase {
      */
     private List<MacTableEntry> createMacTableEntries() {
         List<MacTableEntry> list = new ArrayList<MacTableEntry>();
-        short vlans[] = {0, 1, 4095};
+        short[] vlans = {0, 1, 4095};
         long[] macAddrs = {
             0x000000000001L,
             0xf0123456789aL,

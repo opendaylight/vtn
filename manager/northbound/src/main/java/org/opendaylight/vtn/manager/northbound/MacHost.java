@@ -102,8 +102,8 @@ public class MacHost {
             vlan = ehost.getVlan();
         } else {
             // This should never happen.
-            throw new InternalServerErrorException
-                ("Not an Ethernet host: " + dlhost);
+            throw new InternalServerErrorException(
+                "Not an Ethernet host: " + dlhost);
         }
     }
 

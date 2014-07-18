@@ -183,8 +183,8 @@ public class MacMapState implements Serializable, Cloneable {
      * @return  A map which contains pairs of unmapped host and port is
      *          returned.
      */
-    public synchronized Map<MacVlan, NodeConnector>
-        inactivate(PortFilter filter, Set<PortVlan> rels) {
+    public synchronized Map<MacVlan, NodeConnector> inactivate(
+        PortFilter filter, Set<PortVlan> rels) {
         Map<MacVlan, NodeConnector> result =
             new HashMap<MacVlan, NodeConnector>();
         for (Iterator<Entry<PortVlan, Set<MacVlan>>> it =
@@ -226,9 +226,9 @@ public class MacMapState implements Serializable, Cloneable {
      * @return  A map which contains pairs of unmapped host and port is
      *          returned.
      */
-    public synchronized Map<MacVlan, NodeConnector>
-        inactivate(Map<MacVlan, MapReference> allowed, MapReference ref,
-                   Set<Short> unmapped, Set<PortVlan> rels) {
+    public synchronized Map<MacVlan, NodeConnector> inactivate(
+        Map<MacVlan, MapReference> allowed, MapReference ref,
+        Set<Short> unmapped, Set<PortVlan> rels) {
         Map<MacVlan, NodeConnector> result =
             new HashMap<MacVlan, NodeConnector>();
         for (Iterator<Entry<MacVlan, NodeConnector>> it =

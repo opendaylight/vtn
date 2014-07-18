@@ -29,7 +29,7 @@ public class VlanMapListTest extends TestBase {
         List<VlanMap> list = new ArrayList<VlanMap>();
         List<String> ids = createStrings("map");
         List<Node> nodes = createNodes(3);
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
 
         // null list.
         VlanMapList nullList = new VlanMapList(null);
@@ -76,7 +76,7 @@ public class VlanMapListTest extends TestBase {
         List<VlanMap> list2 = new ArrayList<VlanMap>();
         List<String> ids = createStrings("map");
         List<Node> nodes = createNodes(3);
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: ids) {
             for (Node node: nodes) {
                 for (short vlan: vlans) {
@@ -114,7 +114,7 @@ public class VlanMapListTest extends TestBase {
         vmList = new VlanMapList(list);
         jaxbTest(vmList, rootName);
 
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: createStrings("map")) {
             for (Node node: createNodes(3)) {
                 for (short vlan: vlans) {

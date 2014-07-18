@@ -35,7 +35,6 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
-import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
@@ -235,8 +234,8 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         Node learnedNode = learnedNc.getNode();
         Node inNode = inPortVlan.getNodeConnector().getNode();
 
-        NodeConnector edgePort
-                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15), inNode);
+        NodeConnector edgePort = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)15), inNode);
         for (FlowEntry ent : flowEntries) {
             if (!registeredFlows.add(ent.getFlowName())) {
                 continue;
@@ -299,8 +298,8 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                 fail("not supported case.");
             }
 
-            NodeConnector inEdgePort
-                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15), learnedNode);
+            NodeConnector inEdgePort = NodeConnectorCreator.
+                createOFNodeConnector(Short.valueOf((short)15), learnedNode);
 
             // check Match.
             Match match = ent.getFlow().getMatch();
@@ -308,10 +307,10 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                 MatchField field = match.getField(mtype);
                 switch (mtype) {
                 case DL_SRC:
-                    assertArrayEquals(src, (byte[]) field.getValue());
+                    assertArrayEquals(src, (byte[])field.getValue());
                     break;
                 case DL_DST:
-                    assertArrayEquals(dst, (byte[]) field.getValue());
+                    assertArrayEquals(dst, (byte[])field.getValue());
                     break;
                 case DL_VLAN:
                     assertEquals(inPortVlan.getVlan(),
@@ -320,10 +319,10 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                 case IN_PORT:
                     if (ent.getFlowName().endsWith("-0")) {
                         assertEquals(inPortVlan.getNodeConnector(),
-                                 (NodeConnector) field.getValue());
+                                     (NodeConnector)field.getValue());
                     } else {
                         assertEquals(inEdgePort,
-                                (NodeConnector) field.getValue());
+                                     (NodeConnector)field.getValue());
                     }
                     break;
                 default:
@@ -410,7 +409,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         if (bpath != null) {
             assertEquals("VBridge status: " + msg, bstate, brdg.getState());
         }
-     }
+    }
 
     /**
      * Put a MAC Address Table Entry to MAC Address Table of specified bridge.
@@ -423,13 +422,13 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
     protected void putMacTableEntry(VTNManagerImpl mgr, VBridgePath path,
                                     NodeConnector nc) {
         byte[] src = new byte[] {(byte)0x00, (byte)0x01, (byte)0x01,
-                                 (byte)0x01, (byte)0x01, (byte)0x01,};
+                                 (byte)0x01, (byte)0x01, (byte)0x01};
         byte[] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
                                  (byte)0xFF, (byte)0xFF, (byte)0xFF};
         byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
         byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
-        PacketContext pctx = createARPPacketContext(src, dst, sender ,target,
+        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
                                                     (short)-1, nc, ARP.REQUEST);
         MacAddressTable tbl = mgr.getMacAddressTable(path);
         TestBridgeNode bnode = new TestBridgeNode(path);
@@ -453,7 +452,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         try {
             list = tbl.getEntries();
         } catch (VTNException e) {
-           unexpected(e);
+            unexpected(e);
         }
 
         if (isFlushed) {
@@ -480,7 +479,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
         VTNFlow flow = fdb.create(mgr);
 
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, 1);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, 1);
         fdb.install(mgr, flow);
         flushFlowTasks();
         return flow;

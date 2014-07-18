@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,7 +44,7 @@ public class PortVlanTest extends TestBase {
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
         List<NodeConnector> connectors = createNodeConnectors(10, false);
-        short vlans[] = {-10, -1, 0, 1, 10, 100, 4095, 10000};
+        short[] vlans = {-10, -1, 0, 1, 10, 100, 4095, 10000};
         for (NodeConnector nc: connectors) {
             for (short vlan: vlans) {
                 PortVlan pk1 = new PortVlan(nc, vlan);
@@ -64,7 +64,7 @@ public class PortVlanTest extends TestBase {
     public void testToString() {
         String prefix = "PortVlan[";
         String suffix = "]";
-        short vlans[] = {-10, -1, 0, 1, 10, 100, 4095, 10000};
+        short[] vlans = {-10, -1, 0, 1, 10, 100, 4095, 10000};
         for (NodeConnector nc: createNodeConnectors(10, false)) {
             for (short vlan: vlans) {
                 PortVlan pvlan = new PortVlan(nc, vlan);
@@ -81,7 +81,7 @@ public class PortVlanTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {-10, -1, 0, 1, 10, 100, 4095, 10000};
+        short[] vlans = {-10, -1, 0, 1, 10, 100, 4095, 10000};
         for (NodeConnector nc: createNodeConnectors(10, false)) {
             for (short vlan: vlans) {
                 PortVlan pvlan = new PortVlan(nc, vlan);

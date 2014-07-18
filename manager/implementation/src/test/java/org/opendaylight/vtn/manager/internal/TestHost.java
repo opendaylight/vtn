@@ -30,7 +30,6 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.RawPacket;
-import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
 
@@ -52,7 +51,7 @@ public class TestHost extends TestBase {
      * A {@link PortVlan} instance which represents the VLAN network to which
      * this host belongs.
      */
-    private final PortVlan  portVlan ;
+    private final PortVlan  portVlan;
 
     /**
      * A reference to the virtual mapping which maps this host.

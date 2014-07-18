@@ -71,23 +71,23 @@ public class PacketContextTest extends TestUseVTNManagerBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         Ethernet ether;
-        byte[] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                  (byte) 0xff, (byte) 0xff, (byte) 0xff };
-        byte[] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
         for (NodeConnector nc : createNodeConnectors(3, false)) {
             byte iphost = 1;
             for (short vlan : vlans) {
                 for (EthernetAddress ea : createEthernetAddresses(false)) {
                     byte[] bytes = ea.getValue();
-                    byte[] src = new byte[] { bytes[0], bytes[1], bytes[2],
-                                              bytes[3], bytes[4], bytes[5] };
-                    byte[] sender = new byte[] { (byte) 192, (byte) 168,
-                                                 (byte) 0, iphost };
-                    byte[] sender2 = new byte[] { (byte) 192, (byte) 168,
-                                                  (byte) 0, (byte) (iphost + 100) };
+                    byte[] src = new byte[] {bytes[0], bytes[1], bytes[2],
+                                             bytes[3], bytes[4], bytes[5]};
+                    byte[] sender = new byte[] {(byte)192, (byte)168,
+                                                (byte)0, iphost};
+                    byte[] sender2 = new byte[] {(byte)192, (byte)168,
+                                                 (byte)0, (byte)(iphost + 100)};
 
                     testPacketContext(src, dst, sender, target, vlan, nc);
 
@@ -131,8 +131,8 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         // test getter methods
         if (vlan <= 0) {
             assertEquals(msg, 0, pc.getVlan());
-            pv = new PortVlan(nc, (short) 0);
-            me = new MacTableEntry(path, key, nc, (short) 0, ipaddr);
+            pv = new PortVlan(nc, (short)0);
+            me = new MacTableEntry(path, key, nc, (short)0, ipaddr);
         } else {
             assertEquals(msg, vlan, pc.getVlan());
             pv = new PortVlan(nc, vlan);
@@ -174,8 +174,8 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         Ethernet newether;
         short ethType = EtherTypes.ARP.shortValue();
         if (vlan <= 0) {
-            desc = convertForDescription(ether, ethType, nc, (short) 0);
-            newether = pc.createFrame((short) 0);
+            desc = convertForDescription(ether, ethType, nc, (short)0);
+            newether = pc.createFrame((short)0);
         } else {
             desc = convertForDescription(ether, ethType, nc, vlan);
             newether = pc.createFrame(vlan);
@@ -288,7 +288,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         VBridgePath path = new VBridgePath("tenant1", "bridge1");
         if (vlan < 0) {
             assertEquals(msg, (short)0, pctx.getVlan());
-            me = new MacTableEntry(path, key, nc, (short) 0, ipaddr);
+            me = new MacTableEntry(path, key, nc, (short)0, ipaddr);
         } else {
             assertEquals(vlan, pctx.getVlan());
             me = new MacTableEntry(path, key, nc, vlan, ipaddr);
@@ -310,8 +310,8 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         Ethernet newether;
         short ethType = EtherTypes.ARP.shortValue();
         if (vlan < 0) {
-            desc = convertForDescription(ether, ethType, nc, (short) 0);
-            newether = pctx.createFrame((short) 0);
+            desc = convertForDescription(ether, ethType, nc, (short)0);
+            newether = pctx.createFrame((short)0);
         } else {
             desc = convertForDescription(ether, ethType, nc, vlan);
             newether = pctx.createFrame(vlan);
@@ -363,7 +363,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short)vlan).
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
                 setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
             vlantag.setPayload(arp);
             eth.setPayload(vlantag);
@@ -459,27 +459,27 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
         st = vtnMgr.addBridge(bpath1, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = vtnMgr.addBridgeInterface
-            (ipath1, new VInterfaceConfig(null, Boolean.TRUE));
+        st = vtnMgr.addBridgeInterface(
+            ipath1, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         st = vtnMgr.addBridge(bpath2, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = vtnMgr.addBridgeInterface
-            (ipath2, new VInterfaceConfig(null, Boolean.TRUE));
+        st = vtnMgr.addBridgeInterface(
+            ipath2, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        short vlans[] = { 0, 1, 100, 4095 };
-        byte[] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                  (byte) 0xff, (byte) 0xff, (byte) 0xff };
-        byte[] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
-        byte[] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 0 };
+        short[] vlans = {0, 1, 100, 4095};
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)0};
 
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
-        NodeConnector innc = NodeConnectorCreator
-                .createOFNodeConnector(Short.valueOf((short) 1), node);
-        NodeConnector outnc = NodeConnectorCreator
-                .createOFNodeConnector(Short.valueOf((short) 2), node);
+        NodeConnector innc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)1), node);
+        NodeConnector outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)2), node);
 
         VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(tpath.getTenantName());
         List<EthernetAddress> ethers = createEthernetAddresses(false);
@@ -499,12 +499,13 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
                 String msg = "";
                 byte[] bytes = ea.getValue();
-                byte[] src = new byte[] { bytes[0], bytes[1], bytes[2],
-                                          bytes[3], bytes[4], bytes[5] };
+                byte[] src = new byte[] {bytes[0], bytes[1], bytes[2],
+                                         bytes[3], bytes[4], bytes[5]};
                 sender[3] = iphost;
 
-                PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                         (vlan > 0) ? vlan : -1, innc, ARP.REQUEST);
+                PacketContext pctx = createARPPacketContext(
+                    src, dst, sender, target, (vlan > 0) ? vlan : -1,
+                    innc, ARP.REQUEST);
 
                 InetAddress ipaddr = null;
                 byte[] sip = pctx.getSourceIpAddress();

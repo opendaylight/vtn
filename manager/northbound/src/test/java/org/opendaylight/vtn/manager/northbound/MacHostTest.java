@@ -9,10 +9,8 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Test;
 
@@ -33,7 +31,7 @@ public class MacHostTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (DataLinkAddress dladdr: createDataLinkAddresses()) {
             if (dladdr == null || (dladdr instanceof EthernetAddress)) {
                 EthernetAddress eaddr = (EthernetAddress)dladdr;
@@ -52,7 +50,8 @@ public class MacHostTest extends TestBase {
                     try {
                         MacHost host = new MacHost(dlhost);
                         fail("An exception must be thrown.");
-                    } catch (InternalServerErrorException e) {}
+                    } catch (InternalServerErrorException e) {
+                    }
                 }
             }
         }
@@ -66,7 +65,7 @@ public class MacHostTest extends TestBase {
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
         List<EthernetAddress> addresses = createEthernetAddresses();
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: addresses) {
             for (short vlan : vlans) {
                 DataLinkHost dh1 = new EthernetHost(eaddr, vlan);
@@ -86,7 +85,7 @@ public class MacHostTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             for (short vlan : vlans) {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);

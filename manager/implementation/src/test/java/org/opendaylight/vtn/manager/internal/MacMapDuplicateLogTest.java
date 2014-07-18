@@ -17,36 +17,30 @@ import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-
 /**
  * JUnit test for {@link MacMapDuplicateLog}.
  */
 public class MacMapDuplicateLogTest extends TestBase {
-  /**
-   * Test case for getter methods.
-   */
-  @Test
+    /**
+     * Test case for getter methods.
+     */
+    @Test
     public void testGetter() {
-      for (int i = 0; i < 10; i++) {
-        VBridgePath bpath = new VBridgePath("tenant", "bridge" + i);
-        MacMapPath mpath = new MacMapPath(bpath);
-        MapReference ref = new MapReference(MapType.MAC, "default", mpath);
-        long mac = (long)(i + 0x100000);
-        MacVlan mvlan = new MacVlan(mac, (short)i);
-        MacVlan dup = new MacVlan(mac, (short)(i + 5));
-        MacMapDuplicateLog log =
-          new MacMapDuplicateLog(ref,mvlan, dup);
-        StringBuilder builder =
-          new StringBuilder(MAC_UNAVAILABLE +
-              MAC_USED);
-        mvlan.appendContents(builder);
-        builder.append("}, duplicate={");
-        dup.appendContents(builder);
-        builder.append('}');
-        assertEquals(builder.toString(), log.getMessage());
-      }
+        for (int i = 0; i < 10; i++) {
+            VBridgePath bpath = new VBridgePath("tenant", "bridge" + i);
+            MacMapPath mpath = new MacMapPath(bpath);
+            MapReference ref = new MapReference(MapType.MAC, "default", mpath);
+            long mac = (long)(i + 0x100000);
+            MacVlan mvlan = new MacVlan(mac, (short)i);
+            MacVlan dup = new MacVlan(mac, (short)(i + 5));
+            MacMapDuplicateLog log = new MacMapDuplicateLog(ref, mvlan, dup);
+            StringBuilder builder =
+                new StringBuilder(MAC_UNAVAILABLE + MAC_USED);
+            mvlan.appendContents(builder);
+            builder.append("}, duplicate={");
+            dup.appendContents(builder);
+            builder.append('}');
+            assertEquals(builder.toString(), log.getMessage());
+        }
     }
 }
-

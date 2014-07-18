@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,15 +17,14 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
  * JUnit test for {@link VBridgeIfEvent}.
  *
  * <p>
  *   Test case for methods except for
- *   {@link VBridgeIfEvent#eventReceived(VTNManagerImpl, boolean)}.
- *   Test for {@link VBridgeIfEvent#eventReceived(VTNManagerImpl, boolean)} is
+ *   {@link VBridgeIfEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)}.
+ *   Test for {@link VBridgeIfEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)} is
  *   implemented in {@code VTNManagerImplClusterTest}.
  * </p>
  */
@@ -82,8 +81,8 @@ public class VBridgeIfEventTest extends VNodeEventTestBase {
                                     List<ClusterEvent> events = getClusterEvent();
 
                                     assertEquals(emsg, 1, events.size());
-                                    VBridgeIfEvent event
-                                        = (VBridgeIfEvent) events.get(0);
+                                    VBridgeIfEvent event = (VBridgeIfEvent)
+                                        events.get(0);
 
                                     checkVBridgeIfEvent(event, ifpath, vif,
                                             utype, save, emsg);
@@ -149,13 +148,13 @@ public class VBridgeIfEventTest extends VNodeEventTestBase {
                                     List<ClusterEvent> events = getClusterEvent();
 
                                     assertEquals(emsg, 1, events.size());
-                                    VBridgeIfEvent event
-                                        = (VBridgeIfEvent) events.get(0);
-                                    VBridgeIfEvent newEvent
-                                        = (VBridgeIfEvent) eventSerializeTest(event);
+                                    VBridgeIfEvent event = (VBridgeIfEvent)
+                                        events.get(0);
+                                    VBridgeIfEvent newEvent = (VBridgeIfEvent)
+                                        eventSerializeTest(event);
 
                                     checkVBridgeIfEvent(newEvent, ifpath, vif,
-                                            utype, save, emsg);
+                                                        utype, save, emsg);
 
                                     clearClusterEvent();
                                 }

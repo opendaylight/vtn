@@ -70,7 +70,7 @@ public class ClusterFlowTaskTest extends FlowModTaskTestBase {
                                                          node0);
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         int pri = 1;
@@ -165,7 +165,7 @@ public class ClusterFlowTaskTest extends FlowModTaskTestBase {
                                                            node1);
         match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         flow.addFlow(vtnMgr, match, actions, pri);

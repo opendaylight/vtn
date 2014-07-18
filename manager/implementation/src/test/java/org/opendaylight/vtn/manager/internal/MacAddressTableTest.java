@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -28,7 +27,6 @@ import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
@@ -66,9 +64,9 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             int len = value.length;
             for (int i = 0; i < len; i++) {
                 assertEquals(emsg, value[len - i - 1],
-                        (byte) ((lvalue.longValue() >> (i * 8)) & 0xff));
+                             (byte)((lvalue.longValue() >> (i * 8)) & 0xff));
             }
-            assertTrue(emsg, lvalue.longValue() < (long) (1L << (len * 8)));
+            assertTrue(emsg, lvalue.longValue() < (long)(1L << (len * 8)));
         }
     }
 
@@ -115,7 +113,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
      * {@link MacAddressTable#add(PacketContext, org.opendaylight.vtn.manager.internal.cluster.VBridgeNode)},
      * {@link MacAddressTable#get(Long)},
      * {@link MacAddressTable#remove(Long)},
-     * {@link MacAddressTable#getEntry(DataLinkAddress)},
+     * {@link MacAddressTable#getEntry(org.opendaylight.controller.sal.packet.address.DataLinkAddress)},
      * {@link MacAddressTable#getEntries()},
      * {@link MacAddressTable#getInetAddresses(long)}.
      */
@@ -136,9 +134,13 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
 
         byte iphost = 1;
         short vlan = 4095;
-        byte [] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                   (byte) 0xff, (byte) 0xff, (byte) 0xff};
-        byte [] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250};
+        byte[] dst = new byte[] {
+            (byte)0xff, (byte)0xff, (byte)0xff,
+            (byte)0xff, (byte)0xff, (byte)0xff
+        };
+        byte[] target = new byte[] {
+            (byte)192, (byte)168, (byte)0, (byte)250
+        };
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
 
@@ -146,28 +148,28 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             String emsg = ea.toString();
 
             byte [] bytes = ea.getValue();
-            byte [] src = new byte[] { bytes[0], bytes[1], bytes[2],
-                                       bytes[3], bytes[4], bytes[5] };
-            byte [] sender = new byte[] { (byte) 192, (byte) 168,
-                                          (byte) 0, (byte) iphost};
-            byte [] sender2 = new byte[] { (byte) 192, (byte) 168,
-                                           (byte) 0, (byte) (iphost + 100)};
+            byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
+                                      bytes[3], bytes[4], bytes[5]};
+            byte [] sender = new byte[] {(byte)192, (byte)168,
+                                         (byte)0, (byte)iphost};
+            byte [] sender2 = new byte[] {(byte)192, (byte)168,
+                                          (byte)0, (byte)(iphost + 100)};
 
             // packet context added to table at first
             PacketContext dpctx = createARPPacketContext(src, dst, sender, target,
-                                          (short) -1, connectors.get(0), ARP.REQUEST);
+                                          (short)-1, connectors.get(0), ARP.REQUEST);
             // replaced src and dst
             PacketContext rpctx = createARPPacketContext(dst, src, target, sender,
-                                          (short) -1, connectors.get(0), ARP.REQUEST);
+                                          (short)-1, connectors.get(0), ARP.REQUEST);
             // different sender address
             PacketContext ippctx = createARPPacketContext(src, dst, sender2, target,
-                                          (short) -1, connectors.get(0), ARP.REQUEST);
+                                          (short)-1, connectors.get(0), ARP.REQUEST);
             // have vlan tag
             PacketContext vlanpctx = createARPPacketContext(src, dst, sender, target,
                                           vlan, connectors.get(0), ARP.REQUEST);
             // different node connector
             PacketContext ncpctx = createARPPacketContext(src, dst, sender, target,
-                                          (short) -1, connectors.get(1), ARP.REQUEST);
+                                          (short)-1, connectors.get(1), ARP.REQUEST);
 
             InetAddress ia = getInetAddressFromAddress(sender);
             InetAddress ia2 = getInetAddressFromAddress(sender2);
@@ -257,7 +259,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             list = getEntries(tbl);
             assertNotNull(emsg, list);
             assertEquals(emsg, 1, list.size());
-            EthernetAddress eth = (EthernetAddress) list.get(0).getAddress();
+            EthernetAddress eth = (EthernetAddress)list.get(0).getAddress();
             assertArrayEquals(emsg, src, eth.getValue());
 
             // remove entry
@@ -312,16 +314,18 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         tall.destroy(true);
 
         // call each method after call destroy().
-        byte [] src = new byte[] { 0x00, 0x01, 0x00, 0x00, 0x00, 0x00 };
-        byte [] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
-        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                (short) -1, connectors.get(0), ARP.REQUEST);
+        byte [] src = new byte[] {0x00, 0x01, 0x00, 0x00, 0x00, 0x00};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        PacketContext pctx = createARPPacketContext(
+            src, dst, sender, target, (short)-1, connectors.get(0),
+            ARP.REQUEST);
         bnode.setPath(ipath1);
         tbl.add(pctx, bnode);
         InetAddress ipaddr = getInetAddressFromAddress(sender);
 
         long key = 1000L;
-        tent = new MacTableEntry(path1, key, connectors.get(0), (short) 0, ipaddr);
+        tent = new MacTableEntry(path1, key, connectors.get(0), (short)0,
+                                 ipaddr);
 
         tbl.add(tent);
         assertNull(tbl.get(key));
@@ -350,15 +354,16 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         tbl.destroy(true);
 
         // case for a multicast packet data
-        src = new byte[] { (byte) 0xFF, (byte) 0x00, (byte) 0x00,
-                           (byte) 0x00, (byte) 0x00, (byte) 0x01 };
-        sender = new byte[] { (byte) 192, (byte) 168, (byte) 100, (byte) 1 };
+        src = new byte[] {(byte)0xFF, (byte)0x00, (byte)0x00,
+                          (byte)0x00, (byte)0x00, (byte)0x01};
+        sender = new byte[] {(byte)192, (byte)168, (byte)100, (byte)1};
 
         VBridgePath path = new VBridgePath("tenant1", "bridge1");
         VBridgeIfPath ipath = new VBridgeIfPath(path, "if_1");
         MacAddressTable mtbl = new MacAddressTable(mgr, path, 600);
-        PacketContext mpctx = createARPPacketContext(src, dst, sender, target,
-                (short) -1, connectors.get(0), ARP.REQUEST);
+        PacketContext mpctx = createARPPacketContext(
+            src, dst, sender, target, (short)-1, connectors.get(0),
+            ARP.REQUEST);
         bnode.setPath(ipath);
         mtbl.add(mpctx, bnode);
 
@@ -379,7 +384,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         try {
             mae = mtbl.removeEntry(dl);
         } catch (VTNException e) {
-           unexpected(e);
+            unexpected(e);
         }
         assertNull(mae);
 
@@ -428,14 +433,14 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         MacAddressTable tbl = new MacAddressTable(mgr, bpath, 600);
 
         short vlan = 4095;
-        byte [] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                   (byte) 0xff, (byte) 0xff, (byte) 0xff };
-        byte [] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
-                                   (byte) 0x00, (byte) 0x00, (byte) 0x01 };
-        byte [] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
-        byte [] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
+        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                  (byte)0xff, (byte)0xff, (byte)0xff};
+        byte [] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                  (byte)0x00, (byte)0x00, (byte)0x01};
+        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
         InetAddress ia = getInetAddressFromAddress(sender);
-        Set<InetAddress> ipSet = new HashSet<InetAddress> ();
+        Set<InetAddress> ipSet = new HashSet<InetAddress>();
 
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
         NodeConnector nc = NodeConnectorCreator
@@ -470,7 +475,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         checkMacTableEntry(tbl, ent, ipath, nc, src, vlan, ipSet, "");
 
         // change IP Address
-        sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 2 };
+        sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)2};
         ia = getInetAddressFromAddress(sender);
         pctx = createARPPacketContext(src, dst, sender, target,
                 vlan, nc, ARP.REQUEST);
@@ -579,32 +584,33 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             tbl1, tbl2, tbl3, tbl4, tbl5, tbl6, tbl7,
         };
 
-        InetAddress contIpAddr1
-                = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
-                                                         (byte) 100, (byte) 254 });
-        InetAddress contIpAddr2
-                = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
-                                                         (byte) 100, (byte) 253 });
+        InetAddress contIpAddr1 =
+            getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
+                                                  (byte)100, (byte)254});
+        InetAddress contIpAddr2 =
+            getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
+                                                  (byte)100, (byte)253});
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
-        byte[] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                  (byte) 0xff, (byte) 0xff, (byte) 0xff };
-        byte[] target = new byte[] { (byte) 192, (byte) 168,
-                                     (byte) 100, (byte) 250 };
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] target = new byte[] {(byte)192, (byte)168,
+                                    (byte)100, (byte)250};
 
         TestBridgeNode bnode = new TestBridgeNode();
         int id = 1000;
         final int maxNumHost = 9;
         for (byte iphost = 1; iphost <= maxNumHost; iphost++) {
-            byte[] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
-                                      (byte) 0x00, (byte) 0x00, (byte) iphost };
-            byte[] sender = new byte[] { (byte) 192, (byte) 168,
-                                         (byte) 100, (byte) iphost };
+            byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                     (byte)0x00, (byte)0x00, (byte)iphost};
+            byte[] sender = new byte[] {(byte)192, (byte)168,
+                                        (byte)100, (byte)iphost};
 
-            PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                    (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
-                    connectors.get(iphost % 3), ARP.REQUEST);
+            PacketContext pctx = createARPPacketContext(
+                src, dst, sender, target,
+                (short)(((vlan / 3) > 0) ? (vlan / 3) : -1),
+                connectors.get(iphost % 3), ARP.REQUEST);
 
             for (int i = 0; i < 6; i++) {
                 bnode.setPath(vpathArray[i]);
@@ -612,14 +618,12 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             }
 
             InetAddress ipaddr = getInetAddressFromAddress(sender);
-            MacTableEntryId mentid
-                    = new MacTableEntryId(((id % 2) == 0) ? contIpAddr1 : contIpAddr2,
-                                          (long) id, path7,
-                                          NetUtils.byteArray6ToLong(src));
-            MacTableEntry tent
-                    = new MacTableEntry(mentid, connectors.get(iphost % 3),
-                                        (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
-                                        ipaddr);
+            MacTableEntryId mentid = new MacTableEntryId(
+                ((id % 2) == 0) ? contIpAddr1 : contIpAddr2,
+                (long)id, path7, NetUtils.byteArray6ToLong(src));
+            MacTableEntry tent = new MacTableEntry(
+                mentid, connectors.get(iphost % 3),
+                (short)(((vlan / 3) > 0) ? (vlan / 3) : -1), ipaddr);
 
             bnode.setPath(vpath7);
             tbl7.add(tent);
@@ -655,7 +659,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         }
 
         // flush entry relevant to specified Node and vlan id.
-        tbl3.flush(nc.getNode(), (short) 0);
+        tbl3.flush(nc.getNode(), (short)0);
         flushTasks();
         list = getEntries(tbl3);
         assertNotNull(list);
@@ -677,7 +681,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         }
 
         // flush entry relevant to specified NodeConnector and vlan id.
-        tbl5.flush(nc, (short) 0);
+        tbl5.flush(nc, (short)0);
         flushTasks();
         list = getEntries(tbl5);
         assertNotNull(list);
@@ -688,7 +692,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         }
 
         // flush entry relevant to specified NodeConnector and vlan id.
-        tbl6.flush((Node) null, (short) 0);
+        tbl6.flush((Node)null, (short)0);
         flushTasks();
         list = getEntries(tbl6);
         assertNotNull(list);
@@ -718,9 +722,9 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
 
         nc = connectors.get(0);
         tbl1.flush(nc.getNode());
-        tbl1.flush(nc.getNode(), (short) 0);
+        tbl1.flush(nc.getNode(), (short)0);
         tbl1.flush(nc);
-        tbl1.flush(nc, (short) 0);
+        tbl1.flush(nc, (short)0);
         tbl1.flush(new HashSet<InetAddress>());
         tbl1.flush();
     }
@@ -738,31 +742,28 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         VlanMapPath vpath = new VlanMapPath(path, ifName);
         MacAddressTable tbl = new MacAddressTable(mgr, path, 600);
 
-        InetAddress contIpAddr
-                = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
-                                                         (byte) 100, (byte) 254 });
+        InetAddress contIpAddr = getInetAddressFromAddress(
+            new byte[] {(byte)192, (byte)168, (byte)100, (byte)254});
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
 
         int numEntries = 9;
         for (byte iphost = 1; iphost <= numEntries; iphost++) {
-            byte[] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
-                                      (byte) 0x00, (byte) 0x00, (byte) iphost };
-            byte[] sender = new byte[] { (byte) 192, (byte) 168,
-                                         (byte) 100, (byte) iphost};
+            byte[] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                     (byte)0x00, (byte)0x00, (byte)iphost};
+            byte[] sender = new byte[] {(byte)192, (byte)168,
+                                        (byte)100, (byte)iphost};
 
             long key = NetUtils.byteArray6ToLong(src);
             InetAddress ipaddr = getInetAddressFromAddress(sender);
-            MacTableEntry tent
-                    = new MacTableEntry(ipath, key, connectors.get(iphost % 3),
-                                        (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
-                                        ipaddr);
+            MacTableEntry tent = new MacTableEntry(
+                ipath, key, connectors.get(iphost % 3),
+                (short)(((vlan / 3) > 0) ? (vlan / 3) : -1), ipaddr);
             InetAddress ipaddr2 = getInetAddressFromAddress(sender);
-            MacTableEntry tent2
-                    = new MacTableEntry(ipath, key, connectors.get(iphost % 3),
-                                (short) (((vlan / 3) > 0) ? (vlan / 3) : -1),
-                                ipaddr2);
+            MacTableEntry tent2 = new MacTableEntry(
+                ipath, key, connectors.get(iphost % 3),
+                (short)(((vlan / 3) > 0) ? (vlan / 3) : -1), ipaddr2);
             tbl.add(tent);
             MacTableEntryId id2 = tent2.getEntryId();
 
@@ -817,7 +818,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         // check execute normally after call destroy().
         tbl.destroy(true);
         MacTableEntry tent = new MacTableEntry(path, 0L, connectors.get(0),
-                                               (short) -1, contIpAddr);
+                                               (short)-1, contIpAddr);
         tbl.entryUpdated(tent);
         tbl.entryDeleted(tent.getEntryId());
     }
@@ -853,15 +854,15 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         MacAddressTable tbl = new MacAddressTable(mgr, path, 1);
 
         short vlan = 4095;
-        byte [] src = new byte[] { (byte) 0x00, (byte) 0x00, (byte) 0x00,
-                                   (byte) 0xff, (byte) 0xff, (byte) 0x11 };
-        byte [] dst = new byte[] { (byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                   (byte) 0xff, (byte) 0xff, (byte) 0xff };
-        byte [] sender = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 1 };
-        byte [] target = new byte[] { (byte) 192, (byte) 168, (byte) 0, (byte) 250 };
+        byte [] src = new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                                  (byte)0xff, (byte)0xff, (byte)0x11};
+        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                  (byte)0xff, (byte)0xff, (byte)0xff};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
         Node node = NodeCreator.createOFNode(0L);
-        NodeConnector nc
-                = NodeConnectorCreator.createOFNodeConnector((short) 0, node);
+        NodeConnector nc = NodeConnectorCreator.
+            createOFNodeConnector((short)0, node);
 
         // packet context added to table at first.
         PacketContext pctx = createARPPacketContext(src, dst, sender, target,
@@ -877,10 +878,10 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         // create MacTableEntry added by remote node.
         short vlanRemote = 0;
         InetAddress ipRemoteNode
-            = getInetAddressFromAddress(new byte[] { 0, 0, 0, 0 });
+            = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
         InetAddress ipRemoteEnt
-            = getInetAddressFromAddress(new byte[] { (byte) 192, (byte) 168,
-                                                     (byte) 100, (byte) 1 });
+            = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
+                                                    (byte)100, (byte)1});
         long macKey = 99L;
         MacTableEntryId evidRemote = new MacTableEntryId(ipRemoteNode, 0L,
                                                          path, macKey);

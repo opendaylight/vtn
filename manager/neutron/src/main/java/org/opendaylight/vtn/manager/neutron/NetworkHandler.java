@@ -638,18 +638,18 @@ public class NetworkHandler extends VTNNeutronUtils
                 return result;
             }
             Iterator itrTenant = listTenant.iterator();
-            while(itrTenant.hasNext()) {
-                VTenant tmpTenant = (VTenant) itrTenant.next();
+            while (itrTenant.hasNext()) {
+                VTenant tmpTenant = (VTenant)itrTenant.next();
                 String tenantID = tmpTenant.getName();
                 LOG.trace("tenant-id - {}", tenantID);
                 List<VBridge> listBridge = getBridges(tenantID);
-                if(listBridge == null) {
+                if (listBridge == null) {
                     LOG.trace("isVlanMapExist listBridge is null");
                     continue;
                 }
                 Iterator itrBridge = listBridge.iterator();
                 while (itrBridge.hasNext()) {
-                    VBridge tmpBridge = (VBridge) itrBridge.next();
+                    VBridge tmpBridge = (VBridge)itrBridge.next();
                     String bridgeID = tmpBridge.getName();
                     LOG.trace("bridge-id - {}", bridgeID);
 
@@ -969,8 +969,8 @@ public class NetworkHandler extends VTNNeutronUtils
             return result;
         }
         Iterator itr = list.iterator();
-        while(itr.hasNext()) {
-            VlanMap tmpVlanMap = (VlanMap) itr.next();
+        while (itr.hasNext()) {
+            VlanMap tmpVlanMap = (VlanMap)itr.next();
             String mapID = tmpVlanMap.getId();
             result = deleteVlanMap(tenantID, bridgeID, mapID);
             if (result != HttpURLConnection.HTTP_OK) {

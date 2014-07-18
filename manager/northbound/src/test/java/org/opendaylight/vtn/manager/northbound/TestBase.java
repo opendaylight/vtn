@@ -23,7 +23,6 @@ import java.util.Set;
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.SwitchPort;
@@ -396,8 +395,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link NodeConnector}.
      */
-    protected static List<NodeConnector>
-        createNodeConnectors(int num, boolean setNull) {
+    protected static List<NodeConnector> createNodeConnectors(
+        int num, boolean setNull) {
         ArrayList<NodeConnector> list = new ArrayList<NodeConnector>();
         if (setNull) {
             list.add(null);
@@ -461,8 +460,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link SwitchPort}.
      */
-    protected static List<SwitchPort>
-        createSwitchPorts(int num, boolean setNull) {
+    protected static List<SwitchPort> createSwitchPorts(
+        int num, boolean setNull) {
         ArrayList<SwitchPort> list = new ArrayList<SwitchPort>();
         if (setNull) {
             list.add(null);
@@ -509,23 +508,23 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link EthernetAddress}.
      */
-    protected static List<EthernetAddress>
-        createEthernetAddresses(boolean setNull) {
+    protected static List<EthernetAddress> createEthernetAddresses(
+        boolean setNull) {
         List<EthernetAddress> list = new ArrayList<EthernetAddress>();
         byte [][] addrbytes = {
-            new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x00,
-                        (byte) 0x00, (byte) 0x00, (byte) 0x01},
-            new byte[] {(byte) 0x12, (byte) 0x34, (byte) 0x56,
-                        (byte) 0x78, (byte) 0x9a, (byte) 0xbc},
-            new byte[] {(byte) 0xfe, (byte) 0xdc, (byte) 0xba,
-                        (byte) 0x98, (byte) 0x76, (byte) 0x54}
+            new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                        (byte)0x00, (byte)0x00, (byte)0x01},
+            new byte[] {(byte)0x12, (byte)0x34, (byte)0x56,
+                        (byte)0x78, (byte)0x9a, (byte)0xbc},
+            new byte[] {(byte)0xfe, (byte)0xdc, (byte)0xba,
+                        (byte)0x98, (byte)0x76, (byte)0x54}
         };
 
         if (setNull) {
             list.add(null);
         }
 
-        for(byte[] addr: addrbytes) {
+        for (byte[] addr: addrbytes) {
             try {
                 EthernetAddress ea;
                 ea = new EthernetAddress(addr);
@@ -553,8 +552,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return  A list of {@link DataLinkAddress}.
      */
-    protected static List<DataLinkAddress>
-        createDataLinkAddresses(boolean setNull) {
+    protected static List<DataLinkAddress> createDataLinkAddresses(
+        boolean setNull) {
         List<DataLinkAddress> list = new ArrayList<DataLinkAddress>();
 
         for (EthernetAddress ether: createEthernetAddresses(setNull)) {
@@ -584,8 +583,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link InetAddress} set.
      */
-    protected static List<Set<InetAddress>>
-        createInetAddresses(boolean setNull) {
+    protected static List<Set<InetAddress>> createInetAddresses(
+        boolean setNull) {
         List<Set<InetAddress>> list = new ArrayList<Set<InetAddress>>();
         String[][] arrays = {
             {"0.0.0.0"},
@@ -631,15 +630,15 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return  A list of set of {@link EthernetHost} instances.
      */
-    protected static List<Set<EthernetHost>>
-        createEthernetHostSet(int limit, boolean setNull) {
+    protected static List<Set<EthernetHost>> createEthernetHostSet(
+        int limit, boolean setNull) {
         List<Set<EthernetHost>> list = new ArrayList<Set<EthernetHost>>();
         if (setNull) {
             list.add(null);
         }
 
         HashSet<EthernetHost> set = new HashSet<EthernetHost>();
-        short vlans[] = {0, 4095};
+        short[] vlans = {0, 4095};
         for (short vlan: vlans) {
             for (EthernetAddress ether: createEthernetAddresses()) {
                 set.add(new EthernetHost(ether, vlan));

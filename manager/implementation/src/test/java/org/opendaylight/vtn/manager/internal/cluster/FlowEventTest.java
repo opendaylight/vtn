@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -94,7 +94,7 @@ public class FlowEventTest extends FlowModTaskTestBase {
                                                          node0);
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         int pri = 1;
@@ -105,7 +105,7 @@ public class FlowEventTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         for (Boolean local : createBooleans(false)) {
             String emsg = local.toString();
@@ -121,8 +121,8 @@ public class FlowEventTest extends FlowModTaskTestBase {
                 assertEquals(emsg, 2, stubObj.getFlowEntries().size());
             }
 
-            FlowRemoveEvent removeEvent
-                    = new FlowRemoveEvent(flow.getFlowEntries());
+            FlowRemoveEvent removeEvent =
+                new FlowRemoveEvent(flow.getFlowEntries());
             removeEvent.received(vtnMgr, local.booleanValue());
 
             flushAsyncTask(remoteTimeout);

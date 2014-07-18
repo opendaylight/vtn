@@ -564,7 +564,7 @@ public final class VBridgeImpl implements Serializable {
         }
 
         return list;
-     }
+    }
 
     /**
      * Return information about the specified VLAN mapping.

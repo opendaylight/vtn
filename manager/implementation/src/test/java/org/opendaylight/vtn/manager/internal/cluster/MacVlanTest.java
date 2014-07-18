@@ -72,7 +72,7 @@ public class MacVlanTest extends TestBase {
         assertEquals(MASK_VLAN_ID, MacVlan.MASK_VLAN_ID);
 
         short[] vlans = new short[] {0, 1, 1000, 4095};
-        for (EthernetAddress ea : createEthernetAddresses()){
+        for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan : vlans) {
                 byte[] mac = (ea == null) ? null : ea.getValue();
                 MacVlan mv = new MacVlan(mac, vlan);
@@ -196,7 +196,7 @@ public class MacVlanTest extends TestBase {
     @Test
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
-        short vlans[] = {0, 1, 10, 1000, 4095};
+        short[] vlans = {0, 1, 10, 1000, 4095};
         List<EthernetAddress> ethers = createEthernetAddresses();
 
         for (EthernetAddress ea : ethers) {
@@ -233,7 +233,7 @@ public class MacVlanTest extends TestBase {
     public void testToString() {
         String prefix = "MacVlan[";
         String suffix = "]";
-        short vlans[] = {0, 1, 10, 1000, 4095};
+        short[] vlans = {0, 1, 10, 1000, 4095};
 
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan: vlans) {
@@ -319,7 +319,7 @@ public class MacVlanTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {0, 1, 100, 1000, 4095};
+        short[] vlans = {0, 1, 100, 1000, 4095};
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan: vlans) {
                 byte[] mac = (ea == null) ? null : ea.getValue();

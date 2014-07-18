@@ -101,7 +101,7 @@ public abstract class VTNNorthBoundBase {
         String name = getUserName();
         if (!NorthboundUtils.isAuthorized(name, containerName, priv, this)) {
             String msg = "User is not authorized to perform this operation " +
-                "on container "+ containerName;
+                "on container " + containerName;
             throw new UnauthorizedException(msg);
         }
     }

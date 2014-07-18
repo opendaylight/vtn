@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,7 +25,7 @@ public class VlanMapTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: createStrings("map")) {
             for (Node node: createNodes(3)) {
                 for (short vlan: vlans) {
@@ -47,7 +47,7 @@ public class VlanMapTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
         List<String> ids = createStrings("map");
         List<Node> nodes = createNodes(3);
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: ids) {
             for (Node node: nodes) {
                 for (short vlan: vlans) {
@@ -69,7 +69,7 @@ public class VlanMapTest extends TestBase {
     public void testToString() {
         String prefix = "VlanMap[";
         String suffix = "]";
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: createStrings("map")) {
             for (Node node: createNodes(3)) {
                 for (short vlan : vlans) {
@@ -92,7 +92,7 @@ public class VlanMapTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: createStrings("map")) {
             for (Node node: createNodes(3)) {
                 for (short vlan: vlans) {
@@ -108,7 +108,7 @@ public class VlanMapTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        short vlans[] = {-5, 0, 3, 4095};
+        short[] vlans = {-5, 0, 3, 4095};
         for (String id: createStrings("map")) {
             for (Node node: createNodes(3)) {
                 for (short vlan: vlans) {

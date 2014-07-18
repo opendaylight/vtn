@@ -60,7 +60,7 @@ public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
                                                          node0);
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
 
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
@@ -73,7 +73,7 @@ public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
                                                            node0);
         match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         flow.addFlow(vtnMgr, match, actions, pri);

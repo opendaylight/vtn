@@ -21,67 +21,67 @@ import org.opendaylight.controller.networkconfig.neutron.NeutronPort;
  */
 
 public class NeutronPortCRUDStub implements INeutronPortCRUD {
-  // Following methods are used in UnitTest.
-  @Override
+    // Following methods are used in UnitTest.
+    @Override
     public NeutronPort getPort(String uuid) {
-      if (uuid.equals("C387EB44-7832-49F4-B9F0-D30D27770883")) {
-        NeutronPort neutron = new NeutronPort();
-        return neutron;
-      } else if (uuid.equals("4790F3C1-AB34-4ABC-B7A5-C1B5C7202389")) {
-        NeutronPort neutron = new NeutronPort();
-        neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
-        return neutron;
-      } else if (uuid.equals("52B1482F-A41E-409F-AC68-B04ACFD07779")) {
-        NeutronPort neutron = new NeutronPort();
-        neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
-        return neutron;
-      } else if (uuid.equals("8c781fc0-f215-11e3-aac3-0002a5d5c51b")) {
-        NeutronPort neutron = new NeutronPort();
-        neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
-        return neutron;
-      } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78473")) {
-        NeutronPort neutron = new NeutronPort();
-        neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
-        neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
-        neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
-        return neutron;
-      }
-      return null;
+        if (uuid.equals("C387EB44-7832-49F4-B9F0-D30D27770883")) {
+            NeutronPort neutron = new NeutronPort();
+            return neutron;
+        } else if (uuid.equals("4790F3C1-AB34-4ABC-B7A5-C1B5C7202389")) {
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+            return neutron;
+        } else if (uuid.equals("52B1482F-A41E-409F-AC68-B04ACFD07779")) {
+            NeutronPort neutron = new NeutronPort();
+            neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
+            return neutron;
+        } else if (uuid.equals("8c781fc0-f215-11e3-aac3-0002a5d5c51b")) {
+            NeutronPort neutron = new NeutronPort();
+            neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
+            return neutron;
+        } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78473")) {
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+            neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
+            neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
+            return neutron;
+        }
+        return null;
     }
 
-  // Following methods are Unused in UnitTest.
-  @Override
+    // Following methods are Unused in UnitTest.
+    @Override
     public List<NeutronPort> getAllPorts() {
-      return null;
+        return null;
     }
 
-  @Override
+    @Override
     public boolean addPort(NeutronPort input) {
-      return false;
+        return false;
     }
 
-  @Override
+    @Override
     public boolean removePort(String uuid) {
-      return false;
+        return false;
     }
 
-  @Override
+    @Override
     public boolean updatePort(String uuid, NeutronPort delta) {
-      return false;
+        return false;
     }
 
-  @Override
+    @Override
     public boolean macInUse(String macAddress) {
-      return false;
+        return false;
     }
 
-  @Override
+    @Override
     public NeutronPort getGatewayPort(String subnetUUID) {
-      return null;
+        return null;
     }
 
-  @Override
+    @Override
     public boolean portExists(String uuid) {
-      return true;
+        return true;
     }
 }

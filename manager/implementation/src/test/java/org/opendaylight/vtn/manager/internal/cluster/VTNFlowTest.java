@@ -40,7 +40,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
@@ -101,7 +100,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                             int index = entries.size();
                             String fname = gname + ClusterEventId.SEPARATOR + index;
                             Flow flow = new Flow(match, actions.get());
-                            flow.setPriority((short) pri);
+                            flow.setPriority((short)pri);
                             FlowEntry fent = new FlowEntry(gname, fname, flow,
                                                            port.getNode());
                             entries.add(fent);
@@ -424,8 +423,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                             assertFalse(vflow.dependsOn(hostFF));
                             assertEquals(hasIflow, vflow.dependsOn(imvlan));
                             assertEquals(sameVlan && !hasIflow,
-                                         vflow.dependsOn
-                                         (new MacVlan(dst, svlan)));
+                                         vflow.dependsOn(
+                                             new MacVlan(dst, svlan)));
 
                             // Add egress flow.
                             actions = new ActionList(node);
@@ -639,7 +638,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             ipaddr = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
                                                           (byte)0, (byte)100});
         } catch (UnknownHostException e) {
-           unexpected(e);
+            unexpected(e);
         }
 
         for (NodeConnector port : ncSet) {
@@ -679,7 +678,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
      * @return  Match object.
      */
     private Match setMatchField(Match match, MatchType mtype) {
-        return setMatchField(match, mtype, (short) -1);
+        return setMatchField(match, mtype, (short)-1);
     }
 
     /**
@@ -722,7 +721,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             match.setField(mtype, EtherTypes.ARP.shortValue());
             break;
         case NW_TOS:
-            match.setField(mtype, Byte.valueOf((byte) 0));
+            match.setField(mtype, Byte.valueOf((byte)0));
             break;
         case NW_PROTO:
             match.setField(mtype, IPProtocols.TCP.byteValue());
@@ -732,7 +731,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             try {
                 ipaddr = InetAddress.getByAddress(new byte[] {10, 0, 0, 1});
             } catch (UnknownHostException e) {
-               unexpected(e);
+                unexpected(e);
             }
             match.setField(mtype, ipaddr);
             break;
@@ -741,15 +740,15 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             try {
                 ipaddr = InetAddress.getByAddress(new byte[] {10, 0, 0, 2});
             } catch (UnknownHostException e) {
-               unexpected(e);
+                unexpected(e);
             }
             match.setField(mtype, ipaddr);
             break;
         case TP_SRC:
-            match.setField(mtype, (short) 1000);
+            match.setField(mtype, (short)1000);
             break;
         case TP_DST:
-            match.setField(mtype, (short) 2000);
+            match.setField(mtype, (short)2000);
             break;
         default:
             break;

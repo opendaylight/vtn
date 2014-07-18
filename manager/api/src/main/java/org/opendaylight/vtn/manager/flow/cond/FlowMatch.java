@@ -343,8 +343,8 @@ public final class FlowMatch implements Serializable {
         if (tpsrc != null || tpdst != null) {
             // Layer 4 match requires NW_PROTO match.
             if (nwproto == null) {
-                throw new IllegalArgumentException
-                    ("L4 match without NW_PROTO: " + tpsrc + ", " + tpdst);
+                throw new IllegalArgumentException(
+                    "L4 match without NW_PROTO: " + tpsrc + ", " + tpdst);
             }
 
             int proto = nwproto.intValue();
@@ -355,8 +355,8 @@ public final class FlowMatch implements Serializable {
             } else if (IPProtocols.ICMP.intValue() == proto) {
                 l4Match = new IcmpMatch(tpsrc, tpdst);
             } else {
-                throw new IllegalArgumentException
-                    ("Unexpected IP protocol: " + nwproto);
+                throw new IllegalArgumentException(
+                    "Unexpected IP protocol: " + nwproto);
             }
         }
     }

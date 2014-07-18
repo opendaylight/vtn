@@ -95,8 +95,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
-        Set<Short> portIds = new HashSet<Short>(createShorts((short) 10, (short) 2,
-                                                             false));
+        Set<Short> portIds = new HashSet<Short>(createShorts((short)10,
+                                                             (short)2, false));
         Set<NodeConnector> ncset0
             = NodeConnectorCreator.createOFNodeConnectorSet(portIds, node0);
         Set<NodeConnector> ncset1
@@ -108,7 +108,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         Iterator<NodeConnector> it = ncset0.iterator();
         NodeConnector innc = it.next();
         NodeConnector outnc = it.next();
-        addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+        addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
         fdb.install(vtnMgr, flow);
         flushFlowTasks();
 
@@ -125,7 +125,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         it = ncset1.iterator();
         outnc = it.next();
         innc = it.next();
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
 
         fdb.install(vtnMgr, flow);
         flushFlowTasks();
@@ -146,7 +146,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         it = ncset0.iterator();
         innc = it.next();
         outnc = it.next();
-        addFlowEntry(vtnMgr, conflictFlow, innc, (short) 0, outnc, pri);
+        addFlowEntry(vtnMgr, conflictFlow, innc, (short)0, outnc, pri);
 
         it = ncset1.iterator();
         outnc = it.next();
@@ -193,8 +193,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 4,
-                                                              false));
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)4, false));
         Set<NodeConnector> ncSet0
             = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
 
@@ -203,17 +203,17 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         Set<VTNFlow> flows = new HashSet<VTNFlow>();
         for (NodeConnector innc0 : ncSet0) {
             VTNFlow flow = fdb.create(vtnMgr);
-            NodeConnector outnc
-                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                             innc0.getNode());
-            addFlowEntry(vtnMgr, flow, innc0, (short) 0, outnc, pri);
+            NodeConnector outnc = NodeConnectorCreator.
+                createOFNodeConnector(Short.valueOf((short)15),
+                                      innc0.getNode());
+            addFlowEntry(vtnMgr, flow, innc0, (short)0, outnc, pri);
 
-            NodeConnector innc1
-                = NodeConnectorCreator.createOFNodeConnector((Short) innc0.getID(),
-                                                             node1);
-            outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                               innc1.getNode());
-            addFlowEntry(vtnMgr, flow, innc1, (short) 0, outnc, pri);
+            NodeConnector innc1 = NodeConnectorCreator.
+                createOFNodeConnector((Short)innc0.getID(), node1);
+            outnc = NodeConnectorCreator.
+                createOFNodeConnector(Short.valueOf((short)15),
+                                      innc1.getNode());
+            addFlowEntry(vtnMgr, flow, innc1, (short)0, outnc, pri);
 
             fdb.install(vtnMgr, flow);
             flushFlowTasks();
@@ -348,12 +348,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         nodeDB.put(node0, VNodeState.UP);
         nodeDB.put(node1, VNodeState.UP);
 
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
-                                                              false));
-        Set<Short> portIds1 = new HashSet<Short>(createShorts((short) 10, (short) 4,
-                                                              false));
-        Set<Short> portIds2 = new HashSet<Short>(createShorts((short) 10, (short) 3,
-                                                              false));
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)5, false));
+        Set<Short> portIds1 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)4, false));
+        Set<Short> portIds2 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)3, false));
         Set<NodeConnector> ncset0
             = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
         Set<NodeConnector> ncset1
@@ -365,29 +365,28 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         // add flowEntry as test parameter.
         VTNFlow flow0 = fdb.create(vtnMgr);
-        NodeConnector outnc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                         node0);
+        NodeConnector outnc = NodeConnectorCreator
+            .createOFNodeConnector(Short.valueOf((short)15), node0);
         for (NodeConnector innc : ncset0) {
-            addFlowEntry(vtnMgr, flow0, innc, (short) 0, outnc, pri);
+            addFlowEntry(vtnMgr, flow0, innc, (short)0, outnc, pri);
         }
         fdb.install(vtnMgr, flow0);
         flushFlowTasks();
 
         VTNFlow flow1 = fdb.create(vtnMgr);
-        outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                           node1);
+        outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)15), node1);
         for (NodeConnector innc : ncset1) {
-            addFlowEntry(vtnMgr, flow1, innc, (short) 0, outnc, pri);
+            addFlowEntry(vtnMgr, flow1, innc, (short)0, outnc, pri);
         }
         fdb.install(vtnMgr, flow1);
         flushFlowTasks();
 
         VTNFlow flow2 = fdb.create(vtnMgr);
-        outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                           node2);
+        outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)15), node2);
         for (NodeConnector innc : ncset2) {
-           addFlowEntry(vtnMgr, flow2, innc, (short) 0, outnc, pri);
+            addFlowEntry(vtnMgr, flow2, innc, (short)0, outnc, pri);
         }
         fdb.install(vtnMgr, flow2);
         flushFlowTasks();
@@ -475,12 +474,12 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         nodeDB.put(node1, VNodeState.UP);
         nodeDB.put(node2, VNodeState.UP);
 
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
-                                                              false));
-        Set<Short> portIds1 = new HashSet<Short>(createShorts((short) 10, (short) 4,
-                                                              false));
-        Set<Short> portIds2 = new HashSet<Short>(createShorts((short) 10, (short) 3,
-                                                              false));
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)5, false));
+        Set<Short> portIds1 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)4, false));
+        Set<Short> portIds2 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)3, false));
         Set<NodeConnector> ncset0
             = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
         Set<NodeConnector> ncset1
@@ -497,22 +496,21 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         Iterator<NodeConnector> incset2 = ncset2.iterator();
         for (NodeConnector innc : ncset0) {
             VTNFlow flow = fdb.create(vtnMgr);
-            NodeConnector outnc
-                = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                             node0);
-            addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+            NodeConnector outnc = NodeConnectorCreator.
+                createOFNodeConnector(Short.valueOf((short)15), node0);
+            addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
 
-            if(i > 0) {
+            if (i > 0) {
                 innc = incset1.next();
-                outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                                   node1);
-                addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+                outnc = NodeConnectorCreator.
+                    createOFNodeConnector(Short.valueOf((short)15), node1);
+                addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
             }
             if (i > 1) {
                 innc = incset2.next();
-                outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                                   node2);
-                addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+                outnc = NodeConnectorCreator.
+                    createOFNodeConnector(Short.valueOf((short)15), node2);
+                addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
             }
 
             fdb.install(vtnMgr, flow);
@@ -526,9 +524,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         assertEquals(6, stubObj.getFlowEntries().size());
 
         // remove by specifying node connector.
-        NodeConnector removePort
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                         node2);
+        NodeConnector removePort = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)15), node2);
         FlowRemoveTask task = fdb.removeFlows(vtnMgr, removePort);
         assertNotNull(task);
         flushFlowTasks();
@@ -750,8 +747,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
             long addr = macVlan.getMacAddress();
             short vl = macVlan.getVlan();
             MacVlan mv = new MacVlan(addr, vl);
-            unknownEntries.add(new ObjectPair<MacVlan, NodeConnector>
-                               (mv, unknownPort));
+            unknownEntries.
+                add(new ObjectPair<MacVlan, NodeConnector>(mv, unknownPort));
         }
 
         MacVlan mv = new MacVlan(12345678L, (short)0);
@@ -838,8 +835,9 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      *              it is expected that a FlowEntry dependesOn this was removed.
      * @return Set of {@link VTNFlow} which was removed.
      */
-    private Set<VTNFlow> checkFlowDBEntriesVTenantPath (VTNManagerImpl mgr,
-            VTNFlowDatabase fdb, Set<VTNFlow> flows, VTenantPath rpath) {
+    private Set<VTNFlow> checkFlowDBEntriesVTenantPath(
+        VTNManagerImpl mgr, VTNFlowDatabase fdb, Set<VTNFlow> flows,
+        VTenantPath rpath) {
         Set<VTNFlow> revertFlows = new HashSet<VTNFlow>();
         ConcurrentMap<FlowGroupId, VTNFlow> db = vtnMgr.getFlowDB();
 
@@ -870,8 +868,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      *                  was removed.
      * @return Set of {@link VTNFlow} which was removed.
      */
-    private Set<VTNFlow> checkFlowDBEntriesMacVlan (VTNManagerImpl mgr,
-            VTNFlowDatabase fdb, Set<VTNFlow> flows, MacVlan macVlan) {
+    private Set<VTNFlow> checkFlowDBEntriesMacVlan(VTNManagerImpl mgr,
+        VTNFlowDatabase fdb, Set<VTNFlow> flows, MacVlan macVlan) {
         Set<VTNFlow> revertFlows = new HashSet<VTNFlow>();
         ConcurrentMap<FlowGroupId, VTNFlow> db = vtnMgr.getFlowDB();
 
@@ -899,9 +897,9 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
      * @param numFlows      The expected number of VTNFlows after install.
      * @param numEntries    The expected number of FlowEntries after install.
      */
-    private void revertFlowEntries (VTNManagerImpl mgr, VTNFlowDatabase fdb,
-                                    Set<VTNFlow> revertFlows, int numFlows,
-                                    int numEntries) {
+    private void revertFlowEntries(VTNManagerImpl mgr, VTNFlowDatabase fdb,
+                                   Set<VTNFlow> revertFlows, int numFlows,
+                                   int numEntries) {
         ConcurrentMap<FlowGroupId, VTNFlow> db = vtnMgr.getFlowDB();
         for (VTNFlow flow : revertFlows) {
             fdb.install(vtnMgr, flow);
@@ -920,21 +918,21 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         VTNFlowDatabase fdb = new VTNFlowDatabase("test");
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
-                                                              false));
-        Set<NodeConnector> ncset0
-            = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)5, false));
+        Set<NodeConnector> ncset0 =
+            NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
 
         int pri = 1;
 
         // add flowEntry as test parameter.
         Set<VTNFlow> flows = new HashSet<VTNFlow>();
-        NodeConnector outnc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                         node0);
+        NodeConnector outnc =
+            NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)15),
+                                                       node0);
         for (NodeConnector innc : ncset0) {
             VTNFlow flow = fdb.create(vtnMgr);
-            addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+            addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
 
             fdb.install(vtnMgr, flow);
             flushFlowTasks();
@@ -970,11 +968,10 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         // specify non match flow
         VTNFlow flowNew = new VTNFlow(new FlowGroupId("test_1"));
-        NodeConnector innc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)1),
-                                                         node0);
+        NodeConnector innc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)1), node0);
 
-        addFlowEntry(vtnMgr, flowNew, innc, (short) 0, outnc, pri);
+        addFlowEntry(vtnMgr, flowNew, innc, (short)0, outnc, pri);
 
         List<VTNFlow> flowsNew = new ArrayList<VTNFlow>();
         flowsNew.add(flowNew);
@@ -1037,14 +1034,14 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
 
         Node node0 = NodeCreator.createOFNode(Long.valueOf(0L));
         Node node1 = NodeCreator.createOFNode(Long.valueOf(1L));
-        Set<Short> portIds0 = new HashSet<Short>(createShorts((short) 10, (short) 5,
-                                                              false));
-        Set<Short> portIds1 = new HashSet<Short>(createShorts((short) 10, (short) 5,
-                                                              false));
-        Set<NodeConnector> ncSet0
-            = NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
-        Set<NodeConnector> ncSet1
-            = NodeConnectorCreator.createOFNodeConnectorSet(portIds1, node1);
+        Set<Short> portIds0 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)5, false));
+        Set<Short> portIds1 = new HashSet<Short>(createShorts((short)10,
+                                                              (short)5, false));
+        Set<NodeConnector> ncSet0 =
+            NodeConnectorCreator.createOFNodeConnectorSet(portIds0, node0);
+        Set<NodeConnector> ncSet1 =
+            NodeConnectorCreator.createOFNodeConnectorSet(portIds1, node1);
         Set<Set<NodeConnector>> ncSets = new HashSet<Set<NodeConnector>>();
         ncSets.add(ncSet0);
         ncSets.add(ncSet1);
@@ -1064,18 +1061,19 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
             Iterator<NodeConnector> iNcset1 = encSet.iterator();
             for (NodeConnector innc : incSet) {
                 VTNFlow flow = fdb.create(vtnMgr);
-                NodeConnector outnc
-                    = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                                 innc.getNode());
-                addFlowEntry(vtnMgr, flow, innc, (short) 0, outnc, pri);
+                NodeConnector outnc = NodeConnectorCreator.
+                    createOFNodeConnector(Short.valueOf((short)15),
+                                          innc.getNode());
+                addFlowEntry(vtnMgr, flow, innc, (short)0, outnc, pri);
 
                 if (!iNcset1.hasNext()) {
                     break;
                 }
                 NodeConnector innc1 = iNcset1.next();
-                outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 15),
-                                                                   innc1.getNode());
-                addFlowEntry(vtnMgr, flow, innc1, (short) 0, outnc, pri);
+                outnc = NodeConnectorCreator.
+                    createOFNodeConnector(Short.valueOf((short)15),
+                                          innc1.getNode());
+                addFlowEntry(vtnMgr, flow, innc1, (short)0, outnc, pri);
 
                 fdb.install(vtnMgr, flow);
                 flushFlowTasks();

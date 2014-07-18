@@ -24,7 +24,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.felix.dm.Component;
 import org.apache.felix.dm.impl.ComponentImpl;
 
 import org.junit.Test;
@@ -32,8 +31,6 @@ import org.junit.experimental.categories.Category;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.IVTNManagerAware;
-import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
 import org.opendaylight.vtn.manager.MacMapAclType;
@@ -62,21 +59,16 @@ import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowRemoveEvent;
-import org.opendaylight.vtn.manager.internal.cluster.MacMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
-import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfImpl;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
@@ -84,9 +76,7 @@ import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
-import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.IfIptoHost;
-import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -113,8 +103,11 @@ import org.opendaylight.controller.topologymanager.ITopologyManager;
  * JUnit test for {@link VTNManagerImpl}.
  *
  * <p>
- * Tests of {@link VTenantImpl}, {@link VBridgeImpl}, {@link VBridgeIfImpl},
- * {@link VlanMapImpl} are also implemented in this class.
+ * Tests of {@link VTenantImpl},
+ * {@link org.opendaylight.vtn.manager.internal.cluster.VBridgeImpl},
+ * {@link org.opendaylight.vtn.manager.internal.cluster.VBridgeIfImpl},
+ * {@link org.opendaylight.vtn.manager.internal.cluster.VlanMapImpl}
+ * are also implemented in this class.
  * </p>
  */
 @Category(SlowTest.class)
@@ -128,7 +121,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#init(Component)},
+     * {@link VTNManagerImpl#init(org.apache.felix.dm.Component)},
      * {@link VTNManagerImpl#destroy()}.
      */
     @Test
@@ -138,8 +131,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         String containerName = "default";
         properties.put("containerName", containerName);
         c.setServiceProperties(properties);
-        Map<VBridgeIfPath, PortMapConfig> pmaps
-                = new HashMap<VBridgeIfPath, PortMapConfig>();
+        Map<VBridgeIfPath, PortMapConfig> pmaps =
+            new HashMap<VBridgeIfPath, PortMapConfig>();
         Map<VlanMap, VlanMapConfig> vmaps = new HashMap<VlanMap, VlanMapConfig>();
 
         // create dummy file in startup directory.
@@ -299,7 +292,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#init(Component)},
+     * {@link VTNManagerImpl#init(org.apache.felix.dm.Component)},
      * {@link VTNManagerImpl#destroy()}.
      *
      * <p>
@@ -331,9 +324,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         ContainerConfig cfg = new ContainerConfig(containerName);
         cfg.cleanUp();
 
-        ConcurrentMap<ClusterEventId, ClusterEvent> clsmap
-            = (ConcurrentMap<ClusterEventId, ClusterEvent>) stubObj
-                .getCache(VTNManagerImpl.CACHE_EVENT);
+        ConcurrentMap<ClusterEventId, ClusterEvent> clsmap =
+            (ConcurrentMap<ClusterEventId, ClusterEvent>)stubObj.
+            getCache(VTNManagerImpl.CACHE_EVENT);
 
         FlowGroupId gid = new FlowGroupId("test_tenant");
         InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
@@ -382,9 +375,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         stopVTNManager(false);
 
-        ConcurrentMap<FlowGroupId, VTNFlow> flowMap
-            = (ConcurrentMap<FlowGroupId, VTNFlow>) stubObj
-                .getCache(VTNManagerImpl.CACHE_FLOWS);
+        ConcurrentMap<FlowGroupId, VTNFlow> flowMap =
+            (ConcurrentMap<FlowGroupId, VTNFlow>)stubObj.
+            getCache(VTNManagerImpl.CACHE_FLOWS);
         gid = new FlowGroupId("test_tenant");
         flow = new VTNFlow(gid);
         flowMap.put(gid, flow);
@@ -396,8 +389,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // in case MAC Address Table cache remain.
         ipaddr = getInetAddressFromAddress(new byte[] {10, 0, 0, 1});
-        MacTableEntry tent = new MacTableEntry(bpath, 1L, innc,
-                (short) 0, ipaddr);
+        MacTableEntry tent = new MacTableEntry(bpath, 1L, innc, (short)0,
+                                               ipaddr);
         vtnMgr.putMacTableEntry(tent);
         flushTasks();
         List<MacAddressEntry> entries = getMacAddressEntries(tent.getEntryId());
@@ -624,50 +617,51 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#addHostListener(IfHostListener)},
-     * {@link VTNManagerImpl#removeHostListener(IfHostListener)},
-     * {@link VTNManagerImpl#notifyHost(HostNodeConnector)}
+     * {@link VTNManagerImpl#addHostListener(org.opendaylight.controller.hosttracker.IfHostListener)},
+     * {@link VTNManagerImpl#removeHostListener(org.opendaylight.controller.hosttracker.IfHostListener)},
+     * {@link VTNManagerImpl#notifyHost(org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector)}
      */
     @Test
     public void testIfHostListener() {
-       VTNManagerImpl mgr = vtnMgr;
+        VTNManagerImpl mgr = vtnMgr;
 
-       HostListener hl1 = new HostListener();
-       HostListener hl2 = new HostListener();
-       mgr.addHostListener(hl1);
-       mgr.addHostListener(hl2);
-       mgr.addHostListener(hl1);
+        HostListener hl1 = new HostListener();
+        HostListener hl2 = new HostListener();
+        mgr.addHostListener(hl1);
+        mgr.addHostListener(hl2);
+        mgr.addHostListener(hl1);
 
-       // in case IHostListener specified with argument of removeHostListener()
-       // don't match already registered
-       HostListener hlnew1 = new HostListener();
-       HostListener hlnew2 = new HostListener();
-       mgr.removeHostListener(hlnew2);
-       mgr.removeHostListener(hlnew1);
+        // in case IHostListener specified with argument of removeHostListener()
+        // don't match already registered
+        HostListener hlnew1 = new HostListener();
+        HostListener hlnew2 = new HostListener();
+        mgr.removeHostListener(hlnew2);
+        mgr.removeHostListener(hlnew1);
 
-       // add entry to MacAddressTable to call HostListener
-       byte [] src = new byte[] {(byte)0, (byte)0, (byte)0,
-                                 (byte)0, (byte)0, (byte)0x01};
-       byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                 (byte)0xff, (byte)0xff, (byte)0xff};
-       byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
-       byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
-       List<NodeConnector> connectors = createNodeConnectors(1, false);
-       PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-               (short)-1, connectors.get(0), ARP.REQUEST);
+        // add entry to MacAddressTable to call HostListener
+        byte [] src = new byte[] {(byte)0, (byte)0, (byte)0,
+                                  (byte)0, (byte)0, (byte)0x01};
+        byte [] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                  (byte)0xff, (byte)0xff, (byte)0xff};
+        byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        List<NodeConnector> connectors = createNodeConnectors(1, false);
+        PacketContext pctx = createARPPacketContext(
+            src, dst, sender, target, (short)-1, connectors.get(0),
+            ARP.REQUEST);
 
-       VBridgePath path = new VBridgePath("tenant1", "bridge1");
-       VBridgeIfPath ipath = new VBridgeIfPath(path, "if1");
-       TestBridgeNode bnode = new TestBridgeNode(ipath);
-       MacAddressTable table = new MacAddressTable(mgr, path, 600);
-       table.add(pctx, bnode);
+        VBridgePath path = new VBridgePath("tenant1", "bridge1");
+        VBridgeIfPath ipath = new VBridgeIfPath(path, "if1");
+        TestBridgeNode bnode = new TestBridgeNode(ipath);
+        MacAddressTable table = new MacAddressTable(mgr, path, 600);
+        table.add(pctx, bnode);
 
-       flushTasks();
-       assertEquals(1, hl1.getHostListenerCalled());
-       assertEquals(1, hl2.getHostListenerCalled());
+        flushTasks();
+        assertEquals(1, hl1.getHostListenerCalled());
+        assertEquals(1, hl2.getHostListenerCalled());
 
-       mgr.removeHostListener(hl2);
-       mgr.removeHostListener(hl1);
+        mgr.removeHostListener(hl2);
+        mgr.removeHostListener(hl1);
     }
 
     /**
@@ -749,8 +743,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#removeVTNManagerAware(IVTNManagerAware)},
-     * {@link VTNManagerImpl#addVTNManagerAware(IVTNManagerAware)}
+     * {@link VTNManagerImpl#removeVTNManagerAware(org.opendaylight.vtn.manager.IVTNManagerAware)},
+     * {@link VTNManagerImpl#addVTNManagerAware(org.opendaylight.vtn.manager.IVTNManagerAware)}
      */
     @Test
     public void testIVTNManagerAware() {
@@ -817,8 +811,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // set a PortMap
         Node node = NodeCreator.createOFNode(0L);
-        SwitchPort port = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW,
-        String.valueOf(10));
+        SwitchPort port = new SwitchPort(
+            NodeConnector.NodeConnectorIDType.OPENFLOW, String.valueOf(10));
         PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
         st = mgr.setPortMap(ifpath, pmconf);
 
@@ -966,10 +960,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for
-     * {@link VTNManagerImpl#addVTNModeListener(IVTNModeListener)},
-     * {@link VTNManagerImpl#removeVTNModeListener(IVTNModeListener)},
+     * {@link VTNManagerImpl#addVTNModeListener(org.opendaylight.vtn.manager.IVTNModeListener)},
+     * {@link VTNManagerImpl#removeVTNModeListener(org.opendaylight.vtn.manager.IVTNModeListener)},
      * {@link VTNManagerImpl#notifyChange(boolean)},
-     * {@link VTNManagerImpl#notifyChange(IVTNModeListener, boolean)}
+     * {@link VTNManagerImpl#notifyChange(org.opendaylight.vtn.manager.IVTNModeListener, boolean)}
      */
     @Test
     public void testIVTNModeListener() {
@@ -1173,9 +1167,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 for (Integer iv : ivs) {
                     for (Integer hv : hvs) {
                         VTenantConfig tconf = createVTenantConfig(desc, iv, hv);
-                        String emsg = "(name)" + tname + "(desc)"+ desc
-                                + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
-                                + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+                        String emsg = "(name)" + tname + "(desc)" + desc +
+                            ",(iv)" + ((iv == null) ? "null" : iv.intValue()) +
+                            ",(hv)" + ((hv == null) ? "null" : hv.intValue());
 
                         // test addTenant()
                         Status st = mgr.addTenant(tpath, tconf);
@@ -1284,9 +1278,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                     for (String ndesc : descs) {
                                         // test for all == true. executed at
                                         // first time only.
-                                        String emsg = "(name)" + tname + "(ndesc)"+ ndesc
-                                                + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
-                                                + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+                                        String emsg = "(name)" + tname +
+                                            "(ndesc)" + ndesc + ",(iv)" +
+                                            ((iv == null) ? "null"
+                                             : iv.intValue()) +
+                                            ",(hv)" +
+                                            ((hv == null) ? "null"
+                                             : hv.intValue());
 
                                         tconf = createVTenantConfig(ndesc, iv, hv);
                                         st = mgr.modifyTenant(tpath, tconf, true);
@@ -1350,10 +1348,12 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                 // in case all == false
                                 tconf = createVTenantConfig(desc, iv, hv);
                                 st = mgr.modifyTenant(tpath, tconf, false);
-                                String emsg = "(VTenangConfig(orig))"  + tconfOrg.toString()
-                                        + "(name)" + tname + "(ndesc)"+ desc
-                                        + ",(iv)" + ((iv == null) ? "null" : iv.intValue())
-                                        + ",(hv)" + ((hv == null) ? "null" : hv.intValue());
+                                String emsg = "(VTenangConfig(orig))" +
+                                    tconfOrg.toString() + "(name)" + tname +
+                                    "(ndesc)" + desc + ",(iv)" +
+                                    ((iv == null) ? "null" : iv.intValue()) +
+                                    ",(hv)" +
+                                    ((hv == null) ? "null" : hv.intValue());
 
                                 if ((iv == null || iv.intValue() < 0)
                                         && (hv == null || hv.intValue() < 0)) {
@@ -1469,32 +1469,32 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // bad request
         VTenantPath[] btplist = new VTenantPath[] {
-                null,
-                new VTenantPath(null)
+            null,
+            new VTenantPath(null)
         };
         VTenantConfig[] bcflist = new VTenantConfig[] {
-                null,
-                new VTenantConfig(desc, 65536, 65535),
-                new VTenantConfig(desc, 65535, 65536)
+            null,
+            new VTenantConfig(desc, 65536, 65535),
+            new VTenantConfig(desc, 65535, 65536)
         };
 
         // BADREQUEST cases
         for (VTenantPath path: btplist) {
             st = mgr.addTenant(path, tconf);
             assertEquals((path == null) ? "null" : path.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         for (VTenantConfig conf : bcflist) {
             st = mgr.addTenant(tpath, conf);
             assertEquals((conf == null) ? "null" : conf.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         st = mgr.addTenant(new VTenantPath(""), tconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addTenant(new VTenantPath("12345678901234567890123456789012"),
-                                           tconf);
+                           tconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addTenant(new VTenantPath("tenant-"), tconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
@@ -1504,7 +1504,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addTenant(new VTenantPath("_tenant "), tconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-
 
         st = mgr.addTenant(tpath, tconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -1521,15 +1520,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 mgr.getTenant(path);
                 fail("Throwing exception was expected.");
             } catch (VTNException e) {
-               assertEquals(emsg,
-                       StatusCode.BADREQUEST,e.getStatus().getCode());
+                assertEquals(emsg, StatusCode.BADREQUEST,
+                             e.getStatus().getCode());
             }
         }
 
         for (VTenantConfig conf : bcflist) {
             st = mgr.modifyTenant(tpath, conf, true);
             assertEquals((conf == null) ? "null" : conf.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         // conflict cases
@@ -1548,7 +1547,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             mgr.getTenant(lpath);
             fail("Throwing exception was expected.");
         } catch (VTNException e) {
-           assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
         }
 
         st = mgr.removeTenant(tpath);
@@ -1604,19 +1603,20 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
             assertEquals("(VTenantPath)" + tpath.toString(),
-                    StatusCode.SUCCESS, st.getCode());
+                         StatusCode.SUCCESS, st.getCode());
 
             for (String bname : blist) {
                 if (bname.isEmpty()) {
-                    continue; // This is a invalid condition.
+                    // This is a invalid condition.
+                    continue;
                 }
                 VBridgePath bpath = new VBridgePath(tname, bname);
                 for (String desc : createStrings("desc")) {
                     for (Integer age : ages) {
                         VBridgeConfig bconf = createVBridgeConfig(desc, age);
-                        String emsg = "(VBridgePath)" + bpath.toString()
-                                + "(VBridgeConfig)" + bconf.toString()
-                                + "(age)" + ((age == null) ? "null" : age.intValue());
+                        String emsg = "(VBridgePath)" + bpath.toString() +
+                            "(VBridgeConfig)" + bconf.toString() + "(age)" +
+                            ((age == null) ? "null" : age.intValue());
 
                         st = mgr.addBridge(bpath, bconf);
                         assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
@@ -1632,7 +1632,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                         if (age == null) {
                             assertEquals(emsg, 600, brdg.getAgeInterval());
                         } else {
-                            assertEquals(emsg, age.intValue(), brdg.getAgeInterval());
+                            assertEquals(emsg, age.intValue(),
+                                         brdg.getAgeInterval());
                         }
                         assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
 
@@ -1645,10 +1646,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                 bconf = createVBridgeConfig(newdesc, newage);
                                 st = mgr.modifyBridge(bpath, bconf, false);
 
-                                String emsgMod = emsg
-                                        + "(VBridgeConfig(new))" + bconf.toString()
-                                        + "(age(new))"
-                                        + ((newage == null) ? "null" : newage.intValue());
+                                String emsgMod = emsg + "(VBridgeConfig(new))" +
+                                    bconf.toString() + "(age(new))" +
+                                    ((newage == null) ? "null"
+                                     : newage.intValue());
 
                                 brdg = null;
                                 try {
@@ -1658,23 +1659,23 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                 }
                                 assertEquals(emsgMod, bname, brdg.getName());
                                 if (newdesc == null) {
-                                    assertEquals(emsgMod,
-                                            olddesc, brdg.getDescription());
+                                    assertEquals(emsgMod, olddesc,
+                                                 brdg.getDescription());
                                 } else {
-                                    assertEquals(emsgMod,
-                                            newdesc, brdg.getDescription());
+                                    assertEquals(emsgMod, newdesc,
+                                                 brdg.getDescription());
                                     olddesc = newdesc;
                                 }
                                 if (newage == null) {
-                                    assertEquals(emsgMod,
-                                            oldage, brdg.getAgeInterval());
+                                    assertEquals(emsgMod, oldage,
+                                                 brdg.getAgeInterval());
                                 } else {
-                                    assertEquals(emsgMod,
-                                            newage.intValue(), brdg.getAgeInterval());
+                                    assertEquals(emsgMod, newage.intValue(),
+                                                 brdg.getAgeInterval());
                                     oldage = newage.intValue();
                                 }
-                                assertEquals(emsgMod,
-                                        VNodeState.UNKNOWN, brdg.getState());
+                                assertEquals(emsgMod, VNodeState.UNKNOWN,
+                                             brdg.getState());
                             }
                         }
 
@@ -1691,8 +1692,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                 bconf = createVBridgeConfig(newdesc, newage);
                                 st = mgr.modifyBridge(bpath, bconf, true);
 
-                                String emsgMod = "(VBridgePath)" + bpath.toString()
-                                        + "(VBridgeConfig)" + bconf.toString();
+                                String emsgMod = "(VBridgePath)" +
+                                    bpath.toString() + "(VBridgeConfig)" +
+                                    bconf.toString();
                                 VBridge brdg = null;
                                 try {
                                     brdg = mgr.getBridge(bpath);
@@ -1702,19 +1704,20 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                 assertEquals(emsgMod, bname, brdg.getName());
                                 assertEquals(emsgMod, newdesc, brdg.getDescription());
                                 if (newage == null) {
-                                    assertEquals(emsgMod, 600, brdg.getAgeInterval());
+                                    assertEquals(emsgMod, 600,
+                                                 brdg.getAgeInterval());
                                 } else {
-                                    assertEquals(emsgMod,
-                                            newage.intValue(), brdg.getAgeInterval());
+                                    assertEquals(emsgMod, newage.intValue(),
+                                                 brdg.getAgeInterval());
                                 }
-                                assertEquals(emsgMod,
-                                        VNodeState.UNKNOWN, brdg.getState());
+                                assertEquals(emsgMod, VNodeState.UNKNOWN,
+                                             brdg.getState());
                             }
                         }
 
                         st = mgr.removeBridge(bpath);
                         assertEquals("(VBridgePath)" + bpath.toString(),
-                                StatusCode.SUCCESS, st.getCode());
+                                     StatusCode.SUCCESS, st.getCode());
 
                         first = false;
                     }
@@ -1729,7 +1732,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             }
             st = mgr.removeTenant(tpath);
             assertEquals("(VTenantPath)" + tpath.toString(),
-                    StatusCode.SUCCESS, st.getCode());
+                         StatusCode.SUCCESS, st.getCode());
         }
 
         // add multiple entries.
@@ -1737,19 +1740,20 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
             assertEquals("(VTenantPath)" + tpath.toString(),
-                    StatusCode.SUCCESS, st.getCode());
+                         StatusCode.SUCCESS, st.getCode());
 
             for (String bname : blist) {
                 if (bname.isEmpty()) {
-                    continue; // This is a invalid condition.
+                    // This is a invalid condition.
+                    continue;
                 }
                 VBridgePath bpath = new VBridgePath(tname, bname);
                 VBridgeConfig bconf = createVBridgeConfig(null, null);
 
                 st = mgr.addBridge(bpath, bconf);
-                assertEquals("(VBridgePath)" + bpath.toString()
-                        + "(VBridgeConfig)" + bconf.toString(),
-                        StatusCode.SUCCESS, st.getCode());
+                assertEquals("(VBridgePath)" + bpath.toString() +
+                             "(VBridgeConfig)" + bconf.toString(),
+                             StatusCode.SUCCESS, st.getCode());
             }
             try {
                 List<VBridge> list = mgr.getBridges(tpath);
@@ -1785,40 +1789,43 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VBridgeConfig bconf = createVBridgeConfig(null, null);
 
         VBridgePath[] bbplist = new VBridgePath[] {
-                null,
-                new VBridgePath(tname, null),
-                new VBridgePath((String)null, bname)
+            null,
+            new VBridgePath(tname, null),
+            new VBridgePath((String)null, bname)
         };
         VBridgeConfig[] bcflist = new VBridgeConfig[] {
-                null,
-                new VBridgeConfig("desc", 9),
-                new VBridgeConfig("desc", 1000001)
+            null,
+            new VBridgeConfig("desc", 9),
+            new VBridgeConfig("desc", 1000001)
         };
 
         for (VBridgePath path : bbplist) {
             st = mgr.addBridge(path, bconf);
             assertEquals((path == null) ? "null" : path.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         st = mgr.addBridge(new VBridgePath(tname, ""), bconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridge(new VBridgePath(tname, "123456789012345678901234567890_1"),
-                                           bconf);
+        st = mgr.addBridge(new VBridgePath(tname,
+                                           "123456789012345678901234567890_1"),
+                           bconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridge(new VBridgePath(tname, "123456789012345678901234567890:"),
-                                           bconf);
+        st = mgr.addBridge(new VBridgePath(tname,
+                                           "123456789012345678901234567890:"),
+                           bconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridge(new VBridgePath(tname, "123456789012345678901234567890:"),
-                                           bconf);
+        st = mgr.addBridge(new VBridgePath(tname,
+                                           "123456789012345678901234567890:"),
+                           bconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
         st = mgr.addBridge(new VBridgePath(tname, "_1234567890"), bconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
 
         for (VBridgeConfig conf : bcflist) {
             st = mgr.addBridge(bpath, conf);
-            assertEquals((conf == null) ? "null" :conf.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+            assertEquals((conf == null) ? "null" : conf.toString(),
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         // add bridge before modifyBridge() and removeBridge()
@@ -1837,13 +1844,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 fail("Throwing exception was expected.");
             } catch (VTNException e) {
                 assertEquals(emsg,
-                        StatusCode.BADREQUEST, e.getStatus().getCode());
+                             StatusCode.BADREQUEST, e.getStatus().getCode());
             }
         }
         for (VBridgeConfig conf : bcflist) {
             st = mgr.modifyBridge(bpath, conf, false);
             assertEquals((conf == null) ? "null" : conf.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         try {
@@ -1865,7 +1872,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.CONFLICT, st.getCode());
 
         // not found
-        VBridgePath[] nbplist = new VBridgePath[]{new VBridgePath(tname, "bbbbb"),
+        VBridgePath[] nbplist =
+            new VBridgePath[]{new VBridgePath(tname, "bbbbb"),
                 new VBridgePath("tt", bname)};
         for (VBridgePath path : nbplist) {
             String emsg = path.toString();
@@ -1879,7 +1887,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 mgr.getBridge(path);
                 fail("Throwing exception was expected.");
             } catch (VTNException e) {
-                assertEquals(emsg, StatusCode.NOTFOUND, e.getStatus().getCode());
+                assertEquals(emsg, StatusCode.NOTFOUND,
+                             e.getStatus().getCode());
             }
         }
 
@@ -1948,13 +1957,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             VTenantPath tpath = new VTenantPath(tname);
             Status st = mgr.addTenant(tpath, new VTenantConfig(null));
             assertEquals("(VTenantPath)" + tpath.toString(),
-                    StatusCode.SUCCESS, st.getCode());
+                         StatusCode.SUCCESS, st.getCode());
 
             for (String bname : blist) {
                 VBridgePath bpath = new VBridgePath(tname, bname);
                 VBridgeConfig bconf = createVBridgeConfig(null, null);
                 st = mgr.addBridge(bpath, bconf);
-                assertEquals(bpath.toString(), StatusCode.SUCCESS, st.getCode());
+                assertEquals(bpath.toString(), StatusCode.SUCCESS,
+                             st.getCode());
 
                 List<VInterface> list = null;
                 try {
@@ -1966,7 +1976,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                 for (String ifname : iflist) {
                     if (ifname.isEmpty()) {
-                        continue; // This is a invalid condition.
+                        // This is a invalid condition.
+                        continue;
                     }
 
                     VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
@@ -1974,12 +1985,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                     // test addBridgeInterface() and getBridgeInterface()
                     for (String desc : createStrings("desc")) {
                         for (Boolean enabled : createBooleans()) {
-                            VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
+                            VInterfaceConfig ifconf =
+                                new VInterfaceConfig(desc, enabled);
 
                             st = mgr.addBridgeInterface(ifp, ifconf);
-                            String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + ",(VInterfaceConfig)" + ifconf.toString();
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                            String emsg = "(VBridgeIfPath)" + ifp.toString() +
+                                ",(VInterfaceConfig)" + ifconf.toString();
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
 
                             VInterface vif = null;
                             try {
@@ -1991,43 +2004,50 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                             assertEquals(emsg, ifname, vif.getName());
                             assertEquals(emsg, desc, vif.getDescription());
                             if (enabled == null) {
-                                assertEquals(emsg, Boolean.TRUE, vif.getEnabled());
+                                assertEquals(emsg, Boolean.TRUE,
+                                             vif.getEnabled());
                             } else {
                                 assertEquals(emsg, enabled, vif.getEnabled());
                             }
                             if (enabled == Boolean.FALSE) {
-                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.DOWN,
+                                             vif.getState());
                             } else {
-                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.UNKNOWN,
+                                             vif.getState());
                             }
 
                             VBridge brdg = null;
                             try {
                                 brdg = mgr.getBridge(bpath);
                             } catch (VTNException e) {
-                               unexpected(e);
+                                unexpected(e);
                             }
-                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VNodeState.UNKNOWN,
+                                         brdg.getState());
 
                             st = mgr.removeBridgeInterface(ifp);
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
                         }
                     }
 
                     // for modifyBridgeInterface (all == false)
-                    st = mgr.addBridgeInterface(ifp,
-                            new VInterfaceConfig("desc", Boolean.FALSE));
+                    st = mgr.addBridgeInterface(
+                        ifp, new VInterfaceConfig("desc", Boolean.FALSE));
                     assertEquals(StatusCode.SUCCESS, st.getCode());
 
                     String olddesc = new String("desc");
                     Boolean oldenabled = Boolean.FALSE;
                     for (String desc : descs) {
                         for (Boolean enabled : createBooleans()) {
-                            VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
+                            VInterfaceConfig ifconf =
+                                new VInterfaceConfig(desc, enabled);
                             st = mgr.modifyBridgeInterface(ifp, ifconf, false);
-                            String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + "(VInterfaceConfig)" + ifconf.toString();
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                            String emsg = "(VBridgeIfPath)" + ifp.toString() +
+                                "(VInterfaceConfig)" + ifconf.toString();
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
 
                             VInterface vif = null;
                             try {
@@ -2039,31 +2059,36 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                             assertEquals(emsg, ifname, vif.getName());
 
                             if (desc == null) {
-                                assertEquals(emsg, olddesc, vif.getDescription());
+                                assertEquals(emsg, olddesc,
+                                             vif.getDescription());
                             } else {
                                 assertEquals(emsg, desc, vif.getDescription());
                             }
 
                             Boolean currenabled = enabled;
                             if (enabled == null) {
-                                assertEquals(emsg, oldenabled, vif.getEnabled());
+                                assertEquals(emsg, oldenabled,
+                                             vif.getEnabled());
                                 currenabled = oldenabled;
                             } else {
                                 assertEquals(emsg, enabled, vif.getEnabled());
                             }
 
                             if (currenabled == Boolean.FALSE) {
-                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.DOWN,
+                                             vif.getState());
                             } else {
-                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.UNKNOWN,
+                                             vif.getState());
                             }
                             VBridge brdg = null;
                             try {
                                 brdg = mgr.getBridge(bpath);
                             } catch (VTNException e) {
-                               unexpected(e);
+                                unexpected(e);
                             }
-                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VNodeState.UNKNOWN,
+                                         brdg.getState());
 
                             olddesc = vif.getDescription();
                             oldenabled = vif.getEnabled();
@@ -2071,18 +2096,20 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                     }
 
                     // for modifyBridgeInterface (all == true)
-                    st = mgr.modifyBridgeInterface(ifp,
-                            new VInterfaceConfig("desc", Boolean.FALSE), true);
+                    st = mgr.modifyBridgeInterface(
+                        ifp, new VInterfaceConfig("desc", Boolean.FALSE), true);
                     assertEquals("(VBridgeIfPath)" + ifp.toString(),
-                            StatusCode.SUCCESS, st.getCode());
+                                 StatusCode.SUCCESS, st.getCode());
                     for (String desc : descs) {
                         for (Boolean enabled : createBooleans()) {
-                            VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
+                            VInterfaceConfig ifconf =
+                                new VInterfaceConfig(desc, enabled);
                             st = mgr.modifyBridgeInterface(ifp, ifconf, true);
 
-                            String emsg = "(VBridgeIfPath)" + ifp.toString()
-                                    + "(VInterfaceConfig)" + ifconf.toString();
-                            assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                            String emsg = "(VBridgeIfPath)" + ifp.toString() +
+                                "(VInterfaceConfig)" + ifconf.toString();
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
 
                             VInterface vif = null;
                             try {
@@ -2094,24 +2121,28 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                             assertEquals(emsg, ifname, vif.getName());
                             assertEquals(emsg, desc, vif.getDescription());
                             if (enabled == null) {
-                                assertEquals(emsg, Boolean.TRUE, vif.getEnabled());
+                                assertEquals(emsg, Boolean.TRUE,
+                                             vif.getEnabled());
                             } else {
                                 assertEquals(emsg, enabled, vif.getEnabled());
                             }
 
                             if (enabled == Boolean.FALSE) {
-                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.DOWN,
+                                             vif.getState());
                             } else {
-                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VNodeState.UNKNOWN,
+                                             vif.getState());
                             }
 
                             VBridge brdg = null;
                             try {
                                 brdg = mgr.getBridge(bpath);
                             } catch (VTNException e) {
-                               unexpected(e);
+                                unexpected(e);
                             }
-                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VNodeState.UNKNOWN,
+                                         brdg.getState());
                         }
                     }
                 }
@@ -2122,12 +2153,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 } catch (Exception e) {
                     unexpected(e);
                 }
-                assertEquals("(VBridgePath)" + bpath.toString(), (iflist.size() - 1), list.size());
+                assertEquals("(VBridgePath)" + bpath.toString(),
+                             iflist.size() - 1, list.size());
             }
 
             st = mgr.removeTenant(tpath);
             assertEquals("(VTenantPath)" + tpath.toString(),
-                    StatusCode.SUCCESS, st.getCode());
+                         StatusCode.SUCCESS, st.getCode());
         }
     }
 
@@ -2156,39 +2188,43 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VInterfaceConfig ifconf = new VInterfaceConfig("desc", Boolean.FALSE);
 
         VBridgeIfPath[] ifplist = new VBridgeIfPath[] {
-                null,
-                new VBridgeIfPath(tname, bname, null),
-                new VBridgeIfPath(tname, null, ifname),
-                new VBridgeIfPath(null, bname, ifname),
+            null,
+            new VBridgeIfPath(tname, bname, null),
+            new VBridgeIfPath(tname, null, ifname),
+            new VBridgeIfPath(null, bname, ifname),
         };
         VInterfaceConfig[] ifclist = new VInterfaceConfig[] {null};
 
         for (VBridgeIfPath path : ifplist) {
             st = mgr.addBridgeInterface(path, ifconf);
             assertEquals((path == null) ? "null" : path.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         for (VInterfaceConfig conf : ifclist) {
             st = mgr.addBridgeInterface(ifpath, conf);
             assertEquals((conf == null) ? "null" : conf.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         // addBridgeInterface() also return BADREQUEST in these case.
-        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, ""), ifconf);
+        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, ""),
+                                    ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname,
-                        "123456789012345678901234567890_1"), ifconf);
+        st = mgr.addBridgeInterface(
+            new VBridgeIfPath(tname, bname, "123456789012345678901234567890_1"),
+            ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname,
-                        "123456789012345678901234567890:"), ifconf);
+        st = mgr.addBridgeInterface(
+            new VBridgeIfPath(tname, bname, "123456789012345678901234567890:"),
+            ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname,
-                "123456789012345678901234567890 "), ifconf);
+        st = mgr.addBridgeInterface(
+            new VBridgeIfPath(tname, bname, "123456789012345678901234567890 "),
+            ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname,
-                "_1234567890"), ifconf);
+        st = mgr.addBridgeInterface(
+            new VBridgeIfPath(tname, bname, "_1234567890"), ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
 
         // add Interface before modify and remove()
@@ -2206,15 +2242,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 mgr.getBridgeInterface(path);
                 fail("Throwing exception was expected.");
             } catch (VTNException e) {
-                assertEquals(emsg,
-                        StatusCode.BADREQUEST, e.getStatus().getCode());
+                assertEquals(emsg, StatusCode.BADREQUEST,
+                             e.getStatus().getCode());
             }
         }
 
         for (VInterfaceConfig conf : ifclist) {
             st = mgr.modifyBridgeInterface(ifpath, conf, true);
             assertEquals((conf == null) ? "null" : conf.toString(),
-                    StatusCode.BADREQUEST, st.getCode());
+                         StatusCode.BADREQUEST, st.getCode());
         }
 
         try {
@@ -2230,9 +2266,9 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // not found
         VBridgeIfPath[] nbplist = new VBridgeIfPath[] {
-                new VBridgeIfPath(tname, bname, "i"),
-                new VBridgeIfPath(tname, "bbbbb", ifname),
-                new VBridgeIfPath("tt", bname, ifname)
+            new VBridgeIfPath(tname, bname, "i"),
+            new VBridgeIfPath(tname, "bbbbb", ifname),
+            new VBridgeIfPath("tt", bname, ifname)
         };
 
         for (VBridgeIfPath path : nbplist) {
@@ -2244,7 +2280,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
 
             if (!(path.getTenantName().equals(tname) &&
-                    path.getBridgeName().equals(bname))) {
+                  path.getBridgeName().equals(bname))) {
                 st = mgr.addBridgeInterface(path, ifconf);
                 assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
             }
@@ -2303,7 +2339,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     @Test
     public void testVlanMap() {
         VTNManagerImpl mgr = vtnMgr;
-        short[] vlans = new short[] { 0, 10, 4095 };
+        short[] vlans = new short[] {0, 10, 4095};
         Status st = null;
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
@@ -2351,10 +2387,11 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 try {
                     brdg = mgr.getBridge(bpath);
                 } catch (VTNException e) {
-                   unexpected(e);
+                    unexpected(e);
                 }
                 assertEquals(emsg,
-                        (node == null) ? VNodeState.UP : VNodeState.DOWN, brdg.getState());
+                             (node == null) ? VNodeState.UP
+                             : VNodeState.DOWN, brdg.getState());
 
                 st = mgr.removeVlanMap(bpath, map.getId());
                 assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
@@ -2390,20 +2427,21 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             } catch (Exception e) {
                 unexpected(e);
             }
-            if (node == null
-                    || node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
+            if (node == null ||
+                node.getType() == NodeConnector.NodeConnectorIDType.OPENFLOW) {
                 assertEquals((node == null) ? "null" : node.toString(),
-                        vlans.length, list.size());
+                             vlans.length, list.size());
                 VBridge brdg = null;
                 try {
                     brdg = mgr.getBridge(bpath);
                 } catch (VTNException e) {
-                   unexpected(e);
+                    unexpected(e);
                 }
                 if (node == null) {
                     assertEquals(VNodeState.UP, brdg.getState());
                 } else {
-                    assertEquals(node.toString(), VNodeState.DOWN, brdg.getState());
+                    assertEquals(node.toString(), VNodeState.DOWN,
+                                 brdg.getState());
                 }
             } else {
                 assertEquals(node.toString(), 0, list.size());
@@ -2411,15 +2449,16 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 try {
                     brdg = mgr.getBridge(bpath);
                 } catch (VTNException e) {
-                   unexpected(e);
+                    unexpected(e);
                 }
-                assertEquals(node.toString(), VNodeState.UNKNOWN, brdg.getState());
+                assertEquals(node.toString(), VNodeState.UNKNOWN,
+                             brdg.getState());
             }
 
             for (VlanMap map : list) {
                 st = mgr.removeVlanMap(bpath, map.getId());
                 assertEquals("(VlanMap)" + map.toString(),
-                        StatusCode.SUCCESS, st.getCode());
+                             StatusCode.SUCCESS, st.getCode());
             }
         }
 
@@ -2462,7 +2501,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // conflict case
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short) 0));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short)0));
         } catch (Exception e) {
             unexpected(e);
         }
@@ -2470,14 +2509,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // try to add vlan map conflict previous one.
         map = null;
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short) 0));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short)0));
             fail("Expected to throw Exception.");
         } catch (VTNException e) {
             assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
         }
 
         try {
-            map = mgr.addVlanMap(bpath2, new VlanMapConfig(null, (short) 0));
+            map = mgr.addVlanMap(bpath2, new VlanMapConfig(null, (short)0));
             fail("Expected to throw Exception.");
         } catch (VTNException e) {
             assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
@@ -2486,13 +2525,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // The same VLAN ID can be mapped as long as node differs.
         map = null;
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short) 0));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short)0));
         } catch (VTNException e) {
             unexpected(e);
         }
 
         try {
-            map = mgr.addVlanMap(bpath2, new VlanMapConfig(node, (short) 0));
+            map = mgr.addVlanMap(bpath2, new VlanMapConfig(node, (short)0));
             fail("Expected to throw Exception.");
         } catch (VTNException e) {
             assertEquals(StatusCode.CONFLICT, e.getStatus().getCode());
@@ -2500,7 +2539,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         map = null;
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short) 1));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short)1));
         } catch (Exception e) {
             unexpected(e);
         }
@@ -2508,8 +2547,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // if mapped node specified with VlanMapConfig don't exist,
         // duplicate Vlanmap succeed.
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(node1, (short) 1));
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(node2, (short) 1));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(node1, (short)1));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(node2, (short)1));
         } catch (Exception e) {
             unexpected(e);
         }
@@ -2520,7 +2559,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // VLAN:1 on any switch can be mapped.
         map = null;
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short) 1));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(null, (short)1));
         } catch (VTNException e) {
             unexpected(e);
         }
@@ -2534,16 +2573,16 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         node = NodeCreator.createOFNode(0L);
 
         // bad request
-        VlanMapConfig vlconf = new VlanMapConfig(null, (short) 0);
+        VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
         VBridgePath[] bbplist = new VBridgePath[] {
-                null,
-                new VBridgePath(tname, null),
-                new VBridgePath((String) null, bname)
+            null,
+            new VBridgePath(tname, null),
+            new VBridgePath((String)null, bname)
         };
         VlanMapConfig[] bvclist = new VlanMapConfig[] {
-                null,
-                new VlanMapConfig(node, (short) -1),
-                new VlanMapConfig(node, (short) 4096)
+            null,
+            new VlanMapConfig(node, (short)-1),
+            new VlanMapConfig(node, (short)4096)
         };
 
         for (VBridgePath path : bbplist) {
@@ -2552,15 +2591,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 map = mgr.addVlanMap(path, vlconf);
                 fail("Throwing Exception was expected.");
             } catch (VTNException e) {
-                assertEquals(emsg,
-                        StatusCode.BADREQUEST, e.getStatus().getCode());
+                assertEquals(emsg, StatusCode.BADREQUEST,
+                             e.getStatus().getCode());
             }
             try {
-                map = mgr.addVlanMap(path, new VlanMapConfig(null, (short) 0));
+                map = mgr.addVlanMap(path, new VlanMapConfig(null, (short)0));
                 fail("Throwing Exception was expected.");
             } catch (VTNException e) {
-                assertEquals(emsg,
-                        StatusCode.BADREQUEST, e.getStatus().getCode());
+                assertEquals(emsg, StatusCode.BADREQUEST,
+                             e.getStatus().getCode());
             }
         }
 
@@ -2576,7 +2615,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // add to execute getVlanMap() and removeVlanMap() test.
         try {
-            map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short) 4095));
+            map = mgr.addVlanMap(bpath, new VlanMapConfig(node, (short)4095));
         } catch (Exception e) {
             unexpected(e);
         }
@@ -2712,7 +2751,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     @Test
     public void testPortMap() {
         VTNManagerImpl mgr = vtnMgr;
-        short[] vlans = new short[] { 0, 10, 4095 };
+        short[] vlans = new short[] {0, 10, 4095};
         Status st = null;
         String tname = "vtn";
         VTenantPath tpath = new VTenantPath(tname);
@@ -2736,11 +2775,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         Node node = NodeCreator.createOFNode(0L);
         SwitchPort[] ports = new SwitchPort[] {
-                new SwitchPort("port-10", NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
-                new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW, "11"),
-                new SwitchPort("port-10", null, null),
-                new SwitchPort("port-10"),
-                new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
+            new SwitchPort("port-10",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
+            new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW,
+                           "11"),
+            new SwitchPort("port-10", null, null),
+            new SwitchPort("port-10"),
+            new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
         };
 
         for (SwitchPort port : ports) {
@@ -2772,7 +2813,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 try {
                     brdg = mgr.getBridge(bpath);
                 } catch (VTNException e) {
-                   unexpected(e);
+                    unexpected(e);
                 }
                 assertEquals(emsg, VNodeState.DOWN, brdg.getState());
             }
@@ -2811,13 +2852,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Node node1 = NodeCreator.createOFNode(0L);
         SwitchPort port1
             = new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
-        PortMapConfig pmconf1 = new PortMapConfig(node1, port1, (short) 0);
+        PortMapConfig pmconf1 = new PortMapConfig(node1, port1, (short)0);
         st = mgr.setPortMap(ifp1, pmconf1);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        SwitchPort port2
-            = new SwitchPort( NodeConnector.NodeConnectorIDType.OPENFLOW, "11");
-        PortMapConfig pmconf2 = new PortMapConfig(node1, port2, (short) 0);
+        SwitchPort port2 = new SwitchPort(
+            NodeConnector.NodeConnectorIDType.OPENFLOW, "11");
+        PortMapConfig pmconf2 = new PortMapConfig(node1, port2, (short)0);
         st = mgr.setPortMap(ifp2, pmconf2);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2857,30 +2898,33 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Node node = NodeCreator.createOFNode(0L);
         SwitchPort port
             = new SwitchPort("port-1", NodeConnector.NodeConnectorIDType.OPENFLOW, "1");
-        PortMapConfig pmconf = new PortMapConfig(node, port, (short) 0);
+        PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
         Status st = mgr.setPortMap(ifp, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // bad request
         VBridgeIfPath[] biflist = new VBridgeIfPath[] {
-                null, new VBridgeIfPath(tname, bname, null),
-                new VBridgeIfPath(tname, null, ifname),
-                new VBridgeIfPath(null, bname, ifname)
+            null, new VBridgeIfPath(tname, bname, null),
+            new VBridgeIfPath(tname, null, ifname),
+            new VBridgeIfPath(null, bname, ifname)
         };
         SwitchPort[] badports = new SwitchPort[] {
-                new SwitchPort("port-10", NodeConnector.NodeConnectorIDType.OPENFLOW, null),
-                new SwitchPort("port-11", NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
-                new SwitchPort(null, null, "16"),
-                new SwitchPort(null, null, null),
-                new SwitchPort("", NodeConnector.NodeConnectorIDType.OPENFLOW, null),
-                new SwitchPort(NodeConnector.NodeConnectorIDType.ONEPK, "10"),
+            new SwitchPort("port-10",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, null),
+            new SwitchPort("port-11",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
+            new SwitchPort(null, null, "16"),
+            new SwitchPort(null, null, null),
+            new SwitchPort("", NodeConnector.NodeConnectorIDType.OPENFLOW,
+                           null),
+            new SwitchPort(NodeConnector.NodeConnectorIDType.ONEPK, "10"),
         };
         PortMapConfig[] bpmlist = new PortMapConfig[] {
-                new PortMapConfig(null, port, (short) 0),
-                new PortMapConfig(node, null, (short) 0),
-                new PortMapConfig(node, null, (short) 0),
-                new PortMapConfig(node, port, (short)-1),
-                new PortMapConfig(node, port, (short)4096)
+            new PortMapConfig(null, port, (short)0),
+            new PortMapConfig(node, null, (short)0),
+            new PortMapConfig(node, null, (short)0),
+            new PortMapConfig(node, port, (short)-1),
+            new PortMapConfig(node, port, (short)4096)
         };
 
         for (VBridgeIfPath path : biflist) {
@@ -2914,14 +2958,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             unexpected(e1);
         }
         st = mgr.setPortMap(ifp, new PortMapConfig(pnode, new SwitchPort("port-1"),
-                            (short) 0));
+                            (short)0));
         assertEquals(StatusCode.BADREQUEST, st.getCode());
 
         // not found
         VBridgeIfPath[] niflist = new VBridgeIfPath[] {
-                new VBridgeIfPath(tname, bname, "ii"),
-                new VBridgeIfPath(tname, "bbb", ifname),
-                new VBridgeIfPath("vv", bname, ifname)
+            new VBridgeIfPath(tname, bname, "ii"),
+            new VBridgeIfPath(tname, "bbb", ifname),
+            new VBridgeIfPath("vv", bname, ifname)
         };
 
         for (VBridgeIfPath path : niflist) {
@@ -2964,8 +3008,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      */
     @Test
     public void testMacMap() {
-        final int NUM_PORTS = 5;
-        final int MAX_PORT_IDX = NUM_PORTS - 1;
+        final int numPorts = 5;
+        final int maxPortIndex = numPorts - 1;
 
         /**
          * Test environment for MAC mapping.
@@ -3460,39 +3504,35 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                        StatusCode.BADREQUEST);
 
         // Pass a set of DataLinkHost which contains null.
-        {
-            assertTrue(hset.add(null));
-            MacMapConfig cf1 = new MacMapConfig(hset, null);
-            MacMapConfig cf2 = new MacMapConfig(null, hset);
-            for (UpdateOperation op: UpdateOperation.values()) {
-                errorSetMacMap(bpath1, op, cf1, StatusCode.BADREQUEST);
-                errorSetMacMap(bpath1, op, cf2, StatusCode.BADREQUEST);
-                errorSetMacMap(bpath1, op, MacMapAclType.ALLOW, hset,
-                               StatusCode.BADREQUEST);
-                errorSetMacMap(bpath1, op, MacMapAclType.DENY, hset,
-                               StatusCode.BADREQUEST);
-            }
-            assertTrue(hset.remove(null));
+        assertTrue(hset.add(null));
+        MacMapConfig cf1 = new MacMapConfig(hset, null);
+        MacMapConfig cf2 = new MacMapConfig(null, hset);
+        for (UpdateOperation op: UpdateOperation.values()) {
+            errorSetMacMap(bpath1, op, cf1, StatusCode.BADREQUEST);
+            errorSetMacMap(bpath1, op, cf2, StatusCode.BADREQUEST);
+            errorSetMacMap(bpath1, op, MacMapAclType.ALLOW, hset,
+                           StatusCode.BADREQUEST);
+            errorSetMacMap(bpath1, op, MacMapAclType.DENY, hset,
+                           StatusCode.BADREQUEST);
         }
+        assertTrue(hset.remove(null));
 
         // Pass unsupported host information.
-        {
-            TestDataLink dladdr = new TestDataLink("addr");
-            TestDataLinkHost dh = new TestDataLinkHost(dladdr);
-            assertTrue(hset.add(dh));
+        TestDataLink dladdr = new TestDataLink("addr");
+        TestDataLinkHost dh = new TestDataLinkHost(dladdr);
+        assertTrue(hset.add(dh));
 
-            MacMapConfig cf1 = new MacMapConfig(hset, null);
-            MacMapConfig cf2 = new MacMapConfig(null, hset);
-            for (UpdateOperation op: UpdateOperation.values()) {
-                errorSetMacMap(bpath1, op, cf1, StatusCode.BADREQUEST);
-                errorSetMacMap(bpath1, op, cf2, StatusCode.BADREQUEST);
-                errorSetMacMap(bpath1, op, MacMapAclType.ALLOW, hset,
-                               StatusCode.BADREQUEST);
-                errorSetMacMap(bpath1, op, MacMapAclType.DENY, hset,
-                               StatusCode.BADREQUEST);
-            }
-            assertTrue(hset.remove(dh));
+        cf1 = new MacMapConfig(hset, null);
+        cf2 = new MacMapConfig(null, hset);
+        for (UpdateOperation op: UpdateOperation.values()) {
+            errorSetMacMap(bpath1, op, cf1, StatusCode.BADREQUEST);
+            errorSetMacMap(bpath1, op, cf2, StatusCode.BADREQUEST);
+            errorSetMacMap(bpath1, op, MacMapAclType.ALLOW, hset,
+                           StatusCode.BADREQUEST);
+            errorSetMacMap(bpath1, op, MacMapAclType.DENY, hset,
+                           StatusCode.BADREQUEST);
         }
+        assertTrue(hset.remove(dh));
 
         MacMapConfig[] emptyCf = {
             new MacMapConfig(null, null),
@@ -3530,7 +3570,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         // Create ports.
         Node node = NodeCreator.createOFNode(0L);
         List<NodeConnector> portList = new ArrayList<NodeConnector>();
-        for (short idx = 1; idx <= NUM_PORTS; idx++) {
+        for (short idx = 1; idx <= numPorts; idx++) {
             NodeConnector port = NodeConnectorCreator.
                 createOFNodeConnector(Short.valueOf(idx), node);
             portList.add(port);
@@ -3552,10 +3592,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         //   port 3, VLAN 3
         //   port 4, VLAN 1000
         TestEnv env1 = new TestEnv(bpath1, 1, portList);
-        for (int i = 0; i < MAX_PORT_IDX; i++) {
+        for (int i = 0; i < maxPortIndex; i++) {
             env1.assign(i, (short)i);
         }
-        env1.assign(MAX_PORT_IDX, anyVlan1);
+        env1.assign(maxPortIndex, anyVlan1);
         env1.assign(2, anyVlan2);
 
         // bridge 2:
@@ -3577,8 +3617,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertTrue(allow.add(new EthernetHost(null, anyVlan1)));
         for (int i = 0; i < 10; i++) {
             long mac = 0x123456789aL + i;
-            short vlan = (short)(i % NUM_PORTS);
-            if (vlan == MAX_PORT_IDX) {
+            short vlan = (short)(i % numPorts);
+            if (vlan == maxPortIndex) {
                 vlan = anyVlan2;
             }
             DataLinkHost dlh = createEthernetHost(mac, vlan);
@@ -3742,8 +3782,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 }
 
                 mac = 0xbaddcafeL + i;
-                short vlan = (short)(i % NUM_PORTS);
-                if (vlan == MAX_PORT_IDX) {
+                short vlan = (short)(i % numPorts);
+                if (vlan == maxPortIndex) {
                     vlan = anyVlan1;
                 }
                 DataLinkHost dlh = createEthernetHost(mac, vlan);
@@ -3865,99 +3905,88 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             env1.checkHostMoving(movePort);
             env2.checkHostMoving(movePort);
 
-            {
-                // Remove 1 MAC mapped host from bridge 1 which supersedes
-                // wildcard mapping for anyVlan1.
-                DataLinkHost any = new EthernetHost(null, anyVlan1);
-                assertTrue(allow.remove(any));
-                hset.clear();
-                for (Iterator<DataLinkHost> it = allow.iterator();
-                     it.hasNext();) {
-                    DataLinkHost h = it.next();
-                    if (((EthernetHost)h).getVlan() == anyVlan1) {
-                        hset.add(h);
-                        it.remove();
-                        break;
-                    }
+            // Remove 1 MAC mapped host from bridge 1 which supersedes
+            // wildcard mapping for anyVlan1.
+            DataLinkHost any = new EthernetHost(null, anyVlan1);
+            assertTrue(allow.remove(any));
+            hset.clear();
+            for (Iterator<DataLinkHost> it = allow.iterator(); it.hasNext();) {
+                DataLinkHost h = it.next();
+                if (((EthernetHost)h).getVlan() == anyVlan1) {
+                    hset.add(h);
+                    it.remove();
+                    break;
                 }
-                assertTrue(allow.add(any));
-
-                assertEquals(UpdateType.CHANGED,
-                             mgr.setMacMap(bpath1, UpdateOperation.SET,
-                                           MacMapAclType.ALLOW, allow));
-                mcconf = env1.update(allow, deny);
-                env1.checkInactivated(hset);
-
-                // Remove 2 MAC mapped hosts from bridge 1 by MacMapConfig
-                // REMOVE operation. This operation will remove hosts mapped
-                // by wildcard mapping for anyVlan1.
-                hset.clear();
-                hset.add(any);
-                assertTrue(allow.remove(any));
-                for (Iterator<DataLinkHost> it = allow.iterator();
-                     it.hasNext();) {
-                    DataLinkHost h = it.next();
-                    if (((EthernetHost)h).getVlan() != anyVlan1) {
-                        hset.add(h);
-                        it.remove();
-                        break;
-                    }
-                }
-                MacMapConfig cf = new MacMapConfig(hset, null);
-                assertEquals(UpdateType.CHANGED,
-                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
-                                           cf));
-                mcconf = env1.update(allow, deny);
-                env1.checkInactivated(hset);
             }
+            assertTrue(allow.add(any));
+
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       MacMapAclType.ALLOW, allow));
+            mcconf = env1.update(allow, deny);
+            env1.checkInactivated(hset);
+
+            // Remove 2 MAC mapped hosts from bridge 1 by MacMapConfig
+            // REMOVE operation. This operation will remove hosts mapped
+            // by wildcard mapping for anyVlan1.
+            hset.clear();
+            hset.add(any);
+            assertTrue(allow.remove(any));
+            for (Iterator<DataLinkHost> it = allow.iterator(); it.hasNext();) {
+                DataLinkHost h = it.next();
+                if (((EthernetHost)h).getVlan() != anyVlan1) {
+                    hset.add(h);
+                    it.remove();
+                    break;
+                }
+            }
+            MacMapConfig tmpcf = new MacMapConfig(hset, null);
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath1, UpdateOperation.REMOVE, tmpcf));
+            mcconf = env1.update(allow, deny);
+            env1.checkInactivated(hset);
 
             // Remove more 2 MAC mapped hosts from bridge 1 by host set
             // REMOVE operation.
-            {
-                hset.clear();
-                Iterator<DataLinkHost> it = allow.iterator();
-                for (int i = 0; i < 2; i++) {
-                    hset.add(it.next());
-                    it.remove();
-                }
-                assertEquals(UpdateType.CHANGED,
-                             mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
-                                           MacMapAclType.ALLOW, hset));
-                mcconf = env1.update(allow, deny);
-                env1.checkInactivated(hset);
+            hset.clear();
+            Iterator<DataLinkHost> it1 = allow.iterator();
+            for (int i = 0; i < 2; i++) {
+                hset.add(it1.next());
+                it1.remove();
             }
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath1, UpdateOperation.REMOVE,
+                                       MacMapAclType.ALLOW, hset));
+            mcconf = env1.update(allow, deny);
+            env1.checkInactivated(hset);
 
             // Remove more 2 MAC mapped hosts from bridge 1 by MacMapConfig
             // SET operation.
-            {
-                hset.clear();
-                Iterator<DataLinkHost> it = allow.iterator();
-                for (int i = 0; i < 2; i++) {
-                    hset.add(it.next());
-                    it.remove();
-                }
-                mcconf = env1.update(allow, deny);
-                assertEquals(UpdateType.CHANGED,
-                             mgr.setMacMap(bpath1, UpdateOperation.SET,
-                                           mcconf));
-                env1.checkInactivated(hset);
+            hset.clear();
+            it1 = allow.iterator();
+            for (int i = 0; i < 2; i++) {
+                hset.add(it1.next());
+                it1.remove();
             }
+            mcconf = env1.update(allow, deny);
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       mcconf));
+            env1.checkInactivated(hset);
 
             // Remove more 2 MAC mapped hosts from bridge 1 by host set
             // SET operation.
-            {
-                hset.clear();
-                Iterator<DataLinkHost> it = allow.iterator();
-                for (int i = 0; i < 2; i++) {
-                    hset.add(it.next());
-                    it.remove();
-                }
-                mcconf = env1.update(allow, deny);
-                assertEquals(UpdateType.CHANGED,
-                             mgr.setMacMap(bpath1, UpdateOperation.SET,
-                                           MacMapAclType.ALLOW, allow));
-                env1.checkInactivated(hset);
+            hset.clear();
+            it1 = allow.iterator();
+            for (int i = 0; i < 2; i++) {
+                hset.add(it1.next());
+                it1.remove();
             }
+            mcconf = env1.update(allow, deny);
+            assertEquals(UpdateType.CHANGED,
+                         mgr.setMacMap(bpath1, UpdateOperation.SET,
+                                       MacMapAclType.ALLOW, allow));
+            env1.checkInactivated(hset);
 
             // Remove all mapped hosts.
             mcconf = env1.update(null, deny);
@@ -4198,15 +4227,17 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             byte[] sender2 = new byte[] {(byte)192, (byte)1, (byte)0, (byte)iphost};
             EthernetAddress ea2 = null;
             try {
-                 ea2 = new EthernetAddress(src2);
+                ea2 = new EthernetAddress(src2);
             } catch (ConstructionException e1) {
                 unexpected(e1);
             }
 
-            PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                    (vlan > 0) ? vlan : -1, connectors.get(0), ARP.REQUEST);
-            PacketContext pctx2 = createARPPacketContext(src2, dst2, sender2, target2,
-                    (vlan2 > 0) ? vlan2 : -1, connectors.get(0), ARP.REQUEST);
+            PacketContext pctx = createARPPacketContext(
+                src, dst, sender, target, (vlan > 0) ? vlan : -1,
+                connectors.get(0), ARP.REQUEST);
+            PacketContext pctx2 = createARPPacketContext(
+                src2, dst2, sender2, target2, (vlan2 > 0) ? vlan2 : -1,
+                connectors.get(0), ARP.REQUEST);
 
             VBridgePath bp = new VBridgeIfPath(bpath, "if");
             bnode.setPath(bp);
@@ -4378,9 +4409,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         TestBridgeNode bnode = new TestBridgeNode(vpath);
         tbl.add(pctx, bnode);
 
-        VBridgePath[] badplist = new VBridgePath[] {null,
-                new VBridgePath(tname, null),
-                new VBridgePath((String)null, bname)
+        VBridgePath[] badplist = new VBridgePath[] {
+            null,
+            new VBridgePath(tname, null),
+            new VBridgePath((String)null, bname)
         };
         EthernetAddress[] badelist = new EthernetAddress[] {null};
 
@@ -4427,8 +4459,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // list for not found case
         VBridgePath[] nfplist = new VBridgePath[] {
-                new VBridgePath("vvvvvv", bname),
-                new VBridgePath(tname, "bbbbbb")
+            new VBridgePath("vvvvvv", bname),
+            new VBridgePath(tname, "bbbbbb")
         };
         EthernetAddress[] nfelist = new EthernetAddress[] {null};
 
@@ -4609,7 +4641,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             try {
                 file.createNewFile();
             } catch (IOException e) {
-               unexpected(e);
+                unexpected(e);
             }
         }
     }
@@ -4623,14 +4655,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNManagerImpl mgr = vtnMgr;
 
         byte[] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-        byte[] dst = new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                 (byte) 0xff, (byte) 0xff, (byte) 0xff};
-        byte[] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1};
-        byte[] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 10};
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)10};
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
-        NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 10), node);
-        NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 11), node);
-        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short) 0, innc, ARP.REQUEST);
+        NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)10), node);
+        NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short)11), node);
+        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short)0, innc, ARP.REQUEST);
 
         RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
 
@@ -4708,7 +4740,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                          node0);
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         ActionList actions = new ActionList(outnc.getNode());
         actions.addOutput(outnc);
         int pri = 1;
@@ -4719,7 +4751,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         FlowAddEvent addEvent = new FlowAddEvent(flow.getFlowEntries());
         FlowRemoveEvent removeEvent = new FlowRemoveEvent(flow.getFlowEntries());
@@ -4842,7 +4874,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         resMgr.setClusterGlobalService(cm);
         resMgr.init(c);
-        vtnMgr.setResourceManager((IVTNResourceManager) resMgr);
+        vtnMgr.setResourceManager((IVTNResourceManager)resMgr);
         vtnMgr.setConnectionManager(cm);
         startVTNManager(c);
 
@@ -4877,7 +4909,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             (byte)0xfc, (byte)0xfd, (byte)0xfe,
         };
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
@@ -4890,14 +4922,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         // + remote entry.
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         FlowEntry rent = null;
         Iterator<FlowEntry> it = flow.getFlowEntries().iterator();
@@ -5021,7 +5053,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                              node0);
             Match match = new Match();
             match.setField(MatchType.IN_PORT, innc);
-            match.setField(MatchType.DL_VLAN, (short) 1);
+            match.setField(MatchType.DL_VLAN, (short)1);
             match.setField(MatchType.DL_SRC, src);
             match.setField(MatchType.DL_DST, dst);
             ActionList actions = new ActionList(outnc.getNode());
@@ -5034,7 +5066,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                               node0);
             outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                                node0);
-            flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+            flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
             flow.addDependency(pathSet);
 
@@ -5080,7 +5112,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                          node0);
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
@@ -5152,7 +5184,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         for (MacTableEntryId evid : evidSet) {
             String emsg = evid.toString();
-            MacTableEntry ent = new MacTableEntry(evid, nc, (short) 0, ipaddr);
+            MacTableEntry ent = new MacTableEntry(evid, nc, (short)0, ipaddr);
 
             // entryCreated
             mgr.entryCreated(evid, VTNManagerImpl.CACHE_MAC, true);
@@ -5191,7 +5223,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         }
 
         // specify a name except for CACHE_MAC as cacheName.
-        MacTableEntry ent = new MacTableEntry(evidRemote, nc, (short) 0,
+        MacTableEntry ent = new MacTableEntry(evidRemote, nc, (short)0,
                                               ipaddr);
         mgr.entryUpdated(evidRemote, ent, VTNManagerImpl.CACHE_EVENT, false);
         MacAddressEntry entry = getMacAddressEntry(mgr, bpath, ea);
@@ -5300,7 +5332,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 (byte)0xfc, (byte)0xfd, (byte)0xfe,
             };
             match.setField(MatchType.IN_PORT, innc);
-            match.setField(MatchType.DL_VLAN, (short) 1);
+            match.setField(MatchType.DL_VLAN, (short)1);
             match.setField(MatchType.DL_SRC, src);
             match.setField(MatchType.DL_DST, dst);
             ActionList actions = new ActionList(outnc.getNode());
@@ -5313,7 +5345,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                               node);
             outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                                node);
-            flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+            flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
             fdb.install(mgr, flow);
 
@@ -5328,7 +5360,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                          node10);
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         ActionList acts = new ActionList(outnc.getNode());
         acts.addOutput(outnc);
 
@@ -5411,7 +5443,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             (byte)0xfc, (byte)0xfd, (byte)0xfe,
         };
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
@@ -5424,7 +5456,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         fdb.install(mgr, flow);
         flows.add(flow);
@@ -5501,7 +5533,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             for (EthernetAddress ea : createEthernetAddresses(false)) {
                 byte [] bytes = ea.getValue();
                 byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
-                                        bytes[3], bytes[4], bytes[5]};
+                                          bytes[3], bytes[4], bytes[5]};
                 sender[3] = (byte)iphost;
                 String emsg = ((nc != null) ? "(Incoming nc)" + nc.toString() : "")
                         + ea.toString();

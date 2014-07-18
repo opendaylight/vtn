@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,14 +30,17 @@ public class RawPacketEventTest extends VNodeEventTestBase {
     @Test
     public void testReceived() {
         byte[] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-        byte[] dst = new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                 (byte) 0xff, (byte) 0xff, (byte) 0xff};
-        byte[] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1};
-        byte[] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 10};
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)10};
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
-        NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 10), node);
-        NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 11), node);
-        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short) 0, innc, ARP.REQUEST);
+        NodeConnector innc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)10), node);
+        NodeConnector outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)11), node);
+        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short)0,
+                                           innc, ARP.REQUEST);
 
         RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
 
@@ -49,7 +52,8 @@ public class RawPacketEventTest extends VNodeEventTestBase {
             } else {
                 assertEquals(0, stubObj.getTransmittedDataPacket().size());
             }
-            assertFalse(local.toString(), ev.isSingleThreaded(local.booleanValue()));
+            assertFalse(local.toString(),
+                        ev.isSingleThreaded(local.booleanValue()));
         }
     }
 
@@ -59,14 +63,17 @@ public class RawPacketEventTest extends VNodeEventTestBase {
     @Test
     public void testSerialize() {
         byte[] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-        byte[] dst = new byte[] {(byte) 0xff, (byte) 0xff, (byte) 0xff,
-                                 (byte) 0xff, (byte) 0xff, (byte) 0xff};
-        byte[] sender = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1};
-        byte[] target = new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 10};
+        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
+                                 (byte)0xff, (byte)0xff, (byte)0xff};
+        byte[] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)10};
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
-        NodeConnector innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 10), node);
-        NodeConnector outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 11), node);
-        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short) 0, innc, ARP.REQUEST);
+        NodeConnector innc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)10), node);
+        NodeConnector outnc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)11), node);
+        RawPacket pkt = createARPRawPacket(src, dst, sender, target, (short)0,
+                                           innc, ARP.REQUEST);
 
         RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
         eventSerializeTest(ev);

@@ -202,7 +202,7 @@ public final class EthernetMatchImpl implements PacketMatch {
      *          against packets. A negative value is returned if the VLAN ID
      *          is not specified.
      */
-    public short getVlan () {
+    public short getVlan() {
         return vlan;
     }
 

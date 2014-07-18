@@ -141,7 +141,7 @@ public class MacMapConfigTest extends TestBase {
      * @param allow  A set of strings which represents allowed hosts.
      * @param deny   A set of strings which represents denied hosts.
      */
-    private void parseString(String str, Set<String> allow, Set<String>deny) {
+    private void parseString(String str, Set<String> allow, Set<String> deny) {
         String prefix = "MacMapConfig[";
         assertEquals(0, str.indexOf(prefix));
         int start = prefix.length();

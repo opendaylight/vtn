@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,17 +37,17 @@ public class TestStubCluster extends TestStub {
 
         InetAddress ipaddr = null;
         try {
-            ipaddr = InetAddress.getByAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1});
+            ipaddr = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
+                                                          (byte)0, (byte)1});
         } catch (UnknownHostException e) {
-
         }
         list.add(ipaddr);
 
         ipaddr = null;
         try {
-            ipaddr = InetAddress.getByAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 2});
+            ipaddr = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
+                                                          (byte)0, (byte)2});
         } catch (UnknownHostException e) {
-
         }
         list.add(ipaddr);
 
@@ -58,9 +58,9 @@ public class TestStubCluster extends TestStub {
     public InetAddress getMyAddress() {
         InetAddress ipaddr = null;
         try {
-            ipaddr = InetAddress.getByAddress(new byte[] {(byte) 192, (byte) 168, (byte) 0, (byte) 1});
+            ipaddr = InetAddress.getByAddress(new byte[] {(byte)192, (byte)168,
+                                                          (byte)0, (byte)1});
         } catch (UnknownHostException e) {
-
         }
         return ipaddr;
     }
@@ -80,5 +80,4 @@ public class TestStubCluster extends TestStub {
             return ConnectionLocality.NOT_CONNECTED;
         }
     }
-
 }

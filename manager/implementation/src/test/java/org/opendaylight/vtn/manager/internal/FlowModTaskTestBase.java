@@ -29,14 +29,11 @@ import org.opendaylight.controller.forwardingrulesmanager.PortGroupConfig;
 import org.opendaylight.controller.forwardingrulesmanager.PortGroupProvider;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResultEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
  * Common class for tests of {@link FlowModTask}.
@@ -61,7 +58,7 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         /**
          * constructor
          */
-        ForwardingRulesManagerStub () {
+        ForwardingRulesManagerStub() {
         }
 
         /**
@@ -310,7 +307,7 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         // Override {@code postEvent()} for tests.
         @Override
         public void postEvent(ClusterEvent cev) {
-           stubEventSet.add(cev);
+            stubEventSet.add(cev);
         }
 
         public Set<ClusterEvent> getClusterEventSetStub() {
@@ -323,13 +320,13 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
     }
 
     protected Set<ClusterEvent> getPostedClusterEvent() {
-        Set<ClusterEvent> sets
-            = ((VTNManagerImplStub) vtnMgr).getClusterEventSetStub();
+        Set<ClusterEvent> sets = ((VTNManagerImplStub)vtnMgr).
+            getClusterEventSetStub();
         return new HashSet<ClusterEvent>(sets);
     }
 
     protected void clearPostedClusterEvent() {
-        ((VTNManagerImplStub) vtnMgr).clearClusterEventSetStub();
+        ((VTNManagerImplStub)vtnMgr).clearClusterEventSetStub();
     }
 
     /**

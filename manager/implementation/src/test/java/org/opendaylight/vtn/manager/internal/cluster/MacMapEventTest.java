@@ -9,10 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
 
 import org.junit.Test;
 
@@ -20,7 +18,6 @@ import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.internal.VNodeEventTestBase;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.core.UpdateType;
 
@@ -29,7 +26,7 @@ import org.opendaylight.controller.sal.core.UpdateType;
  *
  * <p>
  *   This class does not check if
- *   {@link MacMapEvent#eventReceived(VTNManagerImpl, boolean)} works.
+ *   {@link MacMapEvent#eventReceived(org.opendaylight.vtn.manager.internal.VTNManagerImpl, boolean)} works.
  *   It will be done by
  *   {@link org.opendaylight.vtn.manager.internal.VTNManagerImplClusterTest}.
  * </p>

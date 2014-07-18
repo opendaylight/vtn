@@ -213,7 +213,7 @@ public class GlobalResourceManager
      *
      * @param <T>  The type of the object returned by this operation.
      */
-    private abstract class ConfigTransaction<T> extends CacheTransaction<T> {
+    private abstract class ConfigTrans<T> extends CacheTransaction<T> {
         /**
          * Determine whether the configuration was changed or not.
          */
@@ -224,7 +224,7 @@ public class GlobalResourceManager
          *
          * @param config  A {@link VTNConfig} object.
          */
-        private ConfigTransaction(VTNConfig config) {
+        private ConfigTrans(VTNConfig config) {
             super(clusterService, config.getCacheTransactionTimeout());
         }
 
@@ -308,8 +308,8 @@ public class GlobalResourceManager
          * A map which keeps {@link MapCleaner} instances used to purge
          * network caches.
          */
-        private final Map<ObjectPair<String, String>, MapCleaner>
-            mapCleaners = new HashMap<ObjectPair<String, String>, MapCleaner>();
+        private final Map<ObjectPair<String, String>, MapCleaner> mapCleaners =
+            new HashMap<ObjectPair<String, String>, MapCleaner>();
 
         /**
          * Return a {@link MapCleaner} instance associated with the
@@ -320,8 +320,8 @@ public class GlobalResourceManager
          * @return  A {@link MapCleaner} instance if found.
          *          {@code null} is returned if not found.
          */
-        protected final MapCleaner
-            getMapCleaner(ObjectPair<String, String> name) {
+        protected final MapCleaner getMapCleaner(
+            ObjectPair<String, String> name) {
             return mapCleaners.get(name);
         }
 
@@ -346,8 +346,8 @@ public class GlobalResourceManager
          * @return  A {@link ObjectPair} instance which keeps a pair of
          *          container and tenant name.
          */
-        protected final ObjectPair<String, String>
-            getMapCleanerKey(MapReference ref) {
+        protected final ObjectPair<String, String> getMapCleanerKey(
+            MapReference ref) {
             String containerName = ref.getContainerName();
             String tenantName = ref.getPath().getTenantName();
             return new ObjectPair<String, String>(containerName, tenantName);
@@ -1275,8 +1275,8 @@ public class GlobalResourceManager
     private void releasePort(PortVlan pvlan, MapReference ref)
         throws VTNException {
         if (!portMaps.remove(pvlan, ref)) {
-            StringBuilder builder = new StringBuilder
-                ("MAC mapping did not reserve port: map=");
+            StringBuilder builder = new StringBuilder(
+                "MAC mapping did not reserve port: map=");
             builder.append(ref.toString()).
                 append(", port=").append(pvlan.toString());
             throw new VTNException(StatusCode.INTERNALERROR,
@@ -1551,8 +1551,8 @@ public class GlobalResourceManager
             putMacMapState(ref, mst);
         } else if (old == null) {
             // This should never happen.
-            StringBuilder builder = new StringBuilder
-                ("Port is reserved by MAC mapping unexpectedly: map=");
+            StringBuilder builder = new StringBuilder(
+                "Port is reserved by MAC mapping unexpectedly: map=");
             builder.append(ref.toString()).append(", host={");
             mvlan.appendContents(builder);
             builder.append("}, pvlan=").append(pvlan.toString());
@@ -1938,8 +1938,8 @@ public class GlobalResourceManager
         final MapReference ref = mgr.getMapReference(path);
 
         // Register VLAN mapping in a cluster cache transaction.
-        ConfigTransaction<VlanMapResult> xact =
-            new ConfigTransaction<VlanMapResult>(mgr.getVTNConfig()) {
+        ConfigTrans<VlanMapResult> xact = new ConfigTrans<VlanMapResult>(
+            mgr.getVTNConfig()) {
             @Override
             protected VlanMapResult update() throws VTNException {
                 VlanMapResult r = new VlanMapResult();
@@ -1968,8 +1968,7 @@ public class GlobalResourceManager
         final MapReference ref = mgr.getMapReference(path);
 
         // Unregister VLAN mapping in a cluster cache transaction.
-        ConfigTransaction<Object> xact =
-            new ConfigTransaction<Object>(mgr.getVTNConfig()) {
+        ConfigTrans<Object> xact = new ConfigTrans<Object>(mgr.getVTNConfig()) {
             @Override
             protected Object update() throws VTNException {
                 removeVlanMap(ref, nvlan);
@@ -1999,8 +1998,8 @@ public class GlobalResourceManager
 
         // Change port mappings in a cluster cache transaction.
         final MapReference ref = mgr.getMapReference(path);
-        ConfigTransaction<PortMapResult> xact =
-            new ConfigTransaction<PortMapResult>(mgr.getVTNConfig()) {
+        ConfigTrans<PortMapResult> xact = new ConfigTrans<PortMapResult>(
+            mgr.getVTNConfig()) {
             @Override
             protected PortMapResult update() throws VTNException {
                 PortMapResult r = changePortMap(pvlan, ref, rmlan, purge);
@@ -2043,8 +2042,8 @@ public class GlobalResourceManager
         throws VTNException {
         // Change MAC mapping configuration in a cluster cache transaction.
         final MapReference ref = mgr.getMapReference(path);
-        ConfigTransaction<MacMapResult> xact =
-            new ConfigTransaction<MacMapResult>(mgr.getVTNConfig()) {
+        ConfigTrans<MacMapResult> xact = new ConfigTrans<MacMapResult>(
+            mgr.getVTNConfig()) {
             @Override
             protected MacMapResult update() throws VTNException {
                 MacMapResult r = changeMacMap(ref, change);
@@ -2202,8 +2201,8 @@ public class GlobalResourceManager
         throws VTNException {
         // Activate MAC mapping in a cluster cache transaction.
         final MapReference ref = mgr.getMapReference(path);
-        ConfigTransaction<MacMapActivation> xact =
-            new ConfigTransaction<MacMapActivation>(mgr.getVTNConfig()) {
+        ConfigTrans<MacMapActivation> xact = new ConfigTrans<MacMapActivation>(
+            mgr.getVTNConfig()) {
             @Override
             protected MacMapActivation update() throws VTNException {
                 MacMapActivation r = activateMacMapImpl(ref, mvlan, port);
@@ -2234,8 +2233,8 @@ public class GlobalResourceManager
         throws VTNException {
         // Inactivate MAC mappings in a cluster cache transaction.
         final MapReference ref = mgr.getMapReference(path);
-        ConfigTransaction<MacMapPurgeResult> xact =
-            new ConfigTransaction<MacMapPurgeResult>(mgr.getVTNConfig()) {
+        ConfigTrans<MacMapPurgeResult> x = new ConfigTrans<MacMapPurgeResult>(
+            mgr.getVTNConfig()) {
             @Override
             protected MacMapPurgeResult update() throws VTNException {
                 MacMapPurgeResult r = new MacMapPurgeResult();
@@ -2246,7 +2245,7 @@ public class GlobalResourceManager
             }
         };
 
-        MacMapPurgeResult result = xact.execute();
+        MacMapPurgeResult result = x.execute();
         result.cleanUp(ref);
 
         return result.isActive();
@@ -2306,8 +2305,7 @@ public class GlobalResourceManager
         // Clean up caches in a cluster cache transaction.
         String root = GlobalConstants.STARTUPHOME.toString();
         VTNConfig config = new VTNConfig(root, containerName);
-        ConfigTransaction<Object> xact =
-            new ConfigTransaction<Object>(config) {
+        ConfigTrans<Object> xact = new ConfigTrans<Object>(config) {
             @Override
             protected Object update() {
                 if (cleanUpImpl(containerName)) {

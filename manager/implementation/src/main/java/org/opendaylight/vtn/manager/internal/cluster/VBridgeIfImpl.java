@@ -987,7 +987,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             ref = resMgr.registerPortMap(mgr, ifPath, pvlan, null, !resuming);
         } catch (VTNException e) {
             LOG.error(getContainerName() + ":" + ifPath +
-                      ": Failed to map port: "+ pvlan, e);
+                      ": Failed to map port: " + pvlan, e);
             return false;
         }
 
@@ -1033,7 +1033,7 @@ public final class VBridgeIfImpl implements VBridgeNode, Serializable {
             resMgr.unregisterPortMap(mgr, ifPath, pvlan, purge);
         } catch (VTNException e) {
             LOG.error(getContainerName() + ":" + ifPath +
-                      ": Failed to unmap port: "+ pvlan, e);
+                      ": Failed to unmap port: " + pvlan, e);
             // FALLTHROUGH
         }
 

@@ -525,9 +525,9 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
             throws VTNException {
             MacVlan mvlan = new MacVlan(dlhost);
             if (mvlan.getMacAddress() == MacVlan.UNDEFINED) {
-                throw new VTNException
-                    (StatusCode.BADREQUEST,
-                     "MAC address cannot be null in denied hosts: " + dlhost);
+                throw new VTNException(
+                    StatusCode.BADREQUEST,
+                    "MAC address cannot be null in denied hosts: " + dlhost);
             }
 
             return mvlan;
@@ -589,7 +589,7 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
                     // configuration.
                     allowedContext.add(allow);
                     deniedContext.add(deny);
-            } else {
+                } else {
                     // Remove the specified configuration from the current
                     // configuration.
                     assert op == UpdateOperation.REMOVE;
@@ -956,8 +956,8 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
             boolean active = resMgr.inactivateMacMap(mgr, mapPath, filter);
             return getBridgeState(active, bstate);
         } catch (Exception e) {
-            StringBuilder builder =
-                createLog(mgr, "Failed to inactivate MAC mapping on switch: ").
+            StringBuilder builder = createLog(
+                mgr, "Failed to inactivate MAC mapping on switch: ").
                 append(node.toString());
             LOG.error(builder.toString(), e);
         }
@@ -989,9 +989,8 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
             boolean active = resMgr.inactivateMacMap(mgr, mapPath, filter);
             return getBridgeState(active, bstate);
         } catch (Exception e) {
-            StringBuilder builder =
-                createLog(mgr, "Failed to inactivate MAC mapping on " +
-                          "switch port: ").
+            StringBuilder builder = createLog(
+                mgr, "Failed to inactivate MAC mapping on switch port: ").
                 append(nc.toString());
             LOG.error(builder.toString(), e);
         }
@@ -1170,8 +1169,8 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
             MacVlan host = e.getHost();
             MapReference ref = e.getMapReference();
             assert ref.getMapType() == MapType.MAC;
-            throw new VTNException
-                (alreadyMapped(host, ref.getAbsolutePath()), e);
+            throw new VTNException(alreadyMapped(host, ref.getAbsolutePath()),
+                                   e);
         }
 
         return removing;

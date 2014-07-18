@@ -16,7 +16,6 @@ import java.util.List;
 
 import org.junit.Test;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
 /**
@@ -28,7 +27,7 @@ public class MacAddressEntryTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         List<Set<InetAddress>> ips = createInetAddresses();
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         for (NodeConnector nc : createNodeConnectors(3, false)) {
@@ -87,7 +86,7 @@ public class MacAddressEntryTest extends TestBase {
      */
     @Test
     public void testEquals() {
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         List<Set<InetAddress>> ips = createInetAddresses(false);
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
         HashSet<Object> set = new HashSet<Object>();
@@ -121,7 +120,7 @@ public class MacAddressEntryTest extends TestBase {
     public void testToString() {
         List<Set<InetAddress>> ips = createInetAddresses();
         String prefix = "MacAddressEntry[";
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         for (NodeConnector nc : createNodeConnectors(3, false)) {
             for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : createEthernetAddresses(false)) {
@@ -159,7 +158,7 @@ public class MacAddressEntryTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = { -10, 0, 1, 100, 4095 };
+        short[] vlans = {-10, 0, 1, 100, 4095};
         for (NodeConnector nc : createNodeConnectors(3, false)) {
             for (Set<InetAddress> ipset : createInetAddresses()) {
                 for (EthernetAddress ea : createEthernetAddresses(false)) {

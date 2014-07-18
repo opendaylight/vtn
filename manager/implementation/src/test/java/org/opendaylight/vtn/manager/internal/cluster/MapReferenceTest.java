@@ -21,8 +21,6 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.core.Node;
-
 /**
  * JUnit test for {@link MapReference}.
  */

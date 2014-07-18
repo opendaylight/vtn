@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -222,9 +222,9 @@ public class VBridgeTest extends TestBase {
     private void jaxbStateTest(String name, String desc, Integer ival,
                                Integer faults, Integer state,
                                VNodeState required) {
-        StringBuilder builder = new StringBuilder
-            ("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-             "<vbridge");
+        StringBuilder builder = new StringBuilder(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+            "<vbridge");
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }

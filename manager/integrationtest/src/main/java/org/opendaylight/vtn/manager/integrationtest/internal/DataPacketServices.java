@@ -17,21 +17,19 @@ import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.connection.IPluginOutConnectionService;
 import org.opendaylight.controller.sal.packet.IPluginInDataPacketService;
 import org.opendaylight.controller.sal.packet.RawPacket;
 
 public class DataPacketServices implements IPluginInDataPacketService {
-    private static final Logger logger = LoggerFactory
-            .getLogger(DataPacketServices.class);
+    private static final Logger LOG = LoggerFactory.
+        getLogger(DataPacketServices.class);
 
     private List<RawPacket> pktList = new CopyOnWriteArrayList<RawPacket>();
     private CountDownLatch latch = null;
 
     void init() {
-        logger.debug("openflow stub DataPacketServices init called.");
+        LOG.debug("openflow stub DataPacketServices init called.");
     }
 
     void destroy() {
@@ -59,7 +57,8 @@ public class DataPacketServices implements IPluginInDataPacketService {
     }
 
     public CountDownLatch setLatch(int expectedPktCount) {
-        logger.trace("setLatch called. Start waiting for {} packet(s).", expectedPktCount);
+        LOG.trace("setLatch called. Start waiting for {} packet(s).",
+                  expectedPktCount);
         this.latch = new CountDownLatch(expectedPktCount);
         return this.latch;
     }
@@ -71,7 +70,7 @@ public class DataPacketServices implements IPluginInDataPacketService {
     }
 
     public void clearPkt() {
-        logger.debug("openflow stub DataPacketServices clearPkt called.");
+        LOG.debug("openflow stub DataPacketServices clearPkt called.");
         if (pktList == null) {
             return;
         }
@@ -79,7 +78,7 @@ public class DataPacketServices implements IPluginInDataPacketService {
     }
 
     public int getPktCount() {
-        logger.trace("openflow stub DataPacketServices getPktCount called.");
+        LOG.trace("openflow stub DataPacketServices getPktCount called.");
         if (pktList == null || pktList.isEmpty()) {
             return 0;
         }
@@ -110,19 +109,19 @@ public class DataPacketServices implements IPluginInDataPacketService {
      */
     @Override
     public void transmitDataPacket(RawPacket outPkt) {
-        logger.debug("openflow stub DataPacketServices transmitDataPacket called.");
+        LOG.debug("openflow stub DataPacketServices transmitDataPacket called.");
         if (outPkt == null) {
-            logger.debug("outPkt is null.");
+            LOG.debug("outPkt is null.");
             return;
         }
 
         NodeConnector nc = outPkt.getOutgoingNodeConnector();
         if (nc == null) {
-            logger.debug("outPkt's outgoing port is not specified.");
+            LOG.debug("outPkt's outgoing port is not specified.");
             return;
         }
 
-        logger.debug("outPkt is added.");
+        LOG.debug("outPkt is added.");
         pktList.add(outPkt);
         if (this.latch != null) {
             this.latch.countDown();

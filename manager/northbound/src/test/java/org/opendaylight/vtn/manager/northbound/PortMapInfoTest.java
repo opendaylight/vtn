@@ -72,7 +72,7 @@ public class PortMapInfoTest extends TestBase {
         List<NodeConnector> connectors = createNodeConnectors(3);
         List<Node> nodes = createNodes(3);
         List<SwitchPort> ports = createSwitchPorts(5);
-        short vlans[] = {-10, 0, 1, 100, 4095};
+        short[] vlans = {-10, 0, 1, 100, 4095};
         for (NodeConnector nc: connectors) {
             for (Node node: nodes) {
                 for (SwitchPort port: ports) {
@@ -101,7 +101,7 @@ public class PortMapInfoTest extends TestBase {
     public void testSerialize() {
         String prefix = "PortMapInfo[";
         String suffix = "]";
-        short vlans[] = {-10, 0, 4095};
+        short[] vlans = {-10, 0, 4095};
         for (NodeConnector nc: createNodeConnectors(3)) {
             for (Node node: createNodes(3)) {
                 for (SwitchPort port: createSwitchPorts(5)) {
@@ -121,7 +121,7 @@ public class PortMapInfoTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        short vlans[] = {-10, 0, 4095};
+        short[] vlans = {-10, 0, 4095};
         for (NodeConnector nc: createNodeConnectors(3)) {
             for (Node node: createNodes(3)) {
                 for (SwitchPort port: createSwitchPorts(5)) {

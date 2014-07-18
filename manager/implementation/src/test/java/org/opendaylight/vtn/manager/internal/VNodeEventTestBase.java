@@ -23,10 +23,10 @@ import org.junit.Before;
 import org.opendaylight.controller.clustering.services.IClusterContainerServices;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
-import org.opendaylight.vtn.manager.internal.cluster.VNodeEvent;
 
 /**
- * Base class for test of classes inherit {@link VNodeEvent}.
+ * Base class for test of classes that inherit
+ * {@link org.opendaylight.vtn.manager.internal.cluster.VNodeEvent}.
  */
 public class VNodeEventTestBase extends TestUseVTNManagerBase {
 
@@ -73,10 +73,10 @@ public class VNodeEventTestBase extends TestUseVTNManagerBase {
      */
     public List<ClusterEvent> getClusterEvent() {
         IClusterContainerServices cs = vtnMgr.getClusterContainerService();
-        ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents
-            = (ConcurrentMap<ClusterEventId, ClusterEvent>) cs
-                .getCache(VTNManagerImpl.CACHE_EVENT);
-        if (clsEvents == null || clsEvents.size() == 0 ) {
+        ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents =
+            (ConcurrentMap<ClusterEventId, ClusterEvent>)cs
+            .getCache(VTNManagerImpl.CACHE_EVENT);
+        if (clsEvents == null || clsEvents.size() == 0) {
             return null;
         }
         return new ArrayList<ClusterEvent>(clsEvents.values());
@@ -87,9 +87,9 @@ public class VNodeEventTestBase extends TestUseVTNManagerBase {
      */
     public void clearClusterEvent() {
         IClusterContainerServices cs = vtnMgr.getClusterContainerService();
-        ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents
-            = (ConcurrentMap<ClusterEventId, ClusterEvent>) cs
-                .getCache(VTNManagerImpl.CACHE_EVENT);
+        ConcurrentMap<ClusterEventId, ClusterEvent> clsEvents =
+            (ConcurrentMap<ClusterEventId, ClusterEvent>)cs
+            .getCache(VTNManagerImpl.CACHE_EVENT);
         if (clsEvents != null) {
             clsEvents.clear();
         }

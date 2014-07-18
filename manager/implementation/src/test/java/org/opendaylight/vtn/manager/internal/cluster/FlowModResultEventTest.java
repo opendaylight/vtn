@@ -132,7 +132,7 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
             (byte)0xfc, (byte)0xfd, (byte)0xfe,
         };
         match.setField(MatchType.IN_PORT, innc);
-        match.setField(MatchType.DL_VLAN, (short) 1);
+        match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
         ActionList actions = new ActionList(outnc.getNode());
@@ -145,14 +145,14 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
                                                           node0);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node0);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         // + remote entry.
         innc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
-        flow = addFlowEntry(vtnMgr, flow, innc, (short) 1, outnc, pri);
+        flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
 
         FlowEntry rent = null;
         Iterator<FlowEntry> it = flow.getFlowEntries().iterator();
@@ -164,7 +164,7 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
             rent = null;
         }
 
-       for (FlowModResult result : FlowModResult.values()) {
+        for (FlowModResult result : FlowModResult.values()) {
             for (Boolean local : createBooleans(false)) {
                 String emsg = "(FlowModResult)" + result.toString()
                         + ",(local)" + local.toString();
@@ -210,6 +210,6 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
                 clearPostedClusterEvent();
             }
         }
-       cleanupSetupFile();
+        cleanupSetupFile();
     }
 }

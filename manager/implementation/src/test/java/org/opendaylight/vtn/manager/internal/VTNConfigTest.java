@@ -22,53 +22,52 @@ import org.junit.Test;
  * JUnit test for {@link VTNConfig}.
  */
 public class VTNConfigTest extends TestBase {
-
     // Default value, min value, max value of nodeEdgeWait.
-    private final int  DEFAULT_NODE_EDGE_WAIT = 3000;
-    private final int  MIN_NODE_EDGE_WAIT = 0;
-    private final int  MAX_NODE_EDGE_WAIT = 600000;
+    private static final int  DEFAULT_NODE_EDGE_WAIT = 3000;
+    private static final int  MIN_NODE_EDGE_WAIT = 0;
+    private static final int  MAX_NODE_EDGE_WAIT = 600000;
 
     // Default value, min value, max value of l2FlowPriority
-    private final int  DEFAULT_L2FLOW_PRIORITY = 10;
-    private final int  MIN_L2FLOW_PRIORITY = 1;
-    private final int  MAX_L2FLOW_PRIORITY = 999;
+    private static final int  DEFAULT_L2FLOW_PRIORITY = 10;
+    private static final int  MIN_L2FLOW_PRIORITY = 1;
+    private static final int  MAX_L2FLOW_PRIORITY = 999;
 
     // Default value, min value, max value value of flowModTimeout
-    private final int  DEFAULT_FLOWMOD_TIMEOUT = 3000;
-    private final int  MIN_FLOWMOD_TIMEOUT = 100;
-    private final int  MAX_FLOWMOD_TIMEOUT = 60000;
+    private static final int  DEFAULT_FLOWMOD_TIMEOUT = 3000;
+    private static final int  MIN_FLOWMOD_TIMEOUT = 100;
+    private static final int  MAX_FLOWMOD_TIMEOUT = 60000;
 
     // Default value, min value, max value of remoteFlowModTimeout
-    private final int  DEFAULT_REMOTE_FLOWMOD_TIMEOUT = 5000;
-    private final int  MIN_REMOTE_FLOWMOD_TIMEOUT = 1000;
-    private final int  MAX_REMOTE_FLOWMOD_TIMEOUT = 60000;
+    private static final int  DEFAULT_REMOTE_FLOWMOD_TIMEOUT = 5000;
+    private static final int  MIN_REMOTE_FLOWMOD_TIMEOUT = 1000;
+    private static final int  MAX_REMOTE_FLOWMOD_TIMEOUT = 60000;
 
     // Default value, min value, max value of remoteBulkFlowModTimeout
-    private final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
-    private final int  MIN_REMOTE_BULK_FLOWMOD_TIMEOUT = 3000;
-    private final int  MAX_REMOTE_BULK_FLOWMOD_TIMEOUT = 600000;
+    private static final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
+    private static final int  MIN_REMOTE_BULK_FLOWMOD_TIMEOUT = 3000;
+    private static final int  MAX_REMOTE_BULK_FLOWMOD_TIMEOUT = 600000;
 
     // Default value, min value, max value of cacheInitTimeout
-    private final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
-    private final int  MIN_CACHE_INIT_TIMEOUT = 100;
-    private final int  MAX_CACHE_INIT_TIMEOUT = 600000;
+    private static final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
+    private static final int  MIN_CACHE_INIT_TIMEOUT = 100;
+    private static final int  MAX_CACHE_INIT_TIMEOUT = 600000;
 
     // Default value, min value, max value of cacheTransactionTimeout
-    private final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
-    private final int  MIN_CACHE_TRANSACTION_TIMEOUT = 100;
-    private final int  MAX_CACHE_TRANSACTION_TIMEOUT = 600000;
+    private static final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
+    private static final int  MIN_CACHE_TRANSACTION_TIMEOUT = 100;
+    private static final int  MAX_CACHE_TRANSACTION_TIMEOUT = 600000;
 
     // Separaters between key and value.
-    private final String[] separaters = new String[] {"=", ":"};
+    private static final String[] SEPARATORS = new String[] {"=", ":"};
 
     // Configuration file name.
-    private final static String containerName = "unittest";
-    private final static String containerFilename = "vtnmanager-" + containerName + ".ini";
-    private final static String globalFilename = "vtnmanager.ini";
+    private static final String CONTAINER_NAME = "unittest";
+    private static final String CONTAINER_FILE_NAME =
+        "vtnmanager-" + CONTAINER_NAME + ".ini";
+    private static final String GLOBAL_FILE_NAME = "vtnmanager.ini";
 
     // The working directory used for test.
-    private final static String WORK_DIR = "work";
-
+    private static final String WORK_DIR = "work";
 
     @AfterClass
     public static void afterclass() {
@@ -105,12 +104,12 @@ public class VTNConfigTest extends TestBase {
     @Test
     public void testVTNConfigNodeEdgeWait() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_NODE_EDGE_WAIT),
-                String.valueOf(MIN_NODE_EDGE_WAIT - 1),
-                String.valueOf(MAX_NODE_EDGE_WAIT),
-                String.valueOf(MAX_NODE_EDGE_WAIT + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_NODE_EDGE_WAIT),
+            String.valueOf(MIN_NODE_EDGE_WAIT - 1),
+            String.valueOf(MAX_NODE_EDGE_WAIT),
+            String.valueOf(MAX_NODE_EDGE_WAIT + 1),
+            "val"
         };
 
         testVTNConfig("nodeEdgeWait", DEFAULT_NODE_EDGE_WAIT,
@@ -127,12 +126,12 @@ public class VTNConfigTest extends TestBase {
     @Test
     public void testVTNConfigL2FlowPriority() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_L2FLOW_PRIORITY),
-                String.valueOf(MIN_L2FLOW_PRIORITY - 1),
-                String.valueOf(MAX_L2FLOW_PRIORITY),
-                String.valueOf(MAX_L2FLOW_PRIORITY + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_L2FLOW_PRIORITY),
+            String.valueOf(MIN_L2FLOW_PRIORITY - 1),
+            String.valueOf(MAX_L2FLOW_PRIORITY),
+            String.valueOf(MAX_L2FLOW_PRIORITY + 1),
+            "val"
         };
 
         testVTNConfig("l2FlowPriority", DEFAULT_L2FLOW_PRIORITY,
@@ -149,12 +148,12 @@ public class VTNConfigTest extends TestBase {
     @Test
     public void testVTNConfigFlowModTimeout() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_FLOWMOD_TIMEOUT),
-                String.valueOf(MIN_FLOWMOD_TIMEOUT - 1),
-                String.valueOf(MAX_FLOWMOD_TIMEOUT),
-                String.valueOf(MAX_FLOWMOD_TIMEOUT + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_FLOWMOD_TIMEOUT),
+            String.valueOf(MIN_FLOWMOD_TIMEOUT - 1),
+            String.valueOf(MAX_FLOWMOD_TIMEOUT),
+            String.valueOf(MAX_FLOWMOD_TIMEOUT + 1),
+            "val"
         };
 
         testVTNConfig("flowModTimeout", DEFAULT_FLOWMOD_TIMEOUT,
@@ -171,12 +170,12 @@ public class VTNConfigTest extends TestBase {
     @Test
     public void testVTNConfigRemoteFlowModTimeout() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_REMOTE_FLOWMOD_TIMEOUT),
-                String.valueOf(MIN_REMOTE_FLOWMOD_TIMEOUT - 1),
-                String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT),
-                String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_REMOTE_FLOWMOD_TIMEOUT),
+            String.valueOf(MIN_REMOTE_FLOWMOD_TIMEOUT - 1),
+            String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT),
+            String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT + 1),
+            "val"
         };
 
         testVTNConfig("remoteFlowModTimeout", DEFAULT_REMOTE_FLOWMOD_TIMEOUT,
@@ -184,22 +183,22 @@ public class VTNConfigTest extends TestBase {
                       values);
     }
 
-     /**
-      * Test case for
-      * {@link VTNConfig#VTNConfig(String, String)},
-      * {@link VTNConfig#getRemoteBulkFlowModTimeout()}.
-      *
-      * This method tests {@code remoteBulkFlowModTimeout} parameter.
-      */
-     @Test
-     public void testVTNConigNodeRemoteBulkFlowModTimeout() {
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getRemoteBulkFlowModTimeout()}.
+     *
+     * This method tests {@code remoteBulkFlowModTimeout} parameter.
+     */
+    @Test
+    public void testVTNConigNodeRemoteBulkFlowModTimeout() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT),
-                String.valueOf(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT - 1),
-                String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT),
-                String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT),
+            String.valueOf(MIN_REMOTE_BULK_FLOWMOD_TIMEOUT - 1),
+            String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT),
+            String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT + 1),
+            "val"
         };
 
         testVTNConfig("remoteBulkFlowModTimeout",
@@ -208,22 +207,22 @@ public class VTNConfigTest extends TestBase {
                       MAX_REMOTE_BULK_FLOWMOD_TIMEOUT, values);
     }
 
-     /**
-      * Test case for
-      * {@link VTNConfig#VTNConfig(String, String)},
-      * {@link VTNConfig#getCacheInitTimeout()}.
-      *
-      * This method tests {@code cacheInitTimeout} parameter.
-      */
-     @Test
-     public void testVTNConigCacheInitTimeout() {
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getCacheInitTimeout()}.
+     *
+     * This method tests {@code cacheInitTimeout} parameter.
+     */
+    @Test
+    public void testVTNConigCacheInitTimeout() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_CACHE_INIT_TIMEOUT),
-                String.valueOf(MIN_CACHE_INIT_TIMEOUT - 1),
-                String.valueOf(MAX_CACHE_INIT_TIMEOUT),
-                String.valueOf(MAX_CACHE_INIT_TIMEOUT + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_CACHE_INIT_TIMEOUT),
+            String.valueOf(MIN_CACHE_INIT_TIMEOUT - 1),
+            String.valueOf(MAX_CACHE_INIT_TIMEOUT),
+            String.valueOf(MAX_CACHE_INIT_TIMEOUT + 1),
+            "val"
         };
 
         testVTNConfig("cacheInitTimeout",
@@ -232,22 +231,22 @@ public class VTNConfigTest extends TestBase {
                       MAX_CACHE_INIT_TIMEOUT, values);
     }
 
-     /**
-      * Test case for
-      * {@link VTNConfig#VTNConfig(String, String)},
-      * {@link VTNConfig#getCacheTransactionTimeout()}.
-      *
-      * This method tests {@code cacheTransactionTimeout} parameter.
-      */
-     @Test
-     public void testVTNConigCacheTransactionTimeout() {
+    /**
+     * Test case for
+     * {@link VTNConfig#VTNConfig(String, String)},
+     * {@link VTNConfig#getCacheTransactionTimeout()}.
+     *
+     * This method tests {@code cacheTransactionTimeout} parameter.
+     */
+    @Test
+    public void testVTNConigCacheTransactionTimeout() {
         String[] values = {
-                null, "empty", "",
-                String.valueOf(MIN_CACHE_TRANSACTION_TIMEOUT),
-                String.valueOf(MIN_CACHE_TRANSACTION_TIMEOUT - 1),
-                String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT),
-                String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT + 1),
-                "val"
+            null, "empty", "",
+            String.valueOf(MIN_CACHE_TRANSACTION_TIMEOUT),
+            String.valueOf(MIN_CACHE_TRANSACTION_TIMEOUT - 1),
+            String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT),
+            String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT + 1),
+            "val"
         };
 
         testVTNConfig("cacheTransactionTimeout",
@@ -269,11 +268,11 @@ public class VTNConfigTest extends TestBase {
                                int minValue, int maxValue, String[] values) {
         cleanup(false);
 
-        for (String separater : separaters) {
+        for (String separater : SEPARATORS) {
             for (String gval : values) {
                 // setup global .ini file.
                 FileWriter gWriter;
-                File gIniFile = new File(WORK_DIR, globalFilename);
+                File gIniFile = new File(WORK_DIR, GLOBAL_FILE_NAME);
                 if (gval != null && gval.equals("empty")) {
                     // if null, create a empty file.
                     try {
@@ -281,7 +280,7 @@ public class VTNConfigTest extends TestBase {
                     } catch (IOException e) {
                         unexpected(e);
                     }
-                } else if (gval != null){
+                } else if (gval != null) {
                     String prop = parameterString + separater + gval;
                     int ave = (minValue + maxValue) / 2;
                     String propComment = "#" + parameterString + separater + ave;
@@ -319,7 +318,7 @@ public class VTNConfigTest extends TestBase {
 
                     // setup container .ini file
                     FileWriter cWriter;
-                    File contIniFile = new File(WORK_DIR, containerFilename);
+                    File contIniFile = new File(WORK_DIR, CONTAINER_FILE_NAME);
                     VTNConfig conf;
 
                     if (cval != null && cval.equals("empty")) {
@@ -329,7 +328,7 @@ public class VTNConfigTest extends TestBase {
                         } catch (IOException e) {
                             unexpected(e);
                         }
-                        conf = new VTNConfig(WORK_DIR, containerName);
+                        conf = new VTNConfig(WORK_DIR, CONTAINER_NAME);
                     } else if (cval != null) {
                         String prop = parameterString + separater + cval;
                         int ave = (minValue + maxValue) / 4;
@@ -343,7 +342,7 @@ public class VTNConfigTest extends TestBase {
                         } catch (IOException e) {
                             unexpected(e);
                         }
-                        conf = new VTNConfig(WORK_DIR, containerName);
+                        conf = new VTNConfig(WORK_DIR, CONTAINER_NAME);
                     } else {
                         // in case of null delete configuration file.
                         if (contIniFile.exists()) {
@@ -411,29 +410,29 @@ public class VTNConfigTest extends TestBase {
     @Test
     public void testVTNConfigAll() {
         String[] parameterStrings = new String[] {
-                "nodeEdgeWait",
-                "l2FlowPriority",
-                "flowModTimeout",
-                "remoteFlowModTimeout",
-                "remoteBulkFlowModTimeout",
-                "cacheInitTimeout",
-                "cacheTransactionTimeout"
+            "nodeEdgeWait",
+            "l2FlowPriority",
+            "flowModTimeout",
+            "remoteFlowModTimeout",
+            "remoteBulkFlowModTimeout",
+            "cacheInitTimeout",
+            "cacheTransactionTimeout"
         };
 
         cleanup(false);
 
-        for (String separater : separaters) {
-            File gIniFile = new File(WORK_DIR, globalFilename);
+        for (String separater : SEPARATORS) {
+            File gIniFile = new File(WORK_DIR, GLOBAL_FILE_NAME);
             if (gIniFile.exists()) {
                 assertTrue(gIniFile.delete());
             }
 
-            File cIniFile = new File(WORK_DIR, containerFilename);
+            File cIniFile = new File(WORK_DIR, CONTAINER_FILE_NAME);
             if (cIniFile.exists()) {
                 assertTrue(cIniFile.delete());
             }
 
-            VTNConfig conf = new VTNConfig(WORK_DIR, containerName);
+            VTNConfig conf = new VTNConfig(WORK_DIR, CONTAINER_NAME);
 
             assertEquals(DEFAULT_NODE_EDGE_WAIT, conf.getNodeEdgeWait());
             assertEquals(DEFAULT_L2FLOW_PRIORITY, conf.getL2FlowPriority());
@@ -449,7 +448,7 @@ public class VTNConfigTest extends TestBase {
 
             // setup global .ini file.
             FileWriter gWriter = null;
-            gIniFile = new File(WORK_DIR, globalFilename);
+            gIniFile = new File(WORK_DIR, GLOBAL_FILE_NAME);
             try {
                 gWriter = new FileWriter(gIniFile);
             } catch (IOException e) {
@@ -492,7 +491,7 @@ public class VTNConfigTest extends TestBase {
             }
 
             // setup container file
-            conf = new VTNConfig(WORK_DIR, containerName);
+            conf = new VTNConfig(WORK_DIR, CONTAINER_NAME);
 
             assertEquals(MIN_NODE_EDGE_WAIT, conf.getNodeEdgeWait());
             assertEquals(MIN_L2FLOW_PRIORITY, conf.getL2FlowPriority());
@@ -506,7 +505,7 @@ public class VTNConfigTest extends TestBase {
                          conf.getCacheTransactionTimeout());
 
             // setup container .ini file.
-            cIniFile = new File(WORK_DIR, containerFilename);
+            cIniFile = new File(WORK_DIR, CONTAINER_FILE_NAME);
             FileWriter cwriter = null;
             try {
                 cwriter = new FileWriter(cIniFile);
@@ -548,7 +547,7 @@ public class VTNConfigTest extends TestBase {
                 unexpected(e);
             }
 
-            conf = new VTNConfig(WORK_DIR, containerName);
+            conf = new VTNConfig(WORK_DIR, CONTAINER_NAME);
 
             assertEquals(MAX_NODE_EDGE_WAIT, conf.getNodeEdgeWait());
             assertEquals(MAX_L2FLOW_PRIORITY, conf.getL2FlowPriority());
@@ -573,7 +572,7 @@ public class VTNConfigTest extends TestBase {
      *                  instead of {@code delete()}.
      */
     public static void cleanup(boolean isExit) {
-        File ginifile = new File(WORK_DIR, globalFilename);
+        File ginifile = new File(WORK_DIR, GLOBAL_FILE_NAME);
         if (ginifile.exists()) {
             if (isExit) {
                 ginifile.deleteOnExit();
@@ -582,7 +581,7 @@ public class VTNConfigTest extends TestBase {
             }
         }
 
-        File inifile = new File(WORK_DIR, containerFilename);
+        File inifile = new File(WORK_DIR, CONTAINER_FILE_NAME);
         if (inifile.exists()) {
             if (isExit) {
                 inifile.deleteOnExit();

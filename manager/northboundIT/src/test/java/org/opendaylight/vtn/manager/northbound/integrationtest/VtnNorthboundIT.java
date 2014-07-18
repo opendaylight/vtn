@@ -70,7 +70,6 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -86,12 +85,12 @@ import org.opendaylight.controller.usermanager.IUserManager;
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
 public class VtnNorthboundIT extends TestBase {
-    private static final Logger log = LoggerFactory.
-            getLogger(VtnNorthboundIT.class);
-    private static final String  BUNDLE_VTN_MANAGER_IMPL
-            = "org.opendaylight.vtn.manager.implementation";
-    private static final String VTN_BASE_URL
-            = "http://127.0.0.1:8080/controller/nb/v2/vtn/";
+    private static final Logger LOG = LoggerFactory.
+        getLogger(VtnNorthboundIT.class);
+    private static final String  BUNDLE_VTN_MANAGER_IMPL =
+        "org.opendaylight.vtn.manager.implementation";
+    private static final String VTN_BASE_URL =
+        "http://127.0.0.1:8080/controller/nb/v2/vtn/";
 
     // get the OSGI bundle context
     @Inject
@@ -134,7 +133,7 @@ public class VtnNorthboundIT extends TestBase {
             String name = b.getSymbolicName();
             int state = b.getState();
             if (state != Bundle.ACTIVE && state != Bundle.RESOLVED) {
-                log.debug("Bundle:" + name + " state:" + stateToString(state));
+                LOG.debug("Bundle:" + name + " state:" + stateToString(state));
                 debugit = true;
             } else if (BUNDLE_VTN_MANAGER_IMPL.equals(name)) {
                 implBundle = b;
@@ -142,7 +141,7 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         if (debugit) {
-            log.debug("Do some debugging because some bundle is " + "unresolved");
+            LOG.debug("Do some debugging because some bundle is " + "unresolved");
         }
         // Assert if true, if false we are good to go!
         assertFalse(debugit);
@@ -156,13 +155,13 @@ public class VtnNorthboundIT extends TestBase {
 
         ServiceReference r = bc.getServiceReference(IUserManager.class.getName());
         if (r != null) {
-            this.userManager = (IUserManager) bc.getService(r);
+            this.userManager = (IUserManager)bc.getService(r);
         }
 
         r = bc.getServiceReference(IVTNManager.class.getName());
         if (r != null) {
-            this.vtnManager = (IVTNManager) bc.getService(r);
-            this.listenDataPacket = (IListenDataPacket) this.vtnManager;
+            this.vtnManager = (IVTNManager)bc.getService(r);
+            this.listenDataPacket = (IListenDataPacket)this.vtnManager;
         }
 
         // If UserManager or VTNManager is null, cannot login to run tests.
@@ -191,7 +190,7 @@ public class VtnNorthboundIT extends TestBase {
             for (int i = 0; i < vtnArray.length(); i++) {
                 JSONObject vtn = vtnArray.getJSONObject(i);
                 String name = vtn.getString("name");
-                log.debug("Clean up VTN: {}", name);
+                LOG.debug("Clean up VTN: {}", name);
                 result = getJsonResult(uri + "/" + name, "DELETE");
                 assertResponse(HTTP_NOT_FOUND);
             }
@@ -510,8 +509,8 @@ public class VtnNorthboundIT extends TestBase {
         httpResponseCode = HTTP_BAD_REQUEST;
         httpLocation = null;
 
-        log.debug("HTTP method: {}, uri: {}", method, restUrl);
-        log.debug("Body: {}", body);
+        LOG.debug("HTTP method: {}, uri: {}", method, restUrl);
+        LOG.debug("Body: {}", body);
 
         try {
             URL url = new URL(restUrl);
@@ -527,15 +526,18 @@ public class VtnNorthboundIT extends TestBase {
             byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());
             String authStringEnc = new String(authEncBytes);
 
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            HttpURLConnection connection =
+                (HttpURLConnection)url.openConnection();
             connection.setRequestMethod(method);
-            connection.setRequestProperty("Authorization", "Basic " + authStringEnc);
+            connection.setRequestProperty("Authorization", "Basic " +
+                                          authStringEnc);
             connection.setRequestProperty("Content-Type", contentType);
             connection.setRequestProperty("Accept", "application/json");
 
             if (body != null) {
                 connection.setDoOutput(true);
-                OutputStreamWriter wr = new OutputStreamWriter(connection.getOutputStream());
+                OutputStreamWriter wr =
+                    new OutputStreamWriter(connection.getOutputStream());
                 wr.write(body);
                 wr.flush();
             }
@@ -566,16 +568,18 @@ public class VtnNorthboundIT extends TestBase {
                 }
             }
 
-            log.debug("HTTP response code: {}", connection.getResponseCode());
-            log.debug("HTTP response message: {}",
+            LOG.debug("HTTP response code: {}", connection.getResponseCode());
+            LOG.debug("HTTP response message: {}",
                       connection.getResponseMessage());
 
             InputStream is = connection.getInputStream();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            InputStreamReader in =
+                new InputStreamReader(is, Charset.forName("UTF-8"));
+            BufferedReader rd = new BufferedReader(in);
             StringBuilder sb = new StringBuilder();
             int cp;
             while ((cp = rd.read()) != -1) {
-                sb.append((char) cp);
+                sb.append((char)cp);
             }
             is.close();
             connection.disconnect();
@@ -617,7 +621,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     @Test
     public void testVTNAPI() throws JSONException {
-        log.info("Starting VTN JAXB client.");
+        LOG.info("Starting VTN JAXB client.");
         String baseURL = VTN_BASE_URL;
 
         String tname1 = "testVtn1";
@@ -642,11 +646,9 @@ public class VtnNorthboundIT extends TestBase {
         String htimeout2 = "400";
 
         String timeout0 = "0";
-        String timeout_negative = "-10";
-        String timeout_max = "65535";
-        String timeout_over = "65540";
-
-        String cont_dummy = "cont_dummy";
+        String timeoutNegative = "-10";
+        String timeoutMax = "65535";
+        String timeoutOver = "65540";
 
         // Test GET vtn in default container, expecting no results
         String result = getJsonResult(baseURL + "default/vtns");
@@ -711,14 +713,16 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         // Test POST vtn3. testing long description
-        requestBody = "{\"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\"" + htimeout1 + "\"}";
+        requestBody = "{\"idleTimeout\":\"" + itimeout1 +
+            "\", \"hardTimeout\":\"" + htimeout1 + "\"}";
         requestUri = baseURL + "default/vtns/" + tname3;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
         Assert.assertEquals(requestUri, httpLocation);
 
         // Test POST vtn4, setting idle timeout of negative value and one character numeric of vtn name
-        requestBody = "{\"description\":\"" + desc3 + "\", \"idleTimeout\":\"" + timeout_negative + "\"}";
+        requestBody = "{\"description\":\"" + desc3 +
+            "\", \"idleTimeout\":\"" + timeoutNegative + "\"}";
         requestUri = baseURL + "default/vtns/" + tname4;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
@@ -733,7 +737,8 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(timeout0, json.getString("hardTimeout"));
 
         // Test POST vtn5, testing hard timeout of negative value
-        requestBody = "{\"description\":\"" + desc1 + "\",  \"hardTimeout\":\"" + timeout_negative + "\"}";
+        requestBody = "{\"description\":\"" + desc1 +
+            "\",  \"hardTimeout\":\"" + timeoutNegative + "\"}";
         requestUri = baseURL + "default/vtns/" + tname5;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
@@ -748,23 +753,29 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(timeout0, json.getString("hardTimeout"));
 
         // Test POST vtn6, setting idle timeout of 0 and hard timeout of 65535
-        requestBody = "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"" + timeout_max + "\", \"hardTimeout\":\""
-                + timeout0 + "\"}";
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"" + timeoutMax + "\", \"hardTimeout\":\"" +
+            timeout0 + "\"}";
         requestUri = baseURL + "default/vtns/" + tname6;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
         Assert.assertEquals(requestUri, httpLocation);
 
-        // Test POST vtn7, setting idle timeout of 65535, hard timeout of 0 and vtn name of 31 characters
-        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + timeout0 + "\", \"hardTimeout\":\""
-                + timeout_max + "\"}";
+        // Test POST vtn7, setting idle timeout of 65535, hard timeout of 0
+        // and vtn name of 31 characters
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"idleTimeout\":\"" + timeout0 + "\", \"hardTimeout\":\"" +
+            timeoutMax + "\"}";
         requestUri = baseURL + "default/vtns/" + tname7;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
         Assert.assertEquals(requestUri, httpLocation);
 
-        // Test POST vtn8, setting invalid value after description to requestBody
-        requestBody = "{\"description\":\"" + desc1 + "\", \"Timeout\":\"" + timeout0 + "\", \"hard\":\"" + timeout0 + "\"}";
+        // Test POST vtn8, setting invalid value after description to
+        // requestBody
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"Timeout\":\"" + timeout0 + "\", \"hard\":\"" + timeout0 +
+            "\"}";
         requestUri = baseURL + "default/vtns/" + tname8;
 
         // Ensure that query parameters are eliminated from Location.
@@ -783,29 +794,40 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(timeout0, json.getString("hardTimeout"));
 
         // Test POST vtn, expecting 400
-        requestBody = "{\"enabled\":\"true\"" + "\"description\":\"" + desc1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST", requestBody);
+        requestBody = "{\"enabled\":\"true\"" + "\"description\":\"" + desc1 +
+            "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST",
+                               requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST vtn, expecting 400, setting invalid value to idle timeout
-        requestBody = "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"idletimeout\", \"hardTimeout\":\""+ htimeout1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST", requestBody);
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"idletimeout\", \"hardTimeout\":\"" +
+            htimeout1 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST",
+                               requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST vtn, expecting 400, setting invalid value to hard timeout
-        requestBody = "{\"description\":\"" + desc1 + "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\"hardtimeout\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST", requestBody);
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"idleTimeout\":\"" + itimeout1 +
+            "\", \"hardTimeout\":\"hardtimeout\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST",
+                               requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST vtn, expecting 400, setting invalid value to requestBody
-        requestBody = "{\"description\":\"" + desc3 + "\", \"didleTimeout\":\"rdTimeout\":\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST", requestBody);
+        requestBody = "{\"description\":\"" + desc3 +
+            "\", \"didleTimeout\":\"rdTimeout\":\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST",
+                               requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
 
         // Test POST vtn expecting 105, test when vtn name is ""
         requestBody = "{}";
-        result = getJsonResult(baseURL + "default/vtns/" + "", "POST", requestBody);
+        result = getJsonResult(baseURL + "default/vtns/" + "", "POST",
+                               requestBody);
         assertResponse(HTTP_BAD_METHOD);
 
         // Test POST vtn expecting 400, specifying invalid tenant name.
@@ -845,7 +867,7 @@ public class VtnNorthboundIT extends TestBase {
         // than hard timeout.
         requestBody =  "{\"description\":\"" + desc1 +
             "\", \"idleTimeout\":\"" + itimeout2 +
-            "\", \"hardTimeout\":\""+ htimeout1 +"\"}";
+            "\", \"hardTimeout\":\"" + htimeout1 + "\"}";
         requestUri = baseURL + "default/vtns/" + tname;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -874,8 +896,9 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(htimeout1, json.getString("hardTimeout"));
 
         // Test PUT vtn1, expecting all elements change
-        requestBody = "{\"description\":\"" + desc3 + "\", \"idleTimeout\":\"" + timeout0 + "\", \"hardTimeout\":\""
-                + timeout0 + "\"}";
+        requestBody = "{\"description\":\"" + desc3 +
+            "\", \"idleTimeout\":\"" + timeout0 + "\", \"hardTimeout\":\"" +
+            timeout0 + "\"}";
         String queryParameter = new QueryParameter("all", "true").getString();
 
         result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
@@ -892,7 +915,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vtn1,  abbreviate idle timeout and hard timeout
         requestBody = "{\"description\":\"" + desc2 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -904,9 +928,12 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals("300", json.getString("idleTimeout"));
         Assert.assertEquals("0", json.getString("hardTimeout"));
 
-        // Test PUT vtn1, abbreviate description, testing idle timeout of 65535 and hard timeout of 0
-        requestBody = "{\"idleTimeout\":\"" + timeout_max + "\", \"hardTimeout\":\"" + timeout0 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        // Test PUT vtn1, abbreviate description, testing idle timeout of
+        // 65535 and hard timeout of 0
+        requestBody = "{\"idleTimeout\":\"" + timeoutMax +
+            "\", \"hardTimeout\":\"" + timeout0 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -918,12 +945,14 @@ public class VtnNorthboundIT extends TestBase {
         } catch (JSONException expected) {
             assertThat(expected.getMessage(), is("JSONObject[\"description\"] not found."));
         }
-        Assert.assertEquals(timeout_max, json.getString("idleTimeout"));
+        Assert.assertEquals(timeoutMax, json.getString("idleTimeout"));
         Assert.assertEquals(timeout0, json.getString("hardTimeout"));
 
-        // Test PUT vtn1, abbreviate description and idle timeout, testing hard timeout of 65535
-        requestBody = "{\"hardTimeout\":\"" + timeout_max + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        // Test PUT vtn1, abbreviate description and idle timeout, testing
+        // hard timeout of 65535
+        requestBody = "{\"hardTimeout\":\"" + timeoutMax + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -932,11 +961,12 @@ public class VtnNorthboundIT extends TestBase {
         json = new JSONObject(jt);
         Assert.assertFalse(json.has("description"));
         Assert.assertEquals("300", json.getString("idleTimeout"));
-        Assert.assertEquals(timeout_max, json.getString("hardTimeout"));
+        Assert.assertEquals(timeoutMax, json.getString("hardTimeout"));
 
         // Test PUT vtn1, abbreviate all elements
         requestBody = "{}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -949,7 +979,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vtn2, expecting all elements not change
         queryParameter = new QueryParameter("all", "false").getString();
-        result = getJsonResult(baseURL + "default/vtns/" + tname2 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + "default/vtns/" + tname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -962,8 +993,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(htimeout1, json.getString("hardTimeout"));
 
         // Test PUT vtn2, setting 0 to idle timoeut and hard timeout
-        requestBody = "{\"idleTimeout\":\"" + timeout0 + "\", \"hardTimeout\":\"" + timeout0 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname2 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"idleTimeout\":\"" + timeout0 +
+            "\", \"hardTimeout\":\"" + timeout0 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -976,9 +1009,11 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(timeout0, json.getString("hardTimeout"));
 
         // Test PUT vtn2, expecting all elements change
-        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\""
-                + htimeout1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname2 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\"" +
+            htimeout1 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -990,8 +1025,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(htimeout1, json.getString("hardTimeout"));
 
         // Test PUT vtn2, expecting all elements not change
-        requestBody = "{\"idleTimeout\":\"" + timeout_negative + "\", \"hardTimeout\":\"" + timeout_negative + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname2 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"idleTimeout\":\"" + timeoutNegative +
+            "\", \"hardTimeout\":\"" + timeoutNegative + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -1004,8 +1041,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(htimeout1, json.getString("hardTimeout"));
 
         // Test PUT vtn8, setting invalid value after description to requestBody
-        requestBody = "{\"description\":\"" + desc2 + "\", \"Timeout\":\"" + itimeout1 + "\", \"hard\":\"" + htimeout2 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname8 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc2 + "\", \"Timeout\":\"" +
+            itimeout1 + "\", \"hard\":\"" + htimeout2 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname8 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -1020,8 +1059,10 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vtn2, description not change
         queryParameter = new QueryParameter("all", "true").getString();
-        requestBody = "{\"idleTimeout\":\"" + timeout_negative + "\", \"hardTimeout\":\"" + timeout_negative + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname2 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"idleTimeout\":\"" + timeoutNegative +
+            "\", \"hardTimeout\":\"" + timeoutNegative + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vtn
@@ -1034,35 +1075,44 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(timeout0, json.getString("hardTimeout"));
 
         // Test PUT vtn, expecting 400, setting the invalid value to idle timeout
-        requestBody = "{\"idleTimeout\":\"" + desc1 + "\", \"hardTimeout\":\"" + htimeout1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"idleTimeout\":\"" + desc1 +
+            "\", \"hardTimeout\":\"" + htimeout1 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT vtn, expecting 400, setting the invalid value to hard timeout
-        requestBody = "{\"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\"" + desc1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"idleTimeout\":\"" + itimeout1 +
+            "\", \"hardTimeout\":\"" + desc1 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT vtn, expecting 400, setting invalid value to requestBody
-        requestBody = "{\"description\":\"" + desc3 + "\", \"didleTimeout\":\"rdTimeout\":\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc3 +
+            "\", \"didleTimeout\":\"rdTimeout\":\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
 
         // Test PUT vtn expecting 404, setting the vtn that don't exist
-        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\""
-                + htimeout1 + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"idleTimeout\":\"" + itimeout1 + "\", \"hardTimeout\":\"" +
+            htimeout1 + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test PUT vtn expecting 400, setting invalid value to requestBody
         requestBody = "{\"Test\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT vtn expecting 400, specifying 65540 as idle timeout.
         requestBody = "{\"description\":\"" + desc2 +
-            "\", \"idleTimeout\":\"" + timeout_over +
+            "\", \"idleTimeout\":\"" + timeoutOver +
             "\", \"hardTimeout\":\"" + htimeout2 + "\"}";
         result = getJsonResult(baseURL + "default/vtns/" + tname1 +
                                queryParameter, "PUT", requestBody);
@@ -1071,7 +1121,7 @@ public class VtnNorthboundIT extends TestBase {
         // Test PUT vtn expecting 400, specifying 65540 as hard timeout.
         requestBody = "{\"description\":\"" + desc2 +
             "\", \"idleTimeout\":\"" + itimeout1 +
-            "\", \"hardTimeout\":\"" + timeout_over + "\"}";
+            "\", \"hardTimeout\":\"" + timeoutOver + "\"}";
         result = getJsonResult(baseURL + "default/vtns/" + tname1 +
                                queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -1080,15 +1130,17 @@ public class VtnNorthboundIT extends TestBase {
         // than hard timeout.
         requestBody =  "{\"description\":\"" + desc1 +
             "\", \"idleTimeout\":\"" + itimeout2 +
-            "\", \"hardTimeout\":\""+ htimeout1 +"\"}";
+            "\", \"hardTimeout\":\"" + htimeout1 + "\"}";
         result = getJsonResult(baseURL + "default/vtns/" + tname1 +
                                queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT vtn
-        requestBody = "{\"description\":\"" + desc2 + "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\""
-                + timeout_negative + "\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"idleTimeout\":\"" + itimeout2 + "\", \"hardTimeout\":\"" +
+            timeoutNegative + "\"}";
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET all vtns in default container
@@ -1106,13 +1158,15 @@ public class VtnNorthboundIT extends TestBase {
 
         // set not supported "Content-type". expect to return 415.
         requestBody = "{}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST", requestBody,
+        result = getJsonResult(baseURL + "default/vtns/" + tname, "POST",
+                               requestBody,
                                "text/plain");
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         requestBody = "{\"description\":\"desc\"}";
-        result = getJsonResult(baseURL + "default/vtns/" + tname1 + queryParameter,
-                               "PUT", requestBody, "text/plain");
+        result = getJsonResult(baseURL + "default/vtns/" + tname1 +
+                               queryParameter, "PUT", requestBody,
+                               "text/plain");
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         // Authentication failure.
@@ -1229,15 +1283,15 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testVBridgeAPI(String tname1, String tname2) throws JSONException {
-        log.info("Starting vBridge JAXB client.");
+    private void testVBridgeAPI(String tname1, String tname2)
+        throws JSONException {
+        LOG.info("Starting vBridge JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
         baseURL.append("default/vtns/");
 
-        String tname_dummy = "tenant_dummy";
-        String cont_dummy = "cont_dummy";
+        String tnameDummy = "tenant_dummy";
         String desc1 = "testDescription1";
         String desc2 = "d";
         String desc3 = String.format("%01000d", 1);
@@ -1254,11 +1308,11 @@ public class VtnNorthboundIT extends TestBase {
         String ageinter2 = "100";
         String ageinter3 = "-100";
         String ageinter4 = "1000000";
-        String ageinter_over = "1000001";
+        String ageinterOver = "1000001";
         String fault = "";
 
         // Test GET vBridges in default container expecting 404, setting dummy tenant
-        String result = getJsonResult(baseURL + tname_dummy + "/vbridges");
+        String result = getJsonResult(baseURL + tnameDummy + "/vbridges");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET vBridges in default container, expecting no results
@@ -1272,7 +1326,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test POST vBridge1 expecting 404, setting dummy tenant
         String requestBody = "{}";
-        result = getJsonResult(baseURL + tname_dummy + "/vbridges/" + bname1, "POST" , requestBody);
+        result = getJsonResult(baseURL + tnameDummy + "/vbridges/" + bname1,
+                               "POST" , requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test POST vBridge1 expecting 400, specifying too small ageInterval.
@@ -1364,7 +1419,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc3,json.getString("description"));
+        Assert.assertEquals(desc3, json.getString("description"));
         Assert.assertEquals("600", json.getString("ageInterval"));
 
         // Test POST vBridge4
@@ -1406,7 +1461,7 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST vBridge expecting 400, specifying too large ageInterval.
-        requestBody = "{\"ageInterval\":\"" + ageinter_over + "\"}";
+        requestBody = "{\"ageInterval\":\"" + ageinterOver + "\"}";
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + ebname,
                                "POST", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -1428,7 +1483,7 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(1, vBridgeArray.length());
 
         // Test GET vBridge expecting 404 setting dummy vtn
-        result = getJsonResult(baseURL + tname_dummy + "/vbridges/" + bname1);
+        result = getJsonResult(baseURL + tnameDummy + "/vbridges/" + bname1);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET vBridge expecting 404 setting dummy vBridge
@@ -1463,7 +1518,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc1,json.getString("description"));
+        Assert.assertEquals(desc1, json.getString("description"));
         Assert.assertEquals("600", json.getString("ageInterval"));
 
         // Test PUT vBridge1, setting only ageInter (queryparameter is true)
@@ -1491,7 +1546,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc2,json.getString("description"));
+        Assert.assertEquals(desc2, json.getString("description"));
         Assert.assertEquals(ageinter4, json.getString("ageInterval"));
 
         // Test PUT vBridge1, setting {} (queryparameter is true)
@@ -1519,7 +1574,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc2,json.getString("description"));
+        Assert.assertEquals(desc2, json.getString("description"));
         Assert.assertEquals(ageinter1, json.getString("ageInterval"));
 
         // Test PUT vBridge2, setting description (query parameter is false)
@@ -1533,7 +1588,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc1,json.getString("description"));
+        Assert.assertEquals(desc1, json.getString("description"));
         Assert.assertEquals(ageinter1, json.getString("ageInterval"));
 
         // Test PUT vBridge2, setting ageInter (query parameter is false)
@@ -1547,7 +1602,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc1,json.getString("description"));
+        Assert.assertEquals(desc1, json.getString("description"));
         Assert.assertEquals(ageinter2, json.getString("ageInterval"));
 
         // Test PUT vBridge2, setting description and ageInter (query parameter is false)
@@ -1561,7 +1616,7 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc3,json.getString("description"));
+        Assert.assertEquals(desc3, json.getString("description"));
         Assert.assertEquals("100", json.getString("ageInterval"));
 
         // Test PUT vBridge2, setting description and ageInter (query parameter is true)
@@ -1576,21 +1631,24 @@ public class VtnNorthboundIT extends TestBase {
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
 
-        Assert.assertEquals(desc3,json.getString("description"));
+        Assert.assertEquals(desc3, json.getString("description"));
         Assert.assertEquals("600", json.getString("ageInterval"));
 
         // Test PUT vBridge1 expecting 400
         requestBody = "{\"ageInterval\":\"" + "ageinter" + "\"}";
-        result = getJsonResult(baseURL +  tname1 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL +  tname1 + "/vbridges/" + bname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT vBridge1 expecting 404, setting dummy vtn
         requestBody = "{}";
-        result = getJsonResult(baseURL +  tname_dummy + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL +  tnameDummy + "/vbridges/" + bname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test PUT vBridge1 expecting 404, setting dummy vbridge
-        result = getJsonResult(baseURL +  tname2 + "/vbridges/" + bname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL +  tname2 + "/vbridges/" + bname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test PUT vBridge1 expecting 400, specifying too small ageInterval.
@@ -1613,7 +1671,7 @@ public class VtnNorthboundIT extends TestBase {
         // Test PUT vBridge1 expecting 400, specifying too large ageInterval
         // ("all=true" is specified as query paramter).
         requestBody = "{\"description\":\"" + desc1 +
-            "\", \"ageInterval\":\"" + ageinter_over + "\"}";
+            "\", \"ageInterval\":\"" + ageinterOver + "\"}";
         result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1 +
                                queryParameter, "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -1624,11 +1682,13 @@ public class VtnNorthboundIT extends TestBase {
 
 
         // Test DELETE vBridge expecting 404, setting dummy tenant
-        result = getJsonResult(baseURL + tname_dummy + "/vbridges/" + bname1, "DELETE");
+        result = getJsonResult(baseURL + tnameDummy + "/vbridges/" + bname1,
+                               "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test DELETE vBridge1
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1, "DELETE");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // specify not supported Content-Type
@@ -1638,8 +1698,9 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         requestBody = "{\"description\":\"test\"}";
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2 + queryParameter,
-                               "PUT", requestBody, "text/plain");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2 +
+                               queryParameter, "PUT", requestBody,
+                               "text/plain");
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         // Authentication failure.
@@ -1657,27 +1718,33 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         // Test DELETE vBridge2
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2, "DELETE");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname2,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // Test DELETE vBridge3
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname3, "DELETE");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname3,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // Test DELETE vBridge4
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname4, "DELETE");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname4,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // Test DELETE vBridge2 on other tenant
-        result = getJsonResult(baseURL + tname2 + "/vbridges/" + bname2, "DELETE");
+        result = getJsonResult(baseURL + tname2 + "/vbridges/" + bname2,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // Test DELETE vBridge expecting 404
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1, "DELETE");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + bname1,
+                               "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test DELETE vBridge expecting 404, setting dummy tenant
-        result = getJsonResult(baseURL + tname1 + "/vbridges/" + ebname, "DELETE");
+        result = getJsonResult(baseURL + tname1 + "/vbridges/" + ebname,
+                               "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET vBridges in default container, expecting no results (tname1)
@@ -1755,8 +1822,9 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testVBridgeInterfaceAPI(String tname1, String bname1, String bname2) throws JSONException {
-        log.info("Starting vBridge Intergace JAXB client.");
+    private void testVBridgeInterfaceAPI(String tname1, String bname1,
+                                         String bname2) throws JSONException {
+        LOG.info("Starting vBridge Intergace JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -1778,16 +1846,16 @@ public class VtnNorthboundIT extends TestBase {
         String ifname5 = "testInterface5testinterface5tes";
         String ifname32 = "testInterface5testinterface5test";
 
-        String bname_dummy = "bname_dummy";
-        String tname_dummy = "tenant_dummy";
-        String cont_dummy = "cont_dummy";
+        String bnameDummy = "bname_dummy";
+        String tnameDummy = "tenant_dummy";
 
         String desc1 = "testDescription1";
         String desc2 = "t";
         String desc3 = String.format("%01000d", 1);
 
 
-        // Test GET vBridge Interfaces in default container, expecting no results
+        // Test GET vBridge Interfaces in default container, expecting no
+        // results
         String result = getJsonResult(baseURL + bname1 + "/interfaces");
         assertResponse(HTTP_OK);
         JSONTokener jt = new JSONTokener(result);
@@ -1797,7 +1865,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test POST vBridge Interface1 expecting 404
         String requestBody = "{}";
-        result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + ifname1, "POST" , requestBody);
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces/" + ifname1,
+                               "POST" , requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test POST vbridge interface expecting 201
@@ -1810,19 +1879,22 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test POST vbridge interface expecting 409
         // setting vbridge Interface1
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1, "POST", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1,
+                               "POST", requestBody);
         assertResponse(HTTP_CONFLICT);
 
         // Test GET vbridge interface expecitng 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname1 + "/interfaces");
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" + bname1 + "/interfaces");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
-        result = getJsonResult(baseURL + bname_dummy +"/interfaces");
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces");
         assertResponse(HTTP_NOT_FOUND);
 
-        // Test GET vBridge Interfaces in default container, expecting one result
+        // Test GET vBridge Interfaces in default container, expecting one
+        // result
         result = getJsonResult(baseURL + bname1 + "/interfaces");
         assertResponse(HTTP_OK);
         jt = new JSONTokener(result);
@@ -1872,7 +1944,8 @@ public class VtnNorthboundIT extends TestBase {
                 try {
                     Assert.assertEquals("true", vbridgeif.getString("enabled"));
                 } catch (JSONException expected) {
-                    assertThat(expected.getMessage(), is("JSONObject[\"enabled\"] not found."));
+                    assertThat(expected.getMessage(),
+                               is("JSONObject[\"enabled\"] not found."));
                 }
                 Assert.assertEquals("-1", vbridgeif.getString("state"));
                 Assert.assertEquals("-1", vbridgeif.getString("entityState"));
@@ -1886,8 +1959,7 @@ public class VtnNorthboundIT extends TestBase {
                 Assert.assertEquals("true", vbridgeif.getString("enabled"));
                 Assert.assertEquals("-1", vbridgeif.getString("state"));
                 Assert.assertEquals("-1", vbridgeif.getString("entityState"));
-            }
-            else {
+            } else {
                 // Unexpected vBridge Interface name
                 Assert.assertTrue(false);
             }
@@ -1920,24 +1992,31 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_CREATED);
         Assert.assertEquals(requestUri, httpLocation);
 
-        // Test POST vBridge Interface expecting 400, setting invalid value for ageInterval
-        requestBody = "{\"description\":\"" + desc2 + "\", \"enabled\":enabled}";
+        // Test POST vBridge Interface expecting 400, setting invalid value
+        // for ageInterval
+        requestBody = "{\"description\":\"" + desc2 +
+            "\", \"enabled\":enabled}";
         requestUri = baseURL + bname1 + "/interfaces/" + ifname;
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST vBridge Interface expecting 404, setting dummy tenant
         requestBody = "{}";
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/"
-                + bname1 + "/interfaces/" + ifname, "POST", requestBody);
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" + bname1 + "/interfaces/" + ifname,
+                               "POST", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
-        // Test POST vBridge Interface expecting 404, setting vbridge that don't exist
-        result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + ifname, "POST", requestBody);
+        // Test POST vBridge Interface expecting 404, setting vbridge that
+        // don't exist
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces/" + ifname,
+                               "POST", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
-        // Test POST vBridge Interface expecting 405, setting "" to vbridgeIF name
-        result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + "", "POST", requestBody);
+        // Test POST vBridge Interface expecting 405, setting "" to vbridgeIF
+        // name
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces/" + "",
+                               "POST", requestBody);
         assertResponse(HTTP_BAD_METHOD);
 
         // Test POST vBridge Interface expecting 400, specifying too long
@@ -1959,15 +2038,20 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test GET vBridge Interface expecting 404, setting vtn that don't exist
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname1 + "/interfaces/" + ifname1);
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" + bname1 + "/interfaces/" +
+                               ifname1);
         assertResponse(HTTP_NOT_FOUND);
 
-        // Test GET vBridge Interface expecting 404, setting vbridge that don't exits
-        result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + ifname1);
+        // Test GET vBridge Interface expecting 404, setting vbridge that don't
+        // exits
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces/" +
+                               ifname1);
         assertResponse(HTTP_NOT_FOUND);
 
-        // Test GET vBridge Interface expecting 404, setting vbridgeIF that don't exits
-        result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + ifname);
+        // Test GET vBridge Interface expecting 404, setting vbridgeIF that
+        // don't exits
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces/" + ifname);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET vBridge Interface2
@@ -1983,9 +2067,11 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals("-1", json.getString("entityState"));
 
         // Test PUT vBridge interface1
-        requestBody = "{\"description\":\"" + desc1 + "\", \"enabled\":\"true\"}";
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"enabled\":\"true\"}";
         String queryParameter = new QueryParameter("all", "true").getString();
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface1
@@ -1997,9 +2083,11 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(desc1, json.getString("description"));
         Assert.assertEquals("true", json.getString("enabled"));
 
-        // Test PUT vBridge interface1, setting description (queryparameter is true)
+        // Test PUT vBridge interface1, setting description
+        // (queryparameter is true)
         requestBody = "{\"description\":\"" + desc2 + "\"}";
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface1
@@ -2013,7 +2101,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vBridge interface1, setting enabled (queryparameter is true)
         requestBody = "{\"enabled\":\"false\"}";
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface1
@@ -2026,8 +2115,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals("false", json.getString("enabled"));
 
         // Test PUT vBridge interface1, setting description and enabled
-        requestBody = "{\"description\":\"" + desc3 + "\", \"enabled\":\"false\"}";
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc3 +
+            "\", \"enabled\":\"false\"}";
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface1
@@ -2041,12 +2132,14 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vBridge interface1, setting {}
         requestBody = "{}";
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname1 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test PUT vBridge Interface2 expecting not change
         queryParameter = new QueryParameter("all", "false").getString();
-        result = getJsonResult(baseURL + bname1 +"/interfaces/" + ifname2 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface2
@@ -2060,7 +2153,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vBridge Interface2, setting enabled
         requestBody = "{\"enabled\":false}";
-        result = getJsonResult(baseURL + bname1 +"/interfaces/" + ifname2 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface2
@@ -2074,7 +2168,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vBridge Interface2, setting enabled
         requestBody = "{\"description\":\"" + desc3 + "\"}";
-        result = getJsonResult(baseURL + bname1 +"/interfaces/" + ifname2 + queryParameter, "PUT", requestBody);
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface2
@@ -2087,8 +2182,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals("false", json.getString("enabled"));
 
         // Test PUT vBridge Interface2, setting enabled
-        requestBody = "{\"description\":\"" + desc1 + "\", \"enabled\":\"true\"}";
-        result = getJsonResult(baseURL + bname1 +"/interfaces/" + ifname2 + queryParameter, "PUT", requestBody);
+        requestBody = "{\"description\":\"" + desc1 +
+            "\", \"enabled\":\"true\"}";
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname2 +
+                               queryParameter, "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET vBridge Interface2
@@ -2103,17 +2200,19 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT vBridge Interface expecting 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname1 + "/interfaces/"
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" + bname1 + "/interfaces/"
                 + ifname1 + queryParameter, "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
-        result = getJsonResult(baseURL +  bname_dummy + "/interfaces/"
+        result = getJsonResult(baseURL +  bnameDummy + "/interfaces/"
                 + ifname1 + queryParameter, "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // setting  dummy vbridgeIF
-        result = getJsonResult(baseURL +  bname1 + "/interfaces/" + ifname + queryParameter,
+        result = getJsonResult(baseURL +  bname1 + "/interfaces/" + ifname +
+                               queryParameter,
                 "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
@@ -2130,7 +2229,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test DELETE expecting 200
         // delete vBridge Interface2 on other tenant
-        result = getJsonResult(baseURL2 + bname2 + "/interfaces/" + ifname2, "DELETE");
+        result = getJsonResult(baseURL2 + bname2 + "/interfaces/" + ifname2,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // specify not supported Content-Type
@@ -2140,8 +2240,9 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         requestBody = "{}";
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3 + queryParameter,
-                               "PUT", requestBody, "text/plain");
+        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3 +
+                               queryParameter, "PUT", requestBody,
+                               "text/plain");
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         // Authentication failure.
@@ -2161,15 +2262,18 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         // delete  vBridge Interface3
-        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3, "DELETE");
+        result = getJsonResult(baseURL + bname2 + "/interfaces/" + ifname3,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // delete vBridge Interface4
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname4, "DELETE");
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname4,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         // delete vBridge Interface5
-        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname5, "DELETE");
+        result = getJsonResult(baseURL + bname1 + "/interfaces/" + ifname5,
+                               "DELETE");
         assertResponse(HTTP_OK);
     }
 
@@ -2230,8 +2334,9 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testVBridgeInterfaceDeleteAPI(String tname, String bname) throws JSONException {
-        log.info("Starting delete vBridge Intergace JAXB client.");
+    private void testVBridgeInterfaceDeleteAPI(String tname, String bname)
+        throws JSONException {
+        LOG.info("Starting delete vBridge Intergace JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2239,25 +2344,25 @@ public class VtnNorthboundIT extends TestBase {
         baseURL.append(tname);
         baseURL.append("/vbridges/");
 
-        String ifname_dummy = "fname_dummy";
-        String tname_dummy = "tname_dummy";
+        String ifnameDummy = "fname_dummy";
+        String tnameDummy = "tnameDummy";
         String ifname1 = "testInterface";
         String ifname2 = "test_Interface2";
-        String bname_dummy = "bname_dummy";
+        String bnameDummy = "bname_dummy";
 
         testPortMappingDeleteAPI(tname, bname, ifname1);
 
         // Test DELETE vbridge interface expecting 404
         // setting dummy vtn
-        String result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname + "/interfaces/" + ifname1, "DELETE");
+        String result = getJsonResult(url + "default/vtns/" + tnameDummy + "/vbridges/" + bname + "/interfaces/" + ifname1, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
-        result = getJsonResult(baseURL + bname_dummy + "/interfaces/" + ifname1, "DELETE");
+        result = getJsonResult(baseURL + bnameDummy + "/interfaces/" + ifname1, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge interface
-        result = getJsonResult(baseURL + bname + "/interfaces/" + ifname_dummy, "DELETE");
+        result = getJsonResult(baseURL + bname + "/interfaces/" + ifnameDummy, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
 
@@ -2306,8 +2411,10 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testPortMappingAPI(String tname, String bname, String bname2, String ifname, String ifname2) throws JSONException {
-        log.info("Starting Port Mapping JAXB client.");
+    private void testPortMappingAPI(String tname, String bname, String bname2,
+                                    String ifname, String ifname2)
+        throws JSONException {
+        LOG.info("Starting Port Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2320,14 +2427,14 @@ public class VtnNorthboundIT extends TestBase {
         String vlan0 = "0";
         String vlan1 = "100";
         String vlan2 = "4095";
-        String vlan_over = "4096";
-        String vlan_negative = "-10";
+        String vlanOver = "4096";
+        String vlanNegative = "-10";
 
         String pname = "testPortname";
 
-        String ifname_dummy = "ifname_dummy";
-        String tenant_dummy = "tenant_dummy";
-        String bname_dummy = "bname_dummy";
+        String ifnameDummy = "ifname_dummy";
+        String tenantDummy = "tenant_dummy";
+        String bnameDummy = "bname_dummy";
 
         String nodeid = "00:00:00:00:00:00:00:01";
         String nodeType = "OF";
@@ -2348,7 +2455,7 @@ public class VtnNorthboundIT extends TestBase {
 
 
         // Test PUT PortMapping expecting 400, specifying too large VLAN ID.
-        requestBody = "{\"vlan\":" + vlan_over + ", \"node\":{\"type\":\""+
+        requestBody = "{\"vlan\":" + vlanOver + ", \"node\":{\"type\":\"" +
             nodeType + "\", \"id\":\"" + nodeid +
             "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
             nodeType + "\", \"id\":\"" + portnum + "\"}}";
@@ -2357,8 +2464,8 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_BAD_REQUEST);
 
         // Specifying a negative VLAN ID.
-        requestBody = "{\"vlan\":" + vlan_negative +
-            ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\"" + nodeid +
+        requestBody = "{\"vlan\":" + vlanNegative +
+            ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\"" + nodeid +
             "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
             nodeType + "\", \"id\":\"" + portnum + "\"}}";
         result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
@@ -2366,7 +2473,7 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_BAD_REQUEST);
 
         // Specifying invalid node type.
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
             test + "\", \"id\":\"" + nodeid + "\"}, \"port\":{\"name\":\"" +
             pname + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum +
             "\"}}";
@@ -2383,7 +2490,7 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_BAD_REQUEST);
 
         // Without specifying port element.
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
             nodeType + "\", \"id\":\"" + nodeid + "\"}}";
         result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
                                requestBody);
@@ -2421,7 +2528,7 @@ public class VtnNorthboundIT extends TestBase {
         requestBody = "{\"vlan\":" + vlan0 + ", \"node\":{\"id\":\"" + nodeid +
             "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
             nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
                                bname2 + "/interfaces/" + ifname2 +
                                "/portmap/", "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -2431,7 +2538,7 @@ public class VtnNorthboundIT extends TestBase {
             nodeType + "\"}, \"port\":{\"name\":\"" + pname +
             "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum +
             "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
                                bname2 + "/interfaces/" + ifname2 + "/portmap/",
                                "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -2441,7 +2548,7 @@ public class VtnNorthboundIT extends TestBase {
             nodeType + "\", \"id\":\"" + nodeid +
             "\"}, \"port\":{\"name\":\"" + pname + "\", \"id\":\"" +
             portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
                                bname2 + "/interfaces/" + ifname2 + "/portmap/",
                                "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
@@ -2451,45 +2558,54 @@ public class VtnNorthboundIT extends TestBase {
             nodeType + "\", \"id\":\"" + nodeid +
             "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
             nodeType + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" +
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
                                bname2 + "/interfaces/" + ifname2 + "/portmap/",
                                "PUT", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT PortMapping 400
         // setting invalid value to node id
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + test + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + test + "\"}, \"port\":{\"name\":\"" +
+            pname + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum +
+            "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test PUT PortMappint expecting 404
         // setting dummy vtn
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tenant_dummy + "/vbridges/" + bname + "/interfaces/"
-                + ifname + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tenantDummy +
+                               "/vbridges/" + bname + "/interfaces/" + ifname +
+                               "/portmap/", "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vBridge
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tenant_dummy + "/vbridges/"
-                + bname_dummy + "/interfaces/" + ifname + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tenantDummy +
+                               "/vbridges/" + bnameDummy + "/interfaces/" +
+                               ifname + "/portmap/", "PUT", requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vBridge interface
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname_dummy + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(baseURL + ifnameDummy + "/portmap/", "PUT",
+                               requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // specfiy not supported Content-Type
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody, "text/plain");
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody, "text/plain");
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         // Authentication failure.
@@ -2508,53 +2624,63 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test PUT PortMapping expecting 200
         // Test PUT PortMapping
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
         assertResponse(HTTP_OK);
 
         // setting port element without port id and  port type
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\""+ nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
         assertResponse(HTTP_OK);
 
         // Test PUT PortMapping, change vlan value
-        requestBody = "{\"vlan\":" + vlan2 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan2 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(baseURL + ifname + "/portmap/", "PUT",
+                               requestBody);
         assertResponse(HTTP_OK);
-
 
         // Test PUT PortMapping expecting 409
         // Test PUT PortMapping for other vbridge
-        requestBody = "{\"vlan\":" + vlan2 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan2 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"name\":\"" + pname + "\", \"type\":\"" +
+            nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap/",
+                               "PUT", requestBody);
 
         // when physical port doesn't exist, conflict mapping succeeds.
         assertResponse(HTTP_OK);
 
         // Test PUT PortMapping expecting 200
         // Test PUT PortMapping for other vbridge and except port name
-        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"vlan\":" + vlan1 + ", \"node\":{\"type\":\"" +
+            nodeType + "\", \"id\":\"" + nodeid +
+            "\"}, \"port\":{\"type\":\"" + nodeType + "\", \"id\":\"" +
+            portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap/",
+                               "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test PUT PortMapping, except vlan
-        requestBody = "{\"node\":{\"type\":\"" + nodeType + "\", \"id\":\""
-                + nodeid + "\"}, \"port\":{\"name\":\"" + pname
-                + "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap/", "PUT", requestBody);
+        requestBody = "{\"node\":{\"type\":\"" + nodeType + "\", \"id\":\"" +
+            nodeid + "\"}, \"port\":{\"name\":\"" + pname +
+            "\", \"type\":\"" + nodeType + "\", \"id\":\"" + portnum + "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap/",
+                               "PUT", requestBody);
         assertResponse(HTTP_OK);
 
         // Test GET PortMapping from bname2
-        result = getJsonResult(url + "default/vtns/" + tname +"/vbridges/" + bname2 + "/interfaces/"
-                + ifname2 + "/portmap");
+        result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/" +
+                               bname2 + "/interfaces/" + ifname2 + "/portmap");
         assertResponse(HTTP_OK);
         JSONTokener jt = new JSONTokener(result);
         JSONObject json = new JSONObject(jt);
@@ -2564,17 +2690,19 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test GET PortMapping expecting 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + tenant_dummy + "/vbridges/" + bname + "/interfaces/"
-                + ifname + "/portmap");
+        result = getJsonResult(url + "default/vtns/" + tenantDummy +
+                               "/vbridges/" + bname + "/interfaces/" + ifname +
+                               "/portmap");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
-        result = getJsonResult(url + "default/vtns/" + tenant_dummy + "/vbridges/"
-                + bname_dummy + "/interfaces/" + ifname + "/portmap");
+        result = getJsonResult(url + "default/vtns/" + tenantDummy +
+                               "/vbridges/" + bnameDummy + "/interfaces/" +
+                               ifname + "/portmap");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge interface
-        result = getJsonResult(baseURL + ifname_dummy + "/portmap");
+        result = getJsonResult(baseURL + ifnameDummy + "/portmap");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET PortMapping expecting 200
@@ -2647,8 +2775,9 @@ public class VtnNorthboundIT extends TestBase {
      *                  configured before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testPortMappingDeleteAPI(String tname, String bname, String ifname) throws JSONException {
-        log.info("Starting delete Port Mapping JAXB client.");
+    private void testPortMappingDeleteAPI(String tname, String bname,
+                                          String ifname) throws JSONException {
+        LOG.info("Starting delete Port Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2658,23 +2787,23 @@ public class VtnNorthboundIT extends TestBase {
         baseURL.append(bname);
         baseURL.append("/interfaces/");
 
-        String tname_dummy = "tname_dummy";
-        String bname_dummy = "bname_dummy";
-        String ifname_dummy = "ifname_dummy";
+        String tnameDummy = "tnameDummy";
+        String bnameDummy = "bname_dummy";
+        String ifnameDummy = "ifname_dummy";
 
         // Test DELETE PortMapping expecting 404
         // setting dummy vtn interface
-        String result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/"
-                + bname +  "/interfaces/" + ifname_dummy + "/portmap", "DELETE");
+        String result = getJsonResult(url + "default/vtns/" + tnameDummy + "/vbridges/"
+                + bname +  "/interfaces/" + ifnameDummy + "/portmap", "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
         result = getJsonResult(url + "default/vtns/" + tname + "/vbridges/"
-                + bname_dummy +  "/interfaces/" + ifname_dummy + "/portmap", "DELETE");
+                + bnameDummy +  "/interfaces/" + ifnameDummy + "/portmap", "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge interface
-        result = getJsonResult(baseURL + ifname_dummy + "/portmap", "DELETE");
+        result = getJsonResult(baseURL + ifnameDummy + "/portmap", "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test DELETE PortMapping
@@ -2701,8 +2830,9 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testVLANMappingAPI(String tname, String bname) throws JSONException {
-        log.info("Starting VLAN Mapping JAXB client.");
+    private void testVLANMappingAPI(String tname, String bname)
+        throws JSONException {
+        LOG.info("Starting VLAN Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2719,13 +2849,13 @@ public class VtnNorthboundIT extends TestBase {
         String vlan3 = "2000";
         String vlan = "10";
 
-        String vlan_negative = "-100";
-        String vlan_over = "4096";
+        String vlanNegative = "-100";
+        String vlanOver = "4096";
 
         String nodeType = "OF";
 
-        String tname_dummy = "tname_dummy";
-        String bname_dummy = "bname_dummy";
+        String tnameDummy = "tnameDummy";
+        String bnameDummy = "bname_dummy";
 
         String bname2 = "vbridge_Name2";
 
@@ -2739,7 +2869,7 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test GET VLAN Mapping expecting 404, setting dummy vtn
         String searchByConf = "/vlanmapsearch/byconf";
-        String badTenant = url + "default/vtns/" + tname_dummy +
+        String badTenant = url + "default/vtns/" + tnameDummy +
             "/vbridges/" + bname;
         result = getJsonResult(badTenant + "/vlanmaps");
         assertResponse(HTTP_NOT_FOUND);
@@ -2749,11 +2879,11 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET VLAN Mapping expecting 404, setting dummy vbridge
-        result = getJsonResult(baseURL + bname_dummy + "/vlanmaps");
+        result = getJsonResult(baseURL + bnameDummy + "/vlanmaps");
         assertResponse(HTTP_NOT_FOUND);
-        result = getJsonResult(baseURL + bname_dummy + searchByConf);
+        result = getJsonResult(baseURL + bnameDummy + searchByConf);
         assertResponse(HTTP_NOT_FOUND);
-        result = getJsonResult(baseURL + bname_dummy + searchByConf +
+        result = getJsonResult(baseURL + bnameDummy + searchByConf +
                                "?vlan=1");
         assertResponse(HTTP_NOT_FOUND);
 
@@ -2773,42 +2903,45 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_NOT_FOUND);
 
         // Test POST VLAN Mapping expecting 404, setting dummy vbridge
-        String requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + nodeid1 + "\"}}";
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/"
-                + bname + "/vlanmaps", "POST", requestBody);
+        String requestBody = "{\"vlan\":\"" + vlan1 +
+            "\",\"node\":{\"type\":\"" + nodeType + "\",\"id\":\"" + nodeid1 +
+            "\"}}";
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" + bname + "/vlanmaps", "POST",
+                               requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test POST VLAN Mapping expecting 404, setting dummy vbridge
-        result = getJsonResult(baseURL + bname_dummy + "/vlanmaps", "POST", requestBody);
+        result = getJsonResult(baseURL + bnameDummy + "/vlanmaps", "POST",
+                               requestBody);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test POST VLAN Mapping expecting 400
         // Specifying a negative VLAN ID.
-        requestBody = "{\"vlan\":\"" + vlan_negative +
-            "\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\"" + nodeid1 +
+        requestBody = "{\"vlan\":\"" + vlanNegative +
+            "\",\"node\":{\"type\":\"" + nodeType + "\",\"id\":\"" + nodeid1 +
             "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
                                requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Specifyin too large VLAN ID.
-        requestBody = "{\"vlan\":\"" + vlan_over +"\",\"node\":{\"type\":\"" +
-            nodeType +"\",\"id\":\"" + nodeid1 + "\"}}";
+        requestBody = "{\"vlan\":\"" + vlanOver + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
                                requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Specifyin invalid node type.
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\"" +
-            "ERROR_TEST" +"\",\"id\":\"" + nodeid1 + "\"}}";
+        requestBody = "{\"vlan\":\"" + vlan + "\",\"node\":{\"type\":\"" +
+            "ERROR_TEST" + "\",\"id\":\"" + nodeid1 + "\"}}";
         result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
                                requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST VLAN Mapping
-        requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + nodeid1 + "\"}}";
+        requestBody = "{\"vlan\":\"" + vlan1 + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + nodeid1 + "\"}}";
         String requestUri = baseURL + bname + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
@@ -2816,9 +2949,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(loc, httpLocation);
 
         // Test POST VLAN Mapping expecting 409
-        requestBody = "{\"vlan\":\"" + vlan1 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + nodeid1 + "\"}}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
+        requestBody = "{\"vlan\":\"" + vlan1 + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + nodeid1 + "\"}}";
+        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
+                               requestBody);
         assertResponse(HTTP_CONFLICT);
 
         // Test GET VLAN Mapping
@@ -2830,9 +2964,10 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(1, vLANMapArray.length());
 
         // Test POST VLAN Mapping
-        requestBody = "{\"vlan\":\"" + vlan2 +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + nodeid2 + "\"}}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
+        requestBody = "{\"vlan\":\"" + vlan2 + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + nodeid2 + "\"}}";
+        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
+                               requestBody);
         assertResponse(HTTP_CREATED);
         loc = requestUri + "/" + nodeType + "-" + nodeid2 + "." + vlan2;
         Assert.assertEquals(loc, httpLocation);
@@ -2850,25 +2985,26 @@ public class VtnNorthboundIT extends TestBase {
         for (int i = 0; i < vLANMapArray.length(); i++) {
             vLANMap = vLANMapArray.getJSONObject(i);
             JSONObject nodeinfo = vLANMap.getJSONObject("node");
-            if (vLANMap.getString("id").equals(nodeType + "-" + nodeid1 + "." + vlan1)) {
+            if (vLANMap.getString("id").equals(nodeType + "-" + nodeid1 + "." +
+                                               vlan1)) {
                 Assert.assertEquals(vlan1, vLANMap.getString("vlan"));
                 Assert.assertEquals(nodeType, nodeinfo.getString("type"));
                 Assert.assertEquals(nodeid1, nodeinfo.getString("id"));
 
-            } else if (vLANMap.getString("id").equals(nodeType + "-" + nodeid2 + "." + vlan2)) {
+            } else if (vLANMap.getString("id").equals(nodeType + "-" +
+                                                      nodeid2 + "." + vlan2)) {
                 Assert.assertEquals(vlan2, vLANMap.getString("vlan"));
                 Assert.assertEquals(nodeType, nodeinfo.getString("type"));
                 Assert.assertEquals(nodeid2, nodeinfo.getString("id"));
-            }
-            else {
+            } else {
                 // Unexpected VLAN Mapping
                 Assert.assertTrue(false);
             }
         }
 
         // Test POST VLAN Mapping, setting 0 to vlan
-        requestBody = "{\"vlan\":\"" + vlan0 + "\",\"node\":{\"type\":\"" + nodeType + "\",\"id\":\""
-                        + nodeid1 + "\"}}";
+        requestBody = "{\"vlan\":\"" + vlan0 + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + nodeid1 + "\"}}";
         requestUri = baseURL + bname2 + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
@@ -2876,7 +3012,8 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(loc, httpLocation);
 
         // Test POST VLAN Mapping, except vlan
-        requestBody = "{\"node\":{\"type\":\""+ nodeType +"\",\"id\":\"" + nodeid1 + "\"}}";
+        requestBody = "{\"node\":{\"type\":\"" + nodeType + "\",\"id\":\"" +
+            nodeid1 + "\"}}";
         requestUri = baseURL + bname + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CONFLICT);
@@ -2895,18 +3032,20 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         // Test DELETE VLAN Mapping
-        result = getJsonResult(baseURL + bname2 + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan0, "DELETE");
+        result = getJsonResult(baseURL + bname2 + "/vlanmaps/" + nodeType +
+                               "-" + nodeid1 + "." + vlan0, "DELETE");
         assertResponse(HTTP_OK);
 
         // Test not supported Content-Type
-        requestBody = "{\"vlan\":\"" + vlan0 + "\",\"node\":{\"type\":\"" + nodeType
-                        + "\",\"id\":\"" + nodeid1 + "\"}}";
+        requestBody = "{\"vlan\":\"" + vlan0 + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + nodeid1 + "\"}}";
         requestUri = baseURL + bname + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody, "text/plain");
         assertResponse(HTTP_UNSUPPORTED_TYPE);
 
         // Test POST VLAN Mapping, except vlan
-        requestBody = "{\"node\":{\"type\":\""+ nodeType +"\",\"id\":\"" + nodeid1 + "\"}}";
+        requestBody = "{\"node\":{\"type\":\"" + nodeType + "\",\"id\":\"" +
+            nodeid1 + "\"}}";
         requestUri = baseURL + bname + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_CREATED);
@@ -2915,22 +3054,22 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test POST VLAN Mapping, specifying invalid node which does not
         // contain node ID.
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\"" +
-            nodeType +"\"}}";
+        requestBody = "{\"vlan\":\"" + vlan + "\",\"node\":{\"type\":\"" +
+            nodeType + "\"}}";
         requestUri = baseURL + bname + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST VLAN Mapping, specifying invalid node which does not
         // contain node type.
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"id\":\"" +
+        requestBody = "{\"vlan\":\"" + vlan + "\",\"node\":{\"id\":\"" +
             nodeid1 + "\"}}";
         requestUri = baseURL + bname2 + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test POST VLAN Mapping, setting requestBody without node elements
-        requestBody = "{\"vlan\":\"" + vlan3 +"\"}";
+        requestBody = "{\"vlan\":\"" + vlan3 + "\"}";
         requestUri = baseURL + bname2 + "/vlanmaps";
 
         // Ensure that query parameters are eliminated from Location.
@@ -2942,28 +3081,32 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test POST VLAN Mapping expecting 400
         // setting invalid value to node id
-        requestBody = "{\"vlan\":\"" + vlan +"\",\"node\":{\"type\":\""+ nodeType +"\",\"id\":\""
-                + "ERROR_TEST" + "\"}}";
+        requestBody = "{\"vlan\":\"" + vlan + "\",\"node\":{\"type\":\"" +
+            nodeType + "\",\"id\":\"" + "ERROR_TEST" + "\"}}";
         requestUri = baseURL + bname2 + "/vlanmaps";
         result = getJsonResult(requestUri, "POST", requestBody);
         assertResponse(HTTP_BAD_REQUEST);
 
         // Test GET VLAN Mapping expecting 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/" + bname + "/vlanmaps"
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" + bname + "/vlanmaps"
                 + nodeType + "-" + nodeid1 + "." + vlan1);
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
-        result = getJsonResult(baseURL + bname_dummy + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan1);
+        result = getJsonResult(baseURL + bnameDummy + "/vlanmaps/" +
+                               nodeType + "-" + nodeid1 + "." + vlan1);
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vlan
-        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan);
+        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType +
+                               "-" + nodeid1 + "." + vlan);
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET VLAN Mapping
-        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan1);
+        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType +
+                               "-" + nodeid1 + "." + vlan1);
         jt = new JSONTokener(result);
         json = new JSONObject(jt);
         assertResponse(HTTP_OK);
@@ -3045,8 +3188,9 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testVLANMappingDeleteAPI(String tname, String bname) throws JSONException {
-        log.info("Starting delete VLAN Mapping JAXB client.");
+    private void testVLANMappingDeleteAPI(String tname, String bname)
+        throws JSONException {
+        LOG.info("Starting delete VLAN Mapping JAXB client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -3058,35 +3202,42 @@ public class VtnNorthboundIT extends TestBase {
         String vlan1 = "1000";
         String nodeType = "OF";
 
-        String tname_dummy = "tname_dummy";
-        String bname_dummy = "bname_dummy";
-        String vlan_dummy = "1234";
-
+        String tnameDummy = "tnameDummy";
+        String bnameDummy = "bname_dummy";
+        String vlanDummy = "1234";
 
         // Test DELETE VLAN Mapping
-        String result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan1, "DELETE");
+        String result = getJsonResult(baseURL + bname + "/vlanmaps/" +
+                                      nodeType + "-" + nodeid1 + "." + vlan1,
+                                      "DELETE");
         assertResponse(HTTP_OK);
 
         // Test DELETE VLAN Mapping expecting 404
         // setting deleted vlan mapping
-        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan1, "DELETE");
+        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType +
+                               "-" + nodeid1 + "." + vlan1, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy tenant
-        result = getJsonResult(url + "default/vtns/" + tname_dummy + "/vbridges/"
-                + bname + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan1, "DELETE");
+        result = getJsonResult(url + "default/vtns/" + tnameDummy +
+                               "/vbridges/" +  bname + "/vlanmaps/" +
+                               nodeType + "-" + nodeid1 + "." + vlan1,
+                               "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge mapping
-        result = getJsonResult(baseURL + bname_dummy + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan1, "DELETE");
+        result = getJsonResult(baseURL + bnameDummy + "/vlanmaps/" + nodeType +
+                               "-" + nodeid1 + "." + vlan1, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vlan mapping
-        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType + "-" + nodeid1 + "." + vlan_dummy, "DELETE");
+        result = getJsonResult(baseURL + bname + "/vlanmaps/" + nodeType +
+                               "-" + nodeid1 + "." + vlanDummy, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // Test GET VLAN Mapping expecting 404
-        result = getJsonResult(baseURL + bname + "/vlanmaps" + nodeType + "-" + nodeid1 + "." + vlan1);
+        result = getJsonResult(baseURL + bname + "/vlanmaps" + nodeType + "-"
+                               + nodeid1 + "." + vlan1);
         assertResponse(HTTP_NOT_FOUND);
 
 
@@ -3102,7 +3253,8 @@ public class VtnNorthboundIT extends TestBase {
         // delete VLAN mappings set for test.
         for (int i = 0; i < vLANMapArray.length(); i++) {
             JSONObject vLANMap = vLANMapArray.getJSONObject(i);
-            result = getJsonResult(baseURL + bname + "/vlanmaps/" + vLANMap.getString("id"), "DELETE");
+            result = getJsonResult(baseURL + bname + "/vlanmaps/" +
+                                   vLANMap.getString("id"), "DELETE");
             assertResponse(HTTP_OK);
         }
     }
@@ -3121,7 +3273,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testMacMappingAPI(String tname, String bname1, String bname2)
         throws JSONException {
-        log.info("Starting MAC Mapping JAXB client.");
+        LOG.info("Starting MAC Mapping JAXB client.");
 
         String qparam = "?param1=1&param2=2";
         String mapUri = createURI("default/vtns", tname, "vbridges", bname1,
@@ -3176,26 +3328,28 @@ public class VtnNorthboundIT extends TestBase {
         JSONObject config = createMacMapConfig(allowedHosts, deniedHosts);
         JSONObject configExpected = completeMacMapConfig(config);
 
-        {
-            String cf = config.toString();
-            getJsonResult(mapUri + qparam, "PUT", cf);
-            assertResponse(HTTP_CREATED);
-            Assert.assertEquals(mapUri, httpLocation);
+        String cf = config.toString();
+        getJsonResult(mapUri + qparam, "PUT", cf);
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(mapUri, httpLocation);
 
-            for (String method: new String[]{"PUT", "POST"}) {
-                getJsonResult(mapUri, method, cf);
-                assertResponse(HTTP_NO_CONTENT);
-            }
+        for (String method: new String[]{"PUT", "POST"}) {
+            getJsonResult(mapUri, method, cf);
+            assertResponse(HTTP_NO_CONTENT);
         }
 
         assertMacMapping(mapUri, configExpected);
 
         // Try to create MAC mapping with specifying invalid MAC address.
         String[] badMacs = {
-            "invalid_mac_address",      // broken
-            "00:00:00:00:00:00",        // zero
-            "ff:ff:ff:ff:ff:ff",        // broadcast
-            "81:00:11:22:33:44",        // multicast
+            // broken
+            "invalid_mac_address",
+            // zero
+            "00:00:00:00:00:00",
+            // broadcast
+            "ff:ff:ff:ff:ff:ff",
+            // multicast
+            "81:00:11:22:33:44",
         };
 
         String[] acls = {"allow", "deny"};
@@ -3283,84 +3437,82 @@ public class VtnNorthboundIT extends TestBase {
 
         // Try to remove hosts that are not registered.
         String remove = "?action=remove";
-        {
-            LinkedList<String> allowedHosts1 = new LinkedList<String>();
-            for (int i = 0; i < 5; i++) {
-                String mac;
-                if ((i & 1) == 0) {
-                    mac = null;
-                } else {
-                    allowedAddr[5] = (byte)i;
-                    mac = HexEncode.bytesToHexStringFormat(allowedAddr);
-                }
-
-                String vlan = String.valueOf(i + 100);
-                allowedHosts1.add(mac);
-                allowedHosts1.add(vlan);
+        LinkedList<String> allowedHosts1 = new LinkedList<String>();
+        for (int i = 0; i < 5; i++) {
+            String mac;
+            if ((i & 1) == 0) {
+                mac = null;
+            } else {
+                allowedAddr[5] = (byte)i;
+                mac = HexEncode.bytesToHexStringFormat(allowedAddr);
             }
 
-            for (int i = 5; i < 10; i++) {
-                String mac;
-                if ((i & 1) == 0) {
-                    allowedAddr[5] = (byte)(i + 1);
-                    mac = HexEncode.bytesToHexStringFormat(allowedAddr);
-                } else {
-                    mac = null;
-                }
+            String vlan = String.valueOf(i + 100);
+            allowedHosts1.add(mac);
+            allowedHosts1.add(vlan);
+        }
 
-                String vlan = String.valueOf(i);
-                allowedHosts1.add(mac);
-                allowedHosts1.add(vlan);
+        for (int i = 5; i < 10; i++) {
+            String mac;
+            if ((i & 1) == 0) {
+                allowedAddr[5] = (byte)(i + 1);
+                mac = HexEncode.bytesToHexStringFormat(allowedAddr);
+            } else {
+                mac = null;
             }
 
-            LinkedList<String> deniedHosts1 = new LinkedList<String>();
-            for (int i = 0; i < 5; i++) {
-                deniedAddr[4] = (byte)(i + 1);
-                String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
-                String vlan = String.valueOf(i + 100);
-                deniedHosts1.add(mac);
-                deniedHosts1.add(vlan);
-            }
-            for (int i = 5; i < 10; i++) {
-                deniedAddr[4] = (byte)i;
-                String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
-                String vlan = String.valueOf(i + 1000);
-                deniedHosts1.add(mac);
-                deniedHosts1.add(vlan);
+            String vlan = String.valueOf(i);
+            allowedHosts1.add(mac);
+            allowedHosts1.add(vlan);
+        }
+
+        LinkedList<String> deniedHosts1 = new LinkedList<String>();
+        for (int i = 0; i < 5; i++) {
+            deniedAddr[4] = (byte)(i + 1);
+            String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
+            String vlan = String.valueOf(i + 100);
+            deniedHosts1.add(mac);
+            deniedHosts1.add(vlan);
+        }
+        for (int i = 5; i < 10; i++) {
+            deniedAddr[4] = (byte)i;
+            String mac = HexEncode.bytesToHexStringFormat(deniedAddr);
+            String vlan = String.valueOf(i + 1000);
+            deniedHosts1.add(mac);
+            deniedHosts1.add(vlan);
+        }
+
+        JSONObject allow1 = createMacHostSet(allowedHosts1);
+        JSONObject deny1 = createMacHostSet(deniedHosts1);
+        config = new JSONObject();
+        config.put("allow", allow1).put("deny", deny1);
+        getJsonResult(createRelativeURI(mapUri + remove), "POST",
+                      config.toString());
+        assertResponse(HTTP_NO_CONTENT);
+        for (String acl: acls) {
+            JSONObject set;
+            LinkedList<String> hostList;
+            if (acl.equals("allow")) {
+                set = allow1;
+                hostList = allowedHosts1;
+            } else {
+                set = deny1;
+                hostList = deniedHosts1;
             }
 
-            JSONObject allow1 = createMacHostSet(allowedHosts1);
-            JSONObject deny1 = createMacHostSet(deniedHosts1);
-            config = new JSONObject();
-            config.put("allow", allow1).put("deny", deny1);
-            getJsonResult(createRelativeURI(mapUri + remove), "POST",
-                          config.toString());
+            getJsonResult(createRelativeURI(mapUri, acl + remove), "POST",
+                          set.toString());
             assertResponse(HTTP_NO_CONTENT);
-            for (String acl: acls) {
-                JSONObject set;
-                LinkedList<String> hostList;
-                if (acl.equals("allow")) {
-                    set = allow1;
-                    hostList = allowedHosts1;
-                } else {
-                    set = deny1;
-                    hostList = deniedHosts1;
-                }
 
-                getJsonResult(createRelativeURI(mapUri, acl + remove), "POST",
-                              set.toString());
+            Iterator<String> it = hostList.iterator();
+            while (it.hasNext()) {
+                String m = it.next();
+                String v = it.next();
+                String uri = createRelativeURI(mapUri, acl,
+                                               (m == null) ? "ANY" : m,
+                                               (v == null) ? "0" : v);
+                getJsonResult(uri, "DELETE");
                 assertResponse(HTTP_NO_CONTENT);
-
-                Iterator<String> it = hostList.iterator();
-                while (it.hasNext()) {
-                    String m = it.next();
-                    String v = it.next();
-                    String uri = createRelativeURI(mapUri, acl,
-                                                   (m == null) ? "ANY" : m,
-                                                   (v == null) ? "0" : v);
-                    getJsonResult(uri, "DELETE");
-                    assertResponse(HTTP_NO_CONTENT);
-                }
             }
         }
 
@@ -3414,21 +3566,19 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         // Duplicate MAC address in allow set.
-        {
-            String acl = "allow";
-            String mac = "00:11:22:33:55:88";
-            JSONObject set = createMacHostSet(mac, "1000", mac, "1001");
-            for (String method: new String[]{"POST", "PUT"}) {
-                JSONObject conf = new JSONObject();
-                conf.put(acl, set);
+        String acl = "allow";
+        String mac = "00:11:22:33:55:88";
+        JSONObject set = createMacHostSet(mac, "1000", mac, "1001");
+        for (String method: new String[]{"POST", "PUT"}) {
+            JSONObject conf = new JSONObject();
+            conf.put(acl, set);
 
-                getJsonResult(mapUri, method, conf.toString());
-                assertResponse(HTTP_BAD_REQUEST);
+            getJsonResult(mapUri, method, conf.toString());
+            assertResponse(HTTP_BAD_REQUEST);
 
-                String uri = createRelativeURI(mapUri, acl);
-                getJsonResult(uri, method, set.toString());
-                assertResponse(HTTP_BAD_REQUEST);
-            }
+            String uri = createRelativeURI(mapUri, acl);
+            getJsonResult(uri, method, set.toString());
+            assertResponse(HTTP_BAD_REQUEST);
         }
 
         // Configuration should not be affected.
@@ -3447,8 +3597,8 @@ public class VtnNorthboundIT extends TestBase {
         configExpected = completeMacMapConfig(config);
         assertMacMapping(mapUri, configExpected);
 
-        for (String acl: acls) {
-            LinkedList<String> hostList = (acl.equals("allow"))
+        for (String acl1: acls) {
+            LinkedList<String> hostList = (acl1.equals("allow"))
                 ? allowedHosts : deniedHosts;
 
             // Remove 2 hosts by specifying the list.
@@ -3456,39 +3606,39 @@ public class VtnNorthboundIT extends TestBase {
             String vlan1 = hostList.removeFirst();
             String mac2 = hostList.removeFirst();
             String vlan2 = hostList.removeFirst();
-            JSONObject set = createMacHostSet(mac1, vlan1, mac2, vlan2);
+            JSONObject set1 = createMacHostSet(mac1, vlan1, mac2, vlan2);
 
-            String uri = createRelativeURI(mapUri, acl + remove);
-            getJsonResult(uri, "POST", set.toString());
+            String uri = createRelativeURI(mapUri, acl1 + remove);
+            getJsonResult(uri, "POST", set1.toString());
             assertResponse(HTTP_OK);
             assertMacMapping(mapUri, allowedHosts, deniedHosts);
         }
 
         // Remove 2 hosts from both lists.
         config = new JSONObject();
-        for (String acl: acls) {
-            LinkedList<String> hostList = (acl.equals("allow"))
+        for (String acl1: acls) {
+            LinkedList<String> hostList = (acl1.equals("allow"))
                 ? allowedHosts : deniedHosts;
             String mac1 = hostList.removeFirst();
             String vlan1 = hostList.removeFirst();
             String mac2 = hostList.removeFirst();
             String vlan2 = hostList.removeFirst();
-            JSONObject set = createMacHostSet(mac1, vlan1, mac2, vlan2);
-            config.put(acl, set);
+            JSONObject set1 = createMacHostSet(mac1, vlan1, mac2, vlan2);
+            config.put(acl1, set1);
         }
         getJsonResult(mapUri + remove, "POST", config.toString());
         assertResponse(HTTP_OK);
         assertMacMapping(mapUri, allowedHosts, deniedHosts);
 
         // Remove 3 hosts by DELETE.
-        for (String acl: acls) {
-            LinkedList<String> hostList = (acl.equals("allow"))
+        for (String acl1: acls) {
+            LinkedList<String> hostList = (acl1.equals("allow"))
                 ? allowedHosts : deniedHosts;
 
             for (int i = 0; i < 3; i++) {
                 String m = hostList.removeFirst();
                 String v = hostList.removeFirst();
-                String uri = createRelativeURI(mapUri, acl,
+                String uri = createRelativeURI(mapUri, acl1,
                                                (m == null) ? "ANY" : m,
                                                (v == null) ? "0" : v);
                 getJsonResult(uri, "DELETE");
@@ -3498,62 +3648,60 @@ public class VtnNorthboundIT extends TestBase {
         assertMacMapping(mapUri, allowedHosts, deniedHosts);
 
         // Remove 3 hosts, and add 4 hosts by PUT.
-        {
-            byte[] base = {
-                (byte)0xa0, (byte)0xa1, (byte)0xa2,
-                (byte)0x00, (byte)0xa4, (byte)0xa5,
-            };
-            for (String acl: acls) {
-                LinkedList<String> hostList = (acl.equals("allow"))
-                    ? allowedHosts : deniedHosts;
-                for (int i = 0; i < 6; i++) {
-                    hostList.removeFirst();
-                }
-
-                for (int i = 0; i < 4; i++) {
-                    base[3] = (byte)i;
-                    hostList.add(HexEncode.bytesToHexStringFormat(base));
-                    hostList.add(String.valueOf(i + 500));
-                }
+        byte[] base = {
+            (byte)0xa0, (byte)0xa1, (byte)0xa2,
+            (byte)0x00, (byte)0xa4, (byte)0xa5,
+        };
+        for (String acl1: acls) {
+            LinkedList<String> hostList = (acl1.equals("allow"))
+                ? allowedHosts : deniedHosts;
+            for (int i = 0; i < 6; i++) {
+                hostList.removeFirst();
             }
 
-            config = createMacMapConfig(allowedHosts, deniedHosts);
-            configExpected = completeMacMapConfig(config);
-            getJsonResult(mapUri, "PUT", config.toString());
+            for (int i = 0; i < 4; i++) {
+                base[3] = (byte)i;
+                hostList.add(HexEncode.bytesToHexStringFormat(base));
+                hostList.add(String.valueOf(i + 500));
+            }
+        }
+
+        config = createMacMapConfig(allowedHosts, deniedHosts);
+        configExpected = completeMacMapConfig(config);
+        getJsonResult(mapUri, "PUT", config.toString());
+        assertResponse(HTTP_OK);
+        assertMacMapping(mapUri, allowedHosts, deniedHosts);
+
+        for (String acl1: acls) {
+            LinkedList<String> hostList = (acl1.equals("allow"))
+                ? allowedHosts : deniedHosts;
+            for (int i = 0; i < 6; i++) {
+                hostList.removeFirst();
+            }
+
+            for (int i = 20; i < 24; i++) {
+                base[3] = (byte)i;
+                hostList.add(HexEncode.bytesToHexStringFormat(base));
+                hostList.add(String.valueOf(i + 500));
+            }
+
+            JSONObject set1 = createMacHostSet(hostList);
+            getJsonResult(createRelativeURI(mapUri, acl1), "PUT",
+                          set1.toString());
             assertResponse(HTTP_OK);
             assertMacMapping(mapUri, allowedHosts, deniedHosts);
-
-            for (String acl: acls) {
-                LinkedList<String> hostList = (acl.equals("allow"))
-                    ? allowedHosts : deniedHosts;
-                for (int i = 0; i < 6; i++) {
-                    hostList.removeFirst();
-                }
-
-                for (int i = 20; i < 24; i++) {
-                    base[3] = (byte)i;
-                    hostList.add(HexEncode.bytesToHexStringFormat(base));
-                    hostList.add(String.valueOf(i + 500));
-                }
-
-                JSONObject set = createMacHostSet(hostList);
-                getJsonResult(createRelativeURI(mapUri, acl), "PUT",
-                              set.toString());
-                assertResponse(HTTP_OK);
-                assertMacMapping(mapUri, allowedHosts, deniedHosts);
-            }
         }
 
         // Remove MAC mapping by specifying host list.
         LinkedList<String> saveAllowed = new LinkedList<String>(allowedHosts);
         LinkedList<String> saveDenied = new LinkedList<String>(deniedHosts);
         for (int i = 0; i < acls.length; i++) {
-            String acl = acls[i];
-            LinkedList<String> hostList = (acl.equals("allow"))
+            String acl1 = acls[i];
+            LinkedList<String> hostList = (acl1.equals("allow"))
                 ? allowedHosts : deniedHosts;
             hostList.clear();
 
-            String uri = createRelativeURI(mapUri, acl);
+            String uri = createRelativeURI(mapUri, acl1);
             getJsonResult(uri, "DELETE");
             assertResponse(HTTP_OK);
 
@@ -3576,47 +3724,45 @@ public class VtnNorthboundIT extends TestBase {
         assertNoMacMapping(mapUri2);
 
         // Create MAC mapping by installing a host to the specific URI.
-        {
-            String mac = "00:11:22:33:44:55";
-            String vlan = "4095";
-            JSONObject hostSet = createMacHostSet(mac, vlan);
-            List<String> empty = new LinkedList<String>();
+        mac = "00:11:22:33:44:55";
+        String vlan = "4095";
+        JSONObject hostSet = createMacHostSet(mac, vlan);
+        List<String> empty = new LinkedList<String>();
 
-            for (String acl: acls) {
-                JSONObject set;
-                if (acl.equals("allow")) {
-                    set = createMacHostSet(saveAllowed);
-                    config = createMacMapConfig(saveAllowed, empty);
-                } else {
-                    set = createMacHostSet(saveDenied);
-                    config = createMacMapConfig(empty, saveDenied);
-                }
+        for (String acl1: acls) {
+            JSONObject set1;
+            if (acl1.equals("allow")) {
+                set1 = createMacHostSet(saveAllowed);
+                config = createMacMapConfig(saveAllowed, empty);
+            } else {
+                set1 = createMacHostSet(saveDenied);
+                config = createMacMapConfig(empty, saveDenied);
+            }
 
-                configExpected = completeMacMapConfig(config);
-                String uri = createRelativeURI(mapUri2, acl);
-                for (String method: new String[]{"PUT", "POST"}) {
-                    getJsonResult(uri + qparam, method, set.toString());
-                    assertResponse(HTTP_CREATED);
-                    Assert.assertEquals(uri, httpLocation);
-                    assertMacMapping(mapUri2, configExpected);
-
-                    getJsonResult(uri, "DELETE");
-                    assertResponse(HTTP_OK);
-                    assertNoMacMapping(mapUri2);
-                }
-
-                config = new JSONObject();
-                config.put(acl, hostSet);
-                String hostUri = createRelativeURI(uri, mac, vlan);
-                getJsonResult(hostUri + qparam, "PUT");
+            configExpected = completeMacMapConfig(config);
+            String uri = createRelativeURI(mapUri2, acl1);
+            for (String method: new String[]{"PUT", "POST"}) {
+                getJsonResult(uri + qparam, method, set1.toString());
                 assertResponse(HTTP_CREATED);
-                Assert.assertEquals(hostUri, httpLocation);
-                assertMacMapping(mapUri2, config);
+                Assert.assertEquals(uri, httpLocation);
+                assertMacMapping(mapUri2, configExpected);
 
-                getJsonResult(hostUri, "DELETE");
+                getJsonResult(uri, "DELETE");
                 assertResponse(HTTP_OK);
                 assertNoMacMapping(mapUri2);
             }
+
+            config = new JSONObject();
+            config.put(acl1, hostSet);
+            String hostUri = createRelativeURI(uri, mac, vlan);
+            getJsonResult(hostUri + qparam, "PUT");
+            assertResponse(HTTP_CREATED);
+            Assert.assertEquals(hostUri, httpLocation);
+            assertMacMapping(mapUri2, config);
+
+            getJsonResult(hostUri, "DELETE");
+            assertResponse(HTTP_OK);
+            assertNoMacMapping(mapUri2);
         }
     }
 
@@ -3720,8 +3866,9 @@ public class VtnNorthboundIT extends TestBase {
      *                  before method is called.
      * @throws JSONException  An error occurred.
      */
-    private void testMacAddressAPI(String tname, String bname) throws JSONException {
-        log.info("Starting MAC address JAXB client.");
+    private void testMacAddressAPI(String tname, String bname)
+        throws JSONException {
+        LOG.info("Starting MAC address JAXB client.");
         String url = VTN_BASE_URL;
 
         StringBuilder baseURL = new StringBuilder();
@@ -3743,7 +3890,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test GET all MAC address expecting 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" + bname + "/mac");
+        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" +
+                               bname + "/mac");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
@@ -3756,8 +3904,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test DELETE all MAC address expecting 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/"
-                + bname + "/mac", "DELETE");
+        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" +
+                               bname + "/mac", "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
@@ -3778,20 +3926,21 @@ public class VtnNorthboundIT extends TestBase {
         // add MAC Address Entry.
         VBridgePath bpath = new VBridgePath(tname, bname);
         Node node = NodeCreator.createOFNode(0L);
-        NodeConnector nc
-            = NodeConnectorCreator.createOFNodeConnector(Short.valueOf((short) 0), node);
+        NodeConnector nc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)0), node);
 
         // test with MAC Table entry existing.
         // set VLAN Map and Mac Table Entry before test.
         short vlan = 0;
         String requestBody = "{\"vlan\":\"" + vlan + "\"}";
-        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST", requestBody);
+        result = getJsonResult(baseURL + bname + "/vlanmaps", "POST",
+                               requestBody);
         assertResponse(HTTP_CREATED);
 
-        byte[] srcMac1 = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-        byte[] srcMac2 = new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
-        byte[] sender1 = new byte[] {(byte)192, (byte)168, (byte)0, (byte) 1};
-        byte[] sender2 = new byte[] {(byte)192, (byte)168, (byte)0, (byte) 2};
+        byte[] srcMac1 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+        byte[] srcMac2 = {0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
+        byte[] sender1 = {(byte)192, (byte)168, (byte)0, (byte)1};
+        byte[] sender2 = {(byte)192, (byte)168, (byte)0, (byte)2};
 
         putMacTableEntry(listenDataPacket, bpath, srcMac1, sender1, nc);
         putMacTableEntry(listenDataPacket, bpath, srcMac2, sender2, nc);
@@ -3805,7 +3954,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // Test GET all MAC address expecting 404
         // setting dummy vtn
-        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" + bname + "/mac");
+        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" +
+                               bname + "/mac");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
@@ -3817,16 +3967,18 @@ public class VtnNorthboundIT extends TestBase {
         // setting dummy vtn
         Iterator<String> itMac = expectedMacSet.iterator();
         String expectedMac = itMac.next();
-        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" + bname + "/mac" + expectedMac,
-                               "DELETE");
+        result = getJsonResult(url + "default/vtns/" + dummy + "/vbridges/" +
+                               bname + "/mac" + expectedMac, "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting dummy vbridge
-        result = getJsonResult(baseURL + dummy + "/mac/" + expectedMac, "DELETE");
+        result = getJsonResult(baseURL + dummy + "/mac/" + expectedMac,
+                               "DELETE");
         assertResponse(HTTP_NOT_FOUND);
 
         // setting correct URI.
-        result = getJsonResult(baseURL + bname + "/mac/" + expectedMac, "DELETE");
+        result = getJsonResult(baseURL + bname + "/mac/" + expectedMac,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         expectedMacSet.remove(expectedMac);
@@ -3834,7 +3986,8 @@ public class VtnNorthboundIT extends TestBase {
 
         // delete another entry.
         expectedMac = expectedMacSet.iterator().next();
-        result = getJsonResult(baseURL + bname + "/mac/" + expectedMac, "DELETE");
+        result = getJsonResult(baseURL + bname + "/mac/" + expectedMac,
+                               "DELETE");
         assertResponse(HTTP_OK);
 
         expectedMacSet.clear();
@@ -3843,8 +3996,8 @@ public class VtnNorthboundIT extends TestBase {
         // Add 10 Mac Entries.
         int numEntry = 10;
         for (int i = 0; i < numEntry; i++) {
-            byte[] src = new byte[] {0x00, 0x00, 0x00, 0x00, 0x01, (byte) (i + 1)};
-            byte[] sender = new byte[] {(byte)192, (byte)168, (byte)1, (byte) (i + 1)};
+            byte[] src = {0x00, 0x00, 0x00, 0x00, 0x01, (byte)(i + 1)};
+            byte[] sender = {(byte)192, (byte)168, (byte)1, (byte)(i + 1)};
 
             putMacTableEntry(listenDataPacket, bpath, src, sender, nc);
             expectedMacSet.add(HexEncode.bytesToHexStringFormat(src));
@@ -3868,8 +4021,8 @@ public class VtnNorthboundIT extends TestBase {
         }
 
         // flush mac address table.
-        result = getJsonResult(baseURL + bname + "/mac", "DELETE", null, "applicatin/json",
-                               false);
+        result = getJsonResult(baseURL + bname + "/mac", "DELETE", null,
+                               "applicatin/json", false);
         assertResponse(HTTP_UNAUTHORIZED);
     }
 
@@ -3902,8 +4055,9 @@ public class VtnNorthboundIT extends TestBase {
      * @param vlan              VLAN ID.
      * @throws JSONException
      */
-    private void checkMacTableEntry(String url, int numEntry, Set<String> expectedMacSet,
-                                    short vlan) throws JSONException {
+    private void checkMacTableEntry(String url, int numEntry,
+                                    Set<String> expectedMacSet, short vlan)
+        throws JSONException {
         String result = getJsonResult(url + "/mac");
         assertResponse(HTTP_OK);
         JSONTokener jt = new JSONTokener(result);
@@ -3930,14 +4084,16 @@ public class VtnNorthboundIT extends TestBase {
      * @param sender      A sender IP addesss.
      * @param nc          A NodeConnector.
      */
-    private void putMacTableEntry(IListenDataPacket listenData, VBridgePath bpath,
-                                  byte[] src, byte[] sender, NodeConnector nc) {
+    private void putMacTableEntry(IListenDataPacket listenData,
+                                  VBridgePath bpath, byte[] src, byte[] sender,
+                                  NodeConnector nc) {
 
-        byte[] dst = new byte[] {(byte)0xFF, (byte)0xFF, (byte)0xFF,
-                                 (byte)0xFF, (byte)0xFF, (byte)0xFF};
-        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
+        byte[] dst = {(byte)0xFF, (byte)0xFF, (byte)0xFF,
+                      (byte)0xFF, (byte)0xFF, (byte)0xFF};
+        byte[] target = {(byte)192, (byte)168, (byte)0, (byte)250};
 
-        RawPacket inPkt = createARPRawPacket (src, dst, sender, target, (short)-1, nc, ARP.REQUEST);
+        RawPacket inPkt = createARPRawPacket(src, dst, sender, target,
+                                             (short)-1, nc, ARP.REQUEST);
 
         listenData.receiveDataPacket(inPkt);
     }
@@ -3948,7 +4104,7 @@ public class VtnNorthboundIT extends TestBase {
      * This method is called by {@link #testVTNAPI()}.
      */
     private void testVtnGlobal(String base) throws JSONException {
-        log.info("Starting IVTNGlobal JAXB client.");
+        LOG.info("Starting IVTNGlobal JAXB client.");
 
         // Authentication failure.
         String uri = base + "version";
@@ -3974,7 +4130,7 @@ public class VtnNorthboundIT extends TestBase {
         Assert.assertEquals(ver.getMicro(), bv.getInt("micro"));
 
         String qf = ver.getQualifier();
-        String qfkey  ="qualifier";
+        String qfkey  = "qualifier";
         if (qf == null || qf.isEmpty()) {
             Assert.assertFalse(bv.has(qfkey));
         } else {
@@ -3987,7 +4143,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     @Test
     public void testServiceUnavailable() {
-        log.info("Starting Test with Service Unavailable.");
+        LOG.info("Starting Test with Service Unavailable.");
 
         // stop VTNManagerImpl.
         Assert.assertNotNull(implBundle);
@@ -4063,7 +4219,7 @@ public class VtnNorthboundIT extends TestBase {
         assertResponse(HTTP_UNAVAILABLE);
 
         // PortMapping APIs.
-        String baseURLPmap = baseURLIf + "/" + ifname + "/portmap" ;
+        String baseURLPmap = baseURLIf + "/" + ifname + "/portmap";
         short vlan = 0;
         String nodeid = "00:00:00:00:00:00:00:01";
         String nodeType = "OF";

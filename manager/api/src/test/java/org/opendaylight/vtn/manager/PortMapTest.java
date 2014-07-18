@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -57,7 +57,7 @@ public class PortMapTest extends TestBase {
         List<NodeConnector> connectors = createNodeConnectors(3);
         List<Node> nodes = createNodes(3);
         List<SwitchPort> ports = createSwitchPorts(5);
-        short vlans[] = {-10, 0, 1, 100, 4095};
+        short[] vlans = {-10, 0, 1, 100, 4095};
         for (NodeConnector nc: connectors) {
             for (Node node: nodes) {
                 for (SwitchPort port: ports) {
@@ -88,7 +88,7 @@ public class PortMapTest extends TestBase {
     public void testToString() {
         String prefix = "PortMap[";
         String suffix = "]";
-        short vlans[] = {-10, 0, 4095};
+        short[] vlans = {-10, 0, 4095};
         for (NodeConnector nc: createNodeConnectors(3)) {
             for (Node node: createNodes(3)) {
                 for (SwitchPort port: createSwitchPorts(5)) {
@@ -121,7 +121,7 @@ public class PortMapTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        short vlans[] = {-10, 0, 4095};
+        short[] vlans = {-10, 0, 4095};
         for (NodeConnector nc: createNodeConnectors(3)) {
             for (Node node: createNodes(3)) {
                 for (SwitchPort port: createSwitchPorts(5)) {

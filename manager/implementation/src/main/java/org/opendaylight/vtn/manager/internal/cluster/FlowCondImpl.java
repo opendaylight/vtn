@@ -150,7 +150,7 @@ public final class FlowCondImpl implements Serializable, Cloneable {
         rdlock.lock();
         try {
             FlowMatchImpl match = matches.get(idx);
-            return (match == null) ? null: match.getMatch();
+            return (match == null) ? null : match.getMatch();
         } finally {
             rdlock.unlock();
         }
@@ -301,8 +301,8 @@ public final class FlowCondImpl implements Serializable, Cloneable {
      * @return  A map which contains flow conditions.
      * @throws VTNException   An error occurred.
      */
-    private NavigableMap<Integer, FlowMatchImpl>
-        createMatches(List<FlowMatch> list) throws VTNException {
+    private NavigableMap<Integer, FlowMatchImpl> createMatches(
+        List<FlowMatch> list) throws VTNException {
         TreeMap<Integer, FlowMatchImpl> map =
             new TreeMap<Integer, FlowMatchImpl>();
         if (list != null) {

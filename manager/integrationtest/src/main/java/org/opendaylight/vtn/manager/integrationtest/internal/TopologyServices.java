@@ -28,34 +28,38 @@ public class TopologyServices implements IPluginInTopologyService {
     public void sollicitRefresh() {
     }
 
-    public void setPluginOutTopologyService(IPluginOutTopologyService pluginOutTopologyService){
+    public void setPluginOutTopologyService(
+        IPluginOutTopologyService pluginOutTopologyService) {
         this.pluginOutTopologyService = pluginOutTopologyService;
     }
 
-    public void unsetPluginOutTopologyService(IPluginOutTopologyService pluginOutTopologyService){
+    public void unsetPluginOutTopologyService(
+        IPluginOutTopologyService pluginOutTopologyService) {
         this.pluginOutTopologyService = null;
     }
 
 
-    public void addEdge(Edge edge, Set<Property> properties, UpdateType updateType){
+    public void addEdge(Edge edge, Set<Property> properties,
+                        UpdateType updateType) {
+        List<TopoEdgeUpdate> topoedgeupdateList =
+            new ArrayList<TopoEdgeUpdate>();
 
-        List<TopoEdgeUpdate> topoedgeupdateList = new ArrayList<TopoEdgeUpdate>();
-
-        topoedgeupdateList.add(new TopoEdgeUpdate(edge, properties, updateType));
+        topoedgeupdateList.add(new TopoEdgeUpdate(edge, properties,
+                                                  updateType));
 
         this.pluginOutTopologyService.edgeUpdate(topoedgeupdateList);
-
     }
 
-    public void addEdge(Collection<Edge> edge, Set<Property> properties, UpdateType updateType){
-
-        List<TopoEdgeUpdate> topoedgeupdateList = new ArrayList<TopoEdgeUpdate>();
+    public void addEdge(Collection<Edge> edge, Set<Property> properties,
+                        UpdateType updateType) {
+        List<TopoEdgeUpdate> topoedgeupdateList =
+            new ArrayList<TopoEdgeUpdate>();
 
         for (Edge eg : edge) {
-            topoedgeupdateList.add(new TopoEdgeUpdate(eg, properties, updateType));
+            topoedgeupdateList.add(new TopoEdgeUpdate(eg, properties,
+                                                      updateType));
         }
 
         this.pluginOutTopologyService.edgeUpdate(topoedgeupdateList);
-
     }
 }

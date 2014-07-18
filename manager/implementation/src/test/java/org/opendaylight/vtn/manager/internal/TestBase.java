@@ -58,22 +58,30 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  * Abstract base class for JUnit tests.
  */
 public abstract class TestBase extends Assert {
-  /**
-   * String Declaration for Mac Unavilable.
-   */
-   protected static final String MAC_UNAVAILABLE = "MAC mapping is unavailable: ";
-  /**
-   * String Declaration for Mac Used .
-   */
-   protected static final String MAC_USED = "Same MAC address is already mapped: host={";
-  /**
-   * String Declaration for Mac Inactivated .
-   */
-   protected static final String MAC_INACTIVATED = "MAC mapping has been inactivated: host={";
-  /**
-   * String Declaration for Switch Reserved .
-   */
-   protected static final String SWITCH_RESERVED = "switch port is reserved: host={";
+    /**
+     * String Declaration for Mac Unavilable.
+     */
+    protected static final String MAC_UNAVAILABLE =
+        "MAC mapping is unavailable: ";
+
+    /**
+     * String Declaration for Mac Used .
+     */
+    protected static final String MAC_USED =
+        "Same MAC address is already mapped: host={";
+
+    /**
+     * String Declaration for Mac Inactivated .
+     */
+    protected static final String MAC_INACTIVATED =
+        "MAC mapping has been inactivated: host={";
+
+    /**
+     * String Declaration for Switch Reserved .
+     */
+    protected static final String SWITCH_RESERVED =
+        "switch port is reserved: host={";
+
     /**
      * Throw an error which indicates an unexpected throwable is caught.
      *
@@ -446,8 +454,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link NodeConnector}.
      */
-    protected static List<NodeConnector>
-        createNodeConnectors(int num, boolean setNull) {
+    protected static List<NodeConnector> createNodeConnectors(
+        int num, boolean setNull) {
         ArrayList<NodeConnector> list = new ArrayList<NodeConnector>();
         if (setNull) {
             list.add(null);
@@ -537,8 +545,8 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link SwitchPort}.
      */
-    protected static List<SwitchPort>
-        createSwitchPorts(int num, boolean setNull) {
+    protected static List<SwitchPort> createSwitchPorts(int num,
+                                                        boolean setNull) {
         ArrayList<SwitchPort> list = new ArrayList<SwitchPort>();
         if (setNull) {
             list.add(null);
@@ -623,15 +631,16 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return A list of {@link EthernetAddress}.
      */
-    protected static List<EthernetAddress> createEthernetAddresses(boolean setNull) {
+    protected static List<EthernetAddress> createEthernetAddresses(
+        boolean setNull) {
         List<EthernetAddress> list = new ArrayList<EthernetAddress>();
         byte [][] addrbytes = {
-            new byte[] {(byte) 0x00, (byte) 0x00, (byte) 0x00,
-                        (byte) 0x00, (byte) 0x00, (byte) 0x01},
-            new byte[] {(byte) 0x12, (byte) 0x34, (byte) 0x56,
-                        (byte) 0x78, (byte) 0x9a, (byte) 0xbc},
-            new byte[] {(byte) 0xfe, (byte) 0xdc, (byte) 0xba,
-                        (byte) 0x98, (byte) 0x76, (byte) 0x54}
+            new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
+                        (byte)0x00, (byte)0x00, (byte)0x01},
+            new byte[] {(byte)0x12, (byte)0x34, (byte)0x56,
+                        (byte)0x78, (byte)0x9a, (byte)0xbc},
+            new byte[] {(byte)0xfe, (byte)0xdc, (byte)0xba,
+                        (byte)0x98, (byte)0x76, (byte)0x54}
         };
 
         if (setNull) {
@@ -836,13 +845,13 @@ public abstract class TestBase extends Assert {
 
         IPv4 ip = new IPv4();
         ip.setVersion((byte)4).
-                setIdentification((short)5).
-                setDiffServ((byte)0).
-                setECN((byte)0).
-                setTotalLength((short)84).
-                setFlags((byte)2).
-                setFragmentOffset((short)0).
-                setTtl((byte)64);
+            setIdentification((short)5).
+            setDiffServ((byte)0).
+            setECN((byte)0).
+            setTotalLength((short)84).
+            setFlags((byte)2).
+            setFragmentOffset((short)0).
+            setTtl((byte)64);
 
         ip.setDestinationAddress(getInetAddressFromAddress(target));
         ip.setSourceAddress(getInetAddressFromAddress(sender));
@@ -854,8 +863,8 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid((short) vlan)
-                    .setEtherType(EtherTypes.IPv4.shortValue()).setParent(eth);
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid((short)vlan).
+                setEtherType(EtherTypes.IPv4.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
             vlantag.setPayload(ip);
@@ -881,12 +890,12 @@ public abstract class TestBase extends Assert {
             byte[] target, short vlan, short arptype) {
         ARP arp = new ARP();
         arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
-                setProtocolType(EtherTypes.IPv4.shortValue()).
-                setHardwareAddressLength((byte) EthernetAddress.SIZE).
-                setProtocolAddressLength((byte) target.length).
-                setOpCode(arptype).
-                setSenderHardwareAddress(src).setSenderProtocolAddress(sender).
-                setTargetHardwareAddress(dst).setTargetProtocolAddress(target);
+            setProtocolType(EtherTypes.IPv4.shortValue()).
+            setHardwareAddressLength((byte)EthernetAddress.SIZE).
+            setProtocolAddressLength((byte)target.length).
+            setOpCode(arptype).
+            setSenderHardwareAddress(src).setSenderProtocolAddress(sender).
+            setTargetHardwareAddress(dst).setTargetProtocolAddress(target);
 
         Ethernet eth = new Ethernet();
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
@@ -895,7 +904,7 @@ public abstract class TestBase extends Assert {
             eth.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             IEEE8021Q vlantag = new IEEE8021Q();
-            vlantag.setCfi((byte) 0x0).setPcp((byte) 0x0).setVid(vlan)
+            vlantag.setCfi((byte)0x0).setPcp((byte)0x0).setVid(vlan)
                     .setEtherType(EtherTypes.ARP.shortValue()).setParent(eth);
             eth.setPayload(vlantag);
 
@@ -1009,15 +1018,15 @@ public abstract class TestBase extends Assert {
      * @param setNull  Set {@code null} to returned list if {@code true}.
      * @return  A list of set of {@link DataLinkHost} instances.
      */
-    protected static List<Set<DataLinkHost>>
-        createDataLinkHostSet(int limit, boolean setNull) {
+    protected static List<Set<DataLinkHost>> createDataLinkHostSet(
+        int limit, boolean setNull) {
         List<Set<DataLinkHost>> list = new ArrayList<Set<DataLinkHost>>();
         if (setNull) {
             list.add(null);
         }
 
         HashSet<DataLinkHost> set = new HashSet<DataLinkHost>();
-        short vlans[] = {0, 4095};
+        short[] vlans = {0, 4095};
         for (short vlan: vlans) {
             for (EthernetAddress ether: createEthernetAddresses()) {
                 set.add(new EthernetHost(ether, vlan));
@@ -1242,7 +1251,7 @@ public abstract class TestBase extends Assert {
      * @return  A deserialized object is returned.
      */
     protected static Object serializeTest(Object o) {
-        Object newobj = SerializeAndDeserialize(o);
+        Object newobj = serializeAndDeserialize(o);
 
         if (o instanceof Enum) {
             assertSame(o, newobj);
@@ -1266,7 +1275,7 @@ public abstract class TestBase extends Assert {
      * @return  A deserialized object is returned.
      */
     protected static Object eventSerializeTest(Object o) {
-        Object newobj = SerializeAndDeserialize(o);
+        Object newobj = serializeAndDeserialize(o);
         assertNotSame(o, newobj);
 
         return newobj;
@@ -1278,7 +1287,7 @@ public abstract class TestBase extends Assert {
      * @param o An {@link Object} serialized and deserialized.
      * @return A deserialized object.
      */
-    private static Object SerializeAndDeserialize(Object o) {
+    private static Object serializeAndDeserialize(Object o) {
         // Serialize the given object.
         byte[] bytes = null;
         try {
@@ -1425,24 +1434,26 @@ public abstract class TestBase extends Assert {
      *
      */
     protected void checkOutEthernetPacket(String msg, Ethernet eth,
-            EtherTypes ethType, byte[] srcMac, byte[] destMac, short vlan,
-            EtherTypes protoType, short opCode, byte[] senderMac,
-            byte[] targetMac, byte[] senderAddr, byte[] targetAddr) {
-
+                                          EtherTypes ethType, byte[] srcMac,
+                                          byte[] destMac, short vlan,
+                                          EtherTypes protoType, short opCode,
+                                          byte[] senderMac, byte[] targetMac,
+                                          byte[] senderAddr,
+                                          byte[] targetAddr) {
         ARP arp = null;
         if (vlan > 0) {
             assertEquals(msg, EtherTypes.VLANTAGGED.shortValue(),
-                    eth.getEtherType());
-            IEEE8021Q vlantag = (IEEE8021Q) eth.getPayload();
+                         eth.getEtherType());
+            IEEE8021Q vlantag = (IEEE8021Q)eth.getPayload();
             assertEquals(msg, vlan, vlantag.getVid());
             assertEquals(msg, ethType.shortValue(), vlantag.getEtherType());
             if (ethType.shortValue() == EtherTypes.ARP.shortValue()) {
-                arp = (ARP) vlantag.getPayload();
+                arp = (ARP)vlantag.getPayload();
             }
         } else {
             assertEquals(msg, ethType.shortValue(), eth.getEtherType());
             if (ethType.shortValue() == EtherTypes.ARP.shortValue()) {
-                arp = (ARP) eth.getPayload();
+                arp = (ARP)eth.getPayload();
             }
         }
 
@@ -1493,10 +1504,11 @@ public abstract class TestBase extends Assert {
      * @param vlan      expected vlan id. (if expected untagged, specify 0 or less than 0)
      */
     protected void checkOutEthernetPacketIPv4(String msg, Ethernet eth,
-            EtherTypes ethType, byte[] srcMac, byte[] destMac, short vlan) {
-
+                                              EtherTypes ethType,
+                                              byte[] srcMac, byte[] destMac,
+                                              short vlan) {
         checkOutEthernetPacket(msg, eth, ethType, srcMac, destMac, vlan, null,
-                (short) -1, null, null, null, null);
+                               (short)-1, null, null, null, null);
     }
 
     /**
