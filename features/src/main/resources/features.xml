@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features name="vtn-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
+
+    <feature name="odl-vtn-all" description="OpenDaylight :: VTN :: All" version="${project.version}">
+        <feature version="${project.version}">odl-vtn-manager</feature>
+        <feature version="${project.version}">odl-vtn-manager</feature>
+    </feature>
+    <feature name="odl-vtn-manager" description="OpenDaylight :: VTN :: Manageri Core" version="${project.version}">
+        <feature version="${nsf.version}">odl-nsf-all</feature>
+        <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
+        <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
+    </feature>
+    <feature name="odl-vtn-manager-northbound" description="OpenDaylight :: VTN :: Manager Northbound" version="${project.version}">
+        <feature version="${northbound.version">odl-northbound-common</feature>
+        <feature version="${project.version}">odl-vtn-manager</feature>
+        <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
+    </feature>
+    <feature name="odl-vtn-manager-neutron" description="OpenDaylight :: VTN :: Neutron">
+         <feature version="${ovsdb.neutron}">odl-ovsdb-neutron</feature>
+         <feature version="${project.version}">odl-vtn-manager</feature>
+         <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
+    </feature>
+</features>
