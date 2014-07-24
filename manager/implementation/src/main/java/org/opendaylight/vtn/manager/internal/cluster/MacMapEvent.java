@@ -70,7 +70,7 @@ public final class MacMapEvent extends VNodeEvent {
      *                mapping.
      * @param mcconf  Configuration information about the MAC mapping.
      * @param save    {@code true} means that the tenant configuration should
-     *                be saved or not.
+     *                be saved.
      */
     public static void removed(VTNManagerImpl mgr, VBridgePath path,
                                MacMapConfig mcconf, boolean save) {
@@ -86,7 +86,7 @@ public final class MacMapEvent extends VNodeEvent {
      * @param mcconf  Configuration information about the MAC mapping.
      * @param type    Update type.
      * @param save    {@code true} means that the tenant configuration should
-     *                be saved or not.
+     *                be saved.
      */
     public MacMapEvent(VBridgePath path, MacMapConfig mcconf, UpdateType type,
                        boolean save) {

@@ -57,7 +57,26 @@ public final class L2Host {
     }
 
     /**
+     * Construct a new instance without specifying MAC address.
+     *
+     * @param vlan   VLAN ID.
+     * @param nc     A {@link NodeConnector} instance corresponding to a
+     *               switch port to which the host is connected.
+     *               Specifying {@code null} results in undefined behavior.
+     */
+    public L2Host(short vlan, NodeConnector nc) {
+        host = new MacVlan(MacVlan.UNDEFINED, vlan);
+        port = nc;
+    }
+
+    /**
      * Return a {@link MacVlan} instance which represents a L2 host.
+     *
+     * <p>
+     *   Note that returned {@link MacVlan} instance keeps
+     *   {@link MacVlan#UNDEFINED} as MAC address if this instance does not
+     *   specify MAC address.
+     * </p>
      *
      * @return  A {@link MacVlan} instance.
      */

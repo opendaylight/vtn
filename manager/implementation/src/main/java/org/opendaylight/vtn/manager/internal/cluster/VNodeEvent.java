@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -61,7 +61,7 @@ public abstract class VNodeEvent extends ClusterEvent {
      * @param obj   An optional object.
      * @param type  Update type.
      * @param save  {@code true} means that the tenant configuration should
-     *              be saved or not.
+     *              be saved.
      */
     protected VNodeEvent(VTenantPath path, Serializable obj, UpdateType type,
                          boolean save) {

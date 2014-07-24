@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -55,7 +55,7 @@ public final class VlanMapEvent extends VNodeEvent {
      *               mapping.
      * @param vlmap  Information about the VLAN mapping.
      * @param save   {@code true} means that the tenant configuration should
-     *               be saved or not.
+     *               be saved.
      */
     public static void removed(VTNManagerImpl mgr, VBridgePath path,
                                VlanMap vlmap, boolean save) {
@@ -71,7 +71,7 @@ public final class VlanMapEvent extends VNodeEvent {
      * @param vlmap  Information about the VLAN mapping.
      * @param type   Update type.
      * @param save   {@code true} means that the tenant configuration should
-     *               be saved or not.
+     *               be saved.
      */
     public VlanMapEvent(VBridgePath path, VlanMap vlmap, UpdateType type,
                         boolean save) {

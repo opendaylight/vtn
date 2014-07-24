@@ -384,8 +384,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         match.setField(MatchType.DL_VLAN, src.getVlan());
 
         ActionList actions = new ActionList(out.getNode());
-        actions.addOutput(out);
-        actions.addVlanId(dst.getVlan());
+        actions.addVlanId(dst.getVlan()).addOutput(out);
         vflow.addFlow(vtnMgr, match, actions, 10);
 
         return vflow;

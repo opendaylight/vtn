@@ -631,7 +631,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
             flow.addVirtualRoute(vroute);
 
             ActionList actions = new ActionList(innc.getNode());
-            actions.addOutput(outnc).addVlanId(vlan);
+            actions.addVlanId(vlan).addOutput(outnc);
             flow.addFlow(vtnMgr, match, actions, pri);
             assertTrue(flow.dependsOn(inhost));
             assertTrue(flow.dependsOn(ehost));
@@ -1148,7 +1148,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         assertTrue(matchPcp.isPresent(MatchType.DL_VLAN_PR));
 
         ActionList actions = new ActionList(node);
-        actions.addOutput(outPort).addVlanId((short)100);
+        actions.addVlanId((short)100).addOutput(outPort);
 
         Flow flow = new Flow(match, actions.get());
         Flow flowPcp = new Flow(matchPcp, actions.get());

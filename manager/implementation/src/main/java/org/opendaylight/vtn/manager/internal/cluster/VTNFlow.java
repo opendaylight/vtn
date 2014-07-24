@@ -640,7 +640,7 @@ public class VTNFlow implements Serializable {
      *          {@link L2Host} instances. A {@link L2Host} instance which
      *          represents incoming host address is set to the left side,
      *          and outgoing host address is set to the right side.
-     *          Node that {@code null} may be set for outgoing host.
+     *          Note that {@code null} may be set for outgoing host.
      *          {@code null} is returned if not found.
      */
     public ObjectPair<L2Host, L2Host> getEdgeHosts() {
@@ -650,12 +650,10 @@ public class VTNFlow implements Serializable {
         }
 
         // Check ingress flow.
-        // DL_SRC, DL_DST, IN_PORT, and DL_VLAN fields should be contained
-        // in the ingress flow.
         Match match = flowEntries.get(0).getFlow().getMatch();
         L2Host in = getSourceHost(match);
         MatchField mf = match.getField(MatchType.DL_DST);
-        byte[] dst = (byte[])mf.getValue();
+        byte[] dst = (mf == null) ? null : (byte[])mf.getValue();
         short vlan = in.getHost().getVlan();
 
         // Check egress flow.
@@ -814,28 +812,28 @@ public class VTNFlow implements Serializable {
         byte[] dst = addr;
         NodeConnector port = null;
         short vlan = inVlan;
-        boolean vlanSet = false;
         for (Action action: actions) {
             if (action instanceof SetDlDst) {
                 dst = ((SetDlDst)action).getDlAddress();
             } else if (action instanceof Output) {
+                // We assume that OUTPUT action comes last.
                 port = ((Output)action).getPort();
+                break;
             } else {
                 short v = getOutputVlan(action);
                 if (v != -1) {
                     vlan = v;
-                    vlanSet = true;
                 }
-            }
-
-            // We assume that there is no duplicate OUTPUT, DL_DST, VLAN_VID
-            // actions in the action list.
-            if (dst != addr && port != null && vlanSet) {
-                break;
             }
         }
 
-        return (port == null) ? null : new L2Host(dst, vlan, port);
+        if (port == null) {
+            return null;
+        }
+        if (dst == null) {
+            return new L2Host(vlan, port);
+        }
+        return new L2Host(dst, vlan, port);
     }
 
     /**
@@ -877,7 +875,7 @@ public class VTNFlow implements Serializable {
         }
 
         // Determine ingress port.
-        // IN_PORT field should be contained in a flow entry.
+        // IN_PORT field should be contained in every flow entry.
         MatchField mf = flow.getMatch().getField(MatchType.IN_PORT);
         NodeConnector in = (NodeConnector)mf.getValue();
         String inName = mgr.getPortName(in);
@@ -895,16 +893,20 @@ public class VTNFlow implements Serializable {
      *          address.
      */
     private L2Host getSourceHost(Match match) {
-        // DL_SRC, IN_PORT, and DL_VLAN fields should be contained in the
-        // ingress flow.
+        // Both IN_PORT and DL_VLAN fields should be contained in the ingress
+        // flow entry.
         MatchField mf = match.getField(MatchType.IN_PORT);
         NodeConnector inPort = (NodeConnector)mf.getValue();
-        mf = match.getField(MatchType.DL_SRC);
-        byte[] src = (byte[])mf.getValue();
         mf = match.getField(MatchType.DL_VLAN);
         short vlan = ((Short)mf.getValue()).shortValue();
 
-        return new L2Host(src, vlan, inPort);
+        mf = match.getField(MatchType.DL_SRC);
+        if (mf != null) {
+            byte[] src = (byte[])mf.getValue();
+            return new L2Host(src, vlan, inPort);
+        }
+
+        return new L2Host(vlan, inPort);
     }
 
     /**

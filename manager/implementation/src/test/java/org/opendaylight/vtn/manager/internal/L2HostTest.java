@@ -31,9 +31,9 @@ public class L2HostTest extends TestBase {
     @Test
     public void testGetter() {
         short[] vlans = new short[] {0, 1, 1000, 4095};
-        for (EthernetAddress ea : createEthernetAddresses()) {
+        for (NodeConnector port: createNodeConnectors(10, false)) {
             for (short vlan : vlans) {
-                for (NodeConnector port: createNodeConnectors(10, false)) {
+                for (EthernetAddress ea : createEthernetAddresses()) {
                     byte[] addr = (ea == null) ? null : ea.getValue();
                     L2Host lh = new L2Host(addr, vlan, port);
                     long mac = NetUtils.byteArray6ToLong(addr);
@@ -48,6 +48,12 @@ public class L2HostTest extends TestBase {
                     assertEquals(vlan, mvlan.getVlan());
                     assertEquals(port, lh2.getPort());
                 }
+
+                L2Host lh = new L2Host(vlan, port);
+                MacVlan mvlan = lh.getHost();
+                assertEquals(MacVlan.UNDEFINED, mvlan.getMacAddress());
+                assertEquals(vlan, mvlan.getVlan());
+                assertEquals(port, lh.getPort());
             }
         }
     }
@@ -63,9 +69,9 @@ public class L2HostTest extends TestBase {
         List<EthernetAddress> ethers = createEthernetAddresses();
         List<NodeConnector> ports = createNodeConnectors(10, false);
 
-        for (EthernetAddress ea : ethers) {
+        for (NodeConnector port: ports) {
             for (short vlan: vlans) {
-                for (NodeConnector port: createNodeConnectors(10, false)) {
+                for (EthernetAddress ea : ethers) {
                     byte[] addr = (ea == null) ? null : ea.getValue();
                     L2Host h1 = new L2Host(addr, vlan, port);
 
@@ -79,8 +85,14 @@ public class L2HostTest extends TestBase {
                     L2Host h2 = new L2Host(addr2, vlan, copy(port));
                     testEquals(set, h1, h2);
                 }
+
+                L2Host h = new L2Host(vlan, port);
+                assertFalse(set.add(h));
             }
         }
+
+        assertEquals(ports.size() * vlans.length * ethers.size(),
+                     set.size());
     }
 
     /**

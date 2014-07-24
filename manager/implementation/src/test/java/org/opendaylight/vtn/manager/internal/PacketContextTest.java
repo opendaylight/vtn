@@ -552,8 +552,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 }
 
                 ActionList actions = new ActionList(innc.getNode());
-                actions.addOutput(outnc);
-                actions.addVlanId(outVlan);
+                actions.addVlanId(outVlan).addOutput(outnc);
                 flow.addFlow(vtnMgr, match, actions, pri);
                 assertTrue(flow.getFlowPorts().contains(innc));
 

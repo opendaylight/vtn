@@ -32,6 +32,7 @@ import org.opendaylight.vtn.manager.internal.SlowTest;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.Drop;
 import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.action.SetDlSrc;
 import org.opendaylight.controller.sal.core.ConstructionException;
@@ -88,11 +89,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                             }
 
                             ActionList actions = new ActionList(port.getNode());
-                            actions.addOutput(port);
-
                             if (vlan >= 0) {
                                 actions.addVlanId(vlan);
                             }
+                            actions.addOutput(port);
 
                             vflow.addFlow(vtnMgr, match, actions, pri);
 
@@ -375,7 +375,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                         // Test for VTN flow that has only one flow.
                         vflow = new VTNFlow(gid);
                         ActionList actions = new ActionList(node);
-                        actions.addOutput(dport).addVlanId(dvlan);
+                        actions.addVlanId(dvlan).addOutput(dport);
                         vflow.addFlow(vtnMgr, match, actions, 10);
 
                         edges = vflow.getEdgeHosts();
@@ -394,11 +394,12 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                         for (int nflows = 0; nflows < 5; nflows++) {
                             // Add intermediate flow.
                             for (int i = 0; i < nflows; i++) {
-                                actions = new ActionList(node);
-                                actions.addOutput(iport).addVlanId(ivlan);
-                                List<Action> alist = actions.get();
+                                List<Action> alist = new ArrayList<Action>();
                                 alist.add(new SetDlSrc(addrEE));
                                 alist.add(new SetDlDst(addrFF));
+                                actions = new ActionList(node);
+                                actions.addVlanId(ivlan).addOutput(iport);
+                                alist.addAll(actions.get());
                                 f = new Flow(match, alist);
                                 vflow.addFlow(vtnMgr, f, node);
                             }
@@ -428,7 +429,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
                             // Add egress flow.
                             actions = new ActionList(node);
-                            actions.addOutput(dport).addVlanId(dvlan);
+                            actions.addVlanId(dvlan).addOutput(dport);
                             vflow.addFlow(vtnMgr, match, actions, 10);
 
                             edges = vflow.getEdgeHosts();
@@ -448,6 +449,127 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                 }
             }
         }
+
+        // Test VTN flow that discards every packet.
+        Match match = new Match();
+        short svlan = 10;
+        match.setField(MatchType.IN_PORT, sport);
+        match.setField(MatchType.DL_VLAN, svlan);
+        List<Action> actions = new ArrayList<Action>();
+        actions.add(new Drop());
+        Flow flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        ObjectPair<L2Host, L2Host> edges = vflow.getEdgeHosts();
+        L2Host srcHost = new L2Host(MacVlan.UNDEFINED, svlan, sport);
+        L2Host dstHost = null;
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        assertEquals(dstHost, edges.getRight());
+
+        // Test VTN flow that forwards packets without specifying MAC address.
+        ActionList aclist = new ActionList(node).addOutput(dport);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, match, aclist, 10);
+        edges = vflow.getEdgeHosts();
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        dstHost = new L2Host(MacVlan.UNDEFINED, svlan, dport);
+        assertEquals(dstHost, edges.getRight());
+
+        // Test VTN flow that forwards packets with modifying destination
+        // MAC address.
+        actions.clear();
+        actions.add(new SetDlDst(dstAddrs[0]));
+        aclist = new ActionList(node).addOutput(dport);
+        actions.addAll(aclist.get());
+        flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        edges = vflow.getEdgeHosts();
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        dstHost = new L2Host(dstAddrs[0], svlan, dport);
+        assertEquals(dstHost, edges.getRight());
+
+        // Test VTN flow that forwards packets with modifying destination
+        // MAC address and VLAN ID.
+        short dvlan = 0;
+        actions.clear();
+        actions.add(new SetDlDst(dstAddrs[0]));
+        aclist = new ActionList(node).addVlanId(dvlan).addOutput(dport);
+        actions.addAll(aclist.get());
+        flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        edges = vflow.getEdgeHosts();
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        dstHost = new L2Host(dstAddrs[0], dvlan, dport);
+        assertEquals(dstHost, edges.getRight());
+
+        // Test VTN flow that discards packets that match the MAC address and
+        // VLAN ID.
+        match = new Match();
+        svlan = 0;
+        match.setField(MatchType.IN_PORT, sport);
+        match.setField(MatchType.DL_VLAN, svlan);
+        match.setField(MatchType.DL_SRC, srcAddrs[1]);
+        match.setField(MatchType.DL_DST, dstAddrs[1]);
+        actions.clear();
+        actions.add(new Drop());
+        flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        edges = vflow.getEdgeHosts();
+        srcHost = new L2Host(srcAddrs[1], svlan, sport);
+        dstHost = null;
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        assertEquals(dstHost, edges.getRight());
+
+        // Add OUTPUT action.
+        actions.clear();
+        aclist = new ActionList(node).addOutput(dport);
+        actions.addAll(aclist.get());
+        flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        edges = vflow.getEdgeHosts();
+        dstHost = new L2Host(dstAddrs[1], svlan, dport);
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        assertEquals(dstHost, edges.getRight());
+
+        // Add DL_VLAN, OUTPUT actions.
+        dvlan = 4095;
+        actions.clear();
+        aclist = new ActionList(node).addVlanId(dvlan).addOutput(dport);
+        actions.addAll(aclist.get());
+        flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        edges = vflow.getEdgeHosts();
+        dstHost = new L2Host(dstAddrs[1], dvlan, dport);
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        assertEquals(dstHost, edges.getRight());
+
+        // Add DL_SRC, DL_DST, DL_VLAN, OUTPUT actions.
+        dvlan = 4095;
+        actions.clear();
+        actions.add(new SetDlSrc(srcAddrs[0]));
+        actions.add(new SetDlDst(dstAddrs[0]));
+        aclist = new ActionList(node).addVlanId(dvlan).addOutput(dport);
+        actions.addAll(aclist.get());
+        flow = new Flow(match, actions);
+        vflow = new VTNFlow(gid);
+        vflow.addFlow(vtnMgr, flow, node);
+        edges = vflow.getEdgeHosts();
+        dstHost = new L2Host(dstAddrs[0], dvlan, dport);
+        assertEquals(srcHost, edges.getLeft());
+        assertEquals(srcHost, vflow.getSourceHost());
+        assertEquals(dstHost, edges.getRight());
     }
 
     /**
@@ -495,10 +617,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                             }
 
                             ActionList actions = new ActionList(port.getNode());
-                            actions.addOutput(port);
                             if (vlan >= 0) {
                                 actions.addVlanId(vlan);
                             }
+                            actions.addOutput(port);
 
                             vflow1.addFlow(vtnMgr, match, actions, pri);
                             vflow2.addFlow(vtnMgr, match, actions, pri);
@@ -564,10 +686,10 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                             }
 
                             ActionList actions = new ActionList(port.getNode());
-                            actions.addOutput(port);
                             if (vlan >= 0) {
                                 actions.addVlanId(vlan);
                             }
+                            actions.addOutput(port);
 
                             flowOneMatch.addFlow(vtnMgr, match, actions, pri);
                             serializeTest(flowOneMatch);

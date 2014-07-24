@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -53,7 +53,7 @@ public final class VBridgeEvent extends VNodeEvent {
      * @param path     Path to the virtual bridge.
      * @param vbridge  Information about the virtual bridge.
      * @param save     {@code true} means that the tenant configuration should
-     *                 be saved or not.
+     *                 be saved.
      */
     public static void changed(VTNManagerImpl mgr, VBridgePath path,
                                VBridge vbridge, boolean save) {
@@ -69,7 +69,7 @@ public final class VBridgeEvent extends VNodeEvent {
      * @param path     Path to the virtual bridge.
      * @param vbridge  Information about the virtual bridge.
      * @param save     {@code true} means that the tenant configuration should
-     *                 be saved or not.
+     *                 be saved.
      */
     public static void removed(VTNManagerImpl mgr, VBridgePath path,
                                VBridge vbridge, boolean save) {
@@ -84,7 +84,7 @@ public final class VBridgeEvent extends VNodeEvent {
      * @param vbridge  Information about the virtual bridge.
      * @param type     Update type.
      * @param save     {@code true} means that the tenant configuration should
-     *                 be saved or not.
+     *                 be saved.
      */
     private VBridgeEvent(VBridgePath path, VBridge vbridge, UpdateType type,
                          boolean save) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -55,7 +55,7 @@ public final class PortMapEvent extends VNodeEvent {
      *              port mapping.
      * @param pmap  Information about the port mapping.
      * @param save  {@code true} means that the tenant configuration should
-     *              be saved or not.
+     *              be saved.
      */
     public static void changed(VTNManagerImpl mgr, VBridgeIfPath path,
                                PortMap pmap, boolean save) {
@@ -72,7 +72,7 @@ public final class PortMapEvent extends VNodeEvent {
      *              port mapping.
      * @param pmap  Information about the port mapping.
      * @param save  {@code true} means that the tenant configuration should
-     *              be saved or not.
+     *              be saved.
      */
     public static void removed(VTNManagerImpl mgr, VBridgeIfPath path,
                                PortMap pmap, boolean save) {
@@ -88,7 +88,7 @@ public final class PortMapEvent extends VNodeEvent {
      * @param pmap  Information about the port mapping.
      * @param type  Update type.
      * @param save  {@code true} means that the tenant configuration should
-     *              be saved or not.
+     *              be saved.
      */
     private PortMapEvent(VBridgeIfPath path, PortMap pmap, UpdateType type,
                          boolean save) {
