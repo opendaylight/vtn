@@ -372,15 +372,19 @@ public class FlowTaskTest extends FlowModTaskTestBase {
                                                           node1);
         outnc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("11"),
                                                            node1);
+
+        ClusterEventMap clEvents = stubObj.getClusterEventMap();
+        flushTasks();
+        clEvents.getPostedEvents();
+
         flow = addFlowEntry(vtnMgr, flow, innc, (short)1, outnc, pri);
         FlowAddTask task = new FlowAddTask(vtnMgr, flow);
         task.run();
         assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
         checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, "");
 
-        Set<ClusterEvent> events = getPostedClusterEvent();
+        List<ClusterEvent> events = clEvents.getPostedEvents();
         assertEquals(2, events.size());
-        clearPostedClusterEvent();
 
         Iterator<FlowEntry> it = flow.getFlowEntries().iterator();
         FlowEntry ingress = it.next();
@@ -389,9 +393,8 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         assertEquals(FlowModResult.FAILED, rtask.getResult(remoteTimeout));
         checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, "");
 
-        events = getPostedClusterEvent();
+        events = clEvents.getPostedEvents();
         assertEquals(1, events.size());
-        clearPostedClusterEvent();
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
@@ -404,34 +407,44 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         while (it.hasNext()) {
             rent = it.next();
         }
-        TimerTask timerTask = new ResultTimerTask(vtnMgr, rent,
-                                                  FlowModResult.SUCCEEDED, false);
-        Timer timer = new Timer();
-        timer.schedule(timerTask, remoteTimeout / 2);
 
-        task = new FlowAddTask(vtnMgr, flow);
-        task.run();
-        assertEquals(FlowModResult.SUCCEEDED, task.getResult(remoteTimeout));
+        flushTasks();
+        clEvents.getPostedEvents();
+        RemoteFlowModEmulator fmod = new RemoteFlowModEmulator(
+            vtnMgr, rent, FlowModResult.SUCCEEDED, false);
+        clEvents.addListener(fmod);
+        try {
+            task = new FlowAddTask(vtnMgr, flow);
+            task.run();
+            assertEquals(FlowModResult.SUCCEEDED,
+                         task.getResult(remoteTimeout));
+        } finally {
+            clEvents.removeListener(fmod);
+        }
+
         // entry managed by local is installed.
         checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2, "");
 
-        events = getPostedClusterEvent();
+        events = clEvents.getPostedEvents();
         assertEquals(1, events.size());
-        clearPostedClusterEvent();
 
         it = flow.getFlowEntries().iterator();
         ingress = it.next();
-        timerTask = new ResultTimerTask(vtnMgr, rent, FlowModResult.SUCCEEDED,
-                                        false);
-        timer.schedule(timerTask, remoteTimeout / 2);
-        rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
-        rtask.run();
-        assertEquals(FlowModResult.SUCCEEDED, rtask.getResult(remoteTimeout));
+        fmod = new RemoteFlowModEmulator(vtnMgr, rent, FlowModResult.SUCCEEDED,
+                                         false);
+        clEvents.addListener(fmod);
+        try {
+            rtask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
+            rtask.run();
+            assertEquals(FlowModResult.SUCCEEDED,
+                         rtask.getResult(remoteTimeout));
+        } finally {
+            clEvents.removeListener(fmod);
+        }
         checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, "");
 
-        events = getPostedClusterEvent();
+        events = clEvents.getPostedEvents();
         assertEquals(1, events.size());
-        clearPostedClusterEvent();
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
@@ -450,20 +463,23 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         while (it.hasNext()) {
             rent = it.next();
         }
-        timerTask = new ResultTimerTask(vtnMgr, rent, FlowModResult.SUCCEEDED,
-                                        false);
-        timer.schedule(timerTask, remoteTimeout / 2);
 
-        task = new FlowAddTask(vtnMgr, flow);
-        task.run();
-        assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
+        fmod = new RemoteFlowModEmulator(vtnMgr, rent, FlowModResult.SUCCEEDED,
+                                         false);
+        clEvents.addListener(fmod);
+        try {
+            task = new FlowAddTask(vtnMgr, flow);
+            task.run();
+            assertEquals(FlowModResult.FAILED, task.getResult(remoteTimeout));
+        } finally {
+            clEvents.removeListener(fmod);
+        }
         checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, "");
 
-        events = getPostedClusterEvent();
         // when include not connected node,
         // don't execute install of remote entry.
+        events = clEvents.getPostedEvents();
         assertEquals(0, events.size());
-        clearPostedClusterEvent();
 
         fdb.clear(vtnMgr);
         flushFlowTasks(remoteTimeout);
@@ -687,5 +703,15 @@ public class FlowTaskTest extends FlowModTaskTestBase {
         rmTask = new FlowRemoveTask(vtnMgr, flow.getGroupId(), ingress, it);
         timer.schedule(timerTask, timeoutRemote / 2);
         assertEquals(FlowModResult.INTERRUPTED, rmTask.getResult(timeoutRemote));
+    }
+
+    /**
+     * Create VTN Manager instance.
+     *
+     * @return  A VTN Manager service.
+     */
+    @Override
+    protected VTNManagerImpl createVTNManager() {
+        return new VTNManagerImpl();
     }
 }

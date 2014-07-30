@@ -11,7 +11,9 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
@@ -34,10 +36,34 @@ public class ClusterEventMap
         new ArrayList<ClusterEvent>();
 
     /**
+     * Cluster event listeners.
+     */
+    private final Set<ClusterEventListener>  listeners =
+        new CopyOnWriteArraySet<ClusterEventListener>();
+
+    /**
      * Construct a new object.
      */
     public ClusterEventMap() {
         super();
+    }
+
+    /**
+     * Add the specified cluster event listener.
+     *
+     * @param l  Cluster event listener to be added.
+     */
+    public void addListener(ClusterEventListener l) {
+        listeners.add(l);
+    }
+
+    /**
+     * Remove the specified cluster event listener.
+     *
+     * @param l  Cluster event listener to be removed.
+     */
+    public void removeListener(ClusterEventListener l) {
+        listeners.remove(l);
     }
 
     /**
@@ -52,7 +78,7 @@ public class ClusterEventMap
     public ClusterEvent put(ClusterEventId key, ClusterEvent value) {
         ClusterEvent old = super.put(key, value);
         if (old == null) {
-            addEvent(value);
+            addEvent(key, value);
         }
 
         return old;
@@ -71,7 +97,7 @@ public class ClusterEventMap
     public ClusterEvent putIfAbsent(ClusterEventId key, ClusterEvent value) {
         ClusterEvent old = super.putIfAbsent(key, value);
         if (old == null) {
-            addEvent(value);
+            addEvent(key, value);
         }
 
         return old;
@@ -155,13 +181,20 @@ public class ClusterEventMap
     /**
      * Add a new event to {@link #postedEvents}.
      *
+     * @param id     Identifier of the event.
      * @param event  A {@link ClusterEvent} instance.
      * @throws IllegalStateException  The specified event is already posted.
      */
-    private synchronized void addEvent(ClusterEvent event) {
-        if (!postedEvents.add(event)) {
-            // This should never happen.
-            throw new IllegalStateException("Already posted: " + event);
+    private void addEvent(ClusterEventId id, ClusterEvent event) {
+        synchronized (this) {
+            if (!postedEvents.add(event)) {
+                // This should never happen.
+                throw new IllegalStateException("Already posted: " + event);
+            }
+        }
+
+        for (ClusterEventListener l: listeners) {
+            l.posted(id, event);
         }
     }
 }

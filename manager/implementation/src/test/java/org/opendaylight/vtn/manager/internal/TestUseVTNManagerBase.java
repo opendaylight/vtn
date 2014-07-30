@@ -90,7 +90,7 @@ public class TestUseVTNManagerBase extends TestBase {
     /**
      * The number of milliseconds to wait for VTN events.
      */
-    private static final long  EVENT_TIMEOUT = 10000L;
+    protected static final long  EVENT_TIMEOUT = 10000L;
 
     /**
      * Construct a new instance.
@@ -242,9 +242,12 @@ public class TestUseVTNManagerBase extends TestBase {
      * Flush all pending tasks on the VTN flow thread.
      */
     protected void flushFlowTasks(long wait) {
+        flushTasks();
+
+        long t = (wait < EVENT_TIMEOUT) ? EVENT_TIMEOUT : wait;
         NopFlowTask task = new NopFlowTask(vtnMgr);
         vtnMgr.postFlowTask(task);
-        assertTrue(task.await(wait, TimeUnit.MILLISECONDS));
+        assertTrue(task.await(t, TimeUnit.MILLISECONDS));
     }
 
     /**
