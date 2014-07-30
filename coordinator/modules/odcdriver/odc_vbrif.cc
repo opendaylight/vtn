@@ -788,7 +788,7 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
       return UNC_DRV_RC_ERR_GENERIC;
     } else {
       val_vbr_if.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
-      std::string vlanid = "0";
+      int vlanid = 0;
       ret_val = unc::restjson::JsonBuildParse::parse(jobj, "vlan", -1,
                                                      vlanid);
       if (restjson::REST_OP_SUCCESS != ret_val) {
@@ -796,8 +796,8 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
         pfc_log_debug("vlan parse error");
         return UNC_DRV_RC_ERR_GENERIC;
       }
-      pfc_log_debug("vlan id in portmap read %s", vlanid.c_str());
-      if (0 == atoi(vlanid.c_str())) {
+      pfc_log_debug("vlan id in portmap read %d", vlanid);
+      if (0 == vlanid) {
         val_vbr_if.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] =
                                                    UNC_VF_INVALID;
         pfc_log_debug("untagged");
@@ -806,8 +806,8 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
       } else {
         pfc_log_debug("vlan id valid");
         val_vbr_if.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-        val_vbr_if.val_vbrif.portmap.vlan_id = atoi(vlanid.c_str());
-        pfc_log_debug("%s  vlan id ", vlanid.c_str());
+        val_vbr_if.val_vbrif.portmap.vlan_id = vlanid;
+        pfc_log_debug("%d  vlan id ", vlanid);
         pfc_log_debug("vlan id tagged");
         val_vbr_if.val_vbrif.portmap.tagged = UPLL_VLAN_TAGGED;
         val_vbr_if.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
