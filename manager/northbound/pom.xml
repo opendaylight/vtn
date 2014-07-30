@@ -39,27 +39,42 @@
     <sonar.language>java</sonar.language>
   </properties>
 
+  <profiles>
+    <!-- Build REST API document unless vtn.doc.skip property is defined -->
+    <profile>
+      <id>restdoc</id>
+      <activation>
+        <property>
+          <name>!vtn.doc.skip</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.enunciate</groupId>
+            <artifactId>maven-enunciate-plugin</artifactId>
+            <version>${enunciate.version}</version>
+            <configuration>
+              <additionalClasspathEntries>
+                <!-- Specify VTN Manager public API sources. -->
+                <additionalClasspathEntry>
+                  ${project.basedir}/../api/src/main/java
+                </additionalClasspathEntry>
+
+                <!-- Specify sources used only for REST API documentation. -->
+                <additionalClasspathEntry>
+                  ${project.basedir}/src/enunciate
+                </additionalClasspathEntry>
+              </additionalClasspathEntries>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.codehaus.enunciate</groupId>
-        <artifactId>maven-enunciate-plugin</artifactId>
-        <version>${enunciate.version}</version>
-        <configuration>
-          <additionalClasspathEntries>
-            <!-- Specify VTN Manager public API sources. -->
-            <additionalClasspathEntry>
-              ${project.basedir}/../api/src/main/java
-            </additionalClasspathEntry>
-
-            <!-- Specify sources used only for REST API documentation. -->
-            <additionalClasspathEntry>
-              ${project.basedir}/src/enunciate
-            </additionalClasspathEntry>
-          </additionalClasspathEntries>
-        </configuration>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
