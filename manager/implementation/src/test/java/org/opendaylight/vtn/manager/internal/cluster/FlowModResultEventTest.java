@@ -11,9 +11,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.List;
 
 import org.apache.felix.dm.impl.ComponentImpl;
 import org.junit.Test;
@@ -27,15 +25,17 @@ import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.ActionList;
-import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
-import org.opendaylight.vtn.manager.internal.TestStubCluster;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
+import org.opendaylight.vtn.manager.internal.ClusterEventMap;
+import org.opendaylight.vtn.manager.internal.FlowModTaskTestBase;
 import org.opendaylight.vtn.manager.internal.SlowTest;
+import org.opendaylight.vtn.manager.internal.TestStubCluster;
 
 /**
  * JUnit test for {@link FlowModResultEvent}.
@@ -54,31 +54,6 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
             // always return false.
             assertFalse(local.toString(),
                         event.isSingleThreaded(local.booleanValue()));
-        }
-    }
-
-    /**
-     * A timer task used to emulate remote event.
-     */
-    private class ResultTimerTask extends TimerTask {
-        private VTNManagerImpl vtnManager = null;
-        private FlowEntry flowEntry = null;
-        private FlowModResult result = null;
-        private boolean isLocal = false;
-
-        public ResultTimerTask(VTNManagerImpl mgr, FlowEntry ent, FlowModResult res,
-                               boolean local) {
-            vtnManager = mgr;
-            flowEntry = ent;
-            result = res;
-            isLocal = local;
-        }
-
-        @Override
-        public void run() {
-            FlowModResultEvent re
-                = new FlowModResultEvent(flowEntry.getFlowName(), result);
-            re.received(vtnManager, isLocal);
         }
     }
 
@@ -154,41 +129,46 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
             rent = null;
         }
 
-       for (FlowModResult result : FlowModResult.values()) {
+        ClusterEventMap clEvents = stubObj.getClusterEventMap();
+        flushTasks();
+        clEvents.getPostedEvents();
+
+        for (FlowModResult result : FlowModResult.values()) {
             for (Boolean local : createBooleans(false)) {
                 String emsg = "(FlowModResult)" + result.toString()
                         + ",(local)" + local.toString();
 
-                // FlowModResultEvent is called from this timerTask.
-                TimerTask timerTask = new ResultTimerTask(vtnMgr, rent, result,
-                                                          local.booleanValue());
-                Timer timer = new Timer();
-
-                timer.schedule(timerTask, 100L);
-                fdb.install(vtnMgr, flow);
-                flushFlowTasks(remoteTimeout * 3);
-                timerTask.cancel();
+                // Emulate flow mod result event.
+                RemoteFlowModEmulator fmod = new RemoteFlowModEmulator(
+                    vtnMgr, rent, result, local.booleanValue());
+                clEvents.addListener(fmod);
+                try {
+                    fdb.install(vtnMgr, flow);
+                    flushFlowTasks(remoteTimeout * 3);
+                } finally {
+                    clEvents.removeListener(fmod);
+                }
 
                 if (result == FlowModResult.SUCCEEDED && local == Boolean.FALSE) {
                     checkRegisteredFlowEntry(vtnMgr, 1, flow, flow, 2, emsg);
 
-                    Set<ClusterEvent> events = getPostedClusterEvent();
+                    List<ClusterEvent> events = clEvents.getPostedEvents();
                     assertEquals(1, events.size());
-                    clearPostedClusterEvent();
 
-                    timerTask = new ResultTimerTask(vtnMgr, rent,
-                                                    FlowModResult.SUCCEEDED,
-                                                    false);
-                    timer.schedule(timerTask, 100L);
-                    fdb.clear(vtnMgr);
-                    flushFlowTasks(remoteTimeout * 3);
-                    timer.cancel();
+                    fmod = new RemoteFlowModEmulator(
+                        vtnMgr, rent, FlowModResult.SUCCEEDED, false);
+                    clEvents.addListener(fmod);
+                    try {
+                        fdb.clear(vtnMgr);
+                        flushFlowTasks(remoteTimeout * 3);
+                    } finally {
+                        clEvents.removeListener(fmod);
+                    }
                 } else {
                     checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
 
-                    Set<ClusterEvent> events = getPostedClusterEvent();
+                    List<ClusterEvent> events = clEvents.getPostedEvents();
                     assertEquals(2, events.size());
-                    clearPostedClusterEvent();
 
                     fdb.clear(vtnMgr);
                     flushFlowTasks(timeout);
@@ -197,9 +177,19 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
                 fdb.clear(vtnMgr);
                 flushFlowTasks(remoteTimeout * 3);
                 checkRegisteredFlowEntry(vtnMgr, 0, flow, null, 0, emsg);
-                clearPostedClusterEvent();
+                clEvents.getPostedEvents();
             }
         }
-       cleanupSetupFile();
+        cleanupSetupFile();
+    }
+
+    /**
+     * Create VTN Manager instance.
+     *
+     * @return  A VTN Manager service.
+     */
+    @Override
+    protected VTNManagerImpl createVTNManager() {
+        return new VTNManagerImpl();
     }
 }

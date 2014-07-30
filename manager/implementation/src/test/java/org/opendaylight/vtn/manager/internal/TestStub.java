@@ -1397,4 +1397,13 @@ public class TestStub implements IClusterGlobalServices, IClusterContainerServic
     public void setTransactionTestMode(TestTransaction.Mode mode) {
         transactionTestMode = mode;
     }
+
+    /**
+     * Return the cluster event cache.
+     *
+     * @return  The cluster event cache.
+     */
+    public ClusterEventMap getClusterEventMap() {
+        return (ClusterEventMap)caches.get(VTNManagerImpl.CACHE_EVENT);
+    }
 }

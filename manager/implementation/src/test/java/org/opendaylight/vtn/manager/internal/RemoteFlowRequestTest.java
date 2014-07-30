@@ -208,7 +208,8 @@ public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
                             entries.get(1).getFlowName(), result1, 1);
                     timer.schedule(task, 10L);
 
-                    long resTimeout = 1000L + System.currentTimeMillis();
+                    long resTimeout = System.currentTimeMillis() +
+                        EVENT_TIMEOUT;
 
                     boolean res = req.getResultAbs(resTimeout,
                                                    all.booleanValue());
@@ -268,7 +269,7 @@ public class RemoteFlowRequestTest extends TestUseVTNManagerBase {
             TimerTask task = new InterruptTask(Thread.currentThread());
             timer.schedule(task, 500L);
 
-            long resTimeout = 1000L + System.currentTimeMillis();
+            long resTimeout = System.currentTimeMillis() + EVENT_TIMEOUT;
 
             boolean res = req.getResultAbs(resTimeout, all.booleanValue());
             assertFalse(res);

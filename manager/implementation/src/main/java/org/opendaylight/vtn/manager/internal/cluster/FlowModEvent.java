@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,7 @@ public abstract class FlowModEvent extends ClusterEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4133633144252779271L;
+    private static final long serialVersionUID = 3197194546736190157L;
 
     /**
      * List of flow entries to be modified.
@@ -47,6 +47,19 @@ public abstract class FlowModEvent extends ClusterEvent {
      */
     protected FlowModEvent(List<FlowEntry> entries) {
         flowEntries = new ArrayList(entries);
+    }
+
+    /**
+     * Return a list of flow entries configured in this event.
+     *
+     * <p>
+     *   This method is only for testing.
+     * </p>
+     *
+     * @return  A list of flow entries.
+     */
+    public List<FlowEntry> getFlowEntries() {
+        return new ArrayList<FlowEntry>(flowEntries);
     }
 
     /**
