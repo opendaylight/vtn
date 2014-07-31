@@ -1595,4 +1595,13 @@ public class TestStub
     public boolean isHostTrackerEnabled() {
         return (hostsDB != null);
     }
+
+    /**
+     * Return the cluster event cache.
+     *
+     * @return  The cluster event cache.
+     */
+    public ClusterEventMap getClusterEventMap() {
+        return (ClusterEventMap)caches.get(VTNManagerImpl.CACHE_EVENT);
+    }
 }
