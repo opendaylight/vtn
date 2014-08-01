@@ -33,6 +33,7 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
+import org.opendaylight.controller.sal.action.Drop;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.PopVlan;
 import org.opendaylight.controller.sal.action.SetDlDst;
@@ -64,7 +65,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1867917266947872180L;
+    private static final long serialVersionUID = -6210984131359256401L;
 
     /**
      * The identifier of the flow group.
@@ -274,6 +275,24 @@ public class VTNFlow implements Serializable {
     }
 
     /**
+     * Add a flow entry that drops matched packets.
+     *
+     * @param mgr       VTN Manager service.
+     * @param match     Match object for a new flow entry.
+     * @param priority  Priority value for a new flow entry.
+     */
+    public void addFlow(VTNManagerImpl mgr, Match match, int priority) {
+        // IN_PORT field should be contained in a flow entry.
+        MatchField mf = match.getField(MatchType.IN_PORT);
+        NodeConnector port = (NodeConnector)mf.getValue();
+        List<Action> actions = new ArrayList<Action>(1);
+        actions.add(new Drop());
+        Flow flow = new Flow(match, actions);
+        flow.setPriority((short)priority);
+        addFlow(mgr, flow, port.getNode());
+    }
+
+    /**
      * Add a flow entry.
      *
      * @param mgr   VTN Manager service.
@@ -289,6 +308,18 @@ public class VTNFlow implements Serializable {
         FlowEntry entry = new FlowEntry(gname, name, flow, node);
         flowEntries.add(entry);
         updateIndex(mgr.getSwitchManager(), flow, node);
+    }
+
+    /**
+     * Add the given node path to the additional dependency set.
+     *
+     * @param path  A path to the virtual node.
+     */
+    public void addDependency(VTenantPath path) {
+        if (dependNodes == null) {
+            dependNodes = new HashSet<VTenantPath>();
+        }
+        dependNodes.add(path);
     }
 
     /**

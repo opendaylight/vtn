@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,12 +16,11 @@ import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.controller.sal.core.NodeConnector;
 
 /**
- * {@code VBridgeIfState} class keeps runtime state of the virtual L2 bridge
- * interface.
+ * {@code VInterfaceState} class keeps runtime state of the virtual interface.
  *
  * <p>
  *   Note that this class is not synchronized.
- *   If multiple threads access a {@code VBridgeIfState} object concurrently,
+ *   If multiple threads access a {@code VInterfaceState} object concurrently,
  *   it must be synchronized externally.
  * </p>
  * <p>
@@ -30,11 +29,11 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  *   class.
  * </p>
  */
-public class VBridgeIfState implements Serializable {
+public class VInterfaceState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8925788210043958442L;
+    private static final long serialVersionUID = -4395393607635863497L;
 
     /**
      * State of the interface.
@@ -62,49 +61,49 @@ public class VBridgeIfState implements Serializable {
     private transient boolean  dirty = false;
 
     /**
-     * Construct a new virtual bridge interface state.
+     * Construct a new virtual interface state.
      *
-     * @param state   The state of the virtual bridge interface.
+     * @param state   The state of the virtual interface.
      *                Specifying {@code null} results in undefined behavior.
      */
-    VBridgeIfState(VNodeState state) {
+    VInterfaceState(VNodeState state) {
         this(state, VNodeState.UNKNOWN, null);
     }
 
     /**
-     * Construct a new virtual bridge interface state.
+     * Construct a new virtual interface state.
      *
-     * @param state      The state of the virtual bridge interface.
+     * @param state      The state of the virtual interface.
      *                   Specifying {@code null} results in undefined behavior.
-     * @param portState  The state of the virtual bridge interface.
+     * @param portState  The state of the virtual interface.
      *                   Specifying {@code null} results in undefined behavior.
-     * @param mapped     Node connector mapped to the bridge interface.
+     * @param mapped     Node connector mapped to the virtual interface.
      */
-    VBridgeIfState(VNodeState state, VNodeState portState,
-                   NodeConnector mapped) {
+    VInterfaceState(VNodeState state, VNodeState portState,
+                    NodeConnector mapped) {
         ifState = state;
         mappedPort = mapped;
         this.portState = portState;
     }
 
     /**
-     * Return the state of the virtual bridge interface.
+     * Return the state of the virtual interface.
      *
-     * @return  The state of the virtual bridge interface.
+     * @return  The state of the virtual interface.
      */
     VNodeState getState() {
         return ifState;
     }
 
     /**
-     * Set the state of the virtual bridge interface.
+     * Set the state of the virtual interface.
      *
      * <p>
      *   If the specified state differs from the state in this object,
      *   the dirty flag is turned on.
      * </p>
      *
-     * @param state  The state of the virtual bridge interface.
+     * @param state  The state of the virtual interface.
      */
     void setState(VNodeState state) {
         if (ifState != state) {
@@ -185,11 +184,11 @@ public class VBridgeIfState implements Serializable {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof VBridgeIfState)) {
+        if (!(o instanceof VInterfaceState)) {
             return false;
         }
 
-        VBridgeIfState ist = (VBridgeIfState)o;
+        VInterfaceState ist = (VInterfaceState)o;
         if (ifState != ist.ifState) {
             return false;
         }
@@ -227,7 +226,7 @@ public class VBridgeIfState implements Serializable {
      */
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("VBridgeIfState[");
+        StringBuilder builder = new StringBuilder("VInterfaceState[");
         if (mappedPort != null) {
             builder.append("mapped=").append(mappedPort.toString()).
                 append(',');

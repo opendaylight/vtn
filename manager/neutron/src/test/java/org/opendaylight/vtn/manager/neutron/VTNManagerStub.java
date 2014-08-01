@@ -43,6 +43,10 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalConfig;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
@@ -171,13 +175,39 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public List<VInterface> getBridgeInterfaces(VBridgePath path)
+    public List<VTerminal> getTerminals(VTenantPath path) {
+        return null;
+    }
+
+    @Override
+    public VTerminal getTerminal(VTerminalPath path) {
+        return null;
+    }
+
+    @Override
+    public Status addTerminal(VTerminalPath path, VTerminalConfig vtconf) {
+        return null;
+    }
+
+    @Override
+    public Status modifyTerminal(VTerminalPath path, VTerminalConfig vtconf,
+                                 boolean all) {
+        return null;
+    }
+
+    @Override
+    public Status removeTerminal(VTerminalPath path) {
+        return null;
+    }
+
+    @Override
+    public List<VInterface> getInterfaces(VBridgePath path)
         throws VTNException {
         return null;
     }
 
     @Override
-    public VInterface getBridgeInterface(VBridgeIfPath path)
+    public VInterface getInterface(VBridgeIfPath path)
         throws VTNException {
         if (path == null) {
             Status status = new Status(StatusCode.BADREQUEST);
@@ -200,8 +230,7 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Status addBridgeInterface(VBridgeIfPath path,
-                                     VInterfaceConfig iconf) {
+    public Status addInterface(VBridgeIfPath path, VInterfaceConfig iconf) {
         if (path == null || iconf == null) {
             return new Status(StatusCode.BADREQUEST);
         }
@@ -217,14 +246,40 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Status modifyBridgeInterface(VBridgeIfPath path,
+    public Status modifyInterface(VBridgeIfPath path,
                                         VInterfaceConfig iconf,
                                         boolean all) {
         return null;
     }
 
     @Override
-    public Status removeBridgeInterface(VBridgeIfPath path) {
+    public Status removeInterface(VBridgeIfPath path) {
+        return null;
+    }
+
+    @Override
+    public List<VInterface> getInterfaces(VTerminalPath path) {
+        return null;
+    }
+
+    @Override
+    public VInterface getInterface(VTerminalIfPath path) {
+        return null;
+    }
+
+    @Override
+    public Status addInterface(VTerminalIfPath path, VInterfaceConfig iconf) {
+        return null;
+    }
+
+    @Override
+    public Status modifyInterface(VTerminalIfPath path, VInterfaceConfig iconf,
+                                  boolean all) {
+        return null;
+    }
+
+    @Override
+    public Status removeInterface(VTerminalIfPath path) {
         return null;
     }
 
@@ -264,6 +319,16 @@ public class VTNManagerStub implements IVTNManager {
     // Following methods are Unused in UnitTest.
     @Override
     public PortMap getPortMap(VBridgeIfPath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public PortMap getPortMap(VTerminalIfPath path) {
+        return null;
+    }
+
+    @Override
+    public Status setPortMap(VTerminalIfPath path, PortMapConfig pmconf) {
         return null;
     }
 

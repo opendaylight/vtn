@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
@@ -23,11 +24,11 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.Path;
 
 /**
- * {@code VBridgeState} class keeps runtime state of the virtual L2 bridge.
+ * {@code BridgeState} class keeps runtime state of the virtual bridge node.
  *
  * <p>
  *   Note that this class is not synchronized.
- *   If multiple threads access a {@code VBridgeState} object concurrently,
+ *   If multiple threads access a {@code BridgeState} object concurrently,
  *   it must be synchronized externally.
  * </p>
  * <p>
@@ -36,11 +37,11 @@ import org.opendaylight.controller.sal.core.Path;
  *   class.
  * </p>
  */
-public class VBridgeState implements Serializable {
+public class BridgeState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -970563907780953357L;
+    private static final long serialVersionUID = -7971444475789967102L;
 
     /**
      * State of the bridge.
@@ -50,8 +51,7 @@ public class VBridgeState implements Serializable {
     /**
      * Set of faulted paths.
      */
-    private final Set<ObjectPair<Node, Node>>  faultedPaths =
-        new HashSet<ObjectPair<Node, Node>>();
+    private Set<ObjectPair<Node, Node>>  faultedPaths;
 
     /**
      * Dirty flag.
@@ -69,7 +69,7 @@ public class VBridgeState implements Serializable {
      * @param state  The state of the virtual bridge.
      *               Specifying {@code null} results in undefined behavior.
      */
-    VBridgeState(VNodeState state) {
+    BridgeState(VNodeState state) {
         bridgeState = state;
     }
 
@@ -94,7 +94,7 @@ public class VBridgeState implements Serializable {
      * @return  The state of the virtual bridge actually set.
      */
     VNodeState setState(VNodeState state) {
-        VNodeState newState = (faultedPaths.isEmpty())
+        VNodeState newState = (faultedPaths == null || faultedPaths.isEmpty())
             ? state : VNodeState.DOWN;
         if (bridgeState != newState) {
             bridgeState = newState;
@@ -110,7 +110,9 @@ public class VBridgeState implements Serializable {
      * @return  A set of faulted node paths.
      */
     Set<ObjectPair<Node, Node>> getFaultedPaths() {
-        return new HashSet<ObjectPair<Node, Node>>(faultedPaths);
+        return (faultedPaths == null)
+            ? new HashSet<ObjectPair<Node, Node>>()
+            : new HashSet<ObjectPair<Node, Node>>(faultedPaths);
     }
 
     /**
@@ -119,7 +121,7 @@ public class VBridgeState implements Serializable {
      * @return  The number of faulted paths in the virtual bridge.
      */
     int getFaultedPathSize() {
-        return faultedPaths.size();
+        return (faultedPaths == null) ? 0 : faultedPaths.size();
     }
 
     /**
@@ -138,7 +140,12 @@ public class VBridgeState implements Serializable {
      */
     boolean addFaultedPath(Node snode, Node dnode) {
         ObjectPair<Node, Node> path = new ObjectPair<Node, Node>(snode, dnode);
-        boolean ret = faultedPaths.add(path);
+        Set<ObjectPair<Node, Node>> set = faultedPaths;
+        if (set == null) {
+            set = new HashSet<ObjectPair<Node, Node>>();
+            faultedPaths = set;
+        }
+        boolean ret = set.add(path);
         if (ret) {
             bridgeState = VNodeState.DOWN;
             dirty = true;
@@ -163,16 +170,21 @@ public class VBridgeState implements Serializable {
     List<ObjectPair<Node, Node>> removeResolvedPath(RouteResolver rr) {
         List<ObjectPair<Node, Node>> removed =
             new ArrayList<ObjectPair<Node, Node>>();
-        for (Iterator<ObjectPair<Node, Node>> it = faultedPaths.iterator();
-             it.hasNext();) {
-            ObjectPair<Node, Node> npath = it.next();
-            Node snode = npath.getLeft();
-            Node dnode = npath.getRight();
-            Path path = rr.getRoute(snode, dnode);
-            if (path != null) {
-                removed.add(npath);
-                it.remove();
-                dirty = true;
+        if (faultedPaths != null) {
+            for (Iterator<ObjectPair<Node, Node>> it = faultedPaths.iterator();
+                 it.hasNext();) {
+                ObjectPair<Node, Node> npath = it.next();
+                Node snode = npath.getLeft();
+                Node dnode = npath.getRight();
+                Path path = rr.getRoute(snode, dnode);
+                if (path != null) {
+                    removed.add(npath);
+                    it.remove();
+                    dirty = true;
+                }
+            }
+            if (faultedPaths.isEmpty()) {
+                faultedPaths = null;
             }
         }
 
@@ -201,15 +213,18 @@ public class VBridgeState implements Serializable {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof VBridgeState)) {
+        if (!(o instanceof BridgeState)) {
             return false;
         }
 
-        VBridgeState bst = (VBridgeState)o;
+        BridgeState bst = (BridgeState)o;
         if (bridgeState != bst.bridgeState) {
             return false;
         }
 
+        if (faultedPaths == null) {
+            return (bst.faultedPaths == null);
+        }
         return faultedPaths.equals(bst.faultedPaths);
     }
 
@@ -220,7 +235,12 @@ public class VBridgeState implements Serializable {
      */
     @Override
     public int hashCode() {
-        return bridgeState.toString().hashCode() ^ faultedPaths.hashCode();
+        int h = bridgeState.toString().hashCode();
+        if (faultedPaths != null) {
+            h += faultedPaths.hashCode() * 13;
+        }
+
+        return h;
     }
 
     /**
@@ -230,9 +250,13 @@ public class VBridgeState implements Serializable {
      */
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("VBridgeState[");
+        StringBuilder builder = new StringBuilder("BridgeState[");
+        Set<ObjectPair<Node, Node>> set = faultedPaths;
+        if (set == null) {
+            set = Collections.emptySet();
+        }
         builder.append("state=").append(bridgeState.toString()).
-            append(",faulted=").append(faultedPaths).append(']');
+            append(",faulted=").append(set).append(']');
         return builder.toString();
     }
 }

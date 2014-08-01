@@ -31,6 +31,10 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalConfig;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -120,9 +124,112 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
 
         for (VBridgeIfPath ifpath : ifpaths) {
             VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-            st = mgr.addBridgeInterface(ifpath, ifconf);
+            st = mgr.addInterface(ifpath, ifconf);
             assertEquals("(VBridgeIfPath)" + ifpath.toString(), StatusCode.SUCCESS, st.getCode());
         }
+    }
+
+    /**
+     * Create the specified tenant only if it does not exist.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the tenant.
+     */
+    protected void putTenant(IVTNManager mgr, VTenantPath path) {
+        try {
+            mgr.getTenant(path);
+            return;
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        VTenantConfig tconf = new VTenantConfig(null);
+        Status st = mgr.addTenant(path, tconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Create the specified vBridge only if it does not exist.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vBridge.
+     */
+    protected void putBridge(IVTNManager mgr, VBridgePath path) {
+        putTenant(mgr, path);
+
+        try {
+            mgr.getBridge(path);
+            return;
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        VBridgeConfig bconf = new VBridgeConfig(null);
+        Status st = mgr.addBridge(path, bconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Create the specified vBridge interface only if it does not exist.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vBridge interface.
+     */
+    protected void putInterface(IVTNManager mgr, VBridgeIfPath path) {
+        putBridge(mgr, path);
+
+        try {
+            mgr.getInterface(path);
+            return;
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        VInterfaceConfig iconf = new VInterfaceConfig(null, null);
+        Status st = mgr.addInterface(path, iconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Create the specified vTerminal only if it does not exist.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vTerminal
+     */
+    protected void putTerminal(IVTNManager mgr, VTerminalPath path) {
+        putTenant(mgr, path);
+
+        try {
+            mgr.getTerminal(path);
+            return;
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        VTerminalConfig vtconf = new VTerminalConfig(null);
+        Status st = mgr.addTerminal(path, vtconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Create the specified vTerminal interface only if it does not exist.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vTerminal interface.
+     */
+    protected void putInterface(IVTNManager mgr, VTerminalIfPath path) {
+        putTerminal(mgr, path);
+
+        try {
+            mgr.getInterface(path);
+            return;
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        VInterfaceConfig iconf = new VInterfaceConfig(null, null);
+        Status st = mgr.addInterface(path, iconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
     }
 
     /**
@@ -151,7 +258,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         try {
             tlist = mgr.getTenants();
             blist = mgr.getBridges(tpath);
-            iflist = mgr.getBridgeInterfaces(bpath);
+            iflist = mgr.getInterfaces(bpath);
         } catch (VTNException e) {
             unexpected(e);
         }
@@ -394,7 +501,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         VInterface bif = null;
         try {
             if (ifp != null) {
-                bif = mgr.getBridgeInterface(ifp);
+                bif = mgr.getInterface(ifp);
             }
             if (bpath != null) {
                 brdg = mgr.getBridge(bpath);
@@ -408,6 +515,35 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         }
         if (bpath != null) {
             assertEquals("VBridge status: " + msg, bstate, brdg.getState());
+        }
+    }
+
+    /**
+     * Check status of vTerminal and vTerminal interface.
+     *
+     * @param mgr       VTN Manager service.
+     * @param vtpath    Path to the vTerminal.
+     * @param ipath     Path to the vTerminal interrace.
+     * @param vtstate   An expected state of the vTerminal.
+     * @param istate    An expected state of the vTerminal interface.
+     * @param msg       An arbitrary string to be displayed on failure.
+     */
+    protected void checkNodeStatus(VTNManagerImpl mgr, VTerminalPath vtpath,
+                                   VTerminalIfPath ipath, VNodeState vtstate,
+                                   VNodeState istate, String msg) {
+        try {
+            if (ipath != null) {
+                VInterface vif = mgr.getInterface(ipath);
+                assertEquals("vTerminal interface state: " + msg,
+                             istate, vif.getState());
+            }
+            if (vtpath != null) {
+                VTerminal vterm = mgr.getTerminal(vtpath);
+                assertEquals("vTerminal state: " + msg,
+                             vtstate, vterm.getState());
+            }
+        } catch (VTNException e) {
+            unexpected(e);
         }
     }
 

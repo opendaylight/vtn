@@ -27,7 +27,7 @@ import org.opendaylight.controller.sal.core.Node;
  *   mapping to the VTN Manager during configuration of port mapping.
  * </p>
  * <p>
- *   Actual physical port of switch that gets mapped to a vBridge interface is
+ *   Actual physical port of switch that gets mapped to a virtual interface is
  *   decided as follows.
  * </p>
  * <ul>

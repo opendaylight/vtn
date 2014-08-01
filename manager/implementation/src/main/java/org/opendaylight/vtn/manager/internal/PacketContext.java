@@ -621,7 +621,7 @@ public class PacketContext {
      * Record a virtual node to be associated with the data flow.
      *
      * <p>
-     *   Node that the virtual node on the packet routing path does not need
+     *   Note that the virtual node on the packet routing path does not need
      *   to be associated with the data flow by this method.
      * </p>
      *
@@ -679,6 +679,24 @@ public class PacketContext {
     public void setFlowTimeout(int idle, int hard) {
         idleTimeout = idle;
         hardTimeout = hard;
+    }
+
+    /**
+     * Return the idle timeout for a flow entry.
+     *
+     * @return  The idle timeout for a flow entry.
+     */
+    public int getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    /**
+     * Return the hard timeout for a flow entry.
+     *
+     * @return  The hard timeout for a flow entry.
+     */
+    public int getHardTimeout() {
+        return hardTimeout;
     }
 
     /**

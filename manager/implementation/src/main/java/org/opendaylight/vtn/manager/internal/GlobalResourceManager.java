@@ -34,8 +34,9 @@ import org.osgi.framework.Version;
 
 import org.opendaylight.vtn.manager.BundleVersion;
 import org.opendaylight.vtn.manager.IVTNGlobal;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VInterfacePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
@@ -527,7 +528,7 @@ public class GlobalResourceManager
                     // be updated.
                     VTNManagerImpl cmgr = getVTNManager(container);
                     if (cmgr != null) {
-                        cmgr.updateBridgeState(macMap.getPath());
+                        cmgr.updateBridgeState((VBridgePath)macMap.getPath());
                     }
                 }
             }
@@ -1368,7 +1369,7 @@ public class GlobalResourceManager
      * @param ref  A reference to the virtual mapping.
      */
     private void purge(VTNManagerImpl mgr, MapReference ref) {
-        VBridgePath path = ref.getPath();
+        VNodePath path = ref.getPath();
         PathMapCleaner cleaner = new PathMapCleaner(path);
         cleaner.purge(mgr, null);
     }
@@ -1377,18 +1378,22 @@ public class GlobalResourceManager
      * Purge network caches originated by the specified port mapping.
      *
      * @param mgr    VTN Manager service.
-     * @param path   A path to the vBridge which maps the specified network.
+     * @param path   A path to the virtual interface which maps the specified
+     *               network.
      * @param pvlan  A {@link PortVlan} instance which specifies the
      *               VLAN network on a switch port.
      */
-    private void purge(VTNManagerImpl mgr, VBridgePath path, PortVlan pvlan) {
+    private void purge(VTNManagerImpl mgr, VInterfacePath path,
+                       PortVlan pvlan) {
         NodeConnector port = pvlan.getNodeConnector();
         short vlan = pvlan.getVlan();
 
-        // Remove MAC addresses detected on the specified port.
-        MacAddressTable table = mgr.getMacAddressTable(path);
-        if (table != null) {
-            table.flush(port, vlan);
+        if (path instanceof VBridgePath) {
+            // Remove MAC addresses detected on the specified port.
+            MacAddressTable table = mgr.getMacAddressTable((VBridgePath)path);
+            if (table != null) {
+                table.flush(port, vlan);
+            }
         }
 
         // Remove flow entries previously mapped by the specified port mapping.
@@ -1987,7 +1992,8 @@ public class GlobalResourceManager
      * {@inheritDoc}
      */
     @Override
-    public MapReference registerPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+    public MapReference registerPortMap(VTNManagerImpl mgr,
+                                        VInterfacePath path,
                                         final PortVlan pvlan,
                                         final PortVlan rmlan,
                                         final boolean purge)
@@ -2027,7 +2033,7 @@ public class GlobalResourceManager
      * {@inheritDoc}
      */
     @Override
-    public void unregisterPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+    public void unregisterPortMap(VTNManagerImpl mgr, VInterfacePath path,
                                   PortVlan pvlan, boolean purge)
         throws VTNException {
         registerPortMap(mgr, path, null, pvlan, purge);

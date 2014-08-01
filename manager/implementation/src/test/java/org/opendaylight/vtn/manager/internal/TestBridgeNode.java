@@ -108,4 +108,18 @@ public class TestBridgeNode implements VBridgeNode {
     public VNodeRoute getIngressRoute() {
         return new VNodeRoute(bridgePath, reason);
     }
+
+    /**
+     * Install a flow entry which drops every incoming packet.
+     *
+     * <p>
+     *   This method must be called with holding the node lock.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     */
+    @Override
+    public void disableInput(VTNManagerImpl mgr, PacketContext pctx) {
+    }
 }

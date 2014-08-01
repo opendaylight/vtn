@@ -29,7 +29,12 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1044749796338168412L;
+    private static final long serialVersionUID = 8776060135426029534L;
+
+    /**
+     * A string which represents that the node type is VTN.
+     */
+    private static final String  NODETYPE_VTN = "VTN";
 
     /**
      * The name of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
@@ -84,6 +89,17 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
     }
 
     /**
+     * Return a human readable string which represents the type of the virtual
+     * node corresponding to this instance.
+     *
+     * @return  {@code "VTN"} is always returned.
+     * @since   Helium
+     */
+    public String getNodeType() {
+        return NODETYPE_VTN;
+    }
+
+    /**
      * Return a {@link StringBuilder} object which contains a string
      * representation of this object.
      *
@@ -96,8 +112,9 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
      *          representation of this object.
      */
     protected StringBuilder toStringBuilder() {
+        StringBuilder builder = new StringBuilder(getNodeType());
         String name = (tenantName == null) ? "<null>" : tenantName;
-        return new StringBuilder(name);
+        return builder.append(':').append(name);
     }
 
     /**
@@ -139,14 +156,10 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
      * </p>
      * <ul>
      *   <li>
-     *     {@code o} is a {@code VTenantPath} object.
-     *     Note that this method returns {@code false} if {@code o} is an
-     *     object of subclass of {@code VTenantPath}.
+     *     The type of {@code o} exactly matches up to the type of this object.
      *   </li>
      *   <li>
-     *     The name of the
-     *     {@linkplain <a href="package-summary.html#VTN">VTN</a>} in {@code o}
-     *     is equal to the value in this object.
+     *     All path components in {@code o} are the same as this object.
      *   </li>
      * </ul>
      *
@@ -154,7 +167,7 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
      * @return   {@code true} if identical. Otherwise {@code false}.
      */
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (o == this) {
             return true;
         }
