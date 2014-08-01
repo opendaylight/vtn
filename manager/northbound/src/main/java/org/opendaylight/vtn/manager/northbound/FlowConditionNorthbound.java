@@ -50,6 +50,8 @@ import org.opendaylight.controller.sal.utils.Status;
 /**
  * This class provides Northbound REST APIs to handle flow condition in the
  * container.
+ *
+ * @since Helium
  */
 @Path("/{containerName}/flowconditions")
 public class FlowConditionNorthbound extends VTNNorthBoundBase {
@@ -60,7 +62,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @return  <strong>flowconditions</strong> element contains information
      *          about flow conditions specified by the requested URI.
-     * @since Helium
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -99,7 +100,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      * @param condName       The name of the flow condition.
      * @return  <strong>flowcondition</strong> element contains information
      *          about the flow condition specified by the requested URI.
-     * @since Helium
      */
     @Path("{condName}")
     @GET
@@ -196,7 +196,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{condName}")
     @PUT
@@ -278,7 +277,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param condName       The name of the flow condition.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{condName}")
     @DELETE
@@ -329,7 +327,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *    A string representation of an integer value must be specified.
      * @return  <strong>flowcondition</strong> element contains information
      *          about the flow condition specified by the requested URI.
-     * @since Helium
      */
     @Path("{condName}/{index}")
     @GET
@@ -426,7 +423,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{condName}/{index}")
     @PUT
@@ -516,7 +512,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *    The match index that specifies the flow match condition.
      *    A string representation of an integer value must be specified.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{condName}/{index}")
     @DELETE

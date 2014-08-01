@@ -57,6 +57,8 @@ import org.opendaylight.controller.sal.utils.Status;
  *   in that path map. If no VTN path map matches an incoming packet,
  *   container path maps are evaluated.
  * </p>
+ *
+ * @since Helium
  */
 @Path("/{containerName}/vtns/{tenantName}/pathmaps")
 public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
@@ -67,7 +69,6 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      * @param tenantName     The name of the VTN.
      * @return  <strong>pathmaps</strong> element contains information
      *          about VTN path map list specified by the requested URI.
-     * @since Helium
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -114,7 +115,6 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      *   A string representation of an integer value must be specified.
      * @return  <strong>pathmap</strong> element contains information
      *          about the path map specified by the requested URI.
-     * @since Helium
      */
     @Path("{index}")
     @GET
@@ -217,7 +217,6 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{index}")
     @PUT
@@ -306,7 +305,6 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      *   The index value which specifies the path map in the VTN path map list.
      *   A string representation of an integer value must be specified.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{index}")
     @DELETE

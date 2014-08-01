@@ -74,6 +74,8 @@ import org.opendaylight.controller.sal.utils.Status;
  * <p>
  *   Currently, only one path policy can be defined in a container.
  * </p>
+ *
+ * @since Helium
  */
 @Path("/{containerName}/pathpolicies")
 public class PathPolicyNorthbound extends VTNNorthBoundBase {
@@ -84,7 +86,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @return  <strong>integers</strong> element contains integer values
      *          which identify path policies in the specified container.
-     * @since Helium
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -123,7 +124,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @param policyId       The identifier of the path policy.
      * @return  <strong>pathpolicy</strong> element contains information
      *          about the path policy specified by the requested URI.
-     * @since Helium
      */
     @Path("{policyId}")
     @GET
@@ -209,7 +209,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}")
     @PUT
@@ -295,7 +294,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param policyId       The identifier of the path policy.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}")
     @DELETE
@@ -358,7 +356,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *       more defails.
      *     </li>
      *   </ul>
-     * @since Helium
      */
     @Path("{policyId}/default")
     @GET
@@ -418,7 +415,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/default")
     @PUT
@@ -519,7 +515,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @return
      *   <strong>integer</strong> element contains the link cost associated
      *   with the specified switch port location in the path policy.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}")
     @GET
@@ -610,7 +605,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}")
     @PUT
@@ -710,7 +704,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *      </li>
      *    </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}")
     @DELETE
@@ -800,7 +793,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @return
      *   <strong>integer</strong> element contains the link cost associated
      *   with the specified switch port location in the path policy.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/name/{portName}")
     @GET
@@ -896,7 +888,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/name/{portName}")
     @PUT
@@ -1003,7 +994,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   <span style="text-decoration: underline;">{nodeType}</span> and
      *   <span style="text-decoration: underline;">{nodeId}</span>.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/name/{portName}")
     @DELETE
@@ -1107,7 +1097,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @return
      *   <strong>integer</strong> element contains the link cost associated
      *   with the specified switch port location in the path policy.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/type/{portType}/{portId}")
     @GET
@@ -1217,7 +1206,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/type/{portType}/{portId}")
     @PUT
@@ -1342,7 +1330,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *      </li>
      *    </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/type/{portType}/{portId}")
     @DELETE
@@ -1450,7 +1437,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @return
      *   <strong>integer</strong> element contains the link cost associated
      *   with the specified switch port location in the path policy.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/type/{portType}/{portId}/{portName}")
     @GET
@@ -1565,7 +1551,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/type/{portType}/{portId}/{portName}")
     @PUT
@@ -1695,7 +1680,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   <span style="text-decoration: underline;">{nodeType}</span> and
      *   <span style="text-decoration: underline;">{nodeId}</span>.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("{policyId}/costs/{nodeType}/{nodeId}/type/{portType}/{portId}/{portName}")
     @DELETE

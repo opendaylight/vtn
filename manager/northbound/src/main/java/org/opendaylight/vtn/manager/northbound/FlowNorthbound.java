@@ -174,7 +174,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *      <li><strong>noderoutes</strong></li>
      *      <li><strong>statistics</strong></li>
      *    </ul>
-     * @since  Helium
      */
     @Path("summary")
     @GET
@@ -245,7 +244,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *      <li><strong>noderoutes</strong></li>
      *      <li><strong>statistics</strong></li>
      *    </ul>
-     * @since  Helium
      */
     @Path("summary/{flowId}")
     @GET
@@ -415,7 +413,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *    <strong>dataflows</strong> element contains detailed information
      *    about all data flows present in the VTN specified by the requested
      *    URI.
-     * @since  Helium
      */
     @Path("detail")
     @GET
@@ -494,7 +491,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      * @return
      *    <strong>dataflow</strong> element contains detailed information
      *    about the data flow specified by the requested URI.
-     * @since  Helium
      */
     @Path("detail/{flowId}")
     @GET
@@ -549,7 +545,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      * @return
      *    <strong>integer</strong> element contains the number of data flows
      *    present in the VTN specified by the requested URI.
-     * @since  Helium
      */
     @Path("count")
     @GET
@@ -598,7 +593,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param tenantName     The name of the VTN.
      * @return Response as dictated by the HTTP Response Status code.
-     * @since  Helium
      */
     @DELETE
     @TypeHint(TypeHint.NO_CONTENT.class)

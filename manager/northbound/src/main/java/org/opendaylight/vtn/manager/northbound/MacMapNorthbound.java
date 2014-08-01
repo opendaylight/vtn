@@ -84,7 +84,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param bridgeName     The name of the vBridge.
      * @return  <strong>macmap</strong> element contains information about
      *          MAC mapping specified by the requested URI.
-     * @since Helium
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -190,7 +189,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @PUT
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -389,7 +387,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *     specified.
      *   </p>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @POST
     @Consumes({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -488,7 +485,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @DELETE
     @TypeHint(TypeHint.NO_CONTENT.class)
@@ -534,7 +530,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param bridgeName     The name of the vBridge.
      * @return  <strong>machosts</strong> element contains host information
      *          configured in Map Allow list of MAC mapping.
-     * @since Helium
      */
     @Path("allow")
     @GET
@@ -607,7 +602,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("allow")
     @PUT
@@ -768,7 +762,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *     specified.
      *   </p>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("allow")
     @POST
@@ -866,7 +859,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("allow")
     @DELETE
@@ -937,7 +929,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </ul>
      * @return  <strong>machost</strong> element contains MAC address and
      *          VLAN ID specified by the requested URI.
-     * @since Helium
      */
     @Path("allow/{macAddr}/{vlan}")
     @GET
@@ -1033,7 +1024,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *      </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("allow/{macAddr}/{vlan}")
     @PUT
@@ -1149,7 +1139,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *      </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("allow/{macAddr}/{vlan}")
     @DELETE
@@ -1210,7 +1199,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param bridgeName     The name of the vBridge.
      * @return  <strong>machosts</strong> element contains host information
      *          configured in Map Deny list of MAC mapping.
-     * @since Helium
      */
     @Path("deny")
     @GET
@@ -1277,7 +1265,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *     </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("deny")
     @PUT
@@ -1432,7 +1419,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *     specified.
      *   </p>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("deny")
     @POST
@@ -1517,7 +1503,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("deny")
     @DELETE
@@ -1584,7 +1569,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </ul>
      * @return  <strong>machost</strong> element contains MAC address and
      *          VLAN ID specified by the requested URI.
-     * @since Helium
      */
     @Path("deny/{macAddr}/{vlan}")
     @GET
@@ -1676,7 +1660,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *      </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("deny/{macAddr}/{vlan}")
     @PUT
@@ -1777,7 +1760,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *      </li>
      *   </ul>
      * @return  Response as dictated by the HTTP Response Status code.
-     * @since Helium
      */
     @Path("deny/{macAddr}/{vlan}")
     @DELETE
@@ -1838,7 +1820,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param bridgeName     The name of the vBridge.
      * @return  <strong>macentries</strong> element contains information about
      *          all hosts actually mapped by MAC mapping.
-     * @since Helium
      */
     @Path("mapped")
     @GET
@@ -1899,7 +1880,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </ul>
      * @return  <strong>macentry</strong> element contains information about
      *          the host actually mapped by MAC mapping.
-     * @since Helium
      */
     @Path("mapped/{macAddr}")
     @GET
