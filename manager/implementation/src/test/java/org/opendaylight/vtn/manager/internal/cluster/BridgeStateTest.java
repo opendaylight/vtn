@@ -29,9 +29,9 @@ import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.routing.IRouting;
 
 /**
- * JUnit test for {@link VBridgeState}.
+ * JUnit test for {@link BridgeState}.
  */
-public class VBridgeStateTest extends TestBase {
+public class BridgeStateTest extends TestBase {
     private Set<ObjectPair<Node, Node>> fp = new HashSet<ObjectPair<Node, Node>>();
 
     /**
@@ -107,7 +107,7 @@ public class VBridgeStateTest extends TestBase {
         VNodeState[] states = VNodeState.values();
 
         for (VNodeState state: states) {
-            VBridgeState bst = new VBridgeState(state);
+            BridgeState bst = new BridgeState(state);
             assertSame(state, bst.getState());
             assertEquals(bst.toString(), fp, bst.getFaultedPaths());
             assertEquals(bst.toString(), 0, bst.getFaultedPathSize());
@@ -121,7 +121,7 @@ public class VBridgeStateTest extends TestBase {
     @Test
     public void testGetSet() {
         VNodeState[] states = VNodeState.values();
-        VBridgeState bst = new VBridgeState(states[states.length - 1]);
+        BridgeState bst = new BridgeState(states[states.length - 1]);
 
         // Change bridge state.
         for (VNodeState state: states) {
@@ -199,8 +199,8 @@ public class VBridgeStateTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VBridgeState#equals(Object)} and
-     * {@link VBridgeState#hashCode()}.
+     * Test case for {@link BridgeState#equals(Object)} and
+     * {@link BridgeState#hashCode()}.
      */
     @Test
     public void testEquals() {
@@ -208,15 +208,15 @@ public class VBridgeStateTest extends TestBase {
         VNodeState[] states = VNodeState.values();
 
         for (VNodeState state: states) {
-            VBridgeState bst1 = new VBridgeState(state);
-            VBridgeState bst2 = new VBridgeState(state);
+            BridgeState bst1 = new BridgeState(state);
+            BridgeState bst2 = new BridgeState(state);
             testEquals(set, bst1, bst2);
         }
 
         List<Edge> edgeList = createEdges(10);
         for (int max = 0; max < edgeList.size(); max++) {
-            VBridgeState bst1 = new VBridgeState(VNodeState.DOWN);
-            VBridgeState bst2 = new VBridgeState(VNodeState.DOWN);
+            BridgeState bst1 = new BridgeState(VNodeState.DOWN);
+            BridgeState bst2 = new BridgeState(VNodeState.DOWN);
             for (int i = 0; i <= max; i++) {
                 Edge edge = edgeList.get(i);
                 ObjectPair<Node, Node> path = toNodePath(edge);
@@ -234,16 +234,16 @@ public class VBridgeStateTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VBridgeState#toString()}.
+     * Test case for {@link BridgeState#toString()}.
      */
     @Test
     public void testToString() {
-        String prefix = "VBridgeState[";
+        String prefix = "BridgeState[";
         String suffix = "]";
 
         VNodeState[] states = VNodeState.values();
         for (VNodeState state: states) {
-            VBridgeState bst = new VBridgeState(state);
+            BridgeState bst = new BridgeState(state);
             String s = "state=" + state.toString();
             String f = "faulted=" + fp.toString();
             String required = joinStrings(prefix, suffix, ",", s, f);
@@ -253,7 +253,7 @@ public class VBridgeStateTest extends TestBase {
         List<Edge> edgeList = createEdges(10);
         VNodeState state = VNodeState.DOWN;
         for (int max = 0; max < edgeList.size(); max++) {
-            VBridgeState bst = new VBridgeState(state);
+            BridgeState bst = new BridgeState(state);
             Set<ObjectPair<Node, Node>> faulted =
                 new HashSet<ObjectPair<Node, Node>>();
             for (int i = 0; i <= max; i++) {
@@ -273,14 +273,14 @@ public class VBridgeStateTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VBridgeState} is serializable.
+     * Ensure that {@link BridgeState} is serializable.
      */
     @Test
     public void testSerialize() {
         VNodeState[] states = VNodeState.values();
         for (VNodeState state: states) {
-            VBridgeState bst1 = new VBridgeState(state);
-            VBridgeState bst2 = (VBridgeState)serializeTest(bst1);
+            BridgeState bst1 = new BridgeState(state);
+            BridgeState bst2 = (BridgeState)serializeTest(bst1);
             assertFalse(bst1.isDirty());
             assertFalse(bst2.isDirty());
         }
@@ -288,7 +288,7 @@ public class VBridgeStateTest extends TestBase {
         List<Edge> edgeList = createEdges(10);
         VNodeState state = VNodeState.DOWN;
         for (int max = 0; max < edgeList.size(); max++) {
-            VBridgeState bst1 = new VBridgeState(state);
+            BridgeState bst1 = new BridgeState(state);
             Set<ObjectPair<Node, Node>> faulted =
                 new HashSet<ObjectPair<Node, Node>>();
             for (int i = 0; i <= max; i++) {
@@ -300,7 +300,7 @@ public class VBridgeStateTest extends TestBase {
                 assertTrue(bst1.addFaultedPath(src, dst));
             }
 
-            VBridgeState bst2 = (VBridgeState)serializeTest(bst1);
+            BridgeState bst2 = (BridgeState)serializeTest(bst1);
             assertTrue(bst1.isDirty());
             assertFalse(bst1.isDirty());
             assertFalse(bst2.isDirty());

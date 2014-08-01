@@ -23,6 +23,9 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VlanMap;
 
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -65,9 +68,27 @@ public class OrderedVTNListener extends TestBase implements IVTNManagerAware {
      * {@inheritDoc}
      */
     @Override
-    public void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface,
-                                        UpdateType type) {
+    public void vTerminalChanged(VTerminalPath path, VTerminal vterm,
+                                 UpdateType type) {
+        addEvent(VTNListenerType.VTERMINAL, path, vterm, type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void vInterfaceChanged(VBridgeIfPath path, VInterface viface,
+                                  UpdateType type) {
         addEvent(VTNListenerType.VBRIDGE_IF, path, viface, type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void vInterfaceChanged(VTerminalIfPath path, VInterface viface,
+                                  UpdateType type) {
+        addEvent(VTNListenerType.VTERMINAL_IF, path, viface, type);
     }
 
     /**
@@ -86,6 +107,15 @@ public class OrderedVTNListener extends TestBase implements IVTNManagerAware {
     public void portMapChanged(VBridgeIfPath path, PortMap pmap,
                                UpdateType type) {
         addEvent(VTNListenerType.PORTMAP, path, pmap, type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void portMapChanged(VTerminalIfPath path, PortMap pmap,
+                               UpdateType type) {
+        addEvent(VTNListenerType.PORTMAP_VTERM, path, pmap, type);
     }
 
     /**

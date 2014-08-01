@@ -14,9 +14,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
@@ -37,6 +39,7 @@ public class VlanMapPathTest extends TestBase {
                     assertEquals(emsg, tname, path.getTenantName());
                     assertEquals(emsg, bname, path.getBridgeName());
                     assertEquals(emsg, mapId, path.getMapId());
+                    assertEquals("VlanMap", path.getNodeType());
                 }
             }
         }
@@ -132,6 +135,11 @@ public class VlanMapPathTest extends TestBase {
                 assertFalse(set.add(bpath));
                 size++;
 
+                VTerminalPath tmpath = new VTerminalPath(path, bname);
+                assertTrue(set.add(tmpath));
+                assertFalse(set.add(tmpath));
+                size++;
+
                 MacMapPath mpath = new MacMapPath(bpath);
                 assertTrue(set.add(mpath));
                 assertFalse(set.add(mpath));
@@ -162,6 +170,7 @@ public class VlanMapPathTest extends TestBase {
      */
     @Test
     public void testToString() {
+        String prefix = "VlanMap:";
         for (String tname: createStrings("tenant")) {
             for (String bname: createStrings("bridge")) {
                 VBridgePath bpath = new VBridgePath(tname, bname);
@@ -170,7 +179,7 @@ public class VlanMapPathTest extends TestBase {
                     String tn = (tname == null) ? "<null>" : tname;
                     String bn = (bname == null) ? "<null>" : bname;
                     String required =
-                        joinStrings(null, null, ".", tn, bn, mapId);
+                        joinStrings(prefix, null, ".", tn, bn, mapId);
                     assertEquals(required, path.toString());
                 }
             }
@@ -214,6 +223,10 @@ public class VlanMapPathTest extends TestBase {
             (sameTenant && equals(bname, path.getBridgeName()));
         assertEquals(false, path.contains(bpath));
         assertEquals(sameBridge, bpath.contains(path));
+
+        VTerminalPath tmpath = new VTerminalPath(tpath, bname);
+        assertEquals(false, path.contains(tmpath));
+        assertEquals(false, tmpath.contains(path));
 
         VBridgeIfPath ipath = new VBridgeIfPath(bpath, mapId);
         assertEquals(false, path.contains(ipath));

@@ -815,6 +815,75 @@
  *   </div>
  * </div>
  *
+ * <h3 id="vTerminal" style="border-bottom: 2px solid #aaaaaa;">
+ *   vTerminal
+ * </h3>
+ * <div style="margin-left: 1em;">
+ *   <p>
+ *     <strong>vTerminal</strong> is isolated input and output terminal inside
+ *     <a href="#VTN">VTN</a>. vTerminal can have only one
+ *     <a href="#vInterface">virtual interface</a>, and it can map a physical
+ *     switch port by <a href="#port-map">port mapping</a>.
+ *   </p>
+ *   <p>
+ *     vTerminal is always used in conjunction with redirection by flow filter.
+ *   </p>
+ *   <ul>
+ *     <li>
+ *       An incoming packet from the virtual interface inside the vTerminal is
+ *       always dropped unless it is redirected to other virtual node by
+ *       flow filter.
+ *     </li>
+ *     <li>
+ *       A packet is never routed to the virtual interface inside the vTerminal
+ *       unless flow filter redirects the packet to that interface.
+ *     </li>
+ *   </ul>
+ *
+ *   <h4 id="vTerminal.status" style="border-bottom: 1px dashed #aaaaaa;">
+ *     vTerminal status
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       vTerminal can have the following internal status.
+ *     </p>
+ *     <dl style="margin-left: 1em;">
+ *       <dt id="vTerminal.status.UNKNOWN" style="font-weight: bold; margin-top: 0.5em;">UNKNOWN
+ *       <dd style="margin-left: 2em;">
+ *         This shows the state wherein physical network is not mapped to
+ *         vTerminal. vTerminal status will be UNKNOWN if any of the following
+ *         conditions are met.
+ *         <ul>
+ *           <li>
+ *             No <a href="#vInterface">virtual interface</a> is configured in
+ *             vTerminal.
+ *           </li>
+ *           <li>
+ *             A <a href="#vInterface">virtual interface</a> inside vTerminal
+ *             is disabled.
+ *           </li>
+ *           <li>
+ *             <a href="#port-map">Port mapping</a> is not configured in a
+ *             <a href="#vInterface">virtual interface</a> inside vTerminal.
+ *           </li>
+ *         </ul>
+ *
+ *       <dt id="vTerminal.status.DOWN" style="font-weight: bold; margin-top: 0.5em;">DOWN
+ *       <dd style="margin-left: 2em;">
+ *         This shows the state wherein the physical network mapped to
+ *         vTerminal is not operating correctly. If an enabled
+ *         <a href="#vInterface">virtual interface</a> inside vTerminal is in
+ *         <a href="#vInterface.status.DOWN">DOWN</a> state, then vTerminal
+ *         status will be DOWN.
+ *
+ *       <dt id="vTerminal.status.UP" style="font-weight: bold; margin-top: 0.5em;">UP
+ *       <dd style="margin-left: 2em;">
+ *             This shows the state wherein the physical network mapped to the
+ *             vTerminal is operating correctly.
+ *     </dl>
+ *   </div>
+ * </div>
+ *
  * <h3 id="vInterface" style="border-bottom: 2px solid #aaaaaa;">
  *   Virtual interface
  * </h3>
@@ -823,7 +892,7 @@
  *     <strong>Virtual interface</strong> shows the input and output interface
  *     that could be set in virtual node of <a href="#VTN">VTN</a>.
  *     At this point in time, it is possible to set virtual interface to
- *     <a href="#vBridge">vBridge</a> alone.
+ *     <a href="#vBridge">vBridge</a> and <a href="#vTerminal">vTerminal</a>.
  *   </p>
  *   <p>
  *     It is possible to dynamically enable or disable virtual interface.
@@ -858,7 +927,7 @@
  *     </dl>
  *   </div>
  *
- *   <h4 style="border-bottom: 1px dashed #aaaaaa;">
+ *   <h4 id="vInterface.status.vBridge"style="border-bottom: 1px dashed #aaaaaa;">
  *     vBridge interface status
  *   </h4>
  *   <div style="margin-left: 1em;">
@@ -908,6 +977,17 @@
  *         </ul>
  *       </li>
  *     </ul>
+ *   </div>
+ *
+ *   <h4 id="vInterface.status.vTerminal" style="border-bottom: 1px dashed #aaaaaa;">
+ *     vTerminal interface status
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       Status of the virtual terminal is decided as
+ *       <a href="#vInterface.status.vBridge">vBridge interface status</a>
+ *       is decided.
+ *     </p>
  *   </div>
  *
  *   <h4 id="port-map" style="border-bottom: 1px dashed #aaaaaa;">

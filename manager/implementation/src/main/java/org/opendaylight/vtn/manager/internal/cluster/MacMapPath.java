@@ -29,7 +29,12 @@ public class MacMapPath extends VBridgeMapPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5241941891686483002L;
+    private static final long serialVersionUID = 4445402130811014184L;
+
+    /**
+     * A string which represents that the node type is MAC mapping.
+     */
+    private static final String  NODETYPE_MACMAP = "MacMap";
 
     /**
      * Construct a path to the MAC mapping.
@@ -39,5 +44,15 @@ public class MacMapPath extends VBridgeMapPath {
      */
     public MacMapPath(VBridgePath bridgePath) {
         super(bridgePath);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return  {@code "MacMap"} is always returned.
+     */
+    @Override
+    public String getNodeType() {
+        return NODETYPE_MACMAP;
     }
 }

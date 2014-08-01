@@ -11,8 +11,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
 
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
 
 /**
  * {@code MapReference} class describes a reference to virtual network mapping
@@ -25,7 +24,7 @@ public class MapReference implements Serializable, Comparable<MapReference> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1690512385908719387L;
+    private static final long serialVersionUID = -1836624943364112531L;
 
     /**
      * Mapping type.
@@ -40,7 +39,7 @@ public class MapReference implements Serializable, Comparable<MapReference> {
     /**
      * A path to a virtual node.
      */
-    private final VBridgePath  vnodePath;
+    private final VNodePath  vnodePath;
 
     /**
      * Construct a new object.
@@ -53,7 +52,7 @@ public class MapReference implements Serializable, Comparable<MapReference> {
      * @param path       A path to a virtual node.
      *                   Specifying {@code null} results in undefined behavior.
      */
-    public MapReference(MapType type, String container, VBridgePath path) {
+    public MapReference(MapType type, String container, VNodePath path) {
         mapType = type;
         containerName = container;
         vnodePath = path;
@@ -83,7 +82,7 @@ public class MapReference implements Serializable, Comparable<MapReference> {
      *
      * @return  A path to a virtual node.
      */
-    public VBridgePath getPath() {
+    public VNodePath getPath() {
         return vnodePath;
     }
 
@@ -98,13 +97,13 @@ public class MapReference implements Serializable, Comparable<MapReference> {
         StringBuilder builder = new StringBuilder(containerName);
         builder.append(':');
 
-        if (vnodePath instanceof VBridgeIfPath) {
-            builder.append(vnodePath.toString());
-        } else {
+        if (vnodePath instanceof VBridgeMapPath) {
             // vnodePath is an instance of internal class.
             // So it should be converted to path to the vBridge.
-            builder.append(vnodePath.getTenantName()).append('.').
-                append(vnodePath.getBridgeName());
+            VBridgeMapPath bmpath = (VBridgeMapPath)vnodePath;
+            builder.append(bmpath.getBridgePath());
+        } else {
+            builder.append(vnodePath.toString());
         }
 
         return builder.toString();
@@ -122,7 +121,7 @@ public class MapReference implements Serializable, Comparable<MapReference> {
      *          by this instance is contained in the specified virtual node.
      *          Otherwise {@code false} is returned.
      */
-    public boolean isContained(String cname, VBridgePath path) {
+    public boolean isContained(String cname, VNodePath path) {
         return (containerName.equals(cname) && path.contains(vnodePath));
     }
 

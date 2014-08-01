@@ -48,6 +48,10 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalConfig;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
@@ -166,8 +170,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         ifpathlist.add(ifpath1);
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
-        Status st = vtnMgr.addBridgeInterface(ifpath2,
-                new VInterfaceConfig(null, Boolean.FALSE));
+        Status st = vtnMgr.addInterface(
+            ifpath2, new VInterfaceConfig(null, Boolean.FALSE));
         ifpathlist.add(ifpath2);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -774,7 +778,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub1.checkAllNull();
         stub2.checkAllNull();
 
-        // add a vbridge
+        // add a vBridge
         String bname = "bridge";
         VBridgePath bpath = new VBridgePath(tname, bname);
         st = mgr.addBridge(bpath, new VBridgeConfig(null));
@@ -790,11 +794,28 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub1.checkAllNull();
         stub2.checkAllNull();
 
-        // add a vInterface
+        // Add a vTerminal.
+        String vtname = "vterm";
+        VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+        st = mgr.addTerminal(vtpath, new VTerminalConfig(null));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        stub1.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+
+        mgr.removeVTNManagerAware(stub2);
+        mgr.addVTNManagerAware(stub2);
+        flushTasks();
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+        stub1.checkAllNull();
+        stub2.checkAllNull();
+
+        // add a vInterface to vBridge
         String ifname = "vif";
         VBridgeIfPath ifpath = new VBridgeIfPath(tname, bname, ifname);
         VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         stub1.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
@@ -805,10 +826,29 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
         stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
-        // set a PortMap
+        // Add a virtual interface to the vTerminal.
+        VTerminalIfPath vifpath = new VTerminalIfPath(vtpath, ifname);
+        st = mgr.addInterface(vifpath, ifconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        stub1.checkVIfInfo(1, vifpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.ADDED);
+
+        mgr.removeVTNManagerAware(stub2);
+        mgr.addVTNManagerAware(stub2);
+        flushTasks();
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.ADDED);
+        stub1.checkAllNull();
+        stub2.checkAllNull();
+
+        // set a PortMap to vBridge interface.
         Node node = NodeCreator.createOFNode(0L);
         SwitchPort port = new SwitchPort(
             NodeConnector.NodeConnectorIDType.OPENFLOW, String.valueOf(10));
@@ -831,6 +871,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
         stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
@@ -853,11 +895,43 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
         stub2.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.ADDED);
         stub1.checkAllNull();
         stub2.checkAllNull();
 
         mgr.addVTNManagerAware(stub2);
         flushTasks();
+
+        // Configure port mapping to the vTerminal interface.
+        SwitchPort vport = new SwitchPort(
+            NodeConnector.NodeConnectorIDType.OPENFLOW, String.valueOf(20));
+        PortMapConfig vpmconf = new PortMapConfig(node, vport, (short)0);
+        st = mgr.setPortMap(vifpath, vpmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // vTerminal and vInterface status should be changed from UNKNOWN to
+        // DOWN.
+        stub1.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub1.checkVIfInfo(1, vifpath, UpdateType.CHANGED);
+        stub1.checkPmapInfo(1, vifpath, vpmconf, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.CHANGED);
+        stub2.checkPmapInfo(1, vifpath, vpmconf, UpdateType.ADDED);
+
+        mgr.removeVTNManagerAware(stub2);
+        mgr.addVTNManagerAware(stub2);
+        flushTasks();
+        stub2.checkVtnInfo(1, tpath, UpdateType.ADDED);
+        stub2.checkVbrInfo(1, bpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, ifpath, UpdateType.ADDED);
+        stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.ADDED);
+        stub2.checkVlmapInfo(1, bpath, map.getId(), UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.ADDED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.ADDED);
+        stub2.checkPmapInfo(1, vifpath, vpmconf, UpdateType.ADDED);
+        stub1.checkAllNull();
+        stub2.checkAllNull();
 
         // modify a tenant setting
         st = mgr.modifyTenant(tpath, new VTenantConfig("desc"), false);
@@ -879,8 +953,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkAllNull();
 
         // modify a vbridge setting
-        st = mgr.modifyBridgeInterface(ifpath,
-                new VInterfaceConfig("interface", Boolean.TRUE), false);
+        st = mgr.modifyInterface(
+            ifpath, new VInterfaceConfig("interface", Boolean.TRUE), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         stub1.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         stub2.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
@@ -896,6 +970,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
         stub1.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
         stub2.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
+
+        // Change description of vTerminal.
+        st = mgr.modifyTerminal(
+            vtpath, new VTerminalConfig("vTerminal"), false);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        stub1.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
 
         // remove a VLANMap setting
         st = mgr.removeVlanMap(bpath, map.getId());
@@ -924,7 +1005,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         stub2.checkAllNull();
 
         // remove a vbridge interface
-        st = mgr.removeBridgeInterface(ifpath);
+        st = mgr.removeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         stub1.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
         stub2.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
@@ -938,6 +1019,58 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(StatusCode.SUCCESS, st.getCode());
         stub1.checkVbrInfo(1, bpath, UpdateType.REMOVED);
         stub2.checkVbrInfo(1, bpath, UpdateType.REMOVED);
+
+        flushTasks();
+        stub1.checkAllNull();
+        stub2.checkAllNull();
+
+        // Remove port mapping from vTerminal interface.
+        st = mgr.setPortMap(vifpath, null);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // vTerminal and vInterface status should be changed from DOWN to
+        // UNKNOWN.
+        stub1.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub1.checkVIfInfo(1, vifpath, UpdateType.CHANGED);
+        stub1.checkPmapInfo(1, vifpath, vpmconf, UpdateType.REMOVED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.CHANGED);
+        stub2.checkPmapInfo(1, vifpath, vpmconf, UpdateType.REMOVED);
+
+        // Configure port mapping into vTerminal interface again.
+        vpmconf = new PortMapConfig(node, vport, (short)4095);
+        st = mgr.setPortMap(vifpath, vpmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // vTerminal and vInterface status should be changed from UNKNOWN to
+        // DOWN.
+        stub1.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub1.checkVIfInfo(1, vifpath, UpdateType.CHANGED);
+        stub1.checkPmapInfo(1, vifpath, vpmconf, UpdateType.ADDED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.CHANGED);
+        stub2.checkPmapInfo(1, vifpath, vpmconf, UpdateType.ADDED);
+
+        // Remove vTerminal interface.
+        // This will change vTerminal status to DOWN to UNKNOWN.
+        st = mgr.removeInterface(vifpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        stub1.checkPmapInfo(1, vifpath, vpmconf, UpdateType.REMOVED);
+        stub1.checkVIfInfo(1, vifpath, UpdateType.REMOVED);
+        stub1.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+        stub2.checkPmapInfo(1, vifpath, vpmconf, UpdateType.REMOVED);
+        stub2.checkVIfInfo(1, vifpath, UpdateType.REMOVED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.CHANGED);
+
+        flushTasks();
+        stub1.checkAllNull();
+        stub2.checkAllNull();
+
+        // Remove vTerminal.
+        st = mgr.removeTerminal(vtpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        stub1.checkVTermInfo(1, vtpath, UpdateType.REMOVED);
+        stub2.checkVTermInfo(1, vtpath, UpdateType.REMOVED);
 
         flushTasks();
         stub1.checkAllNull();
@@ -1931,12 +2064,368 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
     }
 
     /**
+     * Test method for vTerminal APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#addTerminal(VTerminalPath, VTerminalConfig)}</li>
+     *   <li>{@link VTNManagerImpl#removeTerminal(VTerminalPath)}</li>
+     *   <li>{@link VTNManagerImpl#modifyTerminal(VTerminalPath, VTerminalConfig, boolean)}</li>
+     *   <li>{@link VTNManagerImpl#getTerminals(VTenantPath)}</li>
+     *   <li>{@link VTNManagerImpl#getTerminal(VTerminalPath)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminal() {
+        VTNManagerImpl mgr = vtnMgr;
+        String[] tnames = {
+            "vtn",
+            "123456789012345678901234567890_"
+        };
+        String[] vtnames = {
+            "v",
+            "vterm_1",
+            "012345678901234567890123456789_"
+        };
+
+        boolean first = true;
+        for (String tname : tnames) {
+            VTenantPath tpath = new VTenantPath(tname);
+            Status st = mgr.addTenant(tpath, new VTenantConfig(null));
+            assertEquals(tpath.toString(), StatusCode.SUCCESS, st.getCode());
+
+            for (String vtname : vtnames) {
+                // Ensure that vBridges and vTerminals are managed in
+                // different name space.
+                VBridgePath bpath = new VBridgePath(tpath, vtname);
+                st = mgr.addBridge(bpath, new VBridgeConfig(null));
+                assertEquals(StatusCode.SUCCESS, st.getCode());
+
+                VTerminalPath vtpath = new VTerminalPath(tpath, vtname);
+                for (String desc : createStrings("desc")) {
+                    VTerminalConfig vtconf = new VTerminalConfig(desc);
+                    String emsg = new StringBuilder("path=").append(vtpath).
+                        append(", conf=").append(vtconf).toString();
+
+                    st = mgr.addTerminal(vtpath, vtconf);
+                    assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+
+                    VTerminal vterm = null;
+                    try {
+                        vterm = mgr.getTerminal(vtpath);
+                    } catch (Exception e) {
+                        unexpected(e);
+                    }
+                    assertEquals(emsg, vtname, vterm.getName());
+                    assertEquals(emsg, desc, vterm.getDescription());
+                    assertEquals(emsg, VNodeState.UNKNOWN, vterm.getState());
+                    assertEquals(emsg, 0, vterm.getFaults());
+
+                    // modifyTerminal() test (!all)
+                    String olddesc = desc;
+                    for (String newdesc : createStrings("desc")) {
+                        vtconf = new VTerminalConfig(newdesc);
+                        st = mgr.modifyTerminal(vtpath, vtconf, false);
+
+                        String emsgMod = new StringBuilder("path=").
+                            append(vtpath).
+                            append(", conf=").append(vtconf).toString();
+
+                        vterm = null;
+                        try {
+                            vterm = mgr.getTerminal(vtpath);
+                        } catch (Exception e) {
+                            unexpected(e);
+                        }
+                        assertEquals(emsgMod, vtname, vterm.getName());
+                        assertEquals(emsgMod,
+                                     VNodeState.UNKNOWN, vterm.getState());
+                        assertEquals(emsgMod, 0, vterm.getFaults());
+                        if (newdesc == null) {
+                            assertEquals(emsgMod,
+                                         olddesc, vterm.getDescription());
+                        } else {
+                            assertEquals(emsgMod,
+                                         newdesc, vterm.getDescription());
+                            olddesc = newdesc;
+                        }
+                    }
+
+                    st = mgr.removeTerminal(vtpath);
+                    assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                }
+
+                if (first) {
+                    // modifyTerminal() test (all)
+                    VTerminalConfig vtconf = new VTerminalConfig("desc");
+                    String emsg = new StringBuilder("path=").append(vtpath).
+                        append(", conf=").append(vtconf).toString();
+                    st = mgr.addTerminal(vtpath, vtconf);
+                    assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                    for (String newdesc : createStrings("desc")) {
+                        vtconf = new VTerminalConfig(newdesc);
+                        String emsgMod = new StringBuilder("path=").
+                            append(vtpath).
+                            append(", conf=").append(vtconf).toString();
+
+                        st = mgr.modifyTerminal(vtpath, vtconf, true);
+                        assertEquals(emsgMod, StatusCode.SUCCESS, st.getCode());
+
+                        VTerminal vterm = null;
+                        try {
+                            vterm = mgr.getTerminal(vtpath);
+                        } catch (Exception e) {
+                            unexpected(e);
+                        }
+                        assertEquals(emsgMod, vtname, vterm.getName());
+                        assertEquals(emsgMod, newdesc, vterm.getDescription());
+                        assertEquals(emsgMod,
+                                     VNodeState.UNKNOWN, vterm.getState());
+                        assertEquals(emsgMod, 0, vterm.getFaults());
+                    }
+
+                    st = mgr.removeTerminal(vtpath);
+                    assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+                    first = false;
+                }
+            }
+
+            try {
+                List<VTerminal> list = mgr.getTerminals(tpath);
+                assertEquals(tpath.toString(), 0, list.size());
+            } catch (VTNException e) {
+                unexpected(e);
+            }
+            st = mgr.removeTenant(tpath);
+            assertEquals(tpath.toString(),
+                         StatusCode.SUCCESS, st.getCode());
+        }
+
+        // Create multiple vTerminals.
+        for (String tname : tnames) {
+            VTenantPath tpath = new VTenantPath(tname);
+            Status st = mgr.addTenant(tpath, new VTenantConfig(null));
+            assertEquals(tpath.toString(), StatusCode.SUCCESS, st.getCode());
+
+            HashMap<String, VTerminalConfig> confMap =
+                new HashMap<String, VTerminalConfig>();
+            for (String vtname : vtnames) {
+                VTerminalPath vtpath = new VTerminalPath(tpath, vtname);
+                String desc = "vterm:" + vtname;
+                VTerminalConfig vtconf = new VTerminalConfig(desc);
+                confMap.put(vtname, vtconf);
+
+                st = mgr.addTerminal(vtpath, vtconf);
+                String emsg = new StringBuilder("path=").append(vtpath).
+                    append(", conf=").append(vtconf).toString();
+                assertEquals(emsg,  StatusCode.SUCCESS, st.getCode());
+            }
+            try {
+                List<VTerminal> list = mgr.getTerminals(tpath);
+                for (VTerminal vterm: list) {
+                    String name = vterm.getName();
+                    VTerminalConfig vtconf = confMap.remove(name);
+                    assertNotNull(vtconf);
+                    assertEquals(vtconf.getDescription(),
+                                 vterm.getDescription());
+                    assertEquals(VNodeState.UNKNOWN, vterm.getState());
+                    assertEquals(0, vterm.getFaults());
+                }
+            } catch (VTNException e) {
+                unexpected(e);
+            }
+            assertTrue(confMap.isEmpty());
+
+            st = mgr.removeTenant(tpath);
+            assertEquals(tpath.toString(), StatusCode.SUCCESS, st.getCode());
+        }
+    }
+
+    /**
+     * Error test case for vTerminal APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#addTerminal(VTerminalPath, VTerminalConfig)}</li>
+     *   <li>{@link VTNManagerImpl#removeTerminal(VTerminalPath)}</li>
+     *   <li>{@link VTNManagerImpl#modifyTerminal(VTerminalPath, VTerminalConfig, boolean)}</li>
+     *   <li>{@link VTNManagerImpl#getTerminals(VTenantPath)}</li>
+     *   <li>{@link VTNManagerImpl#getTerminal(VTerminalPath)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminalInvalidCase() {
+        VTNManagerImpl mgr = vtnMgr;
+
+        String tname = "tenant";
+        VTenantPath tpath = new VTenantPath(tname);
+        putTenant(mgr, tpath);
+
+        VTerminalConfig vtconf = new VTerminalConfig(null);
+
+        // Specifying invalid path.
+        VTerminalPath[] badpaths = {
+            null,
+            new VTerminalPath(tname, null),
+            new VTerminalPath((String)null, "vterm"),
+        };
+        for (VTerminalPath path: badpaths) {
+            String msg = "path=" + path;
+            Status st = mgr.addTerminal(path, vtconf);
+            assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+
+            st = mgr.modifyTerminal(path, vtconf, true);
+            assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+
+            st = mgr.removeTerminal(path);
+            assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+
+            try {
+                mgr.getTerminal(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(msg,
+                             StatusCode.BADREQUEST, e.getStatus().getCode());
+            }
+        }
+
+        // Empty node name.
+        VTerminalPath badpath = new VTerminalPath(tname, "");
+        Status st = mgr.addTerminal(badpath, vtconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        // Too long node name.
+        badpath = new VTerminalPath(tname, "123456789012345678901234567890_1");
+        st = mgr.addTerminal(badpath, vtconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        String[] invChars = {":", "/", ","};
+        for (String invChar: invChars) {
+            String[] names = {
+                // Starts with invalid character.
+                invChar + "name",
+
+                // Ends with invalid character.
+                "name" + invChar,
+
+                // Contains invalid character.
+                "vterm" + invChar + "name",
+            };
+            for (String name: names) {
+                badpath = new VTerminalPath(tname, name);
+                String msg = "path=" + badpath;
+                st = mgr.addTerminal(badpath, vtconf);
+                assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+            }
+        }
+
+        // Node name must not start with "_".
+        badpath = new VTerminalPath(tname, "_vterm");
+        st = mgr.addTerminal(badpath, vtconf);
+        assertEquals("path=" + badpath,
+                     StatusCode.BADREQUEST, st.getCode());
+
+        // Specify bad path to getTerminals().
+        VTenantPath[] badtpaths = {
+            null,
+            new VTenantPath(null),
+        };
+        for (VTenantPath path: badtpaths) {
+            try {
+                mgr.getTerminals(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
+            }
+        }
+
+        // Specify null configuration.
+        String termName = "vterm";
+        VTerminalPath vtpath = new VTerminalPath(tname, termName);
+        st = mgr.addTerminal(vtpath, null);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        // Create a vTerminal.
+        st = mgr.addTerminal(vtpath, vtconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // Try to duplicate vTerminal.
+        st = mgr.addTerminal(vtpath, vtconf);
+        assertEquals(StatusCode.CONFLICT, st.getCode());
+
+        // Specify path to unknown node.
+        VTerminalPath[] unknownPaths = {
+            new VTerminalPath(tname, "v"),
+            new VTerminalPath(tname, "vterm1"),
+            new VTerminalPath("VTN", termName),
+            new VTerminalPath("VTN1", termName),
+        };
+        for (VTerminalPath path: unknownPaths) {
+            String emsg = "path=" + path;
+            st = mgr.removeTerminal(path);
+            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
+
+            st = mgr.modifyTerminal(path, vtconf, true);
+            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
+
+            try {
+                mgr.getTerminal(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(emsg,
+                             StatusCode.NOTFOUND, e.getStatus().getCode());
+            }
+        }
+
+        // Try to create vTerminal into unknown VTN.
+        badpath = new VTerminalPath("VTN", termName);
+        st = mgr.addTerminal(badpath, vtconf);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+
+        // Remove tenant. This will remove vTerminal in the tenant.
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        st = mgr.removeTerminal(vtpath);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+        st = mgr.modifyTerminal(vtpath, vtconf, true);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+        st = mgr.addTerminal(vtpath, vtconf);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+
+        try {
+            mgr.getTerminal(vtpath);
+            fail("An exception should be thrown.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        try {
+            mgr.getTerminals(tpath);
+            fail("An exception should be thrown.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        // Container mode test.
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        try {
+            st = mgr.addTerminal(vtpath, vtconf);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+            st = mgr.modifyTerminal(vtpath, vtconf, true);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+            st = mgr.removeTerminal(vtpath);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        } finally {
+            mgr.containerModeUpdated(UpdateType.REMOVED);
+        }
+    }
+
+    /**
      * Test method for
-     * {@link VTNManagerImpl#addBridgeInterface(VBridgeIfPath, VInterfaceConfig)},
-     * {@link VTNManagerImpl#modifyBridgeInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
-     * {@link VTNManagerImpl#removeBridgeInterface(VBridgeIfPath)},
-     * {@link VTNManagerImpl#getBridgeInterfaces(VBridgePath)},
-     * {@link VTNManagerImpl#getBridgeInterface(VBridgeIfPath)}.
+     * {@link VTNManagerImpl#addInterface(VBridgeIfPath, VInterfaceConfig)},
+     * {@link VTNManagerImpl#modifyInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
+     * {@link VTNManagerImpl#removeInterface(VBridgeIfPath)},
+     * {@link VTNManagerImpl#getInterfaces(VBridgePath)},
+     * {@link VTNManagerImpl#getInterface(VBridgeIfPath)}.
      */
     @Test
     public void testBridgeInterface() {
@@ -1967,7 +2456,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                 List<VInterface> list = null;
                 try {
-                    list = mgr.getBridgeInterfaces(bpath);
+                    list = mgr.getInterfaces(bpath);
                 } catch (Exception e) {
                     unexpected(e);
                 }
@@ -1981,13 +2470,13 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                     VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
 
-                    // test addBridgeInterface() and getBridgeInterface()
+                    // test addInterface() and getInterface()
                     for (String desc : createStrings("desc")) {
                         for (Boolean enabled : createBooleans()) {
                             VInterfaceConfig ifconf =
                                 new VInterfaceConfig(desc, enabled);
 
-                            st = mgr.addBridgeInterface(ifp, ifconf);
+                            st = mgr.addInterface(ifp, ifconf);
                             String emsg = "(VBridgeIfPath)" + ifp.toString() +
                                 ",(VInterfaceConfig)" + ifconf.toString();
                             assertEquals(emsg, StatusCode.SUCCESS,
@@ -1995,7 +2484,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                             VInterface vif = null;
                             try {
-                                vif = mgr.getBridgeInterface(ifp);
+                                vif = mgr.getInterface(ifp);
                             } catch (Exception e) {
                                 unexpected(e);
                             }
@@ -2025,14 +2514,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                             assertEquals(emsg, VNodeState.UNKNOWN,
                                          brdg.getState());
 
-                            st = mgr.removeBridgeInterface(ifp);
+                            st = mgr.removeInterface(ifp);
                             assertEquals(emsg, StatusCode.SUCCESS,
                                          st.getCode());
                         }
                     }
 
-                    // for modifyBridgeInterface (all == false)
-                    st = mgr.addBridgeInterface(
+                    // for modifyInterface (all == false)
+                    st = mgr.addInterface(
                         ifp, new VInterfaceConfig("desc", Boolean.FALSE));
                     assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2042,7 +2531,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                         for (Boolean enabled : createBooleans()) {
                             VInterfaceConfig ifconf =
                                 new VInterfaceConfig(desc, enabled);
-                            st = mgr.modifyBridgeInterface(ifp, ifconf, false);
+                            st = mgr.modifyInterface(ifp, ifconf, false);
                             String emsg = "(VBridgeIfPath)" + ifp.toString() +
                                 "(VInterfaceConfig)" + ifconf.toString();
                             assertEquals(emsg, StatusCode.SUCCESS,
@@ -2050,7 +2539,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                             VInterface vif = null;
                             try {
-                                vif = mgr.getBridgeInterface(ifp);
+                                vif = mgr.getInterface(ifp);
                             } catch (Exception e) {
                                 unexpected(e);
                             }
@@ -2094,8 +2583,8 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                         }
                     }
 
-                    // for modifyBridgeInterface (all == true)
-                    st = mgr.modifyBridgeInterface(
+                    // for modifyInterface (all == true)
+                    st = mgr.modifyInterface(
                         ifp, new VInterfaceConfig("desc", Boolean.FALSE), true);
                     assertEquals("(VBridgeIfPath)" + ifp.toString(),
                                  StatusCode.SUCCESS, st.getCode());
@@ -2103,7 +2592,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                         for (Boolean enabled : createBooleans()) {
                             VInterfaceConfig ifconf =
                                 new VInterfaceConfig(desc, enabled);
-                            st = mgr.modifyBridgeInterface(ifp, ifconf, true);
+                            st = mgr.modifyInterface(ifp, ifconf, true);
 
                             String emsg = "(VBridgeIfPath)" + ifp.toString() +
                                 "(VInterfaceConfig)" + ifconf.toString();
@@ -2112,7 +2601,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                             VInterface vif = null;
                             try {
-                                vif = mgr.getBridgeInterface(ifp);
+                                vif = mgr.getInterface(ifp);
                             } catch (Exception e) {
                                 unexpected(e);
                             }
@@ -2148,7 +2637,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                 list = null;
                 try {
-                    list = mgr.getBridgeInterfaces(bpath);
+                    list = mgr.getInterfaces(bpath);
                 } catch (Exception e) {
                     unexpected(e);
                 }
@@ -2164,14 +2653,14 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
     /**
      * Test method for invalid cases of
-     * {@link VTNManagerImpl#addBridgeInterface(VBridgeIfPath, VInterfaceConfig)},
-     * {@link VTNManagerImpl#modifyBridgeInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
-     * {@link VTNManagerImpl#removeBridgeInterface(VBridgeIfPath)},
-     * {@link VTNManagerImpl#getBridgeInterfaces(VBridgePath)},
-     * {@link VTNManagerImpl#getBridgeInterface(VBridgeIfPath)}
+     * {@link VTNManagerImpl#addInterface(VBridgeIfPath, VInterfaceConfig)},
+     * {@link VTNManagerImpl#modifyInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
+     * {@link VTNManagerImpl#removeInterface(VBridgeIfPath)},
+     * {@link VTNManagerImpl#getInterfaces(VBridgePath)},
+     * {@link VTNManagerImpl#getInterface(VBridgeIfPath)}
      */
     @Test
-    public void testBridgeInterfaceInvalidCase() {
+    public void testInterfaceInvalidCase() {
         VTNManagerImpl mgr = vtnMgr;
 
         String tname = "tenant";
@@ -2195,50 +2684,50 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VInterfaceConfig[] ifclist = new VInterfaceConfig[] {null};
 
         for (VBridgeIfPath path : ifplist) {
-            st = mgr.addBridgeInterface(path, ifconf);
+            st = mgr.addInterface(path, ifconf);
             assertEquals((path == null) ? "null" : path.toString(),
                          StatusCode.BADREQUEST, st.getCode());
         }
 
         for (VInterfaceConfig conf : ifclist) {
-            st = mgr.addBridgeInterface(ifpath, conf);
+            st = mgr.addInterface(ifpath, conf);
             assertEquals((conf == null) ? "null" : conf.toString(),
                          StatusCode.BADREQUEST, st.getCode());
         }
 
-        // addBridgeInterface() also return BADREQUEST in these case.
-        st = mgr.addBridgeInterface(new VBridgeIfPath(tname, bname, ""),
+        // addInterface() also return BADREQUEST in these case.
+        st = mgr.addInterface(new VBridgeIfPath(tname, bname, ""),
                                     ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(
+        st = mgr.addInterface(
             new VBridgeIfPath(tname, bname, "123456789012345678901234567890_1"),
             ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(
+        st = mgr.addInterface(
             new VBridgeIfPath(tname, bname, "123456789012345678901234567890:"),
             ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(
+        st = mgr.addInterface(
             new VBridgeIfPath(tname, bname, "123456789012345678901234567890 "),
             ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
-        st = mgr.addBridgeInterface(
+        st = mgr.addInterface(
             new VBridgeIfPath(tname, bname, "_1234567890"), ifconf);
         assertEquals(StatusCode.BADREQUEST, st.getCode());
 
         // add Interface before modify and remove()
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         for (VBridgeIfPath path : ifplist) {
             String emsg = (path == null) ? "null" : path.toString();
-            st = mgr.modifyBridgeInterface(path, ifconf, false);
+            st = mgr.modifyInterface(path, ifconf, false);
             assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
-            st = mgr.removeBridgeInterface(path);
+            st = mgr.removeInterface(path);
             assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
 
             try {
-                mgr.getBridgeInterface(path);
+                mgr.getInterface(path);
                 fail("Throwing exception was expected.");
             } catch (VTNException e) {
                 assertEquals(emsg, StatusCode.BADREQUEST,
@@ -2247,20 +2736,19 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         }
 
         for (VInterfaceConfig conf : ifclist) {
-            st = mgr.modifyBridgeInterface(ifpath, conf, true);
+            st = mgr.modifyInterface(ifpath, conf, true);
             assertEquals((conf == null) ? "null" : conf.toString(),
                          StatusCode.BADREQUEST, st.getCode());
         }
 
         try {
-            mgr.getBridgeInterfaces(null);
+            mgr.getInterfaces((VBridgeIfPath)null);
             fail("Throwing exception was expected.");
         } catch (VTNException e) {
             assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
         }
-
         // conflict
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.CONFLICT, st.getCode());
 
         // not found
@@ -2272,20 +2760,20 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         for (VBridgeIfPath path : nbplist) {
             String emsg = (path == null) ? "null" : path.toString();
-            st = mgr.removeBridgeInterface(path);
+            st = mgr.removeInterface(path);
             assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
 
-            st = mgr.modifyBridgeInterface(path, ifconf, false);
+            st = mgr.modifyInterface(path, ifconf, false);
             assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
 
             if (!(path.getTenantName().equals(tname) &&
                   path.getBridgeName().equals(bname))) {
-                st = mgr.addBridgeInterface(path, ifconf);
+                st = mgr.addInterface(path, ifconf);
                 assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
             }
 
             try {
-                mgr.getBridgeInterface(path);
+                mgr.getInterface(path);
                 fail("Throwing exception was expected.");
             } catch (VTNException e) {
                 assertEquals(emsg,
@@ -2296,21 +2784,21 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
-        st = mgr.removeBridgeInterface(ifpath);
+        st = mgr.removeInterface(ifpath);
         assertEquals(StatusCode.NOTFOUND, st.getCode());
 
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.NOTFOUND, st.getCode());
 
         try {
-            mgr.getBridgeInterface(ifpath);
+            mgr.getInterface(ifpath);
             fail("Throwing exception was expected.");
         } catch (VTNException e) {
             assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
         }
 
         try {
-            mgr.getBridgeInterfaces(bpath);
+            mgr.getInterfaces(bpath);
             fail("Throwing exception was expected.");
         } catch (VTNException e) {
             assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
@@ -2318,13 +2806,460 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // in container mode
         mgr.containerModeUpdated(UpdateType.ADDED);
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
-        st = mgr.modifyBridgeInterface(ifpath, ifconf, true);
+        st = mgr.modifyInterface(ifpath, ifconf, true);
         assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
-        st = mgr.removeBridgeInterface(ifpath);
+        st = mgr.removeInterface(ifpath);
         assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
         mgr.containerModeUpdated(UpdateType.REMOVED);
+    }
+
+    /**
+     * Test method for vTerminal interface APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#addInterface(VTerminalIfPath, VInterfaceConfig)}</li>
+     *   <li>{@link VTNManagerImpl#modifyInterface(VTerminalIfPath, VInterfaceConfig, boolean)}</li>
+     *   <li>{@link VTNManagerImpl#removeInterface(VTerminalIfPath)}</li>
+     *   <li>{@link VTNManagerImpl#getInterfaces(VTerminalPath)}</li>
+     *   <li>{@link VTNManagerImpl#getInterface(VTerminalIfPath)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminalInterface() {
+        VTNManagerImpl mgr = vtnMgr;
+        String[] tnames = {
+            "vtn",
+            "123456789012345678901234567890_"
+        };
+        String[] vtnames = {
+            "vterm",
+            "012345678901234567890123456789_"
+        };
+        String[] vifnames = {
+            "v",
+            "vterm_if",
+            "012345678901234567890123456789_"
+        };
+        String[] descs = {
+            null,
+            "desc1",
+            "desc2",
+        };
+
+        for (String tname: tnames) {
+            VTenantPath tpath = new VTenantPath(tname);
+            Status st = mgr.addTenant(tpath, new VTenantConfig(null));
+            assertEquals("path=" + tpath, StatusCode.SUCCESS, st.getCode());
+
+            for (String vtname: vtnames) {
+                VTerminalPath vtpath = new VTerminalPath(tpath, vtname);
+                String vemsg = "path=" + vtpath;
+                VTerminalConfig vtconf = new VTerminalConfig(null);
+                st = mgr.addTerminal(vtpath, vtconf);
+                assertEquals(vemsg, StatusCode.SUCCESS, st.getCode());
+
+                List<VInterface> list = null;
+                try {
+                    list = mgr.getInterfaces(vtpath);
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+                assertEquals(vemsg, 0, list.size());
+
+                HashMap<String, VInterfaceConfig> confMap =
+                    new HashMap<String, VInterfaceConfig>();
+                for (String ifname: vifnames) {
+                    VTerminalIfPath ipath =
+                        new VTerminalIfPath(vtpath, ifname);
+
+                    // Test case for addInterface() and getInterface().
+                    for (String desc: descs) {
+                        for (Boolean enabled: createBooleans()) {
+                            VInterfaceConfig ifconf =
+                                new VInterfaceConfig(desc, enabled);
+                            String emsg = new StringBuilder("path=").
+                                append(ipath).
+                                append(", conf=").append(ifconf).toString();
+
+                            st = mgr.addInterface(ipath, ifconf);
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
+
+                            VInterface vif = null;
+                            try {
+                                vif = mgr.getInterface(ipath);
+                            } catch (Exception e) {
+                                unexpected(e);
+                            }
+
+                            assertEquals(emsg, ifname, vif.getName());
+                            assertEquals(emsg, desc, vif.getDescription());
+                            if (enabled == null) {
+                                assertEquals(emsg, Boolean.TRUE,
+                                             vif.getEnabled());
+                            } else {
+                                assertEquals(emsg, enabled, vif.getEnabled());
+                            }
+                            if (enabled == Boolean.FALSE) {
+                                assertEquals(emsg, VNodeState.DOWN,
+                                             vif.getState());
+                            } else {
+                                assertEquals(emsg, VNodeState.UNKNOWN,
+                                             vif.getState());
+                            }
+
+                            VTerminal vterm = null;
+                            try {
+                                vterm = mgr.getTerminal(vtpath);
+                            } catch (VTNException e) {
+                                unexpected(e);
+                            }
+                            assertEquals(emsg, VNodeState.UNKNOWN,
+                                         vterm.getState());
+
+                            st = mgr.removeInterface(ipath);
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
+                        }
+                    }
+
+                    // modifyInterface() test (!all)
+                    st = mgr.addInterface(
+                        ipath, new VInterfaceConfig("desc", Boolean.FALSE));
+                    assertEquals(StatusCode.SUCCESS, st.getCode());
+
+                    String olddesc = "desc";
+                    Boolean oldenabled = Boolean.FALSE;
+                    for (String desc: descs) {
+                        for (Boolean enabled: createBooleans()) {
+                            VInterfaceConfig ifconf =
+                                new VInterfaceConfig(desc, enabled);
+                            String emsg = new StringBuilder("path=").
+                                append(ipath).
+                                append(", conf=").append(ifconf).toString();
+
+                            st = mgr.modifyInterface(ipath, ifconf, false);
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
+
+                            VInterface vif = null;
+                            try {
+                                vif = mgr.getInterface(ipath);
+                            } catch (Exception e) {
+                                unexpected(e);
+                            }
+
+                            assertEquals(emsg, ifname, vif.getName());
+
+                            if (desc == null) {
+                                assertEquals(emsg, olddesc,
+                                             vif.getDescription());
+                            } else {
+                                assertEquals(emsg, desc, vif.getDescription());
+                            }
+
+                            Boolean curenabled = enabled;
+                            if (enabled == null) {
+                                assertEquals(emsg, oldenabled,
+                                             vif.getEnabled());
+                                curenabled = oldenabled;
+                            } else {
+                                assertEquals(emsg, enabled, vif.getEnabled());
+                            }
+
+                            if (curenabled == Boolean.FALSE) {
+                                assertEquals(emsg, VNodeState.DOWN,
+                                             vif.getState());
+                            } else {
+                                assertEquals(emsg, VNodeState.UNKNOWN,
+                                             vif.getState());
+                            }
+
+                            VTerminal vterm = null;
+                            try {
+                                vterm = mgr.getTerminal(vtpath);
+                            } catch (VTNException e) {
+                                unexpected(e);
+                            }
+                            assertEquals(emsg, VNodeState.UNKNOWN,
+                                         vterm.getState());
+
+                            olddesc = vif.getDescription();
+                            oldenabled = vif.getEnabled();
+                        }
+                    }
+
+                    // modifyInterface() test (all)
+                    st = mgr.modifyInterface(
+                        ipath, new VInterfaceConfig("desc", Boolean.FALSE),
+                        true);
+                    assertEquals(StatusCode.SUCCESS, st.getCode());
+                    for (String desc: descs) {
+                        for (Boolean enabled: createBooleans()) {
+                            VInterfaceConfig ifconf =
+                                new VInterfaceConfig(desc, enabled);
+                            String emsg = new StringBuilder("path=").
+                                append(ipath).
+                                append(", conf=").append(ifconf).toString();
+                            st = mgr.modifyInterface(ipath, ifconf, true);
+                            assertEquals(emsg, StatusCode.SUCCESS,
+                                         st.getCode());
+
+                            VInterface vif = null;
+                            try {
+                                vif = mgr.getInterface(ipath);
+                            } catch (Exception e) {
+                                unexpected(e);
+                            }
+
+                            assertEquals(emsg, ifname, vif.getName());
+                            assertEquals(emsg, desc, vif.getDescription());
+                            if (enabled == null) {
+                                assertEquals(emsg, Boolean.TRUE,
+                                             vif.getEnabled());
+                            } else {
+                                assertEquals(emsg, enabled, vif.getEnabled());
+                            }
+
+                            if (enabled == Boolean.FALSE) {
+                                assertEquals(emsg, VNodeState.DOWN,
+                                             vif.getState());
+                            } else {
+                                assertEquals(emsg, VNodeState.UNKNOWN,
+                                             vif.getState());
+                            }
+
+                            VTerminal vterm = null;
+                            try {
+                                vterm = mgr.getTerminal(vtpath);
+                            } catch (VTNException e) {
+                                unexpected(e);
+                            }
+                            assertEquals(emsg, VNodeState.UNKNOWN,
+                                         vterm.getState());
+                        }
+                    }
+
+                    VInterfaceConfig ifconf =
+                        new VInterfaceConfig("description for " + ifname,
+                                             Boolean.TRUE);
+                    st = mgr.modifyInterface(ipath, ifconf, true);
+                    assertEquals(StatusCode.SUCCESS, st.getCode());
+                    confMap.put(ifname, ifconf);
+                }
+
+                list = null;
+                try {
+                    list = mgr.getInterfaces(vtpath);
+                    for (VInterface vif: list) {
+                        String name = vif.getName();
+                        VInterfaceConfig ifconf = confMap.remove(name);
+                        assertNotNull(ifconf);
+                        assertEquals(ifconf.getDescription(),
+                                     vif.getDescription());
+                        assertEquals(ifconf.getEnabled(), vif.getEnabled());
+                    }
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+                assertTrue(confMap.isEmpty());
+            }
+
+            st = mgr.removeTenant(tpath);
+            assertEquals("path=" + tpath, StatusCode.SUCCESS, st.getCode());
+        }
+    }
+
+    /**
+     * Error test case for vTerminal interface APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#addInterface(VTerminalIfPath, VInterfaceConfig)}</li>
+     *   <li>{@link VTNManagerImpl#modifyInterface(VTerminalIfPath, VInterfaceConfig, boolean)}</li>
+     *   <li>{@link VTNManagerImpl#removeInterface(VTerminalIfPath)}</li>
+     *   <li>{@link VTNManagerImpl#getInterfaces(VTerminalPath)}</li>
+     *   <li>{@link VTNManagerImpl#getInterface(VTerminalIfPath)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminalInterfaceInvalidCase() {
+        VTNManagerImpl mgr = vtnMgr;
+
+        String tname = "tenant";
+        VTenantPath tpath = new VTenantPath(tname);
+        String vtname = "vterm";
+        VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+        putTerminal(mgr, vtpath);
+        VInterfaceConfig iconf = new VInterfaceConfig(null, null);
+
+        // Specifying invalid path.
+        String ifname = "interface";
+        VTerminalIfPath[] badpaths = {
+            null,
+            new VTerminalIfPath(tname, vtname, null),
+            new VTerminalIfPath(tname, null, ifname),
+            new VTerminalIfPath(null, vtname, ifname),
+        };
+        for (VTerminalIfPath path: badpaths) {
+            String msg = "path=" + path;
+            Status st = mgr.addInterface(path, iconf);
+            assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+
+            st = mgr.modifyInterface(path, iconf, true);
+            assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+
+            st = mgr.removeInterface(path);
+            assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+
+            try {
+                mgr.getInterface(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(msg,
+                             StatusCode.BADREQUEST, e.getStatus().getCode());
+            }
+        }
+
+        // Empty node name.
+        VTerminalIfPath badpath = new VTerminalIfPath(tname, vtname, "");
+        Status st = mgr.addInterface(badpath, iconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        // Too long node name.
+        badpath = new VTerminalIfPath(tname, vtname,
+                                      "123456789012345678901234567890_1");
+        st = mgr.addInterface(badpath, iconf);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        String[] invChars = {":", "/", ","};
+        for (String invChar: invChars) {
+            String[] names = {
+                // Starts with invalid character.
+                invChar + "name",
+
+                // Ends with invalid character.
+                "name" + invChar,
+
+                // Contains invalid character.
+                "vterm" + invChar + "name",
+            };
+            for (String name: names) {
+                badpath = new VTerminalIfPath(tname, vtname, name);
+                String msg = "path=" + badpath;
+                st = mgr.addInterface(badpath, iconf);
+                assertEquals(msg, StatusCode.BADREQUEST, st.getCode());
+            }
+        }
+
+        // Node name must not start with "_".
+        badpath = new VTerminalIfPath(tname, vtname, "_vterm");
+        st = mgr.addInterface(badpath, iconf);
+        assertEquals("path=" + badpath, StatusCode.BADREQUEST, st.getCode());
+
+        // Specify bad path to getInterfaces().
+        VTerminalPath[] badvtpaths = {
+            null,
+            new VTerminalPath(tname, null),
+            new VTerminalPath((String)null, "vterm"),
+        };
+        for (VTerminalPath path: badvtpaths) {
+            try {
+                mgr.getInterfaces(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
+            }
+        }
+
+        // Specify null configuration.
+        VTerminalIfPath ipath = new VTerminalIfPath(vtpath, ifname);
+        st = mgr.addInterface(ipath, null);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        // Create a vTerminal interface.
+        st = mgr.addInterface(ipath, iconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // Try to duplicate vTerminal interface.
+        st = mgr.addInterface(ipath, iconf);
+        assertEquals(StatusCode.CONFLICT, st.getCode());
+
+        // Only one interface can be configured in vTerminal.
+        for (String name: new String[]{"if", "interface_2", "if_3"}) {
+            badpath = new VTerminalIfPath(vtpath, name);
+            st = mgr.addInterface(ipath, iconf);
+            assertEquals(StatusCode.CONFLICT, st.getCode());
+        }
+
+        // Specify path to unknown node.
+        String unknown = "unknown";
+        VTerminalIfPath[] unknownPaths = {
+            new VTerminalIfPath(tname, vtname, unknown),
+            new VTerminalIfPath(tname, unknown, ifname),
+            new VTerminalIfPath(unknown, vtname, ifname),
+        };
+        for (VTerminalIfPath path: unknownPaths) {
+            String emsg = "path=" + path;
+            st = mgr.removeInterface(path);
+            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
+
+            st = mgr.modifyInterface(path, iconf, true);
+            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
+
+            try {
+                mgr.getInterface(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(emsg,
+                             StatusCode.NOTFOUND, e.getStatus().getCode());
+            }
+
+            if (!unknown.equals(path.getInterfaceName())) {
+                // Try to create interface into unknown vTerminal.
+                st = mgr.addInterface(path, iconf);
+                assertEquals(StatusCode.NOTFOUND, st.getCode());
+            }
+        }
+
+        // Remove tenant. This will remove vTerminal and interfaces.
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        st = mgr.removeInterface(ipath);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+        st = mgr.modifyInterface(ipath, iconf, true);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+        st = mgr.addInterface(ipath, iconf);
+        assertEquals(StatusCode.NOTFOUND, st.getCode());
+
+        try {
+            mgr.getInterface(ipath);
+            fail("An exception should be thrown.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        try {
+            mgr.getInterfaces(vtpath);
+            fail("An exception should be thrown.");
+        } catch (VTNException e) {
+            assertEquals(StatusCode.NOTFOUND, e.getStatus().getCode());
+        }
+
+        // Container mode test.
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        try {
+            st = mgr.addInterface(ipath, iconf);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+            st = mgr.modifyInterface(ipath, iconf, true);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+            st = mgr.removeInterface(ipath);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        } finally {
+            mgr.containerModeUpdated(UpdateType.REMOVED);
+        }
     }
 
     /**
@@ -2802,7 +3737,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
                 VInterface bif = null;
                 try {
-                    bif = mgr.getBridgeInterface(ifp);
+                    bif = mgr.getInterface(ifp);
                 } catch (VTNException e) {
                     unexpected(e);
                 }
@@ -2863,7 +3798,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         // if specified port is not exist, duplicate portmap success.
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, "vinterface3");
-        st = mgr.addBridgeInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
         st = mgr.setPortMap(ifp3, pmconf1);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2984,6 +3919,291 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.setPortMap(ifp, pmconf);
         assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
         mgr.containerModeUpdated(UpdateType.REMOVED);
+
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Test method for vTerminal interface port mapping APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#getPortMap(VTerminalIfPath)}</li>
+     *   <li>{@link VTNManagerImpl#setPortMap(VTerminalIfPath, PortMapConfig)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminalPortMap() {
+        VTNManagerImpl mgr = vtnMgr;
+        short[] vlans = new short[] {0, 10, 4095};
+        Status st = null;
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String vtname = "vterm";
+        VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+        VTerminalIfPath ipath = new VTerminalIfPath(vtpath, "vinterface");
+        putInterface(mgr, ipath);
+
+        PortMap pmap = null;
+        try {
+            pmap = mgr.getPortMap(ipath);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        assertNull(pmap);
+
+        Node node = NodeCreator.createOFNode(0L);
+        SwitchPort[] ports = new SwitchPort[] {
+            new SwitchPort("port-10",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
+            new SwitchPort(null, NodeConnector.NodeConnectorIDType.OPENFLOW,
+                           "11"),
+            new SwitchPort("port-10", null, null),
+            new SwitchPort("port-10"),
+            new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "13"),
+        };
+
+        for (SwitchPort port: ports) {
+            for (short vlan: vlans) {
+                PortMapConfig pmconf = new PortMapConfig(node, port, vlan);
+                String emsg = "conf=" + pmconf;
+
+                st = mgr.setPortMap(ipath, pmconf);
+                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+
+                PortMap map = null;
+                try {
+                    map = mgr.getPortMap(ipath);
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+                assertEquals(emsg, pmconf, map.getConfig());
+                assertNull(emsg, map.getNodeConnector());
+
+                VInterface vif = null;
+                try {
+                    vif = mgr.getInterface(ipath);
+                } catch (VTNException e) {
+                    unexpected(e);
+                }
+                assertEquals(emsg, VNodeState.DOWN, vif.getState());
+
+                VTerminal vterm = null;
+                try {
+                    vterm = mgr.getTerminal(vtpath);
+                } catch (VTNException e) {
+                    unexpected(e);
+                }
+                assertEquals(emsg, VNodeState.DOWN, vterm.getState());
+            }
+        }
+
+        st = mgr.setPortMap(ipath, null);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        PortMap map = null;
+        try {
+            map = mgr.getPortMap(ipath);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        assertNull(map);
+
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // Create multiple vTerminal interfaces.
+        String tname1 = "vtn1";
+        String tname2 = "vtn2";
+
+        VTerminalIfPath[] vipaths1 = {
+            new VTerminalIfPath(tname1, "vterm1", "if_1"),
+            new VTerminalIfPath(tname1, "vterm1", "if_2"),
+            new VTerminalIfPath(tname1, "vterm2", "if_1"),
+            new VTerminalIfPath(tname1, "vterm2", "if_2"),
+        };
+        VTerminalIfPath[] vipaths2 = {
+            new VTerminalIfPath(tname2, "vterm1", "if_1"),
+            new VTerminalIfPath(tname2, "vterm1", "if_2"),
+            new VTerminalIfPath(tname2, "vterm2", "if_1"),
+            new VTerminalIfPath(tname2, "vterm2", "if_2"),
+        };
+
+        for (VTerminalIfPath path: vipaths1) {
+            putInterface(mgr, path);
+        }
+        for (VTerminalIfPath path: vipaths2) {
+            putInterface(mgr, path);
+        }
+
+        HashMap<VTerminalIfPath, PortMapConfig> confMap =
+            new HashMap<VTerminalIfPath, PortMapConfig>();
+        Node node1 = NodeCreator.createOFNode(0L);
+        SwitchPort port1 =
+            new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, "10");
+
+        for (int i = 0; i < vipaths1.length; i++) {
+            PortMapConfig pmconf = new PortMapConfig(node1, port1, (short)i);
+            st = mgr.setPortMap(vipaths1[i], pmconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+            confMap.put(vipaths1[i], pmconf);
+        }
+
+        SwitchPort port2 = new SwitchPort(
+            NodeConnector.NodeConnectorIDType.OPENFLOW, "11");
+        for (int i = 0; i < vipaths2.length; i++) {
+            PortMapConfig pmconf = new PortMapConfig(node1, port2, (short)i);
+            st = mgr.setPortMap(vipaths2[i], pmconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+            confMap.put(vipaths2[i], pmconf);
+        }
+
+        // Create a vBridge into vtn1.
+        VBridgeIfPath bipath = new VBridgeIfPath(tname1, "bridge", "if_1");
+        putInterface(mgr, bipath);
+
+        for (Map.Entry<VTerminalIfPath, PortMapConfig> entry:
+                 confMap.entrySet()) {
+            VTerminalIfPath path = entry.getKey();
+            PortMapConfig pmconf = entry.getValue();
+            try {
+                pmap = mgr.getPortMap(path);
+                assertEquals(pmconf, pmap.getConfig());
+                assertNull(pmap.getNodeConnector());
+            } catch (Exception e) {
+                unexpected(e);
+            }
+
+            // The same port can be mapped to the vBridge interface because
+            // the target port does not exist.
+            st = mgr.setPortMap(bipath, pmconf);
+            assertEquals(StatusCode.SUCCESS, st.getCode());
+        }
+
+        st = mgr.removeTenant(new VTenantPath(tname1));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        st = mgr.removeTenant(new VTenantPath(tname2));
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Error test case for vTerminal interface port mapping APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#getPortMap(VTerminalIfPath)}</li>
+     *   <li>{@link VTNManagerImpl#setPortMap(VTerminalIfPath, PortMapConfig)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminalPortMapInvalidCase() {
+        VTNManagerImpl mgr = vtnMgr;
+        String tname = "vtn";
+        VTenantPath tpath = new VTenantPath(tname);
+        String vtname = "vterm";
+        VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+        String ifname = "vinterface";
+        VTerminalIfPath ipath = new VTerminalIfPath(vtpath, ifname);
+        putInterface(mgr, ipath);
+
+        Node node = NodeCreator.createOFNode(0L);
+        SwitchPort port =
+            new SwitchPort("port-1",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, "1");
+        PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
+        Status st = mgr.setPortMap(ipath, pmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // bad request
+        VTerminalIfPath[] badpaths = {
+            null,
+            new VTerminalIfPath(tname, vtname, null),
+            new VTerminalIfPath(tname, null, ifname),
+            new VTerminalIfPath(null, vtname, ifname)
+        };
+        SwitchPort[] badports = {
+            new SwitchPort("port-10",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, null),
+            new SwitchPort("port-11",
+                           NodeConnector.NodeConnectorIDType.OPENFLOW, "10"),
+            new SwitchPort(null, null, "16"),
+            new SwitchPort(null, null, null),
+            new SwitchPort("", NodeConnector.NodeConnectorIDType.OPENFLOW,
+                           null),
+            new SwitchPort(NodeConnector.NodeConnectorIDType.ONEPK, "10"),
+        };
+        PortMapConfig[] badconfs = {
+            new PortMapConfig(null, port, (short)0),
+            new PortMapConfig(node, null, (short)0),
+            new PortMapConfig(node, null, (short)0),
+            new PortMapConfig(node, port, (short)-1),
+            new PortMapConfig(node, port, (short)4096)
+        };
+
+        for (VTerminalIfPath path: badpaths) {
+            String emsg = "path=" + path;
+            st = mgr.setPortMap(path, pmconf);
+            assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
+
+            try {
+                mgr.getPortMap(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(emsg, StatusCode.BADREQUEST,
+                             e.getStatus().getCode());
+            }
+        }
+
+        for (SwitchPort sw: badports) {
+            mgr.setPortMap(ipath, new PortMapConfig(node, sw, (short)0));
+            assertEquals("swport=" + sw, StatusCode.BADREQUEST, st.getCode());
+        }
+
+        for (PortMapConfig conf: badconfs) {
+            st = mgr.setPortMap(ipath, conf);
+            assertEquals("pmconf=" + conf,
+                         StatusCode.BADREQUEST, st.getCode());
+        }
+
+        Node pnode = null;
+        try {
+            pnode = new Node(Node.NodeIDType.PRODUCTION, "Node ID: 0");
+        } catch (ConstructionException e1) {
+            unexpected(e1);
+        }
+
+        PortMapConfig pmc =
+            new PortMapConfig(pnode, new SwitchPort("port-1"), (short)0);
+        st = mgr.setPortMap(ipath, pmc);
+        assertEquals(StatusCode.BADREQUEST, st.getCode());
+
+        // Path to unknown node.
+        VTerminalIfPath[] unknownPaths = {
+            new VTerminalIfPath(tname, vtname, "ii"),
+            new VTerminalIfPath(tname, "bbb", ifname),
+            new VTerminalIfPath("vv", vtname, ifname),
+        };
+
+        for (VTerminalIfPath path: unknownPaths) {
+            String emsg = "path=" + path;
+            st = mgr.setPortMap(path, pmconf);
+            assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
+            try {
+                mgr.getPortMap(path);
+                fail("An exception should be thrown.");
+            } catch (VTNException e) {
+                assertEquals(emsg, StatusCode.NOTFOUND,
+                             e.getStatus().getCode());
+            }
+        }
+
+        // Container mode test.
+        mgr.containerModeUpdated(UpdateType.ADDED);
+        try {
+            st = mgr.setPortMap(ipath, pmconf);
+            assertEquals(StatusCode.NOTACCEPTABLE, st.getCode());
+        } finally {
+            mgr.containerModeUpdated(UpdateType.REMOVED);
+        }
 
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());

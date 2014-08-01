@@ -19,6 +19,9 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
@@ -36,7 +39,6 @@ public class MapReferenceTest extends TestBase {
                     for (MapType type: MapType.values()) {
                         VBridgePath path = new VBridgePath(tname, bname);
                         MapReference ref = new MapReference(type, cname, path);
-
                         assertEquals(type, ref.getMapType());
                         assertEquals(cname, ref.getContainerName());
                         assertEquals(path, ref.getPath());
@@ -47,8 +49,8 @@ public class MapReferenceTest extends TestBase {
                                      ref.getAbsolutePath());
 
                         for (String name: createStrings("nm", false)) {
-                            // If the target is vBridge interface, it should be
-                            // embedded in its absolute path.
+                            // If the target is virtual interface, its path
+                            // should be embedded in the absolute path.
                             VBridgeIfPath ifpath =
                                 new VBridgeIfPath(path, name);
                             MapReference iref =
@@ -58,6 +60,11 @@ public class MapReferenceTest extends TestBase {
                             builder.append(':').append(ifpath.toString());
                             assertEquals(builder.toString(),
                                          iref.getAbsolutePath());
+
+                            VTerminalIfPath vifpath =
+                                new VTerminalIfPath(tname, bname, name);
+                            iref = new MapReference(type, cname, vifpath);
+                            assertFalse(ref.equals(iref));
 
                             // Otherwise, path to the vBridge should be used.
                             VlanMapPath vpath = new VlanMapPath(path, name);
@@ -74,25 +81,39 @@ public class MapReferenceTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MapReference#isContained(String, VBridgePath)}.
+     * Test case for {@link MapReference#isContained(String, VNodePath)}.
      */
     @Test
     public void testIsContained() {
         String unknown = "unknown";
         for (MapReference ref: createMapReferences()) {
-            VBridgePath path = ref.getPath();
+            VNodePath path = ref.getPath();
             String cname = ref.getContainerName();
             String tname = path.getTenantName();
-            String bname = path.getBridgeName();
+            String bname = path.getTenantNodeName();
             VBridgePath bpath = new VBridgePath(tname, bname);
+            VTerminalPath vtpath = new VTerminalPath(tname, bname);
+            VNodePath[] unknownPaths = {
+                new VBridgePath(unknown, bname),
+                new VBridgePath(tname, unknown),
+                new VTerminalPath(unknown, bname),
+                new VTerminalPath(tname, unknown),
+            };
+            if (path instanceof VBridgePath) {
+                assertTrue(ref.isContained(cname, bpath));
+                assertFalse(ref.isContained(unknown, bpath));
+                assertFalse(ref.isContained(unknown, vtpath));
+                assertFalse(ref.isContained(unknown, vtpath));
+            } else {
+                assertTrue(ref.isContained(cname, vtpath));
+                assertFalse(ref.isContained(unknown, vtpath));
+                assertFalse(ref.isContained(unknown, bpath));
+                assertFalse(ref.isContained(unknown, bpath));
+            }
 
-            assertTrue(ref.isContained(cname, bpath));
-            assertFalse(ref.isContained(unknown, bpath));
-
-            bpath = new VBridgePath(unknown, bname);
-            assertFalse(ref.isContained(cname, bpath));
-            bpath = new VBridgePath(tname, unknown);
-            assertFalse(ref.isContained(cname, bpath));
+            for (VNodePath vpath: unknownPaths) {
+                assertFalse(ref.isContained(cname, vpath));
+            }
         }
     }
 
@@ -130,7 +151,7 @@ public class MapReferenceTest extends TestBase {
         MapReference prev = it.next();
         MapType prevType = prev.getMapType();
         String prevContainer = prev.getContainerName();
-        VBridgePath prevPath = prev.getPath();
+        VNodePath prevPath = prev.getPath();
 
         while (it.hasNext()) {
             MapReference ref = it.next();
@@ -139,7 +160,7 @@ public class MapReferenceTest extends TestBase {
 
             MapType type = ref.getMapType();
             String container = ref.getContainerName();
-            VBridgePath path = ref.getPath();
+            VNodePath path = ref.getPath();
 
             if (type.equals(prevType)) {
                 if (container.equals(prevContainer)) {
@@ -210,6 +231,11 @@ public class MapReferenceTest extends TestBase {
 
                             VlanMapPath vpath = new VlanMapPath(path, name);
                             ref = new MapReference(type, cname, vpath);
+                            list.add(ref);
+
+                            VTerminalIfPath vipath =
+                                new VTerminalIfPath(tname, bname, name);
+                            ref = new MapReference(type, cname, vipath);
                             list.add(ref);
                         }
                     }
