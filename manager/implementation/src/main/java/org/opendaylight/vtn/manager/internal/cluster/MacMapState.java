@@ -456,8 +456,11 @@ public class MacMapState implements Serializable, Cloneable {
      *    At least one necessary class was not found.
      */
     @SuppressWarnings("unused")
-    private synchronized void readObject(ObjectInputStream in)
+    private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
+        // Read field information.
+        in.readFields();
+
         mappedPorts = new HashMap<PortVlan, Set<MacVlan>>();
         activeMap = new TreeMap<MacVlan, NodeConnector>();
 
@@ -487,6 +490,10 @@ public class MacMapState implements Serializable, Cloneable {
     @SuppressWarnings("unused")
     private synchronized void writeObject(ObjectOutputStream out)
         throws IOException {
+        // Write field information.
+        out.putFields();
+        out.writeFields();
+
         // Write the number of keys in mappedPorts.
         out.writeInt(mappedPorts.size());
 

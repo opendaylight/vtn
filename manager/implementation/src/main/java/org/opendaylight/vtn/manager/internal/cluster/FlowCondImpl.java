@@ -348,16 +348,13 @@ public final class FlowCondImpl implements Serializable, Cloneable {
     @SuppressWarnings("unused")
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
+        // Read serialized fields.
+        // Note that the lock does not need to be acquired here because this
+        // instance is not yet visible.
+        in.defaultReadObject();
+
         // Reset the lock.
         rwLock = new ReentrantReadWriteLock();
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            in.defaultReadObject();
-        } finally {
-            rdlock.unlock();
-        }
     }
 
     /**
