@@ -30,14 +30,29 @@ public enum VTNListenerType {
     VBRIDGE_IF,
 
     /**
+     * A symbol which indicates vTerminal event.
+     */
+    VTERMINAL,
+
+    /**
+     * A symbol which indicates vTerminal interface event.
+     */
+    VTERMINAL_IF,
+
+    /**
      * A symbol which indicates VLAN mapping event.
      */
     VLANMAP,
 
     /**
-     * A symbol which indicates port mapping event.
+     * A symbol which indicates port mapping event for bridge interface.
      */
     PORTMAP,
+
+    /**
+     * A symbol which indicates port mapping event for vTerminal.
+     */
+    PORTMAP_VTERM,
 
     /**
      * A symbol which indicates MAC mapping event.

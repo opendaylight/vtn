@@ -9,12 +9,9 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.util.List;
-
 /**
  * {@code VBridgePath} class describes the position of the
- * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} in the
- * container.
+ * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} in the VTN.
  *
  * <p>
  *   This class inherits {@link VTenantPath} and also stores the position
@@ -29,18 +26,17 @@ public class VBridgePath extends VNodePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7398047160865949576L;
+    private static final long serialVersionUID = -2598911916422555753L;
 
     /**
-     * The name of the
-     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     * A string which represents that the node type is vBridge.
      */
-    private final String  bridgeName;
+    private static final String  NODETYPE_VBRIDGE = "vBridge";
 
     /**
      * Construct a new object which represents the position of the
      * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
-     * the container.
+     * the VTN.
      *
      * <p>
      *   Exception will not occur even if incorrect name, such as {@code null},
@@ -53,14 +49,13 @@ public class VBridgePath extends VNodePath {
      * @param bridgeName  The name of the vBridge.
      */
     public VBridgePath(String tenantName, String bridgeName) {
-        super(tenantName);
-        this.bridgeName = bridgeName;
+        super(tenantName, bridgeName);
     }
 
     /**
      * Construct a new object which represents the position of the
      * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>} inside
-     * the container.
+     * the VTN.
      *
      * <p>
      *   This constructor specifies the VTN to which the vBridge belongs
@@ -82,7 +77,7 @@ public class VBridgePath extends VNodePath {
      * @throws NullPointerException  {@code tenantPath} is {@code null}.
      */
     public VBridgePath(VTenantPath tenantPath, String bridgeName) {
-        this(tenantPath.getTenantName(), bridgeName);
+        super(tenantPath, bridgeName);
     }
 
     /**
@@ -92,113 +87,17 @@ public class VBridgePath extends VNodePath {
      * @return  The name of the vBridge.
      */
     public String getBridgeName() {
-        return bridgeName;
+        return getTenantNodeName();
     }
 
     /**
      * {@inheritDoc}
-     */
-    @Override
-    protected StringBuilder toStringBuilder() {
-        StringBuilder builder = super.toStringBuilder();
-        String name = bridgeName;
-        if (name == null) {
-            name = "<null>";
-        }
-        builder.append('.').append(name);
-
-        return builder;
-    }
-
-    /**
-     * Determine whether all components in the given path equal to components
-     * in this object or not.
      *
-     * @param path  An object to be compared.
-     *              An instance of {@code VBridgePath} must be specified.
-     * @return   {@code true} if all path components in {@code path} are
-     *           identical to components in this object.
-     *           Otherwise {@code false}.
+     * @return  {@code "vBridge"} is always returned.
+     * @since   Helium
      */
     @Override
-    protected boolean equalsPath(VTenantPath path) {
-        if (!super.equalsPath(path)) {
-            return false;
-        }
-
-        VBridgePath bpath = (VBridgePath)path;
-        if (bridgeName == null) {
-            return (bpath.bridgeName == null);
-        }
-
-        return bridgeName.equals(bpath.bridgeName);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected List<String> getComponents() {
-        List<String> components = super.getComponents();
-        components.add(bridgeName);
-        return components;
-    }
-
-    /**
-     * Determine whether the given object is identical to this object.
-     *
-     * <p>
-     *   {@code true} is returned only if all the following conditions are met.
-     * </p>
-     * <ul>
-     *   <li>
-     *     {@code o} is a {@code VBridgePath} object.
-     *     Note that this method returns {@code false} if {@code o} is an
-     *     object of subclass of {@code VBridgePath}.
-     *   </li>
-     *   <li>
-     *     The following values stored in {@code o} are the same as in this
-     *     object.
-     *     <ul>
-     *       <li>
-     *         The name of the
-     *         {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
-     *       </li>
-     *       <li>
-     *         The name of the
-     *         {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
-     *       </li>
-     *     </ul>
-     *   </li>
-     * </ul>
-     *
-     * @param o  An object to be compared.
-     * @return   {@code true} if identical. Otherwise {@code false}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o == null || !o.getClass().equals(getClass())) {
-            return false;
-        }
-
-        return equalsPath((VBridgePath)o);
-    }
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        int h = super.hashCode();
-        if (bridgeName != null) {
-            h ^= bridgeName.hashCode();
-        }
-
-        return h;
+    public String getNodeType() {
+        return NODETYPE_VBRIDGE;
     }
 }

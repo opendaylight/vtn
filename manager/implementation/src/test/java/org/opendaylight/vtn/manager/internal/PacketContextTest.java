@@ -459,13 +459,13 @@ public class PacketContextTest extends TestUseVTNManagerBase {
 
         st = vtnMgr.addBridge(bpath1, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = vtnMgr.addBridgeInterface(
+        st = vtnMgr.addInterface(
             ipath1, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         st = vtnMgr.addBridge(bpath2, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = vtnMgr.addBridgeInterface(
+        st = vtnMgr.addInterface(
             ipath2, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 

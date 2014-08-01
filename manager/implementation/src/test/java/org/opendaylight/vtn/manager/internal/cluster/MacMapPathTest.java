@@ -17,6 +17,7 @@ import org.junit.Test;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
@@ -35,6 +36,7 @@ public class MacMapPathTest extends TestBase {
                 MacMapPath path = new MacMapPath(bpath);
                 assertEquals(tname, path.getTenantName());
                 assertEquals(bname, path.getBridgeName());
+                assertEquals("MacMap", path.getNodeType());
             }
         }
     }
@@ -99,13 +101,14 @@ public class MacMapPathTest extends TestBase {
      */
     @Test
     public void testToString() {
+        String prefix = "MacMap:";
         for (String tname: createStrings("tenant")) {
             for (String bname: createStrings("bridge")) {
                 VBridgePath bpath = new VBridgePath(tname, bname);
                 MacMapPath path = new MacMapPath(bpath);
                 String tn = (tname == null) ? "<null>" : tname;
                 String bn = (bname == null) ? "<null>" : bname;
-                String required = joinStrings(null, null, ".", tn, bn);
+                String required = joinStrings(prefix, null, ".", tn, bn);
                 assertEquals(required, path.toString());
             }
         }
@@ -145,6 +148,10 @@ public class MacMapPathTest extends TestBase {
             (sameTenant && equals(bname, path.getBridgeName()));
         assertEquals(false, path.contains(bpath));
         assertEquals(sameBridge, bpath.contains(path));
+
+        VTerminalPath tmpath = new VTerminalPath(tpath, bname);
+        assertEquals(false, path.contains(tmpath));
+        assertEquals(false, tmpath.contains(path));
 
         VBridgeIfPath ipath = new VBridgeIfPath(bpath, "interface");
         assertEquals(false, path.contains(ipath));

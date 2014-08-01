@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,9 +20,9 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.controller.sal.core.NodeConnector;
 
 /**
- * JUnit test for {@link VBridgeIfState}.
+ * JUnit test for {@link VInterfaceState}.
  */
-public class VBridgeIfStateTest extends TestBase {
+public class VInterfaceStateTest extends TestBase {
     /**
      * Test case for getter methods.
      */
@@ -30,14 +30,14 @@ public class VBridgeIfStateTest extends TestBase {
     public void testGetter() {
         VNodeState[] states = VNodeState.values();
         for (VNodeState state: states) {
-            VBridgeIfState ist = new VBridgeIfState(state);
+            VInterfaceState ist = new VInterfaceState(state);
             assertSame(state, ist.getState());
             assertSame(VNodeState.UNKNOWN, ist.getPortState());
             assertNull(ist.getMappedPort());
 
             for (NodeConnector nc: createNodeConnectors(50)) {
                 for (VNodeState pstate: states) {
-                    ist = new VBridgeIfState(state, pstate, nc);
+                    ist = new VInterfaceState(state, pstate, nc);
                     assertSame(state, ist.getState());
                     assertSame(pstate, ist.getPortState());
                     assertEquals(nc, ist.getMappedPort());
@@ -51,7 +51,7 @@ public class VBridgeIfStateTest extends TestBase {
      */
     @Test
     public void testDirty() {
-        VBridgeIfState ist = new VBridgeIfState(VNodeState.UNKNOWN);
+        VInterfaceState ist = new VInterfaceState(VNodeState.UNKNOWN);
         assertSame(VNodeState.UNKNOWN, ist.getState());
         assertSame(VNodeState.UNKNOWN, ist.getPortState());
         assertFalse(ist.isDirty());
@@ -112,8 +112,8 @@ public class VBridgeIfStateTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VBridgeIfState#equals(Object)} and
-     * {@link VBridgeIfState#hashCode()}.
+     * Test case for {@link VInterfaceState#equals(Object)} and
+     * {@link VInterfaceState#hashCode()}.
      */
     @Test
     public void testEquals() {
@@ -123,10 +123,10 @@ public class VBridgeIfStateTest extends TestBase {
         for (VNodeState state: states) {
             for (VNodeState pstate: states) {
                 for (NodeConnector nc: connectors) {
-                    VBridgeIfState ist1 =
-                        new VBridgeIfState(state, pstate, nc);
-                    VBridgeIfState ist2 =
-                        new VBridgeIfState(state, pstate, copy(nc));
+                    VInterfaceState ist1 =
+                        new VInterfaceState(state, pstate, nc);
+                    VInterfaceState ist2 =
+                        new VInterfaceState(state, pstate, copy(nc));
                     testEquals(set, ist1, ist2);
                 }
             }
@@ -137,17 +137,17 @@ public class VBridgeIfStateTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VBridgeIfState#toString()}.
+     * Test case for {@link VInterfaceState#toString()}.
      */
     @Test
     public void testToString() {
-        String prefix = "VBridgeIfState[";
+        String prefix = "VInterfaceState[";
         String suffix = "]";
         VNodeState[] states = VNodeState.values();
         for (VNodeState state: states) {
             for (VNodeState pstate: states) {
                 for (NodeConnector nc: createNodeConnectors(50)) {
-                    VBridgeIfState ist = new VBridgeIfState(state, pstate, nc);
+                    VInterfaceState ist = new VInterfaceState(state, pstate, nc);
                     String m = (nc == null) ? null : "mapped=" + nc;
                     String s = "state=" + state.toString();
                     String p = "portState=" + pstate.toString();
@@ -160,7 +160,7 @@ public class VBridgeIfStateTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VBridgeIfState} is serializable.
+     * Ensure that {@link VInterfaceState} is serializable.
      */
     @Test
     public void testSerialize() {
@@ -168,7 +168,7 @@ public class VBridgeIfStateTest extends TestBase {
         for (VNodeState state: states) {
             for (VNodeState pstate: states) {
                 for (NodeConnector nc: createNodeConnectors(50)) {
-                    VBridgeIfState ist = new VBridgeIfState(state, pstate, nc);
+                    VInterfaceState ist = new VInterfaceState(state, pstate, nc);
                     serializeTest(ist);
                 }
             }

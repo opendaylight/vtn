@@ -97,7 +97,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public VInterfaceList getBridgeInterfaces(
+    public VInterfaceList getInterfaces(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
@@ -106,8 +106,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
-            List<VInterface> list =
-                mgr.getBridgeInterfaces(path);
+            List<VInterface> list = mgr.getInterfaces(path);
             return new VInterfaceList(list);
         } catch (VTNException e) {
             throw getException(e.getStatus());
@@ -149,7 +148,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public VInterface getBridgeInterface(
+    public VInterface getInterface(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
@@ -159,7 +158,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         try {
-            return mgr.getBridgeInterface(path);
+            return mgr.getInterface(path);
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -247,7 +246,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response addBridgeInterface(
+    public Response addInterface(
             @Context UriInfo uriInfo,
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
@@ -258,7 +257,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
-        Status status = mgr.addBridgeInterface(path, iconf);
+        Status status = mgr.addInterface(path, iconf);
         if (status.isSuccess()) {
             return Response.created(uriInfo.getAbsolutePath()).build();
         }
@@ -337,7 +336,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response modifyBridgeInterface(
+    public Response modifyInterface(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
@@ -348,7 +347,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
-        Status status = mgr.modifyBridgeInterface(path, iconf, all);
+        Status status = mgr.modifyInterface(path, iconf, all);
         if (status.isSuccess()) {
             return Response.ok().build();
         }
@@ -392,7 +391,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response deleteBridgeInterface(
+    public Response deleteInterface(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
@@ -401,7 +400,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
 
         IVTNManager mgr = getVTNManager(containerName);
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
-        Status status = mgr.removeBridgeInterface(path);
+        Status status = mgr.removeInterface(path);
         if (status.isSuccess()) {
             return Response.ok().build();
         }
@@ -534,7 +533,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      *               However, when mapping is actually done with the specified
      *               physical port, the port mapping will not be established if
      *               that physical port and VLAN ID are mapped to another
-     *               vBridge interface.
+     *               virtual interface.
      *             </li>
      *           </ul>
      *         </li>
@@ -592,7 +591,7 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "The specified physical switch port is " +
                       "present, and the specified VLAN ID is mapped to " +
-                      "another vBridge interface by port mapping."),
+                      "another virtual interface by port mapping."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),

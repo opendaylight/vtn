@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.Timer;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -42,11 +43,16 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalConfig;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.ContainerConfig;
@@ -82,7 +88,7 @@ public final class VTenantImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5029932535173882419L;
+    private static final long serialVersionUID = 4868029550273729155L;
 
     /**
      * Logger instance.
@@ -125,6 +131,12 @@ public final class VTenantImpl implements Serializable {
      */
     private transient Map<String, VBridgeImpl> vBridges =
         new TreeMap<String, VBridgeImpl>();
+
+    /**
+     * vTerminal instances configured in this tenant.
+     */
+    private transient Map<String, VTerminalImpl> vTerminals =
+        new TreeMap<String, VTerminalImpl>();
 
     /**
      * VTN path maps configured in this tenant.
@@ -253,7 +265,7 @@ public final class VTenantImpl implements Serializable {
      *          operation.
      */
     public Status addBridge(VTNManagerImpl mgr, VBridgePath path,
-                          VBridgeConfig bconf) throws VTNException {
+                            VBridgeConfig bconf) throws VTNException {
         // Ensure the given bridge name is valid.
         String bridgeName = path.getBridgeName();
         MiscUtils.checkName("Bridge", bridgeName);
@@ -367,14 +379,14 @@ public final class VTenantImpl implements Serializable {
      * @return  A list of vbridge information.
      */
     public List<VBridge> getBridges(VTNManagerImpl mgr) {
-        ArrayList<VBridge> list = new ArrayList<VBridge>();
+        ArrayList<VBridge> list;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            list = new ArrayList<VBridge>(vBridges.size());
             for (VBridgeImpl vbr: vBridges.values()) {
                 list.add(vbr.getVBridge(mgr));
             }
-            list.trimToSize();
         } finally {
             rdlock.unlock();
         }
@@ -404,6 +416,156 @@ public final class VTenantImpl implements Serializable {
     }
 
     /**
+     * Add a new vTerminal to this tenant.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    Path to the vTerminal.
+     * @param vtconf  vTerminal configuration.
+     * @throws VTNException  An error occurred.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     */
+    public Status addTerminal(VTNManagerImpl mgr, VTerminalPath path,
+                              VTerminalConfig vtconf) throws VTNException {
+        // Ensure the given terminal name is valid.
+        String termName = path.getTerminalName();
+        MiscUtils.checkName("vTerminal", termName);
+
+        if (vtconf == null) {
+            Status status = MiscUtils.argumentIsNull("vTerminal configuration");
+            throw new VTNException(status);
+        }
+
+        VTerminalImpl vtm = new VTerminalImpl(this, termName, vtconf);
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            VTerminalImpl old = vTerminals.put(termName, vtm);
+            if (old != null) {
+                vTerminals.put(termName, old);
+                String msg = termName + ": vTerminal name already exists";
+                throw new VTNException(StatusCode.CONFLICT, msg);
+            }
+
+            VTerminal vterm = vtm.getVTerminal(mgr);
+            VTerminalEvent.added(mgr, path, vterm);
+            mgr.export(this);
+            return saveConfigImpl(null);
+        } finally {
+            wrlock.unlock();
+        }
+    }
+
+    /**
+     * Change configuration of existing vTerminal.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    Path to the vTerminal.
+     * @param vtconf  vTerminal configuration.
+     * @param all     If {@code true} is specified, all attributes of the
+     *                vTerminal are modified. In this case, {@code null} in
+     *                {@code vtconf} is interpreted as default value.
+     *                If {@code false} is specified, an attribute is not
+     *                modified if its value in {@code vtconf} is {@code null}.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     * @throws VTNException  An error occurred.
+     */
+    public Status modifyTerminal(VTNManagerImpl mgr, VTerminalPath path,
+                                 VTerminalConfig vtconf, boolean all)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            if (vtm.setVTerminalConfig(mgr, vtconf, all)) {
+                mgr.export(this);
+                return saveConfigImpl(null);
+            }
+
+            return new Status(StatusCode.SUCCESS, "Not modified");
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Remove the specified vTerminal from the tenant.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vTerminal.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     * @throws VTNException  An error occurred.
+     */
+    public Status removeTerminal(VTNManagerImpl mgr, VTerminalPath path)
+        throws VTNException {
+        Lock wrlock = rwLock.writeLock();
+        wrlock.lock();
+        try {
+            String termName = path.getTerminalName();
+            if (termName == null) {
+                Status status = MiscUtils.argumentIsNull("vTerminal name");
+                throw new VTNException(status);
+            }
+
+            VTerminalImpl vtm = vTerminals.remove(termName);
+            if (vtm == null) {
+                Status status = terminalNotFound(termName);
+                throw new VTNException(status);
+            }
+
+            vtm.destroy(mgr, true);
+            mgr.export(this);
+            return saveConfigImpl(null);
+        } finally {
+            wrlock.unlock();
+        }
+    }
+
+    /**
+     * Return a list of vTerminal information in the tenant.
+     *
+     * @param mgr   VTN Manager service.
+     * @return  A list of vTerminal information.
+     */
+    public List<VTerminal> getTerminals(VTNManagerImpl mgr) {
+        ArrayList<VTerminal> list;
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            list = new ArrayList<VTerminal>(vTerminals.size());
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                list.add(vtm.getVTerminal(mgr));
+            }
+        } finally {
+            rdlock.unlock();
+        }
+
+        return list;
+    }
+
+    /**
+     * Return information about the specified vTerminal.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vTerminal.
+     * @return  The vTerminal information associated with the given name.
+     * @throws VTNException  An error occurred.
+     */
+    public VTerminal getTerminal(VTNManagerImpl mgr, VTerminalPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            return vtm.getVTerminal(mgr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
      * Add a new virtual interface to the specified L2 bridge.
      *
      * @param mgr    VTN Manager service.
@@ -413,8 +575,8 @@ public final class VTenantImpl implements Serializable {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status addBridgeInterface(VTNManagerImpl mgr, VBridgeIfPath path,
-                                     VInterfaceConfig iconf)
+    public Status addInterface(VTNManagerImpl mgr, VBridgeIfPath path,
+                               VInterfaceConfig iconf)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -444,8 +606,8 @@ public final class VTenantImpl implements Serializable {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyBridgeInterface(VTNManagerImpl mgr, VBridgeIfPath path,
-                                        VInterfaceConfig iconf, boolean all)
+    public Status modifyInterface(VTNManagerImpl mgr, VBridgeIfPath path,
+                                  VInterfaceConfig iconf, boolean all)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -471,7 +633,7 @@ public final class VTenantImpl implements Serializable {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status removeBridgeInterface(VTNManagerImpl mgr, VBridgeIfPath path)
+    public Status removeInterface(VTNManagerImpl mgr, VBridgeIfPath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -495,8 +657,7 @@ public final class VTenantImpl implements Serializable {
      * @return  A list of bridge interface information.
      * @throws VTNException  An error occurred.
      */
-    public List<VInterface> getBridgeInterfaces(VTNManagerImpl mgr,
-                                                VBridgePath path)
+    public List<VInterface> getInterfaces(VTNManagerImpl mgr, VBridgePath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -517,13 +678,139 @@ public final class VTenantImpl implements Serializable {
      *          name.
      * @throws VTNException  An error occurred.
      */
-    public VInterface getBridgeInterface(VTNManagerImpl mgr, VBridgeIfPath path)
+    public VInterface getInterface(VTNManagerImpl mgr, VBridgeIfPath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VBridgeImpl vbr = getBridgeImpl(path);
             return vbr.getInterface(mgr, path);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Add a new virtual interface to the specified vTerminal.
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the interface to be added.
+     * @param iconf  Interface configuration.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     * @throws VTNException  An error occurred.
+     */
+    public Status addInterface(VTNManagerImpl mgr, VTerminalIfPath path,
+                               VInterfaceConfig iconf)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            vtm.addInterface(mgr, path, iconf);
+
+            mgr.export(this);
+            return saveConfigImpl(null);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Change configuration of existing vTerminal interface.
+     *
+     * @param mgr    VTN Manager service.
+     * @param path   Path to the interface.
+     * @param iconf  Interface configuration.
+     * @param all    If {@code true} is specified, all attributes of the
+     *               interface are modified. In this case, {@code null} in
+     *               {@code iconf} is interpreted as default value.
+     *               If {@code false} is specified, an attribute is not
+     *               modified if its value in {@code iconf} is {@code null}.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     * @throws VTNException  An error occurred.
+     */
+    public Status modifyInterface(VTNManagerImpl mgr, VTerminalIfPath path,
+                                  VInterfaceConfig iconf, boolean all)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            if (vtm.modifyInterface(mgr, path, iconf, all)) {
+                mgr.export(this);
+                return saveConfigImpl(null);
+            }
+
+            return new Status(StatusCode.SUCCESS, "Not modified");
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Remove the specified virtual interface from the vTerminal.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the interface.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     * @throws VTNException  An error occurred.
+     */
+    public Status removeInterface(VTNManagerImpl mgr, VTerminalIfPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            vtm.removeInterface(mgr, path);
+
+            mgr.export(this);
+            return saveConfigImpl(null);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return a list of virtual interface information in the specified
+     * vTerminal.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vTerminal.
+     * @return  A list of vTerminal interface information.
+     * @throws VTNException  An error occurred.
+     */
+    public List<VInterface> getInterfaces(VTNManagerImpl mgr,
+                                          VTerminalPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            return vtm.getInterfaces(mgr);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Return information about the specified vTerminal interface.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the interface.
+     * @return  The virtual interface information associated with the given
+     *          name.
+     * @throws VTNException  An error occurred.
+     */
+    public VInterface getInterface(VTNManagerImpl mgr, VTerminalIfPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            return vtm.getInterface(mgr, path);
         } finally {
             rdlock.unlock();
         }
@@ -667,6 +954,27 @@ public final class VTenantImpl implements Serializable {
     }
 
     /**
+     * Return the port mapping configuration applied to the specified
+     * vTerminal interface.
+     *
+     * @param mgr   VTN Manager service.
+     * @param path  Path to the vTerminal interface.
+     * @return  Port mapping information.
+     * @throws VTNException  An error occurred.
+     */
+    public PortMap getPortMap(VTNManagerImpl mgr, VTerminalIfPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            return vtm.getPortMap(mgr, path);
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
      * Create or destroy mapping between the physical switch port and the
      * virtual bridge interface.
      *
@@ -685,10 +993,42 @@ public final class VTenantImpl implements Serializable {
         rdlock.lock();
         try {
             VBridgeImpl vbr = getBridgeImpl(path);
-            vbr.setPortMap(mgr, path, pmconf);
+            if (vbr.setPortMap(mgr, path, pmconf)) {
+                mgr.export(this);
+                return saveConfigImpl(null);
+            }
 
-            mgr.export(this);
-            return saveConfigImpl(null);
+            return new Status(StatusCode.SUCCESS, "Not modified");
+        } finally {
+            rdlock.unlock();
+        }
+    }
+
+    /**
+     * Create or destroy mapping between the physical switch port and the
+     * vTerminal interface.
+     *
+     * @param mgr     VTN Manager service.
+     * @param path    Path to the vTerminal interface.
+     * @param pmconf  Port mapping configuration to be set.
+     *                If {@code null} is specified, port mapping on the
+     *                specified interface is destroyed.
+     * @return  A {@link Status} instance which indicates the result of the
+     *          operation.
+     * @throws VTNException  An error occurred.
+     */
+    public Status setPortMap(VTNManagerImpl mgr, VTerminalIfPath path,
+                             PortMapConfig pmconf) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTerminalImpl vtm = getTerminalImpl(path);
+            if (vtm.setPortMap(mgr, path, pmconf)) {
+                mgr.export(this);
+                return saveConfigImpl(null);
+            }
+
+            return new Status(StatusCode.SUCCESS, "Not modified");
         } finally {
             rdlock.unlock();
         }
@@ -1006,6 +1346,10 @@ public final class VTenantImpl implements Serializable {
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.resume(mgr);
             }
+
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                vtm.resume(mgr);
+            }
         } finally {
             wrlock.unlock();
         }
@@ -1021,11 +1365,17 @@ public final class VTenantImpl implements Serializable {
      * @param type  Type of update.
      */
     public void notifyNode(VTNManagerImpl mgr, Node node, UpdateType type) {
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.notifyNode(mgr, node, type);
+                vbr.notifyNode(mgr, db, node, type);
+            }
+
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                vtm.notifyNode(mgr, db, node, type);
             }
         } finally {
             rdlock.unlock();
@@ -1043,11 +1393,17 @@ public final class VTenantImpl implements Serializable {
      */
     public void notifyNodeConnector(VTNManagerImpl mgr, NodeConnector nc,
                                     VNodeState pstate, UpdateType type) {
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.notifyNodeConnector(mgr, nc, pstate, type);
+                vbr.notifyNodeConnector(mgr, db, nc, pstate, type);
+            }
+
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                vtm.notifyNodeConnector(mgr, db, nc, pstate, type);
             }
         } finally {
             rdlock.unlock();
@@ -1062,11 +1418,17 @@ public final class VTenantImpl implements Serializable {
      *                information reported by the controller.
      */
     public void edgeUpdate(VTNManagerImpl mgr, EdgeUpdateState estate) {
+        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.edgeUpdate(mgr, estate);
+                vbr.edgeUpdate(mgr, db, estate);
+            }
+
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                vtm.edgeUpdate(mgr, db, estate);
             }
         } finally {
             rdlock.unlock();
@@ -1086,6 +1448,10 @@ public final class VTenantImpl implements Serializable {
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.notifyConfiguration(mgr, listener);
+            }
+
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                vtm.notifyConfiguration(mgr, listener);
             }
         } finally {
             rdlock.unlock();
@@ -1125,6 +1491,8 @@ public final class VTenantImpl implements Serializable {
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.findHost(mgr, pctx);
             }
+
+            // Don't search vTerminals.
         } finally {
             rdlock.unlock();
         }
@@ -1147,8 +1515,17 @@ public final class VTenantImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            VBridgeImpl vbr = getBridgeImpl(ref.getPath());
-            return vbr.probeHost(mgr, ref, pctx);
+            VNodePath path = ref.getPath();
+            if (path instanceof VBridgePath) {
+                VBridgeImpl vbr = getBridgeImpl((VBridgePath)path);
+                return vbr.probeHost(mgr, ref, pctx);
+            }
+            if (path instanceof VTerminalPath) {
+                VTerminalImpl vtm = getTerminalImpl((VTerminalPath)path);
+                return vtm.probeHost(mgr, ref, pctx);
+            }
+
+            return false;
         } finally {
             rdlock.unlock();
         }
@@ -1170,13 +1547,22 @@ public final class VTenantImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            VBridgeImpl vbr = getBridgeImpl(ref.getPath());
-
             // Evaluate path maps.
             RouteResolver rr = evalPathMap(mgr, pctx);
             pctx.setRouteResolver(rr);
 
-            PacketResult res = vbr.receive(mgr, ref, pctx);
+            VNodePath path = ref.getPath();
+            PacketResult res;
+            if (path instanceof VBridgePath) {
+                VBridgeImpl vbr = getBridgeImpl((VBridgePath)path);
+                res = vbr.receive(mgr, ref, pctx);
+            } else if (path instanceof VTerminalPath) {
+                VTerminalImpl vtm = getTerminalImpl((VTerminalPath)path);
+                res = vtm.receive(mgr, ref, pctx);
+            } else {
+                return PacketResult.IGNORED;
+            }
+
             if (res != PacketResult.IGNORED) {
                 pctx.purgeObsoleteFlow(mgr, tenantName);
             }
@@ -1198,6 +1584,9 @@ public final class VTenantImpl implements Serializable {
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.recalculateDone(mgr);
+            }
+            for (VTerminalImpl vtm: vTerminals.values()) {
+                vtm.recalculateDone(mgr);
             }
         } finally {
             rdlock.unlock();
@@ -1221,6 +1610,14 @@ public final class VTenantImpl implements Serializable {
                  it.hasNext();) {
                 VBridgeImpl vbr = it.next();
                 vbr.destroy(mgr, false);
+                it.remove();
+            }
+
+            // Destroy all vTerminals.
+            for (Iterator<VTerminalImpl> it = vTerminals.values().iterator();
+                 it.hasNext();) {
+                VTerminalImpl vtm = it.next();
+                vtm.destroy(mgr, false);
                 it.remove();
             }
         } finally {
@@ -1420,14 +1817,17 @@ public final class VTenantImpl implements Serializable {
             return false;
         }
 
-        // Use copy of bridge map in order to avoid deadlock.
+        // Use copy of maps in order to avoid deadlock.
         Map<String, VBridgeImpl> otherBridges;
+        Map<String, VTerminalImpl> otherTerminals;
         Map<Integer, VTenantPathMapImpl> otherPathMaps;
         Lock rdlock = vtn.rwLock.readLock();
         rdlock.lock();
         try {
             otherBridges = (Map<String, VBridgeImpl>)
                 ((TreeMap<String, VBridgeImpl>)vtn.vBridges).clone();
+            otherTerminals = (Map<String, VTerminalImpl>)
+                ((TreeMap<String, VTerminalImpl>)vtn.vTerminals).clone();
             otherPathMaps = (Map<Integer, VTenantPathMapImpl>)
                 ((TreeMap<Integer, VTenantPathMapImpl>)vtn.pathMaps).clone();
         } finally {
@@ -1437,6 +1837,7 @@ public final class VTenantImpl implements Serializable {
         rdlock = rwLock.readLock();
         try {
             return (vBridges.equals(otherBridges) &&
+                    vTerminals.equals(otherTerminals) &&
                     pathMaps.equals(otherPathMaps));
         } finally {
             rdlock.unlock();
@@ -1456,7 +1857,8 @@ public final class VTenantImpl implements Serializable {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            h += (vBridges.hashCode() * 17) + (pathMaps.hashCode() * 31);
+            h += (vBridges.hashCode() * 17) + (vTerminals.hashCode() * 19) +
+                (pathMaps.hashCode() * 31);
         } finally {
             rdlock.unlock();
         }
@@ -1611,8 +2013,8 @@ public final class VTenantImpl implements Serializable {
     private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
         // Read serialized fields.
-        // Note that this lock needs to be acquired here because this instance
-        // is not yet visible.
+        // Note that the lock does not need to be acquired here because this
+        // instance is not yet visible.
         in.defaultReadObject();
 
         // Reset the lock.
@@ -1632,7 +2034,21 @@ public final class VTenantImpl implements Serializable {
             vBridges.put(name, vbr);
         }
 
-        // Read the number of vTN path maps.
+        // Read the number of vTerminals.
+        size = in.readInt();
+
+        // Read vTerminals.
+        vTerminals = new TreeMap<String, VTerminalImpl>();
+        for (int i = 0; i < size; i++) {
+            String name = (String)in.readObject();
+            VTerminalImpl vtm = (VTerminalImpl)in.readObject();
+
+            // Set this tenant as parent of this vTerminal.
+            vtm.setPath(this, name);
+            vTerminals.put(name, vtm);
+        }
+
+        // Read the number of VTN path maps.
         size = in.readInt();
 
         // Read VTN path maps.
@@ -1671,6 +2087,16 @@ public final class VTenantImpl implements Serializable {
                 out.writeObject(entry.getValue());
             }
 
+            // Write the number of vTerminals.
+            out.writeInt(vTerminals.size());
+
+            // Write vTerminals.
+            for (Map.Entry<String, VTerminalImpl> entry:
+                     vTerminals.entrySet()) {
+                out.writeObject(entry.getKey());
+                out.writeObject(entry.getValue());
+            }
+
             // Write the number of VTN path maps.
             out.writeInt(pathMaps.size());
 
@@ -1692,6 +2118,18 @@ public final class VTenantImpl implements Serializable {
      */
     private Status bridgeNotFound(String bridgeName) {
         String msg = bridgeName + ": Bridge does not exist";
+        return new Status(StatusCode.NOTFOUND, msg);
+    }
+
+    /**
+     * Return a failure status that indicates the specified vTerminal does not
+     * exist.
+     *
+     * @param termName  The name of the vTerminal.
+     * @return  A failure status.
+     */
+    private Status terminalNotFound(String termName) {
+        String msg = termName + ": vTerminal does not exist";
         return new Status(StatusCode.NOTFOUND, msg);
     }
 
@@ -1721,6 +2159,35 @@ public final class VTenantImpl implements Serializable {
         }
 
         return vbr;
+    }
+
+    /**
+     * Return the vTerminal instance associated with the given name.
+     *
+     * <p>
+     *   This method must be called with holding the tenant lock.
+     * </p>
+     *
+     * @param path  Path to the vTerminal.
+     * @return  Virtual terminal instance is returned.
+     * @throws VTNException  An error occurred.
+     * @throws NullPointerException  {@code path} is {@code null}.
+     */
+    private VTerminalImpl getTerminalImpl(VTerminalPath path)
+        throws VTNException {
+        String termName = path.getTerminalName();
+        if (termName == null) {
+            Status status = MiscUtils.argumentIsNull("vTerminal name");
+            throw new VTNException(status);
+        }
+
+        VTerminalImpl vtm = vTerminals.get(termName);
+        if (vtm == null) {
+            Status status = terminalNotFound(termName);
+            throw new VTNException(status);
+        }
+
+        return vtm;
     }
 
     /**

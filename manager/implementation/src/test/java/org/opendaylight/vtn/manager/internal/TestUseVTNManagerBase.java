@@ -40,9 +40,13 @@ import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapEvent;
@@ -60,8 +64,12 @@ import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.sal.core.Config;
+import org.opendaylight.controller.sal.core.Name;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.State;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
@@ -487,12 +495,19 @@ public class TestUseVTNManagerBase extends TestBase {
         private int vlanMapChangedCalled = 0;
         private int portMapChangedCalled = 0;
         private int macMapChangedCalled = 0;
-        VTNManagerAwareData<VTenantPath, VTenant> vtnChangedInfo = null;
-        VTNManagerAwareData<VBridgePath, VBridge> vbrChangedInfo = null;
-        VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo = null;
-        VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo = null;
-        VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo = null;
-        VTNManagerAwareData<VBridgePath, MacMapConfig> macMapChangedInfo = null;
+        private int vtermChangedCalled = 0;
+        private int vtermIfChangedCalled = 0;
+        private int vtermPortMapChangedCalled = 0;
+
+        VTNManagerAwareData<VTenantPath, VTenant> vtnChangedInfo;
+        VTNManagerAwareData<VBridgePath, VBridge> vbrChangedInfo;
+        VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo;
+        VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo;
+        VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo;
+        VTNManagerAwareData<VBridgePath, MacMapConfig> macMapChangedInfo;
+        VTNManagerAwareData<VTerminalPath, VTerminal> vtermChangedInfo;
+        VTNManagerAwareData<VTerminalIfPath, VInterface> vtermIfChangedInfo;
+        VTNManagerAwareData<VTerminalIfPath, PortMap> vtermPortMapChangedInfo;
 
         @Override
         public synchronized void vtnChanged(VTenantPath path, VTenant vtenant,
@@ -513,12 +528,35 @@ public class TestUseVTNManagerBase extends TestBase {
         }
 
         @Override
-        public synchronized void vBridgeInterfaceChanged(VBridgeIfPath path,
-                                                         VInterface viface,
-                                                         UpdateType type) {
+        public synchronized void vTerminalChanged(VTerminalPath path,
+                                                  VTerminal vterm,
+                                                  UpdateType type) {
+            vtermChangedCalled++;
+            vtermChangedInfo =
+                new VTNManagerAwareData<VTerminalPath, VTerminal>(
+                    path, vterm, type, vtermChangedCalled);
+            notify();
+        }
+
+        @Override
+        public synchronized void vInterfaceChanged(VBridgeIfPath path,
+                                                   VInterface viface,
+                                                   UpdateType type) {
             vIfChangedCalled++;
-            vIfChangedInfo = new VTNManagerAwareData<VBridgeIfPath, VInterface>(path, viface, type,
-                    vIfChangedCalled);
+            vIfChangedInfo =
+                new VTNManagerAwareData<VBridgeIfPath, VInterface>(
+                    path, viface, type, vIfChangedCalled);
+            notify();
+        }
+
+        @Override
+        public synchronized void vInterfaceChanged(VTerminalIfPath path,
+                                                   VInterface viface,
+                                                   UpdateType type) {
+            vtermIfChangedCalled++;
+            vtermIfChangedInfo =
+                new VTNManagerAwareData<VTerminalIfPath, VInterface>(
+                    path, viface, type, vIfChangedCalled);
             notify();
         }
 
@@ -537,6 +575,16 @@ public class TestUseVTNManagerBase extends TestBase {
             portMapChangedCalled++;
             portMapChangedInfo = new VTNManagerAwareData<VBridgeIfPath, PortMap>(path, pmap, type,
                     portMapChangedCalled);
+            notify();
+        }
+
+        @Override
+        public synchronized void portMapChanged(VTerminalIfPath path,
+                                                PortMap pmap, UpdateType type) {
+            vtermPortMapChangedCalled++;
+            vtermPortMapChangedInfo =
+                new VTNManagerAwareData<VTerminalIfPath, PortMap>(
+                    path, pmap, type, vtermPortMapChangedCalled);
             notify();
         }
 
@@ -628,15 +676,55 @@ public class TestUseVTNManagerBase extends TestBase {
         }
 
         /**
-         * Check information notified by {@code vBridgeInterfaceChanged()}.
+         * Check information notified by {@code vTerminalChanged()}.
          *
          * @param count     An expected number of times
-         *                  {@code vBridgeInterfaceChanged()} was called.
+         *                  {@code vTerminalChanged()} was called.
+         * @param path      A {@link VTerminalPath} expected to be notified.
+         * @param type      A type expected to be notified.
+         */
+        synchronized void checkVTermInfo(int count, VTerminalPath path,
+                                         UpdateType type) {
+            if (vtermChangedCalled < count) {
+                long milli = EVENT_TIMEOUT;
+                long limit = System.currentTimeMillis() + milli;
+                do {
+                    try {
+                        wait(milli);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                    if (vtermChangedCalled >= count) {
+                        break;
+                    }
+                    milli = limit - System.currentTimeMillis();
+                } while (milli > 0);
+            }
+            assertEquals(count, vtermChangedCalled);
+
+            if (path != null) {
+                assertEquals(path, vtermChangedInfo.path);
+                assertEquals(path.getTerminalName(),
+                             vtermChangedInfo.obj.getName());
+            }
+            if (type != null) {
+                assertEquals(type, vtermChangedInfo.type);
+            }
+            vtermChangedCalled = 0;
+            vtermChangedInfo = null;
+        }
+
+        /**
+         * Check vBridge interface information notified by
+         * {@code vInterfaceChanged()}.
+         *
+         * @param count     An expected number of times
+         *                  {@code vInterfaceChanged()} was called.
          * @param path      A {@link VBridgeIfPath} expect to be notified.
          * @param type      A type expect to be notified.
          */
         synchronized void checkVIfInfo(int count, VBridgeIfPath path,
-                                      UpdateType type) {
+                                       UpdateType type) {
             if (vIfChangedCalled < count) {
                 long milli = EVENT_TIMEOUT;
                 long limit = System.currentTimeMillis() + milli;
@@ -663,6 +751,46 @@ public class TestUseVTNManagerBase extends TestBase {
             }
             vIfChangedCalled = 0;
             vIfChangedInfo = null;
+        }
+
+        /**
+         * Check vTerminal interface information notified by
+         * {@code vInterfaceChanged()}.
+         *
+         * @param count     An expected number of times
+         *                  {@code vInterfaceChanged()} was called.
+         * @param path      A {@link VTerminalIfPath} expected to be notified.
+         * @param type      A type expect to be notified.
+         */
+        synchronized void checkVIfInfo(int count, VTerminalIfPath path,
+                                       UpdateType type) {
+            if (vtermIfChangedCalled < count) {
+                long milli = EVENT_TIMEOUT;
+                long limit = System.currentTimeMillis() + milli;
+                do {
+                    try {
+                        wait(milli);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                    if (vtermIfChangedCalled >= count) {
+                        break;
+                    }
+                    milli = limit - System.currentTimeMillis();
+                } while (milli > 0);
+            }
+            assertEquals(count, vtermIfChangedCalled);
+
+            if (path != null) {
+                assertEquals(path, vtermIfChangedInfo.path);
+                assertEquals(path.getInterfaceName(),
+                             vtermIfChangedInfo.obj.getName());
+            }
+            if (type != null) {
+                assertEquals(type, vtermIfChangedInfo.type);
+            }
+            vtermIfChangedCalled = 0;
+            vtermIfChangedInfo = null;
         }
 
         /**
@@ -707,13 +835,14 @@ public class TestUseVTNManagerBase extends TestBase {
         }
 
         /**
-         * Check information notified by {@code portMapChanged()}.
+         * Check information notified by {@code portMapChanged()} for
+         * bridge interface.
          *
          * @param count     An expected number of times {@code portMapChanged()}
          *                  was called.
-         * @param path      A {@link VBridgeIfPath} expect to be notified.
-         * @param pconf     A {@link PortMapConfig} expect to be notified.
-         * @param type      A type expect to be notified.
+         * @param path      A {@link VBridgeIfPath} expected to be notified.
+         * @param pconf     A {@link PortMapConfig} expected to be notified.
+         * @param type      A type expected to be notified.
          */
         synchronized void checkPmapInfo(int count, VBridgeIfPath path,
                                         PortMapConfig pconf, UpdateType type) {
@@ -745,6 +874,48 @@ public class TestUseVTNManagerBase extends TestBase {
             }
             portMapChangedCalled = 0;
             portMapChangedInfo = null;
+        }
+
+        /**
+         * Check information notified by {@code portMapChanged()} for
+         * vTerminal interface.
+         *
+         * @param count     An expected number of times {@code portMapChanged()}
+         *                  was called.
+         * @param path      A {@link VTerminalIfPath} expected to be notified.
+         * @param pconf     A {@link PortMapConfig} expected to be notified.
+         * @param type      A type expected to be notified.
+         */
+        synchronized void checkPmapInfo(int count, VTerminalIfPath path,
+                                        PortMapConfig pconf, UpdateType type) {
+            if (vtermPortMapChangedCalled < count) {
+                long milli = EVENT_TIMEOUT;
+                long limit = System.currentTimeMillis() + milli;
+                do {
+                    try {
+                        wait(milli);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                    if (vtermPortMapChangedCalled >= count) {
+                        break;
+                    }
+                    milli = limit - System.currentTimeMillis();
+                } while (milli > 0);
+            }
+            assertEquals(count, vtermPortMapChangedCalled);
+
+            if (path != null) {
+                assertEquals(path, vtermPortMapChangedInfo.path);
+            }
+            if (pconf != null) {
+                assertEquals(pconf, vtermPortMapChangedInfo.obj.getConfig());
+            }
+            if (type != null) {
+                assertEquals(type, vtermPortMapChangedInfo.type);
+            }
+            vtermPortMapChangedCalled = 0;
+            vtermPortMapChangedInfo = null;
         }
 
         /**
@@ -805,6 +976,12 @@ public class TestUseVTNManagerBase extends TestBase {
             assertNull(portMapChangedInfo);
             assertEquals(0, macMapChangedCalled);
             assertNull(macMapChangedInfo);
+            assertEquals(0, vtermChangedCalled);
+            assertNull(vtermChangedInfo);
+            assertEquals(0, vtermIfChangedCalled);
+            assertNull(vtermIfChangedInfo);
+            assertEquals(0, vtermPortMapChangedCalled);
+            assertNull(vtermPortMapChangedInfo);
         }
     }
 
@@ -1174,27 +1351,32 @@ public class TestUseVTNManagerBase extends TestBase {
     }
 
     /**
-     * Determine broadcast domain of the specified vBridge.
+     * Determine broadcast domain of the specified virtual node.
      *
-     * @param path    A path to the vBridge.
+     * @param path    A path to the virtual node.
      * @param host    A {@link TestHost} instance which represents the source
      *                host of a broadcast packet.
      * @return  A set of {@link PortVlan} instances to which a broadcast packet
      *          from {@code host} should be sent.
      */
-    protected Set<PortVlan> getBroadcastNetwork(VBridgePath path,
+    protected Set<PortVlan> getBroadcastNetwork(VNodePath path,
                                                 TestHost host) {
         Set<PortVlan> pset = new HashSet<PortVlan>();
         Set<Node> vlanNodes = new HashSet<Node>();
+        if (!(path instanceof VBridgePath)) {
+            // No broadcast domain.
+            return pset;
+        }
 
+        VBridgePath bpath = (VBridgePath)path;
         try {
             // Test port mappings.
-            for (VInterface vif: vtnMgr.getBridgeInterfaces(path)) {
+            for (VInterface vif: vtnMgr.getInterfaces(bpath)) {
                 if (vif.getState() != VNodeState.UP) {
                     continue;
                 }
 
-                VBridgeIfPath ifpath = new VBridgeIfPath(path, vif.getName());
+                VBridgeIfPath ifpath = new VBridgeIfPath(bpath, vif.getName());
                 PortMap pmap = vtnMgr.getPortMap(ifpath);
                 if (pmap == null) {
                     continue;
@@ -1206,7 +1388,7 @@ public class TestUseVTNManagerBase extends TestBase {
             }
 
             // Test MAC mapping.
-            MacMapPath mpath = new MacMapPath(path);
+            MacMapPath mpath = new MacMapPath(bpath);
             Set<PortVlan> nwSet = resMgr.getMacMappedNetworks(vtnMgr, mpath);
             if (nwSet != null) {
                 pset.addAll(nwSet);
@@ -1216,7 +1398,7 @@ public class TestUseVTNManagerBase extends TestBase {
             ISwitchManager swMgr = vtnMgr.getSwitchManager();
             ITopologyManager topoMgr = vtnMgr.getTopologyManager();
             String container = vtnMgr.getContainerName();
-            for (VlanMap vmap: vtnMgr.getVlanMaps(path)) {
+            for (VlanMap vmap: vtnMgr.getVlanMaps(bpath)) {
                 short vlan = vmap.getVlan();
                 Node node = vmap.getNode();
                 if (node == null) {
@@ -1391,7 +1573,7 @@ public class TestUseVTNManagerBase extends TestBase {
                 bpath = null;
             } else {
                 pres = PacketResult.KEEP_PROCESSING;
-                VBridgePath mpath = sref.getPath();
+                VBridgePath mpath = (VBridgePath)sref.getPath();
                 bpath = new VBridgePath(mpath.getTenantName(),
                                         mpath.getBridgeName());
             }
@@ -1517,5 +1699,37 @@ public class TestUseVTNManagerBase extends TestBase {
 
         // This should never install new flow entry.
         stubObj.checkFlowCount(flowCount);
+    }
+
+    /**
+     * Add the specified node connector.
+     *
+     * @param nc    A node connector corresponding to a physical switch port.
+     * @param name  The name of the specified node connector.
+     * @param up    The state of the specified node connector.
+     */
+    protected void addNodeConnector(NodeConnector nc, String name, boolean up) {
+        HashMap<String, Property> props = new HashMap<String, Property>();
+        if (name != null) {
+            props.put(Name.NamePropName, new Name(name));
+        }
+
+        if (up) {
+            props.put(Config.ConfigPropName, new Config(Config.ADMIN_UP));
+            props.put(State.StatePropName, new State(State.EDGE_UP));
+        } else {
+            props.put(Config.ConfigPropName, new Config(Config.ADMIN_DOWN));
+            props.put(State.StatePropName, new State(State.EDGE_DOWN));
+        }
+
+        Node node = nc.getNode();
+        if (stubObj.addNode(node)) {
+            vtnMgr.notifyNode(node, UpdateType.ADDED,
+                              new HashMap<String, Property>());
+        }
+
+        if (stubObj.addNodeConnector(nc, props)) {
+            vtnMgr.notifyNodeConnector(nc, UpdateType.ADDED, props);
+        }
     }
 }

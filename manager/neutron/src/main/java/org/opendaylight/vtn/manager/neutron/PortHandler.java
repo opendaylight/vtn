@@ -408,7 +408,7 @@ public class PortHandler extends VTNNeutronUtils
                                           String portID) {
         VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
         try {
-            return getVTNManager().getBridgeInterface(path);
+            return getVTNManager().getInterface(path);
         } catch (VTNException e) {
             LOG.error("getBridgeInterface error, path - {}, e - {}", path,
                       e.toString());
@@ -434,7 +434,7 @@ public class PortHandler extends VTNNeutronUtils
         int result = HttpURLConnection.HTTP_NOT_FOUND;
         VInterfaceConfig conf = new VInterfaceConfig(portDesc, adminState);
         VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        Status status = getVTNManager().addBridgeInterface(path, conf);
+        Status status = getVTNManager().addInterface(path, conf);
         if (status.isSuccess()) {
             result = HttpURLConnection.HTTP_OK;
         } else {
@@ -463,7 +463,7 @@ public class PortHandler extends VTNNeutronUtils
 
         VInterfaceConfig conf = new VInterfaceConfig(portDesc, adminState);
         VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        Status status = getVTNManager().modifyBridgeInterface(path, conf, all);
+        Status status = getVTNManager().modifyInterface(path, conf, all);
         if (status.isSuccess()) {
             result = HttpURLConnection.HTTP_OK;
         } else {
@@ -486,7 +486,7 @@ public class PortHandler extends VTNNeutronUtils
         int result = HttpURLConnection.HTTP_NOT_FOUND;
 
         VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
-        Status status = getVTNManager().removeBridgeInterface(path);
+        Status status = getVTNManager().removeInterface(path);
         if (status.isSuccess()) {
             result = HttpURLConnection.HTTP_OK;
         } else {
