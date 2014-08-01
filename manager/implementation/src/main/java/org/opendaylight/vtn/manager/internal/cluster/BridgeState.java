@@ -192,6 +192,35 @@ public class BridgeState implements Serializable {
     }
 
     /**
+     * Remove paths that contain the specified node from the set of
+     * faulted paths.
+     *
+     * @param node  A {@link Node} corresponding to a physical switch.
+     * @return  The number of removed faulted paths.
+     */
+    int removeFaultedPath(Node node) {
+        int removed = 0;
+        if (faultedPaths != null) {
+            for (Iterator<ObjectPair<Node, Node>> it = faultedPaths.iterator();
+                 it.hasNext();) {
+                ObjectPair<Node, Node> npath = it.next();
+                Node snode = npath.getLeft();
+                Node dnode = npath.getRight();
+                if (snode.equals(node) || dnode.equals(node)) {
+                    it.remove();
+                    removed++;
+                    dirty = true;
+                }
+            }
+            if (faultedPaths.isEmpty()) {
+                faultedPaths = null;
+            }
+        }
+
+        return removed;
+    }
+
+    /**
      * Test and clear dirty flag.
      *
      * @return  {@code true} is returned only if this object is dirty.

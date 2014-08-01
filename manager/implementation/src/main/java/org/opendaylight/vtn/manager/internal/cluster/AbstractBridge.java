@@ -429,7 +429,8 @@ public abstract class AbstractBridge<T extends AbstractInterface>
     protected final void updateState(VTNManagerImpl mgr,
                                      ConcurrentMap<VTenantPath, Object> db,
                                      BridgeState bst) {
-        VNodeState state = updateStateImpl(mgr, db);
+        VNodeState state = (bst.getFaultedPathSize() == 0)
+            ? updateStateImpl(mgr, db) : VNodeState.DOWN;
         if (state != VNodeState.DOWN) {
             // Scan virtual interfaces.
             for (T vif: vInterfaces.values()) {
