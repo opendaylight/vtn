@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -792,12 +792,25 @@ public final class VBridgeImpl implements Serializable {
      * @param type  Type of update.
      */
     void notifyNode(VTNManagerImpl mgr, Node node, UpdateType type) {
-        VNodeState state = VNodeState.UNKNOWN;
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
+            VBridgeState bst = getBridgeState(db);
+            if (type == UpdateType.REMOVED) {
+                // Remove faulted paths that contain removed node.
+                int removed = bst.removeFaultedPath(node);
+                if (removed != 0) {
+                    LOG.info("{}:{}: Remove {} faulted path{} that contains " +
+                             "removed node: {}", getContainerName(),
+                             bridgePath, removed, (removed > 1) ? "s" : "",
+                             node);
+                }
+            }
+
+            VNodeState state = (bst.getFaultedPathSize() == 0)
+                ? VNodeState.UNKNOWN : VNodeState.DOWN;
             boolean doflush = false;
 
             for (VBridgeIfImpl vif: vInterfaces.values()) {
@@ -831,7 +844,7 @@ public final class VBridgeImpl implements Serializable {
                 }
                 state = s;
             }
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
 
             if (doflush) {
                 // Flush MAC address table entries associated with the
@@ -855,12 +868,27 @@ public final class VBridgeImpl implements Serializable {
      */
     void notifyNodeConnector(VTNManagerImpl mgr, NodeConnector nc,
                              VNodeState pstate, UpdateType type) {
-        VNodeState state = VNodeState.UNKNOWN;
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
 
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
+            VBridgeState bst = getBridgeState(db);
+            if (type == UpdateType.REMOVED) {
+                // Remove path faults that may be caused by removed node
+                // connector. Even if removed paths are still broken, they will
+                // be detected by succeeding PACKET_IN.
+                int removed = bst.removeFaultedPath(nc.getNode());
+                if (removed != 0) {
+                    LOG.info("{}:{}: Remove {} faulted path{} that contains " +
+                             "removed node connector: {}", getContainerName(),
+                             bridgePath, removed, (removed > 1) ? "s" : "",
+                             nc);
+                }
+            }
+
+            VNodeState state = (bst.getFaultedPathSize() == 0)
+                ? VNodeState.UNKNOWN : VNodeState.DOWN;
             boolean doflush = false;
 
             for (VBridgeIfImpl vif: vInterfaces.values()) {
@@ -895,7 +923,7 @@ public final class VBridgeImpl implements Serializable {
                 }
                 state = s;
             }
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
 
             if (doflush) {
                 // Flush MAC address table entries associated with the given
@@ -920,9 +948,11 @@ public final class VBridgeImpl implements Serializable {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
 
         Lock wrlock = rwLock.readLock();
-        VNodeState state = VNodeState.UNKNOWN;
         wrlock.lock();
         try {
+            VBridgeState bst = getBridgeState(db);
+            VNodeState state = (bst.getFaultedPathSize() == 0)
+                ? VNodeState.UNKNOWN : VNodeState.DOWN;
             for (VBridgeIfImpl vif: vInterfaces.values()) {
                 VNodeState s = vif.edgeUpdate(mgr, db, state, topoList);
                 if (vif.isEnabled()) {
@@ -942,7 +972,7 @@ public final class VBridgeImpl implements Serializable {
                 }
                 state = s;
             }
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
@@ -1593,25 +1623,29 @@ public final class VBridgeImpl implements Serializable {
     private void updateState(VTNManagerImpl mgr,
                              ConcurrentMap<VTenantPath, Object> db,
                              VBridgeState bst) {
-        VNodeState state = VNodeState.UNKNOWN;
-
-        // Scan virtual interfaces.
-        for (VBridgeIfImpl vif: vInterfaces.values()) {
-            if (vif.isEnabled()) {
-                state = vif.getBridgeState(db, state);
-                if (state == VNodeState.DOWN) {
-                    setState(mgr, db, bst, state);
-                    return;
+        VNodeState state;
+        if (bst.getFaultedPathSize() == 0) {
+            // Scan virtual interfaces.
+            state = VNodeState.UNKNOWN;
+            for (VBridgeIfImpl vif: vInterfaces.values()) {
+                if (vif.isEnabled()) {
+                    state = vif.getBridgeState(db, state);
+                    if (state == VNodeState.DOWN) {
+                        setState(mgr, db, bst, state);
+                        return;
+                    }
                 }
             }
-        }
 
-        // Scan VLAN mappings.
-        for (VlanMapImpl vmap: vlanMaps.values()) {
-            state = vmap.getBridgeState(db, state);
-            if (state == VNodeState.DOWN) {
-                break;
+            // Scan VLAN mappings.
+            for (VlanMapImpl vmap: vlanMaps.values()) {
+                state = vmap.getBridgeState(db, state);
+                if (state == VNodeState.DOWN) {
+                    break;
+                }
             }
+        } else {
+            state = VNodeState.DOWN;
         }
 
         setState(mgr, db, bst, state);

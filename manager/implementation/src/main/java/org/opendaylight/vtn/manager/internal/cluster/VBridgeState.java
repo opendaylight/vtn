@@ -40,7 +40,7 @@ public class VBridgeState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -970563907780953357L;
+    private static final long serialVersionUID = 762976657470766857L;
 
     /**
      * State of the bridge.
@@ -172,6 +172,30 @@ public class VBridgeState implements Serializable {
             if (path != null) {
                 removed.add(npath);
                 it.remove();
+                dirty = true;
+            }
+        }
+
+        return removed;
+    }
+
+    /**
+     * Remove paths that contain the specified node from the set of
+     * faulted paths.
+     *
+     * @param node  A {@link Node} corresponding to a physical switch.
+     * @return  The number of removed faulted paths.
+     */
+    int removeFaultedPath(Node node) {
+        int removed = 0;
+        for (Iterator<ObjectPair<Node, Node>> it = faultedPaths.iterator();
+             it.hasNext();) {
+            ObjectPair<Node, Node> npath = it.next();
+            Node snode = npath.getLeft();
+            Node dnode = npath.getRight();
+            if (snode.equals(node) || dnode.equals(node)) {
+                it.remove();
+                removed++;
                 dirty = true;
             }
         }

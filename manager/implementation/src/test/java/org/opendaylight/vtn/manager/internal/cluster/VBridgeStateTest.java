@@ -22,6 +22,8 @@ import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.routing.IRouting;
+import org.opendaylight.controller.sal.utils.NodeCreator;
+
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -189,6 +191,79 @@ public class VBridgeStateTest extends TestBase {
         assertTrue(bst.isDirty());
         assertFalse(bst.isDirty());
         assertEquals(faulted, resolvedSet);
+        assertTrue(bst.getFaultedPaths().isEmpty());
+    }
+
+    /**
+     * Test case for {@link BridgeState#removeFaultedPath(Node)}.
+     */
+    @Test
+    public void testRemoveFaultedPath() {
+        VBridgeState bst = new VBridgeState(VNodeState.UP);
+
+        // Create 4 nodes.
+        Node[] nodes = new Node[4];
+        for (int i = 0; i < nodes.length; i++) {
+            nodes[i] = NodeCreator.createOFNode(Long.valueOf((long)i));
+            assertNotNull(nodes[i]);
+            assertEquals(0, bst.removeFaultedPath(nodes[i]));
+            assertFalse(bst.isDirty());
+            assertEquals(0, bst.getFaultedPathSize());
+            assertTrue(bst.getFaultedPaths().isEmpty());
+        }
+
+        // Add faulted paths.
+        HashSet<ObjectPair<Node, Node>> expected =
+            new HashSet<ObjectPair<Node, Node>>();
+        for (int src = 0; src < nodes.length; src++) {
+            for (int dst = 0; dst < nodes.length; dst++) {
+                if (src == dst) {
+                    continue;
+                }
+
+                ObjectPair<Node, Node> path =
+                    new ObjectPair<Node, Node>(nodes[src], nodes[dst]);
+                assertTrue(expected.add(path));
+                assertTrue(bst.addFaultedPath(nodes[src], nodes[dst]));
+                assertTrue(bst.isDirty());
+                assertFalse(bst.isDirty());
+                assertEquals(expected, bst.getFaultedPaths());
+                assertEquals(expected.size(), bst.getFaultedPathSize());
+            }
+        }
+
+        // Ensure that the set of faulted paths is retained if the specified
+        // node is not contained in the faulted paths.
+        for (long i = 0; i < 10; i++) {
+            Node node = NodeCreator.createOFNode(Long.valueOf(100L + i));
+            assertEquals(0, bst.removeFaultedPath(node));
+            assertEquals(expected, bst.getFaultedPaths());
+            assertEquals(expected.size(), bst.getFaultedPathSize());
+            assertFalse(bst.isDirty());
+        }
+
+        // Remove faulted paths.
+        for (int i = 0; i < nodes.length; i++) {
+            int removed = 0;
+            for (Iterator<ObjectPair<Node, Node>> it = expected.iterator();
+                 it.hasNext();) {
+                ObjectPair<Node, Node> npath = it.next();
+                Node snode = npath.getLeft();
+                Node dnode = npath.getRight();
+                if (snode.equals(nodes[i]) || dnode.equals(nodes[i])) {
+                    it.remove();
+                    removed++;
+                }
+            }
+
+            assertEquals(removed, bst.removeFaultedPath(nodes[i]));
+            assertEquals(removed != 0, bst.isDirty());
+            assertFalse(bst.isDirty());
+            assertEquals(expected, bst.getFaultedPaths());
+            assertEquals(expected.size(), bst.getFaultedPathSize());
+        }
+
+        assertEquals(0, bst.getFaultedPathSize());
         assertTrue(bst.getFaultedPaths().isEmpty());
     }
 
