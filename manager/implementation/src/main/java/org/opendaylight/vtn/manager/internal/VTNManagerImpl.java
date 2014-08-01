@@ -59,11 +59,17 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VInterfacePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalConfig;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
@@ -2433,12 +2439,15 @@ public class VTNManagerImpl
      *
      * @param nc     A node connector.
      * @param ether  An ethernet frame.
+     * @return  {@code true} if the given packet was sent.
+     *          Otherwise {@code false}.
      */
-    public void transmit(NodeConnector nc, Ethernet ether) {
+    public boolean transmit(NodeConnector nc, Ethernet ether) {
         Node node = nc.getNode();
         IDataPacketService pktSrv = dataPacketService;
         RawPacket pkt = pktSrv.encodeDataPacket(ether);
         ConnectionLocality cl = connectionManager.getLocalityStatus(node);
+        boolean ret = true;
         if (cl == ConnectionLocality.LOCAL) {
             if (!disabledNodes.containsKey(node)) {
                 pkt.setOutgoingNodeConnector(nc);
@@ -2446,6 +2455,7 @@ public class VTNManagerImpl
             } else if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Don't send packet to disabled node: {}",
                           containerName, node);
+                ret = false;
             }
         } else if (cl == ConnectionLocality.NOT_LOCAL) {
             // Toss the packet to remote cluster nodes.
@@ -2454,7 +2464,10 @@ public class VTNManagerImpl
         } else {
             LOG.warn("{}: Drop packet because target port is " +
                      "uncontrollable: {}", containerName, nc);
+            ret = false;
         }
+
+        return ret;
     }
 
     /**
@@ -3262,12 +3275,12 @@ public class VTNManagerImpl
     /**
      * Create a reference to the port mapping configured in this container.
      *
-     * @param path  A path to the vBridge interface which contains port mapping
+     * @param path  A path to the virtual interface which contains port mapping
      *              configuration.
      * @return      A reference to the port mapping.
      */
-    public MapReference getMapReference(VBridgeIfPath path) {
-        return new MapReference(MapType.PORT, containerName, path);
+    public MapReference getMapReference(VInterfacePath path) {
+        return new MapReference(MapType.PORT, containerName, (VNodePath)path);
     }
 
     /**
@@ -3527,26 +3540,25 @@ public class VTNManagerImpl
     }
 
     /**
-     * Call virtual L2 bridge interface listeners on the calling thread.
+     * Call vTerminal listeners on the calling thread.
      *
-     * @param path    Path to the interface.
-     * @param viface  Information about the virtual interface.
-     * @param type    {@code ADDED} if added.
-     *                {@code REMOVED} if removed.
-     *                {@code CHANGED} if changed.
+     * @param path   Path to the vTerminal.
+     * @param vterm  Information about the vTerminal.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     *               {@code CHANGED} if changed.
      */
-    public void notifyListeners(VBridgeIfPath path, VInterface viface,
+    public void notifyListeners(VTerminalPath path, VTerminal vterm,
                                 UpdateType type) {
-        LOG.info("{}:{}: Bridge interface {}: {}", containerName, path,
-                 type.getName(), viface);
+        LOG.info("{}:{}: vTerminal {}: {}", containerName, path,
+                 type.getName(), vterm);
 
         for (IVTNManagerAware listener: vtnManagerAware) {
             try {
-                listener.vBridgeInterfaceChanged(path, viface, type);
+                listener.vTerminalChanged(path, vterm, type);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder(containerName);
-                builder.append(
-                    ": Unhandled exception in bridge interface listener: ").
+                builder.append(": Unhandled exception in vTerminal listener: ").
                     append(listener).append(": ").append(e.toString());
                 LOG.error(builder.toString(), e);
             }
@@ -3554,16 +3566,86 @@ public class VTNManagerImpl
     }
 
     /**
-     * Notify the L2 bridge interface changes.
+     * Notify the vTerminal changes.
      *
-     * @param path    Path to the interface.
+     * @param path   Path to the vTerminal.
+     * @param vterm  Information about the vTerminal.
+     * @param type   {@code ADDED} if added.
+     *               {@code REMOVED} if removed.
+     *               {@code CHANGED} if changed.
+     */
+    public void notifyChange(final VTerminalPath path, final VTerminal vterm,
+                             final UpdateType type) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                notifyListeners(path, vterm, type);
+            }
+        };
+        postTask(r);
+    }
+
+    /**
+     * Notify the specified listener of the vTerminal.
+     *
+     * @param listener  VTN manager listener service.
+     * @param path      Path to the vTerminal.
+     * @param vterm     Information about the vTerminal.
+     * @param type      {@code ADDED} if added.
+     *                  {@code REMOVED} if removed.
+     *                  {@code CHANGED} if changed.
+     */
+    public void notifyChange(final IVTNManagerAware listener,
+                             final VTerminalPath path, final VTerminal vterm,
+                             final UpdateType type) {
+        Runnable r = new Runnable() {
+            @Override
+            public void run() {
+                listener.vTerminalChanged(path, vterm, type);
+            }
+        };
+        postTask(r);
+    }
+
+    /**
+     * Call virtual interface listeners on the calling thread.
+     *
+     * @param path    Path to the virtual interface.
      * @param viface  Information about the virtual interface.
      * @param type    {@code ADDED} if added.
      *                {@code REMOVED} if removed.
      *                {@code CHANGED} if changed.
      */
-    public void notifyChange(final VBridgeIfPath path, final VInterface viface,
-                             final UpdateType type) {
+    public void notifyListeners(VInterfacePath path, VInterface viface,
+                                UpdateType type) {
+        LOG.info("{}:{}: Virtual interface {}: {}", containerName, path,
+                 type.getName(), viface);
+
+        for (IVTNManagerAware listener: vtnManagerAware) {
+            try {
+                path.vInterfaceChanged(listener, viface, type);
+            } catch (Exception e) {
+                StringBuilder builder = new StringBuilder(containerName);
+                builder.append(": Unhandled exception in ").
+                    append(path.getNodeType()).
+                    append(" interface listener: ").
+                    append(listener).append(": ").append(e.toString());
+                LOG.error(builder.toString(), e);
+            }
+        }
+    }
+
+    /**
+     * Notify the virtual interface changes.
+     *
+     * @param path    Path to the virtual interface.
+     * @param viface  Information about the virtual interface.
+     * @param type    {@code ADDED} if added.
+     *                {@code REMOVED} if removed.
+     *                {@code CHANGED} if changed.
+     */
+    public void notifyChange(final VInterfacePath path,
+                             final VInterface viface, final UpdateType type) {
         Runnable r = new Runnable() {
             @Override
             public void run() {
@@ -3574,22 +3656,22 @@ public class VTNManagerImpl
     }
 
     /**
-     * Notify the specified listener of the L2 bridge interface changes.
+     * Notify the specified listener of the virtual interface changes.
      *
      * @param listener  VTN manager listener service.
-     * @param path      Path to the interface.
+     * @param path      Path to the virtualinterface.
      * @param viface    Information about the virtual interface.
      * @param type      {@code ADDED} if added.
      *                  {@code REMOVED} if removed.
      *                  {@code CHANGED} if changed.
      */
     public void notifyChange(final IVTNManagerAware listener,
-                             final VBridgeIfPath path, final VInterface viface,
-                             final UpdateType type) {
+                             final VInterfacePath path,
+                             final VInterface viface, final UpdateType type) {
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                listener.vBridgeInterfaceChanged(path, viface, type);
+                path.vInterfaceChanged(listener, viface, type);
             }
         };
         postTask(r);
@@ -3739,19 +3821,19 @@ public class VTNManagerImpl
     /**
      * Call port mapping listeners on the calling thread.
      *
-     * @param path  Path to the bridge interface.
+     * @param path  Path to the virtual interface.
      * @param pmap  Information about the port mapping.
      * @param type  {@code ADDED} if added.
      *              {@code REMOVED} if removed.
      */
-    public void notifyListeners(VBridgeIfPath path, PortMap pmap,
+    public void notifyListeners(VInterfacePath path, PortMap pmap,
                                 UpdateType type) {
-        LOG.info("{}:{}: Port mapping {}: {}", containerName, path,
-                 type.getName(), pmap);
+        LOG.info("{}:{}: Port mapping {}: {}",
+                 containerName, path, type.getName(), pmap);
 
         for (IVTNManagerAware listener: vtnManagerAware) {
             try {
-                listener.portMapChanged(path, pmap, type);
+                path.portMapChanged(listener, pmap, type);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder(containerName);
                 builder.append(
@@ -3763,14 +3845,14 @@ public class VTNManagerImpl
     }
 
     /**
-     * Notify port mapping changes.
+     * Notify changes of port mapping configured in virtual interface.
      *
-     * @param path  Path to the bridge interface.
+     * @param path  Path to the virtual interface.
      * @param pmap  Information about the port mapping.
      * @param type  {@code ADDED} if added.
      *              {@code REMOVED} if removed.
      */
-    public void notifyChange(final VBridgeIfPath path, final PortMap pmap,
+    public void notifyChange(final VInterfacePath path, final PortMap pmap,
                              final UpdateType type) {
         Runnable r = new Runnable() {
             @Override
@@ -3782,21 +3864,21 @@ public class VTNManagerImpl
     }
 
     /**
-     * Notify port mapping changes.
+     * Notify changes of port mapping configured in virtual interface.
      *
      * @param listener  VTN manager listener service.
-     * @param path      Path to the bridge interface.
+     * @param path      Path to the virtual interface.
      * @param pmap      Information about the port mapping.
      * @param type      {@code ADDED} if added.
      *                  {@code REMOVED} if removed.
      */
     public void notifyChange(final IVTNManagerAware listener,
-                             final VBridgeIfPath path, final PortMap pmap,
+                             final VInterfacePath path, final PortMap pmap,
                              final UpdateType type) {
         Runnable r = new Runnable() {
             @Override
             public void run() {
-                listener.portMapChanged(path, pmap, type);
+                path.portMapChanged(listener, pmap, type);
             }
         };
         postTask(r);
@@ -3807,7 +3889,7 @@ public class VTNManagerImpl
      *
      * @param host  A new host.
      */
-    void notifyHost(final HostNodeConnector host) {
+    public void notifyHost(final HostNodeConnector host) {
         Runnable r = new Runnable() {
             @Override
             public void run() {
@@ -4859,22 +4941,135 @@ public class VTNManagerImpl
         }
     }
 
+
     /**
-     * Return a list of virtual interfaces attached to the specified virtual
-     * L2 bridge.
+     * Return a list of vTerminals in the specified tenant.
      *
-     * @param path  Path to the bridge.
-     * @return  A list of virtual interfaces.
+     * @param path  Path to the virtual tenant.
+     * @return  A list of vTerminals.
      * @throws VTNException  An error occurred.
      */
     @Override
-    public List<VInterface> getBridgeInterfaces(VBridgePath path)
+    public List<VTerminal> getTerminals(VTenantPath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.getBridgeInterfaces(this, path);
+            return vtn.getTerminals(this);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Return information about the specified vTerminal.
+     *
+     * @param path  Path to the vTerminal.
+     * @return  Information about the specified vTerminal.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public VTerminal getTerminal(VTerminalPath path) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getTerminal(this, path);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Add a new vTerminal.
+     *
+     * @param path    Path to the vTerminal to be added.
+     * @param vtconf  vTerminal configuration.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status addTerminal(VTerminalPath path, VTerminalConfig vtconf) {
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.addTerminal(this, path, vtconf);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Modify configuration of existing vTerminal.
+     *
+     * @param path    Path to the vTerminal.
+     * @param vtconf  vTerminal configuration.
+     * @param all     If {@code true} is specified, all attributes of the
+     *                vTerminal are modified. In this case, {@code null} in
+     *                {@code vtconf} is interpreted as default value.
+     *                If {@code false} is specified, an attribute is not
+     *                modified if its value in {@code vtconf} is {@code null}.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status modifyTerminal(VTerminalPath path, VTerminalConfig vtconf,
+                               boolean all) {
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.modifyTerminal(this, path, vtconf, all);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the vTerminal specified by the given name.
+     *
+     * @param path  Path to the vTerminal.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status removeTerminal(VTerminalPath path) {
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.removeTerminal(this, path);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Return a list of virtual interfaces attached to the specified virtual
+     * L2 bridge.
+     *
+     * @param path  Path to the vBridge.
+     * @return  A list of virtual interfaces.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<VInterface> getInterfaces(VBridgePath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getInterfaces(this, path);
         } finally {
             unlock(rdlock);
         }
@@ -4884,18 +5079,18 @@ public class VTNManagerImpl
      * Return information about the specified virtual interface attached to
      * the virtual L2 bridge.
      *
-     * @param path  Path to the interface.
+     * @param path  Path to the vBridge interface.
      * @return  Information about the specified interface.
      * @throws VTNException  An error occurred.
      */
     @Override
-    public VInterface getBridgeInterface(VBridgeIfPath path)
+    public VInterface getInterface(VBridgeIfPath path)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.getBridgeInterface(this, path);
+            return vtn.getInterface(this, path);
         } finally {
             unlock(rdlock);
         }
@@ -4904,19 +5099,18 @@ public class VTNManagerImpl
     /**
      * Add a new virtual interface to the virtual L2 bridge.
      *
-     * @param path   Path to the interface to be added.
+     * @param path   Path to the vBridge interface to be added.
      * @param iconf  Interface configuration.
      * @return  "Success" or failure reason.
      */
     @Override
-    public Status addBridgeInterface(VBridgeIfPath path,
-                                     VInterfaceConfig iconf) {
+    public Status addInterface(VBridgeIfPath path, VInterfaceConfig iconf) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.addBridgeInterface(this, path, iconf);
+            return vtn.addInterface(this, path, iconf);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4928,7 +5122,7 @@ public class VTNManagerImpl
      * Modify configuration of existing virtual interface attached to the
      * virtual L2 bridge.
      *
-     * @param path   Path to the interface.
+     * @param path   Path to the vBridge interface.
      * @param iconf  Interface configuration.
      * @param all    If {@code true} is specified, all attributes of the
      *               interface are modified. In this case, {@code null} in
@@ -4938,14 +5132,14 @@ public class VTNManagerImpl
      * @return  "Success" or failure reason.
      */
     @Override
-    public Status modifyBridgeInterface(VBridgeIfPath path,
-                                        VInterfaceConfig iconf, boolean all) {
+    public Status modifyInterface(VBridgeIfPath path, VInterfaceConfig iconf,
+                                  boolean all) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.modifyBridgeInterface(this, path, iconf, all);
+            return vtn.modifyInterface(this, path, iconf, all);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -4960,7 +5154,7 @@ public class VTNManagerImpl
      * @return  "Success" or failure reason.
      */
     @Override
-    public Status removeBridgeInterface(VBridgeIfPath path) {
+    public Status removeInterface(VBridgeIfPath path) {
         // Acquire writer lock because this operation may change existing
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
@@ -4968,7 +5162,122 @@ public class VTNManagerImpl
             checkUpdate();
 
             VTenantImpl vtn = getTenantImpl(path);
-            return vtn.removeBridgeInterface(this, path);
+            return vtn.removeInterface(this, path);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Return a list of virtual interfaces attached to the specified vTerminal.
+     *
+     * @param path  Path to the vTerminal.
+     * @return  A list of virtual interfaces.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<VInterface> getInterfaces(VTerminalPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getInterfaces(this, path);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Return information about the specified virtual interface attached to
+     * the vTerminal.
+     *
+     * @param path  Path to the vTerminal interface.
+     * @return  Information about the specified interface.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public VInterface getInterface(VTerminalIfPath path)
+        throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getInterface(this, path);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Add a new virtual interface to the vTerminal.
+     *
+     * @param path   Path to the vTerminal interface to be added.
+     * @param iconf  Interface configuration.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status addInterface(VTerminalIfPath path, VInterfaceConfig iconf) {
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.addInterface(this, path, iconf);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Modify configuration of existing virtual interface attached to the
+     * vTerminal.
+     *
+     * @param path   Path to the vTerminal interface.
+     * @param iconf  Interface configuration.
+     * @param all    If {@code true} is specified, all attributes of the
+     *               interface are modified. In this case, {@code null} in
+     *               {@code iconf} is interpreted as default value.
+     *               If {@code false} is specified, an attribute is not
+     *               modified if its value in {@code iconf} is {@code null}.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status modifyInterface(VTerminalIfPath path, VInterfaceConfig iconf,
+                                  boolean all) {
+        VTNThreadData data = VTNThreadData.create(rwLock.readLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.modifyInterface(this, path, iconf, all);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the virtual interface from the vTerminal.
+     *
+     * @param path  Path to the interface.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status removeInterface(VTerminalIfPath path) {
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.removeInterface(this, path);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -5091,10 +5400,10 @@ public class VTNManagerImpl
     }
 
     /**
-     * Return the port mapping configuration applied to the specified virtual
-     * bridge interface.
+     * Return the port mapping configuration applied to the specified vBridge
+     * interface.
      *
-     * @param path  Path to the bridge interface.
+     * @param path  Path to the vBridge interface.
      * @return  Port mapping information. {@code null} is returned if the
      *          port mapping is not configured on the specified interface.
      * @throws VTNException  An error occurred.
@@ -5112,10 +5421,31 @@ public class VTNManagerImpl
     }
 
     /**
-     * Create or destroy mapping between the physical switch port and the
-     * virtual bridge interface.
+     * Return the port mapping configuration applied to the specified
+     * vTerminal interface.
      *
-     * @param path    Path to the bridge interface.
+     * @param path  Path to the vTerminal interface.
+     * @return  Port mapping information. {@code null} is returned if the
+     *          port mapping is not configured on the specified interface.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public PortMap getPortMap(VTerminalIfPath path) throws VTNException {
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.getPortMap(this, path);
+        } finally {
+            unlock(rdlock);
+        }
+    }
+
+    /**
+     * Create or destroy mapping between the physical switch port and the
+     * vBridge interface.
+     *
+     * @param path    Path to the vBridge interface.
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
      *                specified interface is destroyed.
@@ -5123,6 +5453,33 @@ public class VTNManagerImpl
      */
     @Override
     public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
+        // Acquire writer lock because this operation may change existing
+        // virtual network mapping.
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(path);
+            return vtn.setPortMap(this, path, pmconf);
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Create or destroy mapping between the physical switch port and the
+     * vTerminal interface.
+     *
+     * @param path    Path to the vTerminal.
+     * @param pmconf  Port mapping configuration to be set.
+     *                If {@code null} is specified, port mapping on the
+     *                specified interface is destroyed.
+     * @return  "Success" or failure reason.
+     */
+    @Override
+    public Status setPortMap(VTerminalIfPath path, PortMapConfig pmconf) {
         // Acquire writer lock because this operation may change existing
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
@@ -5428,7 +5785,7 @@ public class VTNManagerImpl
             // Determine the virtual node that maps the given host.
             MapReference ref = resourceManager.getMapReference(dst, nc, vlan);
             if (ref != null && containerName.equals(ref.getContainerName())) {
-                VBridgePath path = ref.getPath();
+                VNodePath path = ref.getPath();
                 VTenantImpl vtn = getTenantImpl(path);
                 return vtn.probeHost(this, ref, pctx);
             }
@@ -7191,7 +7548,7 @@ public class VTNManagerImpl
             short vlan = pctx.getVlan();
             MapReference ref = resourceManager.getMapReference(src, nc, vlan);
             if (ref != null && containerName.equals(ref.getContainerName())) {
-                VBridgePath path = ref.getPath();
+                VNodePath path = ref.getPath();
                 VTenantImpl vtn = getTenantImpl(path);
                 return vtn.receive(this, ref, pctx);
             }

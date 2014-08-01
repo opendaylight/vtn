@@ -612,7 +612,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
 
         for (VBridgeIfPath ifpath : ifpaths) {
             VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-            st = mgr.addBridgeInterface(ifpath, ifconf);
+            st = mgr.addInterface(ifpath, ifconf);
             assertTrue(st.isSuccess());
         }
     }

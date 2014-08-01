@@ -34,8 +34,11 @@ import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
@@ -233,6 +236,18 @@ public abstract class TestBase extends Assert {
                 } else {
                     path = bpath;
                 }
+            } else if (path instanceof VTerminalPath) {
+                VTerminalPath vtpath = (VTerminalPath)path;
+                String vtname = copy(vtpath.getTerminalName());
+                vtpath = new VTerminalPath(tname, vtname);
+
+                if (path instanceof VTerminalIfPath) {
+                    VTerminalIfPath ipath = (VTerminalIfPath)path;
+                    String iname = copy(ipath.getInterfaceName());
+                    path = new VTerminalIfPath(vtpath, iname);
+                } else {
+                    path = vtpath;
+                }
             }
         }
         return path;
@@ -248,7 +263,7 @@ public abstract class TestBase extends Assert {
         if (ref != null) {
             MapType type = ref.getMapType();
             String cname = copy(ref.getContainerName());
-            VBridgePath path = (VBridgePath)copy(ref.getPath());
+            VNodePath path = (VNodePath)copy(ref.getPath());
             ref = new MapReference(type, cname, path);
         }
 
@@ -1180,13 +1195,13 @@ public abstract class TestBase extends Assert {
 
             ArrayList<String> components = new ArrayList<String>();
             components.add(path.getTenantName());
-            if (path instanceof VBridgePath) {
-                components.add(((VBridgePath)path).getBridgeName());
-                if (path instanceof VBridgeIfPath) {
-                    components.add(((VBridgeIfPath)path).getInterfaceName());
-                } else if (path instanceof VlanMapPath) {
-                    components.add(((VlanMapPath)path).getMapId());
-                }
+            if (path instanceof VNodePath) {
+                components.add(((VNodePath)path).getTenantNodeName());
+            }
+            if (path instanceof VBridgeIfPath) {
+                components.add(((VBridgeIfPath)path).getInterfaceName());
+            } else if (path instanceof VlanMapPath) {
+                components.add(((VlanMapPath)path).getMapId());
             }
 
             int prevSize = prevComponens.size();

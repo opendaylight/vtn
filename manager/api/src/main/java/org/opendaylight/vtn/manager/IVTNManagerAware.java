@@ -177,6 +177,91 @@ public interface IVTNManagerAware {
     void vBridgeChanged(VBridgePath path, VBridge vbridge, UpdateType type);
 
     /**
+     * Invoked when the information related to
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * inside the container is changed.
+     *
+     * <p>
+     *   If at least one vTerminal exists in the container at the time of
+     *   registering {@code IVTNManagerAware} listener in the VTN Manager,
+     *   then this method is called with specifying information about each
+     *   vTerminal so that the existence of these can be notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vtnChanged(VTenantPath, VTenant, UpdateType)}, which
+     *     notifies the existence of the
+     *     {@linkplain <a href="package-summary.html#VTN">VTN</a>} to which
+     *     this vTerminal belongs, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path   A {@link VTerminalPath} object that specifies the
+     *               position of the vTerminal.
+     * @param vterm  A {@link VTerminal} object which represents the vTerminal
+     *               information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new vTerminal has been
+     *       created.
+     *       <ul>
+     *         <li>
+     *           The position of the newly created vTerminal is passed to
+     *           {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the newly created vTerminal is passed to
+     *           {@code vterm}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified vTerminal has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vTerminal is passed to
+     *           {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated vTerminal is passed to
+     *           {@code vterm}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>The vTerminal configuration has been changed.</li>
+     *             <li>The status of the vTerminal has been changed.</li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified vTerminal
+     *       has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the removed vTerminal is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the vTerminal just prior to its removal is
+     *           passed to {@code vterm}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     */
+    void vTerminalChanged(VTerminalPath path, VTerminal vterm,
+                          UpdateType type);
+
+    /**
      * Invoked when the information related to the
      * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
      * configured in
@@ -264,9 +349,103 @@ public interface IVTNManagerAware {
      *       </ul>
      *     </li>
      *   </ul>
+     * @since  Helium
      */
-    void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface,
-                                 UpdateType type);
+    void vInterfaceChanged(VBridgeIfPath path, VInterface viface,
+                           UpdateType type);
+
+    /**
+     * Invoked when the information related to the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * configured in
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * inside the container is changed.
+     *
+     * <p>
+     *   If at least one vTerminal interface exists in the container at the
+     *   time of registering {@code IVTNManagerAware} listener in the
+     *   VTN Manager, then this method is called with specifying information
+     *   about each vTerminal interface so that the existence of these can be
+     *   notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vTerminalChanged(VTerminalPath, VTerminal, UpdateType)},
+     *     which notifies the existence of the vTerminal to which this
+     *     vTerminal interface belongs, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path    A {@link VTerminalIfPath} object that specifies the
+     *                position of the vTerminal interface.
+     * @param viface  A {@link VInterface} object which represents the
+     *                vTerminal interface information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new vTerminal interface
+     *       has been created.
+     *       <ul>
+     *         <li>
+     *           The position of the newly created vTerminal interface is
+     *           passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the newly created vTerminal interface is
+     *           passed to {@code viface}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified vTerminal interface has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vTerminal interface is specified
+     *           to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated vTerminal interface is specified
+     *           to {@code viface}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>
+     *               The vTerminal interface configuration has been changed.
+     *             </li>
+     *             <li>
+     *               The status of the vTerminal interface has been changed.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified vTerminal
+     *       interface has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the removed vTerminal interface is passed to
+     *           {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the vTerminal interface just prior to its
+     *           removal is passed to {@code viface}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     * @since  Helium
+     */
+    void vInterfaceChanged(VTerminalIfPath path, VInterface viface,
+                           UpdateType type);
 
     /**
      * Invoked when the information related to the
@@ -354,7 +533,7 @@ public interface IVTNManagerAware {
      * <ul>
      *   <li>
      *     It is guaranteed that
-     *     {@link #vBridgeInterfaceChanged(VBridgeIfPath, VInterface, UpdateType)},
+     *     {@link #vInterfaceChanged(VBridgeIfPath, VInterface, UpdateType)},
      *     which notifies the existence of the vBridge interface wherein this
      *     port mapping is configured, is called first.
      *   </li>
@@ -427,6 +606,98 @@ public interface IVTNManagerAware {
      *   </ul>
      */
     void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type);
+
+    /**
+     * Invoked when the information related to the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}
+     * configured in
+     * {@linkplain <a href="package-summary.html#vInterface">vTerminal interface</a>}
+     * inside the container is changed.
+     *
+     * <p>
+     *   If at least one port mapping configured in vTerminal interface exists
+     *   in the container at the time of registering {@code IVTNManagerAware}
+     *   listener in the VTN Manager, then this method is called with
+     *   specifying information about each port mapping so that the existence
+     *   of these can be notified to listener.
+     * </p>
+     * <ul>
+     *   <li>
+     *     It is guaranteed that
+     *     {@link #vInterfaceChanged(VTerminalIfPath, VInterface, UpdateType)},
+     *     which notifies the existence of the vTerminal interface wherein this
+     *     port mapping is configured, is called first.
+     *   </li>
+     *   <li>
+     *     In that case {@link UpdateType#ADDED} is passed to {@code type}.
+     *   </li>
+     * </ul>
+     *
+     * @param path  A {@link VTerminalIfPath} object that specifies the
+     *              position of the vTerminal interface.
+     * @param pmap  A {@link PortMap} object which represents the port mapping
+     *              information.
+     * @param type
+     *   An {@link UpdateType} object which indicates the type of modification
+     *   is specified.
+     *   <ul>
+     *     <li>
+     *       {@link UpdateType#ADDED} is specified if a new port mapping is
+     *       configured.
+     *       <ul>
+     *         <li>
+     *           The position of the vTerminal interface in which the port
+     *           mapping is configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the port mapping is passed to {@code pmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#CHANGED} is specified if information about the
+     *       specified port mapping has been modified.
+     *       <ul>
+     *         <li>
+     *           The position of the modified vTerminal interface in which the
+     *           port mapping is configured is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the updated port mapping is specified to
+     *           {@code pmap}.
+     *         </li>
+     *         <li>
+     *           Change is notified in the following cases.
+     *           <ul>
+     *             <li>
+     *               The port mapping configuration has been changed.
+     *             </li>
+     *             <li>
+     *               The physical switch port actually mapped by the port
+     *               mapping has been changed.
+     *             </li>
+     *           </ul>
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       {@link UpdateType#REMOVED} is specified if the specified port
+     *       mapping has been removed.
+     *       <ul>
+     *         <li>
+     *           The position of the vTerminal interface from which the port
+     *           mapping is removed is passed to {@code path}.
+     *         </li>
+     *         <li>
+     *           Information about the port mapping just prior to its removal
+     *           is passed to {@code pmap}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *   </ul>
+     * @since  Helium
+     */
+    void portMapChanged(VTerminalIfPath path, PortMap pmap, UpdateType type);
 
     /**
      * Invoked when the information related to the

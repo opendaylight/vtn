@@ -121,21 +121,16 @@ public class VBridgeTest extends TestBase {
                                 createVBridgeConfig(desc, ival);
                             VBridge vbridge = new VBridge(name, state, flt,
                                                           bconf);
-                            if (name != null) {
-                                name = "name=" + name;
-                            }
-                            if (desc != null) {
-                                desc = "desc=" + desc;
-                            }
-
+                            String n = (name == null) ? null : "name=" + name;
+                            String d = (desc == null) ? null : "desc=" + desc;
                             String i = (ival == null)
                                 ? null : "ageInterval=" + ival;
                             String f = "faults=" + flt;
                             String s = "state=" + state;
 
                             String required =
-                                joinStrings(prefix, suffix, ",", name, desc,
-                                            i, f, s);
+                                joinStrings(prefix, suffix, ",", n, d, i,
+                                            f, s);
                             assertEquals(required, vbridge.toString());
                         }
                     }

@@ -45,6 +45,7 @@ public class VTenantPathTest extends TestBase {
         for (String tname: createStrings("tenant_name")) {
             VTenantPath path = new VTenantPath(tname);
             assertEquals(tname, path.getTenantName());
+            assertEquals("VTN", path.getNodeType());
         }
     }
 
@@ -85,10 +86,11 @@ public class VTenantPathTest extends TestBase {
      */
     @Test
     public void testToString() {
+        String prefix = "VTN:";
         for (String tname: createStrings("tenant_name")) {
             VTenantPath path = new VTenantPath(tname);
             String required = (tname == null) ? "<null>" : tname;
-            assertEquals(required, path.toString());
+            assertEquals(prefix + required, path.toString());
         }
     }
 
@@ -117,12 +119,27 @@ public class VTenantPathTest extends TestBase {
                 assertFalse(hset.add(bpath));
                 size++;
 
+                VTerminalPath tmpath = new VTerminalPath(path, bname);
+                assertTrue(set.add(tmpath));
+                assertFalse(set.add(tmpath));
+                assertTrue(hset.add(tmpath));
+                assertFalse(hset.add(tmpath));
+                size++;
+
                 for (String iname: createStrings("interface_name")) {
                     VBridgeIfPath ipath = new VBridgeIfPath(bpath, iname);
                     assertTrue(set.add(ipath));
                     assertFalse(set.add(ipath));
                     assertTrue(hset.add(ipath));
                     assertFalse(hset.add(ipath));
+                    size++;
+
+                    VTerminalIfPath tipath =
+                        new VTerminalIfPath(tmpath, iname);
+                    assertTrue(set.add(tipath));
+                    assertFalse(set.add(tipath));
+                    assertTrue(hset.add(tipath));
+                    assertFalse(hset.add(tipath));
                     size++;
 
                     TestPath tpath = new TestPath(bpath, iname);
@@ -158,11 +175,13 @@ public class VTenantPathTest extends TestBase {
 
             ArrayList<String> components = new ArrayList<String>();
             components.add(path.getTenantName());
-            if (path instanceof VBridgePath) {
-                components.add(((VBridgePath)path).getBridgeName());
-                if (path instanceof VBridgeIfPath) {
-                    components.add(((VBridgeIfPath)path).getInterfaceName());
-                }
+            if (path instanceof VNodePath) {
+                components.add(((VNodePath)path).getTenantNodeName());
+            }
+            if (path instanceof VBridgeIfPath) {
+                components.add(((VBridgeIfPath)path).getInterfaceName());
+            } else if (path instanceof VTerminalIfPath) {
+                components.add(((VTerminalIfPath)path).getInterfaceName());
             }
 
             int prevSize = prevComponens.size();
@@ -247,5 +266,11 @@ public class VTenantPathTest extends TestBase {
 
         VBridgeIfPath ipath = new VBridgeIfPath(bpath, "interface");
         assertEquals(expected, path.contains(ipath));
+
+        VTerminalPath vtpath = new VTerminalPath(tpath, "terminal");
+        assertEquals(expected, path.contains(vtpath));
+
+        VTerminalIfPath vtipath = new VTerminalIfPath(vtpath, "interface");
+        assertEquals(expected, path.contains(vtipath));
     }
 }

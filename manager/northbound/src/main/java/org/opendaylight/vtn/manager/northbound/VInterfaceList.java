@@ -21,11 +21,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.vtn.manager.VInterface;
 
 /**
- * {@code VInterfaceList} class describes a list of vBridge interface
+ * {@code VInterfaceList} class describes a list of virtual interface
  * information.
  *
  * <p>
- *   This class is used to return a list of vBridge interface information to
+ *   This class is used to return a list of virtual interface information to
  *   REST client.
  * </p>
  *
@@ -59,7 +59,7 @@ public class VInterfaceList {
      * <ul>
      *   <li>
      *     This element contains 0 or more {@link VInterface} instances which
-     *     represent information about virtual interface in vBridge.
+     *     represent information about virtual interface in virtual node.
      *   </li>
      * </ul>
      */

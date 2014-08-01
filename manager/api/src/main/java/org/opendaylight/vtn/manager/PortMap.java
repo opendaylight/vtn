@@ -18,7 +18,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}, which
  * maps a physical switch port to a
  * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
- * in a {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+ * in a virtual node.
  *
  * <p>
  *   The VTN Manager passes the port mapping information to other components
@@ -42,8 +42,7 @@ public class PortMap implements Serializable {
     /**
      * Node connector corresponding to the the physical switch port actually
      * mapped to the
-     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
-     * in the {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      */
     private final NodeConnector  nodeConnector;
 
@@ -56,7 +55,7 @@ public class PortMap implements Serializable {
      * @param nc
      *   A {@link NodeConnector} object corresponding to a physical switch port
      *   actually mapped to the
-     *   {@linkplain <a href="package-summary.html#vInterface">vBridge interface</a>}.
+     *   {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      *   Specify {@code null} if there is no physical switch port that
      *   fulfills the conditions specified by {@code pmconf}.
      */
@@ -79,12 +78,10 @@ public class PortMap implements Serializable {
     /**
      * Return the node connector corresponding to the physical switch port
      * actually mapped to the
-     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
-     * in the
-     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      *
      * @return  A {@link NodeConnector} object corresponding to the physical
-     *          swtich port actually mapped to the vBridge interface.
+     *          swtich port actually mapped to the virtual interface.
      *          {@code null} is returned if no physical switch port meets the
      *          conditions specified by the port mapping configuration.
      */
@@ -114,7 +111,7 @@ public class PortMap implements Serializable {
      *       <li>
      *         {@link NodeConnector} object corresponding to the physical
      *         switch port actually mapped to the
-     *         {@linkplain <a href="package-summary.html#vInterface">vBridge interface</a>}.
+     *         {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
      *       </li>
      *     </ul>
      *   </li>

@@ -609,9 +609,286 @@ public interface IVTNManager {
     Status removeBridge(VBridgePath path);
 
     /**
+     * Return a list of {@link VTerminal} objects corresponding to all the
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * inside the specified
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path
+     *   A {@link VTenantPath} object that specifies the position of the VTN.
+     * @return  A list of {@link VTerminal} objects corresponding to all the
+     *          vTerminals present inside the VTN specified by {@code path}.
+     *          An empty list is returned if no vTerminal is present inside
+     *          the VTN.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<VTerminal> getTerminals(VTenantPath path) throws VTNException;
+
+    /**
+     * Return information about the specified
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * in the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path  A {@link VTerminalPath} object that specifies the position
+     *              of the vTerminal.
+     * @return  A {@link VTerminal} object which represents information about
+     *          the vTerminal specified by {@code path}.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    VTerminal getTerminal(VTerminalPath path) throws VTNException;
+
+    /**
+     * Create a new
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * inside the specified
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path
+     *   A {@link VTerminalPath} object that specifies the position of new
+     *   vTerminal.
+     *   <p style="margin-left: 1em;">
+     *     The name of the vTerminal inside {@link VTerminalPath} must
+     *     be a string that meets the following conditions.
+     *   </p>
+     *   <ul>
+     *     <li>
+     *       The length of the name must be greater than <strong>0</strong>
+     *       and less than <strong>32</strong>.
+     *     </li>
+     *     <li>
+     *       The name must consist of US-ASCII alphabets, numbers, and
+     *       underscore ({@code '_'}).
+     *     </li>
+     *     <li>
+     *       The name must start with an US-ASCII alphabet or number.
+     *     </li>
+     *   </ul>
+     * @param vtconf
+     *   A {@link VTerminalConfig} object which specifies the vTerminal
+     *   configuration information.
+     *   <ul>
+     *     <li>
+     *       The description of the vTerminal is not registered if {@code null}
+     *       is configured in {@code vtconf} for the
+     *       {@linkplain VTerminalConfig#getDescription() description}.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code vtconf}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *         <li>
+     *           Incorrect
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name}
+     *           is configured in {@code path}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>}
+     *         specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.CONFLICT}
+     *     <dd>vTerminal specified by {@code path} already exists.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status addTerminal(VTerminalPath path, VTerminalConfig vtconf);
+
+    /**
+     * Modify the configuration of the existing
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * in the specified
+     * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path    A {@link VTerminalPath} that specifies the position
+     *                of the vTerminal to be modified.
+     * @param vtconf  A {@link VTerminalConfig} object which contains the
+     *                vTerminal configuration information to be applied.
+     * @param all
+     *   A boolean value to determine the treatment of attributes for which
+     *   value has not been configured inside {@code vtconf}.
+     *   <ul>
+     *     <li>
+     *       If {@code true} is specified, all the attributes related to
+     *       vTerminal are modified.
+     *       <ul>
+     *         <li>
+     *           The description of the vTerminal will be deleted if
+     *           {@code null} is configured in {@code vtconf} for the
+     *           {@linkplain VTerminalConfig#getDescription() description}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       If {@code false} is specified, attributes with no value
+     *       configured in {@code vtconf} is not modified.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code vtconf}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status modifyTerminal(VTerminalPath path, VTerminalConfig vtconf,
+                          boolean all);
+
+    /**
+     * Remove the specified
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}
+     * from the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
+     *
+     * @param path  A {@link VTerminalPath} object that specifies the position
+     *              of the vTerminal to be removed.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removeTerminal(VTerminalPath path);
+
+    /**
      * Return a list of {@link VInterface} objects corresponding to all the
      * {@linkplain <a href="package-summary.html#vInterface">virtual interfaces</a>}
-     * inside the specified vBridge.
+     * inside the specified
+     * {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
      *
      * @param path
      *   A {@link VBridgePath} object that specifies the position of the
@@ -643,9 +920,9 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
+     * @since  Helium
      */
-    List<VInterface> getBridgeInterfaces(VBridgePath path)
-        throws VTNException;
+    List<VInterface> getInterfaces(VBridgePath path) throws VTNException;
 
     /**
      * Return information about the specified
@@ -681,8 +958,9 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
+     * @since  Helium
      */
-    VInterface getBridgeInterface(VBridgeIfPath path) throws VTNException;
+    VInterface getInterface(VBridgeIfPath path) throws VTNException;
 
     /**
      * Create a new
@@ -770,8 +1048,9 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
+     * @since  Helium
      */
-    Status addBridgeInterface(VBridgeIfPath path, VInterfaceConfig iconf);
+    Status addInterface(VBridgeIfPath path, VInterfaceConfig iconf);
 
     /**
      * Modify the configuration of the existing
@@ -847,9 +1126,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
+     * @since  Helium
      */
-    Status modifyBridgeInterface(VBridgeIfPath path, VInterfaceConfig iconf,
-                                 boolean all);
+    Status modifyInterface(VBridgeIfPath path, VInterfaceConfig iconf,
+                           boolean all);
 
     /**
      * Remove the specified
@@ -896,8 +1176,309 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
+     * @since  Helium
      */
-    Status removeBridgeInterface(VBridgeIfPath path);
+    Status removeInterface(VBridgeIfPath path);
+
+    /**
+     * Return a list of {@link VInterface} objects corresponding to all the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interfaces</a>}
+     * inside the specified
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * @param path
+     *   A {@link VTerminalPath} object that specifies the position of the
+     *   {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     * @return  A list of {@link VInterface} objects corresponding to all the
+     *          virtual interfaces present inside the vTerminal specified by
+     *          {@code path}.
+     *          An empty list is returned if no virtual interface is present
+     *          inside the vTerminal.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *         vTerminal specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<VInterface> getInterfaces(VTerminalPath path) throws VTNException;
+
+    /**
+     * Return information about the specified
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * in the {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * @param path  A {@link VTerminalIfPath} object that specifies the
+     *              position of the vTerminal interface.
+     * @return  A {@link VInterface} object which represents information about
+     *          the vTerminal interface specified by {@code path}.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name} or
+     *           {@linkplain VTerminalIfPath#getInterfaceName() interface name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal or vTerminal interface specified by {@code path} does
+     *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    VInterface getInterface(VTerminalIfPath path) throws VTNException;
+
+    /**
+     * Create a new
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * inside the specified
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * @param path
+     *   A {@link VTerminalIfPath} object that specifies the position of new
+     *   vTerminal interface.
+     *   <p style="margin-left: 1em;">
+     *     The name of the vTerminal interface inside {@link VTerminalIfPath}
+     *     must be a string that meets the following conditions.
+     *   </p>
+     *   <ul>
+     *     <li>
+     *       The length of the name must be greater than <strong>0</strong>
+     *       and less than <strong>32</strong>.
+     *     </li>
+     *     <li>
+     *       The name must consist of US-ASCII alphabets, numbers, and
+     *       underscore ({@code '_'}).
+     *     </li>
+     *     <li>
+     *       The name must start with an US-ASCII alphabet or number.
+     *     </li>
+     *   </ul>
+     * @param iconf
+     *   A {@link VInterfaceConfig} object which specifies the vTerminal
+     *   interface configuration information.
+     *   <ul>
+     *     <li>
+     *       The description of the vTerminal interface is not registered if
+     *       {@code null} is configured in {@code iconf} for the
+     *       {@linkplain VInterfaceConfig#getDescription() description}.
+     *     </li>
+     *     <li>
+     *       {@linkplain VInterfaceConfig#getEnabled() Enable/disable configuration}
+     *       is treated as {@link Boolean#TRUE} if it is not configured in
+     *       {@code iconf}.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code iconf}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name}.
+     *         </li>
+     *         <li>
+     *           Incorrect
+     *           {@linkplain VTerminalIfPath#getInterfaceName() interface name}
+     *           is configured in {@code path}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *         vTerminal specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.CONFLICT}
+     *     <dd>A vTerminal interface already exists in the vTerminal specified
+     *         by {@code path}.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status addInterface(VTerminalIfPath path, VInterfaceConfig iconf);
+
+    /**
+     * Modify the configuration of the existing
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * in the specified
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * @param path   A {@link VTerminalIfPath} that specifies the position
+     *               of the vTerminal interface to be modified.
+     * @param iconf  A {@link VInterfaceConfig} object which contains the
+     *               vTerminal interface configuration information to be
+     *               applied.
+     * @param all
+     *   A boolean value to determine the treatment of attributes for which
+     *   value has not been configured inside {@code iconf}.
+     *   <ul>
+     *     <li>
+     *       If {@code true} is specified, all the attributes related to
+     *       vTerminal interface are modified.
+     *       <ul>
+     *         <li>
+     *           The description of the vTerminal interface will be deleted if
+     *           {@code null} is configured in {@code iconf} for the
+     *           {@linkplain VInterfaceConfig#getDescription() description}.
+     *         </li>
+     *         <li>
+     *           {@linkplain VInterfaceConfig#getEnabled() Enable/disable configuration}
+     *           is treated as {@link Boolean#TRUE} if it is not configured
+     *           in {@code iconf}.
+     *         </li>
+     *       </ul>
+     *     </li>
+     *     <li>
+     *       If {@code false} is specified, attributes with no value
+     *       configured in {@code iconf} is not modified.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>
+     *           {@code null} is passed to {@code path} or {@code iconf}.
+     *         </li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name} or
+     *           {@linkplain VTerminalIfPath#getInterfaceName() interface name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal or vTerminal interface specified by {@code path} does
+     *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status modifyInterface(VTerminalIfPath path, VInterfaceConfig iconf,
+                           boolean all);
+
+    /**
+     * Remove the specified
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * from the
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * @param path  A {@link VTerminalIfPath} object that specifies the
+     *              position of the vTerminal interface to be removed.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name} or
+     *           {@linkplain VTerminalIfPath#getInterfaceName() interface name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal or vTerminal interface specified by {@code path} does
+     *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removeInterface(VTerminalIfPath path);
 
     /**
      * Return a list of {@link VlanMap} objects corresponding to all the
@@ -1251,6 +1832,50 @@ public interface IVTNManager {
     PortMap getPortMap(VBridgeIfPath path) throws VTNException;
 
     /**
+     * Return information about the
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}
+     * configured in the specified
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * in the
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * @param path  A {@link VTerminalIfPath} object that specifies the
+     *              position of the vTerminal interface.
+     * @return  A {@link PortMap} object which contains the port mapping
+     *          information is returned if the port mapping is configured
+     *          in the vTerminal interface specified by {@code path}.
+     *          {@code null} is returned if the port mapping is not configured
+     *          in the specified vTerminal interface.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name} or
+     *           {@linkplain VTerminalIfPath#getInterfaceName() interface name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal or vTerminal interface specified by {@code path} does
+     *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    PortMap getPortMap(VTerminalIfPath path) throws VTNException;
+
+    /**
      * Configure
      * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}
      * in the specified
@@ -1301,7 +1926,7 @@ public interface IVTNManager {
      *             However, when mapping is actually done with the specified
      *             physical port, the port mapping will not be established if
      *             that physical port and VLAN ID are mapped to another
-     *             vBridge interface.
+     *             virtual interface.
      *           </li>
      *         </ul>
      *       </li>
@@ -1388,7 +2013,7 @@ public interface IVTNManager {
      *     <dd>
      *       Physical switch port specified by {@code pmconf} exists, and
      *       the specified combination of physical port and VLAN ID is mapped
-     *       to another vBridge interface.
+     *       to another virtual interface.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
@@ -1400,6 +2025,161 @@ public interface IVTNManager {
      *   </dl>
      */
     Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf);
+
+    /**
+     * Configure
+     * {@linkplain <a href="package-summary.html#port-map">port mapping</a>}
+     * in the specified
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     * in the
+     * {@linkplain <a href="package-summary.html#vTerminal">vTerminal</a>}.
+     *
+     * <p>
+     *   If port mapping is already configured in the specified vTerminal
+     *   interface, the specified settings are applied after old configuration
+     *   is deleted.
+     * </p>
+     * <p>
+     *   If a non-{@code null} value is passed to {@code pmconf}, then
+     *   ethernet frame that flows through the port of the physical switch
+     *   specified by {@code pmconf} will get mapped to the vTerminal interface
+     *   specified by {@code path}.
+     * </p>
+     * <ul>
+     *   <li>
+     *     {@code pmconf} must contain a
+     *     {@link org.opendaylight.controller.sal.core.Node} object
+     *     corresponding to the physical switch that you want to map to the
+     *     vTerminal interface.
+     *     <ul>
+     *       <li>
+     *         Currently, it is possible to configure only the
+     *         {@link org.opendaylight.controller.sal.core.Node} objects that
+     *         correspond to OpenFlow switches.
+     *       </li>
+     *     </ul>
+     *   </li>
+     *   <li>
+     *     {@code pmconf} must contain a {@link SwitchPort} object that
+     *     specifies the position of the physical switch port that you want to
+     *     map to the vTerminal interface.
+     *     <ul>
+     *       <li>
+     *         Currently, it is possible to configure only the physical ports
+     *         of OpenFlow switches.
+     *       </li>
+     *       <li>
+     *         Port mapping configuration will succeed even if the specified
+     *         physical port of the switch does not exist. Port mapping will
+     *         come into effect whenever, at a later point in time, the
+     *         specified physical port is found.
+     *         <ul>
+     *           <li>
+     *             However, when mapping is actually done with the specified
+     *             physical port, the port mapping will not be established if
+     *             that physical port and VLAN ID are mapped to another
+     *             virtual interface.
+     *           </li>
+     *         </ul>
+     *       </li>
+     *     </ul>
+     *   </li>
+     *   <li>
+     *     The VLAN network is mapped to the vTerminal interface according to
+     *     the VLAN ID configured in {@code pmconf}.
+     *     <ul>
+     *       <li>
+     *         If a value between <strong>1</strong> or more and
+     *         <strong>4095</strong> or less is configured, then the ethernet
+     *         frames that have this VLAN ID configured will get mapped to
+     *         the vTerminal interface.
+     *       </li>
+     *       <li>
+     *         If <strong>0</strong> is configured, untagged ethernet frames
+     *         will get mapped to the vTerminal interface.
+     *       </li>
+     *     </ul>
+     *   </li>
+     *   <li>
+     *     This method does nothing if port mapping with the same configuration
+     *     information as {@code pmconf} is already configured in the vTerminal
+     *     interface specified by {@code path}.
+     *   </li>
+     * </ul>
+     *
+     * @param path    A {@link VTerminalIfPath} object that specifies the
+     *                position of the vTerminal interface.
+     * @param pmconf
+     *   A {@link PortMapConfig} object which contains the port mapping
+     *   configuration information.
+     *   <p style="margin-left: 1em;">
+     *     If {@code null} is specified, port mapping in the specified
+     *     vTerminal interface is removed. In this case this method will
+     *     succeed even if no port mapping is configured to the specified
+     *     vTerminal interface.
+     *   </p>
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name} or
+     *           {@linkplain VTerminalPath#getTerminalName() vTerminal name} or
+     *           {@linkplain VTerminalIfPath#getInterfaceName() interface name}.
+     *         </li>
+     *         <li>
+     *           {@code pmconf} is not {@code null}, and
+     *           {@link org.opendaylight.controller.sal.core.Node} or
+     *           {@link SwitchPort} object is not configured in that.
+     *         </li>
+     *         <li>
+     *           {@code pmconf} is not {@code null}, and
+     *           incorrect value is configured in that for
+     *           {@link org.opendaylight.controller.sal.core.Node} or
+     *           {@link SwitchPort} object.
+     *         </li>
+     *         <li>
+     *           {@code pmconf} is not {@code null}, and incorrect VLAN ID is
+     *           configured in that.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
+     *       vTerminal or vTerminal interface specified by {@code path} does
+     *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.CONFLICT}
+     *     <dd>
+     *       Physical switch port specified by {@code pmconf} exists, and
+     *       the specified combination of physical port and VLAN ID is mapped
+     *       to another virtual interface.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status setPortMap(VTerminalIfPath path, PortMapConfig pmconf);
 
     /**
      * Return information about
