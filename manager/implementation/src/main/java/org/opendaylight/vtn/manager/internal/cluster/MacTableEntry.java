@@ -308,8 +308,11 @@ public class MacTableEntry implements Serializable {
      *    At least one necessary class was not found.
      */
     @SuppressWarnings("unused")
-    private synchronized void readObject(ObjectInputStream in)
+    private void readObject(ObjectInputStream in)
         throws IOException, ClassNotFoundException {
+        // Read serialized fields.
+        // Note that the monitor of this instance does not need to be acquired
+        // here because this instance is not yet visible.
         in.defaultReadObject();
 
         // Reset "used" to initial value.
