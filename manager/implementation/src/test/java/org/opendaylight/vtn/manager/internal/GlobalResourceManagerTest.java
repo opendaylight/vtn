@@ -1024,8 +1024,8 @@ public class GlobalResourceManagerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link GlobalResourceManager#registerPortMap(VTNManagerImpl,VBridgeIfPath,PortVlan,PortVlan,boolean)},
-     * {@link GlobalResourceManager#unregisterPortMap(VTNManagerImpl,VBridgeIfPath,PortVlan,boolean)}.
+     * {@link GlobalResourceManager#registerPortMap(VTNManagerImpl,VInterfacePath,PortVlan,PortVlan,boolean)},
+     * {@link GlobalResourceManager#unregisterPortMap(VTNManagerImpl,VInterfacePath,PortVlan,boolean)}.
      */
     @Test
     public void testRegisterPortMap() {

@@ -45,7 +45,7 @@ public final class VNodeLocation implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7246059483559637187L;
+    private static final long serialVersionUID = 8688432687151988512L;
 
     /**
      * The name of the VTN.
@@ -94,7 +94,8 @@ public final class VNodeLocation implements Serializable {
      *   </li>
      *   <li>
      *     This attribute is omitted if the virtual node specified by this
-     *     element is not a vTerminal.
+     *     element is neither a vTerminal nor a virtual node attached to the
+     *     vTerminal.
      *   </li>
      * </ul>
      */
@@ -114,6 +115,11 @@ public final class VNodeLocation implements Serializable {
      *     If the virtual interface specified by this element is attached to
      *     a vRouter, the name of the vRouter is set to the
      *     <strong>router</strong> attribute.
+     *   </li>
+     *   <li>
+     *     If the virtual interface specified by this element is attached to
+     *     a vTerminal, the name of the vTerminal is set to the
+     *     <strong>terminal</strong> attribute.
      *   </li>
      *   <li>
      *     This attribute is omitted if the virtual node specified by this
@@ -147,6 +153,20 @@ public final class VNodeLocation implements Serializable {
 
     /**
      * Construct a new {@code VNodeLocation} instance which represents the
+     * location of the vTerminal.
+     *
+     * @param path  A {@link VTerminalPath} instance which represents the
+     *              location of the vTerminal.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code path}.
+     */
+    public VNodeLocation(VTerminalPath path) {
+        tenantName = path.getTenantName();
+        terminalName = path.getTerminalName();
+    }
+
+    /**
+     * Construct a new {@code VNodeLocation} instance which represents the
      * location of the virtual interface attached to the vBridge.
      *
      * @param path  A {@link VBridgeIfPath} instance which represents the
@@ -156,6 +176,21 @@ public final class VNodeLocation implements Serializable {
      */
     public VNodeLocation(VBridgeIfPath path) {
         this((VBridgePath)path);
+        interfaceName = path.getInterfaceName();
+    }
+
+    /**
+     * Construct a new {@code VNodeLocation} instance which represents the
+     * location of the virtual interface attached to the vTerminal.
+     *
+     * @param path  A {@link VTerminalIfPath} instance which represents the
+     *              location of the virtual interface attached to the
+     *              vTerminal.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code path}.
+     */
+    public VNodeLocation(VTerminalIfPath path) {
+        this((VTerminalPath)path);
         interfaceName = path.getInterfaceName();
     }
 

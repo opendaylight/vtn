@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -70,11 +69,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  *   class.
  * </p>
  */
-public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
+public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2513638526695560805L;
+    private static final long serialVersionUID = -4634225185394179596L;
 
     /**
      * Logger instance.
@@ -1485,6 +1484,17 @@ public final class MacMapImpl implements VBridgeNode, Serializable, Cloneable {
     @Override
     public VNodeRoute getIngressRoute() {
         return new VNodeRoute(mapPath, VNodeRoute.Reason.MACMAPPED);
+    }
+
+    /**
+     * Install a flow entry which drops every incoming packet.
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     */
+    @Override
+    public void disableInput(VTNManagerImpl mgr, PacketContext pctx) {
+        // Not supported.
     }
 
     // Cloneable

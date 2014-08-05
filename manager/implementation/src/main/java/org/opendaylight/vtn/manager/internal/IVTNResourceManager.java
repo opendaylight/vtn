@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 
-import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -121,8 +121,8 @@ public interface IVTNResourceManager {
      * </ul>
      *
      * @param mgr    VTN Manager service.
-     * @param path   Path to the virtual bridge interface which maps the
-     *               specified VLAN network.
+     * @param path   Path to the virtual interface which maps the specified
+     *               VLAN network.
      * @param pvlan  A {@link PortVlan} object which specifies the VLAN network
      *               to be mapped. No port mapping is added if {@code null} is
      *               specified.
@@ -136,7 +136,7 @@ public interface IVTNResourceManager {
      *          VLAN network specified by {@code pvlan} is returned.
      * @throws VTNException  A fatal error occurred.
      */
-    MapReference registerPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+    MapReference registerPortMap(VTNManagerImpl mgr, VInterfacePath path,
                                  PortVlan pvlan, PortVlan rmlan, boolean purge)
         throws VTNException;
 
@@ -149,14 +149,14 @@ public interface IVTNResourceManager {
      * </p>
      *
      * @param mgr    VTN Manager service.
-     * @param path   Path to the virtual bridge interface.
+     * @param path   Path to the virtual interface.
      * @param pvlan  A {@link PortVlan} object which specifies the VLAN network
      *               to be unmapped.
      * @param purge  If {@code true} is specified, this method purges caches
      *               corresponding to the unmapped VLAN network.
      * @throws VTNException  A fatal error occurred.
      */
-    void unregisterPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
+    void unregisterPortMap(VTNManagerImpl mgr, VInterfacePath path,
                            PortVlan pvlan, boolean purge) throws VTNException;
 
     /**

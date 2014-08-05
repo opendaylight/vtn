@@ -44,6 +44,7 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
@@ -65,7 +66,7 @@ import org.opendaylight.vtn.manager.internal.cluster.PortMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RawPacketEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeEvent;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeIfEvent;
+import org.opendaylight.vtn.manager.internal.cluster.VInterfaceEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapEvent;
@@ -195,8 +196,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         ifpathlist.add(ifpath1);
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
-        Status st = vtnMgr.addBridgeInterface(ifpath2,
-                new VInterfaceConfig(null, Boolean.FALSE));
+        Status st = vtnMgr.addInterface(
+            ifpath2, new VInterfaceConfig(null, Boolean.FALSE));
         ifpathlist.add(ifpath2);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -416,7 +417,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             index++;
         }
         for (VBridgePath path: ifpathlist) {
-            assertTrue(posted.get(index) instanceof VBridgeIfEvent);
+            assertTrue(posted.get(index) instanceof VInterfaceEvent);
             index++;
         }
 
@@ -641,52 +642,52 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         events = clsEvents.getPostedEvents();
         checkVBridgeEvent(events, 1, bpath, bconf, UpdateType.ADDED);
 
-        // add vBridgeInterface.
+        // add vBridge interface.
         VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         events = clsEvents.getPostedEvents();
-        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
-        VBridgeIfEvent ifev = (VBridgeIfEvent)events.get(0);
+        checkVInterfaceEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
+        VInterfaceEvent ifev = (VInterfaceEvent)events.get(0);
 
         listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         executeClusterEvent(mgr, ifpath, ifev, true);
         listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
 
-        // change vBridgeInterface.
+        // change vBridge interface.
         ifconf = new VInterfaceConfig("description", Boolean.TRUE);
-        st = mgr.modifyBridgeInterface(ifpath, ifconf, true);
+        st = mgr.modifyInterface(ifpath, ifconf, true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         events = clsEvents.getPostedEvents();
-        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.CHANGED);
-        ifev = (VBridgeIfEvent)events.get(0);
+        checkVInterfaceEvent(events, 1, ifpath, ifconf, UpdateType.CHANGED);
+        ifev = (VInterfaceEvent)events.get(0);
 
         listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
         executeClusterEvent(mgr, ifpath, ifev, true);
         listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
 
-        // remove vBridgeInterface.
-        st = mgr.removeBridgeInterface(ifpath);
+        // remove vBridge interface.
+        st = mgr.removeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         events = clsEvents.getPostedEvents();
-        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.REMOVED);
-        ifev = (VBridgeIfEvent)events.get(0);
+        checkVInterfaceEvent(events, 1, ifpath, ifconf, UpdateType.REMOVED);
+        ifev = (VInterfaceEvent)events.get(0);
 
         listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
         executeClusterEvent(mgr, ifpath, ifev, true);
         listener.checkVIfInfo(1, ifpath, UpdateType.REMOVED);
 
-        // add vBridgeInterface for following tests.
+        // add vBridge interface for following tests.
         ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         listener.checkVIfInfo(1, ifpath, UpdateType.ADDED);
         events = clsEvents.getPostedEvents();
-        checkVBridgeIfEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
+        checkVInterfaceEvent(events, 1, ifpath, ifconf, UpdateType.ADDED);
 
         // add PortMap. When PortMap status is changed,
-        // VBridge and VBridgeInterface status is also changed.
+        // VBridge and VBridge interface status is also changed.
         Node node0 = NodeCreator.createOFNode(Long.valueOf("0"));
         SwitchPort port = new SwitchPort(node0.getType(), "10");
         short vlan = 0;
@@ -710,12 +711,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
                 executeVBridgeEvent(mgr, bpath, bev, false);
                 listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
-            } else if (ev instanceof VBridgeIfEvent) {
+            } else if (ev instanceof VInterfaceEvent) {
                 if (ifev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
                 }
-                ifev = (VBridgeIfEvent)ev;
-                checkVBridgeIfEvent(ifev, ifpath, ifconf,
+                ifev = (VInterfaceEvent)ev;
+                checkVInterfaceEvent(ifev, ifpath, ifconf,
                                     VNodeState.UP, VNodeState.UP,
                                     UpdateType.CHANGED);
                 listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
@@ -747,7 +748,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         listener.checkPmapInfo(1, ifpath, pmconf, UpdateType.CHANGED);
 
         // clear PortMap. When portmap is removed,
-        // VBridge and VBridgeInterface status is also changed.
+        // VBridge and VBridge interface status is also changed.
         st = mgr.setPortMap(ifpath, null);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         events = clsEvents.getPostedEvents();
@@ -767,12 +768,12 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
                 executeVBridgeEvent(mgr, bpath, bev, false);
                 listener.checkVbrInfo(1, bpath, UpdateType.CHANGED);
-            } else if (ev instanceof VBridgeIfEvent) {
+            } else if (ev instanceof VInterfaceEvent) {
                 if (ifev != null) {
                     fail("unexpected event was posted.(" + ev.toString() + ")");
                 }
-                ifev = (VBridgeIfEvent)ev;
-                checkVBridgeIfEvent(ifev, ifpath, ifconf,
+                ifev = (VInterfaceEvent)ev;
+                checkVInterfaceEvent(ifev, ifpath, ifconf,
                                     VNodeState.UNKNOWN, VNodeState.UNKNOWN,
                                     UpdateType.CHANGED);
                 listener.checkVIfInfo(1, ifpath, UpdateType.CHANGED);
@@ -1087,7 +1088,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(3, events.size());
         checkPortMapEvent((PortMapEvent)events.get(0), ifpath, pmconf,
                           UpdateType.ADDED);
-        checkVBridgeIfEvent((VBridgeIfEvent)events.get(1), ifpath, ifconf,
+        checkVInterfaceEvent((VInterfaceEvent)events.get(1), ifpath, ifconf,
                             VNodeState.UP, VNodeState.UP, UpdateType.CHANGED);
         checkVBridgeEvent((VBridgeEvent)events.get(2), bpath, bconf,
                           VNodeState.UP, UpdateType.CHANGED);
@@ -1144,7 +1145,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertTrue(events.isEmpty());
 
         // remove tenant.
-        // VTenantEvent, VBridgeEvent, VBridgeIfEvent, PortMapEvent,
+        // VTenantEvent, VBridgeEvent, VInterfaceEvent, PortMapEvent,
         // VlanMapEvent, and MacMapEvent are posted.
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -1235,23 +1236,23 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check {@link VBridgeIfEvent}.
+     * Check {@link VInterfaceEvent}.
      *
      * @param events    A list of {@link ClusterEvent}.
      * @param numEvents A number of events in {@code clsEvents}.
-     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param ifpath    Path to the target interface.
      * @param ifconf    A {@link VInterfaceConfig}.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkVBridgeIfEvent(List<ClusterEvent> events,
-                                     int numEvents, VBridgeIfPath ifpath,
-                                     VInterfaceConfig ifconf,
-                                     UpdateType utype) {
+    private void checkVInterfaceEvent(List<ClusterEvent> events,
+                                      int numEvents, VInterfacePath ifpath,
+                                      VInterfaceConfig ifconf,
+                                      UpdateType utype) {
         assertEquals(numEvents, events.size());
         for (ClusterEvent ev : events) {
-            if (ev instanceof VBridgeIfEvent) {
-                VBridgeIfEvent ifev = (VBridgeIfEvent)ev;
-                checkVBridgeIfEvent(ifev, ifpath, ifconf,
+            if (ev instanceof VInterfaceEvent) {
+                VInterfaceEvent ifev = (VInterfaceEvent)ev;
+                checkVInterfaceEvent(ifev, ifpath, ifconf,
                                     VNodeState.UNKNOWN, VNodeState.UNKNOWN,
                                     utype);
             } else {
@@ -1261,25 +1262,26 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
     }
 
     /**
-     * Check {@link VBridgeIfEvent}.
+     * Check {@link VInterfaceEvent}.
      *
-     * @param ifev      A {@link VBridgeIfEvent}.
-     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param ifev      A {@link VInterfaceEvent}.
+     * @param ifpath    Path to the target interface.
      * @param ifconf    A {@link VInterfaceConfig}.
      * @param state     A state of {@link VInterface}.
      * @param estate    A state of port mapped to.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkVBridgeIfEvent(VBridgeIfEvent ifev, VBridgeIfPath ifpath,
-                                     VInterfaceConfig ifconf,
-                                     VNodeState state, VNodeState estate,
-                                     UpdateType utype) {
+    private void checkVInterfaceEvent(VInterfaceEvent ifev,
+                                      VInterfacePath ifpath,
+                                      VInterfaceConfig ifconf,
+                                      VNodeState state, VNodeState estate,
+                                      UpdateType utype) {
         assertEquals(ifpath, ifev.getPath());
-        VInterface bif = new VInterface(ifpath.getInterfaceName(),
+        VInterface vif = new VInterface(ifpath.getInterfaceName(),
                                         state, estate, ifconf);
-        assertEquals(bif, ifev.getVInterface());
+        assertEquals(vif, ifev.getVInterface());
         assertEquals(utype, ifev.getUpdateType());
-        assertEquals("virtual bridge interface", ifev.getTypeName());
+        assertEquals("virtual interface", ifev.getTypeName());
     }
 
     /**
@@ -1287,14 +1289,13 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
      *
      * @param events    A list of {@link ClusterEvent}.
      * @param numEvents A number of events in {@code clsEvents}.
-     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param ifpath    Path to the target interface.
      * @param pmconf    A {@link PortMapConfig}.
      * @param utype     A {@link UpdateType}.
      */
     private void checkPortMapEvent(List<ClusterEvent> events,
-                                   int numEvents, VBridgeIfPath ifpath,
+                                   int numEvents, VInterfacePath ifpath,
                                    PortMapConfig pmconf, UpdateType utype) {
-
         assertEquals(numEvents, events.size());
         for (ClusterEvent ev : events) {
             if (ev instanceof PortMapEvent) {
@@ -1310,18 +1311,17 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
      * Check {@link PortMapEvent}.
      *
      * @param ev        A {@link PortMapEvent}.
-     * @param ifpath    A {@link VBridgeIfPath}.
+     * @param ifpath    Path to the target interface.
      * @param pmconf    A {@link PortMapConfig}.
      * @param utype     A {@link UpdateType}.
      */
-    private void checkPortMapEvent(PortMapEvent ev,
-                                   VBridgeIfPath ifpath, PortMapConfig pmconf,
-                                   UpdateType utype) {
+    private void checkPortMapEvent(PortMapEvent ev, VInterfacePath ifpath,
+                                   PortMapConfig pmconf, UpdateType utype) {
         assertEquals(ifpath, ev.getPath());
         assertEquals(pmconf, ev.getPortMap().getConfig());
-        NodeConnector nc = NodeConnectorCreator
-                .createOFNodeConnector(Short.valueOf(pmconf.getPort().getId()),
-                                       pmconf.getNode());
+        NodeConnector nc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf(pmconf.getPort().getId()),
+                                  pmconf.getNode());
         PortMap pmap = new PortMap(pmconf, nc);
         assertEquals(pmap, ev.getPortMap());
         assertEquals(utype, ev.getUpdateType());
@@ -2086,7 +2086,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
                 String bname = (i < maxInterfaceBridge1) ? bname1 : bname2;
                 String ifname = "vinterface" + inode + (i + 10);
                 VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
-                st = mgr.addBridgeInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
+                st = mgr.addInterface(ifp,
+                                      new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals("(VBridgeIfPath)" + ifp.toString(),
                              StatusCode.SUCCESS, st.getCode());
                 inode++;

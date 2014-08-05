@@ -278,7 +278,7 @@ public class TestHost extends TestBase {
             return;
         }
 
-        VBridgePath mapPath = mapping.getPath();
+        VBridgePath mapPath = (VBridgePath)mapping.getPath();
         if (!path.contains(mapPath)) {
             assertEquals(null, tent);
             return;

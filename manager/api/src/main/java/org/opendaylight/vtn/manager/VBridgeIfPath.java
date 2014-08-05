@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.util.List;
 
+import org.opendaylight.controller.sal.core.UpdateType;
+
 /**
  * {@code VBridgeIfPath} class describes the position of the
  * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
@@ -27,11 +29,16 @@ import java.util.List;
  * @see  <a href="package-summary.html#vBridge">vBridge</a>
  * @see  <a href="package-summary.html#vInterface">Virtual interface</a>
  */
-public class VBridgeIfPath extends VBridgePath {
+public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8804848224089838313L;
+    private static final long serialVersionUID = 3530008424797872881L;
+
+    /**
+     * A string which represents that the node type is vBridge interface.
+     */
+    private static final String  NODETYPE_VBRIDGE_IF = "vBridge-IF";
 
     /**
      * The name of the
@@ -89,13 +96,14 @@ public class VBridgeIfPath extends VBridgePath {
     }
 
     /**
-     * Return the name of the
-     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
+     * {@inheritDoc}
      *
-     * @return  The name of the virtual interface.
+     * @return  {@code "vBridge-IF"} is always returned.
+     * @since   Helium
      */
-    public String getInterfaceName() {
-        return ifName;
+    @Override
+    public String getNodeType() {
+        return NODETYPE_VBRIDGE_IF;
     }
 
     /**
@@ -148,53 +156,6 @@ public class VBridgeIfPath extends VBridgePath {
     }
 
     /**
-     * Determine whether the given object is identical to this object.
-     *
-     * <p>
-     *   {@code true} is returned only if all the following conditions are met.
-     * </p>
-     * <ul>
-     *   <li>
-     *     {@code o} is a {@code VBridgeIfPath} object.
-     *     Note that this method returns {@code false} if {@code o} is an
-     *     object of subclass of {@code VBridgeIfPath}.
-     *   </li>
-     *   <li>
-     *     The following values stored in {@code o} are the same as in this
-     *     object.
-     *     <ul>
-     *       <li>
-     *         The name of the
-     *         {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
-     *       </li>
-     *       <li>
-     *         The name of the
-     *         {@linkplain <a href="package-summary.html#vBridge">vBridge</a>}.
-     *       </li>
-     *       <li>
-     *         The name of the
-     *         {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
-     *       </li>
-     *     </ul>
-     *   </li>
-     * </ul>
-     *
-     * @param o  An object to be compared.
-     * @return   {@code true} if identical. Otherwise {@code false}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o == null || !o.getClass().equals(getClass())) {
-            return false;
-        }
-
-        return equalsPath((VBridgeIfPath)o);
-    }
-
-    /**
      * Return the hash code of this object.
      *
      * @return  The hash code.
@@ -207,5 +168,57 @@ public class VBridgeIfPath extends VBridgePath {
         }
 
         return h;
+    }
+
+    // VInterfacePath
+
+    /**
+     * Return the name of the
+     * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
+     *
+     * @return  The name of the virtual interface.
+     */
+    @Override
+    public String getInterfaceName() {
+        return ifName;
+    }
+
+    /**
+     * Call method that listens the change of the virtual interface.
+     *
+     * @param listener  An {@link IVTNManagerAware} instance.
+     * @param viface    A {@link VInterface} instance which represents the
+     *                  virtual interface information.
+     * @param type      An {@link UpdateType} instance which indicates the
+     *                  type of modification.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code listener}.
+     * @see IVTNManagerAware#vInterfaceChanged(VBridgeIfPath, VInterface, UpdateType)
+     * @since Helium
+     */
+    @Override
+    public void vInterfaceChanged(IVTNManagerAware listener, VInterface viface,
+                                  UpdateType type) {
+        listener.vInterfaceChanged(this, viface, type);
+    }
+
+    /**
+     * Call method that listens the change of port mapping configured the
+     * virtual interface specified by this instance.
+     *
+     * @param listener  An {@link IVTNManagerAware} instance.
+     * @param pmap      A {@link PortMap} instance which represents the
+     *                  port mapping information.
+     * @param type      An {@link UpdateType} instance which indicates the
+     *                  type of modification.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code listener}.
+     * @see IVTNManagerAware#portMapChanged(VBridgeIfPath, PortMap, UpdateType)
+     * @since Helium
+     */
+    @Override
+    public void portMapChanged(IVTNManagerAware listener, PortMap pmap,
+                               UpdateType type) {
+        listener.portMapChanged(this, pmap, type);
     }
 }

@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.List;
+
 /**
  * {@code VNodePath} class describes the position of the
  * virtual node inside the
@@ -27,7 +29,12 @@ public abstract class VNodePath extends VTenantPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5947430862835452364L;
+    private static final long serialVersionUID = -3691447682025580103L;
+
+    /**
+     * The name of the virtual node inside the VTN.
+     */
+    private final String  tenantNodeName;
 
     /**
      * Construct a new object which represents the position of the virtual
@@ -40,8 +47,103 @@ public abstract class VNodePath extends VTenantPath {
      * </p>
      *
      * @param tenantName  The name of the VTN.
+     * @param name        The name of the virtual node inside the VTN.
      */
-    protected VNodePath(String tenantName) {
+    protected VNodePath(String tenantName, String name) {
         super(tenantName);
+        tenantNodeName = name;
+    }
+
+    /**
+     * Construct a new object which represents the position of the
+     * virtual node inside the VTN.
+     *
+     * <p>
+     *   This constructor specifies the VTN to which the virtual node belongs
+     *   by using {@link VTenantPath}.
+     * </p>
+     *
+     * @param tenantPath  A {@code VTenantPath} object that specifies the
+     *                    position of the VTN.
+     *                    All the values in the specified object are copied to
+     *                    a new object.
+     * @param name        The name of the virtual node.
+     * @throws NullPointerException  {@code tenantPath} is {@code null}.
+     */
+    protected VNodePath(VTenantPath tenantPath, String name) {
+        this(tenantPath.getTenantName(), name);
+    }
+
+    /**
+     * Return the name of the virtual node inside the VTN.
+     *
+     * @return  The name of the virtual node inside the VTN.
+     */
+    public String getTenantNodeName() {
+        return tenantNodeName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected StringBuilder toStringBuilder() {
+        StringBuilder builder = super.toStringBuilder();
+        String name = tenantNodeName;
+        if (name == null) {
+            name = "<null>";
+        }
+        builder.append('.').append(name);
+
+        return builder;
+    }
+
+    /**
+     * Determine whether all components in the given path equal to components
+     * in this object or not.
+     *
+     * @param path  An object to be compared.
+     *              An instance of {@code VBridgePath} must be specified.
+     * @return   {@code true} if all path components in {@code path} are
+     *           identical to components in this object.
+     *           Otherwise {@code false}.
+     */
+    @Override
+    protected boolean equalsPath(VTenantPath path) {
+        if (!super.equalsPath(path)) {
+            return false;
+        }
+
+        VNodePath npath = (VNodePath)path;
+        if (tenantNodeName == null) {
+            return (npath.tenantNodeName == null);
+        }
+
+        return tenantNodeName.equals(npath.tenantNodeName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected List<String> getComponents() {
+        List<String> components = super.getComponents();
+        components.add(tenantNodeName);
+        return components;
+    }
+
+    /**
+     * Return the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    @Override
+    public int hashCode() {
+        int h = super.hashCode();
+        if (tenantNodeName != null) {
+            h ^= tenantNodeName.hashCode();
+        }
+
+        return h;
     }
 }

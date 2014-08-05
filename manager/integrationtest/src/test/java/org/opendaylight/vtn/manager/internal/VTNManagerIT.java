@@ -81,6 +81,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminal;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
@@ -1336,11 +1339,11 @@ public class VTNManagerIT extends TestBase {
 
     /**
      * Test method for
-     * {@link IVTNManager#addBridgeInterface(VBridgeIfPath, VInterfaceConfig)},
-     * {@link IVTNManager#modifyBridgeInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
-     * {@link IVTNManager#removeBridgeInterface(VBridgeIfPath)},
-     * {@link IVTNManager#getBridgeInterfaces(VBridgePath)},
-     * {@link IVTNManager#getBridgeInterface(VBridgeIfPath)}.
+     * {@link IVTNManager#addInterface(VBridgeIfPath, VInterfaceConfig)},
+     * {@link IVTNManager#modifyInterface(VBridgeIfPath, VInterfaceConfig, boolean)},
+     * {@link IVTNManager#removeInterface(VBridgeIfPath)},
+     * {@link IVTNManager#getInterfaces(VBridgePath)},
+     * {@link IVTNManager#getInterface(VBridgeIfPath)}.
      */
     private void testBridgeInterface() {
         LOG.info("Running testBridgeInterface().");
@@ -1349,6 +1352,8 @@ public class VTNManagerIT extends TestBase {
         List<String> blist = new ArrayList<String>();
         List<String> iflist = new ArrayList<String>();
         List<String> descs = new ArrayList<String>();
+
+        VBridgeIfPath nullIfPath = null;
 
         tlist.add("vtn");
         tlist.add("123456789012345678901234567890_");
@@ -1390,12 +1395,12 @@ public class VTNManagerIT extends TestBase {
             if (isValidTName) {
                 VBridgeIfPath ifp = new VBridgeIfPath(tname, "brdg", "interface");
                 VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.FALSE);
-                st = mgr.addBridgeInterface(ifp, iconf);
+                st = mgr.addInterface(ifp, iconf);
                 assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
                         StatusCode.NOTFOUND, st.getCode());
 
                 try {
-                    List<VInterface> list = mgr.getBridgeInterfaces(ifp);
+                    List<VInterface> list = mgr.getInterfaces(ifp);
                     // It is strange, if VTNException is NOT thrown.
                     fail("Unexpected succeseed : " + tname);
                 } catch (VTNException vtne) {
@@ -1406,7 +1411,7 @@ public class VTNManagerIT extends TestBase {
                 }
 
                 try {
-                    VInterface vif = mgr.getBridgeInterface(ifp);
+                    VInterface vif = mgr.getInterface(ifp);
                     // It is strange, if VTNException is NOT thrown.
                     fail("Unexpected succeseed : " + tname);
                 } catch (VTNException vtne) {
@@ -1418,12 +1423,12 @@ public class VTNManagerIT extends TestBase {
                 }
 
                 for (Boolean allSwitch : createBooleans(false)) {
-                    st = mgr.modifyBridgeInterface(ifp, iconf, allSwitch.booleanValue());
+                    st = mgr.modifyInterface(ifp, iconf, allSwitch.booleanValue());
                     assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
                             StatusCode.NOTFOUND, st.getCode());
                 }
 
-                st = mgr.removeBridgeInterface(ifp);
+                st = mgr.removeInterface(ifp);
                 assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
                         StatusCode.NOTFOUND, st.getCode());
             }
@@ -1446,12 +1451,12 @@ public class VTNManagerIT extends TestBase {
                 if (isValidBPath) {
                     VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, "interface");
                     VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.FALSE);
-                    st = mgr.addBridgeInterface(ifp, iconf);
+                    st = mgr.addInterface(ifp, iconf);
                     assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
                             StatusCode.NOTFOUND, st.getCode());
 
                     try {
-                        List<VInterface> list = mgr.getBridgeInterfaces(ifp);
+                        List<VInterface> list = mgr.getInterfaces(ifp);
                         // It is strange, if VTNException is NOT thrown.
                         fail("Unexpected succeseed : " + tname);
                     } catch (VTNException vtne) {
@@ -1462,7 +1467,7 @@ public class VTNManagerIT extends TestBase {
                     }
 
                     try {
-                        VInterface vif = mgr.getBridgeInterface(ifp);
+                        VInterface vif = mgr.getInterface(ifp);
                         // It is strange, if VTNException is NOT thrown.
                         fail("Unexpected succeseed : " + tname);
                     } catch (VTNException vtne) {
@@ -1473,12 +1478,12 @@ public class VTNManagerIT extends TestBase {
                     }
 
                     for (Boolean allSwitch : createBooleans(false)) {
-                        st = mgr.modifyBridgeInterface(ifp, iconf, allSwitch.booleanValue());
+                        st = mgr.modifyInterface(ifp, iconf, allSwitch.booleanValue());
                         assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
                                 StatusCode.NOTFOUND, st.getCode());
                     }
 
-                    st = mgr.removeBridgeInterface(ifp);
+                    st = mgr.removeInterface(ifp);
                     assertEquals("(VBridgeIfPath)" + tname + "(Not Found)",
                             StatusCode.NOTFOUND, st.getCode());
                 }
@@ -1490,7 +1495,7 @@ public class VTNManagerIT extends TestBase {
                 // Test a null condition.
                 if (first) {
                     try {
-                        list = mgr.getBridgeInterfaces(null);
+                        list = mgr.getInterfaces(nullIfPath);
                         // It is strange, if VTNException is NOT thrown.
                         fail("Unexpected succeseed : (null)");
                     } catch (VTNException vtne) {
@@ -1504,7 +1509,7 @@ public class VTNManagerIT extends TestBase {
                 // Test for NOTFOUND status.
                 try {
                     if (isValidBPath) {
-                        list = mgr.getBridgeInterfaces(bpath);
+                        list = mgr.getInterfaces(bpath);
                         // It is strange, if VTNException is NOT thrown.
                         fail("Unexpected succeseed : " + bpath.toString());
                     }
@@ -1523,7 +1528,7 @@ public class VTNManagerIT extends TestBase {
 
                 list = null;
                 try {
-                    list = mgr.getBridgeInterfaces(bpath);
+                    list = mgr.getInterfaces(bpath);
                 } catch (VTNException vtne) {
                     if (isValidBPath) {
                         unexpected(vtne);
@@ -1552,12 +1557,12 @@ public class VTNManagerIT extends TestBase {
                         for (Boolean enabled : createBooleans()) {
                             // Test some null conditions.
                             if (first) {
-                                st = mgr.addBridgeInterface(null, null);
+                                st = mgr.addInterface(nullIfPath, null);
                                 assertEquals("(VBridgeIfPath)(null)(VInterfaceConfig)(null)",
                                         StatusCode.BADREQUEST, st.getCode());
 
                                 try {
-                                    VInterface vif = mgr.getBridgeInterface(null);
+                                    VInterface vif = mgr.getInterface(nullIfPath);
                                     // It is strange, if VTNException is NOT thrown.
                                     fail("Unexpected succeseed : (null)");
                                 } catch (VTNException vtne) {
@@ -1569,7 +1574,7 @@ public class VTNManagerIT extends TestBase {
                             }
                             String emsg = "(VBridgeIfPath)" + ifp.toString()
                                     + ",(VInterfaceConfig)(null)";
-                            st = mgr.addBridgeInterface(ifp, null);
+                            st = mgr.addInterface(ifp, null);
                             if (isValidBIfPath) {
                                 assertEquals(emsg, StatusCode.BADREQUEST, st.getCode());
                             } else {
@@ -1581,7 +1586,7 @@ public class VTNManagerIT extends TestBase {
                             VInterface vif = null;
                             if (isValidBIfPath) {
                                 try {
-                                    vif = mgr.getBridgeInterface(ifp);
+                                    vif = mgr.getInterface(ifp);
                                     // It is strange, if VTNException is NOT thrown.
                                     fail("Unexpected succeseed : " + ifp.toString());
                                 } catch (VTNException vtne) {
@@ -1590,19 +1595,19 @@ public class VTNManagerIT extends TestBase {
                                     unexpected(e);
                                 }
 
-                                st = mgr.removeBridgeInterface(ifp);
+                                st = mgr.removeInterface(ifp);
                                 assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
                             }
 
                             VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
                             emsg = "(VBridgeIfPath)" + ifp.toString()
                                     + ",(VInterfaceConfig)" + ifconf.toString();
-                            st = mgr.addBridgeInterface(ifp, ifconf);
+                            st = mgr.addInterface(ifp, ifconf);
                             if (isValidBIfPath) {
                                 assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
 
                                 // Re-add for CONFLICT status
-                                st = mgr.addBridgeInterface(ifp, ifconf);
+                                st = mgr.addInterface(ifp, ifconf);
                                 assertEquals(emsg, StatusCode.CONFLICT, st.getCode());
                             } else if (tname == null || (isValidTName && bname == null) ||
                                     (isValidBPath && !isValidBIfName)) {
@@ -1614,7 +1619,7 @@ public class VTNManagerIT extends TestBase {
 
                             vif = null;
                             try {
-                                vif = mgr.getBridgeInterface(ifp);
+                                vif = mgr.getInterface(ifp);
                             } catch (VTNException vtne) {
                                 if (!isValidBIfPath) {
                                     if (tname == null || (isValidTName && bname == null) ||
@@ -1655,11 +1660,11 @@ public class VTNManagerIT extends TestBase {
 
                             // Test a null condition.
                             if (first) {
-                                st = mgr.removeBridgeInterface(null);
+                                st = mgr.removeInterface(nullIfPath);
                                 assertEquals("(VBridgeIfPath)(null)",
                                         StatusCode.BADREQUEST, st.getCode());
                             }
-                            st = mgr.removeBridgeInterface(ifp);
+                            st = mgr.removeInterface(ifp);
                             if (isValidBIfPath) {
                                 assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                             } else if (tname == null || (isValidTName && bname == null) ||
@@ -1680,7 +1685,7 @@ public class VTNManagerIT extends TestBase {
                                 String emsg = "(VBridgeIfPath)" + ifp.toString()
                                         + "(VInterfaceConfig)" + ifconf.toString();
                                 for (Boolean allSwitch : createBooleans(false)) {
-                                    st = mgr.modifyBridgeInterface(ifp, ifconf, allSwitch.booleanValue());
+                                    st = mgr.modifyInterface(ifp, ifconf, allSwitch.booleanValue());
                                     assertEquals(emsg, StatusCode.NOTFOUND, st.getCode());
                                 }
                             }
@@ -1690,7 +1695,8 @@ public class VTNManagerIT extends TestBase {
                     // Test some null condition
                     if (first) {
                         for (Boolean allSwitch : createBooleans(false)) {
-                            st = mgr.modifyBridgeInterface(null, null, allSwitch.booleanValue());
+                            st = mgr.modifyInterface(nullIfPath, null,
+                                                     allSwitch.booleanValue());
                             assertEquals("(VBridgeIfPath)(null) (VInterfaceConfig)(null)",
                                     StatusCode.BADREQUEST, st.getCode());
                         }
@@ -1698,12 +1704,12 @@ public class VTNManagerIT extends TestBase {
 
                     if (isValidBIfPath) {
                         // Add bridge Interface for modify(false) and modify(true)
-                        st = mgr.addBridgeInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE));
+                        st = mgr.addInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE));
                         assertEquals(StatusCode.SUCCESS, st.getCode());
 
                         // Test some null condition
                         for (Boolean allSwitch : createBooleans(false)) {
-                            st = mgr.modifyBridgeInterface(ifp, null, allSwitch.booleanValue());
+                            st = mgr.modifyInterface(ifp, null, allSwitch.booleanValue());
                             assertEquals("(VBridgeIfPath)" + ifp.toString() + "(VInterfaceConfig)(null)",
                                     StatusCode.BADREQUEST, st.getCode());
                         }
@@ -1717,14 +1723,15 @@ public class VTNManagerIT extends TestBase {
                             VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
                             // Test some null condition
                             if (first) {
-                                st = mgr.modifyBridgeInterface(null, ifconf, false);
+                                st = mgr.modifyInterface(nullIfPath, ifconf,
+                                                         false);
                                 assertEquals("(VBridgeIfPath)(null) (VInterfaceConfig)" + ifconf.toString(),
                                         StatusCode.BADREQUEST, st.getCode());
                             }
                             String emsg = "(VBridgeIfPath)" + ifp.toString()
                                     + "(VInterfaceConfig)" + ifconf.toString();
 
-                            st = mgr.modifyBridgeInterface(ifp, ifconf, false);
+                            st = mgr.modifyInterface(ifp, ifconf, false);
                             if (isValidBIfPath) {
                                 assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                             } else if (tname == null || (isValidTName && bname == null) ||
@@ -1742,7 +1749,7 @@ public class VTNManagerIT extends TestBase {
 
                             VInterface vif = null;
                             try {
-                                vif = mgr.getBridgeInterface(ifp);
+                                vif = mgr.getInterface(ifp);
                             } catch (Exception e) {
                                 unexpected(e);
                             }
@@ -1783,7 +1790,7 @@ public class VTNManagerIT extends TestBase {
 
                     // for modify(true)
                     if (isValidBIfPath) {
-                        st = mgr.modifyBridgeInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE), true);
+                        st = mgr.modifyInterface(ifp, new VInterfaceConfig("desc", Boolean.FALSE), true);
                         assertEquals(StatusCode.SUCCESS, st.getCode());
                     }
                     for (String desc : descs) {
@@ -1791,14 +1798,14 @@ public class VTNManagerIT extends TestBase {
                             VInterfaceConfig ifconf = new VInterfaceConfig(desc, enabled);
                             // Test some null condition
                             if (first) {
-                                st = mgr.modifyBridgeInterface(null, ifconf, true);
+                                st = mgr.modifyInterface(nullIfPath, ifconf, true);
                                 assertEquals("(VBridgeIfPath)(null) (VInterfaceConfig)" + ifconf.toString(),
                                         StatusCode.BADREQUEST, st.getCode());
                             }
                             String emsg = "(VBridgeIfPath)" + ifp.toString()
                                     + "(VInterfaceConfig)" + ifconf.toString();
 
-                            st = mgr.modifyBridgeInterface(ifp, ifconf, true);
+                            st = mgr.modifyInterface(ifp, ifconf, true);
                             if (isValidBIfPath) {
                                 assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
                             } else if (tname == null || (isValidTName && bname == null) ||
@@ -1816,7 +1823,7 @@ public class VTNManagerIT extends TestBase {
 
                             VInterface vif = null;
                             try {
-                                vif = mgr.getBridgeInterface(ifp);
+                                vif = mgr.getInterface(ifp);
                             } catch (Exception e) {
                                 unexpected(e);
                             }
@@ -1848,7 +1855,7 @@ public class VTNManagerIT extends TestBase {
 
                 list = null;
                 try {
-                    list = mgr.getBridgeInterfaces(bpath);
+                    list = mgr.getInterfaces(bpath);
                 } catch (VTNException vtne) {
                     if (!isValidBPath) {
                         list = new ArrayList<VInterface>();
@@ -1902,7 +1909,7 @@ public class VTNManagerIT extends TestBase {
         String ifname = "vinterface";
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
         VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        st = mgr.addBridgeInterface(ifp, ifconf);
+        st = mgr.addInterface(ifp, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // add a vlanmap to a vbridge
@@ -2248,7 +2255,7 @@ public class VTNManagerIT extends TestBase {
         String ifname = "vinterface";
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname, ifname);
         VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        st = mgr.addBridgeInterface(ifp, ifconf);
+        st = mgr.addInterface(ifp, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         PortMap pmap = null;
@@ -2307,7 +2314,7 @@ public class VTNManagerIT extends TestBase {
 
                 VInterface bif = null;
                 try {
-                    bif = mgr.getBridgeInterface(ifp);
+                    bif = mgr.getInterface(ifp);
                 } catch (VTNException e) {
                     unexpected(e);
                 }
@@ -2348,12 +2355,12 @@ public class VTNManagerIT extends TestBase {
 
         String ifname1 = "vinterface1";
         VBridgeIfPath ifp1 = new VBridgeIfPath(tname, bname1, ifname1);
-        st = mgr.addBridgeInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         String ifname2 = "vinterface2";
         VBridgeIfPath ifp2 = new VBridgeIfPath(tname, bname1, ifname2);
-        st = mgr.addBridgeInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         Node node1 = NodeCreator.createOFNode(0L);
@@ -2370,7 +2377,7 @@ public class VTNManagerIT extends TestBase {
         // if specified port is not exist, duplicate portmap success.
         String ifname3 = "vinterface3";
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, ifname3);
-        st = mgr.addBridgeInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp3, new VInterfaceConfig(null, Boolean.TRUE));
         st = mgr.setPortMap(ifp3, pmconf1);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2458,7 +2465,7 @@ public class VTNManagerIT extends TestBase {
 
         // Exception test for portmap config
         ifp = new VBridgeIfPath(tname, bname, ifname);
-        st = mgr.addBridgeInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
         Node nodePR = null;
         try {
@@ -2521,12 +2528,12 @@ public class VTNManagerIT extends TestBase {
         st = mgr.addBridge(new VBridgePath(tname, bname1), new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
         ifp1 = new VBridgeIfPath(tname, bname1, ifname1);
-        st = mgr.addBridgeInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp1, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.addBridgeInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(ifp2, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
         try {
-            VInterface vif = mgr.getBridgeInterface(ifp1);
+            VInterface vif = mgr.getInterface(ifp1);
             assertEquals(VNodeState.UNKNOWN, vif.getState());
         } catch (VTNException e) {
             unexpected(e);
@@ -2560,7 +2567,7 @@ public class VTNManagerIT extends TestBase {
         st = mgr.setPortMap(ifp1, pmconf1);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         try {
-            VInterface vif = mgr.getBridgeInterface(ifp1);
+            VInterface vif = mgr.getInterface(ifp1);
             assertEquals(VNodeState.UP, vif.getState());
 
             VBridge vbr = mgr.getBridge(new VBridgePath(tname, bname1));
@@ -2582,9 +2589,9 @@ public class VTNManagerIT extends TestBase {
         assertEquals(StatusCode.CONFLICT, st.getCode());
 
         // clear up
-        st = mgr.removeBridgeInterface(ifp1);
+        st = mgr.removeInterface(ifp1);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.removeBridgeInterface(ifp2);
+        st = mgr.removeInterface(ifp2);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         st = mgr.removeBridge(new VBridgePath(tname, bname1));
@@ -2725,7 +2732,7 @@ public class VTNManagerIT extends TestBase {
             assertEquals(StatusCode.SUCCESS, st.getCode());
 
             VBridgeIfPath vifpath = new VBridgeIfPath(bpath, "vif");
-            st = mgr.addBridgeInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
+            st = mgr.addInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
             listBIfPath.add(vifpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2770,7 +2777,7 @@ public class VTNManagerIT extends TestBase {
                 new SwitchPort(NodeConnector.NodeConnectorIDType.OPENFLOW, idDead.toString());
         VBridgeIfPath vifDead =
                 new VBridgeIfPath(listBPath.get(0), "vifDead");
-        st = mgr.addBridgeInterface(vifDead, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(vifDead, new VInterfaceConfig(null, Boolean.TRUE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
         st = mgr.setPortMap(vifDead, new PortMapConfig(existNodes.get(0), swport, vlans[0]));
         assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -2796,7 +2803,7 @@ public class VTNManagerIT extends TestBase {
 
         // Clear up
         for (VBridgeIfPath vifpath : listBIfPath) {
-            st = mgr.removeBridgeInterface(vifpath);
+            st = mgr.removeInterface(vifpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
         for (VBridgePath bpath : listBPath) {
@@ -2854,7 +2861,7 @@ public class VTNManagerIT extends TestBase {
             assertEquals(StatusCode.SUCCESS, st.getCode());
 
             VBridgeIfPath vifpath = new VBridgeIfPath(bpath, "vif");
-            st = mgr.addBridgeInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
+            st = mgr.addInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
             listBIfPath.add(vifpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2974,7 +2981,7 @@ public class VTNManagerIT extends TestBase {
         setDead.add(vbrDead);
 
         VBridgeIfPath vifDead = new VBridgeIfPath(vbrDead, "vifDead");
-        st = mgr.addBridgeInterface(vifDead, new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(vifDead, new VInterfaceConfig(null, Boolean.TRUE));
         listBIfPath.add(vifDead);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -2997,7 +3004,7 @@ public class VTNManagerIT extends TestBase {
 
         // Clear up
         for (VBridgeIfPath vifpath : listBIfPath) {
-            st = mgr.removeBridgeInterface(vifpath);
+            st = mgr.removeInterface(vifpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
         for (VBridgePath bpath : listBPath) {
@@ -3053,12 +3060,15 @@ public class VTNManagerIT extends TestBase {
     };
 
     private class Update {
-        VTNManagerAwareData<VTenantPath, VTenant> vtnChangedInfo = null;
-        VTNManagerAwareData<VBridgePath, VBridge> vbrChangedInfo = null;
-        VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo = null;
-        VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo = null;
-        VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo = null;
-        VTNManagerAwareData<VBridgePath, MacMapConfig> macMapChangedInfo = null;
+        VTNManagerAwareData<VTenantPath, VTenant> vtnChangedInfo;
+        VTNManagerAwareData<VBridgePath, VBridge> vbrChangedInfo;
+        VTNManagerAwareData<VBridgeIfPath, VInterface> vIfChangedInfo;
+        VTNManagerAwareData<VBridgePath, VlanMap> vlanMapChangedInfo;
+        VTNManagerAwareData<VBridgeIfPath, PortMap> portMapChangedInfo;
+        VTNManagerAwareData<VBridgePath, MacMapConfig> macMapChangedInfo;
+        VTNManagerAwareData<VTerminalPath, VTerminal> vtermChangedInfo;
+        VTNManagerAwareData<VTerminalIfPath, VInterface> vtermIfChangedInfo;
+        VTNManagerAwareData<VTerminalIfPath, PortMap> vtermPortMapChangedInfo;
 
         Update(UpdateType t, VTenantPath path, VTenant vtenant) {
             vtnChangedInfo =
@@ -3090,6 +3100,24 @@ public class VTNManagerIT extends TestBase {
             macMapChangedInfo =
                 new VTNManagerAwareData<VBridgePath, MacMapConfig>(path, mcconf,
                                                                    t);
+        }
+
+        Update(UpdateType t, VTerminalPath path, VTerminal vterm) {
+            vtermChangedInfo =
+                new VTNManagerAwareData<VTerminalPath, VTerminal>(
+                    path, vterm, t);
+        }
+
+        Update(UpdateType t, VTerminalIfPath path, VInterface iface) {
+            vtermIfChangedInfo =
+                new VTNManagerAwareData<VTerminalIfPath, VInterface>(
+                    path, iface, t);
+        }
+
+        Update(UpdateType t, VTerminalIfPath path, PortMap pmap) {
+            vtermPortMapChangedInfo =
+                new VTNManagerAwareData<VTerminalIfPath, PortMap>(path, pmap,
+                                                                  t);
         }
     }
 
@@ -3139,7 +3167,7 @@ public class VTNManagerIT extends TestBase {
         }
 
         @Override
-        public void vBridgeInterfaceChanged(VBridgeIfPath path, VInterface viface, UpdateType type) {
+        public void vInterfaceChanged(VBridgeIfPath path, VInterface viface, UpdateType type) {
             LOG.debug("VTNManager[{}] Got a vbridge interface changed for path:{} object:{}", path, viface);
             Update u = new Update(type, path, viface);
             this.gotUpdates.add(u);
@@ -3160,7 +3188,8 @@ public class VTNManagerIT extends TestBase {
 
         @Override
         public void portMapChanged(VBridgeIfPath path, PortMap pmap, UpdateType type) {
-            LOG.debug("VTNManager[{}] Got a port map changed for path:{} object:{}", path, pmap);
+            LOG.debug("VTNManager[{}] Got a port map(vBridge) changed for " +
+                      "path:{} object:{}", path, pmap);
             Update u = new Update(type, path, pmap);
             this.gotUpdates.add(u);
             if (latch != null) {
@@ -3174,6 +3203,41 @@ public class VTNManagerIT extends TestBase {
             LOG.debug("VTNManager[{}] Got a MAC map changed for path: {} " +
                       "object {}", path, mcconf);
             Update u = new Update(type, path, mcconf);
+            this.gotUpdates.add(u);
+            if (latch != null) {
+                this.latch.countDown();
+            }
+        }
+
+        @Override
+        public void vTerminalChanged(VTerminalPath path, VTerminal vterm,
+                                     UpdateType type) {
+            LOG.debug("VTNManager[{}] Got a vTerminal changed for path:{} " +
+                      "object:{}", path, vterm);
+            Update u = new Update(type, path, vterm);
+            this.gotUpdates.add(u);
+            if (latch != null) {
+                this.latch.countDown();
+            }
+        }
+
+        @Override
+        public void vInterfaceChanged(VTerminalIfPath path, VInterface viface, UpdateType type) {
+            LOG.debug("VTNManager[{}] Got a vTerminal interface changed " +
+                      "for path:{} object:{}", path, viface);
+            Update u = new Update(type, path, viface);
+            this.gotUpdates.add(u);
+            if (latch != null) {
+                this.latch.countDown();
+            }
+        }
+
+        @Override
+        public void portMapChanged(VTerminalIfPath path, PortMap pmap,
+                                   UpdateType type) {
+            LOG.debug("VTNManager[{}] Got a port map(vTerminal) changed for " +
+                      "path:{} object:{}", path, pmap);
+            Update u = new Update(type, path, pmap);
             this.gotUpdates.add(u);
             if (latch != null) {
                 this.latch.countDown();
@@ -3294,6 +3358,23 @@ public class VTNManagerIT extends TestBase {
         }
 
         /**
+         * Invoked when the information related to vTerminal inside the
+         * container is changed.
+         *
+         * @param path   A {@link VTerminalPath} object that specifies the
+         *               position of the vTerminal.
+         * @param vterm  A {@link VTerminal} object which represents the
+         *               vTerminal information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void vTerminalChanged(VTerminalPath path, VTerminal vterm,
+                                     UpdateType type) {
+        }
+
+        /**
          * Invoked when the information related to the virtual interface
          * configured in the vBridge is changed.
          *
@@ -3306,9 +3387,25 @@ public class VTNManagerIT extends TestBase {
          *   modification is specified.
          */
         @Override
-        public void vBridgeInterfaceChanged(VBridgeIfPath path,
-                                            VInterface viface,
-                                            UpdateType type) {
+        public void vInterfaceChanged(VBridgeIfPath path, VInterface viface,
+                                      UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the virtual interface
+         * configured in the vTerminal is changed.
+         *
+         * @param path    A {@link VTerminalIfPath} object that specifies the
+         *                position of the vBridge interface.
+         * @param viface  A {@link VInterface} object which represents the
+         *                vTerminal interface information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void vInterfaceChanged(VTerminalIfPath path, VInterface viface,
+                                      UpdateType type) {
         }
 
         /**
@@ -3330,7 +3427,7 @@ public class VTNManagerIT extends TestBase {
 
         /**
          * Invoked when the information related to the port mapping
-         * configured in the vBridge is changed.
+         * configured in the vBridge interface is changed.
          *
          * @param path  A {@link VBridgeIfPath} object that specifies the
          *              position of the vBridge interface.
@@ -3342,6 +3439,23 @@ public class VTNManagerIT extends TestBase {
          */
         @Override
         public void portMapChanged(VBridgeIfPath path, PortMap pmap,
+                                   UpdateType type) {
+        }
+
+        /**
+         * Invoked when the information related to the port mapping
+         * configured in the vTerminal interface is changed.
+         *
+         * @param path  A {@link VTerminalIfPath} object that specifies the
+         *              position of the vTerminal interface.
+         * @param pmap  A {@link PortMap} object which represents the
+         *              port mapping information.
+         * @param type
+         *   An {@link UpdateType} object which indicates the type of
+         *   modification is specified.
+         */
+        @Override
+        public void portMapChanged(VTerminalIfPath path, PortMap pmap,
                                    UpdateType type) {
         }
 
@@ -3502,7 +3616,7 @@ public class VTNManagerIT extends TestBase {
      * Test method for
      * {@link IVTNManagerAware#vtnChanged(VTenantPath, VTenant, UpdateType)}
      * {@link IVTNManagerAware#vBridgeChanged(VBridgePath, VBridge, UpdateType)}
-     * {@link IVTNManagerAware#vBridgeInterfaceChanged(VBridgeIfPath, VInterface, UpdateType)}
+     * {@link IVTNManagerAware#vInterfaceChanged(VBridgeIfPath, VInterface, UpdateType)}
      * {@link IVTNManagerAware#vlanMapChanged(VBridgePath, VlanMap, UpdateType)}
      * {@link IVTNManagerAware#portMapChanged(VBridgeIfPath, PortMap, UpdateType)}
      * @throws InterruptedException
@@ -3590,7 +3704,7 @@ public class VTNManagerIT extends TestBase {
         String ifname = "vif";
         VBridgeIfPath ifpath = new VBridgeIfPath(tname1, bname, ifname);
         VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-        st = mgr.addBridgeInterface(ifpath, ifconf);
+        st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
@@ -3685,7 +3799,7 @@ public class VTNManagerIT extends TestBase {
 
         // modify a vbridge interface setting
         res = listener.restart(1);
-        st = mgr.modifyBridgeInterface(ifpath,
+        st = mgr.modifyInterface(ifpath,
                 new VInterfaceConfig("interface", Boolean.TRUE), false);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
@@ -3758,7 +3872,7 @@ public class VTNManagerIT extends TestBase {
 
         // remove a vbridge interface
         res = listener.restart(1);
-        st = mgr.removeBridgeInterface(ifpath);
+        st = mgr.removeInterface(ifpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         res.await(LATCH_TIMEOUT, TimeUnit.SECONDS);
@@ -4014,7 +4128,7 @@ public class VTNManagerIT extends TestBase {
                 }
 
                 VBridgeIfPath vifpath = new VBridgeIfPath(listVBrTemp.get(1), "vif");
-                st = mgr.addBridgeInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
+                st = mgr.addInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
                 listVBr.add(vbr);
@@ -4175,7 +4289,7 @@ public class VTNManagerIT extends TestBase {
                 st = mgr.removeVlanMap(bpath, map.getId());
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
-                st = mgr.removeBridgeInterface(vifpath);
+                st = mgr.removeInterface(vifpath);
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
                 for (VBridgePath vbrTemp : listVBrTemp) {
@@ -4546,7 +4660,7 @@ public class VTNManagerIT extends TestBase {
         VBridge brdg = null;
         VInterface bif = null;
         try {
-            bif = mgr.getBridgeInterface(ifp);
+            bif = mgr.getInterface(ifp);
             brdg = mgr.getBridge(bpath);
         } catch (VTNException e) {
             unexpected(e);
@@ -4798,7 +4912,7 @@ public class VTNManagerIT extends TestBase {
                     // "2" and "3" are both used for connecting to other nodes. (Edge)
                     for (int j = 0; j < 2; j++) {
                         VBridgeIfPath vifpath = new VBridgeIfPath(bpath, "vif" + Integer.toString(i));
-                        st = vtnManager.addBridgeInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
+                        st = vtnManager.addInterface(vifpath, new VInterfaceConfig(null, Boolean.TRUE));
                         assertEquals(StatusCode.SUCCESS, st.getCode());
                         listVIFpath.add(vifpath);
                         i++;
@@ -4813,7 +4927,7 @@ public class VTNManagerIT extends TestBase {
                         assertEquals(StatusCode.SUCCESS, st.getCode());
 
                         try {
-                            VInterface vif = vtnManager.getBridgeInterface(vifpath);
+                            VInterface vif = vtnManager.getInterface(vifpath);
                             assertEquals(VNodeState.UP, vif.getState());
                         } catch (VTNException e) {
                             unexpected(e);
@@ -5040,7 +5154,7 @@ public class VTNManagerIT extends TestBase {
                 assertNotNull(listVIFpath);
                 assertFalse(listVIFpath.isEmpty());
                 for (VBridgeIfPath vifpath : listVIFpath) {
-                    st = vtnManager.removeBridgeInterface(vifpath);
+                    st = vtnManager.removeInterface(vifpath);
                     assertEquals(StatusCode.SUCCESS, st.getCode());
                 }
                 break;
@@ -5559,7 +5673,7 @@ public class VTNManagerIT extends TestBase {
 
         for (VBridgeIfPath ifpath : ifpaths) {
             VInterfaceConfig ifconf = new VInterfaceConfig(null, null);
-            st = mgr.addBridgeInterface(ifpath, ifconf);
+            st = mgr.addInterface(ifpath, ifconf);
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
     }

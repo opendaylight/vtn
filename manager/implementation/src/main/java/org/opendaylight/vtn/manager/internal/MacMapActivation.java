@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal;
 import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
@@ -136,7 +137,7 @@ public final class MacMapActivation {
      */
     public void cleanUp(Logger log, VTNManagerImpl mgr, MapReference ref,
                         MacVlan mvlan, NodeConnector port) {
-        VBridgePath path = ref.getPath();
+        VBridgePath path = (VBridgePath)ref.getPath();
         if (vlanMap != null) {
             // Purge obsolete network caches.
             purge(mgr, path);
@@ -179,7 +180,7 @@ public final class MacMapActivation {
      * @param mgr    VTN Manager service.
      * @param mpath  A path to the target MAC mapping.
      */
-    private void purge(VTNManagerImpl mgr, VBridgePath mpath) {
+    private void purge(VTNManagerImpl mgr, VNodePath mpath) {
         String container = mgr.getContainerName();
         String tenant = mpath.getTenantName();
 
@@ -187,7 +188,7 @@ public final class MacMapActivation {
         PortMapCleaner cleaner = new PortMapCleaner();
         cleaner.add(reservedNetwork);
 
-        VBridgePath vpath = vlanMap.getPath();
+        VNodePath vpath = vlanMap.getPath();
         String cname = vlanMap.getContainerName();
         String tname = vpath.getTenantName();
         if (container.equals(cname) && tenant.equals(tname)) {

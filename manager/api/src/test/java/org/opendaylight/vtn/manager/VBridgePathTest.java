@@ -29,10 +29,12 @@ public class VBridgePathTest extends TestBase {
                 VBridgePath path = new VBridgePath(tname, bname);
                 assertEquals(tname, path.getTenantName());
                 assertEquals(bname, path.getBridgeName());
+                assertEquals("vBridge", path.getNodeType());
 
                 path = new VBridgePath(tpath, bname);
                 assertEquals(tname, path.getTenantName());
                 assertEquals(bname, path.getBridgeName());
+                assertEquals("vBridge", path.getNodeType());
             }
         }
     }
@@ -88,12 +90,13 @@ public class VBridgePathTest extends TestBase {
      */
     @Test
     public void testToString() {
+        String prefix = "vBridge:";
         for (String tname: createStrings("tenant")) {
             for (String bname: createStrings("bridge")) {
                 VBridgePath path = new VBridgePath(tname, bname);
                 String tn = (tname == null) ? "<null>" : tname;
                 String bn = (bname == null) ? "<null>" : bname;
-                String required = joinStrings(null, null, ".", tn, bn);
+                String required = joinStrings(prefix, null, ".", tn, bn);
                 assertEquals(required, path.toString());
             }
         }
@@ -127,6 +130,12 @@ public class VBridgePathTest extends TestBase {
 
         VBridgePath bpath = new VBridgePath(tpath, bname);
         assertEquals(expected, path.contains(bpath));
+
+        VTerminalPath tmpath = new VTerminalPath(tpath, bname);
+        assertEquals(false, path.contains(tmpath));
+
+        VTerminalIfPath tipath = new VTerminalIfPath(tmpath, "interface");
+        assertEquals(false, path.contains(tipath));
 
         VBridgeIfPath ipath = new VBridgeIfPath(bpath, "interface");
         assertEquals(expected, path.contains(ipath));

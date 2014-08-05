@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VNodeRoute;
 
 /**
  * {@code VBridgeNode} determines interfaces to be implemented by virtual
@@ -22,26 +21,12 @@ import org.opendaylight.vtn.manager.VNodeRoute;
  *   class.
  * </p>
  */
-public interface VBridgeNode {
+public interface VBridgeNode extends VirtualMapNode {
     /**
      * Return path to this node.
      *
      * @return  Path to the node.
      */
+    @Override
     VBridgePath getPath();
-
-    /**
-     * Determine whether this node is enabled or not.
-     *
-     * @return  {@code true} is returned only if this node is enabled.
-     */
-    boolean isEnabled();
-
-    /**
-     * Return a {@link VNodeRoute} instance which represents the ingress
-     * virtual node.
-     *
-     * @return  A {@link VNodeRoute} instance.
-     */
-    VNodeRoute getIngressRoute();
 }

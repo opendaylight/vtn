@@ -51,6 +51,13 @@ public class VNodePathAdapter extends XmlAdapter<VNodeLocation, VNodePath> {
                 : new VBridgeIfPath(tname, bname, ifname);
         }
 
+        String tmname = loc.getTerminalName();
+        if (tmname != null) {
+            return (ifname == null)
+                ? new VTerminalPath(tname, tmname)
+                : new VTerminalIfPath(tname, tmname, ifname);
+        }
+
         return null;
     }
 
@@ -67,8 +74,14 @@ public class VNodePathAdapter extends XmlAdapter<VNodeLocation, VNodePath> {
         if (path instanceof VBridgeIfPath) {
             return new VNodeLocation((VBridgeIfPath)path);
         }
+        if (path instanceof VTerminalIfPath) {
+            return new VNodeLocation((VTerminalIfPath)path);
+        }
         if (path instanceof VBridgePath) {
             return new VNodeLocation((VBridgePath)path);
+        }
+        if (path instanceof VTerminalPath) {
+            return new VNodeLocation((VTerminalPath)path);
         }
 
         return null;

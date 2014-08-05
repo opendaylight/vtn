@@ -50,6 +50,8 @@ import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
@@ -170,8 +172,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         ifpathlist.add(ifpath3);
         createTenantAndBridgeAndInterface(vtnMgr, tpath, bpathlist, ifpathlist);
 
-        Status st = vtnMgr.addBridgeInterface(ifpath2,
-                                              new VInterfaceConfig(null, Boolean.FALSE));
+        Status st = vtnMgr.addInterface(
+            ifpath2, new VInterfaceConfig(null, Boolean.FALSE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
         ifpathlist.add(ifpath2);
 
@@ -466,7 +468,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             // check vInterface state.
             for (VBridgePath bpath : bpaths.keySet()) {
                 try {
-                    iflist = vtnMgr.getBridgeInterfaces(bpath);
+                    iflist = vtnMgr.getInterfaces(bpath);
                 } catch (VTNException e) {
                     unexpected(e);
                 }
@@ -702,9 +704,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         checkNodeStatus(mgr, bpath1, ifp1, VNodeState.UP, VNodeState.UNKNOWN,
                         pmconf.toString());
 
-        mgr.modifyBridgeInterface(ifp1,
-                                  new VInterfaceConfig(null, Boolean.FALSE),
-                                  true);
+        mgr.modifyInterface(
+            ifp1, new VInterfaceConfig(null, Boolean.FALSE), true);
         port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
         pmconf = new PortMapConfig(node, port, (short)0);
         st = mgr.setPortMap(ifp1, pmconf);
@@ -712,9 +713,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         checkNodeStatus(mgr, bpath1, ifp1, VNodeState.UP, VNodeState.DOWN,
                         pmconf.toString());
 
-        mgr.modifyBridgeInterface(ifp1,
-                                  new VInterfaceConfig(null, Boolean.TRUE),
-                                  true);
+        mgr.modifyInterface(
+            ifp1, new VInterfaceConfig(null, Boolean.TRUE), true);
         checkNodeStatus(mgr, bpath1, ifp1, VNodeState.UP, VNodeState.UP,
                         pmconf.toString());
 
@@ -727,7 +727,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         checkNodeStatus(mgr, bpath1, ifp2, VNodeState.DOWN, VNodeState.DOWN,
                         pmconfIn.toString());
 
-        st = mgr.removeBridgeInterface(ifp2);
+        st = mgr.removeInterface(ifp2);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         checkNodeStatus(mgr, bpath1, null, VNodeState.UP, VNodeState.UP, "");
 
@@ -735,9 +735,14 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         VBridgeIfPath ifp3 = new VBridgeIfPath(tname, bname2, "vinterface3");
         port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
         pmconf = new PortMapConfig(node, port, (short)0);
-        st = mgr.addBridgeInterface(ifp3,
-                                    new VInterfaceConfig(null, Boolean.TRUE));
+        st = mgr.addInterface(
+            ifp3, new VInterfaceConfig(null, Boolean.TRUE));
         st = mgr.setPortMap(ifp3, pmconf);
+        assertEquals(StatusCode.CONFLICT, st.getCode());
+
+        VTerminalIfPath vifpath = new VTerminalIfPath(tname, "vterm", "if_1");
+        putInterface(mgr, vifpath);
+        st = mgr.setPortMap(vifpath, pmconf);
         assertEquals(StatusCode.CONFLICT, st.getCode());
 
         // remove twice
@@ -750,6 +755,178 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         testVlanMapCheck(mgr, bpath1);
 
         // remove test settings.
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+    }
+
+    /**
+     * Test method for vTerminal interface port mapping APIs.
+     *
+     * <ul>
+     *   <li>{@link VTNManagerImpl#getPortMap(VTerminalIfPath)}</li>
+     *   <li>{@link VTNManagerImpl#setPortMap(VTerminalIfPath, PortMapConfig)}</li>
+     * </ul>
+     */
+    @Test
+    public void testTerminalPortMap() {
+        VTNManagerImpl mgr = vtnMgr;
+        short[] vlans = new short[] {0, 10, 4095};
+        String tname = "vtn";
+        String vtname = "vterm";
+        String ifname = "if_1";
+        VTenantPath tpath = new VTenantPath(tname);
+        VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+        VTerminalIfPath ipath = new VTerminalIfPath(vtpath, ifname);
+        putInterface(mgr, ipath);
+
+        PortMap pmap = null;
+        try {
+            pmap = mgr.getPortMap(ipath);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        assertNull(pmap);
+
+        Node node = NodeCreator.createOFNode(0L);
+        SwitchPort[] ports = new SwitchPort[] {
+            new SwitchPort("port-10", NodeConnectorIDType.OPENFLOW, "10"),
+            new SwitchPort(null, NodeConnectorIDType.OPENFLOW, "11"),
+            new SwitchPort("port-10", null, null),
+            new SwitchPort("port-10"),
+            new SwitchPort(NodeConnectorIDType.OPENFLOW, "13"),
+        };
+
+        for (SwitchPort port: ports) {
+            for (short vlan: vlans) {
+                PortMapConfig pmconf = new PortMapConfig(node, port,
+                                                         (short)vlan);
+                String emsg = "pmconf=" + pmconf.toString();
+                Status st = mgr.setPortMap(ipath, pmconf);
+                assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
+
+                PortMap map = null;
+                try {
+                    map = mgr.getPortMap(ipath);
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+                assertEquals(emsg, pmconf, map.getConfig());
+                assertNotNull(emsg, map.getNodeConnector());
+                if (port.getId() != null) {
+                    assertEquals(emsg, Short.parseShort(port.getId()),
+                                 map.getNodeConnector().getID());
+                }
+                if (port.getType() != null) {
+                    assertEquals(emsg, port.getType(),
+                                 map.getNodeConnector().getType());
+                }
+
+                checkNodeStatus(mgr, vtpath, ipath, VNodeState.UP,
+                                VNodeState.UP, pmconf.toString());
+            }
+        }
+
+        Status st = mgr.setPortMap(ipath, null);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        PortMap map = null;
+        try {
+            map = mgr.getPortMap(ipath);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+        assertNull(map);
+
+        st = mgr.removeTenant(tpath);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
+        // set multi portmaps to a vbridge.
+        VTerminalPath vtpath1 = new VTerminalPath(tname, "vterm_1");
+        VTerminalPath vtpath2 = new VTerminalPath(tname, "vterm_2");
+        VTerminalIfPath ipath1 = new VTerminalIfPath(vtpath1, "if");
+        VTerminalIfPath ipath2 = new VTerminalIfPath(vtpath2, "if");
+        putInterface(mgr, ipath1);
+        putInterface(mgr, ipath2);
+
+        SwitchPort port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
+        PortMapConfig pmconf = new PortMapConfig(node, port, (short)0);
+        st = mgr.setPortMap(ipath1, pmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath1, ipath1, VNodeState.UP, VNodeState.UP,
+                        pmconf.toString());
+
+        port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "11");
+        pmconf = new PortMapConfig(node, port, (short)0);
+        st = mgr.setPortMap(ipath2, pmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath2, ipath2, VNodeState.UP, VNodeState.UP,
+                        pmconf.toString());
+
+        // Specify switch port by name.
+        port = new SwitchPort("port-10");
+        pmconf = new PortMapConfig(node, port, (short)0);
+        st = mgr.setPortMap(ipath1, pmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath1, ipath1, VNodeState.UP, VNodeState.UP,
+                        pmconf.toString());
+
+        // Clear port mapping at ipath1.
+        mgr.setPortMap(ipath1, null);
+        checkNodeStatus(mgr, vtpath1, ipath1, VNodeState.UNKNOWN,
+                        VNodeState.UNKNOWN, pmconf.toString());
+
+        // Set port mapping to disabled interface.
+        VInterfaceConfig iconf = new VInterfaceConfig(null, Boolean.FALSE);
+        st = mgr.modifyInterface(ipath1, iconf, true);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
+        pmconf = new PortMapConfig(node, port, (short)0);
+        st = mgr.setPortMap(ipath1, pmconf);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath1, ipath1, VNodeState.UNKNOWN,
+                        VNodeState.DOWN, pmconf.toString());
+
+        iconf = new VInterfaceConfig(null, Boolean.TRUE);
+        st = mgr.modifyInterface(ipath1, iconf, true);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath1, ipath1, VNodeState.UP, VNodeState.UP,
+                        ipath1.toString());
+
+        // Try to map an internal port to interface.
+        SwitchPort portIn =
+            new SwitchPort(NodeConnectorIDType.OPENFLOW, "15");
+        PortMapConfig pmconfIn = new PortMapConfig(node, portIn, (short)0);
+        st = mgr.setPortMap(ipath2, pmconfIn);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath2, ipath2, VNodeState.DOWN, VNodeState.DOWN,
+                        pmconfIn.toString());
+
+        st = mgr.removeInterface(ipath2);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        checkNodeStatus(mgr, vtpath2, null, VNodeState.UNKNOWN, null, "");
+
+        // Try to duplicate port mapping.
+        putInterface(mgr, ipath2);
+        checkNodeStatus(mgr, vtpath2, ipath2, VNodeState.UNKNOWN,
+                        VNodeState.UNKNOWN, ipath2.toString());
+        port = new SwitchPort(NodeConnectorIDType.OPENFLOW, "10");
+        pmconf = new PortMapConfig(node, port, (short)0);
+        st = mgr.setPortMap(ipath2, pmconf);
+        assertEquals(StatusCode.CONFLICT, st.getCode());
+        checkNodeStatus(mgr, vtpath2, ipath2, VNodeState.UNKNOWN,
+                        VNodeState.UNKNOWN, ipath2.toString());
+
+        VBridgeIfPath bifpath = new VBridgeIfPath(tname, "bridge", "if");
+        putInterface(mgr, bifpath);
+        st = mgr.setPortMap(bifpath, pmconf);
+        assertEquals(StatusCode.CONFLICT, st.getCode());
+
+        // Remove port mapping twice.
+        st = mgr.setPortMap(ipath1, null);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        st = mgr.setPortMap(ipath1, null);
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+
         st = mgr.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
     }
@@ -1432,7 +1609,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         ifplist.add(ifp);
         createTenantAndBridgeAndInterface(mgr, tpath, bpathlist, ifplist);
 
-        st = mgr.addBridgeInterface(difp, new VInterfaceConfig(null, Boolean.FALSE));
+        st = mgr.addInterface(difp, new VInterfaceConfig(null, Boolean.FALSE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         PortMap pmap = null;
@@ -1524,8 +1701,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         update = new TopoEdgeUpdate(reverseEdge, null, UpdateType.REMOVED);
                         rmTopoList.add(update);
 
-                        st = mgr.addBridgeInterface(inifp,
-                                                    new VInterfaceConfig(null, null));
+                        st = mgr.addInterface(
+                            inifp, new VInterfaceConfig(null, null));
                         assertEquals(emsgEdge, StatusCode.SUCCESS, st.getCode());
 
                         st = mgr.setPortMap(inifp, pmconfIn);
@@ -1567,7 +1744,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                                             emsgEdge);
                         }
 
-                        st = mgr.removeBridgeInterface(inifp);
+                        st = mgr.removeInterface(inifp);
                         assertEquals(emsgEdge, StatusCode.SUCCESS, st.getCode());
 
                         checkNodeStatus(mgr, bpath, ifp, VNodeState.UP, VNodeState.UP,
@@ -1575,7 +1752,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
                         VInterface bif = null;
                         try {
-                            bif = mgr.getBridgeInterface(difp);
+                            bif = mgr.getInterface(difp);
                         } catch (VTNException e) {
                             unexpected(e);
                         }
@@ -1607,7 +1784,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         st = mgr.addBridge(bpath2, new VBridgeConfig(null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        st = mgr.addBridgeInterface(ifp2, new VInterfaceConfig(null, null));
+        st = mgr.addInterface(ifp2, new VInterfaceConfig(null, null));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         // add same PortMap with ifp1 to ifp2
@@ -1626,8 +1803,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         pmconf.toString());
 
         // notify disabled node
-        st = mgr.modifyBridgeInterface(ifp2,
-                                       new VInterfaceConfig(null, Boolean.FALSE), true);
+        st = mgr.modifyInterface(
+            ifp2, new VInterfaceConfig(null, Boolean.FALSE), true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
@@ -2359,7 +2536,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 String ifname = "vinterface" + inode + (i + 10);
                 VBridgeIfPath ifp = new VBridgeIfPath(tname, (i < 2) ? bname1 : bname2,
                                                       ifname);
-                st = mgr.addBridgeInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
+                st = mgr.addInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals("(VBridgeIfPath)" + ifp.toString(),
                         StatusCode.SUCCESS, st.getCode());
                 inode++;
@@ -2536,8 +2713,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
         confVlan = map.getConfig().getVlan();
 
-        st = mgr.modifyBridgeInterface(ifp1,
-                new VInterfaceConfig(null, Boolean.FALSE), true);
+        st = mgr.modifyInterface(
+            ifp1, new VInterfaceConfig(null, Boolean.FALSE), true);
 
         inPkt = createIPv4RawPacket(src, src2, sender, target,
                 (confVlan > 0) ? confVlan : -1, map.getNodeConnector());
@@ -2551,8 +2728,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         //   - Flooding to enabled interfaces except for incoming interface.
         assertEquals(3, dataList.size());
 
-        st = mgr.modifyBridgeInterface(ifp1,
-                new VInterfaceConfig(null, Boolean.TRUE), true);
+        st = mgr.modifyInterface(
+            ifp1, new VInterfaceConfig(null, Boolean.TRUE), true);
 
         table.flush();
 
@@ -2566,8 +2743,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertEquals(0, dataList.size());
 
         // in case received disable vinterface.
-        st = mgr.modifyBridgeInterface(ifp1,
-                new VInterfaceConfig(null, Boolean.FALSE), true);
+        st = mgr.modifyInterface(
+            ifp1, new VInterfaceConfig(null, Boolean.FALSE), true);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         try {
             map = mgr.getPortMap(ifp1);
@@ -2745,7 +2922,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 String bname = (i < maxInterfaceBridge1) ? bname1 : bname2;
                 VBridgeIfPath ifp
                     = new VBridgeIfPath(tname, bname, ifname);
-                st = mgr.addBridgeInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
+                st = mgr.addInterface(
+                    ifp, new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals("(VBridgeIfPath)" + ifp.toString(),
                              StatusCode.SUCCESS, st.getCode());
                 inode++;
@@ -2754,7 +2932,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // add a disabled interface
         VBridgeIfPath difp = new VBridgeIfPath(tname, bname1, "vinterface_disabled");
-        st = mgr.addBridgeInterface(difp, new VInterfaceConfig(null, Boolean.FALSE));
+        st = mgr.addInterface(difp, new VInterfaceConfig(null, Boolean.FALSE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
         Node dnode = NodeCreator.createOFNode(Long.valueOf((long)2));
@@ -2765,7 +2943,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // add a not mapped interface
         VBridgeIfPath nomapifp = new VBridgeIfPath(tname, bname1, "vinterface_nomap");
-        st = mgr.addBridgeInterface(nomapifp, new VInterfaceConfig(null, Boolean.FALSE));
+        st = mgr.addInterface(nomapifp, new VInterfaceConfig(null, Boolean.FALSE));
         assertEquals(StatusCode.SUCCESS, st.getCode());
 
 
@@ -2947,7 +3125,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 String ifname = "vinterface" + inode + (i + 10);
                 VBridgeIfPath ifp = new VBridgeIfPath(tname,
                         (i < maxInterfaceBridge1) ? bname1 : bname2, ifname);
-                st = mgr.addBridgeInterface(ifp, new VInterfaceConfig(null, Boolean.TRUE));
+                st = mgr.addInterface(
+                    ifp, new VInterfaceConfig(null, Boolean.TRUE));
                 assertEquals("(VBridgeIfPath)" + ifp.toString(),
                              StatusCode.SUCCESS, st.getCode());
                 inode++;
@@ -3162,8 +3341,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
         // in case if is disabled.
         VBridgeIfPath ifp = new VBridgeIfPath(tname, bname1, "vinterface010");
-        mgr.modifyBridgeInterface(ifp,
-                new VInterfaceConfig(null, Boolean.FALSE), true);
+        mgr.modifyInterface(
+            ifp, new VInterfaceConfig(null, Boolean.FALSE), true);
 
         PortMap map = null;
         try {
@@ -3387,7 +3566,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             interfaces2.put(ifpath, pmap);
 
             VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-            Status st = mgr.addBridgeInterface(ifpath, ifconf);
+            Status st = mgr.addInterface(ifpath, ifconf);
             assertEquals(StatusCode.SUCCESS, st.getCode());
             st = mgr.setPortMap(ifpath, pmconf);
             assertEquals(StatusCode.SUCCESS, st.getCode());
@@ -3594,7 +3773,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                 vbridges.add(mgr.getBridge(bpath));
             }
             for (VBridgeIfPath ipath: interfaces2.keySet()) {
-                vif2.add(mgr.getBridgeInterface(ipath));
+                vif2.add(mgr.getInterface(ipath));
             }
         } catch (Exception e) {
             unexpected(e);
@@ -3996,7 +4175,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         assertNull(interfaces2.put(ifpath, pmap));
 
         VInterfaceConfig ifconf = new VInterfaceConfig(null, Boolean.TRUE);
-        Status st = mgr.addBridgeInterface(ifpath, ifconf);
+        Status st = mgr.addInterface(ifpath, ifconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         VInterface vif = new VInterface(ifpath.getInterfaceName(),
                                         VNodeState.UNKNOWN, VNodeState.UNKNOWN,

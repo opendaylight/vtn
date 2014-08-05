@@ -28,7 +28,12 @@ public class VlanMapPath extends VBridgeMapPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -989373357444961828L;
+    private static final long serialVersionUID = -6513566104230130855L;
+
+    /**
+     * A string which represents that the node type is VLAN mapping.
+     */
+    private static final String  NODETYPE_VLANMAP = "VlanMap";
 
     /**
      * Identifier of the VLAN mapping.
@@ -56,6 +61,16 @@ public class VlanMapPath extends VBridgeMapPath {
      */
     public String getMapId() {
         return mapId;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return  {@code "VlanMap"} is always returned.
+     */
+    @Override
+    public String getNodeType() {
+        return NODETYPE_VLANMAP;
     }
 
     /**
@@ -103,24 +118,6 @@ public class VlanMapPath extends VBridgeMapPath {
         List<String> components = super.getComponents();
         components.add(mapId);
         return components;
-    }
-
-    /**
-     * Determine whether the given object is identical to this object.
-     *
-     * @param o  An object to be compared.
-     * @return   {@code true} if identical. Otherwise {@code false}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o == null || !o.getClass().equals(getClass())) {
-            return false;
-        }
-
-        return equalsPath((VlanMapPath)o);
     }
 
     /**

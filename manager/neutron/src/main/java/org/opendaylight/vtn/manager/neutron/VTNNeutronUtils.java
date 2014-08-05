@@ -351,7 +351,7 @@ public class VTNNeutronUtils {
 
         VBridgeIfPath path = new VBridgeIfPath(tenantID, bridgeID, portID);
         try {
-            if (vtnManager.getBridgeInterface(path) != null) {
+            if (vtnManager.getInterface(path) != null) {
                 result = HttpURLConnection.HTTP_OK;
             }
         } catch (VTNException e) {

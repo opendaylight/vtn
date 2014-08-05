@@ -1604,4 +1604,45 @@ public class TestStub
     public ClusterEventMap getClusterEventMap() {
         return (ClusterEventMap)caches.get(VTNManagerImpl.CACHE_EVENT);
     }
+
+    /**
+     * Add the specified node.
+     *
+     * @param node  A node corresponding to a physical switch.
+     * @return  {@code true} only if the specified node is actually added.
+     */
+    public boolean addNode(Node node) {
+        return nodes.add(node);
+    }
+
+    /**
+     * Add the specified node connector.
+     *
+     * @param nc     A node connector corresponding to a physical switch port.
+     * @param props  Property of the specified node connector.
+     * @return  {@code true} only if the specified node connector is actually
+     *           added.
+     */
+    public boolean addNodeConnector(NodeConnector nc,
+                                    Map<String, Property> props) {
+        Node node = nc.getNode();
+        Set<NodeConnector> ncSet = nodeConnectors.get(node);
+        if (ncSet == null) {
+            ncSet = new HashSet<NodeConnector>();
+            nodeConnectors.put(node, ncSet);
+        }
+
+        nodeConnectorProps.put(nc, props);
+        Name nm = (Name)props.get(Name.NamePropName);
+        if (nm != null) {
+            Map<String, NodeConnector> map = nodeConnectorNames.get(node);
+            if (map == null) {
+                map = new HashMap<String, NodeConnector>();
+                nodeConnectorNames.put(node, map);
+            }
+            map.put(nm.getValue(), nc);
+        }
+
+        return ncSet.add(nc);
+    }
 }

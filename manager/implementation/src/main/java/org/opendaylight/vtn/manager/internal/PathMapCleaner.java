@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 
 /**
@@ -18,17 +19,17 @@ import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
  */
 public final class PathMapCleaner implements MapCleaner, MacTableEntryFilter {
     /**
-     * A {@link VBridgePath} instance which specifies the virtual node.
+     * A {@link VNodePath} instance which specifies the virtual node.
      */
-    private final VBridgePath  nodePath;
+    private final VNodePath  nodePath;
 
     /**
      * Construct a new instance.
      *
-     * @param path  A {@link VBridgePath} instance which specifies the virtual
+     * @param path  A {@link VNodePath} instance which specifies the virtual
      *              node.
      */
-    public PathMapCleaner(VBridgePath path) {
+    public PathMapCleaner(VNodePath path) {
         nodePath = path;
     }
 
@@ -46,9 +47,12 @@ public final class PathMapCleaner implements MapCleaner, MacTableEntryFilter {
         // Remove MAC addresses detected by the specified virtual node.
         // In this case we don't need to scan MAC address tables in the
         // container.
-        MacAddressTable table = mgr.getMacAddressTable(nodePath);
-        if (table != null) {
-            table.flush(this);
+        if (nodePath instanceof VBridgePath) {
+            MacAddressTable table =
+                mgr.getMacAddressTable((VBridgePath)nodePath);
+            if (table != null) {
+                table.flush(this);
+            }
         }
 
         // Remove flow entries originated by the specified virtual node.

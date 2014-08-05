@@ -260,6 +260,11 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         nc = NodeConnectorCreator.createOFNodeConnector(Short.valueOf("10"),
                                                         node99);
 
+        addNodeConnector(nc, "node99-port-10", true);
+        mgr.clearDisabledNode();
+        edgePorts.add(nc);
+        mappedThis.add(nc);
+
         inPkt = createIPv4RawPacket(src, dst, sender, ipaddr, (short)-1, nc);
         result = mgr.receiveDataPacket(inPkt);
         assertEquals(PacketResult.KEEP_PROCESSING, result);

@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.Serializable;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentMap;
@@ -50,11 +49,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  *   class.
  * </p>
  */
-public final class VlanMapImpl implements VBridgeNode, Serializable {
+public final class VlanMapImpl implements VBridgeNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 817003080891154790L;
+    private static final long serialVersionUID = -102685496368865791L;
 
     /**
      * Logger instance.
@@ -507,5 +506,16 @@ public final class VlanMapImpl implements VBridgeNode, Serializable {
     @Override
     public VNodeRoute getIngressRoute() {
         return new VNodeRoute(mapPath, VNodeRoute.Reason.VLANMAPPED);
+    }
+
+    /**
+     * Install a flow entry which drops every incoming packet.
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     */
+    @Override
+    public void disableInput(VTNManagerImpl mgr, PacketContext pctx) {
+        // Not supported.
     }
 }
