@@ -55,7 +55,8 @@
               org.opendaylight.vtn.manager,
               org.opendaylight.vtn.manager.flow,
               org.opendaylight.vtn.manager.flow.action,
-              org.opendaylight.vtn.manager.flow.cond
+              org.opendaylight.vtn.manager.flow.cond,
+              org.opendaylight.vtn.manager.flow.filter
             </Export-Package>
             <Import-Package>
               org.opendaylight.controller.hosttracker.hostAware,

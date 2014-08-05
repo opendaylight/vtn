@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -45,7 +46,7 @@ public final class VNodeLocation implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8688432687151988512L;
+    private static final long serialVersionUID = 1379126227527453095L;
 
     /**
      * The name of the VTN.
@@ -242,5 +243,39 @@ public final class VNodeLocation implements Serializable {
      */
     public String getInterfaceName() {
         return interfaceName;
+    }
+
+    /**
+     * Determine whether the given object is identical to this object.
+     *
+     * @param o  An object to be compared.
+     * @return   {@code true} if identical. Otherwise {@code false}.
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o == null || !getClass().equals(o.getClass())) {
+            return false;
+        }
+
+        VNodeLocation loc = (VNodeLocation)o;
+        return (Objects.equals(tenantName, loc.tenantName) &&
+                Objects.equals(bridgeName, loc.bridgeName) &&
+                Objects.equals(routerName, loc.routerName) &&
+                Objects.equals(terminalName, loc.terminalName) &&
+                Objects.equals(interfaceName, loc.interfaceName));
+    }
+
+    /**
+     * Return the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(tenantName, bridgeName, routerName, terminalName,
+                            interfaceName);
     }
 }

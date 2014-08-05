@@ -25,11 +25,12 @@ import java.util.List;
  *
  * @see  <a href="package-summary.html#VTN">VTN</a>
  */
-public class VTenantPath implements Serializable, Comparable<VTenantPath> {
+public class VTenantPath
+    implements Serializable, Comparable<VTenantPath>, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8776060135426029534L;
+    private static final long serialVersionUID = -3796118278733925106L;
 
     /**
      * A string which represents that the node type is VTN.
@@ -39,7 +40,7 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
     /**
      * The name of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      */
-    private final String  tenantName;
+    private String  tenantName;
 
     /**
      * Construct a new object which represents the position of the
@@ -97,6 +98,26 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
      */
     public String getNodeType() {
         return NODETYPE_VTN;
+    }
+
+    /**
+     * Create a shallow copy of this instance, and replace the tenant name
+     * with the specified name.
+     *
+     * @param tenantName  The name of the VTN to be configured into a new
+     *                    instance.
+     * @return  A constructed instance.
+     * @since   Helium
+     */
+    public final VTenantPath replaceTenantName(String tenantName) {
+        try {
+            VTenantPath path = (VTenantPath)super.clone();
+            path.tenantName = tenantName;
+            return path;
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
+        }
     }
 
     /**
@@ -275,5 +296,21 @@ public class VTenantPath implements Serializable, Comparable<VTenantPath> {
         }
 
         return ret;
+    }
+
+    // Cloneable
+
+    /**
+     * Create a shallow copy of this instance.
+     *
+     * @return  A shallow copy of this instance.
+     */
+    public VTenantPath clone() {
+        try {
+            return (VTenantPath)super.clone();
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
+        }
     }
 }

@@ -35,6 +35,18 @@ public class VTerminalPathTest extends TestBase {
                 assertEquals(tname, path.getTenantName());
                 assertEquals(mname, path.getTerminalName());
                 assertEquals("vTerminal", path.getNodeType());
+
+                VTenantPath clone = path.clone();
+                assertNotSame(clone, path);
+                assertEquals(clone, path);
+
+                String name = tname + "_new";
+                VTerminalPath path1 =
+                    (VTerminalPath)path.replaceTenantName(name);
+                assertEquals(name, path1.getTenantName());
+                assertEquals(mname, path1.getTerminalName());
+                assertEquals("vTerminal", path1.getNodeType());
+                assertEquals(VTerminalPath.class, path1.getClass());
             }
         }
     }

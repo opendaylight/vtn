@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
 /**
- * This class is used to establish JAXB mapping between {@code VNodePath} and
+ * This class is used to establish JAXB mapping between {@link VNodePath} and
  * {@link VNodeLocation}.
  *
  * @since  Helium
@@ -39,10 +39,6 @@ public class VNodePathAdapter extends XmlAdapter<VNodeLocation, VNodePath> {
         }
 
         String tname = loc.getTenantName();
-        if (tname == null) {
-            return null;
-        }
-
         String ifname = loc.getInterfaceName();
         String bname = loc.getBridgeName();
         if (bname != null) {
@@ -58,32 +54,20 @@ public class VNodePathAdapter extends XmlAdapter<VNodeLocation, VNodePath> {
                 : new VTerminalIfPath(tname, tmname, ifname);
         }
 
-        return null;
+        return new ErrorVNodePath("Unexpected node location: " + loc);
     }
 
     /**
-     * Convert an instance of {@link VNodePath} into {@link VNodeLocation}.
+     * Convert an instance of {@link VNodePath} into an instance of
+     * {@link VNodeLocation}.
      *
      * @param path  A {@link VNodePath} instance to be converted.
      * @return  A {@link VNodeLocation} instance.
-     *          {@code null} is returned a value passed to {@code path} is
-     *          {@code null} or an instance of unexpected class.
+     *          {@code null} is returned if {@code null} is passed to
+     *          {@code path}.
      */
     @Override
     public VNodeLocation marshal(VNodePath path) {
-        if (path instanceof VBridgeIfPath) {
-            return new VNodeLocation((VBridgeIfPath)path);
-        }
-        if (path instanceof VTerminalIfPath) {
-            return new VNodeLocation((VTerminalIfPath)path);
-        }
-        if (path instanceof VBridgePath) {
-            return new VNodeLocation((VBridgePath)path);
-        }
-        if (path instanceof VTerminalPath) {
-            return new VNodeLocation((VTerminalPath)path);
-        }
-
-        return null;
+        return (path == null) ? null : path.toVNodeLocation();
     }
 }

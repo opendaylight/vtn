@@ -55,6 +55,13 @@ public interface VInterfacePath {
     String getNodeType();
 
     /**
+     * Convert this instance into a {@link VNodeLocation} instance.
+     *
+     * @return  A {@link VNodeLocation} instance.
+     */
+    VNodeLocation toVNodeLocation();
+
+    /**
      * Call method that listens the change of the virtual interface.
      *
      * @param listener  An {@link IVTNManagerAware} instance.

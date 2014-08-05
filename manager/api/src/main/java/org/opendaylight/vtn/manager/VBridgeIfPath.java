@@ -33,7 +33,7 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3530008424797872881L;
+    private static final long serialVersionUID = -4792520332881436474L;
 
     /**
      * A string which represents that the node type is vBridge interface.
@@ -153,6 +153,16 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
         List<String> components = super.getComponents();
         components.add(ifName);
         return components;
+    }
+
+    /**
+     * Convert this instance into a {@link VNodeLocation} instance.
+     *
+     * @return  A {@link VNodeLocation} instance.
+     */
+    @Override
+    public VNodeLocation toVNodeLocation() {
+        return new VNodeLocation(this);
     }
 
     /**

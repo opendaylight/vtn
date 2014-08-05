@@ -39,6 +39,19 @@ public class VBridgeIfPathTest extends TestBase {
                     assertEquals(bname, path.getBridgeName());
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vBridge-IF", path.getNodeType());
+
+                    VTenantPath clone = path.clone();
+                    assertNotSame(clone, path);
+                    assertEquals(clone, path);
+
+                    String name = tname + "_new";
+                    VBridgeIfPath path1 =
+                        (VBridgeIfPath)path.replaceTenantName(name);
+                    assertEquals(name, path1.getTenantName());
+                    assertEquals(bname, path1.getBridgeName());
+                    assertEquals(iname, path1.getInterfaceName());
+                    assertEquals("vBridge-IF", path1.getNodeType());
+                    assertEquals(VBridgeIfPath.class, path1.getClass());
                 }
             }
         }
