@@ -133,8 +133,9 @@ public abstract class PortBridge<T extends PortInterface>
                     Node node, UpdateType type) {
         Lock wrlock = writeLock();
         try {
-            VNodeState state = notifyIfNode(mgr, db, node, type);
-            setState(mgr, state);
+            BridgeState bst = getBridgeState(db);
+            VNodeState state = notifyIfNode(mgr, db, bst, node, type);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
@@ -156,9 +157,10 @@ public abstract class PortBridge<T extends PortInterface>
                              UpdateType type) {
         Lock wrlock = writeLock();
         try {
-            VNodeState state = notifyIfNodeConnector(mgr, db, nc, pstate,
+            BridgeState bst = getBridgeState(db);
+            VNodeState state = notifyIfNodeConnector(mgr, db, bst, nc, pstate,
                                                      type);
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
@@ -176,8 +178,9 @@ public abstract class PortBridge<T extends PortInterface>
                     EdgeUpdateState estate) {
         Lock wrlock = writeLock();
         try {
-            VNodeState state = edgeIfUpdate(mgr, db, estate);
-            setState(mgr, state);
+            BridgeState bst = getBridgeState(db);
+            VNodeState state = edgeIfUpdate(mgr, db, bst, estate);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
@@ -411,14 +414,28 @@ public abstract class PortBridge<T extends PortInterface>
      *
      * @param mgr   VTN Manager service.
      * @param db    Virtual node state DB.
+     * @param bst   Runtime state of the bridge.
      * @param node  Node being updated.
      * @param type  Type of update.
      * @return  New state of this node.
      */
     protected final VNodeState notifyIfNode(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        Node node, UpdateType type) {
-        VNodeState state = VNodeState.UNKNOWN;
+        BridgeState bst, Node node, UpdateType type) {
+        if (type == UpdateType.REMOVED) {
+            // Remove faulted paths that contain removed node.
+            int removed = bst.removeFaultedPath(node);
+            if (removed != 0) {
+                Logger logger = getLogger();
+                logger.info("{}:{}: Remove {} faulted path{} that contains " +
+                            "removed node: {}", getContainerName(),
+                            getNodePath(), removed, (removed > 1) ? "s" : "",
+                            node);
+            }
+        }
+
+        VNodeState state = (bst.getFaultedPathSize() == 0)
+            ? VNodeState.UNKNOWN : VNodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
             VNodeState s = vif.notifyNode(mgr, db, state, node, type);
             if (vif.isEnabled()) {
@@ -444,6 +461,7 @@ public abstract class PortBridge<T extends PortInterface>
      *
      * @param mgr     VTN Manager service.
      * @param db      Virtual node state DB.
+     * @param bst     Runtime state of the bridge.
      * @param nc      Node connector being updated.
      * @param pstate  The state of the node connector.
      * @param type    Type of update.
@@ -451,8 +469,24 @@ public abstract class PortBridge<T extends PortInterface>
      */
     protected final VNodeState notifyIfNodeConnector(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        NodeConnector nc, VNodeState pstate, UpdateType type) {
-        VNodeState state = VNodeState.UNKNOWN;
+        BridgeState bst, NodeConnector nc, VNodeState pstate,
+        UpdateType type) {
+        if (type == UpdateType.REMOVED) {
+            // Remove path faults that may be caused by removed node
+            // connector. Even if removed paths are still broken, they will
+            // be detected by succeeding PACKET_IN.
+            int removed = bst.removeFaultedPath(nc.getNode());
+            if (removed != 0) {
+                Logger logger = getLogger();
+                logger.info("{}:{}: Remove {} faulted path{} that contains " +
+                            "removed node connector: {}", getContainerName(),
+                            getNodePath(), removed, (removed > 1) ? "s" : "",
+                            nc);
+            }
+        }
+
+        VNodeState state = (bst.getFaultedPathSize() == 0)
+            ? VNodeState.UNKNOWN : VNodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
             VNodeState s = vif.notifyNodeConnector(mgr, db, state, nc,
                                                    pstate, type);
@@ -479,14 +513,16 @@ public abstract class PortBridge<T extends PortInterface>
      *
      * @param mgr     VTN Manager service.
      * @param db      Virtual node state DB.
+     * @param bst     Runtime state of the bridge.
      * @param estate  A {@link EdgeUpdateState} instance which contains
      *                information reported by the controller.
      * @return  New state of this node.
      */
     protected final VNodeState edgeIfUpdate(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        EdgeUpdateState estate) {
-        VNodeState state = VNodeState.UNKNOWN;
+        BridgeState bst, EdgeUpdateState estate) {
+        VNodeState state = (bst.getFaultedPathSize() == 0)
+            ? VNodeState.UNKNOWN : VNodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
             VNodeState s = vif.edgeUpdate(mgr, db, state, estate);
             if (vif.isEnabled()) {

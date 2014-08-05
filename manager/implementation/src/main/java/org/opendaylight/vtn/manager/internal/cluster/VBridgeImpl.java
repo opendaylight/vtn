@@ -1284,7 +1284,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
                     Node node, UpdateType type) {
         Lock wrlock = writeLock();
         try {
-            VNodeState state = notifyIfNode(mgr, db, node, type);
+            BridgeState bst = getBridgeState(db);
+            VNodeState state = notifyIfNode(mgr, db, bst, node, type);
 
             MacMapImpl mmap = macMap;
             if (mmap != null) {
@@ -1306,7 +1307,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
                 state = s;
             }
 
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
@@ -1329,7 +1330,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
                              UpdateType type) {
         Lock wrlock = writeLock();
         try {
-            VNodeState state = notifyIfNodeConnector(mgr, db, nc, pstate,
+            BridgeState bst = getBridgeState(db);
+            VNodeState state = notifyIfNodeConnector(mgr, db, bst, nc, pstate,
                                                      type);
 
             MacMapImpl mmap = macMap;
@@ -1354,7 +1356,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
                 state = s;
             }
 
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
@@ -1373,7 +1375,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
                     EdgeUpdateState estate) {
         Lock wrlock = readLock();
         try {
-            VNodeState state = edgeIfUpdate(mgr, db, estate);
+            BridgeState bst = getBridgeState(db);
+            VNodeState state = edgeIfUpdate(mgr, db, bst, estate);
 
             MacMapImpl mmap = macMap;
             if (mmap != null) {
@@ -1395,7 +1398,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
                 state = s;
             }
 
-            setState(mgr, state);
+            setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
         }
