@@ -23,6 +23,11 @@ import java.util.Set;
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
+
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.SwitchPort;
@@ -755,8 +760,9 @@ public abstract class TestBase extends Assert {
      *
      * @param o         An object to be tested.
      * @param rootName  The name of expected root element.
+     * @return  Deserialized object.
      */
-    protected static void jaxbTest(Object o, String rootName) {
+    protected static Object jaxbTest(Object o, String rootName) {
         // Ensure that the class of the given class has XmlRootElement
         // annotation.
         Class<?> cl = o.getClass();
@@ -786,5 +792,51 @@ public abstract class TestBase extends Assert {
 
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
+
+        return newobj;
+    }
+
+    /**
+     * Ensure that the given object is mapped to JSON object.
+     *
+     * @param o    An object to be tested.
+     * @param <T>  The type of the given object.
+     * @return  Deserialized object.
+     */
+    protected static <T> T jsonTest(T o) {
+        ObjectMapper mapper = getJsonObjectMapper();
+
+        try {
+            // Marshal the given object into JSON.
+            String json = mapper.writeValueAsString(o);
+            assertNotNull(json);
+            assertTrue(json.length() != 0);
+
+            // Unmarshal the JSON notation.
+            T newobj = mapper.readValue(json, (Class<T>)o.getClass());
+            assertNotSame(o, newobj);
+            assertEquals(o, newobj);
+            return newobj;
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Create Jackson's {@code ObjectMapper} instance.
+     *
+     * @return  A {@code ObjectMapper} instance.
+     */
+    protected static ObjectMapper getJsonObjectMapper() {
+        // Create Jackson object mapper with enabling JAXB annotations.
+        ObjectMapper mapper = new ObjectMapper();
+        AnnotationIntrospector introspector =
+            AnnotationIntrospector.pair(new JacksonAnnotationIntrospector(),
+                                        new JaxbAnnotationIntrospector());
+        mapper.setAnnotationIntrospector(introspector);
+
+        return mapper;
     }
 }

@@ -26,7 +26,7 @@ public class VBridgePath extends VNodePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2598911916422555753L;
+    private static final long serialVersionUID = -2918772111159548106L;
 
     /**
      * A string which represents that the node type is vBridge.
@@ -99,5 +99,15 @@ public class VBridgePath extends VNodePath {
     @Override
     public String getNodeType() {
         return NODETYPE_VBRIDGE;
+    }
+
+    /**
+     * Convert this instance into a {@link VNodeLocation} instance.
+     *
+     * @return  A {@link VNodeLocation} instance.
+     */
+    @Override
+    public VNodeLocation toVNodeLocation() {
+        return new VNodeLocation(this);
     }
 }

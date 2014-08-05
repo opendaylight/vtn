@@ -46,6 +46,16 @@ public class VTenantPathTest extends TestBase {
             VTenantPath path = new VTenantPath(tname);
             assertEquals(tname, path.getTenantName());
             assertEquals("VTN", path.getNodeType());
+
+            VTenantPath clone = path.clone();
+            assertNotSame(clone, path);
+            assertEquals(clone, path);
+
+            String name = tname + "_new";
+            VTenantPath path1 = path.replaceTenantName(name);
+            assertEquals(name, path1.getTenantName());
+            assertEquals("VTN", path1.getNodeType());
+            assertEquals(VTenantPath.class, path1.getClass());
         }
     }
 

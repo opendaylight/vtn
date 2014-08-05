@@ -103,6 +103,7 @@
               org.opendaylight.vtn.manager.flow,
               org.opendaylight.vtn.manager.flow.action,
               org.opendaylight.vtn.manager.flow.cond,
+              org.opendaylight.vtn.manager.flow.filter,
               org.apache.felix.dm,
               org.slf4j,
               org.osgi.framework
