@@ -89,7 +89,7 @@ public abstract class TpPortAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (o == null || !getClass().equals(o.getClass())) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -104,7 +104,7 @@ public abstract class TpPortAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        return getClass().getName().hashCode() ^ port;
+        return super.hashCode() + (port * 41);
     }
 
     /**

@@ -30,42 +30,11 @@ public final class PopVlanAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 251560461197844528L;
+    private static final long serialVersionUID = 1671527159907644934L;
 
     /**
      * Construct a new instance.
      */
     public PopVlanAction() {
-    }
-
-    /**
-     * Determine whether the given object is identical to this object.
-     *
-     * @param o  An object to be compared.
-     * @return   {@code true} if identical. Otherwise {@code false}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        return (o == this || (o instanceof PopVlanAction));
-    }
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        return PopVlanAction.class.getName().hashCode();
-    }
-
-    /**
-     * Return a string representation of this object.
-     *
-     * @return  A string representation of this object.
-     */
-    @Override
-    public String toString() {
-        return "PopVlanAction";
     }
 }

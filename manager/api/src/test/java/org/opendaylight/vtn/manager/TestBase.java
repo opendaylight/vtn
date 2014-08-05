@@ -23,6 +23,26 @@ import java.util.HashSet;
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
+
+import org.opendaylight.vtn.manager.flow.action.DropAction;
+import org.opendaylight.vtn.manager.flow.action.FlowAction;
+import org.opendaylight.vtn.manager.flow.action.PopVlanAction;
+import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
+import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
@@ -223,6 +243,60 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a copy of the specified {@link FlowAction} instance.
+     *
+     * @param act  A {@link FlowAction} instance to be copied.
+     * @return     A copied {@link FlowAction} instance.
+     */
+    protected static FlowAction copy(FlowAction act) {
+        if (act == null) {
+            return null;
+        }
+        if (act instanceof DropAction) {
+            return new DropAction();
+        }
+        if (act instanceof PopVlanAction) {
+            return new PopVlanAction();
+        }
+        if (act instanceof SetDlDstAction) {
+            return new SetDlDstAction(((SetDlDstAction)act).getAddress());
+        }
+        if (act instanceof SetDlSrcAction) {
+            return new SetDlSrcAction(((SetDlSrcAction)act).getAddress());
+        }
+        if (act instanceof SetDscpAction) {
+            return new SetDscpAction(((SetDscpAction)act).getDscp());
+        }
+        if (act instanceof SetIcmpCodeAction) {
+            return new SetIcmpCodeAction(((SetIcmpCodeAction)act).getCode());
+        }
+        if (act instanceof SetIcmpTypeAction) {
+            return new SetIcmpTypeAction(((SetIcmpTypeAction)act).getType());
+        }
+        if (act instanceof SetInet4DstAction) {
+            return new SetInet4DstAction(((SetInet4DstAction)act).getAddress());
+        }
+        if (act instanceof SetInet4SrcAction) {
+            return new SetInet4SrcAction(((SetInet4SrcAction)act).getAddress());
+        }
+        if (act instanceof SetTpDstAction) {
+            return new SetTpDstAction(((SetTpDstAction)act).getPort());
+        }
+        if (act instanceof SetTpSrcAction) {
+            return new SetTpSrcAction(((SetTpSrcAction)act).getPort());
+        }
+        if (act instanceof SetVlanPcpAction) {
+            return new SetVlanPcpAction(((SetVlanPcpAction)act).getPriority());
+        }
+        if (act instanceof SetVlanIdAction) {
+            return new SetVlanIdAction(((SetVlanIdAction)act).getVlan());
+        }
+
+        fail("Unexpected flow action: " + act);
+        return null;
+    }
+
+    /**
      * Create a deep copy of the specified set.
      *
      * @param set  A set of instances.
@@ -271,6 +345,8 @@ public abstract class TestBase extends Assert {
                 dst.add(copy((TestDataLinkHost)elem));
             } else if (elem instanceof MacAddressEntry) {
                 dst.add(copy((MacAddressEntry)elem));
+            } else if (elem instanceof FlowAction) {
+                dst.add(copy((FlowAction)elem));
             } else {
                 fail("Unexpected instanse in the collection: " + elem);
             }
@@ -724,6 +800,45 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a list of IPv4 addresses and {@code null}.
+     *
+     * @return  A list of {@link InetAddress} instances.
+     */
+    protected static List<InetAddress> createInet4Addresses() {
+        return createInet4Addresses(true);
+    }
+
+    /**
+     * Create a list of IPv4 addresses.
+     *
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link InetAddress} instances.
+     */
+    protected static List<InetAddress> createInet4Addresses(boolean setNull) {
+        List<InetAddress> list = new ArrayList<InetAddress>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        String[] addrs = {
+            "0.0.0.0",
+            "255.255.255.255",
+            "127.0.0.1",
+            "10.20.30.40",
+            "192.168.100.200",
+        };
+        for (String addr: addrs) {
+            try {
+                list.add(InetAddress.getByName(addr));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        return list;
+    }
+
+    /**
      * Create a list of set of {@link DataLinkHost} instances.
      *
      * @param limit  The number of ethernet addresses to be created.
@@ -874,8 +989,9 @@ public abstract class TestBase extends Assert {
      *
      * @param o         An object to be tested.
      * @param rootName  The name of expected root element.
+     * @return  Deserialized object.
      */
-    protected static void jaxbTest(Object o, String rootName) {
+    protected static Object jaxbTest(Object o, String rootName) {
         // Ensure that the class of the given class has XmlRootElement
         // annotation.
         Class<?> cl = o.getClass();
@@ -905,6 +1021,52 @@ public abstract class TestBase extends Assert {
 
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
+
+        return newobj;
+    }
+
+    /**
+     * Ensure that the given object is mapped to JSON object.
+     *
+     * @param o    An object to be tested.
+     * @param <T>  The type of the given object.
+     * @return  Deserialized object.
+     */
+    protected static <T> T jsonTest(T o) {
+        ObjectMapper mapper = getJsonObjectMapper();
+
+        try {
+            // Marshal the given object into JSON.
+            String json = mapper.writeValueAsString(o);
+            assertNotNull(json);
+            assertTrue(json.length() != 0);
+
+            // Unmarshal the JSON notation.
+            T newobj = mapper.readValue(json, (Class<T>)o.getClass());
+            assertNotSame(o, newobj);
+            assertEquals(o, newobj);
+            return newobj;
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return null;
+    }
+
+    /**
+     * Create Jackson's {@code ObjectMapper} instance.
+     *
+     * @return  A {@code ObjectMapper} instance.
+     */
+    protected static ObjectMapper getJsonObjectMapper() {
+        // Create Jackson object mapper with enabling JAXB annotations.
+        ObjectMapper mapper = new ObjectMapper();
+        AnnotationIntrospector introspector =
+            AnnotationIntrospector.pair(new JacksonAnnotationIntrospector(),
+                                        new JaxbAnnotationIntrospector());
+        mapper.setAnnotationIntrospector(introspector);
+
+        return mapper;
     }
 
     /**

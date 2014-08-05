@@ -59,7 +59,7 @@ public abstract class FlowAction implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6524951361877107145L;
+    private static final long serialVersionUID = -6960302092434919689L;
 
     /**
      * Convert a SAL action into {@code FlowAction} instance.
@@ -143,5 +143,36 @@ public abstract class FlowAction implements Serializable {
      * Construct a new instance which describes an action in a flow entry.
      */
     FlowAction() {
+    }
+
+    /**
+     * Determine whether the given object is identical to this object.
+     *
+     * @param o  An object to be compared.
+     * @return   {@code true} if identical. Otherwise {@code false}.
+     */
+    @Override
+    public boolean equals(Object o) {
+        return (o != null && getClass().equals(o.getClass()));
+    }
+
+    /**
+     * Return the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    @Override
+    public int hashCode() {
+        return getClass().getName().hashCode();
+    }
+
+    /**
+     * Return a string representation of this object.
+     *
+     * @return  A string representation of this object.
+     */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
     }
 }

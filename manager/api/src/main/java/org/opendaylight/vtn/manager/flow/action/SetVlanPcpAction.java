@@ -90,7 +90,7 @@ public final class SetVlanPcpAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof SetVlanPcpAction)) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -105,7 +105,7 @@ public final class SetVlanPcpAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetVlanPcpAction.class.getName().hashCode() ^ (int)priority;
+        return super.hashCode() + ((int)priority * 37);
     }
 
     /**

@@ -90,7 +90,7 @@ public final class SetDscpAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof SetDscpAction)) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -105,7 +105,7 @@ public final class SetDscpAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetDscpAction.class.getName().hashCode() ^ (int)dscp;
+        return super.hashCode() + ((int)dscp * 17);
     }
 
     /**

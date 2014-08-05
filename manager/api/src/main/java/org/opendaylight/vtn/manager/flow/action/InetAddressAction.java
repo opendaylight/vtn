@@ -155,6 +155,7 @@ public abstract class InetAddressAction extends FlowAction {
                         new Status(StatusCode.BADREQUEST,
                                    unexpectedAddress(addr, cls));
                 }
+                address = iaddr;
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder("Invalid address: ");
                 builder.append(addr);
@@ -199,7 +200,7 @@ public abstract class InetAddressAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (o == null || !getClass().equals(o.getClass())) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -218,9 +219,9 @@ public abstract class InetAddressAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        int h = getClass().getName().hashCode();
+        int h = super.hashCode();
         if (address != null) {
-            h ^= address.hashCode();
+            h += (address.hashCode() * 31);
         }
 
         return h;

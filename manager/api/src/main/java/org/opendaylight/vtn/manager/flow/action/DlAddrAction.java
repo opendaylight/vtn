@@ -127,7 +127,8 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @XmlAttribute(name = "address", required = true)
     public final String getMacAddress() {
-        return (address == null) ? null : HexEncode.bytesToHexString(address);
+        return (address == null)
+            ? null : HexEncode.bytesToHexStringFormat(address);
     }
 
     /**
@@ -164,7 +165,7 @@ public abstract class DlAddrAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (o == null || !getClass().equals(o.getClass())) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -179,7 +180,7 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        return getClass().getName().hashCode() ^ Arrays.hashCode(address);
+        return super.hashCode() ^ Arrays.hashCode(address);
     }
 
     /**
@@ -193,7 +194,7 @@ public abstract class DlAddrAction extends FlowAction {
         builder.append('[');
         if (address != null) {
             builder.append("addr=").
-                append(HexEncode.bytesToHexString(address));
+                append(HexEncode.bytesToHexStringFormat(address));
         }
         builder.append(']');
 

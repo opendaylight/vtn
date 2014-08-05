@@ -90,7 +90,7 @@ public final class SetIcmpTypeAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof SetIcmpTypeAction)) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -105,7 +105,7 @@ public final class SetIcmpTypeAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetIcmpTypeAction.class.getName().hashCode() ^ (int)type;
+        return super.hashCode() + ((int)type * 29);
     }
 
     /**

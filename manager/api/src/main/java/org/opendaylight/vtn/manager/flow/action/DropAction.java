@@ -30,42 +30,11 @@ public final class DropAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2154070452557746892L;
+    private static final long serialVersionUID = -3632563004504153362L;
 
     /**
      * Construct a new instance.
      */
     public DropAction() {
-    }
-
-    /**
-     * Determine whether the given object is identical to this object.
-     *
-     * @param o  An object to be compared.
-     * @return   {@code true} if identical. Otherwise {@code false}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        return (o == this || (o instanceof DropAction));
-    }
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        return DropAction.class.getName().hashCode();
-    }
-
-    /**
-     * Return a string representation of this object.
-     *
-     * @return  A string representation of this object.
-     */
-    @Override
-    public String toString() {
-        return "DropAction";
     }
 }

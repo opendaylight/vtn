@@ -96,7 +96,7 @@ public final class SetVlanIdAction extends FlowAction {
         if (o == this) {
             return true;
         }
-        if (!(o instanceof SetVlanIdAction)) {
+        if (!super.equals(o)) {
             return false;
         }
 
@@ -111,7 +111,7 @@ public final class SetVlanIdAction extends FlowAction {
      */
     @Override
     public int hashCode() {
-        return SetVlanIdAction.class.getName().hashCode() ^ (int)vlan;
+        return super.hashCode() + ((int)vlan * 11);
     }
 
     /**
