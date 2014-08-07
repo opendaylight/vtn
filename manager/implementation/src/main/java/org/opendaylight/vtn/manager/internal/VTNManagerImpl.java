@@ -4133,8 +4133,8 @@ public class VTNManagerImpl
                 LOG.trace("{}.{}: Container path map was {}: {}",
                           containerName, name, type.getName(), cpm);
             } else {
-                LOG.trace("{}.{}: Container path map was {}.",
-                          containerName, name, type.getName());
+                LOG.info("{}.{}: Container path map was {}.",
+                         containerName, name, type.getName());
             }
         } finally {
             rdlock.unlock();
@@ -4164,8 +4164,7 @@ public class VTNManagerImpl
                 return;
             }
 
-            // REVISIT: trace logging.
-            LOG.trace("{}:{}.{}: VTN path map was {}.",
+            LOG.info("{}:{}.{}: VTN path map was {}.",
                       containerName, tname, index, type.getName());
         } finally {
             rdlock.unlock();

@@ -18,6 +18,12 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * {@code L4PortMatch} describes the range of TCP/UDP port number.
+ *
+ * <p>
+ *   Although this class is public to other packages, this class does not
+ *   provide any API. Applications other than VTN Manager must not use this
+ *   class.
+ * </p>
  */
 public final class L4PortMatch implements Serializable {
     /**

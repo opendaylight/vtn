@@ -28,7 +28,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * This class provides base implementation of path map.
  *
  * <p>
- *   Although this interface is public to other packages, this class does not
+ *   Although this class is public to other packages, this class does not
  *   provide any API. Applications other than VTN Manager must not use this
  *   class.
  * </p>
@@ -40,12 +40,12 @@ public abstract class PathMapImpl implements Serializable {
     private static final long serialVersionUID = -4357453759022403623L;
 
     /**
-     * The minimum value of match index.
+     * The minimum value of index.
      */
     private static final int  INDEX_MIN = 1;
 
     /**
-     * The maximum value of match index.
+     * The maximum value of index.
      */
     private static final int  INDEX_MAX = 65535;
 

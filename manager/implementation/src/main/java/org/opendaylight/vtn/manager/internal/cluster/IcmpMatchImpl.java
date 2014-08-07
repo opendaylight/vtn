@@ -25,7 +25,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * in IPv4 packet.
  *
  * <p>
- *   Although this interface is public to other packages, this class does not
+ *   Although this class is public to other packages, this class does not
  *   provide any API. Applications other than VTN Manager must not use this
  *   class.
  * </p>

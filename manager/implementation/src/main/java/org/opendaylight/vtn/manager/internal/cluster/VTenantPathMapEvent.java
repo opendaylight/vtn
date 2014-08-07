@@ -17,7 +17,7 @@ import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
  * {@code VTenantPathMapEvent} describes an cluster event object which
- * notifies that a vTN path map was added, changed, or removed.
+ * notifies that a VTN path map was added, changed, or removed.
  *
  * <p>
  *   Although this class is public to other packages, this class does not
