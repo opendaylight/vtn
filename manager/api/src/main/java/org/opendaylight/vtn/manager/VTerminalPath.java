@@ -28,7 +28,7 @@ public class VTerminalPath extends VNodePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8111755848677458802L;
+    private static final long serialVersionUID = -4095702145474291746L;
 
     /**
      * A string which represents that the node type is vTerminal.
@@ -98,5 +98,15 @@ public class VTerminalPath extends VNodePath {
     @Override
     public String getNodeType() {
         return NODETYPE_VTERMINAL;
+    }
+
+    /**
+     * Convert this instance into a {@link VNodeLocation} instance.
+     *
+     * @return  A {@link VNodeLocation} instance.
+     */
+    @Override
+    public VNodeLocation toVNodeLocation() {
+        return new VNodeLocation(this);
     }
 }

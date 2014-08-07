@@ -34,7 +34,7 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 627513994821323718L;
+    private static final long serialVersionUID = -7165865505431233649L;
 
     /**
      * A string which represents that the node type is vTerminal interface.
@@ -154,6 +154,16 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
         List<String> components = super.getComponents();
         components.add(ifName);
         return components;
+    }
+
+    /**
+     * Convert this instance into a {@link VNodeLocation} instance.
+     *
+     * @return  A {@link VNodeLocation} instance.
+     */
+    @Override
+    public VNodeLocation toVNodeLocation() {
+        return new VNodeLocation(this);
     }
 
     /**

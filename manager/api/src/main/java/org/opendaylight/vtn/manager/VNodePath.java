@@ -29,7 +29,7 @@ public abstract class VNodePath extends VTenantPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3691447682025580103L;
+    private static final long serialVersionUID = 569227328812607675L;
 
     /**
      * The name of the virtual node inside the VTN.
@@ -49,7 +49,7 @@ public abstract class VNodePath extends VTenantPath {
      * @param tenantName  The name of the VTN.
      * @param name        The name of the virtual node inside the VTN.
      */
-    protected VNodePath(String tenantName, String name) {
+    VNodePath(String tenantName, String name) {
         super(tenantName);
         tenantNodeName = name;
     }
@@ -70,7 +70,7 @@ public abstract class VNodePath extends VTenantPath {
      * @param name        The name of the virtual node.
      * @throws NullPointerException  {@code tenantPath} is {@code null}.
      */
-    protected VNodePath(VTenantPath tenantPath, String name) {
+    VNodePath(VTenantPath tenantPath, String name) {
         this(tenantPath.getTenantName(), name);
     }
 
@@ -82,6 +82,13 @@ public abstract class VNodePath extends VTenantPath {
     public String getTenantNodeName() {
         return tenantNodeName;
     }
+
+    /**
+     * Convert this instance into a {@link VNodeLocation} instance.
+     *
+     * @return  A {@link VNodeLocation} instance.
+     */
+    public abstract VNodeLocation toVNodeLocation();
 
     /**
      * {@inheritDoc}

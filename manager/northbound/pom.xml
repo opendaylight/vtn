@@ -95,6 +95,7 @@
               org.opendaylight.vtn.manager.flow,
               org.opendaylight.vtn.manager.flow.action,
               org.opendaylight.vtn.manager.flow.cond,
+              org.opendaylight.vtn.manager.flow.filter,
               com.fasterxml.jackson.databind.annotation,
               com.sun.jersey.spi.container.servlet,
               javax.ws.rs,

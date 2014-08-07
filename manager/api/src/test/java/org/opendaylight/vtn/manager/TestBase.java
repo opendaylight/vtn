@@ -42,6 +42,10 @@ import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+import org.opendaylight.vtn.manager.flow.filter.DropFilter;
+import org.opendaylight.vtn.manager.flow.filter.FilterType;
+import org.opendaylight.vtn.manager.flow.filter.PassFilter;
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -297,6 +301,45 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a copy of the specified {@link FilterType} instance.
+     *
+     * @param type  A {@link FilterType} instance to be copied.
+     * @return      A copied {@link FilterType} instance.
+     */
+    protected static FilterType copy(FilterType type) {
+        if (type == null) {
+            return null;
+        }
+        if (type instanceof PassFilter) {
+            return new PassFilter();
+        }
+        if (type instanceof DropFilter) {
+            return new DropFilter();
+        }
+        if (type instanceof RedirectFilter) {
+            RedirectFilter rf = (RedirectFilter)type;
+            VInterfacePath path = rf.getDestination();
+            boolean output = rf.isOutput();
+            if (path instanceof VBridgeIfPath) {
+                VBridgeIfPath ipath = new VBridgeIfPath(
+                    copy(path.getTenantName()),
+                    copy(path.getTenantNodeName()),
+                    copy(path.getInterfaceName()));
+                return new RedirectFilter(ipath, output);
+            } else {
+                VTerminalIfPath ipath = new VTerminalIfPath(
+                    copy(path.getTenantName()),
+                    copy(path.getTenantNodeName()),
+                    copy(path.getInterfaceName()));
+                return new RedirectFilter(ipath, output);
+            }
+        }
+
+        fail("Unexpected filter type: " + type);
+        return null;
+    }
+
+    /**
      * Create a deep copy of the specified set.
      *
      * @param set  A set of instances.
@@ -347,6 +390,8 @@ public abstract class TestBase extends Assert {
                 dst.add(copy((MacAddressEntry)elem));
             } else if (elem instanceof FlowAction) {
                 dst.add(copy((FlowAction)elem));
+            } else if (elem instanceof FilterType) {
+                dst.add(copy((FilterType)elem));
             } else {
                 fail("Unexpected instanse in the collection: " + elem);
             }
