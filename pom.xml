@@ -32,5 +32,6 @@
   <modules>
     <module>manager/dist</module>
     <module>coordinator/dist</module>
+    <module>features</module>
   </modules>
 </project>
