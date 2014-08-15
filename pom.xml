@@ -39,6 +39,7 @@
       </activation>
       <modules>
         <module>manager/dist</module>
+        <module>manager/dist-karaf</module>
         <module>coordinator/dist</module>
       </modules>
     </profile>
