@@ -89,6 +89,16 @@
 
     <testvm.argLine>-Xmx1024m -XX:MaxPermSize=256m</testvm.argLine>
 
+    <!-- Karaf properties -->
+    <karaf.version>3.0.1</karaf.version>
+    <karaf.empty.version>1.4.2-SNAPSHOT</karaf.empty.version>
+    <karaf.resources.version>1.4.2-SNAPSHOT</karaf.resources.version>
+
+    <!-- Karaf features versions -->
+    <feature.adsal.version>0.8.1-SNAPSHOT</feature.adsal.version>
+    <feature.nsf.version>0.4.2-SNAPSHOT</feature.nsf.version>
+    <feature.test.version>0.6.2-SNAPSHOT</feature.test.version>
+
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal</javadoc.exclude>
 
