@@ -71,11 +71,31 @@
     <!-- OpenDaylight openflowplugin -->
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowplugin-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowplugin-extension-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>openflowplugin</artifactId>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>openflowplugin-controller-config</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowplugin-extension-nicira</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowjava-extension-nicira-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>openflowjava-extension-nicira</artifactId>
     </dependency>
 
     <!-- OpenDaylight ovsdb -->
@@ -146,7 +166,10 @@
                 ${project.build.directory}/provided-configs
               </outputDirectory>
               <includeArtifactIds>
-                openflowplugin-controller-config
+                openflowplugin-controller-config,
+                openflowplugin-extension-nicira,
+                openflowjava-extension-nicira,
+                openflowjava-extension-nicira-api
               </includeArtifactIds>
               <includes>**\/*.xml</includes>
               <excludeTransitive>true</excludeTransitive>

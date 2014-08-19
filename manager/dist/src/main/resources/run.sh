@@ -82,7 +82,7 @@ if [ "$OF13" = 1 ]; then
     OF_FILTER="org\.opendaylight\.controller\.(thirdparty\.org\.openflow|protocol_plugins\.openflow)"
 
     # Instal configuration for openflow plugin.
-    find $CONFDIR/$INIT_AVAIL -name '*openflowplugin*.xml' | \
+    find $CONFDIR/$INIT_AVAIL -name '*.xml' | \
         while read cf; do
             cfname=`basename $cf`
             ln -s ../$INIT_AVAIL/$cfname $CONF_INITIAL
