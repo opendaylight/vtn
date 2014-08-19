@@ -46,9 +46,9 @@ REM Set up openflow plugin.
 SET FILTER="^^(?^!org\.opendaylight\.(openflowplugin^|openflowjava^|controller\.sal-compatibility)).^*"
 
 IF "%OF13%" NEQ "0" (
-    FOR /F "usebackq" %%f IN (`DIR /B "%CONF_INIT_AVAIL%\*openflowplugin*"`) DO (
+    SET FILTER="^^(?^!org\.opendaylight\.controller\.(thirdparty\.org\.openflow^|protocol_plugins\.openflow)).^*"
+    FOR /F "usebackq" %%f IN (`DIR /B "%CONF_INIT_AVAIL%\*.xml"`) DO (
         COPY %CONF_INIT_AVAIL%\%%f %CONF_INITIAL%\%%f
-        SET FILTER="^^(?^!org\.opendaylight\.controller\.(thirdparty\.org\.openflow^|protocol_plugins\.openflow)).^*"
     )
 )
 
