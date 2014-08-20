@@ -16,6 +16,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.SetTpDst;
+
 /**
  * This class describes a flow action that sets the specified ICMP code
  * into the ICMP header in IPv4 packet.
@@ -35,7 +37,7 @@ public final class SetIcmpCodeAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8269388333320510437L;
+    private static final long serialVersionUID = 6442045696815081122L;
 
     /**
      * ICMP code to be set.
@@ -68,6 +70,17 @@ public final class SetIcmpCodeAction extends FlowAction {
      */
     public SetIcmpCodeAction(short code) {
         this.code = code;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param act  A SAL action that sets the ICMP code.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code act}.
+     */
+    public SetIcmpCodeAction(SetTpDst act) {
+        code = (short)act.getPort();
     }
 
     /**

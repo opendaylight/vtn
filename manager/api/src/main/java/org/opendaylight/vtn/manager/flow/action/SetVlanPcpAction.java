@@ -16,6 +16,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.SetVlanPcp;
+
 /**
  * This class describes a flow action that sets the specified VLAN priority
  * into the packet.
@@ -35,7 +37,7 @@ public final class SetVlanPcpAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4917859306147210865L;
+    private static final long serialVersionUID = 8494308708741440264L;
 
     /**
      * VLAN priority to be set.
@@ -68,6 +70,17 @@ public final class SetVlanPcpAction extends FlowAction {
      */
     public SetVlanPcpAction(byte pri) {
         priority = pri;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param act  A SAL action that sets the VLAN priority.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code act}.
+     */
+    public SetVlanPcpAction(SetVlanPcp act) {
+        priority = (byte)act.getPcp();
     }
 
     /**

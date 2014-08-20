@@ -17,6 +17,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.SetNwDst;
+
 /**
  * This class describes a flow action that sets the specified IPv4 address
  * into the IPv4 packet as the destination address.
@@ -36,7 +38,7 @@ public final class SetInet4DstAction extends Inet4AddressAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5688803158521767135L;
+    private static final long serialVersionUID = -6356309794337002311L;
 
     /**
      * Private constructor only for JAXB.
@@ -55,5 +57,16 @@ public final class SetInet4DstAction extends Inet4AddressAction {
      */
     public SetInet4DstAction(InetAddress addr) {
         super(addr);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param act  A SAL action that sets the destination IP address.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code act}.
+     */
+    public SetInet4DstAction(SetNwDst act) {
+        super(act.getAddress());
     }
 }

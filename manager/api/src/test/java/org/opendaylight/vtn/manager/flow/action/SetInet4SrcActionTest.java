@@ -24,6 +24,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import org.opendaylight.vtn.manager.TestBase;
 
+import org.opendaylight.controller.sal.action.SetNwSrc;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -40,6 +41,13 @@ public class SetInet4SrcActionTest extends TestBase {
             SetInet4SrcAction act = new SetInet4SrcAction(iaddr);
             assertEquals(iaddr, act.getAddress());
             assertEquals(null, act.getValidationStatus());
+
+            if (iaddr != null) {
+                SetNwSrc sact = new SetNwSrc(iaddr);
+                act = new SetInet4SrcAction(sact);
+                assertEquals(iaddr, act.getAddress());
+                assertEquals(null, act.getValidationStatus());
+            }
         }
 
         try {

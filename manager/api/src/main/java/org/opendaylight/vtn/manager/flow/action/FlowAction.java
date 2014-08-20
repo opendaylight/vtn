@@ -10,7 +10,10 @@
 package org.opendaylight.vtn.manager.flow.action;
 
 import java.io.Serializable;
-import java.net.InetAddress;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -20,7 +23,8 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.ActionType;
+import org.opendaylight.controller.sal.action.Drop;
+import org.opendaylight.controller.sal.action.PopVlan;
 import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.action.SetDlSrc;
 import org.opendaylight.controller.sal.action.SetNwDst;
@@ -30,6 +34,7 @@ import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.action.SetTpSrc;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.action.SetVlanPcp;
+import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * This class describes an abstract information about an action in a flow
@@ -59,84 +64,139 @@ public abstract class FlowAction implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6960302092434919689L;
+    private static final long serialVersionUID = -7681330147348966804L;
+
+    /**
+     * Constructors that instantiate {@code FlowAction} variants from
+     * SAL action except for L4 actions.
+     */
+    private static final Map<Class<?>, Constructor<?>>  CTORS;
+
+    /**
+     * Constructors that instantiate {@code FlowAction} variants from
+     * L4 SAL action.
+     */
+    private static final Map<Integer, Map<Class<?>, Constructor<?>>>  CTORS_L4;
+
+    /**
+     * Initialize constructors for {@code FlowAction} variants.
+     */
+    static {
+        CTORS = new HashMap<Class<?>, Constructor<?>>();
+        setConstructor(CTORS, DropAction.class, Drop.class);
+        setConstructor(CTORS, PopVlanAction.class, PopVlan.class);
+        setConstructor(CTORS, SetDlDstAction.class, SetDlDst.class);
+        setConstructor(CTORS, SetDlSrcAction.class, SetDlSrc.class);
+        setConstructor(CTORS, SetDscpAction.class, SetNwTos.class);
+        setConstructor(CTORS, SetInet4DstAction.class, SetNwDst.class);
+        setConstructor(CTORS, SetInet4SrcAction.class, SetNwSrc.class);
+        setConstructor(CTORS, SetVlanIdAction.class, SetVlanId.class);
+        setConstructor(CTORS, SetVlanPcpAction.class, SetVlanPcp.class);
+
+        CTORS_L4 = new HashMap<Integer, Map<Class<?>, Constructor<?>>>();
+        HashMap<Class<?>, Constructor<?>> tcpMap =
+            new HashMap<Class<?>, Constructor<?>>();
+        CTORS_L4.put(Integer.valueOf(IPProtocols.TCP.intValue()), tcpMap);
+        setConstructor(tcpMap, SetTpDstAction.class, SetTpDst.class);
+        setConstructor(tcpMap, SetTpSrcAction.class, SetTpSrc.class);
+
+        // Share TCP constructors with UDP.
+        CTORS_L4.put(Integer.valueOf(IPProtocols.UDP.intValue()), tcpMap);
+
+        HashMap<Class<?>, Constructor<?>> icmpMap =
+            new HashMap<Class<?>, Constructor<?>>();
+        CTORS_L4.put(Integer.valueOf(IPProtocols.ICMP.intValue()), icmpMap);
+        setConstructor(icmpMap, SetIcmpCodeAction.class, SetTpDst.class);
+        setConstructor(icmpMap, SetIcmpTypeAction.class, SetTpSrc.class);
+    }
 
     /**
      * Convert a SAL action into {@code FlowAction} instance.
      *
-     * @param act     A SAL action.
-     * @param isIcmp  {@code true} means that the given action is applied to
-     *                the ICMPv4 packet. If {@code true} is specified,
-     *                {@link SetIcmpTypeAction} and {@link SetIcmpCodeAction}
-     *                are used to represent SET_TP_SRC and SET_TP_DST actions
-     *                respectively. Otherwise {@link SetTpSrcAction} and
-     *                {@link SetTpDstAction} are used.
+     * @param act      A SAL action.
+     * @param ipproto  IP protocol number.
+     *                 This parameter is used if SET_TP_SRC or SET_TP_DST
+     *                 action is passed to {@code act}.
      * @return  A {@link FlowAction} instance converted from the given
      *          SAL action. {@code null} is returned if the given SAL action
      *          is not supported.
      */
-    public static final FlowAction create(Action act, boolean isIcmp) {
-        if (act != null) {
-            ActionType type = act.getType();
-            byte[] dladdr;
-            int ival;
-            InetAddress iaddr;
-
-            switch (type) {
-            case DROP:
-                return new DropAction();
-
-            case SET_DL_SRC:
-                dladdr = ((SetDlSrc)act).getDlAddress();
-                return new SetDlSrcAction(dladdr);
-
-            case SET_DL_DST:
-                dladdr = ((SetDlDst)act).getDlAddress();
-                return new SetDlDstAction(dladdr);
-
-            case SET_VLAN_ID:
-                ival = ((SetVlanId)act).getVlanId();
-                return new SetVlanIdAction((short)ival);
-
-            case SET_VLAN_PCP:
-                ival = ((SetVlanPcp)act).getPcp();
-                return new SetVlanPcpAction((byte)ival);
-
-            case POP_VLAN:
-                return new PopVlanAction();
-
-            case SET_NW_SRC:
-                iaddr = ((SetNwSrc)act).getAddress();
-                return new SetInet4SrcAction(iaddr);
-
-            case SET_NW_DST:
-                iaddr = ((SetNwDst)act).getAddress();
-                return new SetInet4DstAction(iaddr);
-
-            case SET_NW_TOS:
-                ival = ((SetNwTos)act).getNwTos();
-                return new SetDscpAction((byte)ival);
-
-            case SET_TP_SRC:
-                ival = ((SetTpSrc)act).getPort();
-                if (isIcmp) {
-                    return new SetIcmpTypeAction((short)ival);
-                }
-                return new SetTpSrcAction(ival);
-
-            case SET_TP_DST:
-                ival = ((SetTpDst)act).getPort();
-                if (isIcmp) {
-                    return new SetIcmpCodeAction((short)ival);
-                }
-                return new SetTpDstAction(ival);
-
-            default:
-                break;
-            }
+    public static final FlowAction create(Action act, int ipproto) {
+        Constructor<?> ctor = getConstructor(act, ipproto);
+        if (ctor == null) {
+            return null;
         }
 
-        return null;
+        Exception error;
+        try {
+            return (FlowAction)ctor.newInstance(act);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RuntimeException) {
+                // Constructor threw an exception.
+                throw (RuntimeException)cause;
+            }
+
+            error = e;
+        } catch (Exception e) {
+            error = e;
+        }
+
+        // This should never happen.
+        String msg = "Failed to instantiate action: act=" + act +
+            ", ipproto=" + ipproto;
+        throw new IllegalStateException(msg, error);
+    }
+
+    /**
+     * Set constructor for {@code FlowAction} variants to the given map.
+     *
+     * @param map       A map to keep constructors.
+     * @param actClass  Class of {@code FlowAction} variants.
+     * @param salClass  SAL action class associated with {@code actClass}.
+     */
+    private static void setConstructor(Map<Class<?>, Constructor<?>> map,
+                                       Class<? extends FlowAction> actClass,
+                                       Class<? extends Action> salClass) {
+        Constructor<?> ctor = null;
+        try {
+            ctor = actClass.getConstructor(salClass);
+        } catch (NoSuchMethodException e) {
+            String msg = "No constructor for " + actClass.getSimpleName();
+            throw new IllegalStateException(msg, e);
+        }
+
+        map.put(salClass, ctor);
+    }
+
+    /**
+     * Return a constructor for {@code FlowAction} variants associated with
+     * the given SAL action.
+     *
+     * @param act      A SAL action.
+     * @param ipproto  IP protocol number.
+     * @return  A constructor for {@code FlowAction} variants associated with
+     *          {@code act}.
+     */
+    private static Constructor<?> getConstructor(Action act, int ipproto) {
+        if (act == null) {
+            return null;
+        }
+
+        Class<?> salClass = act.getClass();
+        Constructor<?> ctor = CTORS.get(salClass);
+        if (ctor != null) {
+            return ctor;
+        }
+
+        // Try L4 action constructors.
+        Integer key = Integer.valueOf(ipproto);
+        Map<Class<?>, Constructor<?>> map = CTORS_L4.get(key);
+        if (map == null) {
+            return null;
+        }
+
+        return map.get(salClass);
     }
 
     /**

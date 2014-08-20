@@ -157,8 +157,9 @@ public abstract class InetAddressAction extends FlowAction {
                 }
                 address = iaddr;
             } catch (Exception e) {
-                StringBuilder builder = new StringBuilder("Invalid address: ");
-                builder.append(addr);
+                StringBuilder builder =
+                    new StringBuilder(getClass().getSimpleName());
+                builder.append(": Invalid address: ").append(addr);
                 validationStatus =
                     new Status(StatusCode.BADREQUEST, builder.toString());
             }
@@ -175,8 +176,9 @@ public abstract class InetAddressAction extends FlowAction {
      */
     private String unexpectedAddress(String addr, Class<?> cls) {
         StringBuilder builder =
-            new StringBuilder("Unexpected address type: addr=");
-        builder.append(addr).append(", expected=").append(cls.getSimpleName());
+            new StringBuilder(getClass().getSimpleName());
+        builder.append(": Unexpected address type: addr=").append(addr).
+            append(", expected=").append(cls.getSimpleName());
         return builder.toString();
     }
 

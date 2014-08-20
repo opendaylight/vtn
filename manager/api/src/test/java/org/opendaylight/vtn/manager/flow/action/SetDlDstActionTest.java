@@ -24,6 +24,7 @@ import org.codehaus.jettison.json.JSONObject;
 
 import org.opendaylight.vtn.manager.TestBase;
 
+import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.Status;
@@ -44,6 +45,13 @@ public class SetDlDstActionTest extends TestBase {
             byte[] addr = act.getAddress();
             assertTrue(Arrays.equals(bytes, addr));
             assertEquals(null, act.getValidationStatus());
+
+            if (bytes != null) {
+                SetDlDst sact = new SetDlDst(bytes);
+                act = new SetDlDstAction(sact);
+                assertTrue(Arrays.equals(bytes, act.getAddress()));
+                assertEquals(null, act.getValidationStatus());
+            }
         }
     }
 

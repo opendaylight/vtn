@@ -29,17 +29,17 @@ import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.action.SetTpSrc;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.action.SetVlanPcp;
+import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
  * JUnit test for {@link FlowAction}.
  */
 public class FlowActionTest extends TestBase {
     /**
-     * Test case for {@link FlowAction#create(Action, boolean)}.
+     * Test case for {@link FlowAction#create(Action, int)}.
      */
     @Test
     public void testCreate() {
-        boolean[] bools = {true, false};
         byte[][] macAddrs = {
             new byte[]{
                 (byte)0x00, (byte)0x01, (byte)0x02,
@@ -53,60 +53,83 @@ public class FlowActionTest extends TestBase {
         short[] vlans = {1, 2, 100, 1000, 4000, 4095};
         List<InetAddress> inet4Addrs = createInet4Addresses(false);
         byte[] tos = {0, 1, 20, 30, 40, 50, 60, 63};
+        int[] protocols = {
+            -1, 0,
+            IPProtocols.TCP.intValue(),
+            IPProtocols.UDP.intValue(),
+            IPProtocols.ICMP.intValue(),
+            IPProtocols.IPV6.intValue(),
+        };
 
-        for (boolean icmp: bools) {
-            assertEquals(null, FlowAction.create(null, icmp));
+        for (int proto: protocols) {
+            assertEquals(null, FlowAction.create(null, proto));
 
-            FlowAction act = FlowAction.create(new Drop(), icmp);
+            FlowAction act = FlowAction.create(new Drop(), proto);
             assertEquals(new DropAction(), act);
-            act = FlowAction.create(new PopVlan(), icmp);
+            act = FlowAction.create(new PopVlan(), proto);
             assertEquals(new PopVlanAction(), act);
 
             for (byte[] mac: macAddrs) {
-                act = FlowAction.create(new SetDlDst(mac), icmp);
+                act = FlowAction.create(new SetDlDst(mac), proto);
                 assertEquals(new SetDlDstAction(mac), act);
-                act = FlowAction.create(new SetDlSrc(mac), icmp);
+                act = FlowAction.create(new SetDlSrc(mac), proto);
                 assertEquals(new SetDlSrcAction(mac), act);
             }
 
             for (short vlan: vlans) {
-                act = FlowAction.create(new SetVlanId(vlan), icmp);
+                act = FlowAction.create(new SetVlanId(vlan), proto);
                 assertEquals(new SetVlanIdAction(vlan), act);
             }
             for (byte pcp = 0; pcp <= 7; pcp++) {
-                act = FlowAction.create(new SetVlanPcp(pcp), icmp);
+                act = FlowAction.create(new SetVlanPcp(pcp), proto);
                 assertEquals(new SetVlanPcpAction(pcp), act);
             }
             for (InetAddress iaddr: inet4Addrs) {
-                act = FlowAction.create(new SetNwDst(iaddr), icmp);
+                act = FlowAction.create(new SetNwDst(iaddr), proto);
                 assertEquals(new SetInet4DstAction(iaddr), act);
-                act = FlowAction.create(new SetNwSrc(iaddr), icmp);
+                act = FlowAction.create(new SetNwSrc(iaddr), proto);
                 assertEquals(new SetInet4SrcAction(iaddr), act);
             }
             for (byte dscp: tos) {
-                act = FlowAction.create(new SetNwTos(dscp), icmp);
+                act = FlowAction.create(new SetNwTos(dscp), proto);
                 assertEquals(new SetDscpAction(dscp), act);
             }
         }
 
+        int icmp = IPProtocols.ICMP.intValue();
         short[] icmpValues = {1, 2, 64, 128, 200, 255};
         for (short v: icmpValues) {
             Action sal = new SetTpSrc((int)v);
-            FlowAction act = FlowAction.create(sal, true);
+            FlowAction act = FlowAction.create(sal, icmp);
             assertEquals(new SetIcmpTypeAction(v), act);
             sal = new SetTpDst((int)v);
-            act = FlowAction.create(sal, true);
+            act = FlowAction.create(sal, icmp);
             assertEquals(new SetIcmpCodeAction(v), act);
         }
 
         int[] ports = {1, 2, 100, 200, 500, 10000, 30000, 50000, 65535};
-        for (int port: ports) {
-            Action sal = new SetTpSrc(port);
-            FlowAction act = FlowAction.create(sal, false);
-            assertEquals(new SetTpSrcAction(port), act);
-            sal = new SetTpDst(port);
-            act = FlowAction.create(sal, false);
-            assertEquals(new SetTpDstAction(port), act);
+        protocols = new int[]{
+            -1, 0,
+            IPProtocols.TCP.intValue(),
+            IPProtocols.UDP.intValue(),
+            IPProtocols.SCTP.intValue(),
+            IPProtocols.IPV6.intValue(),
+        };
+        for (int proto: protocols) {
+            boolean valid = (proto == IPProtocols.TCP.intValue() ||
+                             proto == IPProtocols.UDP.intValue());
+            for (int port: ports) {
+                Action sal = new SetTpSrc(port);
+                FlowAction act = FlowAction.create(sal, proto);
+                FlowAction expected = (valid)
+                    ? new SetTpSrcAction(port) : null;
+                assertEquals(expected, act);
+
+                sal = new SetTpDst(port);
+                act = FlowAction.create(sal, proto);
+                expected = (valid) ? new SetTpDstAction(port) : null;
+                assertEquals(expected, act);
+            }
         }
     }
 
@@ -120,13 +143,13 @@ public class FlowActionTest extends TestBase {
         FlowAction[] actions = {
             new DropAction(),
             new PopVlanAction(),
-            new SetDlDstAction(null),
-            new SetDlSrcAction(null),
+            new SetDlDstAction((byte[])null),
+            new SetDlSrcAction((byte[])null),
             new SetDscpAction((byte)0),
             new SetIcmpCodeAction((short)0),
             new SetIcmpTypeAction((short)0),
-            new SetInet4DstAction(null),
-            new SetInet4SrcAction(null),
+            new SetInet4DstAction((InetAddress)null),
+            new SetInet4SrcAction((InetAddress)null),
             new SetTpDstAction(0),
             new SetTpSrcAction(0),
             new SetVlanIdAction((short)0),

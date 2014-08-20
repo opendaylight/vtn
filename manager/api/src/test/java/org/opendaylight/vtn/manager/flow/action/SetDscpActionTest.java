@@ -15,6 +15,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
 
+import org.opendaylight.controller.sal.action.SetNwTos;
+
 /**
  * JUnit test for {@link SetDscpAction}.
  */
@@ -27,6 +29,13 @@ public class SetDscpActionTest extends TestBase {
         byte[] bytes = {Byte.MIN_VALUE, 0, 1, 30, 63, Byte.MAX_VALUE};
         for (byte b: bytes) {
             SetDscpAction act = new SetDscpAction(b);
+            assertEquals(b, act.getDscp());
+        }
+
+        byte[] valid = {0, 1, 20, 40, 60, 63};
+        for (byte b: valid) {
+            SetNwTos sact = new SetNwTos((int)b);
+            SetDscpAction act = new SetDscpAction(sact);
             assertEquals(b, act.getDscp());
         }
     }

@@ -740,9 +740,9 @@ public final class DataFlow implements Serializable {
         if (actlist == null || actlist.isEmpty()) {
             list.add(new DropAction());
         } else {
-            boolean icmp = match.isIcmp();
+            int ipproto = match.getInetProtocol();
             for (Action act: actlist) {
-                FlowAction fact = FlowAction.create(act, icmp);
+                FlowAction fact = FlowAction.create(act, ipproto);
                 if (fact != null) {
                     list.add(fact);
                 }

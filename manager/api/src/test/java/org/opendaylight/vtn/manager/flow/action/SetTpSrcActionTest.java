@@ -15,6 +15,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
 
+import org.opendaylight.controller.sal.action.SetTpSrc;
+
 /**
  * JUnit test for {@link SetTpSrcAction}.
  */
@@ -27,6 +29,13 @@ public class SetTpSrcActionTest extends TestBase {
         int[] ports = {Integer.MIN_VALUE, 0, 1, 100, 65535, Integer.MAX_VALUE};
         for (int port: ports) {
             SetTpSrcAction act = new SetTpSrcAction(port);
+            assertEquals(port, act.getPort());
+        }
+
+        int[] valid = {1, 2, 100, 1000, 9999, 20000, 30000, 65534, 65535};
+        for (int port: valid) {
+            SetTpSrc sact = new SetTpSrc(port);
+            SetTpSrcAction act = new SetTpSrcAction(sact);
             assertEquals(port, act.getPort());
         }
     }

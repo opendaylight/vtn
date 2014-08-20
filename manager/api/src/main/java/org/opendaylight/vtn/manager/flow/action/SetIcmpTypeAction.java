@@ -16,6 +16,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.SetTpSrc;
+
 /**
  * This class describes a flow action that sets the specified ICMP type
  * into the ICMP header in IPv4 packet.
@@ -35,7 +37,7 @@ public final class SetIcmpTypeAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5063088824539412489L;
+    private static final long serialVersionUID = 159395924832106640L;
 
     /**
      * ICMP type to be set.
@@ -68,6 +70,17 @@ public final class SetIcmpTypeAction extends FlowAction {
      */
     public SetIcmpTypeAction(short type) {
         this.type = type;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param act  A SAL action that sets the ICMP type.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code act}.
+     */
+    public SetIcmpTypeAction(SetTpSrc act) {
+        type = (short)act.getPort();
     }
 
     /**

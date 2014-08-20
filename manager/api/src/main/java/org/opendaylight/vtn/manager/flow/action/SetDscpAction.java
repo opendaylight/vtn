@@ -16,6 +16,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.SetNwTos;
+
 /**
  * This class describes a flow action that sets the specified value into the
  * DSCP field in the IP packet.
@@ -35,7 +37,7 @@ public final class SetDscpAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5226575550569482414L;
+    private static final long serialVersionUID = 7711399852397187977L;
 
     /**
      * DSCP field value to be set.
@@ -68,6 +70,17 @@ public final class SetDscpAction extends FlowAction {
      */
     public SetDscpAction(byte dscp) {
         this.dscp = dscp;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param act  A SAL action that sets the DSCP field value.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code act}.
+     */
+    public SetDscpAction(SetNwTos act) {
+        dscp = (byte)act.getNwTos();
     }
 
     /**

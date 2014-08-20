@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.SetTpDst;
+
 /**
  * This class describes a flow action that sets the destination port number
  * into the transport layer header in the packet.
@@ -34,7 +36,7 @@ public final class SetTpDstAction extends TpPortAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4007255536251100965L;
+    private static final long serialVersionUID = -4714996958267325400L;
 
     /**
      * Private constructor only for JAXB.
@@ -50,5 +52,16 @@ public final class SetTpDstAction extends TpPortAction {
      */
     public SetTpDstAction(int port) {
         super(port);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param act  A SAL action that sets the destination port.
+     * @throws NullPointerException
+     *    {@code null} is passed to {@code act}.
+     */
+    public SetTpDstAction(SetTpDst act) {
+        super(act.getPort());
     }
 }

@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.controller.sal.action.Drop;
+
 /**
  * This class describes a flow action that discards the packet.
  *
@@ -30,11 +32,19 @@ public final class DropAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3632563004504153362L;
+    private static final long serialVersionUID = 1688309566285598004L;
 
     /**
      * Construct a new instance.
      */
     public DropAction() {
+    }
+
+    /**
+     * Construct a new instance from the given SAL action.
+     *
+     * @param act  Unused.
+     */
+    public DropAction(Drop act) {
     }
 }

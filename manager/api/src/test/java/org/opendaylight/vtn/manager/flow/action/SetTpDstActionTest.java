@@ -15,6 +15,8 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
 
+import org.opendaylight.controller.sal.action.SetTpDst;
+
 /**
  * JUnit test for {@link SetTpDstAction}.
  */
@@ -27,6 +29,13 @@ public class SetTpDstActionTest extends TestBase {
         int[] ports = {Integer.MIN_VALUE, 0, 1, 100, 65535, Integer.MAX_VALUE};
         for (int port: ports) {
             SetTpDstAction act = new SetTpDstAction(port);
+            assertEquals(port, act.getPort());
+        }
+
+        int[] valid = {1, 2, 100, 999, 10000, 29999, 49999, 65534, 65535};
+        for (int port: valid) {
+            SetTpDst sact = new SetTpDst(port);
+            SetTpDstAction act = new SetTpDstAction(sact);
             assertEquals(port, act.getPort());
         }
     }

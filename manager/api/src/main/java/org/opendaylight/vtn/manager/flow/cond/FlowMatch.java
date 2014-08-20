@@ -71,7 +71,7 @@ public final class FlowMatch implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 9066937093639999897L;
+    private static final long serialVersionUID = 3885172577971031294L;
 
     /**
      * This element describes the Ethernet header fields to match against
@@ -527,19 +527,20 @@ public final class FlowMatch implements Serializable {
     }
 
     /**
-     * Determine whether this instance matches ICMP packet or not.
+     * Return IP protocol number configured in this instance.
      *
-     * @return  {@code true} is returned if this instance matches ICMP packet.
-     *          Otherwise {@code false} is returned.
+     * @return  An IP protocol number configured in this instance.
+     *          -1 is returned if not configured.
      */
-    public boolean isIcmp() {
+    public int getInetProtocol() {
         if (inetMatch != null) {
             Short proto = inetMatch.getProtocol();
-            return (proto != null &&
-                    proto.intValue() == IPProtocols.ICMP.intValue());
+            if (proto != null) {
+                return proto.intValue();
+            }
         }
 
-        return false;
+        return -1;
     }
 
     /**
