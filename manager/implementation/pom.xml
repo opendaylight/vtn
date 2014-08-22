@@ -42,6 +42,12 @@
       <id>integrationtests</id>
       <activation>
         <activeByDefault>false</activeByDefault>
+
+        <!-- Run all tests if vtn.build.sonar property is defined. -->
+        <property>
+          <name>vtn.build.sonar</name>
+          <value>true</value>
+        </property>
       </activation>
       <properties>
         <!-- Run all tests. -->
