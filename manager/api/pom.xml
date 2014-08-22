@@ -67,8 +67,8 @@
               org.opendaylight.controller.sal.packet.address,
               org.opendaylight.controller.sal.utils,
               com.fasterxml.jackson.databind.annotation,
-              javax.xml.bind,
-              javax.xml.bind.annotation
+              javax.xml.bind.annotation,
+              javax.xml.bind.annotation.adapters
             </Import-Package>
           </instructions>
         </configuration>
@@ -85,6 +85,18 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>hosttracker</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <!-- Jackson JAXB support is used in unit tests. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-jaxb-annotations</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>

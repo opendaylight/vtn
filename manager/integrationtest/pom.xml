@@ -61,8 +61,7 @@
               org.opendaylight.controller.sal.topology,
               org.opendaylight.controller.sal.utils,
               org.apache.felix.dm,
-              org.slf4j,
-              org.osgi.framework
+              org.slf4j
             </Import-Package>
             <Bundle-Activator>
               org.opendaylight.vtn.manager.integrationtest.internal.Activator
