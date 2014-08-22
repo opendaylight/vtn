@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 
 import org.opendaylight.controller.sal.match.MatchType;
@@ -32,7 +33,7 @@ public abstract class InetMatchImpl implements PacketMatch {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3917984759372518420L;
+    private static final long serialVersionUID = 7890231558329145625L;
 
     /**
      * A pseudo IP protocol number which indicates every protocol number
@@ -49,11 +50,6 @@ public abstract class InetMatchImpl implements PacketMatch {
      * A mask value which represents valid bits in an IP protocol number.
      */
     private static final short  MASK_PROTO = 0xff;
-
-    /**
-     * A mask value which represents valid bits in an DSCP value.
-     */
-    private static final byte  MASK_DSCP = 0x3f;
 
     /**
      * An IP protocol type value to match against packets.
@@ -127,7 +123,7 @@ public abstract class InetMatchImpl implements PacketMatch {
             dscp = DSCP_ANY;
         } else {
             dscp = d.byteValue();
-            if ((dscp & ~MASK_DSCP) != 0) {
+            if (!MiscUtils.isDscpValid(dscp)) {
                 String msg = "Invalid DSCP field value: " + d;
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }

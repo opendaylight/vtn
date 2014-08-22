@@ -38,6 +38,28 @@ public final class MiscUtils {
         Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
 
     /**
+     * A mask value which represents valid bits in an VLAN priority.
+     */
+    private static final byte  MASK_VLAN_PRI = 0x7;
+
+    /**
+     * A mask value which represents valid bits in an DSCP value for
+     * IP protocol.
+     */
+    private static final byte  MASK_IP_DSCP = 0x3f;
+
+    /**
+     * A mask value which represents valid bits in ICMP type and code.
+     */
+    private static final short  MASK_ICMP_VALUE = 0xff;
+
+    /**
+     * A mask value which represents valid bits in port number of transport
+     * layer protocol.
+     */
+    private static final int  MASK_TP_PORT = 0xffff;
+
+    /**
      * Private constructor that protects this class from instantiating.
      */
     private MiscUtils() {}
@@ -109,6 +131,47 @@ public final class MiscUtils {
             String msg = "Invalid VLAN ID: " + vlan;
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
+    }
+
+    /**
+     * Determine whether the specified VLAN priority value is valid or not.
+     *
+     * @param pri  A VLAN priority.
+     * @return  {@code true} only if the given VLAN priority is valid.
+     */
+    public static boolean isVlanPriorityValid(byte pri) {
+        return ((pri & ~MASK_VLAN_PRI) == 0);
+    }
+
+    /**
+     * Determine whether the specified IP DSCP value is valid or not.
+     *
+     * @param dscp  A DSCP value.
+     * @return  {@code true} only if the given DSCP value is valid.
+     */
+    public static boolean isDscpValid(byte dscp) {
+        return ((dscp & ~MASK_IP_DSCP) == 0);
+    }
+
+    /**
+     * Determine whether the specified ICMP type or code value is valid or not.
+     *
+     * @param value  An ICMP type or code.
+     * @return  {@code true} only if the given value is valid.
+     */
+    public static boolean isIcmpValueValid(short value) {
+        return ((value & ~MASK_ICMP_VALUE) == 0);
+    }
+
+    /**
+     * Determine whether the specified port number of transport layer protocol
+     * is valid or not.
+     *
+     * @param port  A port number.
+     * @return  {@code true} only if the given port number is valid.
+     */
+    public static boolean isPortNumberValid(int port) {
+        return ((port & ~MASK_TP_PORT) == 0);
     }
 
     /**

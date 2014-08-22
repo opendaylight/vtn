@@ -95,6 +95,13 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Throw an error which indicates the test code should never reach here.
+     */
+    protected static void unexpected() {
+        fail("Should never reach here.");
+    }
+
+    /**
      * Create a copy of the specified string.
      *
      * @param str  A string to be copied.

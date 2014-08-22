@@ -14,6 +14,8 @@ import java.io.Serializable;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.PortMatch;
 
+import org.opendaylight.vtn.manager.internal.MiscUtils;
+
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -30,11 +32,6 @@ public final class L4PortMatch implements Serializable {
      * Version number for serialization.
      */
     private static final long serialVersionUID = 5154123070973523206L;
-
-    /**
-     * A mask value which represents valid bits in port number.
-     */
-    private static final int  MASK_VALUE = 0xffff;
 
     /**
      * The minimum value (inclusive) in the range of TCP/UDP port numbers
@@ -125,7 +122,7 @@ public final class L4PortMatch implements Serializable {
      *    An invalid port number is specified.
      */
     private void checkPort(int port, String desc) throws VTNException {
-        if ((port & ~MASK_VALUE) != 0) {
+        if (!MiscUtils.isPortNumberValid(port)) {
             StringBuilder builder = new StringBuilder(desc);
             builder.append(": Invalid port number: ").append(port);
             throw new VTNException(StatusCode.BADREQUEST, builder.toString());

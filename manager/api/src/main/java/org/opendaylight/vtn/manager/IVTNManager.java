@@ -17,6 +17,8 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -4132,7 +4134,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
      *     <dd>
-     *       Configuration of existing path map in the VTN was changed.n
+     *       Configuration of existing path map in the VTN was changed.
      *
      *     <dt style="font-weight: bold;">{@code null}
      *     <dd>
@@ -4216,4 +4218,310 @@ public interface IVTNManager {
      * @since  Helium
      */
     Status removePathMap(VTenantPath path, int index);
+
+    /**
+     * Return a list of
+     * {@linkplain <a href="flow/filter/package-summary.html">flow filters</a>}
+     * configured in the specified flow filter list.
+     *
+     * @param fid  A {@link FlowFilterId} instance which specifies the
+     *             flow filter list in the virtual node.
+     * @return  A list of {@link FlowFilter} instances corresponding to all
+     *          flow filters configured in the list specified by {@code fid}.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code fid}.</li>
+     *         <li>
+     *           The location of the target virtual node is not configured
+     *           in {@code fid}.
+     *         </li>
+     *         <li>
+     *           The location of the target virtual node configured in
+     *           {@code fid} contains invalid value.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    List<FlowFilter> getFlowFilters(FlowFilterId fid) throws VTNException;
+
+    /**
+     * Return information about the
+     * {@linkplain <a href="flow/filter/package-summary.html">flow filter</a>}
+     * specified by the index number.
+     *
+     * @param fid    A {@link FlowFilterId} instance which specifies the
+     *               flow filter list in the virtual node.
+     * @param index  The index value which specifies the flow filter in the
+     *               flow filter list specified by {@code fid}.
+     * @return  A {@link FlowFilter} instance corresponding to the flow filter
+     *          specified by {@code fid} and {@code index}.
+     *          {@code null} is returned if the specified flow filter does not
+     *          exist.
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code fid}.</li>
+     *         <li>
+     *           The location of the target virtual node is not configured
+     *           in {@code fid}.
+     *         </li>
+     *         <li>
+     *           The location of the target virtual node configured in
+     *           {@code fid} contains invalid value.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    FlowFilter getFlowFilter(FlowFilterId fid, int index) throws VTNException;
+
+    /**
+     * Create or modify the
+     * {@linkplain <a href="flow/filter/package-summary.html">flow filter</a>}
+     * specified by the index number.
+     *
+     * <ul>
+     *   <li>
+     *     If the flow filter specified by {@code index} does not exist in the
+     *     flow filter list specified by {@code fid}, a new flow filter will
+     *     be associated with {@code index} in the specified list.
+     *   </li>
+     *   <li>
+     *     If the flow filter specified by {@code index} already exists in the
+     *     flow filter list specified by {@code fid}, it will be modified as
+     *     specified by {@code filter}.
+     *   </li>
+     * </ul>
+     *
+     * @param fid    A {@link FlowFilterId} instance which specifies the
+     *               flow filter list in the virtual node.
+     * @param index
+     *   The index value which specifies the flow filter in the flow filter
+     *   list.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>1</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       This value is used to determine order of evaluation.
+     *       Flow filters in the list specified by {@code fid} are evaluated in
+     *       ascending order of indices assigned to flow filters.
+     *     </li>
+     *   </ul>
+     * @param filter
+     *   A {@link FlowFilter} instance which specifies the configuration of the
+     *   flow filter.
+     *   <ul>
+     *     <li>
+     *       The index of the flow filter configured in {@code filter} is
+     *       always ignored. The index number is determined by {@code index}
+     *       argument.
+     *     </li>
+     *     <li>
+     *       Note that this API does not check whether the
+     *       {@link FlowFilter#getFlowConditionName() flow condition}
+     *       configured in {@code filter} actually exists or not.
+     *       The flow filter will be invalidated if the specified flow
+     *       condition does not exist.
+     *     </li>
+     *     <li>
+     *     <li>
+     *       Note that this API does not check whether the destination
+     *       {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}
+     *       specified by the
+     *       {@linkplain <a href="flow/filter/package-summary.html#type.REDIRECT">REDIRECT flow filter</a>}
+     *       configured in {@code filter} actually exists or not.
+     *       Note that every packet redirected by the flow filter is discarded
+     *       if the destination virtual interface specified by {@code filter}
+     *       does not exist.
+     *     </li>
+     *   </ul>
+     * @return
+     *   A {@link UpdateType} object which represents the result of the
+     *   operation is returned.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code UpdateType.ADDED}
+     *     <dd>
+     *       Flow filter was newly configured in the specified flow filter
+     *       list.
+     *
+     *     <dt style="font-weight: bold;">{@code UpdateType.CHANGED}
+     *     <dd>
+     *       Configuration of existing flow filter in the specified
+     *       flow filter list was changed.
+     *
+     *     <dt style="font-weight: bold;">{@code null}
+     *     <dd>
+     *       Configuration of existing flow filter was not changed.
+     *   </dl>
+     * @throws VTNException  An error occurred.
+     *   The following are the main {@code StatusCode} set in {@link Status}
+     *   delivered by the exception.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code fid} or {@code filter}</li>
+     *         <li>
+     *           The location of the target virtual node is not configured
+     *           in {@code fid}.
+     *         </li>
+     *         <li>
+     *           The location of the target virtual node configured in
+     *           {@code fid} contains invalid value.
+     *         </li>
+     *         <li>
+     *           The index number specified by {@code index} is out of valid
+     *           range.
+     *         </li>
+     *         <li>
+     *           A {@link FlowFilter} instance passed to {@code pmap}
+     *           contains invalid configuration.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    UpdateType setFlowFilter(FlowFilterId fid, int index, FlowFilter filter)
+        throws VTNException;
+
+    /**
+     * Remove the
+     * {@linkplain <a href="flow/filter/package-summary.html">flow filter</a>}
+     * specified by the index number.
+     *
+     * @param fid    A {@link FlowFilterId} instance which specifies the
+     *               flow filter list in the virtual node.
+     * @param index  The index value which specifies the flow filter in the
+     *               flow filter list specified by {@code fid}.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     Upon successful completion,
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object. {@code null} is returned if the specified flow filter does
+     *     not exist. Otherwise a {@code StatusCode} which indicates the cause
+     *     of error is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code fid}.</li>
+     *         <li>
+     *           The location of the target virtual node is not configured
+     *           in {@code fid}.
+     *         </li>
+     *         <li>
+     *           The location of the target virtual node configured in
+     *           {@code fid} contains invalid value.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status removeFlowFilter(FlowFilterId fid, int index);
+
+    /**
+     * Remove all the
+     * {@linkplain <a href="flow/filter/package-summary.html">flow filters</a>}
+     * present in the specified flow filter list.
+     *
+     * @param fid  A {@link FlowFilterId} instance which specifies the
+     *             flow filter list in the virtual node.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object if at least one flow filter in the list was removed.
+     *     {@code null} is returned if no flow filter is present in the
+     *     specified flow filter list.
+     *     Otherwise a {@code StatusCode} which indicates the cause of error
+     *     is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code fid}.</li>
+     *         <li>
+     *           The location of the target virtual node is not configured
+     *           in {@code fid}.
+     *         </li>
+     *         <li>
+     *           The location of the target virtual node configured in
+     *           {@code fid} contains invalid value.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>
+     *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Helium
+     */
+    Status clearFlowFilter(FlowFilterId fid);
 }

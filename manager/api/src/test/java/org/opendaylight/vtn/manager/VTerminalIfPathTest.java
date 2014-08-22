@@ -14,6 +14,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
 /**
  * JUnit test for {@link VTerminalIfPath}.
  */
@@ -33,25 +35,27 @@ public class VTerminalIfPathTest extends TestBase {
                     assertEquals(vtname, path.getTerminalName());
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vTerminal-IF", path.getNodeType());
+                    checkRedirectFilter(path);
 
                     path = new VTerminalIfPath(vtpath, iname);
                     assertEquals(tname, path.getTenantName());
                     assertEquals(vtname, path.getTerminalName());
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vTerminal-IF", path.getNodeType());
+                    checkRedirectFilter(path);
 
                     VTenantPath clone = path.clone();
                     assertNotSame(clone, path);
                     assertEquals(clone, path);
 
-                    String name = tname + "_new";
-                    VTerminalIfPath path1 =
-                        (VTerminalIfPath)path.replaceTenantName(name);
-                    assertEquals(name, path1.getTenantName());
-                    assertEquals(vtname, path1.getTerminalName());
-                    assertEquals(iname, path1.getInterfaceName());
-                    assertEquals("vTerminal-IF", path1.getNodeType());
-                    assertEquals(VTerminalIfPath.class, path1.getClass());
+                    for (String name: new String[]{null, tname + "_new"}) {
+                        VTerminalIfPath path1 = path.replaceTenantName(name);
+                        assertEquals(name, path1.getTenantName());
+                        assertEquals(vtname, path1.getTerminalName());
+                        assertEquals(iname, path1.getInterfaceName());
+                        assertEquals("vTerminal-IF", path1.getNodeType());
+                        checkRedirectFilter(path1);
+                    }
                 }
             }
         }
@@ -187,5 +191,21 @@ public class VTerminalIfPathTest extends TestBase {
 
         VTerminalIfPath ipath = new VTerminalIfPath(tmpath, iname);
         assertEquals(expected, path.contains(ipath));
+    }
+
+
+    /**
+     * Ensure that {@link VTerminalIfPath#getRedirectFilter(boolean)} works
+     * correctly.
+     *
+     * @param path  A {@link VTerminalIfPath} instance.
+     */
+    private void checkRedirectFilter(VTerminalIfPath path) {
+        boolean[] bools = {true, false};
+        for (boolean b: bools) {
+            RedirectFilter rf = path.getRedirectFilter(b);
+            assertEquals(path, rf.getDestination());
+            assertEquals(b, rf.isOutput());
+        }
     }
 }

@@ -64,11 +64,6 @@ public final class EthernetMatchImpl implements PacketMatch {
     private static final int  MASK_TYPE = 0xffff;
 
     /**
-     * A mask value which represents valid bits in an VLAN priority.
-     */
-    private static final byte  MASK_VLANPRI = 0x7;
-
-    /**
      * Source MAC address to match.
      */
     private final long  sourceAddress;
@@ -149,7 +144,7 @@ public final class EthernetMatchImpl implements PacketMatch {
             vlanPriority = VLANPRI_ANY;
         } else {
             vlanPriority = b.byteValue();
-            if ((vlanPriority & ~MASK_VLANPRI) != 0) {
+            if (!MiscUtils.isVlanPriorityValid(vlanPriority)) {
                 String msg = "Invalid VLAN priority: " + b;
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }

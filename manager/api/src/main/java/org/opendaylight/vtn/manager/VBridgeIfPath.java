@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.util.List;
 
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
 import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
@@ -33,7 +35,7 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4792520332881436474L;
+    private static final long serialVersionUID = 4595746672343646779L;
 
     /**
      * A string which represents that the node type is vBridge interface.
@@ -191,6 +193,22 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     @Override
     public String getInterfaceName() {
         return ifName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VBridgeIfPath replaceTenantName(String tenantName) {
+        return (VBridgeIfPath)super.replaceTenantName(tenantName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public RedirectFilter getRedirectFilter(boolean out) {
+        return new RedirectFilter(this, out);
     }
 
     /**

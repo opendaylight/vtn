@@ -9,12 +9,20 @@
 
 package org.opendaylight.vtn.manager;
 
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
 import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
  * {@code VInterfacePath} defines methods to be implemented by classes which
  * represents the position of the
  * {@linkplain <a href="package-summary.html#vInterface">virtual interface</a>}.
+ *
+ * <p>
+ *   This interface is provided only for internal use.
+ *   Java application must not define new class that implements this
+ *   interface.
+ * </p>
  *
  * @see  <a href="package-summary.html#vInterface">Virtual interface</a>
  * @since  Helium
@@ -60,6 +68,29 @@ public interface VInterfacePath {
      * @return  A {@link VNodeLocation} instance.
      */
     VNodeLocation toVNodeLocation();
+
+    /**
+     * Create a shallow copy of this instance, and replace the tenant name
+     * with the specified name.
+     *
+     * @param tenantName  The name of the VTN to be configured into a new
+     *                    instance.
+     * @return  A constructed instance.
+     */
+    VInterfacePath replaceTenantName(String tenantName);
+
+    /**
+     * Create a {@link RedirectFilter} instance which represents the
+     * packet redirection to the virtual interface specified by this
+     * instance.
+     *
+     * @param out {@code true} means the redirected packet should be treated
+     *            as outgoing packet.
+     *            {@code false} means the redirected packet should be treated
+     *            as incoming packet.
+     * @return  A {@link RedirectFilter} instance.
+     */
+    RedirectFilter getRedirectFilter(boolean out);
 
     /**
      * Call method that listens the change of the virtual interface.

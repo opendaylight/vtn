@@ -35,12 +35,14 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.LinkedList;
-import java.util.HashSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import javax.inject.Inject;
 
@@ -91,6 +93,51 @@ public class VtnNorthboundIT extends TestBase {
         "org.opendaylight.vtn.manager.implementation";
     private static final String VTN_BASE_URL =
         "http://127.0.0.1:8080/controller/nb/v2/vtn/";
+
+    /**
+     * Resource name for VTN APIs.
+     */
+    private static final String RES_VTNS = "vtns";
+
+    /**
+     * Resource name for vBridge APIs.
+     */
+    private static final String RES_VBRIDGES = "vbridges";
+
+    /**
+     * Resource name for virtual interface APIs.
+     */
+    private static final String RES_INTERFACES = "interfaces";
+
+    /**
+     * Resource name for vTerminal APIs.
+     */
+    private static final String RES_VTERMINALS = "vterminals";
+
+    /**
+     * Resource name for flow filter APIs.
+     */
+    private static final String  RES_FLOWFILTERS = "flowfilters";
+
+    /**
+     * Valid bits in flow filter index.
+     */
+    private static final int  MASK_FLOWFILTER_INDEX = 0xffff;
+
+    /**
+     * Valid bits in VLAN priority.
+     */
+    private static final int  MASK_VLAN_PCP = 0x7;
+
+    /**
+     * Valid bits in IP DSCP value.
+     */
+    private static final int  MASK_IP_DSCP = 0x3f;
+
+    /**
+     * Valid bits in ICMP type and code.
+     */
+    private static final int  MASK_ICMP = 0xff;
 
     // get the OSGI bundle context
     @Inject
@@ -234,10 +281,12 @@ public class VtnNorthboundIT extends TestBase {
         StringBuilder builder = new StringBuilder(base);
 
         for (String comp: components) {
-            if (builder.charAt(builder.length() - 1) != '/') {
-                builder.append('/');
+            if (comp != null) {
+                if (builder.charAt(builder.length() - 1) != '/') {
+                    builder.append('/');
+                }
+                builder.append(comp);
             }
-            builder.append(comp);
         }
 
         return builder.toString();
@@ -249,6 +298,7 @@ public class VtnNorthboundIT extends TestBase {
      *
      * @param addr  A string representation of MAC address.
      * @param vlan  A string representation of VLAN ID.
+     * @return  A {@link JSONObject} instance.
      * @throws JSONException  An error occurred.
      */
     private JSONObject createMacHost(String addr, String vlan)
@@ -270,6 +320,7 @@ public class VtnNorthboundIT extends TestBase {
      *
      * @param args  A list of MAC address and VLAN ID.
      *              The number of arguments must be a multiple of 2.
+     * @return  A {@link JSONObject} instance.
      * @throws JSONException  An error occurred.
      */
     private JSONObject createMacHostSet(List<String> args)
@@ -283,6 +334,7 @@ public class VtnNorthboundIT extends TestBase {
      *
      * @param args  Sequence of MAC address and VLAN ID.
      *              The number of arguments must be a multiple of 2.
+     * @return  A {@link JSONObject} instance.
      * @throws JSONException  An error occurred.
      */
     private JSONObject createMacHostSet(String ... args) throws JSONException {
@@ -386,7 +438,12 @@ public class VtnNorthboundIT extends TestBase {
     private void assertEquals(JSONObject expected, JSONObject json)
         throws JSONException {
         JSONArray keys = json.names();
-        assertEquals(expected.names(), keys);
+        JSONArray exkeys = expected.names();
+        if (keys == null) {
+            Assert.assertEquals(null, exkeys);
+            return;
+        }
+        assertEquals(exkeys, keys);
 
         int keyLen = keys.length();
         for (int i = 0; i < keyLen; i++) {
@@ -416,6 +473,14 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void assertEquals(JSONArray expected, JSONArray jarray)
         throws JSONException {
+        if (expected == null) {
+            Assert.assertEquals(null, jarray);
+            return;
+        }
+        if (jarray == null) {
+            Assert.assertEquals(null, expected);
+            return;
+        }
         int len = jarray.length();
         assertEquals(expected.length(), len);
 
@@ -546,9 +611,9 @@ public class VtnNorthboundIT extends TestBase {
 
             // Response code for success should be 2xx
             httpResponseCode = connection.getResponseCode();
-            if (httpResponseCode > 299) {
-                return httpResponseCode.toString();
-            }
+            LOG.debug("HTTP response code: {}", httpResponseCode);
+            LOG.debug("HTTP response message: {}",
+                      connection.getResponseMessage());
 
             if (httpResponseCode == HTTP_CREATED) {
                 // Determine location.
@@ -568,11 +633,10 @@ public class VtnNorthboundIT extends TestBase {
                 }
             }
 
-            LOG.debug("HTTP response code: {}", connection.getResponseCode());
-            LOG.debug("HTTP response message: {}",
-                      connection.getResponseMessage());
-
-            InputStream is = connection.getInputStream();
+            boolean error = (httpResponseCode > 299);
+            InputStream is = (error)
+                ? connection.getErrorStream()
+                : connection.getInputStream();
             InputStreamReader in =
                 new InputStreamReader(is, Charset.forName("UTF-8"));
             BufferedReader rd = new BufferedReader(in);
@@ -584,14 +648,60 @@ public class VtnNorthboundIT extends TestBase {
             is.close();
             connection.disconnect();
 
+            if (httpResponseCode > 299) {
+                String msg = sb.toString();
+                if (msg.length() != 0) {
+                    LOG.debug("HTTP error response body: {}", msg);
+                    return msg;
+                }
+                return httpResponseCode.toString();
+            }
+
             if (httpResponseCode == HTTP_NO_CONTENT) {
                 assertEquals(0, sb.length());
             }
 
             return sb.toString();
         } catch (Exception e) {
+            LOG.error("Caught exception.", e);
             return null;
         }
+    }
+
+    /**
+     * Send GET request and return result as a JSON object.
+     *
+     * @param uri  A request URI.
+     * @return  A returned result for request.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject getJSONObject(String uri) throws JSONException {
+        String res = getJsonResult(uri);
+        assertResponse(HTTP_OK);
+        JSONTokener jt = new JSONTokener(res);
+        return new JSONObject(jt);
+    }
+
+    /**
+     * Create a polymorphic {@link JSONObject} object.
+     *
+     * @param type  The name of the object type.
+     * @param args  Sequence of key/value pairs.
+     *              The number of arguments must be an even.
+     * @return  A {@link JSONObject} instance.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject createJSONObject(String type, Object ... args)
+        throws JSONException {
+        JSONObject json = new JSONObject();
+        int i = 0;
+        while (i < args.length) {
+            String key = args[i++].toString();
+            Object value = args[i++];
+            json.put(key, value);
+        }
+
+        return new JSONObject().put(type, json);
     }
 
     /**
@@ -621,7 +731,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     @Test
     public void testVTNAPI() throws JSONException {
-        LOG.info("Starting VTN JAXB client.");
+        LOG.info("Starting VTN JAX-RS client.");
         String baseURL = VTN_BASE_URL;
 
         String tname1 = "testVtn1";
@@ -1285,7 +1395,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testVBridgeAPI(String tname1, String tname2)
         throws JSONException {
-        LOG.info("Starting vBridge JAXB client.");
+        LOG.info("Starting vBridge JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -1824,7 +1934,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testVBridgeInterfaceAPI(String tname1, String bname1,
                                          String bname2) throws JSONException {
-        LOG.info("Starting vBridge Intergace JAXB client.");
+        LOG.info("Starting vBridge Intergace JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2336,7 +2446,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testVBridgeInterfaceDeleteAPI(String tname, String bname)
         throws JSONException {
-        LOG.info("Starting delete vBridge Intergace JAXB client.");
+        LOG.info("Starting delete vBridge Intergace JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2414,7 +2524,7 @@ public class VtnNorthboundIT extends TestBase {
     private void testPortMappingAPI(String tname, String bname, String bname2,
                                     String ifname, String ifname2)
         throws JSONException {
-        LOG.info("Starting Port Mapping JAXB client.");
+        LOG.info("Starting Port Mapping JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2777,7 +2887,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testPortMappingDeleteAPI(String tname, String bname,
                                           String ifname) throws JSONException {
-        LOG.info("Starting delete Port Mapping JAXB client.");
+        LOG.info("Starting delete Port Mapping JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -2832,7 +2942,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testVLANMappingAPI(String tname, String bname)
         throws JSONException {
-        LOG.info("Starting VLAN Mapping JAXB client.");
+        LOG.info("Starting VLAN Mapping JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -3190,7 +3300,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testVLANMappingDeleteAPI(String tname, String bname)
         throws JSONException {
-        LOG.info("Starting delete VLAN Mapping JAXB client.");
+        LOG.info("Starting delete VLAN Mapping JAX-RS client.");
         String url = VTN_BASE_URL;
         StringBuilder baseURL = new StringBuilder();
         baseURL.append(url);
@@ -3273,7 +3383,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testMacMappingAPI(String tname, String bname1, String bname2)
         throws JSONException {
-        LOG.info("Starting MAC Mapping JAXB client.");
+        LOG.info("Starting MAC Mapping JAX-RS client.");
 
         String qparam = "?param1=1&param2=2";
         String mapUri = createURI("default/vtns", tname, "vbridges", bname1,
@@ -3868,7 +3978,7 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void testMacAddressAPI(String tname, String bname)
         throws JSONException {
-        LOG.info("Starting MAC address JAXB client.");
+        LOG.info("Starting MAC address JAX-RS client.");
         String url = VTN_BASE_URL;
 
         StringBuilder baseURL = new StringBuilder();
@@ -4104,7 +4214,7 @@ public class VtnNorthboundIT extends TestBase {
      * This method is called by {@link #testVTNAPI()}.
      */
     private void testVtnGlobal(String base) throws JSONException {
-        LOG.info("Starting IVTNGlobal JAXB client.");
+        LOG.info("Starting IVTNGlobal JAX-RS client.");
 
         // Authentication failure.
         String uri = base + "version";
@@ -4370,7 +4480,7 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("org.opendaylight.controller", "flowprogrammer.northbound").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller", "subnets.northbound").versionAsInProject(),
 
-                // VTN Manager bundels
+                // VTN Manager bundles
                 mavenBundle("org.opendaylight.vtn", "manager").versionAsInProject(),
                 mavenBundle("org.opendaylight.vtn", "manager.northbound").versionAsInProject(),
                 mavenBundle("org.opendaylight.vtn", "manager.neutron").versionAsInProject(),
@@ -4405,7 +4515,6 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("geminiweb", "org.eclipse.gemini.web.core").versionAsInProject(),
                 mavenBundle("geminiweb", "org.eclipse.gemini.web.extender").versionAsInProject(),
                 mavenBundle("geminiweb", "org.eclipse.gemini.web.tomcat").versionAsInProject(),
-                mavenBundle("geminiweb", "org.eclipse.virgo.kernel.equinox.extensions").versionAsInProject().noStart(),
                 mavenBundle("geminiweb", "org.eclipse.virgo.util.common").versionAsInProject(),
                 mavenBundle("geminiweb", "org.eclipse.virgo.util.io").versionAsInProject(),
                 mavenBundle("geminiweb", "org.eclipse.virgo.util.math").versionAsInProject(),
@@ -4501,5 +4610,523 @@ public class VtnNorthboundIT extends TestBase {
             } catch (Exception e) {
             }
         }
+    }
+
+    /**
+     * Test case for flow filter APIs.
+     */
+    @Test
+    public void testFlowFilterAPI() throws JSONException {
+        String tname = "vtn_1";
+        String bname = "node_1";
+        String iname = "if_1";
+
+        // Create a VTN.
+        String empty = "{}";
+        String tenantUri = createURI("default", RES_VTNS, tname);
+        getJsonResult(tenantUri, "POST", empty);
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(tenantUri, httpLocation);
+
+        // Create a vBridge.
+        String bridgeUri = createRelativeURI(tenantUri, RES_VBRIDGES, bname);
+        getJsonResult(bridgeUri, "POST", empty);
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(bridgeUri, httpLocation);
+
+        // Create a vBridge interface.
+        String bridgeIfUri = createRelativeURI(bridgeUri, RES_INTERFACES,
+                                               iname);
+        getJsonResult(bridgeIfUri, "POST", empty);
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(bridgeIfUri, httpLocation);
+
+        // Create a vTerminal.
+        String vtermUri = createRelativeURI(tenantUri, RES_VTERMINALS, bname);
+        getJsonResult(vtermUri, "POST", empty);
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(vtermUri, httpLocation);
+
+        // Create a vTerminal interface.
+        String vtermIfUri = createRelativeURI(vtermUri, RES_INTERFACES, iname);
+        getJsonResult(vtermIfUri, "POST", empty);
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(vtermIfUri, httpLocation);
+
+        // Test VTN flow filter APIs.
+        HashMap<String, JSONObject> filters =
+            new HashMap<String, JSONObject>();
+
+        String vtnFilterUri = createRelativeURI(tenantUri, RES_FLOWFILTERS);
+        filters.put(vtnFilterUri, testFlowFilterAPI(vtnFilterUri, 0));
+
+        String vbrInFilterUri = createRelativeURI(bridgeUri, RES_FLOWFILTERS,
+                                                  "in");
+        filters.put(vbrInFilterUri, testFlowFilterAPI(vbrInFilterUri, 100));
+
+        String vbrOutFilterUri = createRelativeURI(bridgeUri, RES_FLOWFILTERS,
+                                                   "out");
+        filters.put(vbrOutFilterUri, testFlowFilterAPI(vbrOutFilterUri, 200));
+
+        String vbrIfInFilterUri = createRelativeURI(bridgeIfUri,
+                                                    RES_FLOWFILTERS, "IN");
+        filters.put(vbrIfInFilterUri,
+                    testFlowFilterAPI(vbrIfInFilterUri, 3333));
+
+        String vbrIfOutFilterUri = createRelativeURI(bridgeIfUri,
+                                                     RES_FLOWFILTERS, "OUT");
+        filters.put(vbrIfOutFilterUri,
+                    testFlowFilterAPI(vbrIfOutFilterUri, 456));
+
+        String vtmIfInFilterUri = createRelativeURI(vtermIfUri,
+                                                    RES_FLOWFILTERS, "In");
+        filters.put(vtmIfInFilterUri,
+                    testFlowFilterAPI(vtmIfInFilterUri, 77777));
+
+        String vtmIfOutFilterUri = createRelativeURI(vtermIfUri,
+                                                     RES_FLOWFILTERS, "Out");
+        filters.put(vtmIfOutFilterUri,
+                    testFlowFilterAPI(vtmIfOutFilterUri, 890));
+
+        // NOT_FOUND tests.
+        String badContainer = createURI("container_1", RES_VTNS, tname);
+        String badTenant = createURI("default", RES_VTNS, "vtn_99999");
+        String badBridge = createURI("default", RES_VTNS, tname, RES_VBRIDGES,
+                                     "vbr_10000");
+        String badBridgeIf = createURI("default", RES_VTNS, tname,
+                                       RES_VBRIDGES, bname,
+                                       RES_INTERFACES, "if_999999");
+        String badTerminal = createURI("default", RES_VTNS, tname,
+                                       RES_VTERMINALS, "vtm_10000");
+        String badTermIf = createURI("default", RES_VTNS, tname,
+                                     RES_VTERMINALS, bname,
+                                     RES_INTERFACES, "if_999999");
+        String[] invalid = {
+            // Specify container that does not exist.
+            createRelativeURI(badContainer, RES_FLOWFILTERS),
+            createRelativeURI(badContainer, RES_VBRIDGES, bname,
+                              RES_FLOWFILTERS, "in"),
+            createRelativeURI(badContainer, RES_VBRIDGES, bname,
+                              RES_FLOWFILTERS, "out"),
+            createRelativeURI(badContainer, RES_VBRIDGES, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badContainer, RES_VBRIDGES, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "out"),
+            createRelativeURI(badContainer, RES_VTERMINALS, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badContainer, RES_VTERMINALS, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badContainer, RES_VTERMINALS, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "out"),
+
+            // Specify VTN that does not exist.
+            createRelativeURI(badTenant, RES_FLOWFILTERS),
+            createRelativeURI(badTenant, RES_VBRIDGES, bname,
+                              RES_FLOWFILTERS, "in"),
+            createRelativeURI(badTenant, RES_VBRIDGES, bname,
+                              RES_FLOWFILTERS, "out"),
+            createRelativeURI(badTenant, RES_VBRIDGES, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badTenant, RES_VBRIDGES, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "out"),
+            createRelativeURI(badTenant, RES_VTERMINALS, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badTenant, RES_VTERMINALS, bname,
+                              RES_INTERFACES, iname, RES_FLOWFILTERS, "out"),
+
+            // Specify vBridge that does not exist.
+            createRelativeURI(badBridge, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badBridge, RES_FLOWFILTERS, "out"),
+            createRelativeURI(badBridge, RES_INTERFACES, iname,
+                              RES_FLOWFILTERS, "in"),
+            createRelativeURI(badBridge, RES_INTERFACES, iname,
+                              RES_FLOWFILTERS, "out"),
+
+            // Specify vBridge interface that does not exist.
+            createRelativeURI(badBridgeIf, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badBridgeIf, RES_FLOWFILTERS, "out"),
+
+            // Specify vTerminal that does not exist.
+            createRelativeURI(badTerminal, RES_INTERFACES, iname,
+                              RES_FLOWFILTERS, "in"),
+            createRelativeURI(badTerminal, RES_INTERFACES, iname,
+                              RES_FLOWFILTERS, "out"),
+
+            // Specify vTerminal interface that does not exist.
+            createRelativeURI(badTermIf, RES_FLOWFILTERS, "in"),
+            createRelativeURI(badTermIf, RES_FLOWFILTERS, "out"),
+        };
+
+        JSONObject body = new JSONObject().
+            put("condition", "condition_1").
+            put("filterType",
+                new JSONObject().put("pass", new JSONObject()));
+        for (String base: invalid) {
+            getJsonResult(base);
+            assertResponse(HTTP_NOT_FOUND);
+            getJsonResult(base, "DELETE");
+            assertResponse(HTTP_NOT_FOUND);
+
+            String uri = createRelativeURI(base, "1");
+            getJsonResult(uri);
+            assertResponse(HTTP_NOT_FOUND);
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_NOT_FOUND);
+
+            getJsonResult(uri, "PUT", body.toString());
+            assertResponse(HTTP_NOT_FOUND);
+        }
+
+        for (Map.Entry<String, JSONObject> entry: filters.entrySet()) {
+            String uri = entry.getKey();
+            JSONObject expected = entry.getValue();
+
+            // Get all flow filters.
+            JSONObject json = getJSONObject(uri);
+            assertEquals(expected, json);
+
+            // Delete all flow filters.
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_OK);
+            json = getJSONObject(uri);
+            JSONArray array = json.getJSONArray("flowfilter");
+            Assert.assertEquals(0, array.length());
+
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_NO_CONTENT);
+        }
+
+        // Restore all filters.
+        for (Map.Entry<String, JSONObject> entry: filters.entrySet()) {
+            String base = entry.getKey();
+            JSONObject list = entry.getValue();
+            JSONArray array = list.getJSONArray("flowfilter");
+            int len = array.length();
+            for (int i = 0; i < len; i++) {
+                body = array.getJSONObject(i);
+                String idx = body.getString("index");
+                String uri = createRelativeURI(base, idx);
+                getJsonResult(uri, "PUT", body.toString());
+                assertResponse(HTTP_CREATED);
+                Assert.assertEquals(uri, httpLocation);
+            }
+
+            JSONObject json = getJSONObject(base);
+            assertEquals(list, json);
+        }
+
+        // Destroy VTN.
+        getJsonResult(tenantUri, "DELETE");
+        assertResponse(HTTP_OK);
+    }
+
+    /**
+     * Test flow filter APIs.
+     *
+     * @param baseUri  Absolute URI for test.
+     * @param cookie   An arbitrary integer to create test data.
+     * @return  A {@link JSONObject} instance that contains all flow filters
+     *          configured into the URI specified by {@code base}.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject testFlowFilterAPI(String baseUri, int cookie)
+        throws JSONException {
+        LOG.info("Starting flow filter JAX-RS client: {}", baseUri);
+
+        // Get all flow filters.
+        JSONObject json = getJSONObject(baseUri);
+        JSONArray array = json.getJSONArray("flowfilter");
+        Assert.assertEquals(0, array.length());
+
+        TreeMap<Integer, JSONObject> allFilters =
+            new TreeMap<Integer, JSONObject>();
+
+        // Create PASS flow filter with all supported actions.
+        byte[] macAddr1 = {
+            0x00, 0x11, 0x22, 0x33, 0x44, (byte)cookie,
+        };
+        byte[] macAddr2 = {
+            (byte)0xf0, (byte)0xfa, (byte)0xfb,
+            (byte)0xfc, (byte)cookie, (byte)0xfe,
+        };
+        JSONArray actions = new JSONArray().
+            put(createJSONObject("dlsrc", "address",
+                                 HexEncode.bytesToHexStringFormat(macAddr1))).
+            put(createJSONObject("dldst", "address",
+                                 HexEncode.bytesToHexStringFormat(macAddr2))).
+            put(createJSONObject("vlanpcp", "priority",
+                                 cookie & MASK_VLAN_PCP)).
+            put(createJSONObject("dscp", "dscp", cookie & MASK_IP_DSCP)).
+            put(createJSONObject("icmptype", "type", cookie & MASK_ICMP)).
+            put(createJSONObject("icmpcode", "code", ~cookie & MASK_ICMP));
+
+        JSONObject empty = new JSONObject();
+        JSONObject type = new JSONObject().put("pass", empty);
+        JSONObject pass = new JSONObject().
+            put("condition", "cond_1").
+            put("filterType", type).
+            put("actions", actions);
+        int passIdx = (cookie + 1) & MASK_FLOWFILTER_INDEX;
+
+        // Try to get flow filter that does not yet created.
+        String uri = createRelativeURI(baseUri, String.valueOf(passIdx));
+        getJsonResult(uri);
+        assertResponse(HTTP_NO_CONTENT);
+
+        // Create PASS filter.
+        getJsonResult(uri, "PUT", pass.toString());
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(uri, httpLocation);
+
+        json = getJSONObject(uri);
+        pass.put("index", passIdx);
+        assertEquals(pass, json);
+        allFilters.put(passIdx, json);
+
+        getJsonResult(uri, "PUT", pass.toString());
+        assertResponse(HTTP_NO_CONTENT);
+
+        // Create one more PASS filter with 3 actions.
+        byte[] macAddr3 = {
+            (byte)0xa0, (byte)0xb0, (byte)cookie,
+            (byte)0xd0, (byte)0xe0, (byte)0xf0,
+        };
+        type = new JSONObject().put("pass", empty);
+        actions = new JSONArray().
+            put(createJSONObject("dlsrc", "address",
+                                 HexEncode.bytesToHexStringFormat(macAddr3))).
+            put(createJSONObject("vlanpcp", "priority",
+                                 (cookie + 13) & MASK_VLAN_PCP)).
+            put(createJSONObject("icmptype", "type",
+                                 (cookie - 31) & MASK_ICMP));
+        JSONObject pass1 = new JSONObject().
+            put("condition", "cond_2").
+            put("filterType", type).
+            put("actions", actions);
+        int passIdx1 = (cookie + 7777) & MASK_FLOWFILTER_INDEX;
+
+        String pass1Uri = createRelativeURI(baseUri, String.valueOf(passIdx1));
+        getJsonResult(pass1Uri, "PUT", pass1.toString());
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(pass1Uri, httpLocation);
+
+        json = getJSONObject(pass1Uri);
+        pass1.put("index", passIdx1);
+        assertEquals(pass1, json);
+
+        // Create DROP filter without actions.
+        type = new JSONObject().put("drop", empty);
+
+        // Index in JSON object should be ignored.
+        JSONObject drop = new JSONObject().
+            put("index", Integer.MAX_VALUE).
+            put("condition", "cond_3").
+            put("filterType", type);
+        int dropIdx = (cookie + 65535) & MASK_FLOWFILTER_INDEX;
+
+        uri = createRelativeURI(baseUri, String.valueOf(dropIdx));
+        getJsonResult(uri, "PUT", drop.toString());
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(uri, httpLocation);
+
+        json = getJSONObject(uri);
+        drop.put("index", dropIdx);
+        assertEquals(drop, json);
+
+        getJsonResult(uri, "PUT", drop.toString());
+        assertResponse(HTTP_NO_CONTENT);
+
+        // Append 2 actions into the DROP filter.
+        byte[] macAddr4 = {
+            (byte)0x00, (byte)0xaa, (byte)0xbb,
+            (byte)cookie, (byte)0xdd, (byte)0xee,
+        };
+        actions = new JSONArray().
+            put(createJSONObject("dscp", "dscp",
+                                 (cookie * 7) & MASK_IP_DSCP)).
+            put(createJSONObject("dldst", "address",
+                                 HexEncode.bytesToHexStringFormat(macAddr4)));
+        drop.put("actions", actions);
+
+        getJsonResult(uri, "PUT", drop.toString());
+        assertResponse(HTTP_OK);
+        json = getJSONObject(uri);
+        assertEquals(drop, json);
+        allFilters.put(dropIdx, json);
+
+        // Create REDIRECT filter with specifying one action.
+        // VTN name in destination should be always ignored.
+        JSONObject destination = new JSONObject().
+            put("tenant", "vtn_100").
+            put("bridge", "bridge_10").
+            put("interface", "if_20");
+        type = createJSONObject("redirect", "destination", destination,
+                                "output", true);
+        actions = new JSONArray().
+            put(createJSONObject("vlanpcp", "priority",
+                                 (cookie * 3) & MASK_VLAN_PCP));
+        JSONObject redirect = new JSONObject().
+            put("condition", "cond_" + cookie).
+            put("filterType", type).
+            put("actions", actions);
+        int redirectIdx = (cookie + 5000) & MASK_FLOWFILTER_INDEX;
+
+        uri = createRelativeURI(baseUri, String.valueOf(redirectIdx));
+        getJsonResult(uri, "PUT", redirect.toString());
+        assertResponse(HTTP_CREATED);
+        Assert.assertEquals(uri, httpLocation);
+
+        json = getJSONObject(uri);
+        redirect.put("index", redirectIdx);
+        destination.remove("tenant");
+        assertEquals(redirect, json);
+
+        getJsonResult(uri, "PUT", redirect.toString());
+        assertResponse(HTTP_NO_CONTENT);
+
+        // Update destination of the REDIRECT filter.
+        destination = new JSONObject().
+            put("terminal", "term_123").
+            put("interface", "if_1");
+        type = createJSONObject("redirect", "destination", destination,
+                                "output", false);
+        redirect = new JSONObject().
+            put("condition", "cond_" + cookie).
+            put("filterType", type).
+            put("actions", actions);
+
+        getJsonResult(uri, "PUT", redirect.toString());
+        assertResponse(HTTP_OK);
+
+        json = getJSONObject(uri);
+        redirect.put("index", redirectIdx);
+        assertEquals(redirect, json);
+        allFilters.put(redirectIdx, json);
+
+        getJsonResult(uri, "PUT", redirect.toString());
+        assertResponse(HTTP_NO_CONTENT);
+
+        // BAD_REQUEST tests.
+
+        // Specify invalid index.
+        int[] badIndex = {-1, 0, 65536, 65537, 100000};
+        for (int idx: badIndex) {
+            uri = createRelativeURI(baseUri, String.valueOf(idx));
+            getJsonResult(uri, "PUT", pass.toString());
+            assertResponse(HTTP_BAD_REQUEST);
+
+            getJsonResult(uri);
+            assertResponse(HTTP_NO_CONTENT);
+        }
+
+        // No flow condition name.
+        JSONObject bad = new JSONObject().
+            put("filterType", new JSONObject().put("pass", empty));
+        getJsonResult(pass1Uri, "PUT", bad.toString());
+        assertResponse(HTTP_BAD_REQUEST);
+
+        // No flow filter type.
+        bad = new JSONObject().put("condition", "cond_1");
+        getJsonResult(pass1Uri, "PUT", bad.toString());
+        assertResponse(HTTP_BAD_REQUEST);
+
+        // Specify invalid action.
+        JSONObject[] badActions = {
+            // Bad action parameter.
+            createJSONObject("dlsrc", "address", "bad_MAC_address"),
+            createJSONObject("dlsrc", "address", "00:00:00:00:00:00"),
+            createJSONObject("dldst", "address", "01:00:00:00:00:00"),
+            createJSONObject("dldst", "address", "ff:ff:ff:ff:ff:ff"),
+            createJSONObject("vlanpcp", "priority", 8),
+            createJSONObject("vlanpcp", "priority", -1),
+            createJSONObject("dscp", "dscp", 64),
+            createJSONObject("dscp", "dscp", -1),
+            createJSONObject("icmptype", "type", -1),
+            createJSONObject("icmptype", "type", 256),
+            createJSONObject("icmpcode", "code", -1),
+            createJSONObject("icmpcode", "code", 256),
+
+            // Unsupported action.
+            createJSONObject("inet4src", "address", "10.0.0.1"),
+            createJSONObject("inet4dst", "address", "10.0.0.1"),
+            createJSONObject("tpsrc", "port", 10),
+            createJSONObject("tpdst", "port", 10),
+        };
+
+        bad.put("filterType", new JSONObject().put("pass", empty));
+        for (JSONObject act: badActions) {
+            actions = new JSONArray().put(act);
+            bad.put("actions", actions);
+            getJsonResult(pass1Uri, "PUT", bad.toString());
+            assertResponse(HTTP_BAD_REQUEST);
+        }
+
+        // Invalid destination of REDIRECT filter.
+        String badName = "_badname";
+        String emptyName = "";
+        String longName = "12345678901234567890123456789012";
+        JSONObject[] badDestinations = {
+            null,
+            empty,
+
+            // No interface name.
+            new JSONObject().put("bridge", "bridge_1"),
+            new JSONObject().put("terminal", "vterm_1"),
+
+            // Invalid node name.
+            new JSONObject().put("bridge", badName).put("interface", "if_1"),
+            new JSONObject().put("bridge", emptyName).put("interface", "if_1"),
+            new JSONObject().put("terminal", longName).put("interface", "if_1"),
+
+            // Invalid interface name.
+            new JSONObject().put("bridge", "bridge_1").
+                put("interface", badName),
+            new JSONObject().put("bridge", "bridge_1").
+                put("interface", emptyName),
+            new JSONObject().put("bridge", "bridge_1").
+                put("interface", longName),
+            new JSONObject().put("terminal", "vterm_1").
+                put("interface", badName),
+            new JSONObject().put("terminal", "vterm_1").
+                put("interface", emptyName),
+            new JSONObject().put("terminal", "vterm_1").
+                put("interface", longName),
+        };
+        for (JSONObject dest: badDestinations) {
+            JSONObject badType = createJSONObject("redirect",
+                                                  "destination", dest,
+                                                  "output", false);
+            bad = new JSONObject().
+                put("condition", "cond_" + cookie).
+                put("filterType", badType);
+            getJsonResult(pass1Uri, "PUT", bad.toString());
+            assertResponse(HTTP_BAD_REQUEST);
+        }
+
+        // Ensure that PASS filter at index 7777 was not modified.
+        json = getJSONObject(pass1Uri);
+        assertEquals(pass1, json);
+
+        // Remove actions in PASS filter at index 7777.
+        pass1.remove("actions");
+        getJsonResult(pass1Uri, "PUT", pass1.toString());
+        assertResponse(HTTP_OK);
+
+        json = getJSONObject(pass1Uri);
+        assertEquals(pass1, json);
+
+        // Delete PASS filter at index 7777.
+        getJsonResult(pass1Uri, "DELETE");
+        assertResponse(HTTP_OK);
+        getJsonResult(pass1Uri, "DELETE");
+        assertResponse(HTTP_NO_CONTENT);
+
+        // Get all flow filters again.
+        JSONObject all = getJSONObject(baseUri);
+        array = new JSONArray(allFilters.values());
+        JSONObject expected = new JSONObject().put("flowfilter", array);
+        assertEquals(expected, all);
+
+        return all;
     }
 }

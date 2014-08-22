@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
 import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
@@ -27,7 +29,7 @@ public final class ErrorVNodePath extends VNodePath
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2748579569569933516L;
+    private static final long serialVersionUID = 8499003604236055338L;
 
     /**
      * A string which represents type type of this node path.
@@ -91,6 +93,30 @@ public final class ErrorVNodePath extends VNodePath
      */
     @Override
     public String getInterfaceName() {
+        throw unexpected();
+    }
+
+    /**
+     * This method should never be called.
+     *
+     * @param tenantName  Unused.
+     * @return  Never returns.
+     * @throws IllegalStateException  Always thrown.
+     */
+    @Override
+    public ErrorVNodePath replaceTenantName(String tenantName) {
+        throw unexpected();
+    }
+
+    /**
+     * This method should never be called.
+     *
+     * @param out  Unused.
+     * @return  Never returns.
+     * @throws IllegalStateException  Always thrown.
+     */
+    @Override
+    public RedirectFilter getRedirectFilter(boolean out) {
         throw unexpected();
     }
 

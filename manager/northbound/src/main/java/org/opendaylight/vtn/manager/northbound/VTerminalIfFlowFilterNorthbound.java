@@ -38,9 +38,9 @@ import org.codehaus.enunciate.jaxrs.ResponseHeaders;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
 
+import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-
-import org.opendaylight.controller.sal.authorization.Privilege;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 
 /**
  * This class provides Northbound REST APIs to handle flow filter in the
@@ -149,10 +149,9 @@ public class VTerminalIfFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName,
             @PathParam("listType") String listType) {
-        checkPrivilege(containerName, Privilege.READ);
-
-        // REVISIT: Not yet.
-        return null;
+        FlowFilterId fid = createFlowFilterId(tenantName, termName, ifName,
+                                              listType);
+        return getFlowFilters(containerName, fid);
     }
 
     /**
@@ -215,13 +214,12 @@ public class VTerminalIfFlowFilterNorthbound extends VTNNorthBoundBase {
     public Response deleteFlowFilters(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
-            @PathParam("termame") String termName,
+            @PathParam("termName") String termName,
             @PathParam("ifName") String ifName,
             @PathParam("listType") String listType) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        // REVISIT: Not yet.
-        return null;
+        FlowFilterId fid = createFlowFilterId(tenantName, termName, ifName,
+                                              listType);
+        return deleteFlowFilters(containerName, fid);
     }
 
     /**
@@ -292,10 +290,9 @@ public class VTerminalIfFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("ifName") String ifName,
             @PathParam("listType") String listType,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.READ);
-
-        // REVISIT: Not yet.
-        return null;
+        FlowFilterId fid = createFlowFilterId(tenantName, termName, ifName,
+                                              listType);
+        return getFlowFilter(containerName, fid, index);
     }
 
     /**
@@ -453,10 +450,9 @@ public class VTerminalIfFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("listType") String listType,
             @PathParam("index") int index,
             @TypeHint(FlowFilter.class) FlowFilter ff) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        // REVISIT: Not yet.
-        return null;
+        FlowFilterId fid = createFlowFilterId(tenantName, termName, ifName,
+                                              listType);
+        return putFlowFilter(uriInfo, containerName, fid, index, ff);
     }
 
     /**
@@ -529,9 +525,24 @@ public class VTerminalIfFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("ifName") String ifName,
             @PathParam("listType") String listType,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        FlowFilterId fid = createFlowFilterId(tenantName, termName, ifName,
+                                              listType);
+        return deleteFlowFilter(containerName, fid, index);
+    }
 
-        // REVISIT: Not yet.
-        return null;
+    /**
+     * Create a flow filter identifier that specifies the flow filter list
+     * in the vTerminal interface.
+     *
+     * @param tenant    The name of the tenant.
+     * @param bridge    The name of the vBridge.
+     * @param iface     The name of the interface.
+     * @param listType  The type of the flow filter list.
+     * @return  A {@link FlowFilterId} instance.
+     */
+    private FlowFilterId createFlowFilterId(String tenant, String bridge,
+                                            String iface, String listType) {
+        VTerminalIfPath path = new VTerminalIfPath(tenant, bridge, iface);
+        return new FlowFilterId(path, getFlowFilterType(listType));
     }
 }

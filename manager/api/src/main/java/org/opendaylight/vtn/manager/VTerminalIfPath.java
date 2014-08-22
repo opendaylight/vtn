@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.util.List;
 
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
 import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
@@ -34,7 +36,7 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7165865505431233649L;
+    private static final long serialVersionUID = -5392212457209001771L;
 
     /**
      * A string which represents that the node type is vTerminal interface.
@@ -192,6 +194,22 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
     @Override
     public String getInterfaceName() {
         return ifName;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTerminalIfPath replaceTenantName(String tenantName) {
+        return (VTerminalIfPath)super.replaceTenantName(tenantName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public RedirectFilter getRedirectFilter(boolean out) {
+        return new RedirectFilter(this, out);
     }
 
     /**

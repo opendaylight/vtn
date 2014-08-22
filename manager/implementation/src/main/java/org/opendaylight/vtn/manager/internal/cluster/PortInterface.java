@@ -55,16 +55,26 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * </p>
  */
 public abstract class PortInterface extends AbstractInterface
-    implements VirtualMapNode {
+    implements VirtualMapNode, FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8802975535447494742L;
+    private static final long serialVersionUID = 8583202785488078241L;
 
     /**
      * Port mapping configuration.
      */
     private PortMapConfig  portMapConfig;
+
+    /**
+     * Flow filters for incoming packets.
+     */
+    private final FlowFilterMap  inFlowFilters;
+
+    /**
+     * Flow filters for outgoing packets.
+     */
+    private final FlowFilterMap  outFlowFilters;
 
     /**
      * Construct a virtual node instance that can have port mapping.
@@ -76,6 +86,8 @@ public abstract class PortInterface extends AbstractInterface
     protected PortInterface(AbstractBridge parent, String name,
                             VInterfaceConfig iconf) {
         super(parent, name, iconf);
+        inFlowFilters = new FlowFilterMap(this, false);
+        outFlowFilters = new FlowFilterMap(this, true);
     }
 
     /**
@@ -358,6 +370,21 @@ public abstract class PortInterface extends AbstractInterface
         }
 
         mgr.transmit(mapped, frame);
+    }
+
+    /**
+     * Return the flow filter instance configured in this virtual interface.
+     *
+     * <p>
+     *   This method must be called with holding the node lock.
+     * </p>
+     *
+     * @param out  {@code true} means that the outgoing flow filter.
+     *             {@code false} means that the incoming flow filter.
+     * @return  A {@link FlowFilterMap} instance.
+     */
+    final FlowFilterMap getFlowFilterMap(boolean out) {
+        return (out) ? outFlowFilters : inFlowFilters;
     }
 
     /**
@@ -884,6 +911,21 @@ public abstract class PortInterface extends AbstractInterface
     // AbstractInterface
 
     /**
+     * Initialize virtual interface path for this instance.
+     *
+     * @param parent  The parent node that contains this interface.
+     * @param name    The name of this interface.
+     */
+    @Override
+    void setPath(AbstractBridge parent, String name) {
+        super.setPath(parent, name);
+
+        // Initialize parent path for flow filter.
+        inFlowFilters.setParent(this);
+        outFlowFilters.setParent(this);
+    }
+
+    /**
      * Change enable/disable configuration of this interface.
      *
      * <p>
@@ -975,6 +1017,12 @@ public abstract class PortInterface extends AbstractInterface
     protected final void destroying(VTNManagerImpl mgr,
                                     ConcurrentMap<VTenantPath, Object> db,
                                     VInterfaceState ist, boolean retain) {
+        if (retain && !(inFlowFilters.isEmpty() && outFlowFilters.isEmpty())) {
+            // REVISIT: Select flow entries affected by obsolete flow filters.
+            VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
+            VTNThreadData.removeFlows(mgr, fdb);
+        }
+
         PortMapConfig pmconf = portMapConfig;
         if (pmconf != null) {
             // Destroy port mapping.
