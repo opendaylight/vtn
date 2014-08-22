@@ -31,13 +31,6 @@
   </scm>
 
   <properties>
-    <!-- Sonar properties using jacoco to retrieve test results -->
-    <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-    <sonar.jacoco.Reportpath>target/jacoco.exec</sonar.jacoco.Reportpath>
-    <sonar.jacoco.itReportPath>../implementation/target/jacoco-it.exec</sonar.jacoco.itReportPath>
-    <sonar.language>java</sonar.language>
-
     <!-- Parameters passed to maven-javadoc-plugin. -->
     <doctitle>VTN Manager ${project.version} API</doctitle>
     <windowtitle>${doctitle}</windowtitle>

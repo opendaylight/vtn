@@ -30,14 +30,6 @@
     <tag>HEAD</tag>
   </scm>
 
-  <properties>
-    <!-- Sonar jacoco plugin to get integration test coverage info -->
-    <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.jacoco.reportPath>../implementation/target/jacoco.exec</sonar.jacoco.reportPath>
-    <sonar.jacoco.itReportPath>../implementaiton/target/jacoco-it.exec</sonar.jacoco.itReportPath>
-    <sonar.language>java</sonar.language>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
@@ -70,30 +62,6 @@
             </Service-Component>
           </instructions>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <destFile>../implementation/target/jacoco-it.exec</destFile>
-          <includes>
-            <include>org.opendaylight.vtn.*</include>
-          </includes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>pre-test</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>post-test</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

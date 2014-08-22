@@ -29,41 +29,8 @@
     <tag>HEAD</tag>
   </scm>
 
-  <properties>
-    <!-- Sonar properties using jacoco to retrieve test results -->
-    <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
-    <sonar.jacoco.Reportpath>../northbound/target/jacoco.exec</sonar.jacoco.Reportpath>
-    <sonar.jacoco.itReportPath>../northbound/target/jacoco-it.exec</sonar.jacoco.itReportPath>
-    <sonar.language>java</sonar.language>
-  </properties>
-
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <destFile>../northbound/target/jacoco-it.exec</destFile>
-          <includes>
-            <include>org.opendaylight.vtn.*</include>
-          </includes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>pre-test</id>
-            <goals>
-              <goal>prepare-agent</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>post-test</id>
-            <configuration>
-              <skip>true</skip>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-clean-plugin</artifactId>
