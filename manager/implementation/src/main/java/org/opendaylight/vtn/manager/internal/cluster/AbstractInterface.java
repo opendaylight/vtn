@@ -38,7 +38,7 @@ public abstract class AbstractInterface implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6986461818737401105L;
+    private static final long serialVersionUID = 302872890426044663L;
 
     /**
      * The parent node which contains this virtual interface.
@@ -65,7 +65,7 @@ public abstract class AbstractInterface implements Serializable {
     protected AbstractInterface(AbstractBridge parent, String name,
                                 VInterfaceConfig iconf) {
         ifConfig = resolve(iconf);
-        setPath(parent, name);
+        initPath(parent, name);
     }
 
     /**
@@ -74,9 +74,8 @@ public abstract class AbstractInterface implements Serializable {
      * @param parent  The parent node that contains this interface.
      * @param name    The name of this interface.
      */
-    final void setPath(AbstractBridge parent, String name) {
-        this.parent = parent;
-        ifPath = parent.createIfPath(name);
+    void setPath(AbstractBridge parent, String name) {
+        initPath(parent, name);
     }
 
     /**
@@ -103,21 +102,21 @@ public abstract class AbstractInterface implements Serializable {
     }
 
     /**
+     * Return the name of the container to which this interface belongs.
+     *
+     * @return  The name of the container.
+     */
+    public final String getContainerName() {
+        return parent.getContainerName();
+    }
+
+    /**
      * Return the parent node.
      *
      * @return  The parent node.
      */
     final AbstractBridge getParent() {
         return parent;
-    }
-
-    /**
-     * Return the name of the container to which this interface belongs.
-     *
-     * @return  The name of the container.
-     */
-    final String getContainerName() {
-        return parent.getContainerName();
     }
 
     /**
@@ -393,6 +392,17 @@ public abstract class AbstractInterface implements Serializable {
         }
 
         return dirty;
+    }
+
+    /**
+     * Initialize virtual interface path for this instance.
+     *
+     * @param parent  The parent node that contains this interface.
+     * @param name    The name of this interface.
+     */
+    private void initPath(AbstractBridge parent, String name) {
+        this.parent = parent;
+        ifPath = parent.createIfPath(name);
     }
 
     /**

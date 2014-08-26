@@ -14,6 +14,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
 /**
  * JUnit test for {@link VBridgeIfPath}.
  */
@@ -33,25 +35,27 @@ public class VBridgeIfPathTest extends TestBase {
                     assertEquals(bname, path.getBridgeName());
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vBridge-IF", path.getNodeType());
+                    checkRedirectFilter(path);
 
                     path = new VBridgeIfPath(bpath, iname);
                     assertEquals(tname, path.getTenantName());
                     assertEquals(bname, path.getBridgeName());
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vBridge-IF", path.getNodeType());
+                    checkRedirectFilter(path);
 
                     VTenantPath clone = path.clone();
                     assertNotSame(clone, path);
                     assertEquals(clone, path);
 
-                    String name = tname + "_new";
-                    VBridgeIfPath path1 =
-                        (VBridgeIfPath)path.replaceTenantName(name);
-                    assertEquals(name, path1.getTenantName());
-                    assertEquals(bname, path1.getBridgeName());
-                    assertEquals(iname, path1.getInterfaceName());
-                    assertEquals("vBridge-IF", path1.getNodeType());
-                    assertEquals(VBridgeIfPath.class, path1.getClass());
+                    for (String name: new String[]{null, tname + "_new"}) {
+                        VBridgeIfPath path1 = path.replaceTenantName(name);
+                        assertEquals(name, path1.getTenantName());
+                        assertEquals(bname, path1.getBridgeName());
+                        assertEquals(iname, path1.getInterfaceName());
+                        assertEquals("vBridge-IF", path1.getNodeType());
+                        checkRedirectFilter(path1);
+                    }
                 }
             }
         }
@@ -186,5 +190,20 @@ public class VBridgeIfPathTest extends TestBase {
 
         VBridgeIfPath ipath = new VBridgeIfPath(bpath, iname);
         assertEquals(expected, path.contains(ipath));
+    }
+
+    /**
+     * Ensure that {@link VBridgeIfPath#getRedirectFilter(boolean)} works
+     * correctly.
+     *
+     * @param path  A {@link VBridgeIfPath} instance.
+     */
+    private void checkRedirectFilter(VBridgeIfPath path) {
+        boolean[] bools = {true, false};
+        for (boolean b: bools) {
+            RedirectFilter rf = path.getRedirectFilter(b);
+            assertEquals(path, rf.getDestination());
+            assertEquals(b, rf.isOutput());
+        }
     }
 }

@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
+import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -49,7 +50,7 @@ public abstract class PortBridge<T extends PortInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -430632339853777419L;
+    private static final long serialVersionUID = -7807792958087877633L;
 
     /**
      * Construct an abstract bridge node that can have port mappings.
@@ -322,6 +323,26 @@ public abstract class PortBridge<T extends PortInterface>
         } finally {
             wrlock.unlock();
         }
+    }
+
+    /**
+     * Return the flow filter instance configured in the specified virtual
+     * interface in this bridge.
+     *
+     * @param lstack  A {@link LockStack} instance to hold acquired locks.
+     * @param path    A path to the target virtual interface.
+     * @param out     {@code true} means that the outgoing flow filter.
+     *                {@code false} means that the incoming flow filter.
+     * @param writer  {@code true} means the writer lock is required.
+     * @return  A {@link FlowFilterMap} instance.
+     * @throws VTNException  An error occurred.
+     */
+    final FlowFilterMap getFlowFilterMap(LockStack lstack, VInterfacePath path,
+                                         boolean out, boolean writer)
+        throws VTNException {
+        lstack.push(getLock(writer));
+        T vif = getInterfaceImpl(path);
+        return vif.getFlowFilterMap(out);
     }
 
     /**

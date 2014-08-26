@@ -235,7 +235,9 @@ public final class VTNThreadData {
      * @param fdb  VTN flow database object associated with the virtual tenant.
      */
     public static void removeFlows(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
-        addTask(fdb.clear(mgr));
+        if (fdb != null) {
+            addTask(fdb.clear(mgr));
+        }
     }
 
     /**

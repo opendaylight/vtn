@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
@@ -40,11 +41,6 @@ public final class IcmpMatchImpl extends L4MatchImpl {
      * A value which indicates every ICMP type and code should match.
      */
     private static final short  VALUE_ANY = -1;
-
-    /**
-     * A mask value which represents valid bits in ICMP type and code.
-     */
-    private static final short  MASK_VALUE = 0xff;
 
     /**
      * ICMP type value to match.
@@ -107,7 +103,7 @@ public final class IcmpMatchImpl extends L4MatchImpl {
         }
 
         short value = s.shortValue();
-        if ((value & ~MASK_VALUE) != 0) {
+        if (!MiscUtils.isIcmpValueValid(value)) {
             throw new VTNException(StatusCode.BADREQUEST,
                                    "Invalid value for " + desc);
         }

@@ -53,6 +53,8 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 
 /**
  * Stub class for unit tests.
@@ -546,6 +548,32 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status removePathMap(VTenantPath path, int index) {
+        return null;
+    }
+
+    @Override
+    public List<FlowFilter> getFlowFilters(FlowFilterId fid) {
+        return null;
+    }
+
+    @Override
+    public FlowFilter getFlowFilter(FlowFilterId fid, int index) {
+        return null;
+    }
+
+    @Override
+    public UpdateType setFlowFilter(FlowFilterId fid, int index,
+                                    FlowFilter filter) {
+        return null;
+    }
+
+    @Override
+    public Status removeFlowFilter(FlowFilterId fid, int index) {
+        return null;
+    }
+
+    @Override
+    public Status clearFlowFilter(FlowFilterId fid) {
         return null;
     }
 }

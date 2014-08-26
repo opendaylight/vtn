@@ -30,7 +30,7 @@ public class VTenantPath
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3796118278733925106L;
+    private static final long serialVersionUID = 1686897608613576535L;
 
     /**
      * A string which represents that the node type is VTN.
@@ -109,7 +109,7 @@ public class VTenantPath
      * @return  A constructed instance.
      * @since   Helium
      */
-    public final VTenantPath replaceTenantName(String tenantName) {
+    public VTenantPath replaceTenantName(String tenantName) {
         try {
             VTenantPath path = (VTenantPath)super.clone();
             path.tenantName = tenantName;

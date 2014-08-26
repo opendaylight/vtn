@@ -13,10 +13,15 @@ import java.security.Principal;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
 
 import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
+import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 
 import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.northbound.commons.RestMessages;
@@ -37,6 +42,7 @@ import org.opendaylight.controller.northbound.commons.exception.
 import org.opendaylight.controller.northbound.commons.utils.NorthboundUtils;
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
@@ -47,6 +53,16 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * Base class of VTN Manager REST API.
  */
 public abstract class VTNNorthBoundBase {
+    /**
+     * The type of the flow filter list for incoming packets.
+     */
+    private static final String  FF_LIST_INCOMING = "in";
+
+    /**
+     * The type of the flow filter list for outgoing packets.
+     */
+    private static final String  FF_LIST_OUTGOING = "out";
+
     /**
      * HTTP user name sent by a client.
      */
@@ -266,5 +282,144 @@ public abstract class VTNNorthBoundBase {
         }
 
         return node;
+    }
+
+    /**
+     * Convert the type of flow filter list into boolean value.
+     *
+     * @param listType  The type of the flow filter list (case insensitive).
+     * @return  {@code true} is returned if the given type represents the
+     *          flow filter list for outgoing packets.
+     *          {@code false} is returned if the given type represents the
+     *          flow filter list for incoming packets.
+     * @throws BadRequestException
+     *    Invalid string was passed to {@code listType}.
+     */
+    protected boolean getFlowFilterType(String listType) {
+        if (FF_LIST_INCOMING.equalsIgnoreCase(listType)) {
+            return false;
+        }
+        if (FF_LIST_OUTGOING.equalsIgnoreCase(listType)) {
+            return true;
+        }
+
+        throw new BadRequestException("Invalid flow filter type: " + listType);
+    }
+
+    /**
+     * Return all flow filters in the specified flow filter list.
+     *
+     * @param container  The name of the container.
+     * @param fid        Flow filter identifier.
+     * @return  A {@link FlowFilterList} instance.
+     */
+    protected FlowFilterList getFlowFilters(String container,
+                                            FlowFilterId fid) {
+        checkPrivilege(container, Privilege.READ);
+
+        IVTNManager mgr = getVTNManager(container);
+        try {
+            return new FlowFilterList(mgr.getFlowFilters(fid));
+        } catch (VTNException e) {
+            throw getException(e.getStatus());
+        }
+    }
+
+    /**
+     * Return the specified flow filter in the specified flow filter list.
+     *
+     * @param container  The name of the container.
+     * @param fid        Flow filter identifier.
+     * @param index      The index which specifies the flow filter.
+     * @return  A {@link FlowFilter} instance.
+     */
+    protected FlowFilter getFlowFilter(String container, FlowFilterId fid,
+                                       int index) {
+        checkPrivilege(container, Privilege.READ);
+
+        IVTNManager mgr = getVTNManager(container);
+        try {
+            return mgr.getFlowFilter(fid, index);
+        } catch (VTNException e) {
+            throw getException(e.getStatus());
+        }
+    }
+
+    /**
+     * Create or modify the flow filter in the specified flow filter list.
+     *
+     * @param uriInfo    Requested URI information.
+     * @param container  The name of the container.
+     * @param fid        Flow filter identifier.
+     * @param index      The index which specifies the flow filter.
+     * @param filter     A {@link FlowFilter} instance.
+     * @return  Response as dictated by the HTTP Response Status code.
+     */
+    protected Response putFlowFilter(UriInfo uriInfo, String container,
+                                     FlowFilterId fid, int index,
+                                     FlowFilter filter) {
+        checkPrivilege(container, Privilege.WRITE);
+
+        IVTNManager mgr = getVTNManager(container);
+        try {
+            UpdateType result = mgr.setFlowFilter(fid, index, filter);
+            if (result == null) {
+                return Response.noContent().build();
+            }
+            if (result == UpdateType.ADDED) {
+                // Return CREATED with Location header.
+                return Response.created(uriInfo.getAbsolutePath()).build();
+            }
+
+            return Response.ok().build();
+        } catch (VTNException e) {
+            throw getException(e.getStatus());
+        }
+    }
+
+    /**
+     * Delete all flow filters in the specified flow filter list.
+     *
+     * @param container  The name of the container.
+     * @param fid        Flow filter identifier.
+     * @return  Response as dictated by the HTTP Response Status code.
+     */
+    protected Response deleteFlowFilters(String container, FlowFilterId fid) {
+        checkPrivilege(container, Privilege.WRITE);
+
+        IVTNManager mgr = getVTNManager(container);
+        Status status = mgr.clearFlowFilter(fid);
+        if (status == null) {
+            return Response.noContent().build();
+        }
+        if (status.isSuccess()) {
+            return Response.ok().build();
+        }
+
+        throw getException(status);
+    }
+
+    /**
+     * Delete the flow filter in the specified flow filter list.
+     *
+     * @param container  The name of the container.
+     * @param fid        Flow filter identifier.
+     * @param index      The index which specifies the flow filter.
+     * @return  Response as dictated by the HTTP Response Status code.
+     */
+    protected Response deleteFlowFilter(String container, FlowFilterId fid,
+                                        int index) {
+        checkPrivilege(container, Privilege.WRITE);
+
+        IVTNManager mgr = getVTNManager(container);
+        Status status = mgr.removeFlowFilter(fid, index);
+        if (status == null) {
+            return Response.noContent().build();
+        }
+        if (status.isSuccess()) {
+            return Response.ok().build();
+        }
+
+        throw getException(status);
     }
 }

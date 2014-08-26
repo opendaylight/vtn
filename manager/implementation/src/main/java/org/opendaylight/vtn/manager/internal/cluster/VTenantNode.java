@@ -31,7 +31,7 @@ public abstract class VTenantNode implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4363321049808192544L;
+    private static final long serialVersionUID = -1522063210471694599L;
 
     /**
      * Virtual tenant which contains this node.
@@ -53,6 +53,15 @@ public abstract class VTenantNode implements Serializable {
      * Construct a new virtual node instance.
      */
     protected VTenantNode() {
+    }
+
+    /**
+     * Return the name of the container to which this node belongs.
+     *
+     * @return  The name of the container.
+     */
+    public final String getContainerName() {
+        return tenant.getContainerName();
     }
 
     /**
@@ -82,15 +91,6 @@ public abstract class VTenantNode implements Serializable {
     final void setNodePath(VTenantImpl vtn, VNodePath path) {
         tenant = vtn;
         nodePath = path;
-    }
-
-    /**
-     * Return the name of the container to which this node belongs.
-     *
-     * @return  The name of the container.
-     */
-    final String getContainerName() {
-        return tenant.getContainerName();
     }
 
     /**
@@ -142,6 +142,16 @@ public abstract class VTenantNode implements Serializable {
         // Write field information.
         out.putFields();
         out.writeFields();
+    }
+
+    /**
+     * Return a lock instance.
+     *
+     * @param writer  {@code true} means the writer lock is required.
+     * @return  A lock object.
+     */
+    protected final Lock getLock(boolean writer) {
+        return (writer) ? rwLock.readLock() : rwLock.writeLock();
     }
 
     /**

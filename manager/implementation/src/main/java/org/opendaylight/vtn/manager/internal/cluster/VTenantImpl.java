@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.Serializable;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
@@ -55,9 +54,12 @@ import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
+
 import org.opendaylight.vtn.manager.internal.ContainerConfig;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
+import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -84,11 +86,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  *   class.
  * </p>
  */
-public final class VTenantImpl implements Serializable {
+public final class VTenantImpl implements FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4868029550273729155L;
+    private static final long serialVersionUID = 2928818452457185931L;
 
     /**
      * Logger instance.
@@ -145,6 +147,11 @@ public final class VTenantImpl implements Serializable {
         new TreeMap<Integer, VTenantPathMapImpl>();
 
     /**
+     * Flow filters configured in this tenant.
+     */
+    private transient FlowFilterMap  flowFilters;
+
+    /**
      * Read write lock to synchronize per-tenant resources.
      */
     private transient ReentrantReadWriteLock  rwLock =
@@ -166,15 +173,7 @@ public final class VTenantImpl implements Serializable {
         this.containerName = containerName;
         this.tenantName = tenantName;
         this.tenantConfig = cf;
-    }
-
-    /**
-     * Return the name of the container to which the tenant belongs.
-     *
-     * @return  The name of the container.
-     */
-    public String getContainerName() {
-        return containerName;
+        flowFilters = new FlowFilterMap(this, false);
     }
 
     /**
@@ -1720,9 +1719,7 @@ public final class VTenantImpl implements Serializable {
 
             // REVISIT: Select flow entries affected by the change.
             VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-            if (fdb != null) {
-                VTNThreadData.removeFlows(mgr, fdb);
-            }
+            VTNThreadData.removeFlows(mgr, fdb);
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}:{}.{}: VTN path map was {}: {}",
@@ -1767,15 +1764,13 @@ public final class VTenantImpl implements Serializable {
 
             // REVISIT: Select flow entries affected by the change.
             VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-            if (fdb != null) {
-                VTNThreadData.removeFlows(mgr, fdb);
-            }
+            VTNThreadData.removeFlows(mgr, fdb);
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}:{}.{}: VTN path map was removed: {}",
                           containerName, tenantName, key, vpm.getPathMap());
             } else {
-                LOG.info("{}:{}.{}: Container path map was removed.",
+                LOG.info("{}:{}.{}: VTN path map was removed.",
                          containerName, tenantName, key);
             }
             VTenantPathMapEvent.raise(mgr, tenantName, index,
@@ -1786,6 +1781,47 @@ public final class VTenantImpl implements Serializable {
         } finally {
             wrlock.unlock();
         }
+    }
+
+    /**
+     * Return the flow filter instance specified by the flow filter identifier.
+     *
+     * @param lstack  A {@link LockStack} instance to hold acquired locks.
+     * @param fid     A {@link FlowFilterId} instance which specifies the
+     *                flow filter list in the virtual node.
+     * @param writer  {@code true} means the writer lock is required.
+     * @return  A {@link FlowFilterMap} instance specified by {@code fid}.
+     * @throws VTNException  An error occurred.
+     */
+    public FlowFilterMap getFlowFilterMap(LockStack lstack, FlowFilterId fid,
+                                          boolean writer) throws VTNException {
+        if (fid == null) {
+            Status status = MiscUtils.argumentIsNull("FlowFilterId");
+            throw new VTNException(status);
+        }
+
+        VTenantPath path = fid.getPath();
+        if (path instanceof VBridgePath) {
+            VBridgePath bpath = (VBridgePath)path;
+            lstack.push(rwLock.readLock());
+            VBridgeImpl vbr = getBridgeImpl(bpath);
+            return vbr.getFlowFilterMap(lstack, bpath, fid.isOutput(), writer);
+        }
+        if (path instanceof VTerminalIfPath) {
+            VTerminalIfPath vipath = (VTerminalIfPath)path;
+            lstack.push(rwLock.readLock());
+            VTerminalImpl vtm = getTerminalImpl(vipath);
+            return vtm.getFlowFilterMap(lstack, vipath, fid.isOutput(), writer);
+        }
+
+        if (path == null) {
+            Status status = MiscUtils.argumentIsNull("Virtual node path");
+            throw new VTNException(status);
+        }
+
+        Lock lock = (writer) ? rwLock.writeLock() : rwLock.readLock();
+        lstack.push(lock);
+        return flowFilters;
     }
 
     /**
@@ -1821,6 +1857,8 @@ public final class VTenantImpl implements Serializable {
         Map<String, VBridgeImpl> otherBridges;
         Map<String, VTerminalImpl> otherTerminals;
         Map<Integer, VTenantPathMapImpl> otherPathMaps;
+        FlowFilterMap otherFilters;
+
         Lock rdlock = vtn.rwLock.readLock();
         rdlock.lock();
         try {
@@ -1830,6 +1868,7 @@ public final class VTenantImpl implements Serializable {
                 ((TreeMap<String, VTerminalImpl>)vtn.vTerminals).clone();
             otherPathMaps = (Map<Integer, VTenantPathMapImpl>)
                 ((TreeMap<Integer, VTenantPathMapImpl>)vtn.pathMaps).clone();
+            otherFilters = vtn.flowFilters.clone();
         } finally {
             rdlock.unlock();
         }
@@ -1838,7 +1877,8 @@ public final class VTenantImpl implements Serializable {
         try {
             return (vBridges.equals(otherBridges) &&
                     vTerminals.equals(otherTerminals) &&
-                    pathMaps.equals(otherPathMaps));
+                    pathMaps.equals(otherPathMaps) &&
+                    flowFilters.equals(otherFilters));
         } finally {
             rdlock.unlock();
         }
@@ -1858,7 +1898,7 @@ public final class VTenantImpl implements Serializable {
         rdlock.lock();
         try {
             h += (vBridges.hashCode() * 17) + (vTerminals.hashCode() * 19) +
-                (pathMaps.hashCode() * 31);
+                (pathMaps.hashCode() * 31) + (flowFilters.hashCode() * 47);
         } finally {
             rdlock.unlock();
         }
@@ -2061,6 +2101,10 @@ public final class VTenantImpl implements Serializable {
             vpm.setVTenant(this);
             pathMaps.put(key, vpm);
         }
+
+        // Read flow filters.
+        flowFilters = (FlowFilterMap)in.readObject();
+        flowFilters.setParent(this);
     }
 
     /**
@@ -2104,6 +2148,9 @@ public final class VTenantImpl implements Serializable {
             for (VTenantPathMapImpl vpm: pathMaps.values()) {
                 out.writeObject(vpm);
             }
+
+            // Write flow filters.
+            out.writeObject(flowFilters);
         } finally {
             rdlock.unlock();
         }
@@ -2219,7 +2266,6 @@ public final class VTenantImpl implements Serializable {
         throw new VTNException(status);
     }
 
-
     /**
      * Save tenant configuration to the configuration file.
      *
@@ -2232,7 +2278,7 @@ public final class VTenantImpl implements Serializable {
      *             whether the current configuration is applied correctly.
      * @return  "Success" or failure reason.
      */
-    private Status saveConfigImpl(VTNManagerImpl mgr) {
+    public Status saveConfigImpl(VTNManagerImpl mgr) {
         ContainerConfig cfg = new ContainerConfig(containerName);
         if (mgr != null) {
             // Adjust interval of MAC address table aging.
@@ -2282,5 +2328,26 @@ public final class VTenantImpl implements Serializable {
 
         // Evaluate container path map list.
         return mgr.evalPathMap(pctx, tenantConfig);
+    }
+
+    // FlowFilterNode
+
+    /**
+     * Return the name of the container to which the tenant belongs.
+     *
+     * @return  The name of the container.
+     */
+    public String getContainerName() {
+        return containerName;
+    }
+
+    /**
+     * Return path to this node.
+     *
+     * @return  Path to the node.
+     */
+    @Override
+    public VTenantPath getPath() {
+        return new VTenantPath(tenantName);
     }
 }

@@ -38,9 +38,9 @@ import org.codehaus.enunciate.jaxrs.ResponseHeaders;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
 
+import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-
-import org.opendaylight.controller.sal.authorization.Privilege;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 
 /**
  * This class provides Northbound REST APIs to handle flow filter in the
@@ -89,12 +89,8 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
     public FlowFilterList getFlowFilters(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.READ);
-
-        // REVISIT: Not yet.
-        return null;
+        return getFlowFilters(containerName, createFlowFilterId(tenantName));
     }
-
 
     /**
      * Delete all flow filters in the VTN flow filter list.
@@ -132,10 +128,7 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
     public Response deleteFlowFilters(
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        // REVISIT: Not yet.
-        return null;
+        return deleteFlowFilters(containerName, createFlowFilterId(tenantName));
     }
 
     /**
@@ -181,10 +174,8 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.READ);
-
-        // REVISIT: Not yet.
-        return null;
+        return getFlowFilter(containerName, createFlowFilterId(tenantName),
+                             index);
     }
 
     /**
@@ -315,10 +306,8 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index,
             @TypeHint(FlowFilter.class) FlowFilter ff) {
-        checkPrivilege(containerName, Privilege.WRITE);
-
-        // REVISIT: Not yet.
-        return null;
+        return putFlowFilter(uriInfo, containerName,
+                             createFlowFilterId(tenantName), index, ff);
     }
 
     /**
@@ -365,9 +354,19 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        return deleteFlowFilter(containerName, createFlowFilterId(tenantName),
+                                index);
+    }
 
-        // REVISIT: Not yet.
-        return null;
+    /**
+     * Create a flow filter identifier that specifies the flow filter list
+     * in the VTN.
+     *
+     * @param tenant  The name of the tenant.
+     * @return  A {@link FlowFilterId} instance.
+     */
+    private FlowFilterId createFlowFilterId(String tenant) {
+        VTenantPath path = new VTenantPath(tenant);
+        return new FlowFilterId(path);
     }
 }

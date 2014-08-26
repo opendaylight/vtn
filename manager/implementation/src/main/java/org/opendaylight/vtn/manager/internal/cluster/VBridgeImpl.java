@@ -46,6 +46,7 @@ import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
+import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
@@ -77,11 +78,12 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  *   class.
  * </p>
  */
-public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
+public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
+    implements FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5455120741361593033L;
+    private static final long serialVersionUID = 8165289023143868770L;
 
     /**
      * Logger instance.
@@ -126,6 +128,16 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
     private MacMapImpl  macMap;
 
     /**
+     * Flow filters for incoming packets.
+     */
+    private final FlowFilterMap  inFlowFilters;
+
+    /**
+     * Flow filters for outgoing packets.
+     */
+    private final FlowFilterMap  outFlowFilters;
+
+    /**
      * Construct a vBridge instance.
      *
      * @param vtn   The virtual tenant to which a new vBridge belongs.
@@ -139,6 +151,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
         VBridgeConfig cf = resolve(bconf);
         checkConfig(cf);
         bridgeConfig = cf;
+        inFlowFilters = new FlowFilterMap(this, false);
+        outFlowFilters = new FlowFilterMap(this, true);
     }
 
     /**
@@ -552,6 +566,29 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
         } finally {
             wrlock.unlock();
         }
+    }
+
+    /**
+     * Return the specified flow filter instance.
+     *
+     * @param lstack  A {@link LockStack} instance to hold acquired locks.
+     * @param path    A path to the target virtual node.
+     * @param out     {@code true} means that the outgoing flow filter.
+     *                {@code false} means that the incoming flow filter.
+     * @param writer  {@code true} means the writer lock is required.
+     * @return  A {@link FlowFilterMap} instance.
+     * @throws VTNException  An error occurred.
+     */
+    FlowFilterMap getFlowFilterMap(LockStack lstack, VBridgePath path,
+                                   boolean out, boolean writer)
+        throws VTNException {
+        if (path instanceof VBridgeIfPath) {
+            VInterfacePath ipath = (VInterfacePath)path;
+            return getFlowFilterMap(lstack, ipath, out, writer);
+        }
+
+        lstack.push(getLock(writer));
+        return (out) ? outFlowFilters : inFlowFilters;
     }
 
     /**
@@ -999,6 +1036,10 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
             VlanMapImpl vmap = entry.getValue();
             vmap.setPath(path, mapId);
         }
+
+        // Initialize parent path for flow filter map.
+        inFlowFilters.setParent(this);
+        outFlowFilters.setParent(this);
     }
 
     // AbstractBridge
@@ -1009,7 +1050,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
      * @return  Path to this bridge.
      */
     @Override
-    VBridgePath getPath() {
+    public VBridgePath getPath() {
         return (VBridgePath)getNodePath();
     }
 
@@ -1095,8 +1136,15 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
             destroyInterfaces(mgr);
 
             if (retain) {
-                // Purge all VTN flows related to this bridge.
-                VTNThreadData.removeFlows(mgr, path);
+                if (inFlowFilters.isEmpty() && outFlowFilters.isEmpty()) {
+                    // Purge all VTN flows related to this bridge.
+                    VTNThreadData.removeFlows(mgr, path);
+                } else {
+                    // REVISIT: Select flow entries affected by obsolete
+                    // flow filters.
+                    VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
+                    VTNThreadData.removeFlows(mgr, fdb);
+                }
             }
 
             destroy();
@@ -1261,9 +1309,13 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl> {
             list.add(new TreeMap<String, VlanMapImpl>(vlanMaps));
             MacMapImpl mmap = (macMap == null) ? null : macMap.clone();
             list.add(mmap);
+            list.add(inFlowFilters.clone());
+            list.add(outFlowFilters.clone());
         } else {
             list.add(vlanMaps);
             list.add(macMap);
+            list.add(inFlowFilters);
+            list.add(outFlowFilters);
         }
 
         return list;

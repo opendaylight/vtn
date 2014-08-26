@@ -76,12 +76,15 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowCondImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowConditionEvent;
+import org.opendaylight.vtn.manager.internal.cluster.FlowFilterMap;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowMatchImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
@@ -3024,6 +3027,26 @@ public class VTNManagerImpl
         }
 
         return tenantName;
+    }
+
+    /**
+     * Return the virtual tenant instance associated with the given
+     * flow filter ID.
+     *
+     * <p>
+     *   This method must be called with the VTN Manager lock.
+     * </p>
+     *
+     * @param fid   A {@link FlowFilterId} instance.
+     * @return  Virtual tenant instance is returned.
+     * @throws VTNException  An error occurred.
+     */
+    private VTenantImpl getTenantImpl(FlowFilterId fid) throws VTNException {
+        if (fid == null) {
+            throw new VTNException(MiscUtils.argumentIsNull("Flow filter ID"));
+        }
+
+        return getTenantImpl(fid.getPath());
     }
 
     /**
@@ -6924,6 +6947,168 @@ public class VTNManagerImpl
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Return a list of flow filters configured in the specified flow filter
+     * list.
+     *
+     * @param fid  A {@link FlowFilterId} instance which specifies the
+     *             flow filter list in the virtual node.
+     * @return  A list of {@link FlowFilter} instances corresponding to all
+     *          flow filters configured in the list specified by {@code fid}.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public List<FlowFilter> getFlowFilters(FlowFilterId fid)
+        throws VTNException {
+        LockStack lstack = new LockStack();
+        lstack.push(rwLock.readLock());
+        try {
+            VTenantImpl vtn = getTenantImpl(fid);
+            FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
+            return ffmap.getAll();
+        } finally {
+            lstack.clear();
+        }
+    }
+
+    /**
+     * Return information about the flow filter specified by the index number.
+     *
+     * @param fid    A {@link FlowFilterId} instance which specifies the
+     *               flow filter list in the virtual node.
+     * @param index  The index value which specifies the flow filter in the
+     *               flow filter list specified by {@code fid}.
+     * @return  A {@link FlowFilter} instance corresponding to the flow filter
+     *          specified by {@code fid} and {@code index}.
+     *          {@code null} is returned if the specified flow filter does not
+     *          exist.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public FlowFilter getFlowFilter(FlowFilterId fid, int index)
+        throws VTNException {
+        LockStack lstack = new LockStack();
+        lstack.push(rwLock.readLock());
+        try {
+            VTenantImpl vtn = getTenantImpl(fid);
+            FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
+            return ffmap.get(index);
+        } finally {
+            lstack.clear();
+        }
+    }
+
+    /**
+     * Create or modify the flow filter specified by the index number.
+     *
+     * @param fid     A {@link FlowFilterId} instance which specifies the
+     *                flow filter list in the virtual node.
+     * @param index   The index value which specifies the flow filter in the
+     *                flow filter list.
+     * @param filter  A {@link FlowFilter} instance which specifies the
+     *                configuration of the flow filter.
+     * @return  A {@link UpdateType} object which represents the result of the
+     *          operation is returned.
+     * @throws VTNException  An error occurred.
+     */
+    @Override
+    public UpdateType setFlowFilter(FlowFilterId fid, int index,
+                                    FlowFilter filter) throws VTNException {
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        LockStack lstack = new LockStack();
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(fid);
+            FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
+            UpdateType result = ffmap.set(this, index, filter);
+            if (result != null) {
+                export(vtn);
+                Status status = vtn.saveConfigImpl(null);
+                if (!status.isSuccess()) {
+                    throw new VTNException(status);
+                }
+            }
+            return result;
+        } finally {
+            lstack.clear();
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove the flow filter specified by the index number.
+     *
+     * @param fid    A {@link FlowFilterId} instance which specifies the
+     *               flow filter list in the virtual node.
+     * @param index  The index value which specifies the flow filter in the
+     *               flow filter list specified by {@code fid}.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status removeFlowFilter(FlowFilterId fid, int index) {
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        LockStack lstack = new LockStack();
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(fid);
+            FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
+            Status result = ffmap.remove(this, index);
+            if (result != null) {
+                export(vtn);
+                Status svres = vtn.saveConfigImpl(null);
+                if (!svres.isSuccess()) {
+                    return svres;
+                }
+            }
+            return result;
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            lstack.clear();
+            data.cleanUp(this);
+        }
+    }
+
+    /**
+     * Remove all the flow filters present in the specified flow filter list.
+     *
+     * @param fid  A {@link FlowFilterId} instance which specifies the
+     *             flow filter list in the virtual node.
+     * @return  A {@link Status} object which represents the result of the
+     *          operation is returned.
+     */
+    @Override
+    public Status clearFlowFilter(FlowFilterId fid) {
+        // Acquire writer lock in order to block receiveDataPacket().
+        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        LockStack lstack = new LockStack();
+        try {
+            checkUpdate();
+
+            VTenantImpl vtn = getTenantImpl(fid);
+            FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
+            Status result = ffmap.clear(this);
+            if (result != null) {
+                export(vtn);
+                Status svres = vtn.saveConfigImpl(null);
+                if (!svres.isSuccess()) {
+                    return svres;
+                }
+            }
+            return result;
+        } catch (VTNException e) {
+            return e.getStatus();
+        } finally {
+            lstack.clear();
             data.cleanUp(this);
         }
     }
