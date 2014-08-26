@@ -30,6 +30,11 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <!-- Reset Sonar test directory to default. -->
+    <sonar.tests>src/test/java</sonar.tests>
+  </properties>
+
   <dependencies>
     <!-- VTN Manager bundles -->
     <dependency>

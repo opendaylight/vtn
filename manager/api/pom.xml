@@ -36,6 +36,25 @@
     <windowtitle>${doctitle}</windowtitle>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>sonar</id>
+      <activation>
+        <property>
+          <name>vtn.build.sonar</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <dependencies>
+        <!-- Suppress error message on Sonar analysis. -->
+        <dependency>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
+
   <build>
     <plugins>
       <plugin>

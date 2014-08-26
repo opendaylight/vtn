@@ -59,6 +59,13 @@
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
     <sonar-jacoco-listeners.version>2.4</sonar-jacoco-listeners.version>
 
+    <!-- Append UT source directories to Sonar test directory list. -->
+    <sonar.tests>
+      src/test/java,
+      ../integrationtest/src/test/java,
+      ../northboundIT/src/test/java
+    </sonar.tests>
+
     <projectinfo.version>2.7</projectinfo.version>
     <project.build.sourceEncoding>${vtn.encoding}</project.build.sourceEncoding>
     <project.reporting.outputEncoding>${vtn.encoding}</project.reporting.outputEncoding>
