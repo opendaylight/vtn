@@ -29,8 +29,49 @@
     <tag>HEAD</tag>
   </scm>
 
-  <modules>
-    <module>manager/dist</module>
-    <module>coordinator/dist</module>
-  </modules>
+  <profiles>
+
+    <!-- By default, build all modules for distribution. -->
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <modules>
+        <module>manager/dist</module>
+        <module>coordinator/dist</module>
+      </modules>
+    </profile>
+
+    <!-- Build VTN Manager modules only for Sonar analysis. -->
+    <profile>
+      <id>sonar</id>
+      <activation>
+        <property>
+          <name>vtn.build.sonar</name>
+          <value>true</value>
+        </property>
+      </activation>
+
+      <modules>
+        <!-- Core modules -->
+        <module>manager/checkstyle</module>
+        <module>manager/common</module>
+        <module>manager/api</module>
+        <module>manager/implementation</module>
+        <module>manager/neutron</module>
+        <module>manager/northbound</module>
+
+        <!-- IT modules -->
+        <module>manager/common.it</module>
+        <module>manager/integrationtest</module>
+        <module>manager/northboundIT</module>
+      </modules>
+
+      <properties>
+        <!-- Don't build REST API document. -->
+        <vtn.doc.skip>true</vtn.doc.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>
