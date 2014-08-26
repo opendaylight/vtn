@@ -30,6 +30,11 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <!-- Exclude all files from Sonar analysis. -->
+    <sonar.exclusions>src/main/java/**/*</sonar.exclusions>
+  </properties>
+
   <build>
     <plugins>
       <plugin>

@@ -51,8 +51,10 @@
     <sonar.jacoco.reportPath>
       target/code-coverage/jacoco.exec
     </sonar.jacoco.reportPath>
+
+    <!-- All modules have to share a single IT code coverage report file.  -->
     <sonar.jacoco.itReportPath>
-      target/code-coverage/jacoco-it.exec
+      ../common.it/target/code-coverage/jacoco-it.exec
     </sonar.jacoco.itReportPath>
     <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
     <sonar-jacoco-listeners.version>2.4</sonar-jacoco-listeners.version>
@@ -304,6 +306,9 @@
           <includes>
             <include>org.opendaylight.vtn.*</include>
           </includes>
+          <excludes>
+            <exclude>org.opendaylight.vtn.manager.integrationtest.*</exclude>
+          </excludes>
         </configuration>
       </plugin>
     </plugins>
