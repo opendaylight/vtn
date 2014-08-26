@@ -55,6 +55,7 @@
 
       <modules>
         <!-- Core modules -->
+        <module>common</module>
         <module>manager/checkstyle</module>
         <module>manager/common</module>
         <module>manager/api</module>
@@ -67,11 +68,6 @@
         <module>manager/integrationtest</module>
         <module>manager/northboundIT</module>
       </modules>
-
-      <properties>
-        <!-- Don't build REST API document. -->
-        <vtn.doc.skip>true</vtn.doc.skip>
-      </properties>
     </profile>
   </profiles>
 </project>
