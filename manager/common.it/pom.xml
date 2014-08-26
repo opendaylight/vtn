@@ -224,7 +224,10 @@
       <groupId>equinoxSDK381</groupId>
       <artifactId>org.eclipse.equinox.launcher</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>equinoxSDK381</groupId>
+      <artifactId>javax.servlet</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>

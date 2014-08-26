@@ -93,6 +93,7 @@ import org.opendaylight.vtn.manager.integrationtest.internal.DataPacketServices;
 import org.opendaylight.vtn.manager.integrationtest.internal.FlowProgrammerService;
 import org.opendaylight.vtn.manager.integrationtest.internal.InventoryService;
 import org.opendaylight.vtn.manager.integrationtest.internal.TopologyServices;
+import org.opendaylight.vtn.manager.integrationtest.internal.OvsdbServices;
 
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
@@ -138,6 +139,10 @@ import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.switchmanager.Subnet;
 import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
+
+import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
+import org.opendaylight.ovsdb.lib.notation.Row;
+import org.opendaylight.ovsdb.lib.schema.GenericTableSchema;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -253,6 +258,7 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("equinoxSDK381", "org.eclipse.equinox.cm").versionAsInProject(),
                 mavenBundle("equinoxSDK381", "org.eclipse.equinox.console").versionAsInProject(),
                 mavenBundle("equinoxSDK381", "org.eclipse.equinox.launcher").versionAsInProject(),
+                mavenBundle("equinoxSDK381", "javax.servlet").versionAsInProject(),
                 mavenBundle("org.apache.felix", "org.apache.felix.dependencymanager").versionAsInProject(),
                 mavenBundle("org.apache.felix", "org.apache.felix.dependencymanager.shell").versionAsInProject(),
 
@@ -271,6 +277,24 @@ public class VTNManagerIT extends TestBase {
                 mavenBundle("org.ops4j.pax.url", "pax-url-aether"),
 
                 mavenBundle("org.opendaylight.controller.thirdparty", "net.sf.jung2").versionAsInProject(),
+
+                //OVSDB Bundles
+                mavenBundle("org.opendaylight.ovsdb", "library").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "plugin").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "schema.openvswitch").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "schema.hardwarevtep").versionAsInProject(),
+
+                //List needed by OVSDB modules
+                mavenBundle("org.opendaylight.controller", "sal.networkconfiguration").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "sal.networkconfiguration.implementation").versionAsInProject(),
+                mavenBundle("org.mockito", "mockito-all").versionAsInProject(),
+                mavenBundle("com.google.guava", "guava").versionAsInProject(),
+                mavenBundle("io.netty", "netty-buffer").versionAsInProject(),
+                mavenBundle("io.netty", "netty-common").versionAsInProject(),
+                mavenBundle("io.netty", "netty-codec").versionAsInProject(),
+                mavenBundle("io.netty", "netty-transport").versionAsInProject(),
+                mavenBundle("io.netty", "netty-handler").versionAsInProject(),
+                mavenBundle("com.google.code.gson", "gson").versionAsInProject(),
 
                 junitBundles());
     }
@@ -377,6 +401,7 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIVTNManager() {
+        testOvsdbNodes();
         testIVTNGlobal();
         testAddGetRemoveTenant();
         testModifyTenant();
@@ -389,6 +414,32 @@ public class VTNManagerIT extends TestBase {
         testIsActive();
     }
 
+   /**
+     * Test method for
+     * {@link OvsdbInventoryListener#addNode(Node node},
+     * {@link OvsdbInventoryListener#nodeRemoved(Node node)},
+     * {@link OvsdbInventoryListener#rowAdded(Node node, String tableName, String uuid, Row row)},
+     * {@link OvsdbInventoryListener#rowUpdated(Node node, String tableName, String uuid, Row old, Row row)},
+     * {@link OvsdbInventoryListener#rowRemoved(Node node, String tableName, String uuid, Row row, Object obj)}
+     */
+    private  void testOvsdbNodes() {
+        LOG.info("Running testOvsdbNodes()");
+        // Get OvsdbServices from openflow stub
+        OvsdbInventoryListener ovsdb = (OvsdbInventoryListener)ServiceHelper
+             .getInstance(OvsdbInventoryListener.class, GlobalConstants.DEFAULT.toString(), VTNManagerIT.this);
+        assertNotNull(ovsdb);
+        assertTrue(ovsdb instanceof OvsdbServices);
+        OvsdbServices ovs = (OvsdbServices)ovsdb;
+        for (Node node : createNodes(3)) {
+            ovs.nodeAdded(node);
+            ovs.nodeRemoved(node);
+            Row<GenericTableSchema> row = new Row<GenericTableSchema>();
+            ovs.rowAdded(node, "Bridge", "1234", row);
+            ovs.rowUpdated(node, "Bridge", "1234", row, row);
+            String obj = new String("testBridgeObject");
+            ovs.rowRemoved(node, "Bridge", "1234", row, obj);
+        }
+    }
 
     /**
      * Test method for
