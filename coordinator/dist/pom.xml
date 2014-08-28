@@ -52,9 +52,6 @@
     <!-- Version of OpenDaylight virtualization edition. -->
     <odl.virt.version>0.1.2</odl.virt.version>
 
-    <execplugin.version>1.1.1</execplugin.version>
-    <buildhelper.version>1.8</buildhelper.version>
-
     <!-- Skip tests entirely unless integrationtests profile is active. -->
     <skipTests>false</skipTests>
     <maven.test.skip>true</maven.test.skip>
@@ -296,7 +293,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>${buildhelper.version}</version>
         <executions>
           <execution>
             <id>vtn-attach-artifacts</id>
