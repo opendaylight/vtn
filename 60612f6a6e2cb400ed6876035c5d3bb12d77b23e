@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_540837d9",
+        "filename": "manager/features/src/main/resources/features.xml",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 11
+      },
+      "writtenOn": "2014-08-28T16:45:23Z",
+      "side": 1,
+      "message": "While you are at it, would you also remove the vtn-manager-neutron to its own feature ?\nAs we discussed, without that, vtn-manager-all cannot be part of integration compatible-with-all feature. \n\nif you are planning to keep vtn-manager as its own integration project\u0027s compatible-with-vtnmanager, then please ignore this comment.",
+      "revId": "60612f6a6e2cb400ed6876035c5d3bb12d77b23e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
