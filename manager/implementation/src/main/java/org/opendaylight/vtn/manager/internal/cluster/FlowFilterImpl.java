@@ -24,6 +24,8 @@ import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -41,7 +43,7 @@ public abstract class FlowFilterImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3869049816189688050L;
+    private static final long serialVersionUID = -2734872622088458798L;
 
     /**
      * The minimum value of filter index.
@@ -143,6 +145,16 @@ public abstract class FlowFilterImpl implements Serializable {
     }
 
     /**
+     * Return the name of the flow condition that selects packets to be
+     * filtered.
+     *
+     * @return  The name of the flow condition.
+     */
+    public final String getFlowConditionName() {
+        return condition;
+    }
+
+    /**
      * Return a {@link FlowFilter} instance which represents this filter.
      *
      * @return  A {@link FlowFilter} instance.
@@ -163,6 +175,50 @@ public abstract class FlowFilterImpl implements Serializable {
     }
 
     /**
+     * Evaluate this flow filter against the given packet.
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @param ffmap  A {@link FlowFilterMap} instance that contains this
+     *               flow filter.
+     * @return  {@code true} is returned if this flow filter was applied to
+     *          the given packet. Otherwise {@code false} is returned.
+     * @throws DropFlowException
+     *    The given packet was discarded by this flow filter.
+     */
+    public final boolean evaluate(VTNManagerImpl mgr, PacketContext pctx,
+                                  FlowFilterMap ffmap)
+        throws DropFlowException {
+        Logger logger = getLogger();
+        if (!pctx.isUnicast() && !isMulticastSupported()) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{}: Ignore flow filter: " +
+                             "multicast packet not supported: {}",
+                             ffmap.getLogPrefix(index), condition);
+            }
+            return false;
+        }
+
+        boolean ret = false;
+        FlowCondImpl fc = mgr.getFlowCondDB().get(condition);
+        if (fc == null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("{}: Ignore flow filter: condition not found: {}",
+                             ffmap.getLogPrefix(index), condition);
+            }
+        } else if (fc.match(mgr, pctx)) {
+            // Apply this flow filter.
+            apply(mgr, pctx, ffmap);
+            ret = true;
+        } else if (logger.isTraceEnabled()) {
+            logger.trace("{}: Packet does not match the condition: {}",
+                         ffmap.getLogPrefix(index), condition);
+        }
+
+        return ret;
+    }
+
+    /**
      * Append the contents of this instance to the given {@link StringBuilder}
      * instance.
      *
@@ -175,6 +231,35 @@ public abstract class FlowFilterImpl implements Serializable {
             builder.append(",actions=").append(actions);
         }
     }
+
+    /**
+     * Determine whether this flow filter can handle multicast packets or not.
+     *
+     * <p>
+     *   This method always returns {@code false} which indicates that this
+     *   flow filter should ignore multicast packets.
+     *   Subclass may override this method to support multicast packets.
+     * </p>
+     *
+     * @return  {@code false}.
+     */
+    protected boolean isMulticastSupported() {
+        return false;
+    }
+
+    /**
+     * Apply this flow filter to the given packet.
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @param ffmap  A {@link FlowFilterMap} instance that contains this
+     *               flow filter.
+     * @throws DropFlowException
+     *    A packet was discarded by this flow filter.
+     */
+    protected abstract void apply(VTNManagerImpl mgr, PacketContext pctx,
+                                  FlowFilterMap ffmap)
+        throws DropFlowException;
 
     /**
      * Return a {@link FilterType} instance which represents the type of

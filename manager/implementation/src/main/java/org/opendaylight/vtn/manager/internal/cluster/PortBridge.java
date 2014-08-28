@@ -50,7 +50,7 @@ public abstract class PortBridge<T extends PortInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7807792958087877633L;
+    private static final long serialVersionUID = -4413669330044382305L;
 
     /**
      * Construct an abstract bridge node that can have port mappings.
@@ -247,9 +247,12 @@ public abstract class PortBridge<T extends PortInterface>
      *              contained in this node.
      * @param pctx  The context of the received packet.
      * @return  A {@code PacketResult} which indicates the result of handler.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
      */
     final PacketResult receive(VTNManagerImpl mgr, MapReference ref,
-                               PacketContext pctx) {
+                               PacketContext pctx)
+        throws DropFlowException {
         NodeConnector incoming = pctx.getIncomingNodeConnector();
         short vlan = pctx.getVlan();
         long mac = NetUtils.byteArray6ToLong(pctx.getSourceAddress());
@@ -264,7 +267,13 @@ public abstract class PortBridge<T extends PortInterface>
             }
 
             if (vnode.isEnabled()) {
-                pctx.addNodeRoute(vnode.getIngressRoute());
+                pctx.addVNodeRoute(vnode.getIngressRoute());
+
+                // Evaluate flow filters configured in the virtual mapping.
+                // Actually this evaluates virtual interface flow filters for
+                // incoming packets.
+                vnode.filterPacket(mgr, pctx, false, this);
+
                 handlePacket(mgr, pctx, vnode);
             } else {
                 Logger logger = getLogger();
@@ -561,6 +570,18 @@ public abstract class PortBridge<T extends PortInterface>
     }
 
     /**
+     * Evaluate flow filters configured in this bridge against the given
+     * outgoing packet.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    abstract void filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx)
+        throws DropFlowException;
+
+    /**
      * Handle the received packet.
      *
      * <p>
@@ -571,8 +592,11 @@ public abstract class PortBridge<T extends PortInterface>
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
      */
     protected abstract void handlePacket(VTNManagerImpl mgr,
                                          PacketContext pctx,
-                                         VirtualMapNode vnode);
+                                         VirtualMapNode vnode)
+        throws DropFlowException;
 }

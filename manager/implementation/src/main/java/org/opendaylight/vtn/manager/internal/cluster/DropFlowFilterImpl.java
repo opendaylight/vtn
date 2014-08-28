@@ -16,6 +16,10 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.filter.DropFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
+import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+
 /**
  * This class describes DROP flow filter, which discards packet.
  *
@@ -29,7 +33,7 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4806340158167710257L;
+    private static final long serialVersionUID = 5797523592920393192L;
 
     /**
      * Logger instance.
@@ -50,6 +54,51 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
         super(idx, filter);
     }
 
+    // FlowFilterImpl
+
+    /**
+     * Determine whether this flow filter can handle multicast packets or not.
+     *
+     * <p>
+     *   This method always returns {@code true} because DROP filter can
+     *   discard multicast packets.
+     * </p>
+     *
+     * @return  {@code true}.
+     */
+    @Override
+    protected boolean isMulticastSupported() {
+        return true;
+    }
+
+    /**
+     * Apply this DROP flow filter to the given packet.
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @param ffmap  A {@link FlowFilterMap} instance that contains this
+     *               flow filter.
+     * @throws DropFlowException  Always thrown.
+     */
+    @Override
+    protected void apply(VTNManagerImpl mgr, PacketContext pctx,
+                         FlowFilterMap ffmap) throws DropFlowException {
+        LOG.info("{}: Discard packet: cond={}, packet={}",
+                 ffmap.getLogPrefix(getIndex()), getFlowConditionName(),
+                 pctx.getDescription());
+
+        VTNFlowDatabase fdb = ffmap.getTenantFlowDB(mgr);
+        if (fdb == null) {
+            LOG.error("{}: Flow database was not found",
+                      ffmap.getLogPrefix(getIndex()));
+        } else {
+            // Install a flow entry that discards the given packet.
+            pctx.installDropFlow(mgr, fdb);
+        }
+
+        throw new DropFlowException();
+    }
+
     /**
      * {@inheritDoc}
      */
@@ -64,5 +113,23 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
     @Override
     protected Logger getLogger() {
         return LOG;
+    }
+}
+
+/**
+ * An exception which indicates an incoming packet was discarded by a
+ * flow filter.
+ */
+final class DropFlowException extends Exception {
+    /**
+     * Version number for serialization.
+     */
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * Construct a new instance.
+     */
+    public DropFlowException() {
+        super();
     }
 }

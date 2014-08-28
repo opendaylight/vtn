@@ -7732,6 +7732,7 @@ public class VTNManagerImpl
             short vlan = pctx.getVlan();
             MapReference ref = resourceManager.getMapReference(src, nc, vlan);
             if (ref != null && containerName.equals(ref.getContainerName())) {
+                pctx.setMapReference(ref);
                 VNodePath path = ref.getPath();
                 VTenantImpl vtn = getTenantImpl(path);
                 return vtn.receive(this, ref, pctx);

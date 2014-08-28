@@ -20,8 +20,11 @@ import org.junit.Test;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.VNodeRoute;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
+import org.opendaylight.vtn.manager.VTerminalPath;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
@@ -113,6 +116,41 @@ public class MapReferenceTest extends TestBase {
 
             for (VNodePath vpath: unknownPaths) {
                 assertFalse(ref.isContained(cname, vpath));
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link MapReference#getIngressRoute()}.
+     */
+    @Test
+    public void testGetIngressRoute() {
+        for (MapReference ref: createMapReferences()) {
+            MapType type = ref.getMapType();
+            if (type.equals(MapType.ALL)) {
+                continue;
+            }
+
+            VNodePath path = ref.getPath();
+            VNodeRoute vr = ref.getIngressRoute();
+            Reason reason = vr.getReason();
+            assertEquals(path, vr.getPath());
+            switch (type) {
+            case PORT:
+                assertEquals(Reason.PORTMAPPED, reason);
+                break;
+
+            case VLAN:
+                assertEquals(Reason.VLANMAPPED, reason);
+                break;
+
+            case MAC:
+                assertEquals(Reason.MACMAPPED, reason);
+                break;
+
+            default:
+                unexpected();
+                break;
             }
         }
     }

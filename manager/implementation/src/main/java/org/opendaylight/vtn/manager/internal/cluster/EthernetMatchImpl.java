@@ -373,7 +373,7 @@ public final class EthernetMatchImpl implements PacketMatch {
     public boolean match(PacketContext pctx) {
         EtherPacket ether = pctx.getEtherPacket();
 
-        // We don't need to DL_SRC, DL_DST, DL_VLAN fields to PacketContext
+        // We don't need to set DL_SRC, DL_DST, DL_VLAN fields to PacketContext
         // because they are mandatory.
 
         // Test source MAC address.

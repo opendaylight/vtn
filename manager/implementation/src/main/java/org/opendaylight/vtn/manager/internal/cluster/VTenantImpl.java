@@ -1515,16 +1515,16 @@ public final class VTenantImpl implements FlowFilterNode {
         rdlock.lock();
         try {
             VNodePath path = ref.getPath();
+            PortBridge bridge;
             if (path instanceof VBridgePath) {
-                VBridgeImpl vbr = getBridgeImpl((VBridgePath)path);
-                return vbr.probeHost(mgr, ref, pctx);
-            }
-            if (path instanceof VTerminalPath) {
-                VTerminalImpl vtm = getTerminalImpl((VTerminalPath)path);
-                return vtm.probeHost(mgr, ref, pctx);
+                bridge = getBridgeImpl((VBridgePath)path);
+            } else if (path instanceof VTerminalPath) {
+                bridge = getTerminalImpl((VTerminalPath)path);
+            } else {
+                return false;
             }
 
-            return false;
+            return bridge.probeHost(mgr, ref, pctx);
         } finally {
             rdlock.unlock();
         }
@@ -1550,24 +1550,25 @@ public final class VTenantImpl implements FlowFilterNode {
             RouteResolver rr = evalPathMap(mgr, pctx);
             pctx.setRouteResolver(rr);
 
+            // Evaluate VTN flow filters.
+            flowFilters.evaluate(mgr, pctx);
+
             VNodePath path = ref.getPath();
-            PacketResult res;
+            PortBridge bridge;
             if (path instanceof VBridgePath) {
-                VBridgeImpl vbr = getBridgeImpl((VBridgePath)path);
-                res = vbr.receive(mgr, ref, pctx);
+                bridge = getBridgeImpl((VBridgePath)path);
             } else if (path instanceof VTerminalPath) {
-                VTerminalImpl vtm = getTerminalImpl((VTerminalPath)path);
-                res = vtm.receive(mgr, ref, pctx);
+                bridge = getTerminalImpl((VTerminalPath)path);
             } else {
                 return PacketResult.IGNORED;
             }
 
-            if (res != PacketResult.IGNORED) {
-                pctx.purgeObsoleteFlow(mgr, tenantName);
-            }
-
-            return res;
+            return bridge.receive(mgr, ref, pctx);
+        } catch (DropFlowException e) {
+            // The given packet was discarded by a flow filter.
+            return PacketResult.CONSUME;
         } finally {
+            pctx.purgeObsoleteFlow(mgr, tenantName);
             rdlock.unlock();
         }
     }

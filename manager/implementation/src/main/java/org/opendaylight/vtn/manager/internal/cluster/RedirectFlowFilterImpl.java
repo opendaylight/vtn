@@ -19,6 +19,8 @@ import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -37,7 +39,7 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1458941547733045079L;
+    private static final long serialVersionUID = 4047222122155716062L;
 
     /**
      * Logger instance.
@@ -149,6 +151,22 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
         super.appendContents(builder);
         builder.append(",destination=").append(destination).
             append(",direction=").append((output) ? "out" : "in");
+    }
+
+    // FlowFilterImpl
+
+    /**
+     * Apply this REDIRECT flow filter to the given packet.
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @param ffmap  A {@link FlowFilterMap} instance that contains this
+     *               flow filter.
+     */
+    @Override
+    protected void apply(VTNManagerImpl mgr, PacketContext pctx,
+                         FlowFilterMap ffmap) {
+        // REVISIT: Not yet implemented.
     }
 
     /**

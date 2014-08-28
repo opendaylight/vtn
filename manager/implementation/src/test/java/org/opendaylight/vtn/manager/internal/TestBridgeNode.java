@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
+import org.opendaylight.vtn.manager.internal.cluster.PortBridge;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
 
 /**
@@ -121,5 +122,21 @@ public class TestBridgeNode implements VBridgeNode {
      */
     @Override
     public void disableInput(VTNManagerImpl mgr, PacketContext pctx) {
+    }
+
+    /**
+     * Evaluate flow filters configured in this virtual mapping.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param out     {@code true} means that the given packet is an outgoing
+     *                packet. {@code false} means that the given packet is
+     *                an incoming packet.
+     * @param bridge  A {@link PortBridge} instance associated with this
+     *                virtual mapping.
+     */
+    @Override
+    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                             boolean out, PortBridge<?> bridge) {
     }
 }

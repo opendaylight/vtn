@@ -53,7 +53,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -91961228823339825L;
+    private static final long serialVersionUID = -6198751253263625812L;
 
     /**
      * Logger instance.
@@ -242,7 +242,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
             // This should never happen.
             LOG.error("{}:{}: Invalid IP address: {}, ipaddr={}",
                       getContainerName(), getNodePath(),
-                      pctx.getDescription(pctx.getIncomingNodeConnector()),
+                      pctx.getDescription(),
                       HexEncode.bytesToHexStringFormat(sip));
             return;
         }
@@ -432,6 +432,20 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     }
 
     // PortBridge
+
+    /**
+     * Evaluate flow filters configured in this bridge.
+     *
+     * <p>
+     *   This method does nothing because vTerminal can not have flow filters.
+     * </p>
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     */
+    @Override
+    void filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx) {
+    }
 
     /**
      * Handle the received packet.

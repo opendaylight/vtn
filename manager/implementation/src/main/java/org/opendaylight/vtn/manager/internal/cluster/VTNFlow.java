@@ -380,18 +380,22 @@ public class VTNFlow implements Serializable {
      *              this VTN flow always discards packets.
      */
     public void setEgressVNodePath(VNodePath path) {
+        int lastIndex = virtualRoute.size() - 1;
         if (path == null) {
             // Append an empty route which represents a negative flow.
-            virtualRoute.add(new VNodeRoute());
+            if (lastIndex < 0 ||
+                virtualRoute.get(lastIndex).getPath() != null) {
+                virtualRoute.add(new VNodeRoute());
+            }
             return;
         }
 
-        int sz = virtualRoute.size();
-        if (sz > 1) {
+        // Need to adjust the last element of the virtual node path if
+        // it contains more than 1 elements.
+        if (lastIndex > 0) {
             // A VNodePath which specifies the virtual mapping which
             // established the egress flow must be always configured in the
             // last VNodeRoute element of the virtual packet routing path.
-            int lastIndex = sz - 1;
             VNodeRoute last = virtualRoute.get(lastIndex);
             VNodePath lastPath = last.getPath();
             if (path.equals(lastPath)) {

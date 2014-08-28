@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -67,7 +66,6 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
 
 /**
  * Implementation of vBridge (virtual layer 2 bridge).
@@ -83,7 +81,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8165289023143868770L;
+    private static final long serialVersionUID = -1152732096599635100L;
 
     /**
      * Logger instance.
@@ -794,33 +792,6 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     }
 
     /**
-     * Determine whether the destination address of the received packet is
-     * this controller or not.
-     *
-     * @param mgr   VTN Manager service.
-     * @param pctx  The context of the received packet.
-     * @param dst   The destination MAC address of the received packet.
-     * @return  {@code true} is returned if the given destination MAC address
-     *          is same as the MAC address of this controller.
-     *          Otherwise {@code false} is returned.
-     */
-    private boolean isResponseToController(VTNManagerImpl mgr,
-                                           PacketContext pctx, byte[] dst) {
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        byte[] ctlrMac = swMgr.getControllerMAC();
-        if (Arrays.equals(ctlrMac, dst)) {
-            if (LOG.isTraceEnabled()) {
-                NodeConnector incoming = pctx.getIncomingNodeConnector();
-                LOG.trace("{}:{}: Ignore packet sent to controller: {}",
-                          getContainerName(), getNodePath(),
-                          pctx.getDescription(incoming));
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
      * Return the MAC address table entry associated with the destination
      * address of the received packet.
      *
@@ -832,14 +803,17 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * @param mgr    VTN Manager service.
      * @param pctx   The context of the received packet.
      * @param table  The MAC address table for this bridge.
-     * @param dst    The destination MAC address of the received packet.
      * @return  A {@link MacTableEntry} object is returned if found.
      *          {@code null} is returned if not found or if the received packet
      *          should not be sent to this bridge.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
      */
     private MacTableEntry getDestination(VTNManagerImpl mgr,
                                          PacketContext pctx,
-                                         MacAddressTable table, byte[] dst) {
+                                         MacAddressTable table)
+        throws DropFlowException {
+        byte[] dst = pctx.getDestinationAddress();
         if (!NetUtils.isUnicastMACAddr(dst)) {
             // Flood the non-unicast packet.
             flood(mgr, pctx);
@@ -887,6 +861,9 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         }
 
         pctx.setEgressVNodePath(bnode.getPath());
+
+        // Evaluate flow filters for outgoing packets.
+        bnode.filterPacket(mgr, pctx, true, this);
 
         return tent;
     }
@@ -1324,6 +1301,20 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     // PortBridge
 
     /**
+     * Evaluate flow filters configured in this bridge.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    @Override
+    void filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx)
+        throws DropFlowException {
+        outFlowFilters.evaluate(mgr, pctx);
+    }
+
+    /**
      * Invoked when a node is added, removed, or changed.
      *
      * @param mgr   VTN Manager service.
@@ -1468,22 +1459,32 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
      */
     @Override
     protected void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
-                                VirtualMapNode vnode) {
+                                VirtualMapNode vnode)
+        throws DropFlowException {
         // Learn the source MAC address if needed.
         VBridgePath bpath = getPath();
         MacAddressTable table = mgr.getMacAddressTable(bpath);
         table.add(pctx, (VBridgeNode)vnode);
 
-        byte[] dst = pctx.getDestinationAddress();
-        if (isResponseToController(mgr, pctx, dst)) {
+        if (pctx.isResponseToController(mgr)) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}:{}: Ignore packet sent to controller: {}",
+                          getContainerName(), getNodePath(),
+                          pctx.getDescription());
+            }
             return;
         }
 
+        // Evaluate flow filters for incoming packets.
+        inFlowFilters.evaluate(mgr, pctx);
+
         // Determine whether the destination address is known or not.
-        MacTableEntry tent = getDestination(mgr, pctx, table, dst);
+        MacTableEntry tent = getDestination(mgr, pctx, table);
         if (tent == null) {
             return;
         }

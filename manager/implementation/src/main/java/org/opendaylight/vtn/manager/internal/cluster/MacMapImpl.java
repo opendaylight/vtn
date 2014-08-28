@@ -73,7 +73,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4634225185394179596L;
+    private static final long serialVersionUID = 8275152227769388186L;
 
     /**
      * Logger instance.
@@ -1495,6 +1495,30 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     @Override
     public void disableInput(VTNManagerImpl mgr, PacketContext pctx) {
         // Not supported.
+    }
+
+    /**
+     * Evaluate flow filters configured in this virtual mapping.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param out     {@code true} means that the given packet is an outgoing
+     *                packet. {@code false} means that the given packet is
+     *                an incoming packet.
+     * @param bridge  A {@link PortBridge} instance associated with this
+     *                virtual mapping.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    @Override
+    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                             boolean out, PortBridge<?> bridge)
+        throws DropFlowException {
+        // Evaluate outgoing flow filters configured in parent vBridge.
+        // vBridge incoming flow filter will be evlauated by VBridgeImpl.
+        if (out) {
+            bridge.filterOutgoingPacket(mgr, pctx);
+        }
     }
 
     // Cloneable

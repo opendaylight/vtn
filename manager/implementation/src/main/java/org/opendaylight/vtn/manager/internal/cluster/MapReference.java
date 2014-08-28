@@ -10,8 +10,12 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
+import java.util.EnumMap;
+import java.util.Map;
 
 import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VNodeRoute;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 
 /**
  * {@code MapReference} class describes a reference to virtual network mapping
@@ -24,7 +28,22 @@ public class MapReference implements Serializable, Comparable<MapReference> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1836624943364112531L;
+    private static final long serialVersionUID = 7660028679508618972L;
+
+    /**
+     * Pairs of {@link MapType} and {@link Reason}.
+     */
+    private static final Map<MapType, Reason>  MAP_REASON;
+
+    /**
+     * Initialize {@link #MAP_REASON}.
+     */
+    static {
+        MAP_REASON = new EnumMap<MapType, Reason>(MapType.class);
+        MAP_REASON.put(MapType.PORT, Reason.PORTMAPPED);
+        MAP_REASON.put(MapType.VLAN, Reason.VLANMAPPED);
+        MAP_REASON.put(MapType.MAC, Reason.MACMAPPED);
+    }
 
     /**
      * Mapping type.
@@ -123,6 +142,19 @@ public class MapReference implements Serializable, Comparable<MapReference> {
      */
     public boolean isContained(String cname, VNodePath path) {
         return (containerName.equals(cname) && path.contains(vnodePath));
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which represents the ingress
+     * virtual node pointed by this instance.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     */
+    public VNodeRoute getIngressRoute() {
+        Reason reason = MAP_REASON.get(mapType);
+        assert reason != null;
+
+        return new VNodeRoute(vnodePath, reason);
     }
 
     /**

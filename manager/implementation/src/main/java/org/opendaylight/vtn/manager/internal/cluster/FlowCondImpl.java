@@ -226,7 +226,7 @@ public final class FlowCondImpl implements Serializable, Cloneable {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}: {}: Matched an empty condition: packet={}",
                               mgr.getContainerName(), name,
-                              pctx.getDescription());
+                              pctx.getDescription(null));
                 }
                 return true;
             }
@@ -236,7 +236,7 @@ public final class FlowCondImpl implements Serializable, Cloneable {
                     if (LOG.isTraceEnabled()) {
                         LOG.trace("{}: {}: Matched the condition: match={}, " +
                                   "packet={}", mgr.getContainerName(), name,
-                                  match, pctx.getDescription());
+                                  match, pctx.getDescription(null));
                     }
                     return true;
                 }
@@ -244,7 +244,7 @@ public final class FlowCondImpl implements Serializable, Cloneable {
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Unmatched: packet={}", name,
-                          pctx.getDescription());
+                          pctx.getDescription(null));
             }
             return false;
         } finally {

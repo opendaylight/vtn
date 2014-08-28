@@ -573,7 +573,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 }
                 flow.clearVirtualRoute();
 
-                pctx.addNodeRoute(new VNodeRoute(ipath1, Reason.PORTMAPPED));
+                pctx.addVNodeRoute(new VNodeRoute(ipath1, Reason.PORTMAPPED));
                 pctx.fixUp(flow);
                 assertEquals(ipath1, flow.getIngressPath());
                 assertEquals(null, flow.getEgressPath());

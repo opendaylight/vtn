@@ -59,7 +59,7 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8583202785488078241L;
+    private static final long serialVersionUID = 7145233837389323463L;
 
     /**
      * Port mapping configuration.
@@ -906,6 +906,26 @@ public abstract class PortInterface extends AbstractInterface
         vflow.setEgressVNodePath(null);
         vflow.setTimeout(pctx.getIdleTimeout(), pctx.getHardTimeout());
         fdb.install(mgr, vflow);
+    }
+
+    /**
+     * Evaluate flow filters configured in this virtual mapping.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param out     {@code true} means that the given packet is an outgoing
+     *                packet. {@code false} means that the given packet is
+     *                an incoming packet.
+     * @param bridge  Never used.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    @Override
+    public final void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                                   boolean out, PortBridge<?> bridge)
+        throws DropFlowException {
+        FlowFilterMap ffmap = (out) ? outFlowFilters : inFlowFilters;
+        ffmap.evaluate(mgr, pctx);
     }
 
     // AbstractInterface

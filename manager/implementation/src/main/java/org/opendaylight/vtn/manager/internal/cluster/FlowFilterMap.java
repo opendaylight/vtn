@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
@@ -48,7 +49,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7816922061009950427L;
+    private static final long serialVersionUID = -777381317561613808L;
 
     /**
      * Logger instance.
@@ -318,6 +319,52 @@ public final class FlowFilterMap implements Serializable, Cloneable {
     }
 
     /**
+     * Evaluate flow filters configured in this instance.
+     *
+     * <p>
+     *   This method must be called with holding the lock for the parent node.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter configured in
+     *    this instance.
+     */
+    public void evaluate(VTNManagerImpl mgr, PacketContext pctx)
+        throws DropFlowException {
+        if (pctx.isResponseToController(mgr)) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}:{}:{}: Ignore response to the controller: {}",
+                          parent.getContainerName(), parent.getPath(),
+                          getFlowDirectionName(output), pctx.getDescription());
+            }
+            return;
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}:{}:{}: Evaluating flow filter map: {}",
+                      parent.getContainerName(), parent.getPath(),
+                      getFlowDirectionName(output), pctx.getDescription());
+        }
+        for (FlowFilterImpl fi: flowFilters.values()) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: Evaluating flow filter",
+                          getLogPrefix(fi.getIndex()));
+            }
+            if (fi.evaluate(mgr, pctx, this)) {
+                return;
+            }
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}:{}:{}: No flow filter was matched",
+                      parent.getContainerName(), parent.getPath(),
+                      getFlowDirectionName(output));
+        }
+    }
+
+    /**
      * Set the virtual node that contains this flow filter.
      *
      * @param fnode  Virtual node that contains this flow filter.
@@ -343,6 +390,31 @@ public final class FlowFilterMap implements Serializable, Cloneable {
 
         FlowFilterMap fmap = (FlowFilterMap)o;
         return (flowFilters.equals(fmap.flowFilters) && output == fmap.output);
+    }
+
+    /**
+     * Create a prefix string for a log record.
+     *
+     * @param index  Index of the flow filter.
+     * @return  A prefix for a log record.
+     */
+    String getLogPrefix(int index) {
+        StringBuilder builder = new StringBuilder(parent.getContainerName());
+        return builder.append(':').append(parent.getPath()).
+            append(':').append(getFlowDirectionName(output)).
+            append('.').append(index).toString();
+    }
+
+    /**
+     * Return a flow database instance.
+     *
+     * @param mgr  VTN Manager service.
+     * @return  A {@link VTNFlowDatabase} instance associated with the VTN.
+     *          {@code null} is returned if not found.
+     */
+    VTNFlowDatabase getTenantFlowDB(VTNManagerImpl mgr) {
+        VTenantPath path = parent.getPath();
+        return mgr.getTenantFlowDB(path.getTenantName());
     }
 
     /**

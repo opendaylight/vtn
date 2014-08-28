@@ -1136,7 +1136,7 @@ public class MacAddressTable {
                 // This should never happen.
                 LOG.error("{}: Invalid IP address: {}, ipaddr={}",
                           getTableName(),
-                          pctx.getDescription(pctx.getIncomingNodeConnector()),
+                          pctx.getDescription(),
                           HexEncode.bytesToHexStringFormat(sip));
             }
         }

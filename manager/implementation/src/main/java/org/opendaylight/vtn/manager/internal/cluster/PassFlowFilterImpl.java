@@ -16,6 +16,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+
 /**
  * This class describes PASS flow filter, which lets packets through the
  * virtual node.
@@ -30,7 +33,7 @@ public final class PassFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5852721392105729083L;
+    private static final long serialVersionUID = 1055087709468219272L;
 
     /**
      * Logger instance.
@@ -49,6 +52,22 @@ public final class PassFlowFilterImpl extends FlowFilterImpl {
     protected PassFlowFilterImpl(int idx, FlowFilter filter)
         throws VTNException {
         super(idx, filter);
+    }
+
+    // FlowFilterImpl
+
+    /**
+     * Apply this PASS flow filter to the given packet.
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @param ffmap  A {@link FlowFilterMap} instance that contains this
+     *               flow filter.
+     */
+    @Override
+    protected void apply(VTNManagerImpl mgr, PacketContext pctx,
+                            FlowFilterMap ffmap) {
+        // REVISIT: Not yet implemented.
     }
 
     /**

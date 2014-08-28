@@ -56,4 +56,20 @@ public interface VirtualMapNode extends Serializable {
      * @param pctx  The context of the received packet.
      */
     void disableInput(VTNManagerImpl mgr, PacketContext pctx);
+
+    /**
+     * Evaluate flow filters configured in this virtual mapping.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param out     {@code true} means that the given packet is an outgoing
+     *                packet. {@code false} means that the given packet is
+     *                an incoming packet.
+     * @param bridge  A {@link PortBridge} instance associated with this
+     *                virtual mapping.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    void filterPacket(VTNManagerImpl mgr, PacketContext pctx, boolean out,
+                      PortBridge<?> bridge) throws DropFlowException;
 }

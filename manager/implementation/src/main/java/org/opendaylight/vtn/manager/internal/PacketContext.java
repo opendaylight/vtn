@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.HashSet;
@@ -24,6 +25,7 @@ import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
@@ -144,6 +146,12 @@ public class PacketContext {
      * Hard timeout for this flow.
      */
     private int  hardTimeout;
+
+    /**
+     * A {@link MapReference} instance which represents the virtual mapping
+     * that maps the incoming packet.
+     */
+    private MapReference  mapReference;
 
     /**
      * Construct a new packet context.
@@ -418,7 +426,9 @@ public class PacketContext {
      * @return  A brief description of the ethernet frame in ths context.
      */
     public String getDescription() {
-        return getDescription((NodeConnector)null);
+        NodeConnector incoming = (rawPacket == null)
+            ? null : rawPacket.getIncomingNodeConnector();
+        return getDescription(incoming);
     }
 
     /**
@@ -530,6 +540,41 @@ public class PacketContext {
     }
 
     /**
+     * Determine whether this packet is an unicast packet or not.
+     *
+     * @return  {@code true} is returned only if this packet is an unicast
+     *          packet.
+     */
+    public boolean isUnicast() {
+        byte[] dst = etherFrame.getDestinationAddress();
+        return NetUtils.isUnicastMACAddr(dst);
+    }
+
+    /**
+     * Determine whether the destination address of this packet is equal to
+     * the controller address or not.
+     *
+     * @param mgr   VTN Manager service.
+     * @return  {@code true} is returned if this packet is sent to the
+     *          controller. Otherwise {@code false} is returned.
+     */
+    public boolean isResponseToController(VTNManagerImpl mgr) {
+        byte[] ctlrMac = mgr.getSwitchManager().getControllerMAC();
+        byte[] dst = etherFrame.getDestinationAddress();
+        return Arrays.equals(ctlrMac, dst);
+    }
+
+    /**
+     * Set a {@link MapReference} instance that determines the ingress virtual
+     * node.
+     *
+     * @param ref  A {@link MapReference} instance.
+     */
+    public void setMapReference(MapReference ref) {
+        mapReference = ref;
+    }
+
+    /**
      * Try to probe IP address of the source address of this packet.
      *
      * @param mgr  VTN Manager service.
@@ -603,7 +648,7 @@ public class PacketContext {
      * @param vroute  A {@link VNodeRoute} instance which represents a
      *                routing to the virtual node.
      */
-    public void addNodeRoute(VNodeRoute vroute) {
+    public void addVNodeRoute(VNodeRoute vroute) {
         virtualRoute.put(vroute.getPath(), vroute);
     }
 
@@ -637,6 +682,13 @@ public class PacketContext {
      * @param vflow  A VTN flow.
      */
     public void fixUp(VTNFlow vflow) {
+        if (virtualRoute.isEmpty() && mapReference != null) {
+            // This can happen if the packet was discarded by the VTN flow
+            // filter. In this case we need to estimate ingress virtual node
+            // route from mapping reference.
+            vflow.addVirtualRoute(mapReference.getIngressRoute());
+        }
+
         // Set the virtual packet routing path.
         vflow.addVirtualRoute(virtualRoute.values());
         vflow.setEgressVNodePath(egressNodePath);
@@ -708,5 +760,27 @@ public class PacketContext {
     public int getFlowPriority(VTNManagerImpl mgr) {
         int pri = mgr.getVTNConfig().getL2FlowPriority();
         return (pri + matchFields.size());
+    }
+
+    /**
+     * Install a flow entry that discards the packet.
+     *
+     * @param mgr  VTN Manager service.
+     * @param fdb  VTN flow database.
+     */
+    public void installDropFlow(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
+        // Create a flow entry that discards the given packet.
+        NodeConnector incoming = getIncomingNodeConnector();
+        Match match = createMatch(incoming);
+        int pri = getFlowPriority(mgr);
+        VTNFlow vflow = fdb.create(mgr);
+        vflow.addFlow(mgr, match, pri);
+
+        // Set the virtual packet routing.
+        fixUp(vflow);
+        vflow.setEgressVNodePath(null);
+
+        // Install a flow entry.
+        fdb.install(mgr, vflow);
     }
 }
