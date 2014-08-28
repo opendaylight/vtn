@@ -13,8 +13,11 @@ import org.apache.felix.dm.Component;
 
 import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortAware;
+import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
-
+import org.opendaylight.ovsdb.plugin.OvsdbConfigService;
+import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
+import org.opendaylight.ovsdb.plugin.IConnectionServiceInternal;
 import org.opendaylight.vtn.manager.IVTNManager;
 
 /**
@@ -50,7 +53,8 @@ public class Activator extends ComponentActivatorAbstractBase {
     @Override
     public Object[] getImplementations() {
         Object[] res = {NetworkHandler.class,
-                        PortHandler.class};
+                        PortHandler.class,
+                        OVSDBPluginEventHandler.class};
         return res;
     }
 
@@ -90,5 +94,28 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setCallbacks("setVTNManager", "unsetVTNManager").
                   setRequired(true));
         }
+        if (imp.equals(OVSDBPluginEventHandler.class)) {
+            c.setInterface(OvsdbInventoryListener.class.getName(), null);
+
+            c.add(createServiceDependency().
+                  setService(IVTNManager.class).
+                  setCallbacks("setVTNManager", "unsetVTNManager").
+                  setRequired(true));
+            c.add(createServiceDependency().
+                  setService(OvsdbConfigService.class).
+                  setCallbacks("setOVSDBConfigService", "unsetOVSDBConfigService").
+                  setRequired(true));
+
+            c.add(createServiceDependency().
+                  setService(INeutronPortCRUD.class).
+                  setCallbacks("setNeutronPortCRUD", "unsetNeutronPortCRUD").
+                  setRequired(true));
+
+            c.add(createServiceDependency().
+                  setService(IConnectionServiceInternal.class).
+                  setCallbacks("setConnectionService", "unsetConnectionService").
+                  setRequired(true));
+        }
+
     }
 }

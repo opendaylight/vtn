@@ -20,6 +20,8 @@ import org.opendaylight.controller.sal.topology.IPluginInTopologyService;
 import org.opendaylight.controller.sal.topology.IPluginOutTopologyService;
 import org.opendaylight.controller.sal.packet.IPluginInDataPacketService;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +73,8 @@ public class Activator extends ComponentActivatorAbstractBase {
             ReadService.class,
             InventoryService.class,
             TopologyServices.class,
-            DataPacketServices.class
+            DataPacketServices.class,
+            OvsdbServices.class
         };
         return res;
     }
@@ -137,6 +140,15 @@ public class Activator extends ComponentActivatorAbstractBase {
             // by SAL
             props.put(GlobalConstants.PROTOCOLPLUGINTYPE.toString(), Node.NodeIDType.OPENFLOW);
             c.setInterface(IPluginInDataPacketService.class.getName(), props);
+        }
+
+        if (imp.equals(OvsdbServices.class)) {
+            // export the service to be used by SAL
+            Dictionary<String, Object> props = new Hashtable<String, Object>();
+            // Set the protocolPluginType property which will be used
+            // by SAL
+            props.put(GlobalConstants.PROTOCOLPLUGINTYPE.toString(), Node.NodeIDType.OPENFLOW);
+            c.setInterface(OvsdbInventoryListener.class.getName(), props);
         }
     }
 
