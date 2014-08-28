@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_de6a28b2",
+        "filename": "manager/dist-karaf/pom.xml",
+        "patchSetId": 3
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-08-28T00:48:13Z",
+      "side": 1,
+      "message": "Move this property definition to manager/common/pom.xml.\nArtifact version control should be centralized in manager/common/pom.xml.",
+      "revId": "4f905a826b2d044a749074b8945f786e2d16e18d",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
