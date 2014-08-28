@@ -4582,6 +4582,23 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("org.opendaylight.controller.thirdparty", "net.sf.jung2").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller.thirdparty", "com.sun.jersey.jersey-servlet").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller.thirdparty", "org.apache.catalina.filters.CorsFilter").versionAsInProject().noStart(),
+                //OVSDB Bundles
+                mavenBundle("org.opendaylight.ovsdb", "library").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "plugin").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "schema.openvswitch").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "schema.hardwarevtep").versionAsInProject(),
+
+                //List needed by OVSDB modules
+                mavenBundle("org.opendaylight.controller", "sal.networkconfiguration").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "sal.networkconfiguration.implementation").versionAsInProject(),
+                mavenBundle("org.mockito", "mockito-all").versionAsInProject(),
+                mavenBundle("com.google.guava", "guava").versionAsInProject(),
+                mavenBundle("io.netty", "netty-buffer").versionAsInProject(),
+                mavenBundle("io.netty", "netty-common").versionAsInProject(),
+                mavenBundle("io.netty", "netty-codec").versionAsInProject(),
+                mavenBundle("io.netty", "netty-transport").versionAsInProject(),
+                mavenBundle("io.netty", "netty-handler").versionAsInProject(),
+                mavenBundle("com.google.code.gson", "gson").versionAsInProject(),
 
                 // Jersey needs to be started before the northbound application
                 // bundles, using a lower start level
@@ -4636,7 +4653,7 @@ public class VtnNorthboundIT extends TestBase {
 
         // Create a vBridge interface.
         String bridgeIfUri = createRelativeURI(bridgeUri, RES_INTERFACES,
-                                               iname);
+            iname);
         getJsonResult(bridgeIfUri, "POST", empty);
         assertResponse(HTTP_CREATED);
         Assert.assertEquals(bridgeIfUri, httpLocation);
@@ -4661,17 +4678,17 @@ public class VtnNorthboundIT extends TestBase {
         filters.put(vtnFilterUri, testFlowFilterAPI(vtnFilterUri, 0));
 
         String vbrInFilterUri = createRelativeURI(bridgeUri, RES_FLOWFILTERS,
-                                                  "in");
+            "in");
         filters.put(vbrInFilterUri, testFlowFilterAPI(vbrInFilterUri, 100));
 
         String vbrOutFilterUri = createRelativeURI(bridgeUri, RES_FLOWFILTERS,
-                                                   "out");
+            "out");
         filters.put(vbrOutFilterUri, testFlowFilterAPI(vbrOutFilterUri, 200));
 
         String vbrIfInFilterUri = createRelativeURI(bridgeIfUri,
-                                                    RES_FLOWFILTERS, "IN");
+            RES_FLOWFILTERS, "IN");
         filters.put(vbrIfInFilterUri,
-                    testFlowFilterAPI(vbrIfInFilterUri, 3333));
+            testFlowFilterAPI(vbrIfInFilterUri, 3333));
 
         String vbrIfOutFilterUri = createRelativeURI(bridgeIfUri,
                                                      RES_FLOWFILTERS, "OUT");
