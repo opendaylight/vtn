@@ -4582,6 +4582,23 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("org.opendaylight.controller.thirdparty", "net.sf.jung2").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller.thirdparty", "com.sun.jersey.jersey-servlet").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller.thirdparty", "org.apache.catalina.filters.CorsFilter").versionAsInProject().noStart(),
+                //OVSDB Bundles
+                mavenBundle("org.opendaylight.ovsdb", "library").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "plugin").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "schema.openvswitch").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "schema.hardwarevtep").versionAsInProject(),
+
+                //List needed by OVSDB modules
+                mavenBundle("org.opendaylight.controller", "sal.networkconfiguration").versionAsInProject(),
+                mavenBundle("org.opendaylight.controller", "sal.networkconfiguration.implementation").versionAsInProject(),
+                mavenBundle("org.mockito", "mockito-all").versionAsInProject(),
+                mavenBundle("com.google.guava", "guava").versionAsInProject(),
+                mavenBundle("io.netty", "netty-buffer").versionAsInProject(),
+                mavenBundle("io.netty", "netty-common").versionAsInProject(),
+                mavenBundle("io.netty", "netty-codec").versionAsInProject(),
+                mavenBundle("io.netty", "netty-transport").versionAsInProject(),
+                mavenBundle("io.netty", "netty-handler").versionAsInProject(),
+                mavenBundle("com.google.code.gson", "gson").versionAsInProject(),
 
                 // Jersey needs to be started before the northbound application
                 // bundles, using a lower start level
