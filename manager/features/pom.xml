@@ -162,6 +162,13 @@
       <type>xml</type>
     </dependency>
 
+    <dependency>
+      <groupId>org.opendaylight.ovsdb</groupId>
+      <artifactId>features-ovsdb</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+
     <!-- test to validate features.xml -->
     <dependency>
       <groupId>org.opendaylight.yangtools</groupId>
