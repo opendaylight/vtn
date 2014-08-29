@@ -1,0 +1,72 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_4ad3ae5f",
+        "filename": "manager/integrationtest/src/main/java/org/opendaylight/vtn/manager/integrationtest/internal/OvsdbServices.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 2,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-08-29T16:05:34Z",
+      "side": 1,
+      "message": "Copyright year should be 2014.",
+      "revId": "db67d0e57a69918e933afce96b5a329df64bc247",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_0ac926ab",
+        "filename": "manager/neutron/pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 70,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-08-29T16:05:34Z",
+      "side": 1,
+      "message": "Please fix indentation.",
+      "revId": "db67d0e57a69918e933afce96b5a329df64bc247",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_cac6de99",
+        "filename": "manager/northboundIT/pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 183,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-08-29T16:05:34Z",
+      "side": 1,
+      "message": "Please fix indentation from here to line 226.",
+      "revId": "db67d0e57a69918e933afce96b5a329df64bc247",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_aab7da1f",
+        "filename": "manager/northboundIT/src/test/java/org/opendaylight/vtn/manager/northbound/integrationtest/VtnNorthboundIT.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 4656,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-08-29T16:05:34Z",
+      "side": 1,
+      "message": "I think all changes below this line are unnecessary.",
+      "revId": "db67d0e57a69918e933afce96b5a329df64bc247",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
