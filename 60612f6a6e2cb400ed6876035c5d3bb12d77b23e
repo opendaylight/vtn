@@ -1,0 +1,9 @@
+Code-Review+1: Madhu Venugopal <mavenugo@gmail.com>
+Code-Review+1: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Verified+1: jenkins-vtn <jenkins-vtn@opendaylight.org>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Fri, 29 Aug 2014 00:14:52 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/10460
+Project: vtn
+Branch: refs/heads/master
