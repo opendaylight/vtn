@@ -40,6 +40,7 @@ pfc_bool_t CapaModule::init(void) {
   ctrlr_common_map_[UNC_CT_PFC] = new CapaCtrlrCommon;
   // ctrlr_common_map_[UNC_CT_LEGACY] = new CapaCtrlrCommon;
   ctrlr_common_map_[UNC_CT_VNP] = new CapaCtrlrCommon;
+  ctrlr_common_map_[UNC_CT_POLC] = new CapaCtrlrCommon;
   ctrlr_common_map_[UNC_CT_ODC] = new CapaCtrlrCommon;
 
   LoadCapabilityFiles();
@@ -218,6 +219,9 @@ bool CapaModule::LoadCapabilityFile(unc_keytype_ctrtype_t ctrlr_type) {
   } else if (ctrlr_type == UNC_CT_VNP) {
       pfc_log_info("\n \n *****CAPA**** UNC_CT_VNP type %d", ctrlr_type);
       capa_file = CAPA_CONF_FILE_VNP;
+  } else if (ctrlr_type == UNC_CT_POLC) {
+      pfc_log_info("\n \n *****CAPA**** UNC_CT_POLC type %d", ctrlr_type);
+      capa_file = CAPA_CONF_FILE_POLC;
   } else if (ctrlr_type == UNC_CT_ODC) {
       pfc_log_info("\n \n *****CAPA**** UNC_CT_ODC type %d", ctrlr_type);
       capa_file = CAPA_CONF_FILE_ODC;
@@ -313,6 +317,7 @@ bool CapaModule::LoadCapabilityFiles(void) {
 	LoadCapabilityFile(UNC_CT_PFC);
 	// LoadCapabilityFile(UNC_CT_LEGACY);
 	LoadCapabilityFile(UNC_CT_VNP);
+	LoadCapabilityFile(UNC_CT_POLC);
 	LoadCapabilityFile(UNC_CT_ODC);
 	return true;
 }

@@ -21,7 +21,7 @@ namespace alarm {
  * alarm API
  */
 
-#define ALARM_KEY_MAX  64
+#define ALARM_KEY_MAX  128
 
 typedef struct alarm_info {
         uint8_t     alarm_class;

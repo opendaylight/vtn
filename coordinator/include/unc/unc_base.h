@@ -26,24 +26,29 @@ extern "C" {
  * @brief  UNC API response code returned
 */
 typedef enum {
-  UNC_RC_SUCCESS = 0,  
-  
+  UNC_RC_SUCCESS = 0,
+
   /*TC response codes*/
   UNC_TC_OPER_FAILURE = -11,           /* System Failover */
   UNC_TC_OPER_INVALID_INPUT = -10,     /* Invalid Input Values Passed */
   UNC_TC_CONFIG_NOT_PRESENT = 100,     /* Config mode is not acquired */
   UNC_TC_CONFIG_PRESENT,               /* Config mode already present */
-  UNC_TC_INVALID_CONFIG_ID,        
+  UNC_TC_STATE_CHANGED,
+  UNC_TC_INVALID_CONFIG_ID,
   UNC_TC_INVALID_OPERATION_TYPE,
   UNC_TC_INVALID_SESSION_ID,
   UNC_TC_INVALID_STATE,
   UNC_TC_OPER_ABORT,                    /* Operation aborted */
   UNC_TC_SESSION_ALREADY_ACTIVE,
   UNC_TC_SESSION_NOT_ACTIVE,
-  UNC_TC_SYSTEM_BUSY,                   /* Acquiring lock failed as another 
+  UNC_TC_SYSTEM_BUSY,                   /* Acquiring lock failed as another
                                            operation is in progress */
-  UNC_TC_SYSTEM_FAILURE,                /* Internal errors in any of the modules */   
+  UNC_TC_SYSTEM_FAILURE,                /* Internal errors in any of the modules */
+  UNC_TC_FORBIDDEN_OPERATION,          /* Operation forbidden in current setup*/
   
+  /*Common error codes*/
+  UNC_RC_ERR_DRIVER_NOT_PRESENT = 200,
+
   /* UPLL Service */
   UNC_UPLL_RC_ERR_GENERIC = 1000,                   /* Generic error */
   UNC_UPLL_RC_ERR_BAD_REQUEST,               /* The request message format is bad */
@@ -127,13 +132,13 @@ typedef enum {
   UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED,           /* Controller is disconnected for state read */
   UNC_UPPL_RC_ERR_AUDIT_NOT_IN_PROGRESS,        /* audit not in progress */
   UNC_UPPL_RC_ERR_FATAL_COPY_CONFIG,            /* copying running DB to startup DB failed */
-  UNC_UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING,  /* DB connection error while copying 
+  UNC_UPPL_RC_ERR_FATAL_COPYDB_CANDID_RUNNING,  /* DB connection error while copying
                                                candidate DB to running DB */
   UNC_UPPL_RC_ERR_COPY_CANDID_TO_RUNNING,       /* Error in copying candidate to running DB
                                                while startup*/
-  UNC_UPPL_RC_ERR_COPY_RUNNING_TO_CANDID,       /* copy running to candidate database failed in 
+  UNC_UPPL_RC_ERR_COPY_RUNNING_TO_CANDID,       /* copy running to candidate database failed in
                                                 abort candidate */
-  UNC_UPPL_RC_ERR_INVALID_CANDID_CONFIG,        
+  UNC_UPPL_RC_ERR_INVALID_CANDID_CONFIG,
   UNC_UPPL_RC_ERR_WRITE_ENTITY_DB,
   UNC_UPPL_RC_ERR_COPY_RUNNING_TO_START,
   UNC_UPPL_RC_ERR_COPY_STARTUP_TO_CANDID,
@@ -170,7 +175,7 @@ typedef enum {
   UNC_DRV_RC_MISSING_VAL_STRUCT,       /* missing value structure  */
   UNC_DRV_RC_ERR_ATTRIBUTE_SYNTAX,     /* attribute syntax error */
   UNC_DRV_RC_ERR_ATTRIBUTE_SEMANTIC,   /* attribute semantic error */
-  UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR, /* capa check error */ 
+  UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR, /* capa check error */
 
   /*Transaction errors*/
   UNC_RC_INTERNAL_ERR = 4000,      /* Internal error in any of the modules*/
@@ -180,7 +185,8 @@ typedef enum {
   UNC_RC_CTR_BUSY,                 /* acquiring config mode failed in controller */
   UNC_RC_CTR_DISCONNECTED,         /* controller disconnected/down  */
   UNC_RC_REQ_NOT_SENT_TO_CTR,      /* request not sent to controller   */
-  UNC_RC_NO_SUCH_INSTANCE          /* request for unknown attribute */
+  UNC_RC_NO_SUCH_INSTANCE,         /* request for unknown attribute */
+  UNC_RC_UNSUPPORTED_CTRL_CONFIG   /* unsupported controller configuration */
 }UncRespCode;
 
 #ifdef __cplusplus

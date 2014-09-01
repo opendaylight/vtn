@@ -61,10 +61,10 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.CONTROLLERID);
 		if (resource instanceof SwitchPortsResource
 				&& ((SwitchPortsResource) resource).getControllerId() != null
-				&& !((SwitchPortsResource) resource).getControllerId().trim()
+				&& !((SwitchPortsResource) resource).getControllerId()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((SwitchPortsResource) resource).getControllerId().trim(),
+					((SwitchPortsResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
@@ -87,9 +87,8 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 	 * Validate get request json for Port API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start SwitchPortResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of SwitchPortResourceValidator");
@@ -105,7 +104,7 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -141,10 +140,10 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = VtnServiceJsonConsts.STATE.equalsIgnoreCase(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-					.getAsString().trim());
+					.getAsString());
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.TARGETDB);
 			requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
@@ -183,7 +182,7 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: max_repitition
@@ -196,7 +195,7 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 				 * .getAsString() != null) { isValid =
 				 * validator.isValidMaxLengthNumber(requestBody
 				 * .getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()
-				 * .trim()); }
+				 * ); }
 				 */
 			}
 		}
@@ -208,10 +207,10 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.PORTNAME).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PORTNAME)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PORTNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 		}
 
@@ -223,10 +222,10 @@ public class SwitchPortResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.PORT_ID).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PORT_ID)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidRange(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PORT_ID)
-						.getAsString().trim(), VtnServiceJsonConsts.LONG_VAL_0,
+						.getAsString(), VtnServiceJsonConsts.LONG_VAL_0,
 						VtnServiceJsonConsts.LONG_VAL_4294967295);
 			}
 		}

@@ -57,7 +57,7 @@ typedef struct val_db_vtunnel_if_st {
 class VnodeChildMoMgr : public MoMgrImpl {
     controller_domain cntrl_dom;
     upll_rc_t RestoreVnode(ConfigKeyVal *ikey, IpcReqRespHeader *req,
-                           DalDmlIntf *dmi, bool restore_flag);
+                           DalDmlIntf *dmi);
     virtual upll_rc_t SetRenameField(ConfigKeyVal *&ikey);
     upll_rc_t GetRenamedKey(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
                             DalDmlIntf *dmi, controller_domain *ctrlr_dom,
@@ -107,7 +107,8 @@ class VnodeChildMoMgr : public MoMgrImpl {
     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
     */
     virtual upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
-                                             DalDmlIntf *dmi);
+                                             DalDmlIntf *dmi,
+                                            uint32_t driver_result);
    
 
     virtual upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
@@ -120,7 +121,9 @@ class VnodeChildMoMgr : public MoMgrImpl {
     template<typename T1, typename T2>
     upll_rc_t SetOperStatus(ConfigKeyVal *ikey,
                        state_notification &notification,
-                       DalDmlIntf *dmi, alarm_status &oper_change = ALARM_NOT_SET);
+                       unc_keytype_operation_t op,
+                       DalDmlIntf *dmi, bool &oper_change = false
+                       );
 
      /**
      * @brief          Enqueues oper status notifications
@@ -133,57 +136,6 @@ class VnodeChildMoMgr : public MoMgrImpl {
      **/
     bool  EnqueOperStatusNotification(ConfigKeyVal *ikey, bool oper_change);
 
-    /* @brief      Retrieve oper status of logical portid from physical  
-     *              
-     * @param[in]  pm            pointer to portmap structure
-     * @param[in]  ctr_domain    holds pointers to controller and domain id
-     * @param[in]  logical_port_operStatus operstatus of logical port 
-     * @param[in]  session_id   transaction session id
-     * @param[in]  config_id    transaction config id
-     *
-     * @retval  UPLL_RC_SUCCESS      Completed successfully.
-     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-     * 
-     **/ 
-    upll_rc_t GetPortStatusFromPhysical(val_port_map_t *pm,
-                                       controller_domain_t ctr_domain,
-                                       val_oper_status &logical_port_operStatus,
-                                       uint32_t session_id,
-                                       uint32_t config_id) ;
-#if 0
-    /* @brief      Gets ports with uninitialized oper status 
-     *             - ports whose status have to be obtained from physical
-     *              
-     * @param[out]  ikey     Pointer to a list of configkeyvals 
-     * @param[in]   dmi      Database connection parameter
-     *
-     * @retval  UPLL_RC_SUCCESS      Completed successfully.
-     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-     * 
-     **/ 
-    template<typename T1,typename T2>
-    upll_rc_t GetUninitOperState(ConfigKeyVal *&ck_vn, DalDmlIntf *dmi);
-#endif
-
-    /* @brief   Initializes the oper status on configuring the object
-     *          
-     *              
-     * @param[in]  ikey         Pointer to the ConfigKeyVal Structure           
-     * @param[in]  valid_admin  valid flag corresponding to admin field
-     * @param[in]  admin_status admin field of value structure
-     * @param[in]  valid_pm     valid flag corresponding to portmap field
-     * @param[in]  pm           pointer to portmap field if applicable
-     *
-     * @retval  UPLL_RC_SUCCESS      Completed successfully.
-     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-     * 
-     **/ 
-   template<typename T1, typename T2>
-   upll_rc_t InitOperStatus(ConfigKeyVal *ikey,
-                            uint8_t valid_admin,
-                            uint8_t admin_status, 
-                            uint8_t valid_pm,
-                            val_port_map_t *pm = NULL);
   public:
     VnodeChildMoMgr() {
       parent_ck_vnode = NULL;
@@ -193,24 +145,6 @@ class VnodeChildMoMgr : public MoMgrImpl {
       if (parent_ck_vnode) delete parent_ck_vnode;
       parent_ck_vnode = NULL;
     }
-
-
-    /* @brief      Called by configmgr to update state information 
-     *             for mapped interfaces 
-     *              
-     * @param[in]  ktype        keytype 
-     * @param[in]  session_id   transaction session_id
-     * @param[in]  config_id    transaction config_id
-     * @param[in]  dmi          database connection paramter
-     *
-     * @retval  UPLL_RC_SUCCESS      Completed successfully.
-     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-     *
-     **/
-    upll_rc_t TxUpdateDtState(unc_key_type_t ktype,
-                              uint32_t session_id,
-                              uint32_t config_id,
-                              DalDmlIntf *dmi);
 
     upll_rc_t RenameMo(IpcReqRespHeader *req, ConfigKeyVal *key,
                        DalDmlIntf *dmi, const char *ctrlr_id) {
@@ -271,55 +205,37 @@ class VnodeChildMoMgr : public MoMgrImpl {
                                                InterfacePortMapInfo flag) {
       return UPLL_RC_ERR_GENERIC;
    }
-    upll_rc_t UpdateOperStatus(ConfigKeyVal *ikey, 
+   upll_rc_t UpdateOperStatus(ConfigKeyVal *ikey, 
                            DalDmlIntf *dmi, 
                            state_notification notification,
-                           bool skip, bool upd_if, bool upd_remif,
-                           bool save_to_db = false);
-   virtual upll_rc_t GetMappedInterfaces(const key_vnode_type_t &vnode_key,
-                                         DalDmlIntf *dmi,
-                                         ConfigKeyVal *&iokey);
-   virtual upll_rc_t SetIfOperStatusforPathFault(
-                           const key_vnode_type_t &vnode_key,
-                           state_notification notification,
-                           DalDmlIntf *dmi);
-   virtual upll_rc_t UpdateVnodeIfOperStatus(ConfigKeyVal *ck_if,
-                           DalDmlIntf *dmi,
-                           state_notification notification);
+                           unc_keytype_operation_t op,
+                           bool skip, 
+                           bool propagate = true);
+    upll_rc_t UpdateVnodeIfOperStatus(
+                               ConfigKeyVal *ck_vnif,
+                               DalDmlIntf *dmi,
+                               state_notification notfn, bool pf_exist);
 
   /* VlanmapOnBoundary change */
    virtual upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
-       ConfigKeyVal *ikey, DalDmlIntf *dmi,
-       bool restore_flag = false);
+                                       ConfigKeyVal *ikey,
+                                       DalDmlIntf *dmi);
 
    /* @brief   Gets the interface type (mapped,boundary,linked,unbound)
-     *          expects the interface key/val to be populated 
-     *              
-     * @param[in]  ck_vnif   Pointer to the ConfigKeyVal Structure             
-     * @param[in]  valid_pm  whether portmap is set to valid  
-     * @param[out] vnif_type type of the interface 
-     * 
+     *          expects the interface key/val to be populated
+     *
+     * @param[in]  ck_vnif   Pointer to the ConfigKeyVal Structure
+     * @param[in]  valid_pm  whether portmap is set to valid
+     * @param[out] vnif_type type of the interface
+     *
      * @retval  UPLL_RC_SUCCESS      Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-     * 
-     **/ 
+     *
+     **/
      upll_rc_t GetInterfaceType(ConfigKeyVal *ck_vnif,
                                uint8_t valid_pm,
-                               if_type &vnif_type ); 
+                               if_type &vnif_type );
 
-   /* @brief   Updates the remote Interface of Internal Vlink on Controller Reconnect
-     *         based on the interface admin status
-     *
-     * @param[in]  ck_vnif  Pointer to the ConfigKeyVal Structure
-     * @param[in]  dmi      Pointer to the DalDmlIntf(DB Interface)
-     *
-     * @retval  UPLL_RC_SUCCESS      Completed successfully.
-     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
-     *
-     **/   
-     upll_rc_t UpdateRemoteVlinkIf(ConfigKeyVal *ck_vnif,
-                                   state_notification notification,
-                                   DalDmlIntf *dmi);
      template<typename T3>
      upll_rc_t IsLogicalPortAndVlanIdInUse(ConfigKeyVal *ckv,
                                       DalDmlIntf *dmi,
@@ -328,14 +244,34 @@ class VnodeChildMoMgr : public MoMgrImpl {
                                  const char *ctrlr_name,
                                  const char *domain_name,
                                  const char *logical_port_id,
-                                 bool oper_status,
+                                 uint8_t oper_status,
                                  DalDmlIntf *dmi);
 
      upll_rc_t PortStatusHandler(ConfigKeyVal *ikey,
-                                 bool oper_status, DalDmlIntf *dmi  );
-     upll_rc_t GetMappedVnodes(const char* ctrlr_id, const char *domain_id,
-                              std::string logportid, DalDmlIntf *dmi,
-                              set<key_vnode_type_t,key_vnode_type_compare>*sw_vbridge_set);
+                                 uint8_t oper_status,
+                                 DalDmlIntf *dmi  );
+     upll_rc_t SetInterfaceOperStatus(ConfigKeyVal *&ck_vnif,
+                                      DalDmlIntf *dmi,
+                                      unc_keytype_operation_t op,
+                                      bool propagate,
+                                      uint32_t driver_result);
+    /* @brief      Retrieve oper status of logical portid from physical  
+     *              
+     * @param[in]  pm            pointer to portmap structure
+     * @param[in]  ctr_domain    holds pointers to controller and domain id
+     * @param[in]  logical_port_operStatus operstatus of logical port 
+     *
+     * @retval  UPLL_RC_SUCCESS      Completed successfully.
+     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
+     * 
+     **/ 
+    virtual upll_rc_t GetPortStatusFromPhysical(val_port_map_t *pm,
+                                       controller_domain_t ctr_domain,
+                                       val_oper_status &logical_port_operStatus);
+    upll_rc_t RecomputeVlinkAndIfoperStatus(ConfigKeyVal *ck_vlink,
+                             ConfigKeyVal *ck_rem_if, DalDmlIntf *dmi);
+    upll_rc_t GetCtrlrStatusFromPhysical(uint8_t *ctrlr_name,
+                            val_oper_status &ctrlr_operstatus); 
 };
 
 }  // namespace kt_momgr

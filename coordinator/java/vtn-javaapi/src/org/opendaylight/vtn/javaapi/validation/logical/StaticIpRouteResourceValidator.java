@@ -54,20 +54,19 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof StaticIpRoutesResource
 				&& ((StaticIpRoutesResource) resource).getVtnName() != null
-				&& !((StaticIpRoutesResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((StaticIpRoutesResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((StaticIpRoutesResource) resource).getVtnName().trim(),
+					((StaticIpRoutesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((StaticIpRoutesResource) resource).getVrtName() != null
 						&& !((StaticIpRoutesResource) resource).getVrtName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((StaticIpRoutesResource) resource).getVrtName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((StaticIpRoutesResource) resource).getVrtName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -75,20 +74,19 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof StaticIpRouteResource
 				&& ((StaticIpRouteResource) resource).getVtnName() != null
-				&& !((StaticIpRouteResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((StaticIpRouteResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((StaticIpRouteResource) resource).getVtnName().trim(),
+					((StaticIpRouteResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((StaticIpRouteResource) resource).getVrtName() != null
 						&& !((StaticIpRouteResource) resource).getVrtName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((StaticIpRouteResource) resource).getVrtName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((StaticIpRouteResource) resource).getVrtName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -98,10 +96,10 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.STATICIPROUTEID);
 				if (((StaticIpRouteResource) resource).getStaticIpRouteId() != null
 						&& !((StaticIpRouteResource) resource)
-								.getStaticIpRouteId().trim().isEmpty()) {
+								.getStaticIpRouteId().isEmpty()) {
 					final String[] staticIpRoute = ((StaticIpRouteResource) resource)
-							.getStaticIpRouteId().trim()
-							.split(VtnServiceJsonConsts.HYPHEN);
+							.getStaticIpRouteId().split(
+									VtnServiceJsonConsts.HYPHEN);
 					isValid = isValidStaticIpRouteId(staticIpRoute);
 				} else {
 					isValid = false;
@@ -138,9 +136,8 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 	 * StaticIpRoute API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start StaticIpRouteResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of StaticIpRouteResourceValidator");
@@ -162,7 +159,7 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -220,9 +217,8 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
 								.getAsString().isEmpty()) {
-					final String index = requestBody
-							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim();
+					final String index = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.INDEX).getAsString();
 					final String[] staticIpRoute = index
 							.split(VtnServiceJsonConsts.HYPHEN);
 					isValid = isValidStaticIpRouteId(staticIpRoute);
@@ -262,9 +258,8 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 			if (staticIp.has(VtnServiceJsonConsts.IPADDR)
 					&& staticIp.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
 							.getAsString() != null) {
-				isValid = validator.isValidIpV4(staticIp
-						.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-						.getAsString().trim());
+				isValid = validator.isValidIpV4(staticIp.getAsJsonPrimitive(
+						VtnServiceJsonConsts.IPADDR).getAsString());
 			}
 
 			// validation for key: prefix(mandatory)
@@ -275,7 +270,7 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.PREFIX).getAsString() != null) {
 					isValid = validator.isValidRange(staticIp
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PREFIX)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_0,
+							.getAsString(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_32);
 				} else {
 					isValid = false;
@@ -290,10 +285,10 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 			// && !staticIp
 			// .getAsJsonPrimitive(
 			// VtnServiceJsonConsts.NMGNAME)
-			// .getAsString().trim().isEmpty()) {
+			// .getAsString().isEmpty()) {
 			// isValid = validator.isValidMaxLengthAlphaNum(staticIp
 			// .getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
-			// .getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+			// .getAsString(), VtnServiceJsonConsts.LEN_31);
 			// }
 			// }
 			if (isValid) {
@@ -331,9 +326,8 @@ public class StaticIpRouteResourceValidator extends VtnServiceValidator {
 			if (staticIp.has(VtnServiceJsonConsts.NEXTHOPADDR)
 					&& staticIp.getAsJsonPrimitive(
 							VtnServiceJsonConsts.NEXTHOPADDR).getAsString() != null) {
-				isValid = validator.isValidIpV4(staticIp
-						.getAsJsonPrimitive(VtnServiceJsonConsts.NEXTHOPADDR)
-						.getAsString().trim());
+				isValid = validator.isValidIpV4(staticIp.getAsJsonPrimitive(
+						VtnServiceJsonConsts.NEXTHOPADDR).getAsString());
 			}
 		}
 		LOG.trace("Complete StaticIpRouteResourceValidator#validatePut()");

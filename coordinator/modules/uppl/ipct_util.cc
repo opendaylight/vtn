@@ -121,6 +121,48 @@ string IpctUtil::get_string(const val_ctr_st_t &val_st) {
   return ss.str();
 }
 
+/** 
+ * @Description : This function returns the values from the kt_controller
+ * commmit versionvalue structure
+ * @param[in]   : val_ctr_commit_ver - structure variable of type val_ctr_st_t 
+ * @return      : value structure elements of val_ctr_st_t structure of
+ * kt_controller
+ **/
+string IpctUtil::get_string(const val_ctr_commit_ver_t &val_commit_ver) {
+  stringstream ss;
+  val_ctr_t v = val_commit_ver.controller;
+  stringstream valid;
+  for (unsigned int i = 0; i < 7 ; ++i) {
+    valid << PhyUtil::uint8tostr(v.valid[i]);
+  }
+  stringstream commit_ver_valid;
+  for (unsigned int i = 0; i < 4 ; ++i) {
+    commit_ver_valid << PhyUtil::uint8tostr(val_commit_ver.valid[i]);
+  }
+  stringstream cs_attr;
+  for (unsigned int i = 0; i < 7 ; ++i) {
+    cs_attr << PhyUtil::uint8tostr(v.cs_attr[i]);
+  }
+  ss << "KT_CONTROLLER:[VAL: "
+      << "type:" << PhyUtil::uint8tostr(v.type)
+  << ", version:" << v.version
+  << ", description:" << v.description
+  << ", ip_address:" << ODBCMUtils::get_ip_string(v.ip_address.s_addr)
+  << ", user:" << v.user
+  << ", password:" << v.password
+  << ", enable_audit:" << PhyUtil::uint8tostr(v.enable_audit)
+  << ", valid:" << valid.str()
+  << ", cs_row_status:" << PhyUtil::uint8tostr(v.cs_row_status)
+  << ", cs_attr:" << cs_attr.str()
+  << ", commit_ver:" << PhyUtil::uint64tostr(val_commit_ver.commit_number)
+  << ", commitdate:" << PhyUtil::uint64tostr(val_commit_ver.commit_date)
+  << ", commit_appl:" << val_commit_ver.commit_application
+  << ", commit_ver valid:" << commit_ver_valid.str()
+  << "]"
+  << endl;
+  return ss.str();
+}
+
 /***** KT_CTR_DOMAIN *****/
 /** 
  * @Description : This function returns the domain name from
@@ -463,19 +505,18 @@ string IpctUtil::get_string(const val_port_st_t &v) {
       << "port_number:" << v.port.port_number
       << ", description:" << v.port.description
       << ", admin_status:" << PhyUtil::uint8tostr(v.port.admin_status)
-  << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
+  << ", tav:" << PhyUtil::uint8tostr
   (v.port.trunk_allowed_vlan)
   << ", valid:" << valid.str()
-  << ", oper_status:" << PhyUtil::uint8tostr(v.oper_status)
-  << ", mac_address:" << macaddr
+  << ", oper_st:" << PhyUtil::uint8tostr(v.oper_status)
+  << ", mac_addr:" << macaddr
   << ", direction:" << PhyUtil::uint8tostr(v.direction)
   << ", duplex:" << PhyUtil::uint8tostr(v.duplex)
   << ", speed:" << PhyUtil::uint64tostr(v.speed)
-  << ", alarms_status:" << PhyUtil::uint64tostr(v.alarms_status)
-  << ", logical_port_id:" << v.logical_port_id
+  << ", alarms_st:" << PhyUtil::uint64tostr(v.alarms_status)
+  << ", lp_id:" << v.logical_port_id
   << ", st_valid:" << st_valid.str()
-  << "]"
-  << endl;
+  << "]";
   return ss.str();
 }
 
@@ -510,16 +551,16 @@ string IpctUtil::get_string(const val_port_stats_t &v) {
       << ", description:" << v.port_st_val.port.description
   << ", admin_status:" << PhyUtil::uint8tostr
   (v.port_st_val.port.admin_status)
-  << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
+  << ", tav:" << PhyUtil::uint8tostr
   (v.port_st_val.port.trunk_allowed_vlan)
   << ", valid:" << valid.str()
-  << ", oper_status:" << PhyUtil::uint8tostr(v.port_st_val.oper_status)
-  << ", mac_address:" << macaddr
+  << ", oper_st:" << PhyUtil::uint8tostr(v.port_st_val.oper_status)
+  << ", mac_addr:" << macaddr
   << ", direction:" << PhyUtil::uint8tostr(v.port_st_val.direction)
   << ", duplex:" << PhyUtil::uint8tostr(v.port_st_val.duplex)
   << ", speed:" << PhyUtil::uint64tostr(v.port_st_val.speed)
-  << ", alarms_status:" << PhyUtil::uint64tostr(v.port_st_val.alarms_status)
-  << ", logical_port_id:" << v.port_st_val.logical_port_id
+  << ", alarms_st:" << PhyUtil::uint64tostr(v.port_st_val.alarms_status)
+  << ", lp_id:" << v.port_st_val.logical_port_id
   << ", st_valid:" << st_valid.str() << endl
   << ", rx_packets:" << v.rx_packets << ", tx_packets:" << v.tx_packets
   << ", rx_bytes:" << v.rx_bytes << ", tx_bytes:" << v.tx_bytes
@@ -528,8 +569,7 @@ string IpctUtil::get_string(const val_port_stats_t &v) {
   << ", rx_frame_err:" << v.rx_frame_err << ", rx_over_err:" << v.rx_over_err
   << ", rx_crc_err:" << v.rx_crc_err << ", collisions:" << v.collisions
   << ", stats_valid:" << stats_valid.str()
-  << "]"
-  << endl;
+  << "]";
   return ss.str();
 }
 
@@ -548,11 +588,10 @@ string IpctUtil::get_string(const val_port_t &v) {
       << "port_number:" << v.port_number
       << ", description:" << v.description
       << ", admin_status:" << PhyUtil::uint8tostr(v.admin_status)
-  << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
+  << ", tav:" << PhyUtil::uint8tostr
   (v.trunk_allowed_vlan)
   << ", valid:" << valid.str()
-  << "]"
-  << endl;
+  << "]";
   return ss.str();
 }
 
@@ -576,15 +615,14 @@ string IpctUtil::get_string(const val_port_st_neighbor &v) {
   ss << "KT_PORT:[NEIGHBOUR VAL: "
       << "port_number:" << PhyUtil::uint8tostr(v.port.port_number)
   << ", description:" << v.port.description
-  << ", admin_status:" << PhyUtil::uint8tostr(v.port.admin_status)
-  << ", trunk_allowed_vlan:" << PhyUtil::uint8tostr
+  << ", admin_st:" << PhyUtil::uint8tostr(v.port.admin_status)
+  << ", tav:" << PhyUtil::uint8tostr
   (v.port.trunk_allowed_vlan)
   << ", valid:" << valid.str()
-  << ", connected_switch_id:" << v.connected_switch_id
-  << ", connected_port_id:" << v.connected_port_id
+  << ", cn_sw_id:" << v.connected_switch_id
+  << ", cn_port_id:" << v.connected_port_id
   << ", neigbour_valid:" << neigh_valid.str()
-  << "]"
-  << endl;
+  << "]";
   return ss.str();
 }
 

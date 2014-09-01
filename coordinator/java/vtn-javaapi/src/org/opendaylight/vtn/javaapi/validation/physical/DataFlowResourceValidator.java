@@ -31,21 +31,21 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 	private static final Logger LOG = Logger
 			.getLogger(DataFlowResourceValidator.class.getName());
 	/**
-	 * Abstract clas resouce refrence.
+	 * Abstract class resource reference.
 	 */
 	private final AbstractResource resource;
 	/**
-	 * Common vaildator class object to invoke common validation methods.
+	 * Common validator class object to invoke common validation methods.
 	 */
 	private final CommonValidator validator = new CommonValidator();
 
 	/**
-	 * Instantiates a new Data Flow resource Validator. the instance of
+	 * Instantiates a new Data Flow resource validator. the instance of
 	 * AbstractResource
 	 */
 	/**
 	 * @param mappingResource
-	 *            ,resouce class object
+	 *            ,resource class object
 	 */
 	public DataFlowResourceValidator(final AbstractResource mappingResource) {
 		this.resource = mappingResource;
@@ -75,14 +75,13 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 	 * @param method
 	 *            , contains info about get,post ,delete.
 	 * @param requestBody
-	 *            , contains request param.
+	 *            , contains request parameters.
 	 * @throws VtnServiceException
-	 *             , vtnexcpetion is thrown.
+	 *             , vtn exception is thrown.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DataFlowResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DataFlowResourceValidator");
@@ -98,7 +97,7 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -120,7 +119,7 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 	 *            the request Json object
 	 * @return true, if successful.
 	 * @param opFlag
-	 *            ,set for opertaion type
+	 *            ,set for operation type
 	 */
 	private boolean isValidateGet(final JsonObject requestBody,
 			final boolean opFlag) {
@@ -133,10 +132,10 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.CONTROLLERID).getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-					.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+					.getAsString(), VtnServiceJsonConsts.LEN_31);
 		}
 		// validation for key:switch_id(mandatory)
 		if (isValid) {
@@ -146,10 +145,10 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.SWITCHID).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.SWITCHID)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SWITCHID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_255);
+						.getAsString(), VtnServiceJsonConsts.LEN_255);
 			} else {
 				isValid = false;
 			}
@@ -162,10 +161,10 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.PORTNAME).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PORTNAME)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PORTNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			} else {
 				isValid = false;
 			}
@@ -186,10 +185,10 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidRange(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
+							.getAsString(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_4095);
 				} else {
 					isValid = false;
@@ -201,10 +200,10 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 						&& !requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.NO_VLAN_ID)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.NO_VLAN_ID)
-							.getAsString().trim()
+							.getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.TRUE);
 				} else {
 					isValid = false;
@@ -222,10 +221,10 @@ public class DataFlowResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.SRCMACADDR).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.SRCMACADDR)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMacAddress(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SRCMACADDR)
-						.getAsString().trim());
+						.getAsString());
 			} else {
 				isValid = false;
 			}

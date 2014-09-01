@@ -80,7 +80,7 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -112,7 +112,7 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
 			isValid = validator.isValidMaxLengthAlphaNum(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-					.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+					.getAsString(), VtnServiceJsonConsts.LEN_31);
 		}
 		if (isValid) {
 			// only vlan_id or no_vlan_id is allowed
@@ -128,11 +128,11 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					// validation for key: vlan_id
 					isValid = validator.isValidRange(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
+							.getAsString(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_4095);
 				} else {
 					isValid = false;
@@ -145,10 +145,9 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 						&& !requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.NO_VLAN_ID)
-								.getAsString().trim().isEmpty()) {
-					final String no_vlan_id = requestBody
-							.getAsJsonPrimitive(VtnServiceJsonConsts.NO_VLAN_ID)
-							.getAsString().trim();
+								.getAsString().isEmpty()) {
+					final String no_vlan_id = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.NO_VLAN_ID).getAsString();
 					isValid = no_vlan_id
 							.equalsIgnoreCase(VtnServiceJsonConsts.TRUE);
 				} else {
@@ -169,7 +168,7 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.MACADDR).getAsString() != null) {
 				isValid = validator.isValidMacAddress(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.MACADDR)
-						.getAsString().trim());
+						.getAsString());
 			}
 		}
 		// validation for key: ipaddr
@@ -178,9 +177,8 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 			if (requestBody.has(VtnServiceJsonConsts.IPADDR)
 					&& requestBody.getAsJsonPrimitive(
 							VtnServiceJsonConsts.IPADDR).getAsString() != null) {
-				isValid = validator.isValidIpV4(requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-						.getAsString().trim());
+				isValid = validator.isValidIpV4(requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.IPADDR).getAsString());
 			}
 		}
 		// validation for key: ipv6addr
@@ -189,9 +187,8 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 			if (requestBody.has(VtnServiceJsonConsts.IPV6ADDR)
 					&& requestBody.getAsJsonPrimitive(
 							VtnServiceJsonConsts.IPV6ADDR).getAsString() != null) {
-				isValid = validator.isValidIpV6(requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.IPV6ADDR)
-						.getAsString().trim());
+				isValid = validator.isValidIpV6(requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.IPV6ADDR).getAsString());
 			}
 		}
 		// validation for key: switch_id
@@ -202,11 +199,11 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.SWITCHID).getAsString() != null) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SWITCHID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_255)
+						.getAsString(), VtnServiceJsonConsts.LEN_255)
 						|| requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.SWITCHID)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
 		// validation for key: port_name
@@ -217,11 +214,11 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.PORTNAME).getAsString() != null) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PORTNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.PORTNAME)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
 
@@ -233,26 +230,47 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VTNNAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VTNNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VTNNAME)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
-		// validation for key: vbr_name
+		// validation for key: vnode_type
 		if (isValid) {
-			setInvalidParameter(VtnServiceJsonConsts.VBRNAME);
-			if (requestBody.has(VtnServiceJsonConsts.VBRNAME)
+			setInvalidParameter(VtnServiceJsonConsts.VNODETYPE);
+			if (requestBody.has(VtnServiceJsonConsts.VNODETYPE)
 					&& requestBody.getAsJsonPrimitive(
-							VtnServiceJsonConsts.VBRNAME).getAsString() != null) {
+							VtnServiceJsonConsts.VNODETYPE).getAsString() != null) {
+
+				String vnodeType = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.VNODETYPE).getAsString();
+				if (vnodeType.equals(VtnServiceJsonConsts.VBRIDGE)
+						|| vnodeType.equals(VtnServiceJsonConsts.VROUTER)
+						|| vnodeType.equals(VtnServiceJsonConsts.VTERMINAL)
+						|| vnodeType.equals(VtnServiceJsonConsts.VBYPASS)
+						|| vnodeType.equals(VtnServiceJsonConsts.VTEP)
+						|| vnodeType.equals(VtnServiceJsonConsts.VTUNNEL)
+						|| vnodeType.equals(VtnServiceJsonConsts.EMPTY)) {
+					isValid = true;
+				}
+
+			}
+		}
+		// validation for key: vnode_name
+		if (isValid) {
+			setInvalidParameter(VtnServiceJsonConsts.VNODENAME);
+			if (requestBody.has(VtnServiceJsonConsts.VNODENAME)
+					&& requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.VNODENAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.VBRNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsJsonPrimitive(VtnServiceJsonConsts.VNODENAME)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| requestBody
 								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.VBRNAME)
-								.getAsString().trim().isEmpty();
+										VtnServiceJsonConsts.VNODENAME)
+								.getAsString().isEmpty();
 			}
 		}
 		// validation for key: if_name
@@ -263,10 +281,10 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.IFNAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.IFNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.IFNAME)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
 		// validation for key: domain_id
@@ -277,10 +295,10 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.DOMAINID).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidDomainId(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 		}
 		if (requestBody.has(VtnServiceJsonConsts.INDEX)) {

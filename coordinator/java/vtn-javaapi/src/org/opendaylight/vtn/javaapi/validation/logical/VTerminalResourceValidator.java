@@ -22,8 +22,8 @@ import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.javaapi.validation.VtnServiceValidator;
 
 /**
- * The Class VTerminalResourceValidator validates request Json object for Vterminal
- * API.
+ * The Class VTerminalResourceValidator validates request Json object for
+ * Vterminal API.
  */
 public class VTerminalResourceValidator extends VtnServiceValidator {
 
@@ -55,25 +55,25 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VTerminalsResource
 				&& ((VTerminalsResource) resource).getVtnName() != null
-				&& !((VTerminalsResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VTerminalsResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTerminalsResource) resource).getVtnName().trim(),
+					((VTerminalsResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		} else if (resource instanceof VTerminalResource
 				&& ((VTerminalResource) resource).getVtnName() != null
-				&& !((VTerminalResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VTerminalResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTerminalResource) resource).getVtnName().trim(),
+					((VTerminalResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTERMINAL_NAME);
-				if (((VTerminalResource) resource).getVterminalName()!= null
-						&& !((VTerminalResource) resource).getVterminalName().trim()
+				if (((VTerminalResource) resource).getVterminalName() != null
+						&& !((VTerminalResource) resource).getVterminalName()
 								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTerminalResource) resource).getVterminalName().trim(),
+							((VTerminalResource) resource).getVterminalName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -113,7 +113,7 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -122,7 +122,7 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -150,13 +150,15 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.VTERMINAL);
 		if (requestBody.has(VtnServiceJsonConsts.VTERMINAL)
-				&& requestBody.get(VtnServiceJsonConsts.VTERMINAL).isJsonObject()) {
+				&& requestBody.get(VtnServiceJsonConsts.VTERMINAL)
+						.isJsonObject()) {
 			isValid = true;
 			final JsonObject vTerminal = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VTERMINAL);
-			if(vTerminal.has(VtnServiceJsonConsts.CONTROLLERID) || vTerminal.has(VtnServiceJsonConsts.DOMAINID) ){
+			if (vTerminal.has(VtnServiceJsonConsts.CONTROLLERID)
+					|| vTerminal.has(VtnServiceJsonConsts.DOMAINID)) {
 				isValid = false;
-			}else{
+			} else {
 				// validation for key: description
 				setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
 				if (vTerminal.has(VtnServiceJsonConsts.DESCRIPTION)
@@ -165,11 +167,11 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 						&& !vTerminal
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DESCRIPTION)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(
 							vTerminal.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
 				}
 			}
@@ -190,17 +192,19 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.VTERMINAL);
 		if (requestBody.has(VtnServiceJsonConsts.VTERMINAL)
-				&& requestBody.get(VtnServiceJsonConsts.VTERMINAL).isJsonObject()) {
+				&& requestBody.get(VtnServiceJsonConsts.VTERMINAL)
+						.isJsonObject()) {
 			final JsonObject vterminal = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VTERMINAL);
 			// validation for mandatory key: VTERMINAL_NAME
 			setInvalidParameter(VtnServiceJsonConsts.VTERMINAL_NAME);
 			if (vterminal.has(VtnServiceJsonConsts.VTERMINAL_NAME)
-					&& vterminal.getAsJsonPrimitive(VtnServiceJsonConsts.VTERMINAL_NAME)
-							.getAsString() != null) {
-				isValid = validator.isValidMaxLengthAlphaNum(vterminal
-						.getAsJsonPrimitive(VtnServiceJsonConsts.VTERMINAL_NAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+					&& vterminal.getAsJsonPrimitive(
+							VtnServiceJsonConsts.VTERMINAL_NAME).getAsString() != null) {
+				isValid = validator.isValidMaxLengthAlphaNum(
+						vterminal.getAsJsonPrimitive(
+								VtnServiceJsonConsts.VTERMINAL_NAME)
+								.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for mandatory key:controller_id
 			if (isValid) {
@@ -209,11 +213,12 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 						&& vterminal.getAsJsonPrimitive(
 								VtnServiceJsonConsts.CONTROLLERID)
 								.getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vterminal.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vterminal.getAsJsonPrimitive(
+											VtnServiceJsonConsts.CONTROLLERID)
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -226,13 +231,13 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
 					isValid = validator.isValidDomainId(vterminal
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
 			}
 			// validation for key: description
-			if (isValid) {				
+			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
 				if (vterminal.has(VtnServiceJsonConsts.DESCRIPTION)
 						&& vterminal.getAsJsonPrimitive(
@@ -240,15 +245,15 @@ public class VTerminalResourceValidator extends VtnServiceValidator {
 						&& !vterminal
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DESCRIPTION)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(
 							vterminal.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
 				}
 			}
-	
+
 		}
 		LOG.trace("Complete vTerminalResourceValidator#validatePost()");
 		return isValid;

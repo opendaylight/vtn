@@ -9,7 +9,9 @@
 package org.opendaylight.vtn.javaapi.openstack.validation;
 
 import java.math.BigInteger;
+import java.util.Iterator;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
@@ -66,20 +68,24 @@ public class PortResourceValidator extends VtnServiceValidator {
 		LOG.trace("Start PortResourceValidator#validate()");
 		boolean isValid = false;
 		try {
-			isValid = validateUri();
-			if (isValid && requestBody != null
-					&& VtnServiceConsts.POST.equalsIgnoreCase(method)) {
-				isValid = validatePost(requestBody);
-			} else if (isValid) {
-				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
-						.getMessage());
-				isValid = false;
+			if (requestBody != null) {
+				isValid = validateUri();
+				if (isValid && VtnServiceConsts.POST.equalsIgnoreCase(method)) {
+					isValid = validatePost(requestBody);
+				} else if (isValid) {
+					setInvalidParameter(UncCommonEnum.UncResultCode
+							.UNC_METHOD_NOT_ALLOWED.getMessage());
+					isValid = false;
+				}
+			} else {
+				setInvalidParameter(UncCommonEnum.UncResultCode
+						.UNC_INVALID_FORMAT.getMessage());
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Invalid value : " + e.getMessage());
+			LOG.error(e, "Invalid value : " + e.getMessage());
 			isValid = false;
 		} catch (final ClassCastException e) {
-			LOG.error("Invalid type : " + e.getMessage());
+			LOG.error(e, "Invalid type : " + e.getMessage());
 			isValid = false;
 		}
 
@@ -198,7 +204,8 @@ public class PortResourceValidator extends VtnServiceValidator {
 				if (id.isJsonNull()
 						|| id.getAsString().isEmpty()
 						|| !validator.isValidMaxLengthAlphaNum(
-								id.getAsString(), VtnServiceJsonConsts.LEN_24)) {
+								id.getAsString(),
+								VtnServiceJsonConsts.LEN_24)) {
 					isValid = false;
 					setInvalidParameter(VtnServiceOpenStackConsts.ID
 							+ VtnServiceConsts.COLON
@@ -263,7 +270,8 @@ public class PortResourceValidator extends VtnServiceValidator {
 						isValid = validator.isValidRange(vid.getAsString(),
 								VtnServiceJsonConsts.VAL_1,
 								VtnServiceJsonConsts.VAL_4095);
-						if (Integer.parseInt(vid.getAsString()) == VtnServiceJsonConsts.VAL_65535) {
+						if (Integer.parseInt(vid.getAsString()) == 
+								VtnServiceJsonConsts.VAL_65535) {
 							isValid = true;
 						}
 					} catch (Exception e) {
@@ -278,6 +286,69 @@ public class PortResourceValidator extends VtnServiceValidator {
 							+ (vid.isJsonNull() ? vid : vid.getAsString()));
 				}
 			}
+			
+			// validation of filters.
+			if (isValid) {
+				setInvalidParameter(VtnServiceOpenStackConsts.FILTERS);
+				if (requestBody.has(VtnServiceOpenStackConsts.FILTERS)) {
+					if (requestBody.get(VtnServiceOpenStackConsts.FILTERS)
+							.isJsonArray()) {
+						if (requestBody.getAsJsonArray(
+								VtnServiceOpenStackConsts.FILTERS).size() > 0) {
+							JsonArray filters = requestBody
+									.getAsJsonArray(
+											VtnServiceOpenStackConsts.FILTERS);
+							Iterator<JsonElement> iterator = filters.iterator();
+							while (iterator.hasNext()) {
+								JsonElement filterID = iterator.next();
+								if (filterID.isJsonPrimitive()) {
+									isValid = isValidFilterId(filterID
+											.getAsString());
+									// Set message as per above checks
+									if (!isValid) {
+										setInvalidParameter(
+											VtnServiceOpenStackConsts
+												.FILTER_RES_ID
+												+ VtnServiceConsts.COLON
+												+ filterID.getAsString());
+										LOG.debug("Invalid flow filter id: %s",
+												filterID.getAsString());
+										break;
+									}
+								} else {
+									setInvalidParameter(
+											UncCommonEnum.UncResultCode
+												.UNC_INVALID_FORMAT
+													.getMessage());
+									isValid = false;
+									break;
+								}
+							}
+						}
+					} else {
+						setInvalidParameter(UncCommonEnum.UncResultCode
+								.UNC_INVALID_FORMAT
+									.getMessage());
+						isValid = false;
+					}
+				}
+				// filters is not specified, The isValid is true.
+			}
+		}
+
+		if (isValid) {
+			final JsonElement port = requestBody
+					.get(VtnServiceOpenStackConsts.PORT);
+			if (port.isJsonNull()
+					|| port.getAsString().equalsIgnoreCase(
+							VtnServiceOpenStackConsts.NULL)) {
+				if (requestBody.has(VtnServiceOpenStackConsts.FILTERS) 
+						&& requestBody.getAsJsonArray(
+								VtnServiceOpenStackConsts.FILTERS).size() > 0) {
+					isValid = false;
+					setInvalidParameter("filters,but no port");
+				}
+			}
 		}
 
 		// validation of port and datapath_id combination
@@ -288,12 +359,13 @@ public class PortResourceValidator extends VtnServiceValidator {
 					.get(VtnServiceOpenStackConsts.DATAPATH_ID);
 			if (datapathid.getAsString().isEmpty()
 					&& (!port.isJsonNull() && !port.getAsString()
-							.equalsIgnoreCase(VtnServiceOpenStackConsts.NULL))) {
+							.equalsIgnoreCase(
+									VtnServiceOpenStackConsts.NULL))) {
 				isValid = false;
-				setInvalidParameter("port specified, but datapath_id not specified");
+				setInvalidParameter("port specified, but datapath_id not " +
+						"specified");
 			}
 		}
-
 		LOG.trace("Complete PortResourceValidator#validatePost()");
 		return isValid;
 	}
@@ -309,19 +381,88 @@ public class PortResourceValidator extends VtnServiceValidator {
 		boolean isValid = true;
 		if (!datapathId.equalsIgnoreCase(VtnServiceConsts.EMPTY_STRING)) {
 			try {
-				isValid = (datapathId.substring(0, 2).equalsIgnoreCase("0X")) ? datapathId
+				isValid = (datapathId.substring(0, 2)
+						.equalsIgnoreCase("0X")) ? datapathId
 						.matches(VtnServiceOpenStackConsts.OS_DATAPATH_ID_REGEX)
-						: validator.isValidBigIntegerRangeString(new BigInteger(
-								datapathId), VtnServiceJsonConsts.BIG_VAL0,
-								VtnServiceJsonConsts.BIG_VAL_18446744073709551999);
+						: validator
+								.isValidBigIntegerRangeString(
+										new BigInteger(datapathId),
+										VtnServiceJsonConsts.BIG_VAL0,
+										VtnServiceJsonConsts
+											.BIG_VAL_18446744073709551999);
 			} catch (Exception e) {
+				LOG.error(e, "validation fail for datapath-id: " + e);
 				isValid = false;
 			}
 			if (isValid) {
-				isValid = !datapathId
-						.equalsIgnoreCase(VtnServiceOpenStackConsts.INVALID_DATA_PATH_ID);
+				isValid = !datapathId.equalsIgnoreCase(
+						VtnServiceOpenStackConsts.INVALID_DATA_PATH_ID);
 			}
 		}
+		return isValid;
+	}
+	
+	/**
+	 * Check the validity of filter id notation.
+	 * 
+	 * @param filterId
+	 *            - filter id format string, the format is "os_fXHHHH_", detail:
+	 *            X: 'p' or 'd', HHHH: Hexadecimal number
+	 * @return - result as true or false
+	 */
+	private boolean isValidFilterId(String filterId) {
+		final int FILTER_ID_MIN_LEN = 11;
+		final int FILTER_PREFIX_START = 0;
+		final int FILTER_PREFIX_END = 4;
+		final int FILTER_ACTION = 4;
+		final int FILTER_PRIORITY_START = 5;
+		final int FILTER_PRIORITY_END = 9;
+		final int RAIDX_16 = 16;
+		
+		boolean isValid = false;
+		String subString;
+
+		if (filterId.length() < FILTER_ID_MIN_LEN
+				|| !validator.isValidMaxLengthAlphaNum(filterId,
+						VtnServiceJsonConsts.LEN_32)) {
+			return isValid;
+		}
+
+		/* Check "os_f". */
+		subString = filterId.substring(FILTER_PREFIX_START, FILTER_PREFIX_END);
+		if (!subString.equals(VtnServiceOpenStackConsts.FL_PREFIX)) {
+			return isValid;
+		}
+
+		/* Check "X". */
+		if (filterId.charAt(FILTER_ACTION) != VtnServiceOpenStackConsts.X_PASS
+				&& filterId.charAt(FILTER_ACTION) != 
+						VtnServiceOpenStackConsts.X_DROP) {
+			return isValid;
+		}
+
+		/* Check "HHHH". */
+		subString = filterId.substring(FILTER_PRIORITY_START,
+				FILTER_PRIORITY_END);
+		try {
+			int value = Integer.parseInt(subString, RAIDX_16);
+			if (value >= VtnServiceJsonConsts.VAL_1
+					&& value <= VtnServiceJsonConsts.VAL_32766) {
+				isValid = true;
+			}
+		} catch (Exception e) {
+			isValid = false;
+		}
+		if (!isValid) {
+			return isValid;
+		}
+
+		/* Check "_". */
+		if (filterId.charAt(9) != VtnServiceOpenStackConsts.UNDER_LINE
+				.charAt(0)) {
+			return false;
+		}
+
 		return isValid;
 	}
 }

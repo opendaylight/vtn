@@ -39,9 +39,8 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 	 * Configuration API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ConfigResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ConfigResourceValidator");
@@ -85,9 +84,8 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 			if (configuration.has(VtnServiceJsonConsts.OPERATION)
 					&& configuration.getAsJsonPrimitive(
 							VtnServiceJsonConsts.OPERATION).getAsString() != null) {
-				final String operation = configuration
-						.getAsJsonPrimitive(VtnServiceJsonConsts.OPERATION)
-						.getAsString().trim();
+				final String operation = configuration.getAsJsonPrimitive(
+						VtnServiceJsonConsts.OPERATION).getAsString();
 				isValid = operation
 						.equalsIgnoreCase(VtnServiceJsonConsts.COMMIT)
 						|| operation

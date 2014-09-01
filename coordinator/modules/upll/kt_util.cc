@@ -158,7 +158,7 @@ void KtUtil::Init() {
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValFlowfilterEntry);
   // can't do; TC does not support
   // tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStPfcdrvValVbrifVextif);
-  kt_msg_templates_[UNC_KT_FLOWLIST_ENTRY] = tmpl;
+  kt_msg_templates_[UNC_KT_VBRIF_FLOWFILTER_ENTRY] = tmpl;
   // UNC_KT_VBRIF_POLICINGMAP
   tmpl = new KtMsgTemplate();
   tmpl->kt_cfg_msg.push_back(IpctSt::kIpcStKeyVbrIf);
@@ -809,6 +809,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_vtn& val_rename_vtn) {
   ss << "   -----   val_rename_vtn   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_vtn.valid);
   ss << "   -->new_name " << val_rename_vtn.new_name << endl;
+  ss << "   -->Rename_type "<< chr2int(val_rename_vtn.rename_type) << endl;
   return ss.str();
 }
 
@@ -843,8 +844,9 @@ std::string KtUtil::IpcStructToStr(const val_vtn_mapping_controller_st& data) {
   ss << "   -->vlan_id " << data.vlan_id << endl;
   ss << "   -->tagged " << chr2int(data.tagged) << endl;
   ss << "   -->map_type " << chr2int(data.map_type) << endl;
-  ss << "   -->vbr_name " << data.vbr_name << endl;
-  ss << "   -->vbrif_name " << data.vbrif_name << endl;
+  ss << "   -->vnode_type " << chr2int(data.vnode_type) << endl;
+  ss << "   -->vnode_name " << data.vnode_name << endl;
+  ss << "   -->vnode_if_name " << data.vnode_if_name << endl;
   return ss.str();
 }
 
@@ -871,9 +873,10 @@ std::string KtUtil::IpcStructToStr(const val_vtnstation_controller_st& data) {
   ss << "   -->map_status " << chr2int(data.map_status) << endl;
   ss << "   -->vtn_name " << data.vtn_name << endl;
   ss << "   -->domain_id " << data.domain_id << endl;
-  ss << "   -->vbr_name " << data.vbr_name << endl;
-  ss << "   -->vbrif_name " << data.vbrif_name << endl;
-  ss << "   -->vbrif_status " << chr2int(data.vbrif_status) << endl;
+  ss << "   -->vnode_type " << chr2int(data.vnode_type) << endl;
+  ss << "   -->vnode_name " << data.vnode_name << endl;
+  ss << "   -->vnode_if_name " << data.vnode_if_name << endl;
+  ss << "   -->vnode_if_status " << chr2int(data.vnode_if_status) << endl;
   return ss.str();
 }
 
@@ -935,6 +938,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_vbr& val_rename_vbr) {
   ss << "   -----   val_rename_vbr   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_vbr.valid);
   ss << "   -->new_name " << val_rename_vbr.new_name << endl;
+  ss << "   -->Rename_type " <<  chr2int(val_rename_vbr.rename_type) <<endl;
   return ss.str();
 }
 
@@ -1064,6 +1068,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_vrt& val_rename_vrt) {
   ss << "   -----   val_rename_vrt   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_vrt.valid);
   ss << "   -->new_name " << val_rename_vrt.new_name << endl;
+  ss << "   -->Renmae_type " << val_rename_vrt.rename_type << endl;
   return ss.str();
 }
 
@@ -1232,6 +1237,7 @@ std::stringstream ss;
 ss << "   -----   val_rename_vterm   -----   " << endl;
 ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_vterm.valid);
 ss << "   -->new_name " << val_rename_vterm.new_name << endl;
+ss << "   -->Rename_type "<< chr2int(val_rename_vterm.rename_type) << endl;
 return ss.str();
 }
 
@@ -1567,6 +1573,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_vlink& val_rename_vlink) {
   ss << "   -----   val_rename_vlink   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_vlink.valid);
   ss << "   -->new_name " << val_rename_vlink.new_name << endl;
+  ss << "   -->Rename_type " << chr2int(val_rename_vlink.rename_type) << endl;
   return ss.str();
 }
 
@@ -1592,6 +1599,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_flowlist& data) {
   ss << "   -----   val_rename_flowlist   -----   " << endl;
   ss << "   -->valid " << VALID_ARRAY_TO_STR(data.valid);
   ss << "   -->flowlist_newname " << data.flowlist_newname << endl;
+  ss << "   -->Rename_type " << chr2int(data.rename_type) << endl;
   return ss.str();
 }
 
@@ -1875,6 +1883,7 @@ std::string KtUtil::IpcStructToStr(const val_rename_policingprofile&
   ss << "   -->valid " << VALID_ARRAY_TO_STR(val_rename_policingprofile.valid);
   ss << "   -->policingprofile_newname "
       << val_rename_policingprofile.policingprofile_newname << endl;
+  ss << "   -->Rename_type " << chr2int(val_rename_policingprofile.rename_type) << endl;
   return ss.str();
 }
 
@@ -1954,8 +1963,8 @@ std::string KtUtil::IpcStructToStr(const val_policingmap_switch_st& data) {
   ss << "   -->policer_id " << data.policer_id << endl;
   ss << "   -->switch_id " << data.switch_id << endl;
   ss << "   -->status " << chr2int(data.status) << endl;
-  ss << "   -->vBridge_name " << data.vbr_name << endl;
-  ss << "   -->if_name " << data.if_name << endl;
+  ss << "   -->vBridge_name " << data.vnode_name << endl;
+  ss << "   -->if_name " << data.vnode_if_name << endl;
   ss << "   -->port_name " << data.port_name << endl;
   ss << "   -->vlanid " << data.vlanid << endl;
   ss << "   -->total " << endl;

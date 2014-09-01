@@ -53,13 +53,13 @@ enum val_mac_entry_type {
   UPLL_MAC_ENTRY_DYNAMIC
 };
 
-/* Enumeration for ValVbrIfMap type */
-enum val_vbr_if_map_type {
+/* Enumeration for vnode interface type */
+enum val_vnode_if_map_type {
   UPLL_IF_OFS_MAP = 0,
   UPLL_IF_VLAN_MAP
 };
 
-/* Enumeration for ValVtnMap status */
+/* Enumeration for vtn map status */
 enum val_vtn_map_status {
   UPLL_VTN_MAP_VALID = 0,
   UPLL_VTN_MAP_INVALID
@@ -97,9 +97,10 @@ enum val_vtnstation_controller_st_index {
   UPLL_IDX_MAP_STATUS_VSCS,
   UPLL_IDX_VTN_NAME_VSCS,
   UPLL_IDX_DOMAIN_ID_VSCS,
-  UPLL_IDX_VBR_NAME_VSCS,
-  UPLL_IDX_VBR_IF_NAME_VSCS,
-  UPLL_IDX_VBR_IF_STATUS_VSCS
+  UPLL_IDX_VNODE_TYPE_VSCS,
+  UPLL_IDX_VNODE_NAME_VSCS,
+  UPLL_IDX_VNODE_IF_NAME_VSCS,
+  UPLL_IDX_VNODE_IF_STATUS_VSCS
 };
 
 /* index enumeration for val_vtn_station_controller_stat  structure */
@@ -136,8 +137,9 @@ enum val_vtn_mapping_controller_st_index {
   UPLL_IDX_VLAN_ID_VMCS,
   UPLL_IDX_TAGGED_VMCS,
   UPLL_IDX_MAP_TYPE_VMCS,
-  UPLL_IDX_VBR_NAME_VMCS,
-  UPLL_IDX_VBR_IF_NAME_VMCS
+  UPLL_IDX_VNODE_TYPE_VMCS,
+  UPLL_IDX_VNODE_NAME_VMCS,
+  UPLL_IDX_VNODE_IF_NAME_VMCS
 };
 
 /* index enumeration for val_vtn structure */
@@ -147,7 +149,8 @@ enum val_vtn_index {
 
 /* index enumeration for val_rename_vtn structure */
 enum val_rename_vtn_index {
-  UPLL_IDX_NEW_NAME_RVTN = 0
+  UPLL_IDX_NEW_NAME_RVTN = 0,
+  UPLL_IDX_RENAME_TYPE_RVTN
 };
 
 /* index enumeration for val_vtn_st structure */
@@ -169,7 +172,8 @@ enum val_vbr_index {
 
 /* index enumeration for val_rename_vbr structure */
 enum val_rename_vbr_index {
-  UPLL_IDX_NEW_NAME_RVBR = 0
+  UPLL_IDX_NEW_NAME_RVBR = 0,
+  UPLL_IDX_RENAME_TYPE_RVBR
 };
 
 /* index enumeration for val_vbr_st structure */
@@ -231,7 +235,8 @@ enum val_vrt_index {
 
 /* index enumeration for val_rename_vrt structure */
 enum val_rename_vrt_index {
-  UPLL_IDX_NEW_NAME_RVRT = 0
+  UPLL_IDX_NEW_NAME_RVRT = 0,
+  UPLL_IDX_RENAME_TYPE_RVRT
 };
 
 /* index enumeration for val_vrt_st structure */
@@ -396,7 +401,8 @@ enum val_vlink_st_index {
 
 /* index enumeration for val_rename_vlink structure */
 enum val_rename_vlink_index {
-  UPLL_IDX_NEW_NAME_RVLNK = 0
+  UPLL_IDX_NEW_NAME_RVLNK = 0,
+  UPLL_IDX_RENAME_TYPE_RVLNK
 };
 
 /* index enumeration for val_nwm structure */
@@ -437,7 +443,9 @@ enum val_vterm_index {
 
 /* index enumeration for val_rename_vterm structure */
 enum val_rename_vterm_index {
-  UPLL_IDX_NEW_NAME_RVTERM = 0
+  UPLL_IDX_NEW_NAME_RVTERM = 0,
+  UPLL_IDX_RENAME_TYPE_RVTERM
+
 };
 
 /* index enumeration for val_vterm_st structure */
@@ -498,7 +506,8 @@ enum val_flowlist_index {
 
 /* valid array enum in val_rename_flowlist */
 enum val_rename_flowlist_index {
-  UPLL_IDX_RENAME_FLOWLIST_RFL = 0    /* flowlist_newname */
+  UPLL_IDX_RENAME_FLOWLIST_RFL = 0,    /* flowlist_newname */
+  UPLL_IDX_RENAME_TYPE_RFL
 };
 
 /* valid array enum in val_flowlist_entry index */
@@ -599,7 +608,8 @@ enum val_flowfilter_entry_index {
 
 /* valid array enum in val_rename_policingprofile */
 enum val_rename_policingprofile_index {
-  UPLL_IDX_RENAME_PROFILE_RPP = 0    /* policingprofile_newname */
+  UPLL_IDX_RENAME_PROFILE_RPP = 0,    /* policingprofile_newname */
+  UPLL_IDX_RENAME_TYPE_RPP
 };
 
 /* valid array enum in val_policingprofile_entry */
@@ -642,8 +652,8 @@ enum val_policingmap_switch_st_index {
   UPLL_IDX_POLICER_ID_PMSS = 0,   /* policer_id */
   UPLL_IDX_SWITCH_ID_PMSS,        /* dpid */
   UPLL_IDX_STATUS_PMSS,           /* status */
-  UPLL_IDX_VBR_NAME_PMSS,         /* vbridge name*/
-  UPLL_IDX_IF_NAME_PMSS,          /* if_name */
+  UPLL_IDX_VNODE_NAME_PMSS,       /* vnode name*/
+  UPLL_IDX_VNODE_IF_NAME_PMSS,    /* vnode if_name */
   UPLL_IDX_PORT_NAME_PMSS,        /* port_name */
   UPLL_IDX_VLAN_ID_PMSS,          /* vlanid */
   UPLL_IDX_TOTAL_PMSS,            /* total */
@@ -706,6 +716,26 @@ enum val_vtn_dataflow_index {
   UPLL_IDX_CTRLR_DOMAIN_COUNT_VVD   /* Hop count */
 };
 
+/* Import operation type enum */
+enum upll_import_type {
+  UPLL_IMPORT_TYPE_FULL = 0,
+  UPLL_IMPORT_TYPE_PARTIAL = 1
+};
+
+/* Rename type enum */
+enum upll_rename_type {
+  UPLL_RENAME_TYPE_MANUAL = 0,
+  UPLL_RENAME_TYPE_AUTO = 1
+};
+
+enum val_vnode_type {
+  UPLL_VNODE_VBRIDGE = 0,
+  UPLL_VNODE_VROUTER,
+  UPLL_VNODE_VTERMINAL,
+  UPLL_VNODE_VUNKNOWN,
+  UPLL_VNODE_VTEP,
+  UPLL_VNODE_VTUNNEL
+};
 
 UNC_C_END_DECL
 

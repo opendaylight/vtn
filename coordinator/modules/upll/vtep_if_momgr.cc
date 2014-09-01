@@ -785,7 +785,9 @@ namespace kt_momgr {
         UPLL_LOG_DEBUG("Returning error\n");
         return UPLL_RC_ERR_GENERIC;
       }
-      vnif_st->oper_status = UPLL_OPER_STATUS_UP;
+      vnif_st->oper_status = (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)?
+                              UPLL_OPER_STATUS_UNKNOWN:
+                              UPLL_OPER_STATUS_UP;
       vnif_st->valid[UPLL_IDX_IF_OPER_STATUS_VTEPIS] = UNC_VF_VALID;
 #endif
       vtep_db_valst->down_count = 0;
@@ -1375,8 +1377,10 @@ namespace kt_momgr {
     while (okey) {
       uint8_t vlink_flag = 0;
       GET_USER_DATA_FLAGS(okey, vlink_flag);
-      if (vlink_flag & VIF_TYPE)
-        return UPLL_RC_ERR_CFG_SEMANTIC;
+      if (vlink_flag & VIF_TYPE) {
+        result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+        break;
+      }
       okey = okey->get_next_cfg_key_val();
     }
     DELETE_IF_NOT_NULL(tkey);

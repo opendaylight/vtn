@@ -103,7 +103,7 @@ void TcDbHandler::GetErrorReason(SQLRETURN sqlret,
 
 TcTaskqUtil::~TcTaskqUtil() {}
 
-TcTaskqUtil::TcTaskqUtil(uint32_t concurrency, int32_t alarm_id) {}
+TcTaskqUtil::TcTaskqUtil(uint32_t concurrency) {}
 int TcTaskqUtil::PostReadTimer(uint32_t session_id,
                                uint32_t timeout,
                                TcLock* tclock,
@@ -169,6 +169,21 @@ TcUtilRet TcServerSessionUtils::get_uint32(pfc::core::ipc::ServerSession* ssess,
     return TCUTIL_RET_SUCCESS;
   }
 }
+
+TcUtilRet TcServerSessionUtils::get_uint64(pfc::core::ipc::ServerSession* ssess,
+                                           uint32_t index,
+                                           uint64_t* data) {
+  if ( stub_srv_uint32 == 0 ) {
+    pfc_log_info("get_uint32::TCUTIL_RET_FAILURE");
+    return TCUTIL_RET_FAILURE;
+  } else if (stub_srv_uint32 == -1) {
+    pfc_log_info("get_uint32::TCUTIL_RET_FAILURE");
+    return TCUTIL_RET_FATAL;
+  } else {
+        return TCUTIL_RET_SUCCESS;
+      }
+    }
+
 
 TcUtilRet TcServerSessionUtils::set_uint32(pfc::core::ipc::ServerSession* ssess,
                                            uint32_t audit_result ) {

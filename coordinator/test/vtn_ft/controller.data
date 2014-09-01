@@ -8,7 +8,7 @@
 #
 
 [ControllerFirst]
-ipaddr=10.100.9.41
+ipaddr=10.100.9.44
 invalid_ipaddr=10.10.0.1
 controller_id=controller1
 description=First Test Controller
@@ -26,7 +26,7 @@ get_url=/controllers/controller1
 port=8080
 
 [ControllerSecond]
-ipaddr=10.100.9.43
+ipaddr=10.100.9.42
 invalid_ipaddr=10.10.0.2
 controller_id=controller2
 description=Second Test Controller

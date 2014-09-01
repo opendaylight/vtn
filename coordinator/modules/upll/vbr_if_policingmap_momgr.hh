@@ -102,7 +102,7 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_GENERIC          Generic Errors.
    */
   upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                              DalDmlIntf *dmi, bool restore_flag = false);
+                              DalDmlIntf *dmi);
 
   /**
    * @Brief This API is used to delete the record (VbrIf name with
@@ -289,7 +289,8 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_MERGE_CONFLICT  Record already avilable
    */
   upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                          ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                          ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                          upll_import_type import_type);
 
   /**
    * @Brief This API is used to get the unc key name
@@ -554,7 +555,8 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
       unc_keytype_operation_t op,
       DbSubOp dbop,
       DalDmlIntf *dmi,
-      ConfigKeyVal **okey);
+      ConfigKeyVal **okey,
+      controller_domain ctrlr_dom);
 
   upll_rc_t ReadEntryDetailRecord(
       IpcReqRespHeader *req,
@@ -568,7 +570,8 @@ class VbrIfPolicingMapMoMgr : public MoMgrImpl {
       unc_keytype_operation_t op,
       DbSubOp dbop,
       DalDmlIntf *dmi,
-      ConfigKeyVal **okey);
+      ConfigKeyVal **okey,
+      controller_domain ctrlr_dom);
 
   upll_rc_t GetChildEntryConfigKey(ConfigKeyVal *&okey,
                                    ConfigKeyVal *ikey);

@@ -17,6 +17,7 @@
 
 #include "odbcm_common.hh"
 #include "odbcm_mgr.hh"
+#include "pfcxx/thread.hh"
 using unc::uppl::ODBCManager;
 namespace unc {
 namespace uppl {
@@ -35,7 +36,7 @@ class OdbcmConnectionHandler {
     */
     explicit OdbcmConnectionHandler(const OdbcmConnType conn_type,
                                     UncRespCode &conn_status,
-                                    ODBCManager *odbc_manager): 
+                                    ODBCManager *odbc_manager):
                                     conn_type_(conn_type),
                                     conn_handle_(NULL),
                                     odbc_manager_(odbc_manager),
@@ -61,11 +62,14 @@ class OdbcmConnectionHandler {
       conn_handle_ = conn_handle;
     }
 
-    void set_using_session_id(uint32_t session_id) {
+    void set_using_session_id(uint32_t session_id, uint32_t thread_id) {
       using_session_id_ = session_id;
+      using_session_id_ = (using_session_id_ << 32) + thread_id;
+      pfc_log_info("using_session_id_ (session_id + thread_id) = %"
+                                   PFC_PFMT_u64, using_session_id_);
     }
 
-    uint32_t get_using_session_id() {
+    uint64_t get_using_session_id() {
       return using_session_id_;
     }
 
@@ -81,7 +85,7 @@ class OdbcmConnectionHandler {
     OdbcmConnType conn_type_;
     SQLHDBC conn_handle_;  // Connection handler to create ODBC Connection
     ODBCManager *odbc_manager_;
-    uint32_t using_session_id_;
+    uint64_t using_session_id_;
 };
 
 class ScopedDBConnection {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -51,6 +51,8 @@ class DBTableSchema {
      */
     CsRowStatus db_return_status_;
 
+    std::string frame_explicit_order_;
+
     /*
      * Get the table name
      */
@@ -84,13 +86,13 @@ class DBTableSchema {
      */
     void set_row_list(std::list <std::vector<TableAttrSchema> >);
     /*
-     * To push the TableAttrSchema to Attribute vector 
-     */
-    void PushBackToTableRowVector(TableAttrSchema);  // WIP
-    /*
      * To free the memory in DBTableSchema
      */
     void FreeDBTableSchema();
+    /* to clear a particular row's allocated memory in row_list_
+     *
+     * */
+    void DeleteRowListFrontElement();
     /*
      * Method to print the database schema information
      */

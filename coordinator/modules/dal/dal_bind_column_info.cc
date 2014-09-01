@@ -116,7 +116,14 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
   }
   // If DB datatype is BINARY, array size should be number of bytes.
   if (dal_data_type == SQL_BINARY) {
-    binary_array_size = CalculateAppBufferSize(app_data_type, array_size);
+    /* In case of SQL_BINARY, array size should be always 1 
+     * When CheckInstance is called from CreateRecord: During BindMatch
+     * in CheckInstance, the size of binary (nwm-host-addr) is 4 instead of 1
+     * since it was updated as 4 when BindAttribute was called for CreateRecord */
+    if (array_size == 1)
+      binary_array_size = CalculateAppBufferSize(app_data_type, array_size);
+    else
+      binary_array_size = array_size;
     if (binary_array_size !=
         schema::ColumnDbArraySize(table_index, column_index_)) {
       UPLL_LOG_DEBUG("Array size mismatch for Table(%s) Column(%s): "

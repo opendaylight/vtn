@@ -55,18 +55,18 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VlanMapsResource
 				&& ((VlanMapsResource) resource).getVtnName() != null
-				&& !((VlanMapsResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VlanMapsResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VlanMapsResource) resource).getVtnName().trim(),
+					((VlanMapsResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VlanMapsResource) resource).getVbrName() != null
-						&& !((VlanMapsResource) resource).getVbrName().trim()
+						&& !((VlanMapsResource) resource).getVbrName()
 								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VlanMapsResource) resource).getVbrName().trim(),
+							((VlanMapsResource) resource).getVbrName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -75,18 +75,17 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof VlanMapResource
 				&& ((VlanMapResource) resource).getVtnName() != null
-				&& !((VlanMapResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VlanMapResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VlanMapResource) resource).getVtnName().trim(),
+					((VlanMapResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VlanMapResource) resource).getVbrName() != null
-						&& !((VlanMapResource) resource).getVbrName().trim()
-								.isEmpty()) {
+						&& !((VlanMapResource) resource).getVbrName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VlanMapResource) resource).getVbrName().trim(),
+							((VlanMapResource) resource).getVbrName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -96,10 +95,10 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VLANMAPID);
 				if (((VlanMapResource) resource).getVlanMapId() != null
-						&& !((VlanMapResource) resource).getVlanMapId().trim()
+						&& !((VlanMapResource) resource).getVlanMapId()
 								.isEmpty()) {
 					final String vlamMapId = ((VlanMapResource) resource)
-							.getVlanMapId().trim();
+							.getVlanMapId();
 					isValid = isValidVLanMapId(vlamMapId);
 				} else {
 					isValid = false;
@@ -135,9 +134,8 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of VLanMap API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VLanMapResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VLanMapResourceValidator");
@@ -159,7 +157,7 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -220,9 +218,8 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 						&& requestBody.getAsJsonPrimitive(
 								VtnServiceJsonConsts.INDEX).getAsString() != null) {
 
-					final String vlamMapId = requestBody
-							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim();
+					final String vlamMapId = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.INDEX).getAsString();
 					isValid = isValidVLanMapId(vlamMapId);
 				}
 			}
@@ -263,12 +260,11 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 					&& !vLanMap
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.LOGICAL_PORT_ID)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(
 						vLanMap.getAsJsonPrimitive(
 								VtnServiceJsonConsts.LOGICAL_PORT_ID)
-								.getAsString().trim(),
-						VtnServiceJsonConsts.LEN_319);
+								.getAsString(), VtnServiceJsonConsts.LEN_319);
 			}
 			if (isValid) {
 				isValid = validatePut(requestBody);
@@ -310,11 +306,11 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 						&& !vLanMap
 								.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					// validation for key: vlan_id
 					isValid = validator.isValidRange(vLanMap
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLANID)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
+							.getAsString(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_4095);
 				} else {
 					isValid = false;
@@ -326,11 +322,10 @@ public class VLanMapResourceValidator extends VtnServiceValidator {
 						&& !vLanMap
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.NO_VLAN_ID)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					// validation for key: no_vlan_id
-					final String no_vlan_id = vLanMap
-							.getAsJsonPrimitive(VtnServiceJsonConsts.NO_VLAN_ID)
-							.getAsString().trim();
+					final String no_vlan_id = vLanMap.getAsJsonPrimitive(
+							VtnServiceJsonConsts.NO_VLAN_ID).getAsString();
 					isValid = no_vlan_id
 							.equalsIgnoreCase(VtnServiceJsonConsts.TRUE);
 				} else {

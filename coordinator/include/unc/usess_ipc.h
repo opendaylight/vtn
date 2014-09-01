@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -23,9 +23,11 @@ extern "C" {
 
 // Invalid session ID.
 #define USESS_ID_INVALID 0
-// fixed session ID for database management.
-#define USESS_ID_DB_MGMT  128
-#define USESS_ID_LAUNCHER 129
+
+// Fixed session ID.
+#define USESS_ID_DB_MGMT  128  // Database Management
+#define USESS_ID_LAUNCHER 129  // Launcher
+#define USESS_ID_STARTUPPROXY 130  // Startup Proxy
 
 // Default user name.
 #define USESS_USER_CLI_ADMIN "UNC_CLI_ADMIN"

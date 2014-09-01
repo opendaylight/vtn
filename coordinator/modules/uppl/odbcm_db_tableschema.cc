@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,6 +33,7 @@ DBTableSchema::DBTableSchema()
       /** Initialize all the members */
       db_return_status_(ROW_VALID) {
       table_name_ = UNKNOWN_TABLE;
+      frame_explicit_order_ = "";
 }
 
 /**
@@ -157,6 +158,30 @@ void DBTableSchema::FreeDBTableSchema() {
   /** Clear the list after the traversal */
   row_list_.clear();
 }
+
+/**
+*@Description : delete and free the single rowlist memory in DBTableSchema 
+*@param[in]   : none
+*@return      : void
+**/
+void DBTableSchema::DeleteRowListFrontElement() {
+  std::list <std::vector<TableAttrSchema> >::iterator iter_list =
+                                      row_list_.begin();
+  std::vector< TableAttrSchema >::iterator iter_vector;
+  std::vector<TableAttrSchema> attr_vector = *iter_list;
+  /** Traverse the vector to get attribute information */
+  for (iter_vector = attr_vector.begin();
+      iter_vector != attr_vector.end(); ++iter_vector) {
+    /** Free the memory inside the vector */
+    if ((*iter_vector).p_table_attribute_value != NULL) {
+      ::operator delete((*iter_vector).p_table_attribute_value);
+      (*iter_vector).p_table_attribute_value = NULL;
+    }
+  }
+  attr_vector.clear();
+  row_list_.pop_front();
+}
+
 /**
  * *@Description : To print the char buffer values in DBTableSchema
  * *@param[in]   : buffer - to print the column attribute values, 

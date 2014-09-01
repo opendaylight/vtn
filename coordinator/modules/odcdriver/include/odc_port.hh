@@ -17,6 +17,7 @@
 #include <vtn_drv_module.hh>
 #include <unc/unc_events.h>
 #include <vtndrvintf_defs.h>
+#include <driver/driver_command.hh>
 #include <string>
 #include <list>
 #include <vector>
@@ -25,7 +26,7 @@
 namespace unc {
 namespace odcdriver {
 
-class OdcPort {
+class OdcPort : public unc::driver::vtn_driver_read_command {
  public:
   /**
    * @brief Default Constructor
@@ -61,6 +62,10 @@ class OdcPort {
                                     key_port_t *key_port,
                                     val_port_st_t *val_port,
                                     val_port_st_t *val_old_port);
+
+  // For reading PORT statistics
+  UncRespCode read_cmd(unc::driver::controller *ctr,
+                        unc::vtnreadutil::driver_read_util*);
 
  private:
   /**
@@ -206,6 +211,20 @@ class OdcPort {
       char *data,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
+  /**
+   * @brief                           - parse the response from controller
+   * @param[in] ctr_ptr               - Controller pointer
+   * @param[in] read_util             - readutil for reading key
+   * @param[in] data                  - data to be parsed
+   * @param[in] port_map              - Map contains, port-id and port-name
+   * @param[in] switch-id             - switch-id
+   * return UncRespCode               - return UNC_RC_SUCCESS/ UNC_DRV_RC_ERR_GENERIC
+   */
+  UncRespCode parse_port_stat_response(
+      unc::driver::controller *ctr_ptr,
+      unc::vtnreadutil::driver_read_util*, char *data_port,
+      std::map<string, string>port_map, string switch_id);
+
 
   /**
    * @brief                           - fills logical port structure
@@ -251,6 +270,7 @@ class OdcPort {
 
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;
+  std::map <std::string, std::string> port_id_val_;
 };
 }  // namespace odcdriver
 }  // namespace unc

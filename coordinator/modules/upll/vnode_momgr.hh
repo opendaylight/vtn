@@ -22,38 +22,48 @@ namespace kt_momgr {
 typedef struct val_db_vbr_st {
     val_vbr_st vbr_val_st;
     uint32_t down_count;
-    uint32_t fault_count;
+    uint32_t unknown_count;
 } val_db_vbr_st_t;
 
 typedef struct val_db_vrt_st {
     val_vrt_st vrt_val_st;
     uint32_t down_count;
-    uint32_t fault_count;
+    uint32_t unknown_count;
 } val_db_vrt_st_t;
 
 typedef struct val_db_vtep_st {
     val_vtep_st vtep_val_st;
     uint32_t down_count;
-    uint32_t fault_count;
+    uint32_t unknown_count;
 } val_db_vtep_st_t;
 
 typedef struct val_db_vtunnel_st {
     val_vtunnel_st vtunnel_val_st;
     uint32_t down_count;
-    uint32_t fault_count;
+    uint32_t unknown_count;
 } val_db_vtunnel_st_t;
 
 typedef struct val_db_vterm_st {
     val_vterm_st vterm_val_st;
     uint32_t down_count;
-    uint32_t fault_count;
+    uint32_t unknown_count;
 } val_db_vterm_st_t;
 
-
+struct vnode_comp {
+  inline bool operator()(const key_vnode &keyvnode1,
+                          const key_vnode &keyvnode2) const {
+    int ret = strcmp((const char *)keyvnode1.vtn_key.vtn_name,
+                     (const char *)keyvnode2.vtn_key.vtn_name);
+    if (ret == 0) {
+      return (strcmp((const char *)keyvnode1.vnode_name,
+                     (const char*)keyvnode2.vnode_name) < 0);
+    } else {
+      return (ret < 0);
+    }
+  }
+};
 class VnodeMoMgr : public MoMgrImpl {
   public:
-    map<string,ConfigKeyVal *> vnode_oper_map;
-
     VnodeMoMgr() {
       parent_ck_vtn = NULL;
       cntrl_id = NULL;
@@ -65,8 +75,8 @@ class VnodeMoMgr : public MoMgrImpl {
 
     upll_rc_t UpdateOperStatus(ConfigKeyVal *ck_vn,
                           DalDmlIntf *dmi,
-                          state_notification notification, bool skip,
-                          bool save_to_db);
+                          state_notification notification, bool skip
+                          );
     upll_rc_t CtrlrTypeAndDomainCheck(ConfigKeyVal *ikey, 
                                               IpcReqRespHeader *req);
    /**
@@ -129,11 +139,10 @@ class VnodeMoMgr : public MoMgrImpl {
                                         upll_keytype_datatype_t dt_type);
 
     template<typename T1, typename T2>
-    bool SetOperStatus(ConfigKeyVal *ikey,
+    upll_rc_t SetOperStatus(ConfigKeyVal *ikey,
                             DalDmlIntf *dmi,
-                            int notification,
-                            bool skip,
-                            bool save_to_db);
+                            state_notification &notification,
+                            bool &oper_change);
     /**
      * @brief          Enqueues oper status notifications
      *
@@ -162,6 +171,14 @@ class VnodeMoMgr : public MoMgrImpl {
                               uint32_t session_id,
                               uint32_t config_id,
                               DalDmlIntf *dmi) ;
+    upll_rc_t SetVnodeAndParentOperStatus (ConfigKeyVal *ck_vnode,
+                                           DalDmlIntf *dmi, bool stand_alone,
+                                           bool recon, uint32_t unknown_count, uint32_t down_count);
+    upll_rc_t UpdateLastInterfaceDelete(ConfigKeyVal *ikey, ConfigKeyVal *ck_vnode,
+                                    DalDmlIntf *dmi);
+    upll_rc_t SetStandAloneOperStatus(ConfigKeyVal *ck_vnode,
+                                      state_notification notfn,
+                                      DalDmlIntf *dmi);
   protected:
     ConfigKeyVal *parent_ck_vtn;
 
@@ -175,7 +192,8 @@ class VnodeMoMgr : public MoMgrImpl {
     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
     */
     virtual upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
-                                           DalDmlIntf *dmi);
+                                           DalDmlIntf *dmi,
+                                           uint32_t driver_result);
 
     virtual upll_rc_t DeleteMo(IpcReqRespHeader *req,
                                ConfigKeyVal *ikey,
@@ -185,23 +203,6 @@ class VnodeMoMgr : public MoMgrImpl {
                            unc_key_type_t &keytype,
                           ConfigKeyVal *&ck_val, DalDmlIntf *dmi,
                           upll_keytype_datatype_t dt_type);
-    /**
-     * @brief   set the renamed flag in Vnode
-     *          and create an entry in vnode rename table if VTN is renamed 
-     *        
-     *
-     * @param[in]  ikey       ConfigKeyVal pointer
-     * @param[in]  dt_type    specifies the database type  
-     * @param[in]  ctrlr_id   pointer to the controller name   
-     * @param[in]  dmi        DalDmlIntf pointer
-     *
-     * @retval UPLL_RC_SUCCESS      Successful
-     * @retval UPLL_RC_ERR_GENERIC  failed to update the VbrIf
-     */
-    upll_rc_t SetVnodeRenameFlag(ConfigKeyVal *&ikey,
-                                 upll_keytype_datatype_t dt_type,
-                                 controller_domain_t *ctrlr_dom,
-                                 DalDmlIntf *dmi);
     /**
      * @brief  Creates a vnode entry in DB after performing pre-requisite checks
      *
@@ -219,22 +220,7 @@ class VnodeMoMgr : public MoMgrImpl {
     upll_rc_t RestoreVnode(ConfigKeyVal *ikey,
                            IpcReqRespHeader *req,
                            DalDmlIntf *dmi,
-                           controller_domain_t ctrlr_domain[],
-                           bool restore_flag);
-
-    /**
-     * @brief  Get the specific vtn_name and vnode_name from ConfigKeyVal
-     *
-     * @param[in]  ikey        ConfigKeyVal pointer
-     * @param[out] vtn_name    vnode vtn name
-     * @param[out] vnode_name  vnode specific name
-     *
-     * @retval UPLL_RC_SUCCESS      Successful
-     * @retval UPLL_RC_ERR_GENERIC  failed to retrieve the values
-     */
-    virtual upll_rc_t GetVnodeName(ConfigKeyVal *ikey,
-                                   uint8_t *&vtn_name,
-                                   uint8_t *&vnode_name) =0;
+                           controller_domain_t ctrlr_domain[]);
 
     /**
      * @brief  Checks and Updates the VbrIf interfaces associated with the vlink with the 
@@ -287,8 +273,7 @@ class VnodeMoMgr : public MoMgrImpl {
      * @retval UPLL_RC_ERR_INVALID_OPTION1        Invalid option
      */
     virtual upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
-                                        ConfigKeyVal *ikey, DalDmlIntf *dmi,
-                                        bool restore_flag = false);
+                                        ConfigKeyVal *ikey, DalDmlIntf *dmi);
     virtual upll_rc_t CreateAuditMoImpl(ConfigKeyVal *ikey,
                                         DalDmlIntf *dmi,
                                         const char *ctrlr_id);
@@ -297,8 +282,8 @@ class VnodeMoMgr : public MoMgrImpl {
      * @brief  Checks if the parent VTN is already present in the pfc controller
      *
      * @param[in]  ikey       ConfigKeyVal pointer
-     * @param[in]  req        IpcReqRespHeader pointer  
-     * @param[in]  ctrlr_dom  pointer to the controller and domain name   
+     * @param[in]  req        IpcReqRespHeader pointer
+     * @param[in]  ctrlr_dom  pointer to the controller and domain name
      * @param[in]  dmi        DalDmlIntf pointer
      *
      * @retval UPLL_RC_SUCCESS                Successful
@@ -308,17 +293,17 @@ class VnodeMoMgr : public MoMgrImpl {
     upll_rc_t CheckVtnExistenceOnController(ConfigKeyVal *ikey,
                                             IpcReqRespHeader *req,
                                             controller_domain *ctrlr_dom,
-                                            bool restore_flag,
+                                            bool ctrlr_vtn_flag,
                                             DalDmlIntf *dmi);
 
     /**
      * @brief create entry in Vnode Rename Table,
      *        with the renamed VTN details fetched from VTN rename Table
-     *        
+     *
      *
      * @param[in]  ikey       ConfigKeyVal pointer
-     * @param[in]  dt_type    specifies the database type  
-     * @param[in]  ctrlr_dom   pointer to the controller and domain name   
+     * @param[in]  dt_type    specifies the database type
+     * @param[in]  ctrlr_dom   pointer to the controller and domain name
      * @param[in]  dmi        DalDmlIntf pointer
      *
      *
@@ -332,12 +317,12 @@ class VnodeMoMgr : public MoMgrImpl {
 
 
     /**
-     * @brief  check if any UNC VTN is renamed as this VTN on the given Controller 
-     *         
+     * @brief  check if any UNC VTN is renamed as this VTN on the given Controller
+     *
      *
      * @param[in]  ikey       ConfigKeyVal pointer
-     * @param[in]  dt_type    specifies the database type  
-     * @param[in]  ctrlr_dom   pointer to the controller and domain name   
+     * @param[in]  dt_type    specifies the database type
+     * @param[in]  ctrlr_dom   pointer to the controller and domain name
      * @param[in]  dmi        DalDmlIntf pointer
      *
      * @retval UPLL_RC_SUCCESS      Successful
@@ -348,22 +333,24 @@ class VnodeMoMgr : public MoMgrImpl {
                                   controller_domain *ctrlr_dom,
                                   DalDmlIntf *dmi);
 
-    /* @brief     To control operation on key types 
-     *              
+    /* @brief     To control operation on key types
+     *
      * @param[in]     header    Pointer to IpcResResHeader
-     * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure                    
+     * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure
      * @param[in]     dmi       Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
     upll_rc_t ControlMo(IpcReqRespHeader *header, ConfigKeyVal *ikey,
                         DalDmlIntf *dmi);
 
+    upll_rc_t CopyKeyToVal (ConfigKeyVal *ikey,
+                       ConfigKeyVal *&okey);
 };
 
 }  // namespace kt_momgr

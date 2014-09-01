@@ -169,7 +169,11 @@ class TcLibInterfaceStub : public TcLibInterface {
 
   TcCommonRet HandleAuditStart(uint32_t session_id,
                                unc_keytype_ctrtype_t driver_id,
-                               string controller_id) {
+                               string controller_id,
+                               pfc_bool_t simplified_audit,
+                               uint64_t commit_number,
+                               uint64_t commit_date,
+                               std::string commit_application) {
     if (tclib_stub_failure_ == PFC_TRUE) {
       return TC_FAILURE;
     }

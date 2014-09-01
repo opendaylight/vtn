@@ -840,9 +840,8 @@ upll_rc_t VtepGrpMoMgr::IsReferenced(ConfigKeyVal *ikey,
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutNone};
   result_code = mgr->ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop,
                                   dmi, MAINTBL);
-  UPLL_LOG_TRACE("Vtunnel ReadConfigDb");
+  UPLL_LOG_TRACE("Vtepgroup ReadConfigDb");
   if (UPLL_RC_SUCCESS == result_code) {
-    delete okey;
     result_code =  UPLL_RC_ERR_CFG_SEMANTIC;
   }
   result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?

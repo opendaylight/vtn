@@ -157,6 +157,7 @@ public class FreeCounterDao {
 		}
 		return status;
 	}
+
 	/**
 	 * Delete all resource counters for specific VTN from database
 	 * 
@@ -184,5 +185,43 @@ public class FreeCounterDao {
 			}
 		}
 		return status;
+	}
+	
+	
+	/**
+	 * Find the Counter
+	 * Return -1 if not found
+	 * 
+	 * @param connection
+	 *            - DB Connection instance
+	 * @param freeCounterBean
+	 *            - Bean corresponding to os_free_counter_tbl
+	 * @return - true, if resource found
+	 * @throws SQLException
+	 */
+	public boolean isCounterFound(Connection connection, FreeCounterBean freeCounterBean)
+					throws SQLException {
+		final String sql = VtnOpenStackSQLFactory.FID_FC_SQL;
+		boolean isFound = false;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, freeCounterBean.getResourceId());
+			statement.setString(2, freeCounterBean.getVtnName());
+			statement.setInt(3, freeCounterBean.getResourceCounter());
+			resultSet = statement.executeQuery();
+			if (resultSet.next() && resultSet.getInt(1) > 0) {
+				isFound = true;
+			}
+		} finally {
+			if (resultSet != null) {
+				resultSet.close();
+			}
+			if (statement != null) {
+				statement.close();
+			}
+		}
+		return isFound;
 	}
 }

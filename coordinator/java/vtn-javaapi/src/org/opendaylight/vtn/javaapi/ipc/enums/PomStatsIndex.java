@@ -11,6 +11,9 @@ package org.opendaylight.vtn.javaapi.ipc.enums;
 
 public class PomStatsIndex {
 	private Integer software;
+	private Integer existingFlow;
+	private Integer expiredFlow;
+	private Integer total;
 
 	public final Integer getSoftware() {
 		return software;
@@ -43,8 +46,4 @@ public class PomStatsIndex {
 	public final void setTotal(final Integer total) {
 		this.total = total;
 	}
-
-	private Integer existingFlow;
-	private Integer expiredFlow;
-	private Integer total;
 }

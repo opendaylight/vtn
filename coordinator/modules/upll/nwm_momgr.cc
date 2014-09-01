@@ -114,7 +114,7 @@ bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
                             (nwm_key->vbr_key.vtn_key.vtn_name),
                             kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -123,7 +123,7 @@ bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
                             (nwm_key->vbr_key.vbridge_name),
                             kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VBridge Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VBridge Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -132,7 +132,7 @@ bool NwMonitorMoMgr::IsValidKey(void *key, uint64_t index) {
                             (nwm_key->nwmonitor_name), kMinLenNwmName,
                             kMaxLenNwmName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("NwMonitor Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("NwMonitor Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -802,7 +802,8 @@ upll_rc_t NwMonitorMoMgr::OnNwmonFault(
 upll_rc_t NwMonitorMoMgr::MergeValidate(unc_key_type_t keytype,
                                   const char *ctrlr_id,
                                   ConfigKeyVal *ikey,
-                                  DalDmlIntf *dmi) {
+                                  DalDmlIntf *dmi,
+                                  upll_import_type import_type) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
@@ -829,10 +830,7 @@ upll_rc_t NwMonitorMoMgr::MergeValidate(unc_key_type_t keytype,
     DELETE_IF_NOT_NULL(dup_key);
     return result_code;
   }
-  if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
-    DELETE_IF_NOT_NULL(dup_key);
-    return result_code;
-  }
+
   ConfigKeyVal *travel = dup_key;
   while (travel) {
     /*
@@ -841,7 +839,7 @@ upll_rc_t NwMonitorMoMgr::MergeValidate(unc_key_type_t keytype,
      */
     result_code = DupConfigKeyVal(tkey, travel, MAINTBL);
 
-    if (UPLL_RC_SUCCESS != result_code || tkey == NULL) {
+    if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG(" DupConfigKeyVal is Failed");
       DELETE_IF_NOT_NULL(tkey);
       DELETE_IF_NOT_NULL(dup_key);
@@ -855,17 +853,34 @@ upll_rc_t NwMonitorMoMgr::MergeValidate(unc_key_type_t keytype,
     memset(key_nwmon->vbr_key.vbridge_name, 0, 
 	   sizeof(key_nwmon->vbr_key.vbridge_name));
     // Existence check in Candidate DB
-    result_code = UpdateConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dmi, MAINTBL);
-    if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
-      ikey->ResetWith(tkey);
-      DELETE_IF_NOT_NULL(tkey);
-      DELETE_IF_NOT_NULL(dup_key);
-      UPLL_LOG_DEBUG("NetworkMonitor Name Conflict %s", (ikey->ToStrAll()).c_str());
-      return UPLL_RC_ERR_MERGE_CONFLICT;
+    if (import_type == UPLL_IMPORT_TYPE_FULL) {
+      result_code = UpdateConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dmi, MAINTBL);
+      if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
+        ikey->ResetWith(tkey);
+        DELETE_IF_NOT_NULL(tkey);
+        DELETE_IF_NOT_NULL(dup_key);
+        UPLL_LOG_DEBUG("NetworkMonitor Name Conflict %s", (ikey->ToStrAll()).c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+    } else {
+      DbSubOp dbop1 = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr};
+      uint8_t *ctrlr_name = NULL;
+      result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dbop1, dmi, MAINTBL);
+
+      if (UPLL_RC_SUCCESS == result_code) {
+        GET_USER_DATA_CTRLR(tkey,ctrlr_name);
+        if (strcmp(ctrlr_id,(const char *)ctrlr_name)) {
+          DELETE_IF_NOT_NULL(tkey);
+          DELETE_IF_NOT_NULL(dup_key);
+          UPLL_LOG_INFO ("Controller names are mismatched");
+          return UPLL_RC_ERR_MERGE_CONFLICT;
+        }
+      }
     }
 
     /* Any other DB error */
-    if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+    if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code &&
+        UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("UpdateConfigDB  Failed %d", result_code);
       DELETE_IF_NOT_NULL(tkey);
       DELETE_IF_NOT_NULL(dup_key);
@@ -931,6 +946,94 @@ upll_rc_t NwMonitorMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
   DELETE_IF_NOT_NULL(temp_ikey);
   return UPLL_RC_SUCCESS;
 }
+upll_rc_t NwMonitorMoMgr::AdaptValToDriver(ConfigKeyVal *ck_new,
+                                           ConfigKeyVal *ck_old,
+                                           unc_keytype_operation_t op,
+                                           upll_keytype_datatype_t dt_type,
+                                           unc_key_type_t keytype,
+                                           DalDmlIntf *dmi,
+                                           bool &not_send_to_drv,
+                                           bool audit_update_phase) {
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (!audit_update_phase) {
+    if ((op == UNC_OP_DELETE) &&
+        (keytype == UNC_KT_VBR_NWMONITOR)) {
+      // Verify whether given Network Monitor is referred in
+      // flowfilter_entry or not. If it is referred then return semantic error
+      result_code  = ValidateNWM(ck_new, UPLL_DT_CANDIDATE, dmi);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_INFO("Cannot delete NWM! Validation failed"
+                      " result code - %d", result_code );
+        return result_code;
+      }
+    }
+  }
+  return result_code;
+}
+
+upll_rc_t NwMonitorMoMgr::ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
+                                            ConfigKeyVal *rename_vtn_ckv,
+                                            DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
+  ConfigKeyVal *nwm_ckv = NULL;
+
+  if (!org_vtn_ckv || !org_vtn_ckv->get_key() || !rename_vtn_ckv ||
+      !rename_vtn_ckv->get_key()) {
+    UPLL_LOG_DEBUG("Input is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  result_code = GetChildConfigKey(nwm_ckv, org_vtn_ckv);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey Failed");
+    return result_code;
+  }
+
+  /* Gets All VBR_NWM ConfigKeyVall based on original vtn name */
+  result_code = ReadConfigDB(nwm_ckv, UPLL_DT_IMPORT, UNC_OP_READ, dbop, dmi,
+                             MAINTBL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)
+      result_code = UPLL_RC_SUCCESS;
+
+    DELETE_IF_NOT_NULL(nwm_ckv);
+    return result_code;
+  }
+
+  uint8_t *vtn_rename = reinterpret_cast<key_vtn_t*>(
+                         rename_vtn_ckv->get_key())->vtn_name;
+  ConfigKeyVal *travel = nwm_ckv;
+  while (travel) {
+    /* Verifies whether the same network group is exist under the
+     * new vtn name */
+    uuu::upll_strncpy(reinterpret_cast<key_nwm*>(
+                   travel->get_key())->vbr_key.vtn_key.vtn_name,
+                   vtn_rename,
+                   (kMaxLenVtnName + 1));
+    memset(reinterpret_cast<key_nwm*>(
+                travel->get_key())->vbr_key.vbridge_name, 0, kMaxLenVnodeName);
+    result_code = UpdateConfigDB(travel, UPLL_DT_IMPORT, UNC_OP_READ,
+                                 dmi, MAINTBL);
+    if (result_code != UPLL_RC_ERR_INSTANCE_EXISTS &&
+        result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      UPLL_LOG_DEBUG("UpdateConfigDb Db error");
+      DELETE_IF_NOT_NULL(nwm_ckv);
+      return result_code;
+    } else if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
+      UPLL_LOG_DEBUG("Same network monitor group exist in another vbridge");
+      DELETE_IF_NOT_NULL(nwm_ckv);
+      return UPLL_RC_ERR_MERGE_CONFLICT;
+    }
+
+    travel = travel->get_next_cfg_key_val();
+  }
+  DELETE_IF_NOT_NULL(nwm_ckv);
+  return UPLL_RC_SUCCESS;
+}
+
+
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

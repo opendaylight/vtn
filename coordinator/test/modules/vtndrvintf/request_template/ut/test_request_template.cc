@@ -1003,7 +1003,7 @@ TEST(KT_CTR, Validate_Request1) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1050,7 +1050,7 @@ TEST(KT_CTR, Validate_Request11) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1099,7 +1099,7 @@ TEST(KT_CTR, Validate_Request12) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1152,7 +1152,7 @@ TEST(KT_CTR, Validate_Request13) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
   sess.clearStubData();
@@ -1204,7 +1204,7 @@ TEST(KT_CTR, Validate_Request2) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1256,7 +1256,7 @@ TEST(KT_CTR, Validate_Request21) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1310,7 +1310,7 @@ TEST(KT_CTR, Validate_Request3) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1362,7 +1362,7 @@ TEST(KT_CTR, Validate_Request31) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1415,7 +1415,7 @@ TEST(KT_CTR, Validate_Request32) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 
@@ -1468,7 +1468,7 @@ TEST(KT_CTR, Validate_Request4) {
       new unc::driver::ControllerFramework;
 
   unc::driver::KtHandler* ctr_req =
-      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_t>(&kt_map);
+      new unc::driver::KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>(&kt_map);
 
   pfc::core::ipc::ServerSession sess;
 

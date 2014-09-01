@@ -72,7 +72,9 @@ typedef enum {
   /* UPLL daemon is shutting down and cannot process the request */
   UPLL_RC_ERR_SHUTTING_DOWN = UNC_UPLL_RC_ERR_SHUTTING_DOWN,
   /* Controller disconnected error */
-  UPLL_RC_ERR_CTR_DISCONNECTED = UNC_RC_CTR_DISCONNECTED
+  UPLL_RC_ERR_CTR_DISCONNECTED = UNC_RC_CTR_DISCONNECTED,
+  /* Driver not present */
+  UPLL_RC_ERR_DRIVER_NOT_PRESENT = UNC_RC_ERR_DRIVER_NOT_PRESENT
 } upll_rc_t;
 
 UNC_C_END_DECL

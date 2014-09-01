@@ -229,7 +229,7 @@ ODBCM_RC_STATUS DBVarbind::bind_port_table_input(
               0,
               0,
               &p_port_table->sspeed,
-              sizeof(p_port_table->sspeed)-1,
+              sizeof(p_port_table->sspeed),
               p_speed_len);
       /**set flag value 0 to print column binding details */
           log_flag = 0;

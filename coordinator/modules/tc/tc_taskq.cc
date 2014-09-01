@@ -16,10 +16,9 @@ namespace tc {
  *@param[in]  concurrency  Number of simultanious tasks.
  */
 
-TcTaskqUtil::TcTaskqUtil(uint32_t concurrency, int32_t audit_alarm) {
+TcTaskqUtil::TcTaskqUtil(uint32_t concurrency) {
   taskq_ = pfc::core::TaskQueue::create(concurrency);
   timed_ = pfc::core::Timer::create(taskq_->getId());
-  auditq_alarm_ = audit_alarm;
 }
 
 /**
@@ -77,15 +76,12 @@ AuditParams::AuditParams(std::string controller_id,
                          TcDbHandler* db_handler,
                          TcLock* tclock,
                          TcChannelNameMap& unc_map,
-                         unc_keytype_ctrtype_t driver_id,
-                         int32_t alarm_id)
+                         unc_keytype_ctrtype_t driver_id)
   : controller_id_(controller_id),
     audit_db_hdlr_(db_handler),
     tclock_(tclock),
     unc_channel_map_(unc_map),
-    driver_id_(driver_id),
-    alarm_id_(alarm_id) {}
-
+    driver_id_(driver_id) { }
 
 /**
  *@brief    Handling of audit driver.
@@ -105,11 +101,6 @@ void AuditParams::HandleDriverAudit(void) {
   if (tc_audit_oper_.Dispatch() != TC_OPER_SUCCESS )
      pfc_log_error("Driver Audit from taskq failed controller_id=%s",
                   tc_audit_oper_.controller_id_.c_str());
-
-  if (TC_OPER_SUCCESS !=
-      tc_audit_oper_.SendAuditStatusNotification(alarm_id_)) {
-    pfc_log_warn("could not notify audit status");
-  }
 }
 
 /**
@@ -157,8 +148,7 @@ int TcTaskqUtil::DispatchAuditDriverRequest(std::string controller_id,
                         tc_db_hdlr,
                         tclock,
                         unc_map,
-                        driver_id,
-                        auditq_alarm_);
+                        driver_id);
   pfc::core::taskq_func_t  task_func(func_obj);
   ret = taskq_->dispatch(task_func);
   if (ret != 0) {

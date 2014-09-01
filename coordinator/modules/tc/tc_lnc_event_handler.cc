@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -95,6 +95,9 @@ TcDaemonName TcConvertDriverType(unc_keytype_ctrtype_t drv_type) {
 
     /*case UNC_CT_LEGACY:
       return TC_DRV_LEGACY;*/
+
+    case UNC_CT_POLC:
+      return TC_DRV_POLC;
 
     default:
        break;

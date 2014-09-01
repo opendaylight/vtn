@@ -235,6 +235,12 @@ ServerSession::addOutput(const pfc_ipcstdef_t&  /*def*/, pfc_cptr_t /*data*/) {
   return addOutPut_;
 }
 
+
+int
+ServerSession::addOutput(val_ctr&) {
+  return addOutPut_;
+}
+
 int
 ServerSession::addOutput(val_ctr_st&) {
   return addOutPut_;
@@ -278,7 +284,7 @@ ServerSession::addOutput(key_ctr&) {
   }
 }
 int
-ServerSession::addOutput(val_ctr&) {
+ServerSession::addOutput(val_ctr_commit_ver&) {
   //        return addOutPut_;
   if (rest_code) {
     return addOutPut_;
@@ -453,6 +459,21 @@ ServerSession::addOutput(val_vbr_if_t&) {
   }
 }
 
+int 
+ServerSession::addOutput(key_vtnstation_controller&) {
+  return addOutPut_;
+}
+
+int 
+ServerSession::addOutput(val_vtnstation_controller_st&){
+  return addOutPut_;
+}
+
+int 
+ServerSession::addOutput(val_vtnstation_controller_stat&){
+  return addOutPut_;
+}
+
 
 
 
@@ -566,7 +587,7 @@ ServerSession::getArgument(int /*index*/, key_ctr_t& /*data*/) {
   }
 }
 int
-ServerSession::getArgument(int /*index*/, val_ctr_t& /*data*/) {
+ServerSession::getArgument(int /*index*/, val_ctr_commit_ver& /*data*/) {
   //        return result_;
   if (rest_code) {
     return addOutPut_;
@@ -575,6 +596,10 @@ ServerSession::getArgument(int /*index*/, val_ctr_t& /*data*/) {
     get_argument_list.erase(get_argument_list.begin());
     return local;
   }
+}
+int
+ServerSession::getArgument(int /*index*/, val_ctr& /*data*/) {
+  return result_;
 }
 int
 ServerSession::getArgument(int /*index*/, key_ctr_domain_t& /*data*/) {
@@ -694,6 +719,21 @@ ServerSession::getArgument(int, key_dataflow&) {
 
 int
 ServerSession::getArgument(int /*index*/, pfcdrv_val_vbr_if_t& /*data*/) {
+  return result_;
+}
+
+int
+ServerSession::getArgument(int /*index*/, key_vtnstation_controller& /*data*/) {
+  return result_;
+}
+
+int
+ServerSession::getArgument(int /*index*/, val_vtnstation_controller_st& /*data*/) {
+  return result_;
+}
+
+int
+ServerSession::getArgument(int /*index*/, val_vtnstation_controller_stat& /*data*/) {
   return result_;
 }
 

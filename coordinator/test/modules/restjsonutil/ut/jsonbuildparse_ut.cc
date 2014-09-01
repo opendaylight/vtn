@@ -107,66 +107,6 @@ TEST(JsonBuildParse , Build_str_pattern) {
   EXPECT_STREQ(str, json_object_to_json_string(jobj));
   json_object_put(jobj);
 }
-
-TEST(JsonBuildParse , get_string) {
-  unc::restjson::JsonBuildParse obj;
-  json_object *jobj = NULL;
-  char *string =  const_cast<char *>("{ \"Name\": \"dnu1\" }");
-  jobj = json_tokener_parse(string);
-  EXPECT_STREQ(string,
-               reinterpret_cast<const char *>
-               (obj.get_string(jobj)));
-  json_object_put(jobj);
-}
-
-TEST(JsonBuildParse , get_string_null) {
-  unc::restjson::JsonBuildParse obj;
-  json_object *jobj;
-  jobj = NULL;
-  EXPECT_EQ(0 , const_cast<char *>(obj.get_string(jobj)));
-  json_object_put(jobj);
-}
-
-TEST(JsonBuildParse , get_string_str) {
-  unc::restjson::JsonBuildParse obj;
-  char *str = const_cast<char *>(
-      "{\"sitename\" : [{\"port_no\" : 1, \"name\" : \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" },{ \"port_no\" : 2, \"name\" : \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\"},{\"port_no\" : 1, \"name\" : \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" },{\"port_no\" : 65534, \"name\" : \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" },{\"port_no\" : 65534, \"name\" : \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }]}");
-
-  json_object *jobj = json_tokener_parse(str);
-  json_object *val = NULL;
-  obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
-  std::string str2 =
-      "[ { \"port_no\": 1, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
-  EXPECT_EQ(str2, str1);
-  json_object_put(jobj);
-}
-
-
-TEST(JsonBuildParse , get_string_int) {
-  unc::restjson::JsonBuildParse obj;
-  json_object *jobj = NULL;
-  char *string = const_cast<char *>("{ \"Name\": 10 }");
-  jobj = json_tokener_parse(string);
-  EXPECT_STREQ(string,
-               reinterpret_cast<const char *>
-               (obj.get_string(jobj)));
-  json_object_put(jobj);
-}
-
-
-TEST(JsonBuildParse , get_null_string) {
-  unc::restjson::JsonBuildParse obj;
-  json_object *jobj= NULL;
-  char *string = const_cast<char *>("{ \"Name\": null }");
-  jobj = json_tokener_parse(string);
-  EXPECT_STREQ(string,
-               reinterpret_cast<const char *>
-               (obj.get_string(jobj)));
-  json_object_put(jobj);
-}
-
-
 TEST(JsonBuildParse , get_array_length_size_case1) {
   unc::restjson::JsonBuildParse obj;
   char *str = const_cast<char *>
@@ -267,7 +207,7 @@ TEST(JsonBuildParse , Parse_str) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 = "\"joys of programming\"";
   EXPECT_EQ(str2, str1);
   json_object_put(jobj);
@@ -291,7 +231,7 @@ TEST(JsonBuildParse , Parse_str_case1) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 =
       "[ { \"port_no\": 1, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);
@@ -311,7 +251,7 @@ TEST(JsonBuildParse , Parse_arr_ind) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 =
       "[ { \"port_no\": 1, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);
@@ -330,7 +270,7 @@ TEST(JsonBuildParse , Parse_arr_index) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 =
       "[ { \"port_no\": 1, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);
@@ -349,7 +289,7 @@ TEST(JsonBuildParse , Parse_arr_index_case1) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 =
       "[ { \"port_no\": 1, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);
@@ -368,7 +308,7 @@ TEST(JsonBuildParse , Parse_arr_indexi_case2) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 =
       "[ { \"port_no\": null, \"name\": \"eth0\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 2, \"name\": \"eth1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 1, \"name\": \"vxlan1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br1\", \"registered_at\": \"2013-04-24T23:59:00Z\" }, { \"port_no\": 65534, \"name\": \"br0\", \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);
@@ -387,7 +327,7 @@ TEST(JsonBuildParse , Parse_simple_arr) {
   json_object *jobj = json_tokener_parse(str);
   json_object *val = NULL;
   obj.parse(jobj, "sitename", -1, val);
-  std::string str1 = obj.get_string(val);
+  std::string str1 = obj.get_json_string(val);
   std::string str2 =
       "[ { \"port_no\": null, \"name\": \"eth0\" }, { \"registered_at\": \"2013-04-24T23:59:00Z\" } ]";
   EXPECT_EQ(str2, str1);

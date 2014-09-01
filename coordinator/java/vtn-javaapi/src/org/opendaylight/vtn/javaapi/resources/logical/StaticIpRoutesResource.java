@@ -100,15 +100,6 @@ public class StaticIpRoutesResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
-			/*
-			 * if (requestBody != null &&
-			 * requestBody.has(VtnServiceJsonConsts.STATIC_IPROUTE) &&
-			 * !((JsonObject) requestBody
-			 * .get(VtnServiceJsonConsts.STATIC_IPROUTE))
-			 * .has(VtnServiceJsonConsts.NMG_NAME)) { ((JsonObject) requestBody
-			 * .get(VtnServiceJsonConsts.STATIC_IPROUTE)).addProperty(
-			 * VtnServiceJsonConsts.NMG_NAME, ""); }
-			 */
 			final List<String> uriParameterList = getUriParameters(requestBody);
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VRT_IPROUTE_CREATE, requestBody,
@@ -142,11 +133,6 @@ public class StaticIpRoutesResource extends AbstractResource {
 				prefix = ((JsonObject) requestBody
 						.get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
 						VtnServiceJsonConsts.PREFIX).getAsString();
-				/*
-				 * nmgName = ((JsonObject) requestBody
-				 * .get(VtnServiceJsonConsts.STATIC_IPROUTE)).get(
-				 * VtnServiceJsonConsts.NMG_NAME).getAsString();
-				 */
 				staticIpRouteId = ipAddr + VtnServiceJsonConsts.HYPHEN
 						+ nextHopAddr + VtnServiceJsonConsts.HYPHEN + prefix;
 			}

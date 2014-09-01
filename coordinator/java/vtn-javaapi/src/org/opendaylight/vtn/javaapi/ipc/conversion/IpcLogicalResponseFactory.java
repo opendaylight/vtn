@@ -9,9 +9,12 @@
 
 package org.opendaylight.vtn.javaapi.ipc.conversion;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import org.opendaylight.vtn.core.ipc.IpcDataUnit;
@@ -21,6 +24,7 @@ import org.opendaylight.vtn.core.util.UnsignedInteger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
+import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.PomStatsIndex;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncPhysicalStructIndexEnum;
@@ -51,6 +55,7 @@ public class IpcLogicalResponseFactory {
 		if (requestBody.has(VtnServiceJsonConsts.OP)) {
 			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
 		}
+
 		/*
 		 * data type will be required to resolve the response structures
 		 */
@@ -462,7 +467,7 @@ public class IpcLogicalResponseFactory {
 				count = IpcDataUnitWrapper
 						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
 			}
-			l2Domain.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			l2Domain.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, l2Domain);
 		} else {
 			// There is no use of key type, key structure and count of l2domains
@@ -614,7 +619,7 @@ public class IpcLogicalResponseFactory {
 				count = IpcDataUnitWrapper
 						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
 			}
-			macEntries.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			macEntries.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, macEntries);
 		} else {
 			// There is no use of key type and key structure
@@ -980,7 +985,7 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
-					//Direction
+					// Direction
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -991,7 +996,8 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
-								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTDIRECTION)
 								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
 										.getValue())) {
@@ -999,21 +1005,21 @@ public class IpcLogicalResponseFactory {
 									VtnServiceJsonConsts.DIRECTION,
 									VtnServiceJsonConsts.IN);
 						} else if (IpcDataUnitWrapper
-								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTDIRECTION)
 								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
 										.getValue())) {
 							setValueToJsonObject(validBit, redirectDst,
 									VtnServiceJsonConsts.DIRECTION,
 									VtnServiceJsonConsts.OUT);
-						}  else {
+						} else {
 							LOG.debug("Direction : Invalid");
 						}
 						LOG.debug("Direction :"
-								+ IpcDataUnitWrapper
-										.getIpcStructUint8Value(
-												valFlowFilterEntryStruct,
-												VtnServiceIpcConsts.REDIRECTDIRECTION));
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION));
 					}
 					validBit = valFlowFilterEntryStruct
 							.getByte(
@@ -1908,10 +1914,8 @@ public class IpcLogicalResponseFactory {
 	 * @param responseStruct
 	 * @param pomStatsIndexSet
 	 */
-	public void
-			getPomStats(final JsonObject targetJson,
-					final IpcStruct responseStruct,
-					final PomStatsIndex pomStatsIndexSet) {
+	public void getPomStats(final JsonObject targetJson,
+			final IpcStruct responseStruct, final PomStatsIndex pomStatsIndexSet) {
 		LOG.trace("Start getPomStats");
 		byte validBit;
 		// pom stats starts
@@ -1965,7 +1969,7 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, softwareFFJson,
-								VtnServiceIpcConsts.OCTETS,
+								VtnServiceJsonConsts.OCTETS,
 								IpcDataUnitWrapper.getIpcStructUint64Value(
 										IpcDataUnitWrapper.getInnerIpcStruct(
 												responseStruct,
@@ -2013,7 +2017,7 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, existFFJson,
-								VtnServiceIpcConsts.OCTETS,
+								VtnServiceJsonConsts.OCTETS,
 								IpcDataUnitWrapper.getIpcStructUint64Value(
 										IpcDataUnitWrapper.getInnerIpcStruct(
 												responseStruct,
@@ -2061,7 +2065,7 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, expireFFJson,
-								VtnServiceIpcConsts.OCTETS,
+								VtnServiceJsonConsts.OCTETS,
 								IpcDataUnitWrapper.getIpcStructUint64Value(
 										IpcDataUnitWrapper.getInnerIpcStruct(
 												responseStruct,
@@ -2109,7 +2113,7 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						setValueToJsonObject(validBit, totalFFJson,
-								VtnServiceIpcConsts.OCTETS,
+								VtnServiceJsonConsts.OCTETS,
 								IpcDataUnitWrapper.getIpcStructUint64Value(
 										IpcDataUnitWrapper.getInnerIpcStruct(
 												responseStruct,
@@ -2883,7 +2887,7 @@ public class IpcLogicalResponseFactory {
 				count = IpcDataUnitWrapper
 						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
 			}
-			aRPEntries.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			aRPEntries.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, aRPEntries);
 		} else {
 			int index = 0;
@@ -3411,7 +3415,7 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
-					//Direction
+					// Direction
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -3422,7 +3426,8 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
-								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTDIRECTION)
 								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
 										.getValue())) {
@@ -3430,21 +3435,21 @@ public class IpcLogicalResponseFactory {
 									VtnServiceJsonConsts.DIRECTION,
 									VtnServiceJsonConsts.IN);
 						} else if (IpcDataUnitWrapper
-								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTDIRECTION)
 								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
 										.getValue())) {
 							setValueToJsonObject(validBit, redirectDst,
 									VtnServiceJsonConsts.DIRECTION,
 									VtnServiceJsonConsts.OUT);
-						}  else {
+						} else {
 							LOG.debug("Direction : Invalid");
 						}
 						LOG.debug("Direction :"
-								+ IpcDataUnitWrapper
-										.getIpcStructUint8Value(
-												valFlowFilterEntryStruct,
-												VtnServiceIpcConsts.REDIRECTDIRECTION));
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION));
 					}
 					validBit = valFlowFilterEntryStruct
 							.getByte(
@@ -3483,8 +3488,7 @@ public class IpcLogicalResponseFactory {
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
 								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
-						&& opType
-								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
 					LOG.debug("Case : Show and targetdb :State ");
 					final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
 					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
@@ -5096,7 +5100,7 @@ public class IpcLogicalResponseFactory {
 						validBit = valVbrIfStStruct
 								.getByte(
 										VtnServiceIpcConsts.VALID,
-										UncStructIndexEnum.ValVbrIfStIndex.UPLL_IDX_OPER_STATUS_VBRIS
+										UncStructIndexEnum.ValVrtIfStIndex.UPLL_IDX_OPER_STATUS_VRTIS
 												.ordinal());
 						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 								.ordinal()
@@ -5503,7 +5507,7 @@ public class IpcLogicalResponseFactory {
 									VtnServiceIpcConsts.VALID,
 									UncStructIndexEnum.valVtermIfIndex.UPLL_IDX_PM_VTERMI
 											.ordinal());
-				}  else {
+				} else {
 					LOG.debug("Incorrect ifType:" + ifType);
 				}
 				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
@@ -5567,7 +5571,7 @@ public class IpcLogicalResponseFactory {
 							.ordinal()
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-					if (IpcDataUnitWrapper
+						if (IpcDataUnitWrapper
 								.getIpcStructUint8Value(valPortMapStruct,
 										VtnServiceIpcConsts.TAGGED)
 								.equals(UncStructIndexEnum.vlan_tagged.UPLL_VLAN_TAGGED
@@ -5990,7 +5994,7 @@ public class IpcLogicalResponseFactory {
 										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTPORT));
 					}
-					//Direction
+					// Direction
 					validBit = valFlowFilterEntryStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
@@ -6001,7 +6005,8 @@ public class IpcLogicalResponseFactory {
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
 						if (IpcDataUnitWrapper
-								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTDIRECTION)
 								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_IN
 										.getValue())) {
@@ -6009,21 +6014,21 @@ public class IpcLogicalResponseFactory {
 									VtnServiceJsonConsts.DIRECTION,
 									VtnServiceJsonConsts.IN);
 						} else if (IpcDataUnitWrapper
-								.getIpcStructUint8Value(valFlowFilterEntryStruct,
+								.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
 										VtnServiceIpcConsts.REDIRECTDIRECTION)
 								.equals(UncStructIndexEnum.FlowfilterDirection.UPLL_FLOWFILTER_DIR_OUT
 										.getValue())) {
 							setValueToJsonObject(validBit, redirectDst,
 									VtnServiceJsonConsts.DIRECTION,
 									VtnServiceJsonConsts.OUT);
-						}  else {
+						} else {
 							LOG.debug("Direction : Invalid");
 						}
 						LOG.debug("Direction :"
-								+ IpcDataUnitWrapper
-										.getIpcStructUint8Value(
-												valFlowFilterEntryStruct,
-												VtnServiceIpcConsts.REDIRECTDIRECTION));
+								+ IpcDataUnitWrapper.getIpcStructUint8Value(
+										valFlowFilterEntryStruct,
+										VtnServiceIpcConsts.REDIRECTDIRECTION));
 					}
 					validBit = valFlowFilterEntryStruct
 							.getByte(
@@ -6061,8 +6066,7 @@ public class IpcLogicalResponseFactory {
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
 								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
-						&& opType
-								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
 					LOG.debug("Case : Show and targetdb :State ");
 					final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
 					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
@@ -6997,22 +7001,58 @@ public class IpcLogicalResponseFactory {
 							valVtnstationControllerSt,
 							VtnServiceIpcConsts.DOMAINID));
 		}
-
-		// for vbr_name parameter
+		// for vnode_type parameter
 		validBit = valVtnstationControllerSt
 				.getByte(
 						VtnServiceIpcConsts.VALID,
-						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VBR_NAME_VSCS
+						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VNODE_TYPE_VSCS
+								.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+
+			int vnodeVal = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcStructUint8Value(valVtnstationControllerSt,
+							VtnServiceIpcConsts.VNODETYPE));
+			String vnodeType = null;
+			if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VBRIDGE
+					.ordinal()) {
+				vnodeType = VtnServiceJsonConsts.VBRIDGE;
+			} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VROUTER
+					.ordinal()) {
+				vnodeType = VtnServiceJsonConsts.VROUTER;
+			} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VTEP
+					.ordinal()) {
+				vnodeType = VtnServiceJsonConsts.VTEP;
+			} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VTERMINAL
+					.ordinal()) {
+				vnodeType = VtnServiceJsonConsts.VTERMINAL;
+			} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VTUNNEL
+					.ordinal()) {
+				vnodeType = VtnServiceJsonConsts.VTUNNEL;
+			} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VUNKNOWN
+					.ordinal()) {
+				vnodeType = VtnServiceJsonConsts.VBYPASS;
+			}
+			setValueToJsonObject(validBit, vtnStation,
+					VtnServiceJsonConsts.VNODETYPE, vnodeType);
+		}
+		// for vnode_name parameter
+		validBit = valVtnstationControllerSt
+				.getByte(
+						VtnServiceIpcConsts.VALID,
+						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VNODE_NAME_VSCS
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
 				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 						.ordinal()) {
 			setValueToJsonObject(validBit, vtnStation,
-					VtnServiceJsonConsts.VBRIDGENAME,
+					VtnServiceJsonConsts.VNODENAME,
 					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 							valVtnstationControllerSt,
-							VtnServiceIpcConsts.VBRNAME));
+							VtnServiceIpcConsts.VNODENAME));
 		}
 
 		final JsonObject interfaceObj = new JsonObject();
@@ -7021,7 +7061,7 @@ public class IpcLogicalResponseFactory {
 		validBit = valVtnstationControllerSt
 				.getByte(
 						VtnServiceIpcConsts.VALID,
-						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VBR_IF_NAME_VSCS
+						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VNODE_IF_NAME_VSCS
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
@@ -7031,14 +7071,14 @@ public class IpcLogicalResponseFactory {
 					VtnServiceJsonConsts.IFNAME,
 					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 							valVtnstationControllerSt,
-							VtnServiceIpcConsts.VBRIFNAME));
+							VtnServiceIpcConsts.VNODEIF_NAME));
 		}
 
 		// for if_status parameter
 		validBit = valVtnstationControllerSt
 				.getByte(
 						VtnServiceIpcConsts.VALID,
-						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VBR_IF_STATUS_VSCS
+						UncStructIndexEnum.ValVtnstationControllerStIndex.UPLL_IDX_VNODE_IF_STATUS_VSCS
 								.ordinal());
 		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 				.ordinal()
@@ -7047,7 +7087,7 @@ public class IpcLogicalResponseFactory {
 			if (UncStructIndexEnum.ValOperStatus.UPLL_OPER_STATUS_UP.getValue()
 					.equals(IpcDataUnitWrapper.getIpcStructUint8Value(
 							valVtnstationControllerSt,
-							VtnServiceIpcConsts.VBRIFSTATUS))) {
+							VtnServiceIpcConsts.VNODEIF_STATUS))) {
 				setValueToJsonObject(validBit, interfaceObj,
 						VtnServiceJsonConsts.OPERSTATUS,
 						VtnServiceJsonConsts.UP);
@@ -7055,7 +7095,7 @@ public class IpcLogicalResponseFactory {
 					.getValue().equals(
 							IpcDataUnitWrapper.getIpcStructUint8Value(
 									valVtnstationControllerSt,
-									VtnServiceIpcConsts.VBRIFSTATUS))) {
+									VtnServiceIpcConsts.VNODEIF_STATUS))) {
 				setValueToJsonObject(validBit, interfaceObj,
 						VtnServiceJsonConsts.OPERSTATUS,
 						VtnServiceJsonConsts.DOWN);
@@ -7063,7 +7103,7 @@ public class IpcLogicalResponseFactory {
 					.getValue().equals(
 							IpcDataUnitWrapper.getIpcStructUint8Value(
 									valVtnstationControllerSt,
-									VtnServiceIpcConsts.VBRIFSTATUS))) {
+									VtnServiceIpcConsts.VNODEIF_STATUS))) {
 				setValueToJsonObject(validBit, interfaceObj,
 						VtnServiceJsonConsts.OPERSTATUS,
 						VtnServiceJsonConsts.UNKNOWN);
@@ -7073,7 +7113,7 @@ public class IpcLogicalResponseFactory {
 			LOG.debug("Operstatus :"
 					+ IpcDataUnitWrapper.getIpcStructUint8Value(
 							valVtnstationControllerSt,
-							VtnServiceIpcConsts.VBRIFSTATUS));
+							VtnServiceIpcConsts.VNODEIF_STATUS));
 		}
 
 		vtnStation.add(VtnServiceJsonConsts.INTERFACE, interfaceObj);
@@ -7768,7 +7808,7 @@ public class IpcLogicalResponseFactory {
 				count = IpcDataUnitWrapper
 						.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]);
 			}
-			ipRouteList.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			ipRouteList.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, ipRouteList);
 		} else {
 			int index = 0;
@@ -7976,7 +8016,7 @@ public class IpcLogicalResponseFactory {
 		LOG.trace("Start getVtnMappingResponse");
 		final JsonObject root = new JsonObject();
 		JsonObject vtnMapping = null;
-		JsonArray vtnMappingArray = null;		
+		JsonArray vtnMappingArray = null;
 		JsonArray vtnMappingInfosJsonArray = null;
 
 		LOG.debug("getType: " + getType);
@@ -8103,13 +8143,13 @@ public class IpcLogicalResponseFactory {
 							.ordinal()
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-						
-						
-						String vLanIdValue = IpcDataUnitWrapper.getIpcStructUint16Value(
-								valVtnMappingStruct,
-								VtnServiceIpcConsts.VLANID);
-						
-						if (!vLanIdValue.equalsIgnoreCase(VtnServiceJsonConsts.VLAN_ID_65535)){
+
+						String vLanIdValue = IpcDataUnitWrapper
+								.getIpcStructUint16Value(valVtnMappingStruct,
+										VtnServiceIpcConsts.VLANID);
+
+						if (!vLanIdValue
+								.equalsIgnoreCase(VtnServiceJsonConsts.VLAN_ID_65535)) {
 							setValueToJsonObject(validBit,
 									vtnMappingInfojsonObject,
 									VtnServiceJsonConsts.VLANID, vLanIdValue);
@@ -8159,35 +8199,80 @@ public class IpcLogicalResponseFactory {
 							.ordinal()
 							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
 									.ordinal()) {
-			
-					if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_OFS_MAP.getValue()
-								.equals(IpcDataUnitWrapper.getIpcStructUint8Value(
-										valVtnMappingStruct,
-										VtnServiceIpcConsts.MAP_TYPE))) {
-							setValueToJsonObject(validBit, vtnMappingInfojsonObject,
+
+						if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_OFS_MAP
+								.getValue()
+								.equals(IpcDataUnitWrapper
+										.getIpcStructUint8Value(
+												valVtnMappingStruct,
+												VtnServiceIpcConsts.MAP_TYPE))) {
+							setValueToJsonObject(validBit,
+									vtnMappingInfojsonObject,
 									VtnServiceJsonConsts.MAPTYPE,
 									VtnServiceJsonConsts.PORTMAP);
 						} else if (UncStructIndexEnum.ValVbrIfMapType.UPLL_IF_VLAN_MAP
-								.getValue().equals(
-										IpcDataUnitWrapper.getIpcStructUint8Value(
+								.getValue()
+								.equals(IpcDataUnitWrapper
+										.getIpcStructUint8Value(
 												valVtnMappingStruct,
 												VtnServiceIpcConsts.MAP_TYPE))) {
-							setValueToJsonObject(validBit, vtnMappingInfojsonObject,
+							setValueToJsonObject(validBit,
+									vtnMappingInfojsonObject,
 									VtnServiceJsonConsts.MAPTYPE,
 									VtnServiceJsonConsts.VLANMAP);
-						}else {
+						} else {
 							LOG.debug("MapType : invalid");
 						}
 						LOG.debug("MapType :"
 								+ IpcDataUnitWrapper.getIpcStructUint8Value(
 										valVtnMappingStruct,
 										VtnServiceIpcConsts.MAP_TYPE));
-					
+
 					}
+					// for vnode_type parameter
 					validBit = valVtnMappingStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
-									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VBR_NAME_VMCS
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VNODE_TYPE_VMCS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+
+						int vnodeVal = Integer.parseInt(IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valVtnMappingStruct,
+										VtnServiceIpcConsts.VNODETYPE));
+						String vnodeType = null;
+						if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VBRIDGE
+								.ordinal()) {
+							vnodeType = VtnServiceJsonConsts.VBRIDGE;
+						} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VROUTER
+								.ordinal()) {
+							vnodeType = VtnServiceJsonConsts.VROUTER;
+						} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VTEP
+								.ordinal()) {
+							vnodeType = VtnServiceJsonConsts.VTEP;
+						} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VTERMINAL
+								.ordinal()) {
+							vnodeType = VtnServiceJsonConsts.VTERMINAL;
+						} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VTUNNEL
+								.ordinal()) {
+							vnodeType = VtnServiceJsonConsts.VTUNNEL;
+						} else if (vnodeVal == UncStructIndexEnum.ValVnodeType.UPLL_VNODE_VUNKNOWN
+								.ordinal()) {
+							vnodeType = VtnServiceJsonConsts.VBYPASS;
+						}
+						setValueToJsonObject(validBit,
+								vtnMappingInfojsonObject,
+								VtnServiceJsonConsts.VNODETYPE, vnodeType);
+					}
+					// for vnode_name parameter
+					validBit = valVtnMappingStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VNODE_NAME_VMCS
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
@@ -8195,16 +8280,16 @@ public class IpcLogicalResponseFactory {
 									.ordinal()) {
 						setValueToJsonObject(validBit,
 								vtnMappingInfojsonObject,
-								VtnServiceJsonConsts.VBRNAME,
+								VtnServiceJsonConsts.VNODENAME,
 								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 										valVtnMappingStruct,
-										VtnServiceIpcConsts.VBRNAME));
+										VtnServiceIpcConsts.VNODENAME));
 					}
 
 					validBit = valVtnMappingStruct
 							.getByte(
 									VtnServiceIpcConsts.VALID,
-									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VBR_IF_NAME_VMCS
+									UncStructIndexEnum.valVtnMappingControllerStIndex.UPLL_IDX_VNODE_IF_NAME_VMCS
 											.ordinal());
 					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
 							.ordinal()
@@ -8215,13 +8300,13 @@ public class IpcLogicalResponseFactory {
 								VtnServiceJsonConsts.IFNAME,
 								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
 										valVtnMappingStruct,
-										VtnServiceIpcConsts.VBRIFNAME));
+										VtnServiceIpcConsts.VNODEIF_NAME));
 					}
 
 					vtnMappingInfosJsonArray.add(vtnMappingInfojsonObject);
 				}
 				vtnMapping.add(VtnServiceJsonConsts.MAPPINGINFOS,
-						vtnMappingInfosJsonArray);	
+						vtnMappingInfosJsonArray);
 			} else {
 				vtnMapping.remove(VtnServiceJsonConsts.CONTROLLERID);
 				vtnMapping.remove(VtnServiceJsonConsts.DOMAINID);
@@ -8430,8 +8515,19 @@ public class IpcLogicalResponseFactory {
 						VtnServiceJsonConsts.CONTROLER_TYPE,
 						VtnServiceJsonConsts.VNP);
 
+			} else if (IpcDataUnitWrapper
+					.getIpcStructUint8Value(valVtnDataFlowCmnStruct,
+							VtnServiceIpcConsts.CONTROLER_TYPE).equals(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_POLC
+									.getValue())) {
+				String polc = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_POLC);
+				setValueToJsonObject(validBit, controllerDomainFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						polc);
+
 			} else {
-				LOG.debug("Controller Type invalid");
+				LOG.info("Controller Type invalid");
 			}
 			LOG.debug("Controller Type :"
 					+ IpcDataUnitWrapper.getIpcStructUint8Value(
@@ -9021,9 +9117,9 @@ public class IpcLogicalResponseFactory {
 					.ordinal()) {
 				final IpcStruct valDfFlowMatchDlType = (IpcStruct) responsePacket[index
 						.getAndIncrement()];
-				element= new JsonPrimitive(IpcDataUnitWrapper.getIpcStructUint16HexaValue(
-						valDfFlowMatchDlType, VtnServiceIpcConsts.DL_TYPE)
-						.toString());
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16HexaValue(valDfFlowMatchDlType,
+								VtnServiceIpcConsts.DL_TYPE).toString());
 				if (null == macEtherTypeJsonArray) {
 					macEtherTypeJsonArray = new JsonArray();
 				}
@@ -9041,13 +9137,13 @@ public class IpcLogicalResponseFactory {
 				if (null == vlanIdJsonArray) {
 					vlanIdJsonArray = new JsonArray();
 				}
-				if(element.getAsString().equals(VtnServiceJsonConsts.VLAN_ID_65535)){
+				if (element.getAsString().equals(
+						VtnServiceJsonConsts.VLAN_ID_65535)) {
 					element = new JsonPrimitive(VtnServiceJsonConsts.EMPTY);
 					vlanIdJsonArray.add(element);
-				}else{
+				} else {
 					vlanIdJsonArray.add(element);
 				}
-				
 
 				LOG.debug("set validbit for vlan_id  :" + validBit);
 
@@ -9071,13 +9167,11 @@ public class IpcLogicalResponseFactory {
 				final IpcStruct valDfFlowMatchIpTos = (IpcStruct) responsePacket[index
 						.getAndIncrement()];
 
-			    final String hexString =
-                        UnsignedInteger.toHexString(Long
-                                .valueOf(IpcDataUnitWrapper
-                                        .getIpcStructUint8Value(
-                                                valDfFlowMatchIpTos,
-                                                VtnServiceIpcConsts.IP_TOS)));
-                element = new JsonPrimitive("0x" + hexString);
+				final String hexString = UnsignedInteger.toHexString(Long
+						.valueOf(IpcDataUnitWrapper
+								.getIpcStructUint8Value(valDfFlowMatchIpTos,
+										VtnServiceIpcConsts.IP_TOS)));
+				element = new JsonPrimitive("0x" + hexString);
 				if (null == ipTosJsonArray) {
 					ipTosJsonArray = new JsonArray();
 				}
@@ -9474,19 +9568,18 @@ public class IpcLogicalResponseFactory {
 				element = new JsonPrimitive(IpcDataUnitWrapper
 						.getIpcStructUint16Value(valDfFlowActionSetVlanId,
 								VtnServiceIpcConsts.VLAN_ID).toString());
-			
+
 				if (null == setVlanIdJsonArray) {
 					setVlanIdJsonArray = new JsonArray();
 
 				}
-				if(element.getAsString().equals(VtnServiceJsonConsts.VLAN_ID_65535)){
+				if (element.getAsString().equals(
+						VtnServiceJsonConsts.VLAN_ID_65535)) {
 					element = new JsonPrimitive(VtnServiceJsonConsts.EMPTY);
 					setVlanIdJsonArray.add(element);
-				}else{
+				} else {
 					setVlanIdJsonArray.add(element);
 				}
-				
-
 			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_VLAN_PCP
 					.ordinal()) {
 				final IpcStruct valDfFlowActionSetVlanPcp = (IpcStruct) responsePacket[index
@@ -9507,8 +9600,8 @@ public class IpcLogicalResponseFactory {
 				if (null == setStripVlanJsonArray) {
 					setStripVlanJsonArray = new JsonArray();
 				}
-				setStripVlanJsonArray.add(element);				
-				index.getAndIncrement();			
+				setStripVlanJsonArray.add(element);
+				index.getAndIncrement();
 			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IPV4_DST
 					.ordinal()) {
 				final IpcStruct valDfFlowActionSetIpv4 = (IpcStruct) responsePacket[index
@@ -9541,14 +9634,12 @@ public class IpcLogicalResponseFactory {
 				final IpcStruct valDfFlowActionSetIpTos = (IpcStruct) responsePacket[index
 						.getAndIncrement()];
 
-                final String hexString =
-                        UnsignedInteger.toHexString(Long
-                                .valueOf(IpcDataUnitWrapper
-                                        .getIpcStructUint8Value(
-                                                valDfFlowActionSetIpTos,
-                                                VtnServiceIpcConsts.IP_TOS)));
-                element = new JsonPrimitive("0x" + hexString);
-                
+				final String hexString = UnsignedInteger.toHexString(Long
+						.valueOf(IpcDataUnitWrapper.getIpcStructUint8Value(
+								valDfFlowActionSetIpTos,
+								VtnServiceIpcConsts.IP_TOS)));
+				element = new JsonPrimitive("0x" + hexString);
+
 				if (null == setIpTosJsonArray) {
 					setIpTosJsonArray = new JsonArray();
 				}
@@ -9669,7 +9760,7 @@ public class IpcLogicalResponseFactory {
 		LOG.debug("action json:" + action);
 		return action;
 	}
-	
+
 	/**
 	 * Used for VTerminalInterface FlowFilter Response
 	 * 
@@ -9733,7 +9824,6 @@ public class IpcLogicalResponseFactory {
 		LOG.trace("Complete getVTerminalInterfaceFlowFilterResponse");
 		return root;
 	}
-
 
 	/**
 	 * Used for VTerminalInterface FlowFilterEntry Response
@@ -10034,8 +10124,7 @@ public class IpcLogicalResponseFactory {
 				if (getType.equals(VtnServiceJsonConsts.SHOW)
 						&& dataType
 								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
-						&& opType
-								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
 					LOG.debug("Case : Show and targetdb :State ");
 					final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
 					if (opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
@@ -10534,5 +10623,1487 @@ public class IpcLogicalResponseFactory {
 		LOG.trace("Complete getVTerminalInterfaceResponse");
 
 		return root;
+	}
+
+	/**
+	 * Used for PolicingProfile Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getPolicingProfileResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+
+		LOG.trace("Start getPolicingProfileResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray policingProfileJsonArray = null;
+		LOG.debug("getType: " + getType);
+
+		// operation type will be required to resolve the response type
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+
+		String rootJsonName = null;
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.POLICINGPROFILE;
+		} else {
+			// json array will be required for list type of cases
+			policingProfileJsonArray = new JsonArray();
+			rootJsonName = VtnServiceJsonConsts.POLICINGPROFILES;
+		}
+
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject policingProfileJsonObj = null;
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			policingProfileJsonObj = new JsonObject();
+			// Create Json for Count
+			policingProfileJsonObj
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, policingProfileJsonObj);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+				policingProfileJsonObj = new JsonObject();
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+
+				// add mandatory informations from key structure
+				final IpcStruct keyPolicinProfileStruct = (IpcStruct) responsePacket[index++];
+				policingProfileJsonObj.addProperty(
+						VtnServiceJsonConsts.PROFILE_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								keyPolicinProfileStruct,
+								VtnServiceIpcConsts.POLICING_PROFILE_NAME));
+				if (null != policingProfileJsonArray) {
+					policingProfileJsonArray.add(policingProfileJsonObj);
+				}
+				index++;
+			}
+			// finally add either array or single object to root json object and
+			// return the same.
+			if (null != policingProfileJsonArray) {
+				root.add(rootJsonName, policingProfileJsonArray);
+			} else {
+				root.add(rootJsonName, policingProfileJsonObj);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getPolicingProfileResponse");
+		return root;
+	}
+
+	/**
+	 * Create response for Policing Profile Entry Show/List API
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getPolicingProfileEntryResponse(
+			final IpcDataUnit[] responsePacket, final JsonObject requestBody,
+			final String getType) {
+		LOG.trace("Start getPolicingProfileEntryResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray profileEntriesJsonArray = null;
+		LOG.debug("getType: " + getType);
+		/*
+		 * operation type will be required to resolve the response type
+		 */
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		// root Json Name for Show or List
+		String rootJsonName = null;
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.POLICINGPROFILEENTRY;
+		} else {
+			rootJsonName = VtnServiceJsonConsts.POLICINGPROFILEENTRIES;
+			// json array will be required for list type of cases
+			profileEntriesJsonArray = new JsonArray();
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject profileEntryJson = null;
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			/*
+			 * Create Json for Count
+			 */
+			profileEntryJson = new JsonObject();
+			profileEntryJson
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, profileEntryJson);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+				profileEntryJson = new JsonObject();
+				JsonObject tworatethreecolorJson = new JsonObject();
+				JsonObject meterJson = new JsonObject();
+				byte validBit;
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+				/*
+				 * add mandatory informations from key structure
+				 */
+				final IpcStruct keyPolicingProfileEntryStruct = (IpcStruct) responsePacket[index++];
+				profileEntryJson.addProperty(VtnServiceJsonConsts.SEQNUM,
+						IpcDataUnitWrapper.getIpcStructUint8Value(
+								keyPolicingProfileEntryStruct,
+								VtnServiceIpcConsts.SEQUENCENUM));
+
+				/*
+				 * this part is always required in Show, but not required in
+				 * List + "normal" op type
+				 */
+				if (getType.equals(VtnServiceJsonConsts.LIST)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+						|| getType.equals(VtnServiceJsonConsts.SHOW)) {
+					LOG.debug("Case : Show or detail");
+					/*
+					 * add valid informations from value structure
+					 */
+					final IpcStruct valPolicingProfileEntryStruct = (IpcStruct) responsePacket[index++];
+
+					validBit = valPolicingProfileEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_FLOWLIST_PPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, profileEntryJson,
+								VtnServiceJsonConsts.FLNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPolicingProfileEntryStruct,
+										VtnServiceIpcConsts.FLOWLIST));
+					}
+					// rate parameter of Ipc Struct
+					validBit = valPolicingProfileEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_RATE_PPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						int rate = Integer.parseInt(IpcDataUnitWrapper
+								.getIpcStructUint8Value(
+										valPolicingProfileEntryStruct,
+										VtnServiceIpcConsts.RATE));
+						if (rate == UncStructIndexEnum.ValPolicingProfileRateType.UPLL_POLICINGPROFILE_RATE_KBPS
+								.ordinal()) {
+							setValueToJsonObject(validBit, meterJson,
+									VtnServiceJsonConsts.UNIT,
+									VtnServiceJsonConsts.KBPS);
+						} else if (rate == UncStructIndexEnum.ValPolicingProfileRateType.UPLL_POLICINGPROFILE_RATE_PPS
+								.ordinal()) {
+							setValueToJsonObject(validBit, meterJson,
+									VtnServiceJsonConsts.UNIT,
+									VtnServiceJsonConsts.PPS);
+						} else {
+							LOG.debug("Invalid value of rate");
+						}
+						LOG.debug("rate :" + rate);
+					}
+
+					// cir parameter of Ipc Struct
+					validBit = valPolicingProfileEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_CIR_PPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, meterJson,
+								VtnServiceJsonConsts.CIR,
+								IpcDataUnitWrapper.getIpcStructUint32Value(
+										valPolicingProfileEntryStruct,
+										VtnServiceIpcConsts.CIR));
+					}
+
+					// cbs parameter of Ipc Struct
+					validBit = valPolicingProfileEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_CBS_PPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, meterJson,
+								VtnServiceJsonConsts.CBS,
+								IpcDataUnitWrapper.getIpcStructUint32Value(
+										valPolicingProfileEntryStruct,
+										VtnServiceIpcConsts.CBS));
+					}
+
+					// cbs parameter of Ipc Struct
+					validBit = valPolicingProfileEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_PIR_PPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, meterJson,
+								VtnServiceJsonConsts.PIR,
+								IpcDataUnitWrapper.getIpcStructUint32Value(
+										valPolicingProfileEntryStruct,
+										VtnServiceIpcConsts.PIR));
+					}
+
+					// pbs parameter of Ipc Struct
+					validBit = valPolicingProfileEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_PBS_PPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, meterJson,
+								VtnServiceJsonConsts.PBS,
+								IpcDataUnitWrapper.getIpcStructUint32Value(
+										valPolicingProfileEntryStruct,
+										VtnServiceIpcConsts.PBS));
+					}
+					// add meter json to tworatethreecolor json
+					tworatethreecolorJson.add(VtnServiceJsonConsts.METER,
+							meterJson);
+
+					List<String> paramNames = new ArrayList<String>();
+					// set green json to tworatethreecolor json
+					paramNames.add(VtnServiceIpcConsts.GREENACTION);
+					paramNames.add(VtnServiceIpcConsts.GREENACTIONDSCP);
+					paramNames.add(VtnServiceIpcConsts.GREENACTIONPRIORITY);
+					paramNames
+							.add(VtnServiceIpcConsts.GREENACTIONDROPPRECEDENCE);
+					tworatethreecolorJson
+							.add(VtnServiceJsonConsts.GREENACTION,
+									createActionJson(
+											valPolicingProfileEntryStruct,
+											paramNames,
+											UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_GREEN_ACTION_PPE
+													.ordinal()));
+					// set yellow json to tworatethreecolor json
+					paramNames.clear();
+					paramNames.add(VtnServiceIpcConsts.YELLOWACTION);
+					paramNames.add(VtnServiceIpcConsts.YELLOWACTIONDSCP);
+					paramNames.add(VtnServiceIpcConsts.YELLOWACTIONPRIORITY);
+					paramNames
+							.add(VtnServiceIpcConsts.YELLOWACTIONDROPPRECEDENCE);
+					tworatethreecolorJson
+							.add(VtnServiceJsonConsts.YELLOWACTION,
+									createActionJson(
+											valPolicingProfileEntryStruct,
+											paramNames,
+											UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_YELLOW_ACTION_PPE
+													.ordinal()));
+					// set red json to tworatethreecolor json
+					paramNames.clear();
+					paramNames.add(VtnServiceIpcConsts.REDACTION);
+					paramNames.add(VtnServiceIpcConsts.REDACTIONDSCP);
+					paramNames.add(VtnServiceIpcConsts.REDACTIONPRIORITY);
+					paramNames.add(VtnServiceIpcConsts.REDACTIONDROPPRECEDENCE);
+					tworatethreecolorJson
+							.add(VtnServiceJsonConsts.REDACTION,
+									createActionJson(
+											valPolicingProfileEntryStruct,
+											paramNames,
+											UncStructIndexEnum.valPolicingProfileEntryIndex.UPLL_IDX_RED_ACTION_PPE
+													.ordinal()));
+
+					profileEntryJson.add(
+							VtnServiceJsonConsts.TWORATETHREECOLOR,
+							tworatethreecolorJson);
+				}
+
+				/*
+				 * add current json object to array, if it has been initialized
+				 * earlier
+				 */
+				if (getType.equals(VtnServiceJsonConsts.LIST)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
+					LOG.debug("List ,Operation : normal Skip value strutures ");
+					index++;
+				}
+				// add current json object to array, if it has been initialized
+				// earlier
+				if (null != profileEntriesJsonArray) {
+					profileEntriesJsonArray.add(profileEntryJson);
+				}
+			}
+			/*
+			 * finally add either array or single object to root json object and
+			 * return the same.
+			 */
+			if (null != profileEntriesJsonArray) {
+				root.add(rootJsonName, profileEntriesJsonArray);
+			} else {
+				root.add(rootJsonName, profileEntryJson);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getPolicingProfileEntryResponse");
+		return root;
+	}
+
+	/**
+	 * Create JSON object for green/yellow/red actions with all parameters
+	 * inside that
+	 * 
+	 * @param valPolicingProfileEntryStruct
+	 * @param paramNames
+	 *            - parameter names
+	 * @param startIndex
+	 */
+	private JsonObject createActionJson(
+			final IpcStruct valPolicingProfileEntryStruct,
+			List<String> paramNames, int startIndex) {
+		byte validBit;
+		JsonObject actionJson = new JsonObject();
+		validBit = valPolicingProfileEntryStruct.getByte(
+				VtnServiceIpcConsts.VALID, startIndex++);
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			int actionType = Integer.parseInt(IpcDataUnitWrapper
+					.getIpcStructUint8Value(valPolicingProfileEntryStruct,
+							paramNames.get(0)));
+			if (actionType == UncStructIndexEnum.ValPolicingProfileAction.UPLL_POLICINGPROFILE_ACT_PASS
+					.ordinal()) {
+				setValueToJsonObject(validBit, actionJson,
+						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.PASS);
+			} else if (actionType == UncStructIndexEnum.ValPolicingProfileAction.UPLL_POLICINGPROFILE_ACT_DROP
+					.ordinal()) {
+				setValueToJsonObject(validBit, actionJson,
+						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.DROP);
+			} else if (actionType == UncStructIndexEnum.ValPolicingProfileAction.UPLL_POLICINGPROFILE_ACT_PENALTY
+					.ordinal()) {
+				setValueToJsonObject(validBit, actionJson,
+						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.PENALTY);
+			} else {
+				LOG.debug("Invalid value of type");
+			}
+		}
+
+		validBit = valPolicingProfileEntryStruct.getByte(
+				VtnServiceIpcConsts.VALID, startIndex++);
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, actionJson,
+					VtnServiceJsonConsts.PRIORITY,
+					IpcDataUnitWrapper.getIpcStructUint8Value(
+							valPolicingProfileEntryStruct, paramNames.get(1)));
+		}
+
+		validBit = valPolicingProfileEntryStruct.getByte(
+				VtnServiceIpcConsts.VALID, startIndex++);
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, actionJson,
+					VtnServiceJsonConsts.DSCP,
+					IpcDataUnitWrapper.getIpcStructUint8Value(
+							valPolicingProfileEntryStruct, paramNames.get(2)));
+		}
+
+		validBit = valPolicingProfileEntryStruct.getByte(
+				VtnServiceIpcConsts.VALID, startIndex++);
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, actionJson,
+					VtnServiceJsonConsts.DROPPRECEDENCE,
+					IpcDataUnitWrapper.getIpcStructUint8Value(
+							valPolicingProfileEntryStruct, paramNames.get(3)));
+		}
+		return actionJson;
+	}
+
+	/**
+	 * Used for PolicingMap Response
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getVtnPolicingMapResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+		LOG.trace("Start getVtnPolicingMapResponse()");
+		final JsonObject root = new JsonObject();
+		final JsonObject policingmapJson = new JsonObject();
+		// flag to be set in case detail information
+		boolean detailedInfo = true;
+		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)
+				&& !requestBody.get(VtnServiceJsonConsts.TARGETDB)
+						.getAsString()
+						.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+			// create response with only profile_name
+			detailedInfo = false;
+		} else {
+			if (requestBody.has(VtnServiceJsonConsts.CONTROLLERID)
+					&& requestBody.has(VtnServiceJsonConsts.DOMAINID)) {
+				// create response with detail information
+				detailedInfo = true;
+			} else {
+				// create response with only profile_name
+				detailedInfo = false;
+			}
+		}
+
+		// ignore key-type and key-strucrure, as they are have no information
+		// that is reqiued in response
+		int index = 2;
+		if (detailedInfo) {
+			/*
+			 * there is no use of key-type, key-structure, val_policingmap and
+			 * val_policingmap_controller so start response packet iteration
+			 * from 4th index
+			 */
+			getDetailPolicingMap(responsePacket, policingmapJson, 4,
+					VtnServiceJsonConsts.DETAIL);
+		} else {
+			final IpcStruct valPolicingMapStruct = (IpcStruct) responsePacket[index];
+			byte validBit = valPolicingMapStruct
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.ValPolicingMapIndex.UPLL_IDX_POLICERNAME_PM
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, policingmapJson,
+						VtnServiceJsonConsts.PROFILE_NAME,
+						IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+								valPolicingMapStruct,
+								VtnServiceIpcConsts.POLICER_NAME));
+			}
+		}
+		root.add(VtnServiceJsonConsts.POLICINGMAP, policingmapJson);
+		LOG.trace("Start getVtnPolicingMapResponse()");
+		LOG.debug("response Json: " + root.toString());
+		return root;
+	}
+
+	/**
+	 * Create response for show policing-map APIs. common for vBridge/vBridge
+	 * Interface/vTerminal Interface
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getPolicingMapResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+
+		LOG.trace("Start getPolicingMapResponse()");
+		final JsonObject root = new JsonObject();
+		JsonObject policingMapJsonObject = new JsonObject();
+
+		LOG.debug("getType: " + getType);
+		// set default valiue of op, if not set
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		// set default valiue of targetdb, if not set
+		String targetDB = VtnServiceJsonConsts.STATE;
+		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
+			targetDB = requestBody.get(VtnServiceJsonConsts.TARGETDB)
+					.getAsString();
+		}
+		// there is no use of key-type and key-structure, so start response
+		// packet iteration from 2nd index
+		int index = 2;
+		final IpcStruct valPolicingMapStruct = (IpcStruct) responsePacket[index++];
+		byte validBit = valPolicingMapStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.ValPolicingMapIndex.UPLL_IDX_POLICERNAME_PM
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, policingMapJsonObject,
+					VtnServiceJsonConsts.PROFILE_NAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							valPolicingMapStruct,
+							VtnServiceIpcConsts.POLICER_NAME));
+		}
+		// opType and targetDB is used for Detail case
+		if (targetDB.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+			/*
+			 * there is no use of key-type, key-structure and val_policingmap,
+			 * so start responsepacket iteration from 3rd index
+			 */
+			getDetailPolicingMap(responsePacket, policingMapJsonObject, 3,
+					opType);
+		}
+		root.add(VtnServiceJsonConsts.POLICINGMAP, policingMapJsonObject);
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getPolicingMapResponse");
+		return root;
+	}
+
+	/**
+	 * Create response for show policing-map APIs with detail case. common for
+	 * vBridge/vBridge Interface/vTerminal Interface
+	 * 
+	 * @param responsePacket
+	 * @param profileJsonObject
+	 */
+	private void getDetailPolicingMap(IpcDataUnit[] responsePacket,
+			JsonObject policingmapJson, int index, String opType) {
+		JsonArray switchesjsonArray = null;
+		JsonArray policingProfileEntriesjsonArray;
+		JsonObject policingProfileEntriesjsonObject;
+		JsonObject switchesjsonObject;
+		byte validBit;
+		policingProfileEntriesjsonArray = new JsonArray();
+		while (index < responsePacket.length) {
+			final IpcStruct valPolicingMapControllerSt = (IpcStruct) responsePacket[index++];
+			policingProfileEntriesjsonObject = new JsonObject();
+			// sequence number
+			validBit = valPolicingMapControllerSt
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncStructIndexEnum.ValPolicingMapControllerStIndex.UPLL_IDX_SEQ_NUM_PMCS
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit,
+						policingProfileEntriesjsonObject,
+						VtnServiceJsonConsts.SEQNUM,
+						IpcDataUnitWrapper.getIpcStructUint8Value(
+								valPolicingMapControllerSt,
+								VtnServiceIpcConsts.SEQUENCENUM));
+			}
+			if (opType.equals(VtnServiceJsonConsts.DETAIL)) {
+				JsonObject statisticJsonObject = new JsonObject();
+				// set pom-stats for total
+				validBit = valPolicingMapControllerSt
+						.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.ValPolicingMapControllerStIndex.UPLL_IDX_TOTAL_PMCS
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+						.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					statisticJsonObject.add(VtnServiceJsonConsts.TOTAL,
+							setPomStatusToJson(IpcDataUnitWrapper
+									.getInnerIpcStruct(
+											valPolicingMapControllerSt,
+											VtnServiceIpcConsts.TOTAL)));
+				}
+
+				// set pom-stats for green_yellow
+				validBit = valPolicingMapControllerSt
+						.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.ValPolicingMapControllerStIndex.UPLL_IDX_GREEN_YELLOW_PMCS
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+						.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					statisticJsonObject.add(VtnServiceJsonConsts.GREEN_YELLOW,
+							setPomStatusToJson(IpcDataUnitWrapper
+									.getInnerIpcStruct(
+											valPolicingMapControllerSt,
+											VtnServiceIpcConsts.GREEN_YELLOW)));
+				}
+
+				// set pom-stats for red
+				validBit = valPolicingMapControllerSt
+						.getByte(
+								VtnServiceIpcConsts.VALID,
+								UncStructIndexEnum.ValPolicingMapControllerStIndex.UPLL_IDX_RED_PMCS
+										.ordinal());
+				if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+						.ordinal()
+						&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+								.ordinal()) {
+					statisticJsonObject.add(VtnServiceJsonConsts.RED,
+							setPomStatusToJson(IpcDataUnitWrapper
+									.getInnerIpcStruct(
+											valPolicingMapControllerSt,
+											VtnServiceIpcConsts.RED)));
+				}
+
+				policingProfileEntriesjsonObject.add(
+						VtnServiceJsonConsts.STATISTICS, statisticJsonObject);
+			}
+
+			// there is no use of val_policingprofile_entry
+			index++;
+
+			while (index < responsePacket.length) {
+				IpcStruct valPolicingMapSwitchSt = (IpcStruct) responsePacket[index++];
+				if (valPolicingMapSwitchSt.getName().equalsIgnoreCase(
+						VtnServiceIpcConsts.ValPolicingMapSwitchSt)) {
+					if (switchesjsonArray == null) {
+						switchesjsonArray = new JsonArray();
+					}
+					switchesjsonObject = new JsonObject();
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_POLICER_ID_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.POLICERID,
+								IpcDataUnitWrapper.getIpcStructUint32Value(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.POLICERID));
+					}
+
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_SWITCH_ID_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.SWITCH_ID,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.SWITCHID));
+					}
+
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_VBR_NAME_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.VNODENAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.VBRNAME));
+					}
+
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_IF_NAME_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.IFNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.IFNAME));
+					}
+
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_PORT_NAME_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.PORTNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.PORTNAME));
+					}
+
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_VLAN_ID_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.VLAN_ID,
+								IpcDataUnitWrapper.getIpcStructUint16Value(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.VLANID1));
+					}
+
+					validBit = valPolicingMapSwitchSt
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_STATUS_PMSS
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, switchesjsonObject,
+								VtnServiceJsonConsts.STATUS,
+								IpcDataUnitWrapper.getIpcStructUint8Value(
+										valPolicingMapSwitchSt,
+										VtnServiceIpcConsts.STATUS));
+					}
+					if (opType.equals(VtnServiceJsonConsts.DETAIL)) {
+						JsonObject switchStatisticJsonObject = new JsonObject();
+						// set pom-stats for total
+						validBit = valPolicingMapSwitchSt
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_TOTAL_PMSS
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							switchStatisticJsonObject
+									.add(VtnServiceJsonConsts.TOTAL,
+											setPomStatusToJson(IpcDataUnitWrapper
+													.getInnerIpcStruct(
+															valPolicingMapSwitchSt,
+															VtnServiceIpcConsts.TOTAL)));
+						}
+
+						// set pom-stats for green_yellow
+						validBit = valPolicingMapSwitchSt
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_GREEN_YELLOW_PMSS
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							switchStatisticJsonObject
+									.add(VtnServiceJsonConsts.GREEN_YELLOW,
+											setPomStatusToJson(IpcDataUnitWrapper
+													.getInnerIpcStruct(
+															valPolicingMapSwitchSt,
+															VtnServiceIpcConsts.GREEN_YELLOW)));
+						}
+
+						// set pom-stats for red
+						validBit = valPolicingMapSwitchSt
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.ValPolicingMapSwitchStIndex.UPLL_IDX_RED_PMSS
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							switchStatisticJsonObject.add(
+									VtnServiceJsonConsts.RED,
+									setPomStatusToJson(IpcDataUnitWrapper
+											.getInnerIpcStruct(
+													valPolicingMapSwitchSt,
+													VtnServiceIpcConsts.RED)));
+						}
+						switchesjsonObject.add(VtnServiceJsonConsts.STATISTICS,
+								switchStatisticJsonObject);
+					}
+					switchesjsonArray.add(switchesjsonObject);
+				} else {
+					index--;
+					break;
+				}
+			}
+			if (switchesjsonArray != null) {
+				policingProfileEntriesjsonObject.add(
+						VtnServiceJsonConsts.SWITCHES, switchesjsonArray);
+			}
+			policingProfileEntriesjsonArray
+					.add(policingProfileEntriesjsonObject);
+		}
+		policingmapJson.add(VtnServiceJsonConsts.POLICINGPROFILEENTRIES,
+				policingProfileEntriesjsonArray);
+	}
+
+	/**
+	 * Create JSON with packets/octes information from pom_stats
+	 * 
+	 * @param pomStatus
+	 *            - IpcStruct containing information for packets/bytes
+	 * @return - JsonObject
+	 */
+	private JsonElement setPomStatusToJson(IpcStruct pomStatus) {
+		JsonObject pomJson = new JsonObject();
+		byte validBit;
+		/*
+		 * set information for packets, after checking valid bit
+		 */
+		validBit = pomStatus.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_PACKETS
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, pomJson,
+					VtnServiceJsonConsts.PACKETS,
+					IpcDataUnitWrapper.getIpcStructUint64Value(pomStatus,
+							VtnServiceIpcConsts.PACKETS));
+		}
+
+		/*
+		 * set information for octets, after checking valid bit
+		 */
+		validBit = pomStatus.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_BYTES
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			setValueToJsonObject(validBit, pomJson,
+					VtnServiceJsonConsts.OCTETS,
+					IpcDataUnitWrapper.getIpcStructUint64Value(pomStatus,
+							VtnServiceIpcConsts.BYTES));
+		}
+		return pomJson;
+	}
+
+	/**
+	 * Create response for show Path Map Entry APIs.
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return
+	 */
+	public JsonObject getPathMapEntryResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+		LOG.trace("Start getPathMapEntryResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray pathMapEntriesJsonArray = null;
+		LOG.debug("getType: " + getType);
+		// operation type will be required to resolve the response type
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+
+		// root json name as per Show or List Response
+		String rootJsonName = null;
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.PATHMAPENTRY;
+		} else {
+			// json array will be required for list type of cases
+			pathMapEntriesJsonArray = new JsonArray();
+			rootJsonName = VtnServiceJsonConsts.PATHMAPENTRIES;
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject pathMapEntryJsonObj = null;
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			pathMapEntryJsonObj = new JsonObject();
+			// Create Json for Count
+			pathMapEntryJsonObj
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, pathMapEntryJsonObj);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+				pathMapEntryJsonObj = new JsonObject();
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+
+				// add mandatory informations from key structure
+				final IpcStruct keyPathMapEntryStruct = (IpcStruct) responsePacket[index++];
+				pathMapEntryJsonObj.addProperty(VtnServiceJsonConsts.SEQNUM,
+						IpcDataUnitWrapper.getIpcStructUint16Value(
+								keyPathMapEntryStruct,
+								VtnServiceIpcConsts.SEQUENCENUM));
+
+				final IpcStruct valPathMapEntryStruct = (IpcStruct) responsePacket[index++];
+				// ignore fl_name setting for List with summary information
+				if (getType.equalsIgnoreCase(VtnServiceJsonConsts.SHOW)
+						|| (getType.equalsIgnoreCase(VtnServiceJsonConsts.LIST) && opType
+								.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL))) {
+					byte validBit = valPathMapEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtnPathMapEntryIndex.UPLL_IDX_FLOWLIST_NAME_VPME
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, pathMapEntryJsonObj,
+								VtnServiceJsonConsts.FLNAME,
+								IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+										valPathMapEntryStruct,
+										VtnServiceIpcConsts.FLOWLIST_NAME));
+					}
+				}
+
+				/*
+				 * ignore val_vtn_pathmap_ppolicy_entry value structures
+				 * continue loop, if same structure is coming again and again
+				 * till response packet length. Break the loop when NULL
+				 */
+				while (index < responsePacket.length) {
+					final IpcStruct valVtnPathmapPpolicyEntry = (IpcStruct) responsePacket[index++];
+					if (valVtnPathmapPpolicyEntry != null
+							&& valVtnPathmapPpolicyEntry
+									.getName()
+									.equalsIgnoreCase(
+											VtnServiceIpcConsts.ValVtnPathMapPPolicyEntry)) {
+						continue;
+					} else {
+						index--;
+						break;
+					}
+				}
+				if (null != pathMapEntriesJsonArray) {
+					pathMapEntriesJsonArray.add(pathMapEntryJsonObj);
+				}
+			}
+			// finally add either array or single object to root json object and
+			// return the same.
+			if (null != pathMapEntriesJsonArray) {
+				root.add(rootJsonName, pathMapEntriesJsonArray);
+			} else {
+				root.add(rootJsonName, pathMapEntryJsonObj);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getPathMapEntryResponse");
+		return root;
+	}
+
+	/**
+	 * Create response for show Path Policy Entry APIs.
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param getType
+	 * @return JsonObject
+	 */
+	public JsonObject getPathPolicyEntryResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+		LOG.trace("Start getPathPolicyEntryResponse()");
+		final JsonObject root = new JsonObject();
+		JsonArray pPolicyEntryArray = null;
+		/*
+		 * op type will be required to resolve the response type
+		 */
+		LOG.debug("getType: " + getType);
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		/*
+		 * data type will be required to resolve the response structures
+		 */
+		String dataType = VtnServiceJsonConsts.STATE;
+		if (requestBody.has(VtnServiceJsonConsts.TARGETDB)) {
+			dataType = requestBody.get(VtnServiceJsonConsts.TARGETDB)
+					.getAsString();
+		}
+		String rootJsonName;
+		/*
+		 * get type (show or list) will be required to resolve root json name
+		 * here it will be vtn for show and vtns for list
+		 */
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.PATHPOLICYENTRY;
+		} else {
+			rootJsonName = VtnServiceJsonConsts.PATHPOLICYENTRIES;
+			// json array will be required for list type of cases
+			pPolicyEntryArray = new JsonArray();
+		}
+
+		LOG.debug("Json Name :" + rootJsonName);
+		JsonObject pPolicyEntry = null;
+
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			/*
+			 * Create Json for Count
+			 */
+			pPolicyEntry = new JsonObject();
+			pPolicyEntry
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, pPolicyEntry);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+				pPolicyEntry = new JsonObject();
+				byte validBit;
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+				/*
+				 * add mandatory informations from key structure
+				 */
+				final IpcStruct keyVtnpPolicyEntryStruct = (IpcStruct) responsePacket[index++];
+
+				String controllerId = IpcDataUnitWrapper
+						.getIpcStructUint8ArrayValue(keyVtnpPolicyEntryStruct,
+								VtnServiceIpcConsts.CONTROLLERID);
+				String domainId = IpcDataUnitWrapper
+						.getIpcStructUint8ArrayValue(keyVtnpPolicyEntryStruct,
+								VtnServiceIpcConsts.DOMAINID);
+				pPolicyEntry.addProperty(VtnServiceJsonConsts.ENTRYID,
+						controllerId + VtnServiceJsonConsts.HYPHEN + domainId);
+
+				if (getType.equals(VtnServiceJsonConsts.LIST)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
+						|| getType.equals(VtnServiceJsonConsts.SHOW)) {
+					LOG.debug("Case : Show or List with detail");
+					pPolicyEntry.addProperty(VtnServiceJsonConsts.CONTROLLERID,
+							controllerId);
+					pPolicyEntry.addProperty(VtnServiceJsonConsts.DOMAINID,
+							domainId);
+
+					/*
+					 * add valid informations from value structure
+					 */
+					final IpcStruct valpPolicyEntryStruct = (IpcStruct) responsePacket[index++];
+
+					validBit = valpPolicyEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtnPathmapPpolicyEntryIndex.UPLL_IDX_POLICY_ID_VPMPPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, pPolicyEntry,
+								VtnServiceJsonConsts.POLICYID,
+								IpcDataUnitWrapper.getIpcStructUint8Value(
+										valpPolicyEntryStruct,
+										VtnServiceIpcConsts.POLICYID));
+					}
+					validBit = valpPolicyEntryStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtnPathmapPpolicyEntryIndex.UPLL_IDX_AGING_TIME_OUT_VPMPPE
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, pPolicyEntry,
+								VtnServiceJsonConsts.AGEOUTTIME,
+								IpcDataUnitWrapper.getIpcStructUint16Value(
+										valpPolicyEntryStruct,
+										VtnServiceIpcConsts.AGINGOUTTIME));
+					}
+				} else if (getType.equals(VtnServiceJsonConsts.LIST)
+						&& opType.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL)) {
+					// skip val struct
+					index++;
+				}
+
+				if (getType.equals(VtnServiceJsonConsts.SHOW)
+						&& dataType
+								.equalsIgnoreCase(VtnServiceJsonConsts.STATE)) {
+					LOG.debug("state db case");
+					// skip val_vtn_pathmap_entry
+					index++;
+
+					// val structure val_vtn_pathmap_ppolicy_entry_stat
+					final IpcStruct valpPolicyEntryStStruct = (IpcStruct) responsePacket[index++];
+					validBit = valpPolicyEntryStStruct
+							.getByte(
+									VtnServiceIpcConsts.VALID,
+									UncStructIndexEnum.ValVtnPathmapPpolicyEntryStat.UPLL_IDX_POLICY_TYPE_VVPMPPES
+											.ordinal());
+					if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+							.ordinal()
+							&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+									.ordinal()) {
+						setValueToJsonObject(validBit, pPolicyEntry,
+								VtnServiceJsonConsts.POLICYTYPE,
+								IpcDataUnitWrapper.getIpcStructUint8Value(
+										valpPolicyEntryStStruct,
+										VtnServiceIpcConsts.POLICYTYPE));
+					}
+
+					if (opType.equals(VtnServiceJsonConsts.DETAIL)) {
+						LOG.info("call getPolicyEntryPomStats : for statics information");
+						getPolicyEntryPomStats(pPolicyEntry,
+								IpcDataUnitWrapper.getInnerIpcStruct(
+										valpPolicyEntryStStruct,
+										VtnServiceIpcConsts.PMAP_HWSTATS));
+					}
+					// flowlist entry count
+					int flowListEntryCount = Integer
+							.parseInt(IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[index++]));
+
+					JsonArray flowListEntriesArray = new JsonArray();
+					for (int i = 0; i < flowListEntryCount; i++) {
+						// val structure val_vtn_pathmap_ppolicy_flow_entry_stat
+						final IpcStruct valFlowFilterEntryStStruct = (IpcStruct) responsePacket[index++];
+						if (opType.equals(VtnServiceJsonConsts.DETAIL)) {
+							JsonObject flowListEntry = new JsonObject();
+							validBit = valFlowFilterEntryStStruct
+									.getByte(
+											VtnServiceIpcConsts.VALID,
+											UncStructIndexEnum.ValVtnPathmapPpolicyFlowEntryStatIndex.UPLL_IDX_SEQ_NUM_PMPPFES
+													.ordinal());
+							if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+									.ordinal()
+									&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+											.ordinal()) {
+								setValueToJsonObject(
+										validBit,
+										flowListEntry,
+										VtnServiceJsonConsts.SEQNUM,
+										IpcDataUnitWrapper
+												.getIpcStructUint16Value(
+														valFlowFilterEntryStStruct,
+														VtnServiceIpcConsts.SEQUENCENUM));
+							}
+							validBit = valFlowFilterEntryStStruct
+									.getByte(
+											VtnServiceIpcConsts.VALID,
+											UncStructIndexEnum.ValVtnPathmapPpolicyFlowEntryStatIndex.UPLL_IDX_FL_STATS_PMPPFES
+													.ordinal());
+							if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+									.ordinal()
+									&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+											.ordinal()) {
+								LOG.debug("call getPolicyEntryPomStats : for statics information");
+								getPolicyEntryPomStats(flowListEntry,
+										IpcDataUnitWrapper.getInnerIpcStruct(
+												valFlowFilterEntryStStruct,
+												VtnServiceIpcConsts.FL_HWSTATS));
+							}
+							flowListEntriesArray.add(flowListEntry);
+						}
+					}
+					if (opType.equals(VtnServiceJsonConsts.DETAIL)) {
+						JsonObject flowlistJsonObj = new JsonObject();
+						flowlistJsonObj.add(
+								VtnServiceJsonConsts.FLOWLISTENTRIES,
+								flowListEntriesArray);
+						pPolicyEntry.add(VtnServiceJsonConsts.FLOWLIST,
+								flowlistJsonObj);
+					}
+
+					// link weight count
+					int linkWeightCount = Integer.parseInt(IpcDataUnitWrapper
+							.getIpcDataUnitValue(responsePacket[index++]));
+
+					JsonArray linkWeightArray = new JsonArray();
+					for (int i = 0; i < linkWeightCount; i++) {
+						// val structure
+						// val_pmap_ppolicy_entry_flowlist_weight_st
+						final IpcStruct valPmapPpolicyEntryFlowlistWeightSt = (IpcStruct) responsePacket[index++];
+						JsonObject linkWeightObj = new JsonObject();
+						validBit = valPmapPpolicyEntryFlowlistWeightSt
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.valPmapPpolicyEntryFlWeightStIndex.UPLL_IDX_SWITCH_ID_PMPPFLW
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							setValueToJsonObject(
+									validBit,
+									linkWeightObj,
+									VtnServiceJsonConsts.SWITCHID,
+									IpcDataUnitWrapper
+											.getIpcStructUint8ArrayValue(
+													valPmapPpolicyEntryFlowlistWeightSt,
+													VtnServiceIpcConsts.SWITCHID));
+						}
+						validBit = valPmapPpolicyEntryFlowlistWeightSt
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.valPmapPpolicyEntryFlWeightStIndex.UPLL_IDX_PORT_ID_PMPPFLW
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							setValueToJsonObject(
+									validBit,
+									linkWeightObj,
+									VtnServiceJsonConsts.PORTNAME,
+									IpcDataUnitWrapper
+											.getIpcStructUint8ArrayValue(
+													valPmapPpolicyEntryFlowlistWeightSt,
+													VtnServiceIpcConsts.PORT_ID));
+						}
+						validBit = valPmapPpolicyEntryFlowlistWeightSt
+								.getByte(
+										VtnServiceIpcConsts.VALID,
+										UncStructIndexEnum.valPmapPpolicyEntryFlWeightStIndex.UPLL_IDX_LINK_WEIGHT_PMPPFLW
+												.ordinal());
+						if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+								.ordinal()
+								&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+										.ordinal()) {
+							setValueToJsonObject(
+									validBit,
+									linkWeightObj,
+									VtnServiceJsonConsts.WEIGHT,
+									IpcDataUnitWrapper
+											.getIpcStructUint32Value(
+													valPmapPpolicyEntryFlowlistWeightSt,
+													VtnServiceIpcConsts.LINK_WEIGHT));
+						}
+						linkWeightArray.add(linkWeightObj);
+					}
+					pPolicyEntry.add(VtnServiceJsonConsts.LINK_WEIGHTS,
+							linkWeightArray);
+
+				}
+
+				// If object has been initialized earlier, add it to array
+				if (null != pPolicyEntryArray) {
+					pPolicyEntryArray.add(pPolicyEntry);
+				}
+			}
+			/*
+			 * finally add either array or single object to root json object and
+			 * return the same.
+			 */
+			if (null != pPolicyEntryArray) {
+				root.add(rootJsonName, pPolicyEntryArray);
+			} else {
+				root.add(rootJsonName, pPolicyEntry);
+			}
+		}
+		LOG.debug("response Json: " + root.toString());
+		LOG.trace("Complete getPathPolicyEntryResponse()");
+		return root;
+	}
+
+	/**
+	 * Create JSON containing statistics information for Path Policy Entry API
+	 * 
+	 * @param targetJson
+	 * @param responseStruct
+	 * @param pomStatsIndexSet
+	 */
+	public void getPolicyEntryPomStats(final JsonObject targetJson,
+			final IpcStruct responseStruct) {
+		LOG.trace("Start getPolicyEntryPomStats");
+		byte validBit;
+
+		final JsonObject statisticsFFJson = new JsonObject();
+		final JsonObject softwareFFJson = new JsonObject();
+		final JsonObject existFFJson = new JsonObject();
+		final JsonObject expireFFJson = new JsonObject();
+		final JsonObject totalFFJson = new JsonObject();
+
+		/*
+		 * set packets and octats informaation for software pom-stats
+		 */
+		validBit = responseStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.PomPmapStatsIndex.UPLL_IDX_SOFT_PPSI
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			LOG.info("information addition is in-progress for software pom-stats");
+			IpcStruct softStruct = IpcDataUnitWrapper.getInnerIpcStruct(
+					responseStruct, VtnServiceIpcConsts.SOFT);
+			validBit = softStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_PACKETS
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, softwareFFJson,
+						VtnServiceJsonConsts.PACKETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(softStruct,
+								VtnServiceIpcConsts.PACKETS));
+			}
+			validBit = softStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_BYTES
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, softwareFFJson,
+						VtnServiceJsonConsts.OCTETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(softStruct,
+								VtnServiceIpcConsts.BYTES));
+			}
+		}
+
+		/*
+		 * set packets and octats informaation for existing flow pom-stats
+		 */
+		validBit = responseStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.PomPmapStatsIndex.UPLL_IDX_EXIST_FLOW_PPSI
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			LOG.info("information addition is in-progress for existing flow pom-stats");
+			IpcStruct existFlowStruct = IpcDataUnitWrapper.getInnerIpcStruct(
+					responseStruct, VtnServiceIpcConsts.EXISTFLOW);
+			validBit = existFlowStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_PACKETS
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, existFFJson,
+						VtnServiceJsonConsts.PACKETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(
+								existFlowStruct, VtnServiceJsonConsts.PACKETS));
+			}
+			validBit = existFlowStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_BYTES
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, existFFJson,
+						VtnServiceJsonConsts.OCTETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(
+								existFlowStruct, VtnServiceIpcConsts.BYTES));
+			}
+		}
+
+		/*
+		 * set packets and octats informaation for expired flow pom-stats
+		 */
+		validBit = responseStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.PomPmapStatsIndex.UPLL_IDX_EXPIRED_FLOW_PPSI
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			LOG.info("information addition is in-progress for expired flow pom-stats");
+			IpcStruct expiredFlowStruct = IpcDataUnitWrapper.getInnerIpcStruct(
+					responseStruct, VtnServiceIpcConsts.EXPIRED_FLOW);
+			validBit = expiredFlowStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_PACKETS
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, expireFFJson,
+						VtnServiceJsonConsts.PACKETS,
+						IpcDataUnitWrapper
+								.getIpcStructUint64Value(expiredFlowStruct,
+										VtnServiceJsonConsts.PACKETS));
+			}
+			validBit = expiredFlowStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_BYTES
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, expireFFJson,
+						VtnServiceJsonConsts.OCTETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(
+								expiredFlowStruct, VtnServiceIpcConsts.BYTES));
+			}
+		}
+
+		/*
+		 * set packets and octats informaation for total pom-stats
+		 */
+		validBit = responseStruct.getByte(VtnServiceIpcConsts.VALID,
+				UncStructIndexEnum.PomPmapStatsIndex.UPLL_IDX_TOTAL_PPSI
+						.ordinal());
+		if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+				.ordinal()
+				&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+						.ordinal()) {
+			LOG.info("information addition is in-progress for total pom-stats");
+			IpcStruct totalStruct = IpcDataUnitWrapper.getInnerIpcStruct(
+					responseStruct, VtnServiceIpcConsts.TOTAL);
+			validBit = totalStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_PACKETS
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, totalFFJson,
+						VtnServiceJsonConsts.PACKETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(totalStruct,
+								VtnServiceIpcConsts.PACKETS));
+			}
+			validBit = totalStruct.getByte(VtnServiceIpcConsts.VALID,
+					UncStructIndexEnum.ValPomStatsIndex.UPLL_IDX_STATS_BYTES
+							.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, totalFFJson,
+						VtnServiceJsonConsts.OCTETS,
+						IpcDataUnitWrapper.getIpcStructUint64Value(totalStruct,
+								VtnServiceIpcConsts.BYTES));
+			}
+		}
+
+		statisticsFFJson.add(VtnServiceJsonConsts.SOFTWARE, softwareFFJson);
+		statisticsFFJson.add(VtnServiceIpcConsts.EXISTINGFLOW, existFFJson);
+		statisticsFFJson.add(VtnServiceIpcConsts.EXPIREDFLOW, expireFFJson);
+		statisticsFFJson.add(VtnServiceJsonConsts.TOTAL, totalFFJson);
+		targetJson.add(VtnServiceJsonConsts.STATISTICS, statisticsFFJson);
+
+		LOG.debug("statics Json for policy-entry: " + targetJson.toString());
+		LOG.trace("complete getPolicyEntryPomStats");
 	}
 }

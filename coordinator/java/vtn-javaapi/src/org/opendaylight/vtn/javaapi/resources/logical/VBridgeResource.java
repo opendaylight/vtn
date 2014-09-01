@@ -158,6 +158,14 @@ public class VBridgeResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			//removal of unused parameter in request body.
+			JsonObject vBridge = requestBody.getAsJsonObject(VtnServiceJsonConsts.VBRIDGE);
+			if (vBridge.has(VtnServiceJsonConsts.CONTROLLERID)) {
+				vBridge.remove(VtnServiceJsonConsts.CONTROLLERID);
+			}
+			if (vBridge.has(VtnServiceJsonConsts.DOMAINID)) {
+				vBridge.remove(VtnServiceJsonConsts.DOMAINID);
+			}
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VBRIDGE_UPDATE, requestBody,
 					getUriParameters());

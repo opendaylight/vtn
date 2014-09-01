@@ -263,7 +263,8 @@ class FlowListMoMgr : public MoMgrImpl {
      *                                              exists in RunningDB)
      **/
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *conflict_ckv, DalDmlIntf *dmi);
+                            ConfigKeyVal *conflict_ckv, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
    /* @brief      Read the configuration from DB based on the operation code
     *
@@ -307,48 +308,6 @@ class FlowListMoMgr : public MoMgrImpl {
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
         DalDmlIntf *dmi);
-
-   /**
-    *  @brief  Method to Update Controller with created, deleted and updated records
-    *
-    *  @param[in]   keytype             Defines the keytype for which operation has
-    *                                   to be carried out.
-    *  @param[in]   session_id          Session id to send req to driver
-    *  @param[in]   config_id           Config id to send req to driver
-    *  @param[in]   phase               List describes Commit Control Status
-    *                                    Information.
-    *  @param[out]  affected_ctrlr_set  Set of affected controllers.
-    *  @param[in]   dmi                 Pointer to DalDmlIntf Class.
-    *
-    *  @retval  UPLL_RC_SUCCESS              Successfull completion.
-    *  @retval  UPLL_RC_ERR_GENERIC          Failure
-    *  retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
-    *  @retval  UPLL_RC_ERR_DB_ACCESS        DB access error
-    **/
-    upll_rc_t TxUpdateController(unc_key_type_t keytype,
-        uint32_t session_id, uint32_t config_id,
-        uuc::UpdateCtrlrPhase phase,
-        set<string> *affected_ctrlr_set, DalDmlIntf *dmi,
-        ConfigKeyVal **err_ckv);
-
-   /**
-    *  @brief  Method to send req to driver during Transaction Update Operation
-    *
-    *  @param[in]  ck_main   Pointer to ConfigKeyVal
-    *  @param[in]  ipc_req   Pointer to ipc_request structure.
-    *  @param[in]  ipc_resp  Pointer to ipc_response structure.
-    *  @param[in]  op        Operation to be carried out
-    *  @param[in]  dmi       Pointer to DalDmlIntf Class.
-    *  @param[in]  ctrlr_id  Pointer to ctrlr_id
-    *
-    *  @retval  UPLL_RC_SUCCESS               Successfull completion.
-    *  @retval  UPLL_RC_ERR_GENERIC           Failure
-    *  @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
-    **/
-    upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-        IpcResponse *ipc_resp, unc_keytype_operation_t op, DalDmlIntf *dmi,
-        controller_domain *ctrlr_dom, set<string> *affected_ctrlr_set, bool *driver_resp);
-
 
     /** @brief  Allocate the memory for the value structure depending upon
      *          the tbl ARG
@@ -580,6 +539,20 @@ class FlowListMoMgr : public MoMgrImpl {
     upll_rc_t UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
                                        DalDmlIntf *dmi,
                                        upll_keytype_datatype_t dt_type);
+
+    upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                           unc_keytype_operation_t &op);
+    upll_rc_t CopyKeyToVal (ConfigKeyVal *ikey,
+                            ConfigKeyVal *&okey);
+
+    upll_rc_t GetControllerDomainSpan(
+        ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+        DalDmlIntf *dmi);
+
+    upll_rc_t GetDomainsForController(
+        ConfigKeyVal *ckv_drvr,
+        ConfigKeyVal *&ctrlr_ckv,
+        DalDmlIntf *dmi);
 };
 
 typedef struct val_flowlist_ctrl {

@@ -139,12 +139,20 @@ class TcLibInterface {
    *             session id will be 0 for driver audit
    * @param[in]  ctr_type controller type openflow/overlay/legacy 
    * @param[in]  controller_id controller id intended for audit
+   * @param[in]  simplified_audit if set simplified audit is to be executed
+   * @param[in]  commit_number Current Commit version of PFC
+   * @param[in]  commit_date Latest commit time of PFC
+   * @param[in]  commit_application Application that performed commit operation
    * @retval     TC_SUCCESS audit start success
    * @retval     TC_FAILURE audit start failed
    */
   virtual TcCommonRet HandleAuditStart(uint32_t session_id,
                                        unc_keytype_ctrtype_t ctr_type,
-                                       std::string controller_id) = 0;
+                                       std::string controller_id,
+                                       pfc_bool_t simplified_audit,
+                                       uint64_t commit_number,
+                                       uint64_t commit_date,
+                                       std::string commit_application) = 0;
 
   /**
    * @brief      Handling of audit start in driver modules for audit operation
@@ -156,6 +164,7 @@ class TcLibInterface {
    * @param[in]  force_reconnect set to audit controller after reconnecting.
    * @retval     TC_SUCCESS audit start success
    * @retval     TC_FAILURE audit start failed
+   * @retval     TC_SIMPLIFIED_AUDIT Execute simplified Audit operation
    */
   virtual TcCommonRet HandleAuditStart(uint32_t session_id,
                                        unc_keytype_ctrtype_t ctr_type,

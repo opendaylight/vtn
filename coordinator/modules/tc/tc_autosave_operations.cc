@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,24 +58,32 @@ TcOperStatus TcAutoSaveOperations::SetAutoSave() {
  * @brief convert TcLock return to TcOperStatus
  */
 TcOperStatus TcAutoSaveOperations::HandleLockRet(TcLockRet lock_ret) {
+  TcOperStatus ret = TC_OPER_FAILURE;
   switch ( lock_ret ) {
-    case     TC_LOCK_INVALID_UNC_STATE:
+    case TC_LOCK_INVALID_UNC_STATE:
     case TC_LOCK_OPERATION_NOT_ALLOWED:
-      return TC_INVALID_STATE;
+      ret = TC_INVALID_STATE;
+      break;
     case TC_LOCK_BUSY:
-      return TC_SYSTEM_BUSY;
+      ret = TC_SYSTEM_BUSY;
+      break;
     default:
-      return TC_OPER_FAILURE;
+      ret = TC_OPER_FAILURE;
   }
-  return TC_OPER_FAILURE;
+  pfc_log_info("HandleLockRet: Received(%u) return (%u)",
+               lock_ret, ret);
+  return ret;
 }
 
 /*
  * @brief Check the argument count in the input
  */
 TcOperStatus TcAutoSaveOperations::TcCheckOperArgCount(uint32_t avail_count) {
-  if ( avail_count != UNC_AUTOSAVE_OPER_ARG_COUNT_MIN )
+  if ( avail_count != UNC_AUTOSAVE_OPER_ARG_COUNT_MIN ) {
+    pfc_log_error("TcCheckOperArgCount args expected(%u) received(%u)",
+                  UNC_AUTOSAVE_OPER_ARG_COUNT_MIN, avail_count);
     return TC_OPER_INVALID_INPUT;
+  }
   return TC_OPER_SUCCESS;
 }
 
@@ -85,6 +93,9 @@ TcOperStatus TcAutoSaveOperations::TcCheckOperArgCount(uint32_t avail_count) {
 TcOperStatus TcAutoSaveOperations::TcValidateOperType() {
   if (tc_oper_ > TC_OP_AUTOSAVE_DISABLE ||
       tc_oper_ < TC_OP_AUTOSAVE_GET) {
+    pfc_log_error("TcValidateOperType opertype(%u) not in range"
+                  " TC_OP_AUTOSAVE_DISABLE till TC_OP_AUTOSAVE_GET",
+                  tc_oper_);
     return TC_INVALID_OPERATION_TYPE;
   }
   return TC_OPER_SUCCESS;
@@ -102,9 +113,20 @@ TcOperStatus TcAutoSaveOperations::TcValidateOperParams() {
  */
 TcOperStatus TcAutoSaveOperations::TcGetExclusion() {
   TcLockRet ret = TC_LOCK_FAILURE;
-  ret = tclock_->GetLock(session_id_,
+
+  if (tc_oper_ ==TC_OP_AUTOSAVE_GET) {
+    ret = tclock_->GetLock(session_id_,
+                         TC_AUTO_SAVE_GET,
+                         TC_WRITE_NONE);
+  } else if (tc_oper_ == TC_OP_AUTOSAVE_ENABLE) {
+    ret = tclock_->GetLock(session_id_,
                          TC_AUTO_SAVE_ENABLE,
                          TC_WRITE_NONE);
+  } else {
+    ret = tclock_->GetLock(session_id_,
+                         TC_AUTO_SAVE_DISABLE,
+                         TC_WRITE_NONE);
+  }
   if (ret != TC_LOCK_SUCCESS) {
      return HandleLockRet(ret);
   }
@@ -116,10 +138,22 @@ TcOperStatus TcAutoSaveOperations::TcGetExclusion() {
  */
 TcOperStatus TcAutoSaveOperations::TcReleaseExclusion() {
   TcLockRet ret = TC_LOCK_FAILURE;
-  ret= tclock_->ReleaseLock(session_id_,
-                            0,
-                            TC_AUTO_SAVE_DISABLE,
-                            TC_WRITE_NONE);
+  if (tc_oper_ == TC_OP_AUTOSAVE_GET) {
+    ret= tclock_->ReleaseLock(session_id_,
+                              0,
+                              TC_AUTO_SAVE_GET,
+                              TC_WRITE_NONE);
+  } else if (tc_oper_ == TC_OP_AUTOSAVE_ENABLE) {
+    ret= tclock_->ReleaseLock(session_id_,
+                              0,
+                              TC_AUTO_SAVE_ENABLE,
+                              TC_WRITE_NONE);
+  } else {
+    ret= tclock_->ReleaseLock(session_id_,
+                              0,
+                              TC_AUTO_SAVE_DISABLE,
+                              TC_WRITE_NONE);
+  }
   if (ret != TC_LOCK_SUCCESS) {
      return HandleLockRet(ret);
   }
@@ -143,7 +177,7 @@ TcOperStatus TcAutoSaveOperations::Execute() {
       }
     case TC_OP_AUTOSAVE_ENABLE:
       {
-       pfc_log_info("Enable AutoSave");
+        pfc_log_info("Enable AutoSave");
         if ( autosave_ == PFC_TRUE ) {
           return TC_OPER_SUCCESS;
         } else {
@@ -156,7 +190,7 @@ TcOperStatus TcAutoSaveOperations::Execute() {
       }
     case TC_OP_AUTOSAVE_DISABLE:
       {
-       pfc_log_info("Disable AutoSave");
+        pfc_log_info("Disable AutoSave");
         if ( autosave_ == PFC_FALSE ) {
           return TC_OPER_SUCCESS;
         } else {
@@ -170,6 +204,29 @@ TcOperStatus TcAutoSaveOperations::Execute() {
     default:
       return TC_OPER_FAILURE;
   }
+
+  // Send AutoSave status change request to TCLIB
+  TcMsgOperType tclib_opertype = tclib::MSG_MAX;
+  if (tc_oper_ == TC_OP_AUTOSAVE_ENABLE) {
+    tclib_opertype = tclib::MSG_AUTOSAVE_ENABLE;
+  } else if (tc_oper_ == TC_OP_AUTOSAVE_DISABLE) {
+    tclib_opertype = tclib::MSG_AUTOSAVE_DISABLE;
+  }
+  TcMsg *tcmsg = TcMsg::CreateInstance(session_id_,
+                                tclib_opertype,
+                                unc_oper_channel_map_);
+  if ( tcmsg == NULL ) {
+    pfc_log_error("Cannot create instance for AutoSave notification");
+    return TC_SYSTEM_FAILURE;
+  }
+
+  TcOperRet MsgRet = tcmsg->Execute();
+  delete tcmsg;
+  
+  if ( MsgRet != TCOPER_RET_SUCCESS ) {
+    return HandleMsgRet(MsgRet);
+  }
+
   return TC_OPER_SUCCESS;
 }
 
@@ -193,8 +250,10 @@ TcOperStatus TcAutoSaveOperations::FillTcMsgData(TcMsg* tc_msg,
  */
 TcOperStatus TcAutoSaveOperations::
                   SendAdditionalResponse(TcOperStatus oper_stat) {
-  if (SetAutoSave() != TC_OPER_SUCCESS)
+  if (SetAutoSave() != TC_OPER_SUCCESS) {
+    pfc_log_error("SendAdditionalResponse setting AutoSave status failed");
     return TC_OPER_FAILURE;
+  }
   return oper_stat;
 }
 }  // namespace tc

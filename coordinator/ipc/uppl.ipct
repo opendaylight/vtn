@@ -30,6 +30,8 @@ ipc_struct val_ctr {
               # UNC_CT_UNKNOWN
               # UNC_CT_PFC
               # UNC_CT_VNP
+              # UNC_CT_POLC
+              # UNC_CT_ODC
   UINT8 version[32];
   UINT8 description[128];
   IPV4 ip_address;
@@ -52,6 +54,15 @@ ipc_struct val_ctr_st {
                      # UPPL_CONTROLLER_OPER_WAITING_AUDIT
                      # UPPL_CONTROLLER_OPER_AUDITING
   UINT8 valid[3];
+};
+
+# From Physical to Driver
+ipc_struct val_ctr_commit_ver {
+  val_ctr controller;
+  UINT64 commit_number;
+  UINT64 commit_date;
+  UINT8 commit_application[256];
+  UINT8 valid[4];
 };
 
 # From physical to Logical
@@ -114,6 +125,7 @@ ipc_struct val_logical_port {
                            # UPPL_LP_TRUNK_PORT
                            # UPPL_LP_SUBDOMAIN
                            # UPPL_LP_TUNNEL_ENDPOINT
+                           # UPPL_LP_PORT_GROUP
   UINT8 switch_id[256];
   UINT8 physical_port_id[32];
   UINT8 oper_down_criteria;  # supported values are

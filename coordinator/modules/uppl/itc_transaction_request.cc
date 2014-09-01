@@ -27,6 +27,7 @@
 #include "ipct_util.hh"
 
 using unc::tclib::TcLibModule;
+using unc::tclib::TcControllerResult;
 
 /**TransactionRequest
  * @Description : This function initializes the member data
@@ -125,14 +126,13 @@ UncRespCode TransactionRequest::StartTransaction(
       return UNC_UPPL_RC_ERR_TRANSACTION_START;
     }
   } else {
-    pfc_log_debug("Inside itc_trans->trans_state() != TRANS_END");
+    pfc_log_info("Inside itc_trans->trans_state() != TRANS_END");
     itc_trans->set_trans_state(TRANS_END);
     return UNC_UPPL_RC_ERR_INVALID_TRANSACT_START_REQ;
   }
   itc_trans->set_trans_state(TRANS_START_SUCCESS);
   pfc_log_debug("TransactionRequest::StartTransaction::trans_state()= %d",
                 itc_trans->trans_state());
-  pfc_log_info("TransactionRequest::StartTransaction is Successful");
   return UNC_RC_SUCCESS;
 }
 
@@ -156,7 +156,6 @@ UncRespCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::HandleVoteRequest");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
 
   if (itc_trans->trans_state() == TRANS_START_SUCCESS) {
@@ -165,12 +164,11 @@ UncRespCode TransactionRequest::HandleVoteRequest(uint32_t session_id,
     itc_trans->set_trans_state(VOTE_BEGIN);
     itc_trans->set_trans_state(VOTE_WAIT_DRIVER_RESULT);
   } else {
-    pfc_log_debug("Inside itc_trans->trans_state() != TRANS_START_SUCCESS");
+    pfc_log_info("Inside itc_trans->trans_state() != TRANS_START_SUCCESS");
     return UNC_UPPL_RC_ERR_VOTE_INVALID_REQ;
   }
   pfc_log_debug("TransactionRequest::VoteRequest:trans_state()= %d",
                 itc_trans->trans_state());
-  pfc_log_info("TransactionRequest::VoteRequest is Successful");
   return UNC_RC_SUCCESS;
 }
 
@@ -198,20 +196,12 @@ UncRespCode TransactionRequest::HandleDriverResult(
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::HandleDriverResult");
-  pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
-  pfc_log_debug("phase = %d", phase);
 
   if (phase == unc::tclib::TC_COMMIT_VOTE_PHASE) {
-    pfc_log_debug("Inside Phase == TC_COMMIT_VOTE_PHASE");
     if (itc_trans->trans_state() == VOTE_WAIT_DRIVER_RESULT) {
-      pfc_log_debug("itc_trans->trans_state() == VOTE_WAIT_DRIVER_RESULT");
       itc_trans->set_trans_state(VOTE_SUCCESS);
-      pfc_log_info(
-          "TransactionRequest::HandleDriverResult:VotePhase is Successful");
-      pfc_log_debug("TransactionRequest::HandleDriverResult:trans_state()= %d",
-                    itc_trans->trans_state());
     } else {
+      pfc_log_info("TransactionRequest::HandleDriverResult:VOTE_INVALID_REQ");
       return UNC_UPPL_RC_ERR_VOTE_INVALID_REQ;
     }
   }
@@ -219,6 +209,149 @@ UncRespCode TransactionRequest::HandleDriverResult(
       itc_trans->trans_state() == GLOBAL_COMMIT_WAIT_DRIVER_RESULT) {
     itc_trans->set_trans_state(GLOBAL_COMMIT_DRIVER_RESULT);
 
+    //  store commit version (3 attributes) into controller cand,running table
+    std::vector<TcControllerResult>::iterator viter = driver_result.begin();
+    Kt_Controller kt_ctr;
+    pfc_log_debug("size of driver_result is %" PFC_PFMT_SIZE_T , driver_result.size());
+    // Failover Scenario: Resetting the commit version
+    if ((driver_result.size() == 0) && (session_id == 0) && (config_id == 0)) {
+      pfc_log_info("Handling commit version:Failover sceario");
+      Kt_Controller kt_ctr;
+      vector<void *> vect_ctr_key, vect_ctr_val;
+      key_ctr_t key_ctr_obj;
+      memset(&key_ctr_obj, '\0', sizeof(key_ctr_t));
+      vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
+
+      // Getting the controller list from running Database
+      UncRespCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
+                                                   vect_ctr_val,
+                                                   UNC_DT_RUNNING,
+                                                   UNC_OP_READ_SIBLING_BEGIN);
+      if (read_status != UNC_RC_SUCCESS &&
+                      read_status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+        pfc_log_info("read from RUNNING db is failed with status %d", read_status);
+        return read_status;
+      }
+      UncRespCode update_status = UNC_RC_SUCCESS;
+      for (uint32_t ctrIndex = 0; ctrIndex < vect_ctr_key.size();
+           ctrIndex ++) {
+          key_ctr_t *ctr_key =
+            reinterpret_cast<key_ctr_t*>(vect_ctr_key[ctrIndex]);
+        string controller_name = (const char*)ctr_key->controller_name;
+        pfc_log_debug("controller_name: %s", controller_name.c_str());
+        val_ctr_commit_ver_t ctrlr_val;
+        memset(&ctrlr_val, 0, sizeof(val_ctr_commit_ver_t));
+        //  key, val structure framing
+        ctrlr_val.valid[kIdxCtrCommitNumber] = UNC_VF_VALID;
+        ctrlr_val.valid[kIdxCtrCommitDate] = UNC_VF_VALID;
+        ctrlr_val.valid[kIdxCtrCommitApplication] = UNC_VF_VALID;
+        update_status = kt_ctr.UpdateKeyInstance(db_conn,
+                      reinterpret_cast<void*>(ctr_key),
+                     reinterpret_cast<void*>(&ctrlr_val),
+                     UNC_DT_RUNNING, UNC_KT_CONTROLLER,
+                     (pfc_bool_t)true/*commit version update*/);
+        if (update_status != UNC_RC_SUCCESS) {
+          pfc_log_error(
+              "commit version update is failed for controller %s, status: %d",
+                         key_ctr_obj.controller_name, update_status);
+          break;
+        }
+      }// for loop close
+      for (uint32_t ctrIndex = 0; ctrIndex < vect_ctr_key.size();
+           ctrIndex++) {
+        key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>(vect_ctr_key[ctrIndex]);
+        if (ctr_key != NULL) {
+          delete ctr_key;
+          ctr_key = NULL;
+        }
+        val_ctr_st_t *ctr_val =
+            reinterpret_cast<val_ctr_st_t*>(vect_ctr_val[ctrIndex]);
+        if (ctr_val != NULL) {
+          delete ctr_val;
+          ctr_val = NULL;
+        }
+      }
+      if (update_status != UNC_RC_SUCCESS) {
+        return update_status;
+      }
+    }
+    // Normal Scenario:Updating the Commit version
+    viter = driver_result.begin();
+    for ( ;viter != driver_result.end(); viter++) {
+      TcControllerResult tcResult = *viter;
+      //  key to update the commit version
+      key_ctr_t key_ctr_obj;
+      //  val structure for commit version
+      val_ctr_commit_ver_t ctrlr_val;
+      memset(&key_ctr_obj, 0, sizeof(key_ctr_t));
+      memset(&ctrlr_val, 0, sizeof(val_ctr_commit_ver_t));
+      //  key, val structure framing
+      memcpy(&key_ctr_obj.controller_name, tcResult.controller_id.c_str(),
+                            tcResult.controller_id.length()+1);
+      ctrlr_val.commit_number = tcResult.commit_number;
+      ctrlr_val.commit_date = tcResult.commit_date;
+      memcpy(&ctrlr_val.commit_application,
+           tcResult.commit_application.c_str(), tcResult.commit_application.length()+1);
+      ctrlr_val.valid[kIdxCtrCommitNumber] = UNC_VF_VALID;
+      ctrlr_val.valid[kIdxCtrCommitDate] = UNC_VF_VALID;
+      ctrlr_val.valid[kIdxCtrCommitApplication] = UNC_VF_VALID;
+      ctrlr_val.valid[kIdxCtrVal] = UNC_VF_VALID; 
+      pfc_log_info("cname:%s Commit_number:%" PFC_PFMT_u64 
+                   ", date is %" PFC_PFMT_u64 ", app:%s",
+                tcResult.controller_id.c_str(), 
+                ctrlr_val.commit_number, ctrlr_val.commit_date,
+                ctrlr_val.commit_application);
+      UncRespCode update_status = kt_ctr.UpdateKeyInstance(db_conn,
+                    reinterpret_cast<void*>(&key_ctr_obj),
+                   reinterpret_cast<void*>(&ctrlr_val),
+                   UNC_DT_CANDIDATE, UNC_KT_CONTROLLER,
+                   (pfc_bool_t)true/*commit version update*/);
+      if (update_status != UNC_RC_SUCCESS) {
+        ClearMaps();
+        if (update_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
+          return update_status; // fatal is already logged inside update fn
+        } else {
+          pfc_log_fatal(
+            "commit version update is FAILED for controller %s, status: %d",
+                       key_ctr_obj.controller_name, update_status);
+          return UNC_UPPL_RC_ERR_DB_UPDATE;
+        }
+      }
+      update_status = kt_ctr.UpdateKeyInstance(db_conn,
+                    reinterpret_cast<void*>(&key_ctr_obj),
+                   reinterpret_cast<void*>(&ctrlr_val),
+                   UNC_DT_RUNNING, UNC_KT_CONTROLLER,
+                   (pfc_bool_t)true/*commit version update*/);
+      if (update_status != UNC_RC_SUCCESS) {
+        if (update_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
+          ClearMaps();
+          return update_status; // fatal is already logged inside update fn
+        } else {
+          pfc_bool_t isFreshCtrlr = false;
+          vector<key_ctr_t> :: iterator iter;
+          for(iter = controller_created.begin();
+              iter != controller_created.end(); iter ++) {
+            key_ctr_t k = *iter;
+            if(strcmp(tcResult.controller_id.c_str(),(const char *)k.controller_name) == 0) {
+              pfc_log_debug( "fresh contrlr true");
+              isFreshCtrlr = true;
+              break;
+            }
+          }
+          if(isFreshCtrlr) {
+          pfc_log_info(
+            "ignore commit version update for fresh ctr %s, status: %d",
+                       key_ctr_obj.controller_name, update_status);
+          } else {
+          ClearMaps();
+          pfc_log_fatal(
+            "commit version update is failed for controller %s, status: %d",
+                       key_ctr_obj.controller_name, update_status);
+          return UNC_UPPL_RC_ERR_DB_UPDATE;
+          }
+        }
+      }
+    }
     // Checking whether there is any modified configuration
     if (controller_created.empty() && controller_deleted.empty() &&
         controller_updated.empty() && domain_created.empty()&&
@@ -226,7 +359,7 @@ UncRespCode TransactionRequest::HandleDriverResult(
         boundary_created.empty() && boundary_deleted.empty() &&
         boundary_updated.empty()) {
       itc_trans->set_trans_state(GLOBAL_COMMIT_SUCCESS);
-      pfc_log_info("CommitPhase:There are no modified configurations\n");
+      pfc_log_debug("CommitPhase:There are no modified configurations\n");
       return UNC_RC_SUCCESS;
     }
 
@@ -264,6 +397,58 @@ UncRespCode TransactionRequest::HandleDriverResult(
       }
     }
 */
+    /* Storing the Old values of deleted controller */
+    vector<key_ctr_t> :: iterator it_ctr =
+        controller_deleted.begin();
+    key_ctr_t key_controller_obj;
+    for (; it_ctr != controller_deleted.end();) {
+      key_controller_obj = *it_ctr;
+      pfc_log_debug("HandleDriverResult:GlobalCommitPhase");
+      pfc_log_debug("Deleted Controller is %s ",
+                        key_controller_obj.controller_name);
+      vector<void *> vect_ctrlr_key, vect_ctrlr_val;
+      vect_ctrlr_key.push_back(reinterpret_cast<void *>(&key_controller_obj));
+      if (kt_ctr.ReadInternal(db_conn, vect_ctrlr_key, vect_ctrlr_val,
+                                     UNC_DT_RUNNING,
+                                     UNC_OP_READ) != UNC_RC_SUCCESS) {
+        it_ctr = controller_deleted.erase(it_ctr);
+        continue;
+      }
+      vector<string> vect_controller_id;
+      vector<val_ctr_commit_ver_t> vect_val_ctr_cv;
+      uint32_t max_rep_ct = 1;
+      UncRespCode read_status = kt_ctr.ReadCtrCommitVerFromDB(db_conn,
+                               reinterpret_cast<void*>(&key_controller_obj),
+                               NULL,
+                               UNC_DT_RUNNING, UNC_OP_READ,
+                               max_rep_ct, vect_val_ctr_cv, vect_controller_id);
+      if (read_status != UNC_RC_SUCCESS) {
+        pfc_log_info("Error in read commit version from DB");
+        continue;
+      }
+
+      val_ctr_commit_ver_t ctr_val_struct =  vect_val_ctr_cv[0];
+      val_ctr_st_t val_st =  *(reinterpret_cast<val_ctr_st_t*>(vect_ctrlr_val[0]));
+      ctr_val_struct.controller = val_st.controller;
+
+      string ctr_name =
+                reinterpret_cast<char*>(key_controller_obj.controller_name);
+      // Storing the old updated value of controller in the map
+      controller_old_del_val[ctr_name] = ctr_val_struct;
+      // Release memory allocated for key struct
+      key_ctr_t *ctrlr_key = reinterpret_cast<key_ctr_t*>(vect_ctrlr_key[0]);
+      if (ctrlr_key != NULL) {
+        delete ctrlr_key;
+        ctrlr_key = NULL;
+      }
+      val_ctr_st_t *ctrlr_val =
+                    reinterpret_cast<val_ctr_st_t*>(vect_ctrlr_val[0]);
+      if (ctrlr_val != NULL) {
+        delete ctrlr_val;
+        ctrlr_val = NULL;
+      }
+      ++it_ctr;
+    }
     /* Storing the Old values of updated controller */
     vector<key_ctr_t> :: iterator it_controller =
         controller_updated.begin();
@@ -283,7 +468,31 @@ UncRespCode TransactionRequest::HandleDriverResult(
         it_controller = controller_updated.erase(it_controller);
         continue;
       }
-      vec_old_val_ctr.push_back(vect_ctr_val[0]);
+      vector<string> vect_controller_id;
+      vector<val_ctr_commit_ver_t> vect_val_ctr_cv;
+      uint32_t max_rep_ct = 1;
+      UncRespCode read_status = kt_controller.ReadCtrCommitVerFromDB(db_conn,
+                               reinterpret_cast<void*>(&key_ctr_obj),
+                               NULL,
+                               UNC_DT_RUNNING, UNC_OP_READ,
+                               max_rep_ct, vect_val_ctr_cv, vect_controller_id);
+      if (read_status != UNC_RC_SUCCESS) {
+        pfc_log_info("Error in read commit version from DB");
+        continue;
+      }
+
+    val_ctr_commit_ver_t ctr_val_struct =  vect_val_ctr_cv[0];
+    val_ctr_st_t val_st =  *(reinterpret_cast<val_ctr_st_t*>(vect_ctr_val[0]));
+    ctr_val_struct.controller = val_st.controller;
+    ctr_val_struct.valid[kIdxCtrVal] = UNC_VF_VALID; 
+
+    vec_old_val_ctr.push_back(reinterpret_cast<val_ctr_st_t*>(
+                                vect_ctr_val[0])); // for northbound
+      string controller_name =
+                reinterpret_cast<char*>(key_ctr_obj.controller_name);
+      // Storing the old updated value of controller in the map
+      controller_old_upd_val[controller_name] =
+                 ctr_val_struct; // for driver
       // Release memory allocated for key struct
       key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>(vect_ctr_key[0]);
       if (ctr_key != NULL) {
@@ -373,7 +582,7 @@ UncRespCode TransactionRequest::HandleDriverResult(
       key_ctr_t key_ctr_obj = *it_controller;
       string controller_name =
           reinterpret_cast<char*>(key_ctr_obj.controller_name);
-      pfc_log_info("Removing State entries for controller %s",
+      pfc_log_info("Removing State/Import db entries for controller %s",
                    controller_name.c_str());
       ODBCM_RC_STATUS clear_status =
           PhysicalLayer::get_instance()->get_odbc_manager()->
@@ -387,14 +596,29 @@ UncRespCode TransactionRequest::HandleDriverResult(
                                             0);
         return UNC_UPPL_RC_ERR_CLEAR_DB;
       }
+      clear_status =
+          PhysicalLayer::get_instance()->get_odbc_manager()->
+          ClearOneInstance(UNC_DT_IMPORT, controller_name, db_conn);
+      if (clear_status !=  ODBCM_RC_SUCCESS) {
+        pfc_log_fatal("Error during Clearing the import db");
+        TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+         (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+        tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
+                                            UNC_RC_INTERNAL_ERR,
+                                            0);
+        return UNC_UPPL_RC_ERR_CLEAR_DB;
+      }
       // remove the deleted controller entry from alarm_status_map
       physical_core->remove_ctr_from_alarm_status_map(controller_name, "1");
+      physical_core->remove_ctr_from_alarm_status_map(controller_name, "2");
       physical_core->remove_ctr_from_alarm_status_map(controller_name, "3");
+      // remove controller specific task queue from task map
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      taskq_util->del_task_queue(controller_name);
     }
     itc_trans->set_trans_state(GLOBAL_COMMIT_SUCCESS);
     pfc_log_debug("TransactionRequest::HandleDriverResult:trans_state()= %d",
                   itc_trans->trans_state());
-    pfc_log_debug(" Transaction is Committed !!!");
     // Update Boundary oper status
     it_boundary = boundary_created.begin();
     for (; it_boundary != boundary_created.end();) {
@@ -435,7 +659,7 @@ UncRespCode TransactionRequest::HandleDriverResult(
       }
       ++it_boundary;
     }
-    pfc_log_info("Starting to send the Notification after"
+    pfc_log_debug("Starting to send the Notification after"
         " committing configuration");
     UncRespCode notfn_status = SendControllerNotification(db_conn,
                                                              vec_old_val_ctr);
@@ -479,8 +703,7 @@ UncRespCode TransactionRequest::HandleGlobalCommitRequest(
       get_physical_core();
   InternalTransactionCoordinator *itc_trans =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::HandleGlobalCommitRequest");
-  pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
+  pfc_log_debug("GlobalCommit trans_state()= %d", itc_trans->trans_state());
 
   if (itc_trans->trans_state() == VOTE_SUCCESS) {
     pfc_log_debug("itc_trans->trans_state() == VOTE_SUCCESS");
@@ -548,7 +771,6 @@ UncRespCode TransactionRequest::EndTransaction(
       get_physical_core();
   InternalTransactionCoordinator *itc_trans  =
       physical_core->get_internal_transaction_coordinator();
-  pfc_log_info("TransactionRequest::EndTransaction");
   pfc_log_debug("trans_state()= %d", itc_trans->trans_state());
   // Checking the result of the Transaction
   if (trans_res == unc::tclib::TRANS_END_FAILURE) {
@@ -561,7 +783,6 @@ UncRespCode TransactionRequest::EndTransaction(
   if (controller_deleted.empty() && controller_created.empty() &&
       controller_updated.empty()) {
     itc_trans->set_trans_state(TRANS_END);
-    pfc_log_info("End Transaction:No Modified configurations\n");
     return UNC_RC_SUCCESS;
   }
   string controller_name = "";
@@ -580,11 +801,17 @@ UncRespCode TransactionRequest::EndTransaction(
     pfc_log_fatal("Cannot open session to VNP driver");
     return err;
   }
+  IPCClientDriverHandler polc_drv_handler(UNC_CT_POLC, err);
+  if (err != UNC_RC_SUCCESS) {
+    pfc_log_fatal("Cannot open session to POLC driver");
+    return err;
+  }
   IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
   if (err != UNC_RC_SUCCESS) {
     pfc_log_fatal("Cannot open session to ODC driver");
     return err;
   }
+
   // Sending the 'Delete' Controller Request to Driver
   vector<key_ctr_t> :: iterator it_controller = controller_deleted.begin();
   for ( ; it_controller != controller_deleted.end(); ++it_controller) {
@@ -616,15 +843,18 @@ UncRespCode TransactionRequest::EndTransaction(
       } else if (controller_type == UNC_CT_VNP) {
         pfc_log_debug("VNP Controller Type");
         cli_session = vnp_drv_handler.ResetAndGetSession();
-      } else if (controller_type == UNC_CT_ODC ) {
+      } else if (controller_type == UNC_CT_POLC) {
+        pfc_log_debug("POLC Controller Type");
+        cli_session = polc_drv_handler.ResetAndGetSession();
+      } else if (controller_type == UNC_CT_ODC) {
         pfc_log_debug("ODC Controller Type");
         cli_session = odc_drv_handler.ResetAndGetSession();
       } else {
-        pfc_log_debug("DRIVER SUPPORT NOT ADDED YET FOR"
+        pfc_log_info("DRIVER SUPPORT NOT ADDED YET FOR"
             "UNKNOWN type");
         continue;
       }
-      if(audit_flag != false) {
+      if (audit_flag != false) {
       string domain_id = "";
       driver_request_header rqh = {uint32_t(0), uint32_t(0), controller_name,
           domain_id, UNC_OP_DELETE, uint32_t(0),
@@ -632,23 +862,40 @@ UncRespCode TransactionRequest::EndTransaction(
           UNC_KT_CONTROLLER};
       int err = PhyUtil::sessOutDriverReqHeader(*cli_session, rqh);
       err |= cli_session->addOutput(key_ctr_obj);
-      pfc_log_info("%s", IpctUtil::get_string(key_ctr_obj).c_str());
+      pfc_log_info("KEY:%s", IpctUtil::get_string(key_ctr_obj).c_str());
+      val_ctr_commit_ver_t val_ctr_old;
+      memset(&val_ctr_old, '\0', sizeof(val_ctr_commit_ver_t));
+      map<string, val_ctr_commit_ver_t> :: iterator it_ctr_oldval =
+                                   controller_old_del_val.find(controller_name);
+      if (it_ctr_oldval != controller_old_del_val.end()) {
+        val_ctr_old = (it_ctr_oldval->second);
+      }
+      err |= cli_session->addOutput(val_ctr_old);
+      pfc_log_info("OLD VAL:%s",
+                          IpctUtil::get_string(val_ctr_old).c_str());
       // Send the request to driver
       UncRespCode driver_response = UNC_RC_SUCCESS;
       driver_response_header rsp;
       if (controller_type == UNC_CT_PFC) {
         driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
-      }
-      else if (controller_type == UNC_CT_VNP) {
+      } else if (controller_type == UNC_CT_VNP) {
         driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
-      }
-      else if (controller_type == UNC_CT_ODC) {
+      } else if (controller_type == UNC_CT_POLC) {
+        driver_response = polc_drv_handler.SendReqAndGetResp(rsp);
+      } else if (controller_type == UNC_CT_ODC) {
         driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
       }
       if (err != 0 || driver_response != UNC_RC_SUCCESS) {
         pfc_log_error("Delete response from driver for controller %s"
             "is %d err=%d", controller_name.c_str(), driver_response, err);
       }
+      // remove the deleted controller entry from alarm_status_map
+      physical_core->remove_ctr_from_alarm_status_map(controller_name, "1");
+      physical_core->remove_ctr_from_alarm_status_map(controller_name, "2");
+      physical_core->remove_ctr_from_alarm_status_map(controller_name, "3");
+      // remove controller specific task queue from task map
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      taskq_util->del_task_queue(controller_name);
       }
     } else {
       pfc_log_error("Could not able to find type for %s",
@@ -664,6 +911,8 @@ UncRespCode TransactionRequest::EndTransaction(
   pfc_log_debug("End Trans:Updated Controller Iterated ");
   itc_trans->set_trans_state(TRANS_END);
   pfc_log_debug("End Trans:Response Code = %d", ret_code);
+  controller_old_upd_val.clear();
+  controller_old_del_val.clear();
   return ret_code;
 }
 
@@ -1051,6 +1300,8 @@ UncRespCode TransactionRequest::SendBoundaryNotification(
                                                       UNC_DT_CANDIDATE,
                                                       UNC_OP_READ);
     if (retCode == UNC_RC_SUCCESS) {
+      val_boundary_st_t *val_boundary = reinterpret_cast<val_boundary_st_t*>
+          (vect_boundary_val_st[0]);
       UncRespCode nofn_status =
           kt_boundary.ConfigurationChangeNotification(
               (uint32_t)UNC_DT_RUNNING,
@@ -1058,13 +1309,11 @@ UncRespCode TransactionRequest::SendBoundaryNotification(
               oper_type,
               key_boundary_ptr,
               *it_boundary_old,
-              vect_boundary_val_st[0]);
+              val_boundary);
       pfc_log_debug("Notification Status %d", nofn_status);
       // clear the key and val memory
       key_boundary_t *key_boundary = reinterpret_cast<key_boundary_t*>
       (vect_boundary_key[0]);
-      val_boundary_st_t *val_boundary = reinterpret_cast<val_boundary_st_t*>
-      (vect_boundary_val_st[0]);
       if (key_boundary != NULL) {
         delete key_boundary;
         key_boundary = NULL;
@@ -1115,6 +1364,11 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     pfc_log_error("Cannot open session to VNP driver");
     return;
   }
+  IPCClientDriverHandler polc_drv_handler(UNC_CT_POLC, err);
+  if (err != UNC_RC_SUCCESS) {
+    pfc_log_error("Cannot open session to POLC driver");
+    return;
+  }
   IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
   if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to VNP driver");
@@ -1143,7 +1397,8 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
                                                         UNC_DT_CANDIDATE,
                                                         UNC_OP_READ);
     if (retCode != UNC_RC_SUCCESS) {
-      pfc_log_debug("ReadInternal failed for controller");
+      pfc_log_info("ReadInternal failed for controller %s",
+                    controller_name.c_str());
       continue;
     }
     unc_keytype_ctrtype_t controller_type = UNC_CT_UNKNOWN;
@@ -1168,7 +1423,7 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
         (PhyUtil::uint8touint(val_ctr_new->controller.type));
     if (physical_core->GetDriverName(controller_type, driver_name)
         != UNC_RC_SUCCESS)  {
-      pfc_log_debug("TxnEnd:Unable to get Driver Name from Physical Core");
+      pfc_log_info("TxnEnd:Unable to get Driver Name from Physical Core");
       delete val_ctr_new;
       val_ctr_new = NULL;
       key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>
@@ -1179,8 +1434,31 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
       }
       continue;
     }
+
+    //  read commit version from DT_RUNNING 
+    vector<string> vect_controller_id;
+    vector<val_ctr_commit_ver_t> vect_val_ctr_cv;
+    val_ctr_commit_ver_t cv_val_struct;
+    memset(&cv_val_struct, 0, sizeof(val_ctr_commit_ver_t));
+    uint32_t max_rep_ct = 1;
+
+    pfc_log_trace("Calling ReadCtrCommitVerFromDB");
+    UncRespCode read_status = kt_controller.ReadCtrCommitVerFromDB(db_conn,
+                               reinterpret_cast<void*>(&key_ctr_obj),
+                               NULL/*reinterpret_cast<void*>(&cv_val_struct)*/,
+                               UNC_DT_RUNNING, UNC_OP_READ,
+                               max_rep_ct, vect_val_ctr_cv, vect_controller_id);
+    if (read_status != UNC_RC_SUCCESS) {
+      pfc_log_info("Error in read commit version from DB");
+      continue;
+    }
+    val_ctr_commit_ver_t ctr_val_struct =  vect_val_ctr_cv[0];
+    memcpy(&ctr_val_struct.controller, &val_ctr_new->controller,
+                     sizeof(val_ctr_new->controller)); 
+    ctr_val_struct.valid[kIdxCtrVal] = UNC_VF_VALID; 
     pfc_log_debug("Controller name is %s and driver name is %s",
                   controller_name.c_str(), driver_name.c_str());
+
     ClientSession *cli_session = NULL;
     if (controller_type == UNC_CT_PFC) {
       pfc_log_debug("PFC Controller type");
@@ -1188,11 +1466,14 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
     } else if (controller_type == UNC_CT_VNP) {
       pfc_log_debug("VNP Controller type");
       cli_session = vnp_drv_handler.ResetAndGetSession();
-    } else if (controller_type == UNC_CT_ODC ) {
+    } else if (controller_type == UNC_CT_POLC) {
+      pfc_log_debug("POLC Controller type");
+      cli_session = polc_drv_handler.ResetAndGetSession();
+    } else if (controller_type == UNC_CT_ODC) {
       pfc_log_debug("ODC Controller type");
       cli_session = odc_drv_handler.ResetAndGetSession();
     } else {
-      pfc_log_debug("DRIVER SUPPORT NOT ADDED YET FOR"
+      pfc_log_info("DRIVER SUPPORT NOT ADDED YET FOR"
           " UNKNOWN type");
       delete val_ctr_new;
       val_ctr_new = NULL;
@@ -1213,19 +1494,33 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
 
     int err = PhyUtil::sessOutDriverReqHeader(*cli_session, rqh);
     err |= cli_session->addOutput(key_ctr_obj);
-    err |= cli_session->addOutput(val_ctr_new->controller);
+    err |= cli_session->addOutput(ctr_val_struct);
     pfc_log_info("%s", IpctUtil::get_string(key_ctr_obj).c_str());
-    pfc_log_info("%s", IpctUtil::get_string(*val_ctr_new).c_str());
+    pfc_log_info("NEW VAL :%s", IpctUtil::get_string(ctr_val_struct).c_str());
+    // Adding the old updated value strucutre in the session
+    if (operation_type == UNC_OP_UPDATE) {
+      map<string, val_ctr_commit_ver_t > :: iterator it_ctr_oldval =
+                                  controller_old_upd_val.find(controller_name);
+      val_ctr_commit_ver_t val_ctr_old;
+      memset(&val_ctr_old, '\0', sizeof(val_ctr_commit_ver_t));
+      if (it_ctr_oldval != controller_old_upd_val.end()) {
+        val_ctr_old = (it_ctr_oldval->second);
+      }
+      err |= cli_session->addOutput(val_ctr_old);
+      pfc_log_info("OLD VAL :%s", IpctUtil::get_string(val_ctr_old).c_str());
+    }
+
     // Send the request to driver
     UncRespCode driver_response = UNC_RC_SUCCESS;
-    if(audit_flag != false) {
+    if (audit_flag != false) {
     driver_response_header rsp;
 
     if (controller_type == UNC_CT_PFC) {
       driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
-    }
-    if (controller_type == UNC_CT_VNP) {
+    } else if (controller_type == UNC_CT_VNP) {
       driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
+    } else if (controller_type == UNC_CT_POLC) {
+      driver_response = polc_drv_handler.SendReqAndGetResp(rsp);
     }
     if (controller_type == UNC_CT_ODC ) {
       driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
@@ -1245,6 +1540,13 @@ void TransactionRequest::SendControllerInfo(OdbcmConnectionHandler *db_conn,
           driver_response, err);
       continue;
     }
+    // Create a task queue to process particular controller's events
+    if (operation_type == UNC_OP_CREATE) {
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      UncRespCode status = taskq_util->create_task_queue(controller_name);
+      if (status != UNC_RC_SUCCESS)
+        pfc_log_fatal("Event Handling taskq creation error !!");
+    }
   }
 }
 
@@ -1261,7 +1563,6 @@ UncRespCode TransactionRequest::GetModifiedController(
     CsRowStatus row_status) {
   UncRespCode ret_code = UNC_RC_SUCCESS;
   unc_keytype_ctrtype_t controller_type;
-  pfc_log_info("Get Modified Controller for Row Status: %d", row_status);
 
   // Gets the Modified Controller Configuration
   Kt_Controller kt_controller;
@@ -1270,7 +1571,8 @@ UncRespCode TransactionRequest::GetModifiedController(
       db_conn, vec_key_ctr_modified,
       row_status);
   pfc_log_debug("Controller:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS || ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
+                           ret_code == UNC_UPPL_RC_ERR_DB_GET) {
     pfc_log_info(
           "Error retrieving GetModifiedRows, return txn error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
@@ -1280,6 +1582,7 @@ UncRespCode TransactionRequest::GetModifiedController(
                                         0);
     return UNC_UPPL_RC_ERR_TRANSACTION_START;
   }
+  ret_code = UNC_RC_SUCCESS;
   for (uint32_t config_count = 0; \
   config_count < vec_key_ctr_modified.size(); config_count++) {
     key_ctr_t *ptr_key_ctr = reinterpret_cast<key_ctr_t *>
@@ -1307,7 +1610,8 @@ UncRespCode TransactionRequest::GetModifiedController(
       tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
                                           UNC_RC_INTERNAL_ERR,
                                           0);
-      return UNC_UPPL_RC_ERR_TRANSACTION_START;
+      ret_code = UNC_UPPL_RC_ERR_TRANSACTION_START;
+      break;
     } else if (key_exist_running != UNC_RC_SUCCESS) {
       pfc_log_debug(
           "Controller entry in is not available in running");
@@ -1327,8 +1631,6 @@ UncRespCode TransactionRequest::GetModifiedController(
       }
     }
     //  Freeing the Memory allocated in controller class
-    delete ptr_key_ctr;
-    ptr_key_ctr = NULL;
     if (PhyUtil::get_controller_type(
         db_conn, controller_name,
         controller_type, UNC_DT_CANDIDATE) == UNC_RC_SUCCESS) {
@@ -1345,7 +1647,8 @@ UncRespCode TransactionRequest::GetModifiedController(
       tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
                                           UNC_RC_INTERNAL_ERR,
                                           0);
-      return UNC_UPPL_RC_ERR_TRANSACTION_START;
+      ret_code = UNC_UPPL_RC_ERR_TRANSACTION_START;
+      break;
     }
     if (is_controller_recreated == PFC_TRUE) {
       // Get existing controller type from RUNNING
@@ -1363,12 +1666,23 @@ UncRespCode TransactionRequest::GetModifiedController(
         tclib_ptr->TcLibWriteControllerInfo(controller_name.c_str(),
                                           UNC_RC_INTERNAL_ERR,
                                           0);
-        return UNC_UPPL_RC_ERR_TRANSACTION_START;
+        ret_code = UNC_UPPL_RC_ERR_TRANSACTION_START;
+        break;
       }
     }
   }
+  for (uint32_t config_count = 0; \
+  config_count < vec_key_ctr_modified.size(); config_count++) {
+    key_ctr_t *ptr_key_ctr = reinterpret_cast<key_ctr_t *>
+    (vec_key_ctr_modified[config_count]);
+    if (ptr_key_ctr == NULL) {
+      continue;
+    }
+    delete ptr_key_ctr;
+    ptr_key_ctr = NULL;
+  }
   pfc_log_debug("Modified Controllers Iterated properly");
-  return UNC_RC_SUCCESS;
+  return ret_code;
 }
 
 /**GetModifiedDomain
@@ -1383,7 +1697,6 @@ UncRespCode TransactionRequest::GetModifiedDomain(
     OdbcmConnectionHandler *db_conn,
     CsRowStatus row_status) {
   UncRespCode ret_code = UNC_RC_SUCCESS;
-  pfc_log_info("Get Modified Domain for Row Status: %d", row_status);
   /* Getting the Modified Unknown Domain Configuration */
   Kt_Ctr_Domain kt_ctr_domain;
   vector<void*> vec_key_ctr_domain_modified;
@@ -1391,7 +1704,8 @@ UncRespCode TransactionRequest::GetModifiedDomain(
       db_conn, vec_key_ctr_domain_modified,
       row_status);
   pfc_log_debug("Domain:GetModifiedRows return code = %d", ret_code);
-  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS || ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
+                            ret_code == UNC_UPPL_RC_ERR_DB_GET) {
     pfc_log_info(
           "Error retrieving GetModifiedRows, return txn error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
@@ -1466,7 +1780,6 @@ UncRespCode TransactionRequest::GetModifiedBoundary(
     OdbcmConnectionHandler *db_conn,
     CsRowStatus row_status) {
   UncRespCode ret_code = UNC_RC_SUCCESS;
-  pfc_log_info("Get Modified Boundary for Row Status: %d", row_status);
   //  Getting the Modified Boundary Configuration
   Kt_Boundary kt_boundary;
   vector<void*> vec_key_boundary_modified;
@@ -1474,7 +1787,8 @@ UncRespCode TransactionRequest::GetModifiedBoundary(
       db_conn, vec_key_boundary_modified,
       row_status);
   pfc_log_debug("Controller:GetModifiedRows return code = %d", ret_code);
-   if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS || ret_code == UNC_UPPL_RC_ERR_DB_GET) {
+  if (ret_code == UNC_UPPL_RC_ERR_DB_ACCESS ||
+                              ret_code == UNC_UPPL_RC_ERR_DB_GET) {
      pfc_log_info(
           "Error retrieving GetModifiedRows from running db, return txn error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
@@ -1482,7 +1796,7 @@ UncRespCode TransactionRequest::GetModifiedBoundary(
     tclib_ptr->TcLibWriteControllerInfo("",
                                         UNC_RC_INTERNAL_ERR,
                                         0);
-    return UNC_UPPL_RC_ERR_TRANSACTION_START; 
+    return UNC_UPPL_RC_ERR_TRANSACTION_START;
   }
   for (uint32_t config_count = 0; \
   config_count < vec_key_boundary_modified.size(); config_count++) {
@@ -1514,7 +1828,7 @@ UncRespCode TransactionRequest::GetModifiedBoundary(
         tclib_ptr->TcLibWriteControllerInfo("",
                                         UNC_RC_INTERNAL_ERR,
                                         0);
-        
+
         return UNC_UPPL_RC_ERR_TRANSACTION_START;
       } else {
         pfc_log_debug(

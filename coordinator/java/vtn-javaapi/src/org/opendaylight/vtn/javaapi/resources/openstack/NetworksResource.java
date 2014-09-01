@@ -18,7 +18,6 @@ import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -71,7 +70,7 @@ public class NetworksResource extends AbstractResource {
 	 *      .google.gson.JsonObject)
 	 */
 	@Override
-	public int post(JsonObject requestBody) throws VtnServiceException {
+	public int post(JsonObject requestBody) {
 		LOG.trace("Start NetworksResource#post()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -103,7 +102,7 @@ public class NetworksResource extends AbstractResource {
 							.setResourceId(VtnServiceOpenStackConsts.NETWORK_RES_ID);
 					freeCounterBean.setVtnName(getTenantId());
 
-					counter = resourceIdManager.getResourceId(connection,
+					counter = resourceIdManager.getResourceCounter(connection,
 							freeCounterBean);
 					if (counter != -1) {
 						LOG.debug("Resource id auto-generation is successfull : "
@@ -154,7 +153,8 @@ public class NetworksResource extends AbstractResource {
 							isCommitRequired = true;
 							if (counter != 0) {
 								final JsonObject response = new JsonObject();
-								response.addProperty(VtnServiceOpenStackConsts.ID,
+								response.addProperty(
+										VtnServiceOpenStackConsts.ID,
 										generatedVbrName);
 								setInfo(response);
 							}
@@ -196,7 +196,7 @@ public class NetworksResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			if (exception.getSQLState().equalsIgnoreCase(
 					VtnServiceOpenStackConsts.CONFLICT_SQL_STATE)) {
@@ -217,7 +217,7 @@ public class NetworksResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -307,11 +307,11 @@ public class NetworksResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
-			notFoundStatus = true;
+			resourceFound = true;
 		} else {
 			createErrorInfo(
 					UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -319,6 +319,6 @@ public class NetworksResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 }

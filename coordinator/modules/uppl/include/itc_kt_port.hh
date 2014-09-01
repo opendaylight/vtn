@@ -129,7 +129,11 @@ class Kt_Port: public Kt_State_Base {
                     port_val1.direction == port_val2.direction &&
                     port_val1.duplex == port_val2.duplex &&
                     port_val1.speed == port_val2.speed &&
-                    port_val1.logical_port_id == port_val2.logical_port_id) {
+                    port_val1.alarms_status == port_val2.alarms_status &&
+                    memcmp(
+                        port_val1.logical_port_id,
+                        port_val2.logical_port_id,
+                        sizeof(port_val1.logical_port_id)) == 0) {
       return PFC_TRUE;
     }
     return PFC_FALSE;

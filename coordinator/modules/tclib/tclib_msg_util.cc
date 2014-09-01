@@ -421,8 +421,8 @@ TcCommonRet TcLibMsgUtil::GetAuditTransactionMsg(
     return TC_FAILURE;
   }
 
-  /*reconnect attribute*/
   if (audit_trans_msg.oper_type == MSG_AUDIT_START) {
+    /*reconnect attribute*/
     uint8_t reconnect = 0;
     idx++;
     util_ret = tc::TcServerSessionUtils::get_uint8(session, idx, &reconnect);
@@ -432,6 +432,46 @@ TcCommonRet TcLibMsgUtil::GetAuditTransactionMsg(
       return TC_FAILURE;
     }
     audit_trans_msg.reconnect_controller = (pfc_bool_t)reconnect;
+
+    /*simplified_audit attribute*/
+    uint8_t simplified_audit = 0;
+    idx++;
+    util_ret = tc::TcServerSessionUtils::get_uint8(session, idx,
+                                                   &simplified_audit);
+    if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+      pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+                    __FUNCTION__, __LINE__, util_ret);
+      return TC_FAILURE;
+    }
+    audit_trans_msg.simplified_audit = (pfc_bool_t)simplified_audit;
+
+    /*commit number attribute*/
+    idx++;
+    util_ret = tc::TcServerSessionUtils::get_uint64(session, idx,
+                                            &audit_trans_msg.commit_number);
+    if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+      pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+                    __FUNCTION__, __LINE__, util_ret);
+      return TC_FAILURE;
+    }
+    /*commit date attribute*/
+    idx++;
+    util_ret = tc::TcServerSessionUtils::get_uint64(session, idx,
+                                            &audit_trans_msg.commit_date);
+    if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+      pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+                    __FUNCTION__, __LINE__, util_ret);
+      return TC_FAILURE;
+    }
+    /*commit application attribute*/
+    idx++;
+    util_ret = tc::TcServerSessionUtils::get_string(session, idx,
+                                            audit_trans_msg.commit_application);
+    if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+      pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+                    __FUNCTION__, __LINE__, util_ret);
+      return TC_FAILURE;
+    }
   }
 
   // audit_result

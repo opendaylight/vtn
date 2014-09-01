@@ -26,7 +26,6 @@
 #include "physical_common_def.hh"
 #include "physical_itc.hh"
 #include "unc_state_handler.hh"
-#include "controller_version.hh"
 #include "capa_intf.hh"
 
 using std::vector;
@@ -65,9 +64,6 @@ struct cap_value_struct {
     vector<attribute_struct> attrs;
 };
 
-typedef map<ControllerVersion, map<cap_key_struct,
-    cap_value_struct > >::iterator cap_iter;
-
 /**
  * Physical Core Class
  */
@@ -102,46 +98,6 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
 
     UncRespCode ReadConfigFile();
-
-    /**
-     * @Description : This function reads controller capability config
-     * and fills the capability map
-     * @param[in] :
-     */
-
-    UncRespCode ReadCtrlrStaticCapability();
-
-    /**
-     * @Description : This function validates key type controller capability map
-     * @param[in] : version - Controller Version
-     * @param[in] : key_type - Key type from NB
-     */
-
-    UncRespCode ValidateKeyTypeInCtrlrCap(string version,
-                                             uint32_t key_type);
-
-    /**
-     * @Description : This function checks the attribute name in associated key
-     *                type is available in controller capability map
-     * @param[in] : version - Controller Version
-     * @param[in] : key_type - Key type from NB
-     * @param[in] : attribute_name - name of the attribute associated
-     */
-
-    UncRespCode ValidateAttribInCtrlrCap(string version,
-                                            uint32_t key_type,
-                                            string attribute_name);
-
-    /**
-     * @Description : This function gets the scalability number of associated
-     *                key type
-     * @param[in] : version - Controller Version
-     * @param[in] : key_type - Key type from NB
-     */
-
-    UncRespCode GetScalabilityNumber(string version,
-                                        uint32_t key_type,
-                                        uint32_t &scalability_num);
 
     /**
      * @Description : This function sends event subscription request to Driver
@@ -186,17 +142,6 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     ) {
       return internal_transaction_coordinator_;
     }
-
-    /**
-     * @Description : This function returns the list of supported controller
-     *                version
-     *                Controller version will be available in static
-     *                capability file
-     *                This function will be called from ITC
-     * @param[in] :
-     */
-
-    list<string> GetControllerVersionList();
 
     /**
      * @Description : This function sends CONROLLER_DISCONNECT alarm to
@@ -245,6 +190,10 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      **/
     UncRespCode SendEventHandlingFailureAlarm(string controller_id,
                                                 string event_details);
+
+    UncRespCode SendControllerAuditFailureAlarm(string controller_id);
+
+    UncRespCode SendControllerAuditSuccessAlarm(string controller_id);
 
     /**
      * @Description : This function gives the corresponding for controller type
@@ -347,7 +296,11 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
 
     TcCommonRet HandleAuditStart(uint32_t session_id,
                                  unc_keytype_ctrtype_t driver_id,
-                                 string controller_id);
+                                 string controller_id,
+                                 pfc_bool_t simplified_audit,
+                                 uint64_t  commit_number,
+                                 uint64_t  commit_date,
+                                 std::string commit_application);
     /**
      * @Description : This is a dummy function. TcLibInterface has pure virtual
      *                functions. All functions has to have an implementation to
@@ -355,7 +308,7 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      */
     TcCommonRet HandleAuditStart(uint32_t session_id,
                                  unc_keytype_ctrtype_t driver_id,
-                                 string controller_id, 
+                                 string controller_id,
                                  pfc_bool_t force_reconnect) {
       /*this should not called by UPPL*/
       return unc::tclib::TC_FAILURE;
@@ -534,6 +487,11 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     uint32_t getUnknownControllerCount() {
       return unknown_controller_count_;
     }
+    //  getter method to access unc_mode_
+    UncMode getunc_mode() {
+      return unc_mode_;
+    }
+
     vector<string> event_handling_controller_alarm_;
     UncRespCode RaiseEventHandlingAlarm(string controller_name);
     UncRespCode ClearEventHandlingAlarm(string controller_name);
@@ -555,17 +513,12 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
     /*this flag enables to send the user initiated operations 
     *          recovery alarm to nodemgr */
     bool system_transit_state_;
+    /*Auto save changes*/
+    uint16_t getStartupValidStatus();
 
   private:
     /* PhysicalCore Instance */
     static PhysicalCore* physical_core_;
-
-    /* For each controller version, this map the Key types and the attributes
-     * under each Key Type that would be supported by controller.
-     * For each attribute the properties are stored in a map
-     */
-    map<ControllerVersion, map<cap_key_struct, cap_value_struct > >
-    ctr_cap_map_;
 
     /* This list contains the ids of the IPC services provided by south bound */
     list<uint8_t> sb_ipc_service_ids_;
@@ -600,6 +553,8 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
      *  object
      */
     InternalTransactionCoordinator* internal_transaction_coordinator_;
+    /* This variable contains the unc_mode value, separate or coexist*/
+    UncMode unc_mode_;
 
     /* Constructor */
     PhysicalCore() :
@@ -608,14 +563,14 @@ class PhysicalCore : public TcLibInterface, public UncStateHandler {
       system_transit_state_(false),
       audit_notfn_timeout_(0),
       unknown_controller_count_(0),
-      internal_transaction_coordinator_(NULL) {
+      internal_transaction_coordinator_(NULL),
+      unc_mode_(UNC_SEPARATE_MODE) {
     }
     /* Destructor */
     ~PhysicalCore() {
       if (!alarm_status_map_.empty())
         alarm_status_map_.clear();
     }
-    cap_iter GetVersionIterator(ControllerVersion version_in);
 };
 }  // namespace uppl
 }  // namespace unc

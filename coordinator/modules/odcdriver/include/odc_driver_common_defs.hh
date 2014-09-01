@@ -24,12 +24,16 @@ namespace odcdriver {
 const std::string BASE_URL              = "/controller/nb/v2/vtn";
 const std::string BASE_SW_URL           = "/controller/nb/v2/switchmanager";
 const std::string BASE_TOPO_URL         = "/controller/nb/v2/topology";
+const std::string BASE_PORT_URL         = "/controller/nb/v2/statistics";
 const std::string VERSION               = "/version";
 const std::string CONTAINER_NAME        = "/default";
 const std::string VTNS                  = "/vtns";
+const std::string FLOWS                 = "/flows";
+const std::string DETAIL                = "/detail";
 const std::string NODES                 = "/nodes";
 const std::string NODE                  = "/node";
 const std::string NODE_OF               = "/OF";
+const std::string PORT                  = "/port";
 
 const std::string DEFAULT_USER_NAME     = "admin";
 const std::string DEFAULT_PASSWORD      = "admin";

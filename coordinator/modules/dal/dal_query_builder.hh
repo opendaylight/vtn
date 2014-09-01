@@ -8,7 +8,7 @@
  */
 
 /*
- * DalQueryBuilder.h
+ * DalQueryBuilder.hh
  *
  *  Created on: Jan 6, 2013
  *      Author: guest
@@ -35,7 +35,8 @@ enum DalApiNum {
   kDalGetSibCountQT,
   kDalGetRecCountQT,
   kDalCreateRecQT,
-  kDalDelRecQT,
+  kDalDelRecQT,              // Delete specified records or all
+  kDalTruncTableQT,          // Delete all rows in the table
   kDalUpdateRecQT,
   kDalGetDelRecQT,
   kDalGetCreatedRecQT,
@@ -45,7 +46,20 @@ enum DalApiNum {
   kDalCopyModRecCreateQT,
   kDalCopyModRecUpdateQT,
   kDalCopyMatchingRecQT,
-  kDalCheckRecIdenticalQT
+  kDalCheckRecIdenticalQT,
+  kDalDirtyTblUpdateRecQT,
+  kDalDirtyTblClearAllQT,
+  kDalCreateCandRecQT,       // Create with c_flag = 1
+  kDalCreateCandRecUpdateQT, // Create with u_flag = 1 if rec exists in RUNN
+  kDalUpdateCandRecQT,       // Update with u_flag = 1
+  kDalClearCandFlagsQT,      // Clear c_flag and u_flag 
+  kDalGetCreatedRecInCandQT, // Get created records where c_flag = 1 from CAND
+  kDalGetModRecConfig1QT,    // Get CAND records where u_flag = 1
+  kDalGetModRecConfig2QT,    // Get RUNN rec which exists in CAND with u_flag=1
+  kDalCopyModRecUpdateAbortQT,  // Copy RUNN to CAND during abort
+  kDalCopyModRecCreateImportQT,
+  kDalCopyModRecUpdateImportQT,
+  kDalCopyModRecDelImportQT
 };
 
 /* sql template tokens */
@@ -70,6 +84,7 @@ enum DalQuerytoken {
   kDalOptMatchColEqNotLastExpr,
   kDalMandMatchColLstGtrExpr,
   kDalMandMatchColEqTempExpr,
+  kDalMatchColEqTempExpr,
 
   // Enum for Primary Key Related Tokens
   kDalPkeyColNames,
@@ -119,6 +134,7 @@ class DalQueryBuilder {
     static const char * DalGetRecCountQT;
     static const char * DalCreateRecQT;
     static const char * DalDelRecQT;
+    static const char * DalTruncTableQT;
     static const char * DalUpdateRecQT;
     static const char * DalGetDelRecQT;
     static const char * DalGetCreatedRecQT;
@@ -129,6 +145,20 @@ class DalQueryBuilder {
     static const char * DalCopyModRecUpdateQT;
     static const char * DalCopyMatchingRecQT;
     static const char * DalCheckRecIdenticalQT;
+    static const char * DalDirtyTblUpdateRecQT;
+    static const char * DalDirtyTblClearAllQT;
+    // New queries with c_flag and u_flag
+    static const char * DalCreateCandRecQT;
+    static const char * DalCreateCandRecUpdateQT;
+    static const char * DalUpdateCandRecQT;
+    static const char * DalClearCandFlagsQT;
+    static const char * DalGetCreatedRecInCandQT;
+    static const char * DalGetModRecConfig1QT;
+    static const char * DalGetModRecConfig2QT;
+    static const char * DalCopyModRecUpdateAbortQT;
+    static const char * DalCopyModRecCreateImportQT;
+    static const char * DalCopyModRecUpdateImportQT;
+    static const char * DalCopyModRecDelImportQT;
 
     /* replacement tokens */
     // Input Related Tokens
@@ -187,6 +217,10 @@ class DalQueryBuilder {
     // col1 = temp.col1 AND col2 = temp.col2 ...
     // For all match columns in bind list
     static const char * DalMandMatchColEqTempExpr;
+    // {mand_match_columns_eq_with_temp}
+    // col1 = temp.col1 , col2 = temp.col2 ...
+    // For all match columns in bind list
+    static const char * DalMatchColEqTempExpr;
     // {match_dst_primary_key_columns_eq_with_temp} - col1, col2, ...
     // <dst_table>.col1 = temp.col1 AND <dst_table>.col2 = temp.col2 ...
     // For all primary key column names of the table

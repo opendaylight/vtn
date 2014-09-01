@@ -135,8 +135,51 @@ unc::driver::driver_command* ODCModule::create_driver_command(
       driver_cmd_ptr = new OdcVbrVlanMapCommand(conf_file_values_);
       break;
     }
+    case UNC_KT_VTERMINAL: {
+      pfc_log_debug("UNC_KT_VTERMINAL key type received");
+      driver_cmd_ptr = new OdcVterminalCommand(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTERM_IF: {
+      pfc_log_debug("UNC_KT_VTERM_IF key type received");
+      driver_cmd_ptr = new OdcVtermIfCommand(conf_file_values_);
+      break;
+    }
+
     default:
       pfc_log_debug("Unknown keytype received : %d", key_type);
+      break;
+  }
+  return driver_cmd_ptr;
+}
+
+
+// Get the Driver Read Command for supported keytypes
+unc::driver::vtn_driver_read_command* ODCModule::create_driver_read_command(
+    unc_key_type_t key_type) {
+  ODC_FUNC_TRACE;
+  unc::driver::vtn_driver_read_command* driver_cmd_ptr = NULL;
+  switch (key_type) {
+    case UNC_KT_DATAFLOW: {
+      pfc_log_debug("Read for Dataflow");
+      driver_cmd_ptr = new OdcDataFlowCommand(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_PORT: {
+      pfc_log_info("UNC_KT_PORT type received");
+      driver_cmd_ptr = new OdcPort(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTNSTATION_CONTROLLER: {
+      pfc_log_debug("UNC_KT_PORT type received");
+      driver_cmd_ptr = new OdcVtnStationCommand(conf_file_values_);
+      break;
+    }
+    default:
+      pfc_log_error("READ not supported");
       break;
   }
   return driver_cmd_ptr;
@@ -203,6 +246,7 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   unc::driver::ConnectionStatus connection_status =
       ctr->get_connection_status();
   if ((connection_status) && (new_audit_status)) {
+    pfc_log_info("Posting Controller Audit from ODC Driver");
     std::string controller_name = ctr->get_controller_id();
     notify_audit_start_to_tc(controller_name);
   }

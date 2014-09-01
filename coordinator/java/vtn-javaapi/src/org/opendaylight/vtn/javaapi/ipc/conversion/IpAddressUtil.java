@@ -37,7 +37,7 @@ public class IpAddressUtil {
 				responseArray = InetAddress.getByName(ipV4Add).getAddress();
 			} catch (final UnknownHostException e) {
 				responseArray = null;
-				LOG.error("incorrect format ipv4 address " + e.getMessage());
+				LOG.error(e, "incorrect format ipv4 address " + e.getMessage());
 			}
 		} else {
 			LOG.error("incorrect length ipv4 address");
@@ -59,7 +59,7 @@ public class IpAddressUtil {
 				responseArray = InetAddress.getByName(ipV6Add).getAddress();
 			} catch (final UnknownHostException e) {
 				responseArray = null;
-				LOG.error("incorrect format ipv6 address " + e.getMessage());
+				LOG.error(e, "incorrect format ipv6 address " + e.getMessage());
 			}
 		} else {
 			LOG.error("incorrect length ipv6 address");

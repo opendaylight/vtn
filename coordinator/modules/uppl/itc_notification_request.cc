@@ -25,6 +25,8 @@
 
 
 using unc::uppl::NotificationRequest;
+map<string, vector<struct unc::uppl::alarm_buffer*> >
+                        NotificationRequest::map_alarm_buff;
 
 /**NotificationRequest
  * @Description:NotificationRequest constructor
@@ -172,7 +174,7 @@ UncRespCode NotificationRequest::InvokeKtDriverEvent(
  **/
 UncRespCode NotificationRequest::ProcessNotificationEvents(
     const IpcEvent &event) {
-  pfc_log_info("Inside ProcessNotificationEvents of NotificationRequest");
+  pfc_log_trace("Inside ProcessNotificationEvents of NotificationRequest");
   UncRespCode status = UNC_RC_SUCCESS;
   ClientSession sess(event.getSession());
 
@@ -281,6 +283,7 @@ UncRespCode NotificationRequest::ProcessNotificationEvents(
 void NotificationRequest::GetNotificationDT(OdbcmConnectionHandler *db_conn,
                                             string controller_name,
                                             uint32_t &data_type) {
+  data_type = (uint32_t)UNC_DT_STATE;
   pfc_bool_t is_controller_in_audit = PhysicalLayer::get_instance()->
       get_ipc_connection_manager()->
       IsControllerInAudit(controller_name);
@@ -297,16 +300,7 @@ void NotificationRequest::GetNotificationDT(OdbcmConnectionHandler *db_conn,
  * @return   :Success or associated error code
  **/
 UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
-  pfc_log_info("Inside ProcessAlarmEvents of NotificationRequest");
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
+  pfc_log_trace("Inside ProcessAlarmEvents of NotificationRequest");
   UncRespCode status = UNC_RC_SUCCESS;
   ClientSession sess(event.getSession());
 
@@ -350,14 +344,37 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
       }
       string controller_name = reinterpret_cast<char *>
       (key_ctr.controller_name);
-      GetNotificationDT(&db_conn, controller_name, data_type);
-      Kt_Controller NotifyController;
-      status = NotifyController.HandleDriverAlarms(
-          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
-          reinterpret_cast<void*>(&key_ctr),
-          reinterpret_cast<void*>(&val_ctr_alarm_struct));
-      pfc_log_debug(
-          "Return status of controller HandleDriverAlarms: %d", status);
+      EventAlarmDetail event_detail(TQ_ALARM);
+      event_detail.alarm_type = alarm_header.alarm_type;
+      event_detail.operation = alarm_header.operation;
+      event_detail.data_type = data_type;
+      event_detail.key_type = alarm_header.key_type;
+      //  allocating memory for key structure - key is mandatory param
+      key_ctr_t *key = (key_ctr_t*)malloc(sizeof(key_ctr_t));
+      if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      memcpy(key, &key_ctr, sizeof(key_ctr_t));
+      event_detail.key_struct = reinterpret_cast<void *>(key);
+      event_detail.key_size = sizeof(key_ctr_t);
+      //  allocating memory for new val structure
+      val_phys_path_fault_alarm_t *n_val_ctr_alarm_struct =
+        (val_phys_path_fault_alarm_t*) malloc
+                        (sizeof(val_phys_path_fault_alarm_t));
+      if (n_val_ctr_alarm_struct == NULL)
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      memcpy(n_val_ctr_alarm_struct, &val_ctr_alarm_struct,
+          sizeof(val_phys_path_fault_alarm_t));
+      event_detail.new_val_struct =
+                    reinterpret_cast<void*>(n_val_ctr_alarm_struct);
+      event_detail.val_size = sizeof(val_phys_path_fault_alarm_t);
+      event_detail.old_val_struct = NULL;
+      //  get taskq for this controller, and dipatch a new task into taskqueue.
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      if (taskq_util->DispatchNotificationEvent(
+                      event_detail, controller_name) != 0) {
+        pfc_log_error("Dispatch event failed , alarm type %d",
+                                     alarm_header.alarm_type);
+        return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+      }
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_CONTROLLER: %d",
                    alarm_header.alarm_type);
@@ -382,18 +399,29 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     if (alarm_header.alarm_type ==  UNC_COREDOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_ctr_domain.ctr_key.controller_name);
-      Kt_Base *NotifyDomain = new Kt_Ctr_Domain();
-      if (NotifyDomain == NULL) {
-        pfc_log_error("Memory not allocated for Notifydomain");
-        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      EventAlarmDetail event_detail(TQ_ALARM);
+      event_detail.alarm_type = alarm_header.alarm_type;
+      event_detail.operation = alarm_header.operation;
+      event_detail.data_type = data_type;
+      event_detail.key_type = alarm_header.key_type;
+      //  allocating memory for key structure - key is mandatory param
+      key_ctr_domain_t *key =
+        (key_ctr_domain_t*)malloc(sizeof(key_ctr_domain_t));
+      if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      memcpy(key, &key_ctr_domain, sizeof(key_ctr_domain_t));
+      event_detail.key_struct = reinterpret_cast<void *>(key);
+      event_detail.key_size = sizeof(key_ctr_domain_t);
+      event_detail.new_val_struct = NULL;
+      event_detail.old_val_struct = NULL;
+      event_detail.val_size = 0;
+      //  get taskq for this controller, and dipatch a new task into taskqueue.
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      if (taskq_util->DispatchNotificationEvent(
+                      event_detail, controller_name) != 0) {
+        pfc_log_error("Dispatch event failed , alarm type %d",
+                                        alarm_header.alarm_type);
+        return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
       }
-      GetNotificationDT(&db_conn, controller_name, data_type);
-      status = NotifyDomain->HandleDriverAlarms(
-          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
-          reinterpret_cast<void*>(&key_ctr_domain), NULL);
-      pfc_log_debug(
-          "Return status of domain HandleDriverAlarms: %d", status);
-      delete NotifyDomain;
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_CTR_DOMAIN: %d",
                    alarm_header.alarm_type);
@@ -418,18 +446,29 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
     if (alarm_header.alarm_type == UNC_SUBDOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_logicalport.domain_key.ctr_key.controller_name);
-      Kt_Base *NotifyLogicalPort = new Kt_LogicalPort();
-      if (NotifyLogicalPort  == NULL) {
-        pfc_log_error("Memory not allocated for NotifyLogicalPort");
-        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      EventAlarmDetail event_detail(TQ_ALARM);
+      event_detail.alarm_type = alarm_header.alarm_type;
+      event_detail.operation = alarm_header.operation;
+      event_detail.data_type = data_type;
+      event_detail.key_type = alarm_header.key_type;
+      //  allocating memory for key structure - key is mandatory param
+      key_logical_port_t *key =
+        (key_logical_port_t*)malloc(sizeof(key_logical_port_t));
+      if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      memcpy(key, &key_logicalport, sizeof(key_logical_port_t));
+      event_detail.key_struct = reinterpret_cast<void *>(key);
+      event_detail.key_size = sizeof(key_logical_port_t);
+      event_detail.new_val_struct = NULL;
+      event_detail.old_val_struct = NULL;
+      event_detail.val_size = 0;
+      //  get taskq for this controller, and dipatch a new task into taskqueue.
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      if (taskq_util->DispatchNotificationEvent(
+                      event_detail, controller_name) != 0) {
+        pfc_log_error("Dispatch event failed , alarm type %d",
+                                      alarm_header.alarm_type);
+        return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
       }
-      GetNotificationDT(&db_conn, controller_name, data_type);
-      status = NotifyLogicalPort->HandleDriverAlarms(
-          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
-          reinterpret_cast<void*>(&key_logicalport), NULL);
-      pfc_log_debug(
-          "Return status of sub_domain HandleDriverAlarms: %d", status);
-      delete NotifyLogicalPort;
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_LOGICAL_PORT: %d",
                    alarm_header.alarm_type);
@@ -456,18 +495,28 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
         (alarm_header.alarm_type ==  UNC_PORT_CONGES)) {
       string controller_name = reinterpret_cast<char *>
       (port_key.sw_key.ctr_key.controller_name);
-      Kt_Base *NotifyPort = new Kt_Port();
-      if (NotifyPort  == NULL) {
-        pfc_log_error("Memory not allocated for NotifyPort");
-        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      EventAlarmDetail event_detail(TQ_ALARM);
+      event_detail.alarm_type = alarm_header.alarm_type;
+      event_detail.operation = alarm_header.operation;
+      event_detail.data_type = data_type;
+      event_detail.key_type = alarm_header.key_type;
+      //  allocating memory for key structure - key is mandatory param
+      key_port_t *key = (key_port_t*)malloc(sizeof(key_port_t));
+      if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      memcpy(key, &port_key, sizeof(key_port_t));
+      event_detail.key_struct = reinterpret_cast<void *>(key);
+      event_detail.key_size = sizeof(key_port_t);
+      event_detail.new_val_struct = NULL;
+      event_detail.old_val_struct = NULL;
+      event_detail.val_size = 0;
+      //  get taskq for this controller, and dipatch a new task into taskqueue.
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      if (taskq_util->DispatchNotificationEvent(
+                      event_detail, controller_name) != 0) {
+        pfc_log_error("Dispatch event failed , alarm type %d",
+                                    alarm_header.alarm_type);
+        return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
       }
-      GetNotificationDT(&db_conn, controller_name, data_type);
-      status = NotifyPort->HandleDriverAlarms(
-          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
-          reinterpret_cast<void*>(&port_key), NULL);
-      pfc_log_debug(
-          "Return status of port HandleDriverAlarms: %d", status);
-      delete NotifyPort;
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_PORT: %d",
                    alarm_header.alarm_type);
@@ -493,18 +542,28 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
         (alarm_header.alarm_type ==  UNC_OFS_LACK_FEATURES)) {
       string controller_name = reinterpret_cast<char *>
       (switch_key.ctr_key.controller_name);
-      Kt_Base *NotifySwitch = new Kt_Switch();
-      if (NotifySwitch  == NULL) {
-        pfc_log_error("Memory not allocated for NotifySwitch");
-        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      EventAlarmDetail event_detail(TQ_ALARM);
+      event_detail.alarm_type = alarm_header.alarm_type;
+      event_detail.operation = alarm_header.operation;
+      event_detail.data_type = data_type;
+      event_detail.key_type = alarm_header.key_type;
+      //  allocating memory for key structure - key is mandatory param
+      key_switch_t *key = (key_switch_t*)malloc(sizeof(key_switch_t));
+      if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      memcpy(key, &switch_key, sizeof(key_switch_t));
+      event_detail.key_struct = reinterpret_cast<void *>(key);
+      event_detail.key_size = sizeof(key_switch_t);
+      event_detail.new_val_struct = NULL;
+      event_detail.old_val_struct = NULL;
+      event_detail.val_size = 0;
+      //  get taskq for this controller, and dipatch a new task into taskqueue.
+      PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+      if (taskq_util->DispatchNotificationEvent(
+                      event_detail, controller_name) != 0) {
+        pfc_log_error("Dispatch event failed , alarm type %d",
+                                       alarm_header.alarm_type);
+        return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
       }
-      GetNotificationDT(&db_conn, controller_name, data_type);
-      status = NotifySwitch->HandleDriverAlarms(
-          &db_conn, data_type, alarm_header.alarm_type, alarm_header.operation,
-          reinterpret_cast<void*>(&switch_key), NULL);
-      pfc_log_debug(
-          "Return status of switch HandleDriverAlarms: %d", status);
-      delete NotifySwitch;
     } else {
       pfc_log_info("Invalid alarm type for UNC_KT_SWITCH: %d",
                    alarm_header.alarm_type);
@@ -528,15 +587,6 @@ UncRespCode NotificationRequest::ProcessPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
   UncRespCode status = UNC_RC_SUCCESS;
   key_port_t port_key;
   memset(&port_key, '\0', sizeof(key_port_t));
@@ -548,7 +598,6 @@ UncRespCode NotificationRequest::ProcessPortEvents(
   pfc_log_info("%s", IpctUtil::get_string(port_key).c_str());
   string controller_name = reinterpret_cast<char *>
   (port_key.sw_key.ctr_key.controller_name);
-  GetNotificationDT(&db_conn, controller_name, data_type);
   val_port_st old_val_port, new_val_port;
   // val
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
@@ -570,11 +619,40 @@ UncRespCode NotificationRequest::ProcessPortEvents(
                  IpctUtil::get_string(old_val_port).c_str());
   }
   // call driver event
-  status = InvokeKtDriverEvent(&db_conn, operation, data_type,
-                               reinterpret_cast<void*>(&port_key),
-                               reinterpret_cast<void*>(&new_val_port),
-                               reinterpret_cast<void*>(&old_val_port),
-                               UNC_KT_PORT);
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_PORT;
+  //  allocating memory for key structure - key is mandatory param
+  key_port_t* key = (key_port_t*)malloc(sizeof(key_port_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &port_key, sizeof(key_port_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_port_t);
+  //  allocating memory for new val structure
+  val_port_st* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_port_st*)malloc(sizeof(val_port_st));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_port, sizeof(val_port_st));
+  }
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_port_st);
+  //  allocating memory for old val structure
+  val_port_st* o_val_struct = NULL;
+  if (operation == UNC_OP_UPDATE) {
+    o_val_struct = (val_port_st*)malloc(sizeof(val_port_st));
+    if (o_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(o_val_struct, &old_val_port, sizeof(val_port_st));
+  }
+  event_detail.old_val_struct = reinterpret_cast<void*>(o_val_struct);
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
   return status;
 }
 
@@ -590,15 +668,6 @@ UncRespCode NotificationRequest::ProcessSwitchEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
   UncRespCode status = UNC_RC_SUCCESS;
   /*process switch add, switch update and switch delete events*/
   key_switch_t switch_key;
@@ -611,7 +680,6 @@ UncRespCode NotificationRequest::ProcessSwitchEvents(
   pfc_log_info("%s", IpctUtil::get_string(switch_key).c_str());
   string controller_name = reinterpret_cast<char *>
   (switch_key.ctr_key.controller_name);
-  GetNotificationDT(&db_conn, controller_name, data_type);
   val_switch_st old_val_switch, new_val_switch;
   memset(&old_val_switch, '\0', sizeof(val_switch_st));
   memset(&new_val_switch, '\0', sizeof(val_switch_st));
@@ -633,11 +701,40 @@ UncRespCode NotificationRequest::ProcessSwitchEvents(
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_switch).c_str());
   }
-  status = InvokeKtDriverEvent(&db_conn, operation, data_type,
-                               reinterpret_cast<void*>(&switch_key),
-                               reinterpret_cast<void*>(&new_val_switch),
-                               reinterpret_cast<void*>(&old_val_switch),
-                               UNC_KT_SWITCH);
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_SWITCH;
+  //  allocating memory for key structure - key is mandatory param
+  key_switch_t* key = (key_switch_t*)malloc(sizeof(key_switch_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &switch_key, sizeof(key_switch_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_switch_t);
+  //  allocating memory for new val structure
+  val_switch_st* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_switch_st*)malloc(sizeof(val_switch_st));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_switch, sizeof(val_switch_st));
+  }
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_switch_st);
+  //  allocating memory for old val structure
+  val_switch_st* o_val_struct = NULL;
+  if (operation == UNC_OP_UPDATE) {
+    o_val_struct = (val_switch_st*)malloc(sizeof(val_switch_st));
+    if (o_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(o_val_struct, &old_val_switch, sizeof(val_switch_st));
+  }
+  event_detail.old_val_struct = reinterpret_cast<void*>(o_val_struct);
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
   return status;
 }
 
@@ -654,15 +751,6 @@ UncRespCode NotificationRequest:: ProcessLinkEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
   UncRespCode status = UNC_RC_SUCCESS;
   /*process link add, link update and link delete events*/
   key_link_t key_link;
@@ -675,7 +763,6 @@ UncRespCode NotificationRequest:: ProcessLinkEvents(
   pfc_log_info("%s", IpctUtil::get_string(key_link).c_str());
   string controller_name = reinterpret_cast<char *>
   (key_link.ctr_key.controller_name);
-  GetNotificationDT(&db_conn, controller_name, data_type);
   val_link_st old_val_link, new_val_link;
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_link);
@@ -695,11 +782,40 @@ UncRespCode NotificationRequest:: ProcessLinkEvents(
     pfc_log_info("OLDVAL: %s",
                  IpctUtil::get_string(old_val_link).c_str());
   }
-  status = InvokeKtDriverEvent(&db_conn, operation, data_type,
-                               reinterpret_cast<void*>(&key_link),
-                               reinterpret_cast<void*>(&new_val_link),
-                               reinterpret_cast<void*>(&old_val_link),
-                               UNC_KT_LINK);
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_LINK;
+  //  allocating memory for key structure - key is mandatory param
+  key_link_t* key = (key_link_t*)malloc(sizeof(key_link_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &key_link, sizeof(key_link_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_link_t);
+  //  allocating memory for new val structure
+  val_link_st* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_link_st*)malloc(sizeof(val_link_st));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_link, sizeof(val_link_st));
+  }
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_link_st);
+  //  allocating memory for old val structure
+  val_link_st* o_val_struct = NULL;
+  if (operation == UNC_OP_UPDATE) {
+    o_val_struct = (val_link_st*)malloc(sizeof(val_link_st));
+    if (o_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(o_val_struct, &old_val_link, sizeof(val_link_st));
+  }
+  event_detail.old_val_struct = reinterpret_cast<void*>(o_val_struct);
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
   return status;
 }
 
@@ -726,7 +842,6 @@ UncRespCode NotificationRequest:: ProcessControllerEvents(
     return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(key_ctr).c_str());
-  Kt_Controller NotifyController;
   read_err = sess->getResponse((uint32_t)6, new_val_ctr);
   if (read_err != 0) {
     pfc_log_error("New value not received for controller");
@@ -739,59 +854,43 @@ UncRespCode NotificationRequest:: ProcessControllerEvents(
     return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("OLDVAL: %s", IpctUtil::get_string(old_val_ctr).c_str());
-  pfc_bool_t is_events_done = PFC_FALSE;
-  uint8_t driver_oper_status = new_val_ctr.oper_status;
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
+
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_CONTROLLER;
+  //  allocating memory for key structure - key is mandatory param
+  key_ctr_t* key = (key_ctr_t*)malloc(sizeof(key_ctr_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &key_ctr, sizeof(key_ctr_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_ctr_t);
+  //  allocating memory for new val structure
+  val_ctr_st* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_ctr_st*)malloc(sizeof(val_ctr_st));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_ctr, sizeof(val_ctr_st));
   }
-  if (driver_oper_status == CONTROLLER_EVENTS_DONE) {
-    // CONTROLLER_OPER_UP can be set
-    // Its same as enum UPPL_CONTROLLER_OPER_UP
-    new_val_ctr.oper_status = CONTROLLER_OPER_UP;
-    string controller_name = reinterpret_cast<char *>
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_ctr_st);
+  //  allocating memory for old val structure
+  val_ctr_st* o_val_struct = NULL;
+  if (operation == UNC_OP_UPDATE) {
+    o_val_struct = (val_ctr_st*)malloc(sizeof(val_ctr_st));
+    if (o_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(o_val_struct, &old_val_ctr, sizeof(val_ctr_st));
+  }
+  event_detail.old_val_struct = reinterpret_cast<void*>(o_val_struct);
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  string controller_name = reinterpret_cast<char *>
     (key_ctr.controller_name);
-    pfc_log_info(
-        "Received end of events notification for controller %s",
-        controller_name.c_str());
-    IPCConnectionManager *ipc_mgr = PhysicalLayer::get_instance()->
-        get_ipc_connection_manager();
-    pfc_bool_t is_controller_in_audit = ipc_mgr->
-        IsControllerInAudit(controller_name);
-    if (is_controller_in_audit == PFC_TRUE) {
-      pfc_log_debug("Calling MergeAuditDbToRunning");
-      // To cancel the already running timer in Audit
-      UncRespCode cancel_ret = ipc_mgr->CancelTimer(controller_name);
-      if (cancel_ret != UNC_RC_SUCCESS) {
-        pfc_log_info("Failure in cancelling timer for controller %s",
-                     controller_name.c_str());
-      }
-      AuditRequest audit_req;
-      UncRespCode merge_auditdb =
-          audit_req.MergeAuditDbToRunning(&db_conn, reinterpret_cast<char *>
-      (key_ctr.controller_name));
-      if (merge_auditdb != UNC_RC_SUCCESS) {
-        pfc_log_info("Merge of audit and running db failed");
-      }
-    } else {
-      pfc_log_info("End of events received non-audit controller %s",
-                   controller_name.c_str());
-      return UNC_UPPL_RC_ERR_BAD_REQUEST;
-    }
-    is_events_done = PFC_TRUE;
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
-  status = NotifyController.HandleDriverEvents(
-      &db_conn, reinterpret_cast<void*>(&key_ctr),
-      operation,
-      data_type,
-      reinterpret_cast<void*>(&old_val_ctr),
-      reinterpret_cast<void*>(&new_val_ctr),
-      is_events_done);
-  pfc_log_info(
-      "Return status of controller update HandleDriverEvents: %d",
-      status);
   return status;
 }
 
@@ -807,28 +906,18 @@ UncRespCode NotificationRequest:: ProcessDomainEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
   UncRespCode status = UNC_RC_SUCCESS;
   /*process domain add, domain update and domain delete events*/
   key_ctr_domain_t key_ctr_domain;
   memset(&key_ctr_domain, '\0', sizeof(key_ctr_domain_t));
   int read_err = sess->getResponse((uint32_t)5, key_ctr_domain);
   if (read_err != 0) {
-    pfc_log_error("Key not received for controller");
+    pfc_log_error("Key not received for ctrdomain");
     return UNC_UPPL_RC_ERR_BAD_REQUEST;
   }
   pfc_log_info("%s", IpctUtil::get_string(key_ctr_domain).c_str());
   string controller_name = reinterpret_cast<char *>
   (key_ctr_domain.ctr_key.controller_name);
-  GetNotificationDT(&db_conn, controller_name, data_type);
   val_ctr_domain_st new_val_ctr_domain_t;
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_ctr_domain_t);
@@ -838,12 +927,36 @@ UncRespCode NotificationRequest:: ProcessDomainEvents(
     }
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_ctr_domain_t).c_str());
+    new_val_ctr_domain_t.oper_status = UPPL_CTR_DOMAIN_OPER_UP;
+    new_val_ctr_domain_t.valid[kIdxDomainStOperStatus] = UNC_VF_VALID;
   }
-  status = InvokeKtDriverEvent(
-      &db_conn, operation, data_type,
-      reinterpret_cast<void*>(&key_ctr_domain),
-      reinterpret_cast<void*>(&new_val_ctr_domain_t),
-      NULL, UNC_KT_CTR_DOMAIN);
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_CTR_DOMAIN;
+  //  allocating memory for key structure - key is mandatory param
+  key_ctr_domain_t* key = (key_ctr_domain_t*)malloc(sizeof(key_ctr_domain_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &key_ctr_domain, sizeof(key_ctr_domain_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_ctr_domain_t);
+  //  allocating memory for new val structure
+  val_ctr_domain_st* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_ctr_domain_st*)malloc(sizeof(val_ctr_domain_st));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_ctr_domain_t, sizeof(val_ctr_domain_st));
+  }
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_ctr_domain_st);
+  event_detail.old_val_struct = NULL;
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
   return status;
 }
 
@@ -859,15 +972,6 @@ UncRespCode NotificationRequest:: ProcessLogicalPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
   UncRespCode status = UNC_RC_SUCCESS;
   key_logical_port_t key_logical_port;
   memset(&key_logical_port, '\0', sizeof(key_logical_port_t));
@@ -879,7 +983,6 @@ UncRespCode NotificationRequest:: ProcessLogicalPortEvents(
   pfc_log_info("%s", IpctUtil::get_string(key_logical_port).c_str());
   string controller_name = reinterpret_cast<char *>
   (key_logical_port.domain_key.ctr_key.controller_name);
-  GetNotificationDT(&db_conn, controller_name, data_type);
   val_logical_port_st new_val_logical_port_t;
   if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
     read_err = sess->getResponse((uint32_t)6, new_val_logical_port_t);
@@ -890,11 +993,34 @@ UncRespCode NotificationRequest:: ProcessLogicalPortEvents(
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_logical_port_t).c_str());
   }
-  status = InvokeKtDriverEvent(
-      &db_conn, operation, data_type,
-      reinterpret_cast<void*>(&key_logical_port),
-      reinterpret_cast<void*>(&new_val_logical_port_t),
-      NULL, UNC_KT_LOGICAL_PORT);
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_LOGICAL_PORT;
+  //  allocating memory for key structure - key is mandatory param
+  key_logical_port_t* key =
+             (key_logical_port_t*)malloc(sizeof(key_logical_port_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &key_logical_port, sizeof(key_logical_port_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_logical_port_t);
+  //  allocating memory for new val structure
+  val_logical_port_st* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_logical_port_st*)malloc(sizeof(val_logical_port_st));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_logical_port_t, sizeof(val_logical_port_st));
+  }
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_logical_port_st);
+  event_detail.old_val_struct = NULL;
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
   return status;
 }
 
@@ -911,15 +1037,6 @@ UncRespCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
     ClientSession *sess,
     uint32_t data_type,
     uint32_t operation) {
-  // Check for MergeImportRunning Lock
-  ScopedReadWriteLock eventDoneLock(
-      PhysicalLayer::get_events_done_lock_(), PFC_FALSE);  // read lock
-  UncRespCode db_ret = UNC_RC_SUCCESS;
-  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
-  if (db_ret != UNC_RC_SUCCESS) {
-    pfc_log_error("Error in opening DB connection");
-    return UNC_UPPL_RC_ERR_DB_ACCESS;
-  }
   UncRespCode status = UNC_RC_SUCCESS;
   key_logical_member_port_t logical_member_port_key;
   memset(&logical_member_port_key, '\0', sizeof(key_logical_member_port_t));
@@ -933,18 +1050,64 @@ UncRespCode NotificationRequest:: ProcessLogicalMemeberPortEvents(
       reinterpret_cast<char *>
   (logical_member_port_key.logical_port_key.
       domain_key.ctr_key.controller_name);
-  GetNotificationDT(&db_conn, controller_name, data_type);
-  Kt_State_Base *NotifyLogicalMemberPort = new Kt_LogicalMemberPort();
-  if (NotifyLogicalMemberPort == NULL) {
-    pfc_log_error("Memory not allocated for NotifyLogicalMemberPort_\n");
-    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_LOGICAL_MEMBER_PORT;
+  //  allocating memory for key structure - key is mandatory param
+  key_logical_member_port_t* key = (key_logical_member_port_t*)malloc
+                                   (sizeof(key_logical_member_port_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &logical_member_port_key, sizeof(key_logical_member_port_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_logical_member_port_t);
+  //  allocating memory for new val structure
+  event_detail.new_val_struct = NULL;
+  event_detail.old_val_struct = NULL;
+  event_detail.val_size = 0;
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
-  status = NotifyLogicalMemberPort->HandleDriverEvents(
-      &db_conn, reinterpret_cast<void*>(&logical_member_port_key),
-      operation,
-      data_type, UNC_KT_LOGICAL_MEMBER_PORT, NULL, NULL);
-  pfc_log_info(
-      "Return status of logical member port HandleDriverEvents: %d", status);
-  delete NotifyLogicalMemberPort;
   return status;
 }
+
+/**
+ * * @Description : This function keeps the alarm details in the vector and store it in map
+ * * @param[in] : alarm type, operation type, key struct and val struct
+ * * @return    : void
+ * */
+
+void NotificationRequest::FillAlarmDetails(uint32_t alarm_type,
+                                 uint32_t oper_type,
+                                 void* key_struct,
+                                 void* val_struct) {
+  key_ctr_t *obj_key_ctr= new key_ctr_t;
+  memcpy(obj_key_ctr, reinterpret_cast<key_ctr_t*>(key_struct),
+        sizeof(key_ctr_t));
+  string controller_name = reinterpret_cast<const char*>
+                 (obj_key_ctr->controller_name);
+  val_phys_path_fault_alarm_t *obj_val = new val_phys_path_fault_alarm_t;
+  memcpy(obj_val, reinterpret_cast<val_phys_path_fault_alarm_t*>(val_struct),
+      sizeof(val_phys_path_fault_alarm_t));
+  pfc_log_debug("FillAlarmdetails:Controller name is %s",
+                               obj_key_ctr->controller_name);
+  pfc_log_debug("Switch name is %s", obj_val->ingress_ofs_dpid);
+  alarm_buffer *buff_alarm = new alarm_buffer(alarm_type, oper_type);
+  buff_alarm->key_struct = reinterpret_cast<void*>(obj_key_ctr);
+  buff_alarm->val_struct = reinterpret_cast<void*>(obj_val);
+  vector <struct unc::uppl::alarm_buffer*> vec_alarm_buff;
+  // Checking if any alarm for same controller exists
+  map<string, vector<struct unc::uppl::alarm_buffer*> > ::iterator it =
+                     map_alarm_buff.find(controller_name);
+  if (it != map_alarm_buff.end()) {
+    pfc_log_debug("Entry found for previous Alarm for same controller");
+    vec_alarm_buff = it->second;
+  }
+  vec_alarm_buff.push_back(buff_alarm);
+  map_alarm_buff[controller_name] = vec_alarm_buff;
+}
+

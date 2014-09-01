@@ -57,12 +57,23 @@ ODCDRIVER_SOURCES += odc_vbr_vlanmap.cc
 ODCDRIVER_SOURCES += odc_switch.cc
 ODCDRIVER_SOURCES += odc_port.cc
 ODCDRIVER_SOURCES += odc_link.cc
+ODCDRIVER_SOURCES += odc_rest.cc
+ODCDRIVER_SOURCES += odc_util.cc
+ODCDRIVER_SOURCES += odc_kt_utils.cc
+ODCDRIVER_SOURCES += odc_vtnstation.cc
+ODCDRIVER_SOURCES += odc_dataflow_util.cc
+ODCDRIVER_SOURCES += odc_dataflow.cc
+ODCDRIVER_SOURCES += odc_vterminal.cc
+ODCDRIVER_SOURCES += odc_vterminal_if.cc
+
+#ODCDRIVER_SOURCES += odc_ctl_dataflow.cc
 
 VTNCACHEUTIL_SOURCES = keytree.cc
 VTNCACHEUTIL_SOURCES += confignode.cc
 VTNCACHEUTIL_SOURCES += vtn_cache_mod.cc
 VTNDRVINTF_STUB_SOURCES += controller_fw.cc
 VTNDRVINTF_STUB_SOURCES += vtn_drv_module.cc
+#VTNDRVINTF_STUB_SOURCES += vtn_read_value_util.cc
 
 TCLIB_SOURCES = tclib_module.cc
 MISC_SOURCES  = ipc_client.cc ipc_server.cc module.cc

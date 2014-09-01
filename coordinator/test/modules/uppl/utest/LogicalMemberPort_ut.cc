@@ -598,7 +598,7 @@ TEST_F(LogicalMemberPortTest,
   OdbcmConnectionHandler *db_conn =NULL;
   int ret =  ktlmportobj.ReadInternal(db_conn, vectkey_logicalmemberport,
     vectVal_logicalmemberport, UNC_DT_STATE, UNC_OP_CREATE);
-  EXPECT_EQ(UNC_RC_SUCCESS, ret);
+  EXPECT_EQ(2008, ret);
 }
 
 /*ReadInternal function where value struct is NULL */

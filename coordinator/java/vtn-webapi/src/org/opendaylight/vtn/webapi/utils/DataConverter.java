@@ -14,6 +14,8 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -68,6 +70,11 @@ public final class DataConverter {
 					contentType)) {
 				final Random random = new Random();
 				final String randomString = String.valueOf(random.nextInt());
+				final String randomStringSpace = String.valueOf(random
+						.nextInt());
+
+				rawRequestString = replaceSpaceAll(rawRequestString,
+						randomStringSpace);
 				rawRequestString = rawRequestString.replaceAll(
 						ApplicationConstants.DOT_ZERO, randomString
 								+ ApplicationConstants.SESSION_TYPE);
@@ -78,11 +85,15 @@ public final class DataConverter {
 					XMLTransformationUtil.preProcessJson(jsonObject);
 				}
 				LOG.debug("Json before parsing : " + jsonObject);
-				convertedObj = (JsonObject) parser.parse(jsonObject.toString()
-						.replaceAll(
-								randomString
-										+ ApplicationConstants.SESSION_TYPE,
-								ApplicationConstants.DOT_ZERO));
+
+				String jsonString = jsonObject.toString().replaceAll(
+						randomString + ApplicationConstants.SESSION_TYPE,
+						ApplicationConstants.DOT_ZERO);
+				jsonString = jsonString.replaceAll(randomStringSpace
+						+ ApplicationConstants.SESSION_TYPE,
+						ApplicationConstants.SPACE_STRING);
+
+				convertedObj = (JsonObject) parser.parse(jsonString);
 			} else if (ContentTypeEnum.APPLICATION_JSON.getContentType()
 					.equals(contentType)) {
 				convertedObj = (JsonObject) parser.parse(rawRequestString);
@@ -93,15 +104,15 @@ public final class DataConverter {
 			}
 			LOG.debug("Request JSON object for Java API #" + convertedObj);
 		} catch (JsonSyntaxException e) {
-			LOG.error("Request Syntax Error : " + e);
+			LOG.error(e, "Request Syntax Error : " + e);
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
 		} catch (JSONException e) {
-			LOG.error("Request Syntax Error : " + e);
+			LOG.error(e, "Request Syntax Error : " + e);
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
 		} catch (NoSuchElementException e) {
-			LOG.error("Request Syntax Error : " + e);
+			LOG.error(e, "Request Syntax Error : " + e);
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_BAD_REQUEST.getCode());
 		}
@@ -150,7 +161,7 @@ public final class DataConverter {
 			mapJson = (JsonObject) new JsonParser().parse(json.toString());
 			LOG.debug("Coverted JSON from Map parameters : " + mapJson);
 		} catch (final JSONException e) {
-			LOG.error("Json syntax error : " + e.getMessage());
+			LOG.error(e, "Json syntax error : " + e.getMessage());
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
 		}
@@ -201,11 +212,35 @@ public final class DataConverter {
 			}
 			LOG.debug("Response String : " + responseString);
 		} catch (final Exception e) {
-			LOG.error("Internal server error occurred : " + e);
+			LOG.error(e, "Internal server error occurred : " + e);
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
 		}
 		LOG.trace("Complete DataConverter#getConvertedResponse()");
 		return responseString;
+	}
+
+	/**
+	 * replace Space which in the end.
+	 * 
+	 * @param String
+	 *            the xml string.
+	 * @param String
+	 *            the xml string.
+	 * @return the string
+	 * 
+	 */
+	private static String replaceSpaceAll(String xml, String randomString) {
+		Pattern p = Pattern.compile("\"(.*?)\"");
+		Matcher m = p.matcher(xml);
+		while (m.find()) {
+			String old = m.group();
+			String new_xml = old.replaceFirst(ApplicationConstants.SPACE_STRING
+					+ ApplicationConstants.QUOTATION_MARK_STRING, randomString
+					+ ApplicationConstants.SESSION_TYPE
+					+ ApplicationConstants.QUOTATION_MARK_STRING);
+			xml = xml.replaceFirst(old, new_xml);
+		}
+		return xml;
 	}
 }

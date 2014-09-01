@@ -44,20 +44,22 @@ UncRespCode OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
     return UNC_DRV_RC_ERR_GENERIC;
   }
   url.append(vtnname);
-  unc::restjson::JsonBuildParse json_obj;
+  // unc::restjson::JsonBuildParse json_obj;
   json_object* jobj_req_body = create_request_body(val_vtn);
-  const char* request = NULL;
+ /* const char* request = NULL;
   if (!(json_object_is_type(jobj_req_body, json_type_null))) {
-    request = json_obj.get_string(jobj_req_body);
+     json_obj.get_string(jobj_req_body,request);
   }
 
-  pfc_log_debug("Request body formed in create_cmd : %s", request);
+  pfc_log_debug("Request body formed in create_cmd : %s", request);*/
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                   ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
 
   unc::restjson::HttpResponse_t* response =
       rest_util_obj.send_http_request(
-         url, restjson::HTTP_METHOD_POST, request, conf_file_values_);
+         url, restjson::HTTP_METHOD_POST,
+         unc::restjson::JsonBuildParse::get_json_string(jobj_req_body),
+         conf_file_values_);
   json_object_put(jobj_req_body);
   if (NULL == response) {
     pfc_log_error("Error Occured while getting httpresponse");
@@ -74,13 +76,14 @@ UncRespCode OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
 // Creates Request Body
 json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
   ODC_FUNC_TRACE;
-  unc::restjson::JsonBuildParse json_obj;
+  //unc::restjson::JsonBuildParse json_obj;
   const char* description = reinterpret_cast<const char*>(val_vtn.description);
-  json_object *jobj = json_obj.create_json_obj();
+  json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();
   int ret_val = 1;
   if (UNC_VF_VALID == val_vtn.valid[UPLL_IDX_DESC_VTN]) {
     if (0 != strlen(description)) {
-      ret_val = json_obj.build("description", description, jobj);
+      ret_val = unc::restjson::JsonBuildParse::build("description", description,
+                                                     jobj);
       if (restjson::REST_OP_SUCCESS != ret_val) {
         pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
         json_object_put(jobj);
@@ -93,13 +96,17 @@ json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
   std::ostringstream idle_timeout_str_format;
   idle_timeout_str_format << idle_timeout_;
   std::string idle_time_out = idle_timeout_str_format.str();
-  ret_val = json_obj.build("idleTimeout", idle_timeout_str_format.str(), jobj);
+  ret_val = unc::restjson::JsonBuildParse::build("idleTimeout",
+                                                 idle_timeout_str_format.str(),
+                                                 jobj);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
     json_object_put(jobj);
     return NULL;
   }
-  ret_val = json_obj.build("hardTimeout", hard_timeout_str_format.str(), jobj);
+  ret_val = unc::restjson::JsonBuildParse::build("hardTimeout",
+                                                 hard_timeout_str_format.str(),
+                                                 jobj);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
     json_object_put(jobj);
@@ -126,21 +133,22 @@ UncRespCode OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
     return UNC_DRV_RC_ERR_GENERIC;
   }
   url.append(vtnname);
-  unc::restjson::JsonBuildParse json_obj;
+  // unc::restjson::JsonBuildParse json_obj;
 
   json_object* jobj_request = create_request_body(val_vtn);
-  const char* request = NULL;
+/*  const char* request = NULL;
   if (!(json_object_is_type(jobj_request, json_type_null))) {
-    request = json_obj.get_string(jobj_request);
+     json_obj.get_string(jobj_request,request);
   }
-
-  pfc_log_debug("Request body formed in create_cmd : %s", request);
+  pfc_log_debug("Request body formed in create_cmd : %s", request);*/
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                   ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
   unc::restjson::HttpResponse_t* response =
       rest_util_obj.send_http_request(
-          url, restjson::HTTP_METHOD_PUT, request, conf_file_values_);
+          url, restjson::HTTP_METHOD_PUT,
+          unc::restjson::JsonBuildParse::get_json_string(jobj_request),
+           conf_file_values_);
 
   json_object_put(jobj_request);
   if (NULL == response) {

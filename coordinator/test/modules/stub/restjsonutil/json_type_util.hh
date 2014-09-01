@@ -10,8 +10,8 @@
 #ifndef JSON_TYPE_UTIL_H_
 #define JSON_TYPE_UTIL_H_
 
+#include <json.h>
 #include <uncxx/odc_log.hh>
-#include <json/json.h>
 #include <string>
 
 namespace unc {
@@ -35,23 +35,23 @@ class JsonTypeUtil {
   }
 
   /**
-   * @brief               - parametrised constructor takes arg as int
-   *                      - creates json object of type int
-   * @param[in] intdata   -  integer value
-   */
-  explicit JsonTypeUtil(int intdata) {
-    ODC_FUNC_TRACE;
-    jobj_ = json_object_new_int(intdata);
-  }
-
-  /**
-   * @brief               - parametrised constructor takes arg as unsigned uint
+   * @brief               - parametrised constructor takes arg as unsigned int
    *                        and  creates json object of type unsigned int
    * @param[in] uintdata  - unsigned integer value
    */
   explicit JsonTypeUtil(uint uintdata) {
     ODC_FUNC_TRACE;
     jobj_ = json_object_new_int(uintdata);
+  }
+
+  /**
+   * @brief               - parametrised constructor takes arg as int
+   *                        and  creates json object of type int
+   * @param[in] intdata  - integer value
+   */
+  explicit JsonTypeUtil(int intdata) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_int(intdata);
   }
 
   /**
@@ -63,7 +63,21 @@ class JsonTypeUtil {
     ODC_FUNC_TRACE;
     jobj_ = jsondata;
   }
+  /**
+   * @brief               - Parametrised constructor takes arg as json object
+   *                      - Creates json object of type json object
+   * @param[in] jsondata  - json object
+   */
 
+  explicit JsonTypeUtil(unsigned long long longdata) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_int64(longdata);
+  }
+
+  explicit JsonTypeUtil(bool value) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_boolean(value);
+  }
   /**
    * @brief                 - Function overloading getValue - returns the value
    *                          of type string
@@ -71,9 +85,25 @@ class JsonTypeUtil {
    * @param[out] val        - the value stored in this string reference
    * return                 - None
    */
+  static void get_value(json_object* jobjval, bool &val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_boolean(jobjval);
+  }
   static void get_value(json_object* jobjval, std::string &val) {
     ODC_FUNC_TRACE;
     val = json_object_get_string(jobjval);
+  }
+
+  /**
+   * @brief                  - Function overloading getValue - returns the
+   *                           value of type unsigned int
+   * @param[in] jobjval      - json object from which the value to be retrieved
+   * @param[out] val         - the value stored in this unsigned int reference
+   * return                  - None
+   */
+  static void get_value(json_object* jobjval, uint &val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_int(jobjval);
   }
 
   /**
@@ -99,18 +129,6 @@ class JsonTypeUtil {
   static void get_value(json_object* jobjval, json_object*& jobjgetval) {
     ODC_FUNC_TRACE;
     jobjgetval = jobjval;
-  }
-
-  /**
-   * @brief                  - Function overloading getValue - returns the
-   *                           value of type unsigned int
-   * @param[in] jobjval      - json object from which the value to be retrieved
-   * @param[out] val         - the value stored in this unsigned int reference
-   * return                  - None
-   */
-  static void get_value(json_object* jobjval, uint &val) {
-    ODC_FUNC_TRACE;
-    val = json_object_get_int(jobjval);
   }
 
   /**

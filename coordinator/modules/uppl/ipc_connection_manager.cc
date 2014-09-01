@@ -16,6 +16,7 @@
 
 #include "physicallayer.hh"
 #include "ipc_connection_manager.hh"
+#include "ipc_client_configuration_handler.hh"
 
 using unc::uppl::IPCConnectionManager;
 using unc::uppl::IPCServerHandler;
@@ -42,6 +43,7 @@ IPCConnectionManager::IPCConnectionManager()
  *@return      : None
  **/
 IPCConnectionManager::~IPCConnectionManager() {
+  PHY_TIMER_LOCK();
   // Clear timer and taskq if present in case of timeout
   if (!timer_obj_.empty()) {
     map<string, Timer *> :: iterator timer_iter = timer_obj_.begin();
@@ -110,22 +112,17 @@ IPCServerHandler * IPCConnectionManager::get_ipc_server_handler() {
 /**
  * @Description : Returns the object of NotificationManager class
  * @param[in]   : ctr_type - enum which indicates the controller type
- *                           i.e either UNKNOWN or PFC or VNP
+ *                           i.e either UNKNOWN or PFC or VNP or POLC or ODC
  * @return      : Pointer to NotificationManager class
  **/
 NotificationManager* IPCConnectionManager::get_notification_manager(
     unc_keytype_ctrtype_t ctr_type) {
-  if (ctr_type == UNC_CT_PFC) {
+  if ((ctr_type == UNC_CT_PFC)
+      || (ctr_type == UNC_CT_VNP)
+      || (ctr_type == UNC_CT_POLC)
+      || (ctr_type == UNC_CT_ODC)) {
     return NotificationManager::get_notification_manager(
-        UNC_CT_PFC);
-  }
-  if (ctr_type == UNC_CT_VNP) {
-    return NotificationManager::get_notification_manager(
-        UNC_CT_VNP);
-  }
-  if (ctr_type == UNC_CT_ODC) {
-    return NotificationManager::get_notification_manager(
-        UNC_CT_ODC);
+        ctr_type);
   }
   return NULL;
 }
@@ -202,7 +199,7 @@ UncRespCode IPCConnectionManager::Finalize() {
 UncRespCode IPCConnectionManager::SendEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  IpcEventAttr attr_pfc, attr_vnp, attr_odc;
+  IpcEventAttr attr_pfc, attr_vnp, attr_polc, attr_odc;
   IpcEventMask mask(0);
   // Add events to mask
   if ((mask.add(UNC_PHYSICAL_EVENTS)) != 0) {
@@ -219,6 +216,7 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
   }
   attr_pfc.setPriority(150);
   attr_vnp.setPriority(150);
+  attr_polc.setPriority(150);
   attr_odc.setPriority(150);
 
   if ((attr_pfc.addTarget(PFCDRIVER_IPC_SVC_NAME, mask)) != 0) {
@@ -231,6 +229,8 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
       get_notification_manager(UNC_CT_PFC) ,
       &attr_pfc);
   pfc_log_debug("Event Subscribed for PFC driver");
+
+  // VNP
   if ((attr_vnp.addTarget(VNPDRIVER_IPC_SVC_NAME, mask)) != 0) {
     pfc_log_error("addTarget() failed for OVERLAY driver\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
@@ -240,6 +240,17 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
       get_notification_manager(UNC_CT_VNP),
       &attr_vnp);
   pfc_log_debug("Event Subscribed for Overlay driver");
+
+  // POLC
+  if ((attr_polc.addTarget(POLCDRIVER_IPC_SVC_NAME, mask)) != 0) {
+    pfc_log_error("addTarget() failed for POLC driver\n");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
+  physical_layer->Module::addIpcEventHandler(
+      POLCDRIVER_IPC_CHN_NAME,
+      get_notification_manager(UNC_CT_POLC),
+      &attr_polc);
+  pfc_log_debug("Event Subscribed for Polc driver");
 
   // Notification manager for ODC
   if ((attr_odc.addTarget(ODCDRIVER_IPC_SVC_NAME, mask)) != 0) {
@@ -266,18 +277,24 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
 UncRespCode  IPCConnectionManager::CancelEventSubscription() {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  // Remove the Event Handler
+  // Remove the Event Handler for PFC
   if ((physical_layer->Module::removeIpcEventHandler(
       get_notification_manager(UNC_CT_PFC)))
       != 0) {
-    pfc_log_error("removeIpcEventHandler() failed\n");
+    pfc_log_error("removeIpcEventHandler() pfc failed\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
-  // Remove the Event Handler
+  // Remove the Event Handler for VNP
   if ((physical_layer->Module::removeIpcEventHandler(
       get_notification_manager(UNC_CT_VNP)))
       != 0) {
-    pfc_log_error("removeIpcEventHandler() failed\n");
+    pfc_log_error("removeIpcEventHandler() vnp failed\n");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
+  // Remove the Event Handler for POLC
+  if ((physical_layer->Module::removeIpcEventHandler(
+      get_notification_manager(UNC_CT_POLC))) != 0) {
+    pfc_log_error("removeIpcEventHandler() polc failed\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   // Remove the Event Handler for ODC Driver
@@ -326,7 +343,7 @@ UncRespCode IPCConnectionManager::removeControllerFromAuditList(
                                          controller_in_audit_.end(),
                                          controller_name);
   if (iter == controller_in_audit_.end()) {
-    pfc_log_debug("Controller is not available in vector");
+    pfc_log_info("Controller is not available in vector");
     return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
   } else {
     controller_in_audit_.erase(iter);
@@ -337,6 +354,7 @@ UncRespCode IPCConnectionManager::removeControllerFromAuditList(
   if (timer_iter != notfn_timer_id_.end()) {
     notfn_timer_id_.erase(timer_iter);
   } else {
+    pfc_log_info("Not able to delete timer");
     return UNC_UPPL_RC_ERR_AUDIT_FAILURE;
   }
   return UNC_RC_SUCCESS;
@@ -375,6 +393,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
     string controller_name) {
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
+  PHY_TIMER_LOCK();  
   uint32_t time_out = physical_core->getAuditNotfnTimeOut();
   uint32_t no_tasks = 1;
   map<string, Timer *> :: iterator timer_iter =
@@ -432,6 +451,62 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
     setTimeOutId(controller_name, time_out_id);
   }
   return ret;
+}
+
+/**
+ * @Description : This function is used to get the driver presence during
+ *                create/update operations 
+ * @param[in]   : ctr_type of type uint32
+ * @return      : UNC_RC_SUCCESS - if respective driver is present
+ *                UNC_RC_ERR_DRIVER_NOT_PRESENT -if driver is not installed
+ *                will be returned
+ **/
+UncRespCode IPCConnectionManager::GetDriverPresence(uint32_t ctr_type) {
+  UncRespCode driver_response = UNC_RC_SUCCESS;
+  if (ctr_type == UNC_CT_PFC || ctr_type == UNC_CT_VNP ||
+      ctr_type == UNC_CT_POLC || ctr_type == UNC_CT_ODC) {
+    UncRespCode err_resp = UNC_RC_SUCCESS;
+    pfc_ipcresp_t resp = 0;
+    uint8_t err = 0;
+
+    if (ctr_type == UNC_CT_PFC) {
+      IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err_resp);
+      if (err_resp == 0) {
+        err = pfc_drv_handler.ResetAndGetSession()->invoke(resp);
+        pfc_log_debug("GetDriverPresence invoke status = %d, resp = %d",
+                                                            err, resp);
+      }
+    } else if (ctr_type == UNC_CT_VNP) {
+      IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err_resp);
+      if (err_resp == 0) {
+        err = vnp_drv_handler.ResetAndGetSession()->invoke(resp);
+      }
+    } else if (ctr_type == UNC_CT_POLC) {
+      IPCClientDriverHandler polc_drv_handler(UNC_CT_POLC, err_resp);
+      if (err_resp == 0) {
+        err = polc_drv_handler.ResetAndGetSession()->invoke(resp);
+      }
+    } else if (ctr_type == UNC_CT_ODC) {
+      IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err_resp);
+      if (err_resp == 0) {
+        err = odc_drv_handler.ResetAndGetSession()->invoke(resp);
+      }
+    }
+    if (err != 0) {
+      pfc_log_debug("DriverPresence status = %d", err);
+      if (err == ECONNREFUSED) {
+        pfc_log_debug("DriverPresence status = %d, driver not present", err);
+        driver_response =  UNC_RC_ERR_DRIVER_NOT_PRESENT;
+      } else {
+        pfc_log_debug("DriverPresence status = %d, comm failure", err);
+        driver_response = UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
+      }
+    } else {
+      pfc_log_debug("DriverPresence status = %d, comm success", err);
+      driver_response = UNC_RC_SUCCESS;
+    }
+  }
+  return driver_response;
 }
 
 /**

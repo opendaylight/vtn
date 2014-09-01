@@ -97,7 +97,7 @@ public class VtnServiceWebAPIController {
 					.toString() : null;
 			LOG.debug("JAVA API returned response # " + responseStr);
 		} catch (final Exception e) {
-			LOG.error("VTN Service error occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service error occurred : " + e.getMessage());
 			exceptionStatus = true;
 			if (!(e instanceof VtnServiceWebAPIException)) {
 				throw new VtnServiceWebAPIException(
@@ -139,7 +139,7 @@ public class VtnServiceWebAPIController {
 					responseJSON = new JSONObject(responseStr);
 				}
 			} catch (final JSONException exception) {
-				LOG.error("VTN Service error occurred : "
+				LOG.error(exception, "VTN Service error occurred : "
 						+ exception.getMessage());
 				throw new VtnServiceWebAPIException(
 						HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
@@ -217,7 +217,7 @@ public class VtnServiceWebAPIController {
 					.toString() : null;
 			LOG.debug("JAVA API returned response # " + responseStr);
 		} catch (final Exception e) {
-			LOG.error("VTN Service error occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service error occurred : " + e.getMessage());
 			exceptionStatus = true;
 			if (!(e instanceof VtnServiceWebAPIException)) {
 				throw new VtnServiceWebAPIException(
@@ -260,7 +260,7 @@ public class VtnServiceWebAPIController {
 					responseJSON = new JSONObject(responseStr);
 				}
 			} catch (final JSONException exception) {
-				LOG.error("VTN Service error occurred : "
+				LOG.error(exception, "VTN Service error occurred : "
 						+ exception.getMessage());
 				throw new VtnServiceWebAPIException(
 						HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -349,7 +349,7 @@ public class VtnServiceWebAPIController {
 				throw new VtnServiceWebAPIException();
 			}
 		} catch (final Exception e) {
-			LOG.error("VTN Service error occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service error occurred : " + e.getMessage());
 			exceptionStatus = true;
 			if (!(e instanceof VtnServiceWebAPIException)) {
 				throw new VtnServiceWebAPIException(
@@ -393,7 +393,7 @@ public class VtnServiceWebAPIController {
 					responseJSON = new JSONObject(responseStr);
 				}
 			} catch (final JSONException exception) {
-				LOG.error("VTN Service error occurred : "
+				LOG.error(exception, "VTN Service error occurred : "
 						+ exception.getMessage());
 				throw new VtnServiceWebAPIException(
 						HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
@@ -482,7 +482,7 @@ public class VtnServiceWebAPIController {
 				throw new VtnServiceWebAPIException();
 			}
 		} catch (final Exception e) {
-			LOG.error("VTN Service error occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service error occurred : " + e.getMessage());
 			exceptionStatus = true;
 			if (!(e instanceof VtnServiceWebAPIException)) {
 				throw new VtnServiceWebAPIException(
@@ -526,7 +526,7 @@ public class VtnServiceWebAPIController {
 					responseJSON = new JSONObject(responseStr);
 				}
 			} catch (final JSONException exception) {
-				LOG.error("VTN Service error occurred : "
+				LOG.error(exception, "VTN Service error occurred : "
 						+ exception.getMessage());
 				throw new VtnServiceWebAPIException(
 						HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
@@ -615,7 +615,7 @@ public class VtnServiceWebAPIController {
 				throw new VtnServiceWebAPIException();
 			}
 		} catch (final Exception e) {
-			LOG.error("VTN Service error occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service error occurred : " + e.getMessage());
 			exceptionStatus = true;
 			if (!(e instanceof VtnServiceWebAPIException)) {
 				throw new VtnServiceWebAPIException(
@@ -658,7 +658,7 @@ public class VtnServiceWebAPIController {
 					responseJSON = new JSONObject(responseStr);
 				}
 			} catch (final JSONException exception) {
-				LOG.error("VTN Service error occurred : "
+				LOG.error(exception, "VTN Service error occurred : "
 						+ exception.getMessage());
 				throw new VtnServiceWebAPIException(
 						HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
@@ -743,7 +743,7 @@ public class VtnServiceWebAPIController {
 				throw new VtnServiceWebAPIException();
 			}
 		} catch (final Exception e) {
-			LOG.error("VTN Service error occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service error occurred : " + e.getMessage());
 			exceptionStatus = true;
 			if (!(e instanceof VtnServiceWebAPIException)) {
 				throw new VtnServiceWebAPIException(
@@ -786,7 +786,7 @@ public class VtnServiceWebAPIController {
 					responseJSON = new JSONObject(responseStr);
 				}
 			} catch (final JSONException exception) {
-				LOG.error("VTN Service error occurred : "
+				LOG.error(exception, "VTN Service error occurred : "
 						+ exception.getMessage());
 				throw new VtnServiceWebAPIException(
 						HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());

@@ -11,7 +11,9 @@ package org.opendaylight.vtn.javaapi.openstack.dbmanager;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
@@ -32,7 +34,7 @@ public class DataBaseConnectionPool implements Runnable {
 
 	private boolean pendingConnection = false;
 
-	private Vector<Connection> availableConnections, usedConnections;
+	private List<Connection> availableConnections, usedConnections;
 
 	/**
 	 * Constructor of Database Connection Pooling. Initialize the connection
@@ -57,18 +59,24 @@ public class DataBaseConnectionPool implements Runnable {
 							.getMaxPossibleConnections());
 		}
 
-		this.availableConnections = new Vector<Connection>(
-				connectionProperties.getInitialConnections());
-		this.usedConnections = new Vector<Connection>();
+		this.availableConnections = Collections
+				.synchronizedList(new ArrayList<Connection>(
+						connectionProperties.getInitialConnections()));
+		this.usedConnections = Collections
+				.synchronizedList(new ArrayList<Connection>());
 
 		try {
+			Class.forName(connectionProperties.getDbDriver());
 			// create connection with initial connection pool size
 			for (int i = 0; i < this.connectionProperties
 					.getInitialConnections(); i++) {
-				this.availableConnections.addElement(createConnection());
+				this.availableConnections.add(createConnection());
 			}
+		} catch (final ClassNotFoundException cnfe) {
+			LOG.error(cnfe, "Can't find class for driver : "
+					+ connectionProperties.getDbDriver());
 		} catch (final SQLException e) {
-			LOG.error("Connection Pooling Initialization Error.");
+			LOG.error(e, "Connection Pooling Initialization Error.");
 			exceptionHandler
 					.raise(Thread.currentThread().getStackTrace()[1]
 							.getClassName()
@@ -99,16 +107,16 @@ public class DataBaseConnectionPool implements Runnable {
 
 		LOG.trace("Start DataBaseConnectionPool#getConnection()");
 
-		if (!availableConnections.isEmpty()) {
+		if (availableConnections != null && !availableConnections.isEmpty()) {
 			/*
 			 * if connection is available in prepared connection pool, the
 			 * return from connection pool. Update the available connection and
 			 * used connection list as per result of operation
 			 */
 			LOG.debug("Connection can be provided by initialized connection pool.");
-			final Connection connection = availableConnections.lastElement();
+			final Connection connection = availableConnections.get(availableConnections.size() - 1);
 			availableConnections
-					.removeElementAt(availableConnections.size() - 1);
+					.remove(availableConnections.size() - 1);
 
 			if (connection.isClosed()) {
 				LOG.warning("Connection had been closed. Create new connection and return");
@@ -116,7 +124,7 @@ public class DataBaseConnectionPool implements Runnable {
 				return getConnection();
 			} else {
 				LOG.debug("Use connection : " + connection);
-				usedConnections.addElement(connection);
+				usedConnections.add(connection);
 				LOG.trace("Complete DataBaseConnectionPool#getConnection()");
 				return connection;
 			}
@@ -163,7 +171,7 @@ public class DataBaseConnectionPool implements Runnable {
 			final Thread connectThread = new Thread(this);
 			connectThread.start();
 		} catch (final OutOfMemoryError oome) {
-			LOG.fatal("Out of memory space error : " + oome);
+			LOG.fatal(oome, "Out of memory space error : " + oome);
 		}
 
 		LOG.trace("Complete DataBaseConnectionPool#createBackGroundConnection()");
@@ -181,12 +189,16 @@ public class DataBaseConnectionPool implements Runnable {
 		try {
 			final Connection connection = createConnection();
 			synchronized (this) {
-				availableConnections.addElement(connection);
-				pendingConnection = false;
-				notifyAll();
+				if (availableConnections == null) {
+					throw new NullPointerException("Connection list is null");
+				} else {
+					availableConnections.add(connection);
+					pendingConnection = false;
+					notifyAll();
+				}
 			}
 		} catch (final Exception e) {
-			LOG.error("Error ocurred while creating new connection.");
+			LOG.error(e, "Error ocurred while creating new connection : " + e);
 		}
 
 		LOG.trace("Complete DataBaseConnectionPool#run()");
@@ -201,22 +213,13 @@ public class DataBaseConnectionPool implements Runnable {
 	private Connection createConnection() throws SQLException {
 
 		LOG.trace("Start DataBaseConnectionPool#createConnection()");
-
-		try {
-			Class.forName(connectionProperties.getDbDriver());
-			final Connection connection = DriverManager.getConnection(
-					connectionProperties.getDbURL(),
-					connectionProperties.getDbUsername(),
-					connectionProperties.getDbPassword());
-			connection.setAutoCommit(false);
-			LOG.trace("Complete DataBaseConnectionPool#createConnection()");
-			return connection;
-		} catch (final ClassNotFoundException cnfe) {
-			LOG.error("Can't find class for driver : "
-					+ connectionProperties.getDbDriver());
-			throw new SQLException("Can't find class for driver: "
-					+ connectionProperties.getDbDriver());
-		}
+		final Connection connection = DriverManager.getConnection(
+				connectionProperties.getDbURL(),
+				connectionProperties.getDbUsername(),
+				connectionProperties.getDbPassword());
+		connection.setAutoCommit(false);
+		LOG.trace("Complete DataBaseConnectionPool#createConnection()");
+		return connection;
 	}
 
 	/**
@@ -228,10 +231,13 @@ public class DataBaseConnectionPool implements Runnable {
 
 		LOG.trace("Start DataBaseConnectionPool#freeConnection()");
 
-		usedConnections.removeElement(connection);
-		availableConnections.addElement(connection);
+		if (usedConnections != null) {
+			usedConnections.remove(connection);
+		}
+		if (availableConnections != null) {
+			availableConnections.add(connection);
+		}
 		notifyAll();
-
 		LOG.trace("Complete DataBaseConnectionPool#freeConnection()");
 	}
 
@@ -242,23 +248,31 @@ public class DataBaseConnectionPool implements Runnable {
 	 */
 	public synchronized int countConnections() {
 
-		LOG.trace("Return from DataBaseConnectionPool#countConnections()");
+		LOG.trace("Start DataBaseConnectionPool#countConnections()");
+		int size = 0;
+		if (usedConnections != null) {
+			size = size + usedConnections.size();
+		}
 
-		return availableConnections.size() + usedConnections.size();
+		if (availableConnections != null) {
+			size = size + availableConnections.size();
+		}
+		LOG.debug("Count of connections: " + size);
+		LOG.trace("Complete DataBaseConnectionPool#countConnections()");
+		return size;
 	}
 
 	/**
-	 * Close all connections and re-initialize available and used connection
-	 * lists with no connections
+	 * Close all connections and nullity available and used connection lists
 	 */
 	public synchronized void closeAllConnections() {
 
 		LOG.trace("Start DataBaseConnectionPool#closeAllConnections()");
 
 		closeConnections(availableConnections);
-		availableConnections = new Vector<Connection>();
+		availableConnections = null;
 		closeConnections(usedConnections);
-		usedConnections = new Vector<Connection>();
+		usedConnections = null;
 
 		LOG.trace("Complete DataBaseConnectionPool#closeAllConnections()");
 	}
@@ -268,21 +282,22 @@ public class DataBaseConnectionPool implements Runnable {
 	 * 
 	 * @param connections
 	 */
-	private void closeConnections(Vector<Connection> connections) {
+	private void closeConnections(List<Connection> connections) {
 
 		LOG.trace("Start DataBaseConnectionPool#closeConnections()");
 
 		try {
-			for (int i = 0; i < connections.size(); i++) {
-
-				final Connection connection = connections.elementAt(i);
-				if (!connection.isClosed()) {
-					LOG.debug("Close connections, if it is not closed.");
-					connection.close();
+			if (connections != null) {
+				for (int i = 0; i < connections.size(); i++) {
+					final Connection connection = connections.get(i);
+					if (!connection.isClosed()) {
+						LOG.debug("Close connections, if it is not closed.");
+						connection.close();
+					}
 				}
 			}
 		} catch (final SQLException sqle) {
-			LOG.error("Error occurred while closing the connection : " + sqle);
+			LOG.error(sqle, "Error occurred while closing the connection : " + sqle);
 		}
 
 		LOG.trace("Complete DataBaseConnectionPool#closeConnections()");

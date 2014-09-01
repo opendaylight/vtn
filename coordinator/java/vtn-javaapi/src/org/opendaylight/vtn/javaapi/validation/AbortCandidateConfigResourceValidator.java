@@ -43,9 +43,8 @@ public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 	 * Validate request Json for put method of Abort Candidate Configuration API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start AbortCandidateConfigResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of AbortCandidateConfigResourceValidator");
@@ -87,9 +86,8 @@ public class AbortCandidateConfigResourceValidator extends VtnServiceValidator {
 			if (candidate.has(VtnServiceJsonConsts.OPERATION)
 					&& candidate.getAsJsonPrimitive(
 							VtnServiceJsonConsts.OPERATION).getAsString() != null) {
-				final String operation = candidate
-						.getAsJsonPrimitive(VtnServiceJsonConsts.OPERATION)
-						.getAsString().trim();
+				final String operation = candidate.getAsJsonPrimitive(
+						VtnServiceJsonConsts.OPERATION).getAsString();
 				isValid = operation
 						.equalsIgnoreCase(VtnServiceJsonConsts.ABORT);
 			}

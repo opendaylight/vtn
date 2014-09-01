@@ -71,7 +71,11 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
     * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
     */
     upll_rc_t UpdateParentOperStatus(ConfigKeyVal *ikey,
-                                     DalDmlIntf *dmi);
+                                     DalDmlIntf *dmi,
+                                     uint32_t driver_result);
+    upll_rc_t UpdateVnodeOperStatus(ConfigKeyVal *ikey,
+                                     DalDmlIntf *dmi,
+                                     uint32_t driver_result);
 
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *req,
                                  unc_keytype_operation_t op,
@@ -273,6 +277,35 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
       return true;
     }
     static uint16_t kVbrVlanMapNumChildKey;
+    /** 
+     * @brief     Perform validation on key type specific, 
+     *            before sending to driver
+     *
+     * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
+     * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
+     * @param[in]  op                       Operation name.
+     * @param[in]  dt_type                  Specifies the configuration CANDIDATE/RUNNING
+     * @param[in]  keytype                  Specifies the keytype
+     * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
+     * @param[out] not_send_to_drv          Decides whether the configuration needs
+     *                                      to be sent to controller or not 
+     * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
+     * 
+     * @retval  UPLL_RC_SUCCESS             Completed successfully.
+     * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
+     * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
+     * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
+     *
+     */
+
+    upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+        ConfigKeyVal *ck_old,
+        unc_keytype_operation_t op,
+        upll_keytype_datatype_t dt_type,
+        unc_key_type_t keytype,
+        DalDmlIntf *dmi,
+        bool &not_send_to_drv,
+        bool audit_update_phase);
 
   public:
     VlanMapMoMgr();
@@ -382,6 +415,11 @@ class VlanMapMoMgr : public VnodeChildMoMgr {
                               ConfigKeyVal *parent_key);
   upll_rc_t CheckIfVnodeisVlanmapped(ConfigKeyVal *ikey,
                                    DalDmlIntf *dmi);
+
+  upll_rc_t PartialMergeValidate(unc_key_type_t keytype,
+                                const char *ctrlr_id,
+                                ConfigKeyVal *err_ckv,
+                                DalDmlIntf *dmi);
 
 };
 

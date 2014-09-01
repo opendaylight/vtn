@@ -44,21 +44,27 @@ class KtHandler {
    */
   virtual UncRespCode  execute_cmd(unc::vtndrvcache::ConfigNode *cfgptr,
                                       unc::driver::controller* ctl_ptr,
-                                      unc::driver::driver* drv_ptr)=0;
+                                      unc::driver::driver* drv_ptr) {
+    return UNC_RC_SUCCESS;
+  }
 
   /**
   * @brief     - Retrieve Key struct
   * @param[in] - ConfigNode pointer
   * @retval    - void * to key
   */
-  virtual void* get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr)=0;
+  virtual void* get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
+    return NULL;
+  }
 
   /**
   * @brief     - Retrieve Val struct
   * @param[in] - ConfigNode pointer
   * @retval    - void * to val
   */
-  virtual void* get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr)=0;
+  virtual void* get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
+    return NULL;
+  }
 };
 }  // namespace driver
 }  // namespace unc

@@ -53,8 +53,7 @@ CPPFLAGS	+= -include ut_stub.h
 # Define a list of cfdef files to be compiled.
 ALT_CFDEF_FILES	= $(UPPL_SRCDIR)/uppl_ctr_capability.cfdef
 
-UPPL_SOURCES	= controller_version.cc 
-UPPL_SOURCES	+= ipc_client_configuration_handler.cc 
+UPPL_SOURCES	= ipc_client_configuration_handler.cc 
 UPPL_SOURCES	+= ipc_client_logical_handler.cc 
 UPPL_SOURCES	+= ipc_connection_manager.cc 
 UPPL_SOURCES	+= ipc_server_handler.cc 
@@ -87,6 +86,7 @@ UPPL_SOURCES	+= unc_state_handler.cc
 UPPL_SOURCES	+= physicallayer.cc
 UPPL_SOURCES  += itc_kt_ctr_dataflow.cc
 UPPL_SOURCES  += itc_kt_dataflow.cc
+UPPL_SOURCES  += physical_taskq.cc
 
 ODBC_SOURCES	= odbcm_mgr_stub.cc odbcm_utils_stub.cc
 TCLIB_SOURCES	= tclib_module.cc

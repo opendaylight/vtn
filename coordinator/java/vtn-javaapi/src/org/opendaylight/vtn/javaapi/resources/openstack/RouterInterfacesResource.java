@@ -17,7 +17,6 @@ import org.opendaylight.vtn.javaapi.RestResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -86,7 +85,7 @@ public class RouterInterfacesResource extends AbstractResource {
 	 *      .google.gson.JsonObject)
 	 */
 	@Override
-	public int post(JsonObject requestBody) throws VtnServiceException {
+	public int post(JsonObject requestBody) {
 		LOG.trace("Start RouterInterfacesResource#post()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -117,20 +116,20 @@ public class RouterInterfacesResource extends AbstractResource {
 						.setResourceId(VtnServiceOpenStackConsts.PORT_RES_ID);
 				freeCounterBean.setVtnName(getTenantId());
 
-				counter = resourceIdManager.getResourceId(connection,
+				counter = resourceIdManager.getResourceCounter(connection,
 						freeCounterBean);
 
 				if (counter != -1) {
 					LOG.debug("Resource id auto-generation is successfull : "
 							+ counter);
-					
+
 					if (counter > VtnServiceOpenStackConsts.MAX_ROUTER_IF_LIMIT) {
 						LOG.warning("Router interface creation reached at maximum limit");
 						createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR
 								.getValue());
 						return errorCode;
 					}
-					
+
 					// if id is generated successfully
 					generatedIfName = VtnServiceOpenStackConsts.IF_PREFIX
 							+ counter;
@@ -157,7 +156,7 @@ public class RouterInterfacesResource extends AbstractResource {
 					vInterfaceBean.setVrtIfName(generatedIfName);
 					vInterfaceBean.setVbrName(requestBody.get(
 							VtnServiceOpenStackConsts.NET_ID).getAsString());
-					
+
 					final VRouterInterfaceDao vInterfaceDao = new VRouterInterfaceDao();
 					final int status = vInterfaceDao.insert(connection,
 							vInterfaceBean);
@@ -238,7 +237,7 @@ public class RouterInterfacesResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			if (exception.getSQLState().equalsIgnoreCase(
 					VtnServiceOpenStackConsts.CONFLICT_SQL_STATE)) {
@@ -259,7 +258,7 @@ public class RouterInterfacesResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -400,7 +399,7 @@ public class RouterInterfacesResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection,
 			JsonObject requestBody) throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
@@ -413,7 +412,7 @@ public class RouterInterfacesResource extends AbstractResource {
 				vBridgeBean.setVbrName(requestBody.get(
 						VtnServiceOpenStackConsts.NET_ID).getAsString());
 				if (new VBridgeDao().isVbrFound(connection, vBridgeBean)) {
-					notFoundStatus = true;
+					resourceFound = true;
 				} else {
 					createErrorInfo(
 							UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -439,6 +438,6 @@ public class RouterInterfacesResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 }

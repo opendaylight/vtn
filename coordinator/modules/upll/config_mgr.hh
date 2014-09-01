@@ -23,7 +23,7 @@
 #include "unc/uppl_common.h"
 #include "unc/pfcdriver_include.h"
 #include "unc/upll_errno.h"
-
+#include "unc/upll_ipc_enum.h"
 #include "dal/dal_odbc_mgr.hh"
 #include "capa_intf.hh"
 #include "tclib_module.hh"
@@ -50,7 +50,14 @@ using unc::upll::dal::DalOdbcMgr;
 
 enum upll_alarm_category_t {
   UPLL_INVALID_CONFIGURATION_ALARM = 0,
-  UPLL_OPERSTATUS_ALARM = 1
+  UPLL_OPERSTATUS_ALARM = 1,
+  UPLL_PATHFAULT_ALARM = 2
+};
+
+enum upll_alarm_kind_t {
+  UPLL_CLEAR_WITH_TRAP = 0,
+  UPLL_ASSERT_WITH_TRAP = 1,
+  UPLL_CLEAR_WITHOUT_TRAP = 0xC0
 };
 
 class UpllConfigMgr {
@@ -129,7 +136,7 @@ class UpllConfigMgr {
    * @return  @see upll_rc_t
    */
   upll_rc_t StartImport(const char *ctrlr_id, uint32_t session_id,
-                        uint32_t config_id);
+                        uint32_t config_id, upll_import_type import_type);
 
   /**
    * @brief Merge the imported configuration after validating if merge is
@@ -140,22 +147,36 @@ class UpllConfigMgr {
    *
    * @return @see upll_rc_t
    */
-  upll_rc_t OnMerge(uint32_t session_id, uint32_t config_id);
+  upll_rc_t OnMerge(uint32_t session_id, uint32_t config_id,
+                    upll_import_type import_type);
 
   /**
    * @brief Validate if merge is possible / allowed
    *
    * @return @see upll_rc_t
    */
-  upll_rc_t MergeValidate();
-
+  upll_rc_t MergeValidate(upll_import_type import_type);
+  /**
+   * @brief Clear the ctrlr sepecific information
+   * from the UNC candidate configuration
+   *
+   * @return @see upll_rc_t
+   */
+  upll_rc_t ClearCtrlrConfigInCandidate();
+  /**
+   * @brief Remove the deleted configuratoin from candiate
+   * configuration during partial import 
+   *
+   * @return @see upll_rc_t
+   */
+  upll_rc_t PurgeCandidate();
   /**
    * @brief Does the database merging of import configuraiton to candidate
    * configuration.
    *
    * @return @see upll_rc_t
    */
-  upll_rc_t MergeImportToCandidate();
+  upll_rc_t MergeImportToCandidate(upll_import_type import_type);
 
   /**
    * @brief Clears imported configuration in the database
@@ -185,27 +206,12 @@ class UpllConfigMgr {
                              const ConfigKeyVal *ckv, bool *in_use);
 
   /**
-   * @brief Path Fault Alarm Handler
-   *
-   * @param[in] ctrlr_name  name of the controller
-   * @param[in] domain_id   name of the domain
-   * @param[in] ingress_ports vector of ingress ports
-   * @param[in] egress_ports  vector of egress ports
-   * @param[in] alarm_asserted  true if alarm is asserted, false otherwise
-   */
-  void OnPathFaultAlarm(const char *ctrlr_name,
-                        const char *domain_name,
-                        std::vector<std::string> &ingress_ports,
-                        std::vector<std::string> &egress_ports,
-                        bool alarm_asserted);
-
-  /**
    * @brief Controller down event handler
    *
    * @param[in] ctrlr_name  name of the controller
    * @param[in] operstatus  operational status of controller 
    */
-  void OnControllerStatusChange(const char *ctrlr_name, bool operstatus);
+  void OnControllerStatusChange(const char *ctrlr_name, uint8_t operstatus);
 
   /**
    * @brief Logical Port operstatus change event handler
@@ -218,7 +224,7 @@ class UpllConfigMgr {
   void OnLogicalPortStatusChange(const char *ctrlr_name,
                                  const char *domain_name,
                                  const char *logical_port_id,
-                                 bool oper_status);
+                                 uint8_t oper_status);
 
   /**
    * @brief Bounday operstatus change event handler
@@ -269,7 +275,10 @@ class UpllConfigMgr {
                          const key_vtn_t &key_vtn,
                          const pfcdrv_network_mon_alarm_data_t &alarm_data,
                          bool alarm_raised);
-
+  upll_rc_t GetControllerSatusFromPhysical(uint8_t *ctrlr_id,
+                            bool &is_audit_wait,
+                            uint32_t session_id,
+                            uint32_t config_id);
   upll_rc_t OnTxStart(uint32_t session_id, uint32_t config_id,
                       ConfigKeyVal **err_ckv);
   upll_rc_t OnAuditTxStart(const char *ctrlr_id,
@@ -288,7 +297,7 @@ class UpllConfigMgr {
       uint32_t session_id, uint32_t config_id,
       std::list<CtrlrCommitStatus*> *ctrlr_commit_status);
   upll_rc_t OnAuditTxCommitCtrlrStatus(CtrlrCommitStatus *ctrlr_commit_status);
-  upll_rc_t OnAuditStart(const char *ctrlr_id);
+  upll_rc_t OnAuditStart(const char *ctrlr_id, bool skip_audit);
   upll_rc_t OnTxEnd();
   upll_rc_t OnAuditTxEnd(const char *ctrlr_id);
   upll_rc_t OnAuditEnd(const char *ctrlr_id, bool sby2act_trans);
@@ -311,6 +320,7 @@ class UpllConfigMgr {
       upll_kt_momgrs_.find(kt);
     if (it != upll_kt_momgrs_.end() )
       return it->second;
+    UPLL_LOG_INFO("No manager for kt %d", kt);
     return NULL;
   }
 
@@ -332,10 +342,8 @@ class UpllConfigMgr {
   // cl_switched is true if cluster swithover is happening. false if just
   // cold-started
   void SetClusterState(bool active, bool cl_switched) {
-    // To support fail-over and switch-over scenarios, candidate_dirty_qc_ is
-    // set to TRUE whenever the system changes states to active or standby, as
-    // in this case all MoMgrs are consulted to find if the candidate
-    // configuration is really dirty
+    UPLL_LOG_INFO("active=%d, cl_switched=%d", active, cl_switched_);
+    // At the start/switchover, set dirty_qc to true and unintialized.
     candidate_dirty_qc_lock_.lock();
     candidate_dirty_qc_ = true;
     candidate_dirty_qc_initialized_ = false;
@@ -349,9 +357,22 @@ class UpllConfigMgr {
     dbcm_->TerminateAndInitializeDbConns(active);
     if (active) {
       upll_rc_t urc;
-      DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
-      dbinst->MakeAllDirty();
-      dbcm_->ReleaseRwConn(dbinst);
+      if (!cl_switched_) {
+        DalOdbcMgr *dbinst = dbcm_->GetConfigRwConn();
+        if (dbinst == NULL) {
+          UPLL_LOG_FATAL("Failed to get config rw conn");
+          return;
+        }
+        unc::upll::dal::DalResultCode drc = dbinst->UpdateDirtyTblCacheFromDB();
+        if (drc != unc::upll::dal::kDalRcSuccess) {
+          UPLL_LOG_FATAL("Failed to read dirty table from DB. drc=%d", drc);
+        }
+        candidate_dirty_qc_ = dbinst->IsAnyTableDirtyShallow();
+        candidate_dirty_qc_initialized_ = true;
+
+        dbcm_->ReleaseRwConn(dbinst);
+      }
+
       urc = OnAuditEnd("", true);
       if (urc != UPLL_RC_SUCCESS) {
         UPLL_LOG_FATAL("Failed to clear audit tables, urc=%d", urc);
@@ -366,6 +387,8 @@ class UpllConfigMgr {
     } else {
       // dbcm_->TerminateAllDbConns();
       TerminateBatch();
+      // clear All alarms
+      ClearAllAlarms();
     }
   }
 
@@ -393,6 +416,23 @@ class UpllConfigMgr {
   uint32_t GetDbROConnLimitFrmConfFile();
   bool SendOperStatusAlarm(const char *vtn_name, const char *vnode_name,
                            const char *vif_name, bool assert_alarm);
+  bool SendPathFaultAlarm(const char *ctr_name, const char *domain_name,
+                          const char *vtn_name, upll_alarm_kind_t alarm_kind);
+  void OnPathFaultAlarm(const char *ctrlr_name,
+                        const char *domain_name,
+                        bool alarm_asserted);
+  bool SendInvalidConfigAlarm(string ctrlr_name, bool assert_alarm);
+
+  // init operstatus
+  upll_rc_t InitAllOperStatus();
+  void ClearAllAlarms();
+  void ClearPathFaultAlarms(const char *ctrlr_name);
+  inline void LockPathFaultEvent() {
+    pfc_sem_init(&sem_path_fault_, 0);
+  }
+  inline void UnlockPathFaultEvent() {
+    pfc_sem_post(&sem_path_fault_);
+  }
 
  private:
   UpllConfigMgr();
@@ -440,12 +480,13 @@ class UpllConfigMgr {
   upll_rc_t ValidateCommit(const char *caller);
   upll_rc_t ValidateAudit(const char *caller, const char *ctrlr_id);
   upll_rc_t ValidateImport(uint32_t session_id, uint32_t config_id,
-                           const char *ctrlr_id, uint32_t operation);
-  upll_rc_t ImportCtrlrConfig(const char *ctrlr_id, upll_keytype_datatype_t dt);
+                           const char *ctrlr_id, uint32_t operation,
+                           upll_import_type import_type);
+  upll_rc_t ImportCtrlrConfig(const char *ctrlr_id, upll_keytype_datatype_t dt,
+                              upll_import_type import_type);
 
   void TriggerInvalidConfigAlarm(upll_rc_t ctrlt_result, string ctrlr_id);
 
-  bool SendInvalidConfigAlarm(string ctrlr_name, bool assert_alarm);
 
   void GetBatchParamsFrmConfFile();
   upll_rc_t ValidateBatchConfigMode(uint32_t session_id, uint32_t config_id);
@@ -471,6 +512,9 @@ class UpllConfigMgr {
   bool commit_in_progress_;      // Regular transaction in progress
   bool audit_in_progress_;
   bool import_in_progress_;
+  upll_import_type current_import_type;
+  upll_import_type import_type;
+  uint8_t import_state_progress;
   string import_ctrlr_id_;
   string audit_ctrlr_id_;
   KTxCtrlrAffectedState audit_ctrlr_affected_state_;
@@ -478,6 +522,7 @@ class UpllConfigMgr {
   pfc::core::Mutex  import_mutex_lock_;
   pfc::core::Mutex  audit_mutex_lock_;
   std::set<std::string> affected_ctrlr_set_;
+  pfc_sem_t sem_path_fault_;
 
   // Initail database connections. When node turns ACTIVE, intial connections
   // are mode, and when node turns STANDBY from ACTIVE, initial connections are

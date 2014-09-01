@@ -61,23 +61,26 @@ public class TenantResourceValidator extends VtnServiceValidator {
 		LOG.info("Start TenantResourceValidator#validate()");
 		boolean isValid = false;
 		try {
-			isValid = validateUri();
-			if (isValid && requestBody != null
-					&& VtnServiceConsts.POST.equalsIgnoreCase(method)) {
-				isValid = validatePost(validator, requestBody);
-			} else if (isValid && requestBody != null
-					&& VtnServiceConsts.PUT.equals(method)) {
-				isValid = validatePut(validator, requestBody);
-			} else if (isValid) {
-				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+			if (requestBody != null) {
+				isValid = validateUri();
+				if (isValid && VtnServiceConsts.POST.equalsIgnoreCase(method)) {
+					isValid = validatePost(validator, requestBody);
+				} else if (isValid && VtnServiceConsts.PUT.equals(method)) {
+					isValid = validatePut(validator, requestBody);
+				} else if (isValid) {
+					setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+							.getMessage());
+					isValid = false;
+				}
+			} else {
+				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
 						.getMessage());
-				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Invalid value : " + e.getMessage());
+			LOG.error(e, "Invalid value : " + e.getMessage());
 			isValid = false;
 		} catch (final ClassCastException e) {
-			LOG.error("Invalid type : " + e.getMessage());
+			LOG.error(e, "Invalid type : " + e.getMessage());
 			isValid = false;
 		}
 

@@ -74,6 +74,10 @@ class JsonTypeUtil {
     jobj_ = json_object_new_int64(longdata);
   }
 
+  explicit JsonTypeUtil(bool value) {
+    ODC_FUNC_TRACE;
+    jobj_ = json_object_new_boolean(value);
+  }
   /**
    * @brief                 - Function overloading getValue - returns the value
    *                          of type string
@@ -81,6 +85,10 @@ class JsonTypeUtil {
    * @param[out] val        - the value stored in this string reference
    * return                 - None
    */
+  static void get_value(json_object* jobjval, bool &val) {
+    ODC_FUNC_TRACE;
+    val = json_object_get_boolean(jobjval);
+  }
   static void get_value(json_object* jobjval, std::string &val) {
     ODC_FUNC_TRACE;
     val = json_object_get_string(jobjval);

@@ -1,6 +1,3 @@
-#ifndef _IMPORT_REQUEST_H_
-#define _IMPORT_REQUEST_H_
-
 /*
  * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
@@ -15,6 +12,9 @@
  * @file     itc_import_request.cc
  *
  */
+
+#ifndef _IMPORT_REQUEST_H_
+#define _IMPORT_REQUEST_H_
 
 #include <string>
 #include "physical_common_def.hh"
@@ -36,8 +36,8 @@ class ImportRequest:public ITCReq {
                             key_ctr_t obj_key_ctr);
   UncRespCode StartImport(OdbcmConnectionHandler *db_conn,
                              key_ctr_t obj_key_ctr);
-  UncRespCode MergeConfiguration(key_ctr_t obj_key_ctr);
-  UncRespCode ClearImportConfig(key_ctr_t obj_key_ctr);
+  UncRespCode MergeConfiguration();
+  UncRespCode ClearImportConfig();
 };
 }/*namespace uppl*/
 }/*namespace unc*/

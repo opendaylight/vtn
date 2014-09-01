@@ -71,7 +71,7 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_GENERIC          Generic Errors.
    */
   upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                              DalDmlIntf *dmi, bool restore_flag = false);
+                              DalDmlIntf *dmi);
 
   /**
    * @Brief This API is used to delete the record (Vtn name with
@@ -282,7 +282,8 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_MERGE_CONFLICT  Record already avilable
    */
   upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                          ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                          ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                          upll_import_type import_type);
 
   /**
    * @Brief This API is used to get the unc key name
@@ -300,44 +301,6 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
                              upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
                              uint8_t *ctrlr_id);
-
-  /**
-   * @Brief This API is used to update the configuration info to controller
-   *
-   * @param[in]  keytype              Describes the keyType Information.
-   * @param[in]  session_id           Describes Session Id.
-   * @param[in]  config_id            Describes Configuration Id.
-   * @param[in]  phase                Describes the phase of controller
-   * @param[out] affected_ctrlr_set   Describes the resp controller list.
-   * @param[in]  dmi                  Pointer to DalDmlIntf Class.
-   *
-   * @retval     UPLL_RC_SUCCESS      Successful completion.
-   * @retval     UPLL_RC_ERR_GENERIC  Generic Errors.
-   */
-  upll_rc_t TxUpdateController(unc_key_type_t keytype, uint32_t session_id,
-                               uint32_t config_id,
-                               uuc::UpdateCtrlrPhase phase,
-                               set<string> *affected_ctrlr_set,
-                               DalDmlIntf *dmi, ConfigKeyVal **err_ckv);
-
-  /**
-   * @Brief Method is uesd to update the configuration info to controller
-   *
-   * @param[out]  ck_main          Contains the Pointer to ConfigkeyVal Class
-   *                               and contains the Pfc Name.
-   * @param[in]   ipc_resp         Describes Pointer variable for IpcResponse
-   *                               Class.
-   * @param[in]   op               Decribes the resp operation .
-   * @param[in]   dmi              Describes Pointer to DalDmlIntf Class.
-   * @param[in]   ctrlr_id         Describes Controller name.
-   *
-   * @retval  UPLL_RC_SUCCESS      Successfull completion.
-   * @retval  UPLL_RC_ERR_GENERIC  Failure.
-   */
-  upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main, IpcResponse *ipc_resp,
-                            unc_keytype_operation_t op,
-                            DalDmlIntf *dmi, controller_domain *ctrlr_dom,
-                            set<string> *affected_ctrlr_set, bool *driver_resp);
 
   /**
    * @Brief This API is used to get the renamed Controller's key
@@ -759,7 +722,8 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
 
   upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
                                    const char *ctrlr_name,
-                                   DalDmlIntf *dmi);
+                                   DalDmlIntf *dmi,
+                                   upll_import_type import_type);
 
   upll_rc_t IsRenamed(ConfigKeyVal *ikey,
                       upll_keytype_datatype_t dt_type,
@@ -784,6 +748,32 @@ class VtnPolicingMapMoMgr : public MoMgrImpl {
                                    DalDmlIntf *dmi);*/
 
   static bool IsAllAttrInvalid(val_policingmap_t *val);
+
+virtual  upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                         unc_keytype_operation_t &op);
+
+  upll_rc_t CreatePIForVtnPom(IpcReqRespHeader *req, ConfigKeyVal *ikey,
+                              DalDmlIntf *dmi,
+                              const char *ctrlr_id);
+
+  upll_rc_t CompareValueStructure(ConfigKeyVal *tmp_ckv,
+                                  upll_keytype_datatype_t datatype,
+                                  DalDmlIntf *dmi);
+
+  upll_rc_t CompareValStructure(void *val1, void *val2);
+
+  upll_rc_t UpdateRefCountInPPCtrlrTbl(
+    ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+    const char *ctrlr_id);
+
+  upll_rc_t UpdateRecordInVtnPmCtrlrTbl(
+    ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    unc_keytype_operation_t op, DalDmlIntf *dmi);
+
+  upll_rc_t GetDomainsForController(
+      ConfigKeyVal *ckv_drvr,
+      ConfigKeyVal *&ctrlr_ckv,
+      DalDmlIntf *dmi);
 };
 
 typedef struct val_vtnpolicingmap_ctrl {
