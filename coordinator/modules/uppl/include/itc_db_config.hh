@@ -30,6 +30,7 @@ class DBConfigurationRequest : public ITCReq {
   DBConfigurationRequest();
   ~DBConfigurationRequest();
   UncRespCode LoadAndCommitStartup(OdbcmConnectionHandler *db_conn);
+  UncRespCode CopyRunningtoCandidate(OdbcmConnectionHandler *db_conn);
   UncRespCode ClearStartUpDb(OdbcmConnectionHandler *db_conn);
   UncRespCode AbortCandidateDb(OdbcmConnectionHandler *db_conn);
   UncRespCode  SaveRunningToStartUp(OdbcmConnectionHandler *db_conn);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,7 +9,6 @@
 
 #include <unc/keytype.h>
 #include <../../stub/tclib_module/tclib_interface_stub.hh>
-
 namespace unc {
 namespace tclib {
 
@@ -52,6 +51,11 @@ void fill_driver_info(TcDriverInfoMap &drv_map) {
   for (it1 = map_ctr.begin(); it1 != map_ctr.end(); it1++) {
     VEC_CTR vec_print;
     vec_print = it1->second;
+#if 0
+    for (it = vec_print.begin(); it < vec_print.end(); it++)
+      std::cout << ' ' << *it;
+    std::cout << '\n';
+#endif
   }
   drv_map = map_ctr;
 }

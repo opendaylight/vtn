@@ -59,7 +59,7 @@ class VbrFlowFilterMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_INSTANCE_EXISTS Instance does Not exist
      * */
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi, bool restore_flag = false);
+                                DalDmlIntf *dmi);
 
     /**
      * @Brief This API is used to check the  object availability
@@ -253,7 +253,8 @@ class VbrFlowFilterMoMgr : public MoMgrImpl {
      *                                               this KT.
      */
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     /**
      * @brief  Method used for Rename Operation.

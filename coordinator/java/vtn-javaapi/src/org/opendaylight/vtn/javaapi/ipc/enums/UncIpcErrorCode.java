@@ -208,11 +208,19 @@ public class UncIpcErrorCode {
 				in.close();
 			} catch (Exception e) {
 				// Ignore this error.
-				log.warning("Failed to close IPC error " +
+				log.warning(e, "Failed to close IPC error " +
 					    "property: name=%s, error=%s",
 					    resource, e);
 			}
 		}
+
+		// Add common error code(UNC_RC_ERR_DRIVER_NOT_PRESENT: 200)
+		UncErrorBean commErr = new UncErrorBean();
+		commErr.setErrorCodeKey("UNC_RC_ERR_DRIVER_NOT_PRESENT");
+		commErr.setErrorCode("50000");
+		commErr.setJavaAPIErrorMessage("Internal Server Error");
+		commErr.setSouthboundErrorMessage("Resource is disconnected");
+		map.put(200, commErr);
 
 		// Construct UncErrorBean instances.
 		for (int index = 0; true; index++) {

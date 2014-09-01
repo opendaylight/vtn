@@ -95,7 +95,8 @@ public class LinksResource extends AbstractResource {
 					IpcRequestPacketEnum.KT_LINK_GET, requestBody,
 					uriParameterList);
 			if (!requestBody.has(VtnServiceJsonConsts.LINKNAME)) {
-				getModifiedRequestPacket(requestBody, requestProcessor);
+				IpcRequestPacketEnum ipcRequestPacketEnum = null;
+				ipcRequestPacketEnum = getModifiedRequestPacket(requestBody, requestProcessor);
 				LOG.debug("Request packet created successfully");
 				status = requestProcessor.processIpcRequest();
 				LOG.debug("Request packet processed with status:" + status);
@@ -109,7 +110,7 @@ public class LinksResource extends AbstractResource {
 							requestProcessor, responseGenerator, responseArray,
 							VtnServiceJsonConsts.LINKS,
 							VtnServiceJsonConsts.LINKNAME,
-							IpcRequestPacketEnum.KT_LINK_GET, uriParameterList,
+							ipcRequestPacketEnum, uriParameterList,
 							VtnServiceIpcConsts.GET_LINK_RESPONSE);
 				}
 				setInfo(responseJson);
@@ -159,17 +160,19 @@ public class LinksResource extends AbstractResource {
 	 * @param requestProcessor
 	 *            , for processing the request .
 	 */
-	private void getModifiedRequestPacket(final JsonObject requestBody,
+	private IpcRequestPacketEnum getModifiedRequestPacket(
+			final JsonObject requestBody,
 			final IpcRequestProcessor requestProcessor) {
+		IpcRequestPacketEnum ipcRequestPacketEnum = IpcRequestPacketEnum.KT_LINK_GET;
 		if ((requestBody.has(VtnServiceJsonConsts.SWITCH1ID) && requestBody
-				.has(VtnServiceJsonConsts.SWITCH2ID))
-				|| requestBody.has(VtnServiceJsonConsts.INDEX)) {
+				.has(VtnServiceJsonConsts.SWITCH2ID))) {
 			requestProcessor
 					.getRequestPacket()
 					.setOption2(
 							IpcDataUnitWrapper
 									.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_BOTH_SWITCH
 											.ordinal()));
+			ipcRequestPacketEnum = IpcRequestPacketEnum.KT_LINK_GET_BOTH_SWITCH;
 		} else if (requestBody.has(VtnServiceJsonConsts.SWITCH1ID)) {
 			requestProcessor
 					.getRequestPacket()
@@ -177,6 +180,7 @@ public class LinksResource extends AbstractResource {
 							IpcDataUnitWrapper
 									.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH1
 											.ordinal()));
+			ipcRequestPacketEnum = IpcRequestPacketEnum.KT_LINK_GET_SWITCH1;
 		} else if (requestBody.has(VtnServiceJsonConsts.SWITCH2ID)) {
 			requestProcessor
 					.getRequestPacket()
@@ -184,7 +188,10 @@ public class LinksResource extends AbstractResource {
 							IpcDataUnitWrapper
 									.setIpcUint32Value(UncOption2Enum.UNC_OPT2_MATCH_SWITCH2
 											.ordinal()));
+			ipcRequestPacketEnum = IpcRequestPacketEnum.KT_LINK_GET_SWITCH2;
 		}
+		
+		return ipcRequestPacketEnum;
 	}
 
 	/**

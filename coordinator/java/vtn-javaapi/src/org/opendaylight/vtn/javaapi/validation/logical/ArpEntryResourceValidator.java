@@ -54,18 +54,18 @@ public class ArpEntryResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof ArpEntryResource
 				&& ((ArpEntryResource) resource).getVtnName() != null
-				&& !((ArpEntryResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((ArpEntryResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((ArpEntryResource) resource).getVtnName().trim(),
+					((ArpEntryResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((ArpEntryResource) resource).getVrtName() != null
-						&& !((ArpEntryResource) resource).getVrtName().trim()
+						&& !((ArpEntryResource) resource).getVrtName()
 								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((ArpEntryResource) resource).getVrtName().trim(),
+							((ArpEntryResource) resource).getVrtName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -81,9 +81,8 @@ public class ArpEntryResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get method of ArpEntry API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ArpEntryResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ArpEntryResourceValidator");
@@ -132,9 +131,8 @@ public class ArpEntryResourceValidator extends VtnServiceValidator {
 					&& requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
 							.getAsString() != null) {
-				final String type = requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-						.getAsString().trim();
+				final String type = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.TYPE).getAsString();
 				isValid = type.equalsIgnoreCase(VtnServiceJsonConsts.STATIC)
 						|| type.equalsIgnoreCase(VtnServiceJsonConsts.DYNAMIC);
 

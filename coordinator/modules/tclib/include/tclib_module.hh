@@ -59,6 +59,14 @@ class TcLibModule : public pfc::core::Module {
   /* API's for other modules */
 
   /**
+   * @brief 	To provide info on whether startup-config is valid or not.
+   * @param[in]    None
+   * @param[out]   None
+   * @retval       Boolean true if startup-config is valid; false otherwise
+   */
+  pfc_bool_t IsStartupConfigValid();
+
+  /**
    * @brief      Register TclibInterface handler
    *             TcLibInterface handlers of UPLL/UPPL/driver modules are
    *             registered which will be updated in handler.
@@ -129,6 +137,28 @@ class TcLibModule : public pfc::core::Module {
   TcApiCommonRet TcLibWriteControllerInfo(std::string controller_id,
                                           uint32_t response_code,
                                           uint32_t num_of_errors);
+
+  /**
+   * @brief      Write of controller id, response code,num of errors,
+   *             commit_number,commit_date and commit_application
+   * @param[in]  controller_id controller id for which key type involved 
+   * @param[in]  response_code response code from the pfcdriver 
+   * @param[in]  num_of_errors number of errors if any 
+   * @param[in]  commit_number Current Commit version of PFC 
+   * @param[in]  commit_date Latest committed time of PFC
+   * @param[in]  commit_application Application that performed commit operation
+   * @retval     TC_API_COMMON_SUCCESS on successful updation for key and value
+   * @retval     TC_INVALID_OPER_STATE invalid oper state for write
+   * @retval     TC_INVALID_CONTROLLER_ID invalid controller id
+   * @retval     TC_API_FATAL on any api fatal failures
+   * note:       This API is used only by the PFC driver to fill PFC Commit Info
+   */
+  TcApiCommonRet TcLibWriteControllerInfo(std::string controller_id,
+                                          uint32_t response_code,
+                                          uint32_t num_of_errors,
+                                          uint64_t commit_number,
+                                          uint64_t commit_date,
+                                          std::string commit_application);
   /**
    * @brief      Write of key type, key and data
    * @param[in]  controller_id controller id for which key type involved
@@ -150,6 +180,10 @@ class TcLibModule : public pfc::core::Module {
                                             void* value_data);
 
  private:
+  /* @brief      Handles the AutoSave msgs
+   * @param[in]  pfc_ipcid_t service
+   */
+  TcCommonRet NotifyAutoSave(pfc_ipcid_t service);
   /**
    * @brief      Validation of oper type sequence
    * @param[in]  oper_type operation type in commit/audit process
@@ -364,7 +398,7 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
-  TcCommonRet AuditConfig();
+  TcCommonRet AuditConfig(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      Setup Configuration Message sent to UPPL at the end of startup
@@ -372,14 +406,14 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_SUCCESS clear startup handling success
    * @retval     TC_FAILURE clear startup handling failed
    */
-  TcCommonRet Setup();
+  TcCommonRet Setup(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      Setup Complete Message sent to UPPL during state changes
    * @retval     TC_SUCCESS clear startup handling success
    * @retval     TC_FAILURE clear startup handling failed
    */
-  TcCommonRet SetupComplete();
+  TcCommonRet SetupComplete(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      Get controller type invoked from TC to detect the controller type
@@ -481,6 +515,26 @@ class TcLibModule : public pfc::core::Module {
    * @brief      Used while handling driver result in commit/audit operations
    */
   TcCommitPhaseResult commit_phase_result_;
+
+  /**
+   * @brief Used to save autosave is on or off
+   */
+  pfc_bool_t auto_save_enabled_;
+
+  /**
+   * @brief Mutex for autosave_enabled_ member
+   */
+  pfc::core::Mutex tclib_autosave_mutex_;
+
+  /**
+   * @brief Request counter
+   */
+  uint32_t request_counter_;
+
+  /**
+   * @brief Mutex for request counter
+   */
+  pfc::core::Mutex request_counter_lock_;
 };
 }  // namespace tclib
 }  // namespace unc

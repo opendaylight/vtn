@@ -19,6 +19,8 @@
 #include "ipc_client_configuration_handler.hh"
 #include "physicallayer.hh"
 #include "physical_common_def.hh"
+#include "unc/polcdriver_include.h"
+#include "unc/odcdriver_include.h" 
 #include "unc/unc_base.h"
 
 using unc::uppl::IPCClientDriverHandler;
@@ -36,7 +38,8 @@ Ktclasses,Audit,Import and ITC class.
 IPCClientDriverHandler::IPCClientDriverHandler(
     unc_keytype_ctrtype_t cntr_type, UncRespCode &err) {
   if (cntr_type == UNC_CT_PFC ||
-      cntr_type == UNC_CT_VNP || 
+      cntr_type == UNC_CT_VNP ||
+      cntr_type == UNC_CT_POLC ||
       cntr_type == UNC_CT_ODC ) {
     controller_type = cntr_type;
     PhysicalCore* physical_core = PhysicalCore::get_physical_core();
@@ -48,11 +51,13 @@ IPCClientDriverHandler::IPCClientDriverHandler(
                     cntr_type);
       err = UNC_UPPL_RC_ERR_BAD_REQUEST;
     }
-    pfc_log_info("Creating a session to driver %s", driver_name.c_str());
+    pfc_log_debug("Creating a session to driver %s", driver_name.c_str());
     connp = 0;
     chn_name = PFCDRIVER_IPC_CHN_NAME;
     if (cntr_type == UNC_CT_VNP) {
       chn_name = VNPDRIVER_IPC_CHN_NAME;
+    } else if (cntr_type == UNC_CT_POLC) {
+      chn_name = POLCDRIVER_IPC_CHN_NAME;
     } else if ( cntr_type == UNC_CT_ODC ) {
       chn_name = ODCDRIVER_CHANNEL_NAME;
     }
@@ -64,14 +69,16 @@ IPCClientDriverHandler::IPCClientDriverHandler(
     pfc_ipcid_t service = PFCDRIVER_SVID_PHYSICAL;
     if (cntr_type == UNC_CT_VNP) {
       service = VNPDRV_SVID_PHYSICAL;
+    } else if (cntr_type == UNC_CT_POLC) {
+      service = POLCDRV_SVID_PHYSICAL;
     }
     cli_session = new ClientSession(connp, driver_name, service, clnt_err);
     if (cli_session == NULL) {
       pfc_log_error("Could not get driver ipc session");
       err = UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
     } else if (clnt_err != 0) {
-      pfc_log_error("Could not get driver ipc session, error is %d", err);
       err = ConvertDriverErrorCode(clnt_err);
+      pfc_log_error("Could not get driver ipc session, error is %d", err);
     }
   } else {
     // Default case
@@ -97,6 +104,10 @@ ClientSession* IPCClientDriverHandler::ResetAndGetSession() {
   pfc_ipcid_t service = PFCDRIVER_SVID_PHYSICAL;
   if (controller_type == UNC_CT_VNP) {
     service = VNPDRV_SVID_PHYSICAL;
+  } else if (controller_type == UNC_CT_POLC) {
+    service = POLCDRV_SVID_PHYSICAL;
+  } else if (controller_type == UNC_CT_ODC) {
+    service = ODCDRV_SVID_PLATFORM;
   }
   cli_session->reset(driver_name, service);
   return cli_session;
@@ -109,6 +120,10 @@ UncRespCode IPCClientDriverHandler::SendReqAndGetResp(
   pfc_log_debug("DriverHandler err = %d, resp = %d",
                 err, resp);
   if (err != 0 || resp != 0) {
+    if (err == ECONNREFUSED) {
+      pfc_log_debug("DriverHandler err = %d, driver not present", err);
+      return UNC_RC_ERR_DRIVER_NOT_PRESENT;
+    }
     return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
   } else {
     err = PhyUtil::sessGetDriverRespHeader(*cli_session, rsp);
@@ -129,6 +144,7 @@ UncRespCode IPCClientDriverHandler::ConvertDriverErrorCode(
     case UNC_CT_PFC:
     case UNC_CT_ODC:
     case UNC_CT_VNP:
+    case UNC_CT_POLC:
       switch (drv_err_code) {
         case UNC_RC_SUCCESS:
           return UNC_RC_SUCCESS;
@@ -160,6 +176,7 @@ UncRespCode IPCClientDriverHandler::ConvertDriverErrorCode(
           return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
         case UNC_RC_INTERNAL_ERR:
           return UNC_UPPL_RC_ERR_INVALID_STATE;
+        case UNC_RC_UNSUPPORTED_CTRL_CONFIG:
         case UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR:
           return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
         default:

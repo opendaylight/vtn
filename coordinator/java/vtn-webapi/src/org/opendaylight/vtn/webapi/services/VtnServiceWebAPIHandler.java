@@ -47,19 +47,17 @@ public class VtnServiceWebAPIHandler {
 	 * 
 	 * @param request
 	 *            the request
-	 * @return the string
+	 * @return the JSONObject
 	 * @throws VtnServiceWebAPIException
 	 *             the vtn service web api exception
 	 */
-	public String get(final HttpServletRequest request)
+	public JSONObject get(final HttpServletRequest request)
 			throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebAPIHandler#get()");
 		JSONObject serviceResponse = null;
 		JsonObject serviceRequest = new JsonObject();
-		String responseString = null;
 		String resourcePath = VtnServiceCommonUtil.getResourceURI(request
 				.getRequestURI());
-		final String contentType = VtnServiceCommonUtil.getContentType(request);
 		final Map<String, String[]> paramsMap = request.getParameterMap();
 		serviceRequest = VtnServiceCommonUtil.getOpParameter(serviceRequest,
 				resourcePath);
@@ -83,11 +81,9 @@ public class VtnServiceWebAPIHandler {
 						serviceRequest, resourcePath);
 			}
 		}
-		responseString = DataConverter.getConvertedResponse(serviceResponse,
-				contentType);
-		LOG.debug("responseString : " + responseString);
+		LOG.debug("serviceResponse : " + serviceResponse);
 		LOG.trace("Complete VtnServiceWebAPIHandler#get()");
-		return responseString;
+		return serviceResponse;
 	}
 
 	/**
@@ -99,16 +95,15 @@ public class VtnServiceWebAPIHandler {
 	 * 
 	 * @param request
 	 *            the request
-	 * @return the string
+	 * @return the JSONObject
 	 * @throws VtnServiceWebAPIException
 	 *             the vtn service web api exception
 	 */
-	public String post(final HttpServletRequest request)
+	public JSONObject post(final HttpServletRequest request)
 			throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebAPIHandler#post()");
 		JSONObject serviceResponse = null;
 		JsonObject serviceRequest = null;
-		String responseString = null;
 		try {
 			final String resourcePath = VtnServiceCommonUtil
 					.getResourceURI(request.getRequestURI());
@@ -121,16 +116,14 @@ public class VtnServiceWebAPIHandler {
 			final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
 			serviceResponse = vtnServiceWebAPIController.post(sessionJson,
 					serviceRequest, resourcePath);
-			responseString = DataConverter.getConvertedResponse(
-					serviceResponse, contentType);
-			LOG.debug("responseString : " + responseString);
+			LOG.debug("serviceResponse : " + serviceResponse);
 		} catch (final IOException e) {
-			LOG.error("Internal server error occurred : " + e.getMessage());
+			LOG.error(e, "Internal server error occurred : " + e.getMessage());
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
 		}
 		LOG.trace("Complete VtnServiceWebAPIHandler#post()");
-		return responseString;
+		return serviceResponse;
 	}
 
 	/**
@@ -142,16 +135,15 @@ public class VtnServiceWebAPIHandler {
 	 * 
 	 * @param request
 	 *            the request
-	 * @return the string
+	 * @return the JSONObject
 	 * @throws VtnServiceWebAPIException
 	 *             the vtn service web api exception
 	 */
-	public String put(final HttpServletRequest request)
+	public JSONObject put(final HttpServletRequest request)
 			throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebAPIHandler#put()");
 		JSONObject serviceResponse = null;
 		JsonObject serviceRequest = null;
-		String responseString = null;
 		try {
 			final String resourcePath = VtnServiceCommonUtil
 					.getResourceURI(request.getRequestURI());
@@ -173,16 +165,14 @@ public class VtnServiceWebAPIHandler {
 			serviceResponse = vtnServiceWebAPIController.put(
 					VtnServiceWebUtil.prepareHeaderJson(request),
 					serviceRequest, resourcePath);
-			responseString = DataConverter.getConvertedResponse(
-					serviceResponse, contentType);
-			LOG.debug("responseString : " + responseString);
+			LOG.debug("serviceResponse : " + serviceResponse);
 		} catch (final IOException e) {
-			LOG.error("Internal server error occurred : " + e.getMessage());
+			LOG.error(e, "Internal server error occurred : " + e.getMessage());
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
 		}
 		LOG.trace("Complete VtnServiceWebAPIHandler#put()");
-		return responseString;
+		return serviceResponse;
 	}
 
 	/**
@@ -194,19 +184,17 @@ public class VtnServiceWebAPIHandler {
 	 * 
 	 * @param request
 	 *            the request
-	 * @return the string
+	 * @return the JSONObject
 	 * @throws VtnServiceWebAPIException
 	 *             the vtn service web api exception
 	 */
-	public String delete(final HttpServletRequest request)
+	public JSONObject delete(final HttpServletRequest request)
 			throws VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebAPIHandler#delete()");
 		JSONObject serviceResponse = null;
 		JsonObject serviceRequest = new JsonObject();
-		String responseString = null;
 		final String resourcePath = VtnServiceCommonUtil.getResourceURI(request
 				.getRequestURI());
-		final String contentType = VtnServiceCommonUtil.getContentType(request);
 		final Map<String, String[]> paramsMap = request.getParameterMap();
 		final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
 		if (null != paramsMap && !paramsMap.isEmpty()) {
@@ -219,11 +207,9 @@ public class VtnServiceWebAPIHandler {
 			serviceResponse = vtnServiceWebAPIController.delete(
 					VtnServiceWebUtil.prepareHeaderJson(request), resourcePath);
 		}
-		responseString = DataConverter.getConvertedResponse(serviceResponse,
-				contentType);
-		LOG.debug("responseString : " + responseString);
+		LOG.debug("serviceResponse : " + serviceResponse);
 		LOG.trace("Complete VtnServiceWebAPIHandler#delete()");
-		return responseString;
+		return serviceResponse;
 	}
 
 	/**

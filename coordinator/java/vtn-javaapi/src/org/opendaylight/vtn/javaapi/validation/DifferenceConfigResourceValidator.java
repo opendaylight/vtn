@@ -27,9 +27,8 @@ public class DifferenceConfigResourceValidator extends VtnServiceValidator {
 	 * Validate request Json for UNC Difference Config API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.info("Validation not required for Diffrence Config API");
 	}
 }

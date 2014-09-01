@@ -283,7 +283,7 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     * @retval  UPLL_RC_ERR_GENERIC          Generic Errors.
     * **/
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
-              ConfigKeyVal *ikey, DalDmlIntf *dmi, bool restore_flag = false);
+              ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
     /**
     * @brief     This API is used to delete the record from DB
@@ -329,10 +329,13 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
     upll_rc_t MergeValidate(unc_key_type_t keytype,
                           const char *ctrlr_id,
                           ConfigKeyVal *ikey,
-                          DalDmlIntf *dmi);
+                          DalDmlIntf *dmi,
+                          upll_import_type import_type);
+
     upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
                                     const char *ctrlr_name,
-                                    DalDmlIntf *dmi);
+                                    DalDmlIntf *dmi,
+                                    upll_import_type import_type);
    /* @brief The Rename Operation is not allowed for the Key type KT_VTN_FLOWFILTER_ENTRY
     *
    *  @return code UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT. Rename operation is not allowed for
@@ -467,49 +470,6 @@ class VtnFlowFilterEntryMoMgr: public MoMgrImpl {
                                       uuc::UpdateCtrlrPhase phase,
                                       ConfigKeyVal *&ckv_running,
                                       DalDmlIntf *dmi);
-   /**
-    * @brief  Method for TxUpdateController for updating the controller .
-    *
-    * @param[in]  keytype             Contains respective keytype of Api.
-    * @param[in]  session_id          Describes session information id .
-    * @param[in]  config_id           Describes the configuartion id .
-    * @param[in]  phase               Describes the phase of controller.
-    * @param[in]  affected_ctrlr_set  Describes the resp controller list.
-    * @param[in]  dmi                 Describes Pointer to DalDmlIntf class.
-    *
-    * @retval  UPLL_RT_SUCCESS      Successfull completion.
-    * @retval  UPLL_RC_ERR_GENERIC  Failure.
-    */
-
-    upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                 uint32_t session_id,
-                                 uint32_t config_id,
-                                 uuc::UpdateCtrlrPhase phase,
-                                 set<string> *affected_ctrlr_set,
-                                 DalDmlIntf *dmi,
-                                 ConfigKeyVal **err_ckv);
-     /**
-     * @brief  Method TxUpdateProcess .
-     *
-     * @param[out]  ck_main   Contains the Pointer to ConfigkeyVal Class
-     *                         and contains the Pfc Name.
-     * @param[in]   ipc_req   Describes Pointer variable for IpcRequest Class.
-     * @param[in]   ipc_resp  Describes Pointer variable for IpcResponse Class.
-     * @param[in]   op        Decribes the resp operation .
-     * @param[in]   dmi       Describes Pointer to DalDmlIntf Class.
-     * @param[in]   ctrlr_id  Describes Controller name
-     *
-     * @retval  UPLL_RT_SUCCESS      Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Failure.
-     */
-
-    upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-                              IpcResponse *ipc_resp,
-                              unc_keytype_operation_t op,
-                              DalDmlIntf *dmi,
-                              controller_domain *ctrlr_dom,
-                              set<string> *affected_ctrlr_set,
-                              bool *driver_resp);
 
     /**
     * @brief  This API is used to know the value availability of
@@ -747,6 +707,35 @@ upll_rc_t UpdateMainTbl(ConfigKeyVal *vtn_ffe_key,
    upll_rc_t DecRefCountInFLCtrlTbl(ConfigKeyVal *ffe_imkey, DalDmlIntf *dmi);
 
    bool IsAllAttrInvalid(val_vtn_flowfilter_entry_t *val);  
+
+   upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                          unc_keytype_operation_t &op);
+
+   upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new, ConfigKeyVal *ck_old,
+                              unc_keytype_operation_t op,
+                              upll_keytype_datatype_t dt_type,
+                              unc_key_type_t keytype, DalDmlIntf *dmi,
+                              bool &not_send_to_drv, bool audit_update_phase);
+
+   upll_rc_t CreatePIForVtnPom(IpcReqRespHeader *req,
+                               ConfigKeyVal *ikey,
+                               DalDmlIntf *dmi,
+                               const char *ctrlr_id);
+
+  upll_rc_t CompareValueStructure(ConfigKeyVal *tmp_ckv,
+                                  upll_keytype_datatype_t datatype,
+                                  DalDmlIntf *dmi);
+
+  upll_rc_t CompareValStructure(void *val1, void *val2);
+
+  upll_rc_t UpdateFlowListInCtrlTbl(ConfigKeyVal *ikey,
+                                   upll_keytype_datatype_t dt_type,
+                                   const char *ctrlr_id,
+                                   DalDmlIntf* dmi);
+  upll_rc_t GetDomainsForController(
+      ConfigKeyVal *ckv_drvr,
+      ConfigKeyVal *&ctrlr_ckv,
+      DalDmlIntf *dmi);
 };
 
 }  // namespace kt_momgr

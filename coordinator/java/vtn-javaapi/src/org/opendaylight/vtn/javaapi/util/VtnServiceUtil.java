@@ -8,6 +8,7 @@
  */
 package org.opendaylight.vtn.javaapi.util;
 
+import java.lang.reflect.Field;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -15,11 +16,16 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import org.opendaylight.vtn.core.util.Logger;
+import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
+import org.opendaylight.vtn.javaapi.resources.SessionsResource;
+import org.opendaylight.vtn.javaapi.resources.UserResource;
+import org.opendaylight.vtn.javaapi.resources.physical.ControllerResource;
+import org.opendaylight.vtn.javaapi.resources.physical.ControllersResource;
 
 public class VtnServiceUtil {
 
@@ -45,11 +51,18 @@ public class VtnServiceUtil {
 	/**
 	 * Trim the values of all the parameters of given Json
 	 * 
+	 * @param resource
+	 * 
 	 * @param Json
 	 *            object that require to be update
 	 * @return Updated Json Object
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
 	 */
-	public static JsonObject trimParamValues(final JsonObject jsonObject) {
+	public static JsonObject trimParamValues(final JsonObject jsonObject,
+			AbstractResource resource) throws IllegalArgumentException,
+			IllegalAccessException {
+		LOG.trace("start VtnServiceUtil#trimParamValues()");
 		// extract all the entries in Json Object
 		final Set<Entry<String, JsonElement>> jsonSet = jsonObject.entrySet();
 		/*
@@ -61,7 +74,8 @@ public class VtnServiceUtil {
 			 */
 			if (!(entry.getValue() instanceof JsonNull)
 					&& entry.getValue().isJsonObject()) {
-				VtnServiceUtil.trimParamValues((JsonObject) entry.getValue());
+				VtnServiceUtil.trimParamValues((JsonObject) entry.getValue(),
+						resource);
 				continue;
 			} else if (!(entry.getValue() instanceof JsonNull)
 					&& entry.getValue().isJsonArray()) {
@@ -69,7 +83,7 @@ public class VtnServiceUtil {
 				for (int index = 0; index < array.size(); index++) {
 					if (array.get(index).isJsonObject()) {
 						VtnServiceUtil.trimParamValues(array.get(index)
-								.getAsJsonObject());
+								.getAsJsonObject(), resource);
 						continue;
 					}
 				}
@@ -77,11 +91,74 @@ public class VtnServiceUtil {
 			} else if (!(entry.getValue() instanceof JsonNull)
 					&& !entry.getValue().getAsString()
 							.equals(entry.getValue().getAsString().trim())) {
-				entry.setValue(new JsonPrimitive(entry.getValue().getAsString()
-						.trim()));
+				String paramName = entry.getKey();
+				if (!isallParamValuesValid(paramName, resource)) {
+					resource.getValidator().setInvalidParameter(paramName);
+					LOG.debug("validation failed for : " + paramName);
+					throw new IllegalArgumentException(
+							"triming validation failed for : " + paramName);
+				}
 			}
 		}
+		/*
+		 * check URI parameters, leading and trailing spaces are not allowed for
+		 * URI parameters as they are always used as key informations
+		 */
+		for (Field field : resource.getClass().getDeclaredFields()) {
+			LOG.info("check annotated resource variables for leading and trailing spaces");
+			UNCField uncField = field.getAnnotation(UNCField.class);
+			field.setAccessible(true);
+			if (uncField != null
+					&& !field.get(resource).toString().trim()
+							.equals(field.get(resource))) {
+				final String value = uncField.value();
+				resource.getValidator().setInvalidParameter(value);
+				LOG.debug("validation failed for : " + value);
+				throw new IllegalArgumentException(
+						"triming validation failed for : " + value);
+			}
+		}
+		LOG.trace("complete VtnServiceUtil#trimParamValues()");
 		return jsonObject;
+	}
+
+	/**
+	 * Verify that parameter is allowed or not to contain leading and trailing
+	 * spaces in string values
+	 * 
+	 * @param resource
+	 *            - instance of concrete resource class
+	 * @param paramName
+	 *            - parameter name to be verified
+	 * @return true, if parameter is allowed to contain leading and trailing
+	 *         spaces. Otherwise return false
+	 */
+	private static boolean isallParamValuesValid(String paramName,
+			AbstractResource resource) {
+		LOG.trace("start VtnServiceUtil#isallParamValuesValid()");
+		boolean flag;
+		if (paramName.equals(VtnServiceJsonConsts.DESCRIPTION)) {
+			// description parameter is allowed to contains leading and trailing
+			// spaces for all APIs
+			flag = true;
+		} else if (resource instanceof SessionsResource
+				&& (paramName.equals(VtnServiceJsonConsts.LOGIN_NAME) || paramName
+						.equals(VtnServiceJsonConsts.INFO) || paramName
+						.equals(VtnServiceJsonConsts.PASSWORD))) {
+			flag = true;
+		} else if ((resource instanceof ControllersResource || resource instanceof ControllerResource)
+				&& (paramName.equals(VtnServiceJsonConsts.USERNAME) || paramName
+						.equals(VtnServiceJsonConsts.PASSWORD))) {
+			flag = true;
+		} else if (resource instanceof UserResource
+				&& paramName.equals(VtnServiceJsonConsts.PASSWORD)) {
+			flag = true;
+		} else {
+			flag = false;
+		}
+		LOG.debug("validation status for " + paramName + " is " + flag);
+		LOG.trace("complete VtnServiceUtil#isallParamValuesValid()");
+		return flag;
 	}
 
 	/**

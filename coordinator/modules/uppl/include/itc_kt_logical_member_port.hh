@@ -108,6 +108,12 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
     return PFC_FALSE;
   }
 
+  UncRespCode UpdateDomainNameForTP(OdbcmConnectionHandler *db_conn,
+                                    void* key_struct,
+                                    void* val_struct,
+                                    uint32_t data_type,
+                                    uint32_t key_type);
+
  private:
   void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_dbtableschema,

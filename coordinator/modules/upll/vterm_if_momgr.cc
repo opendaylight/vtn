@@ -263,7 +263,7 @@ bool VtermIfMoMgr::IsValidKey(void *key, uint64_t index) {
           reinterpret_cast<char *>(if_key->vterm_key.vtn_key.vtn_name),
           kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -272,7 +272,7 @@ bool VtermIfMoMgr::IsValidKey(void *key, uint64_t index) {
           reinterpret_cast<char *>(if_key->vterm_key.vterminal_name),
           kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VTERMINAL Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTERMINAL Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -280,7 +280,7 @@ bool VtermIfMoMgr::IsValidKey(void *key, uint64_t index) {
       ret_val = ValidateKey(reinterpret_cast<char *>(if_key->if_name),
                             kMinLenInterfaceName, kMaxLenInterfaceName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VTERMINAL IF Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTERMINAL IF Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -519,19 +519,23 @@ upll_rc_t VtermIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
 
   val_vterm_if_t *vtermif_running = reinterpret_cast<val_vterm_if_t *>
                                              (GetVal(upd_key));
-  bool           port_map_change = false;
+  bool propagate = false;
+  bool port_map_change = false;
   switch (op) {
     case UNC_OP_UPDATE:
       {
         if (vtermif_val->valid[UPLL_IDX_PM_VTERMI] !=
-            vtermif_running->valid[UPLL_IDX_PM_VTERMI])
+            vtermif_running->valid[UPLL_IDX_PM_VTERMI]) {
           port_map_change = true;
-
+          propagate = true;
+        }
         void* val = reinterpret_cast<void *>(vtermif_val);
         CompareValidValue(val, GetVal(upd_key), true);
         if (vtermif_val->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]
-            != UNC_VF_INVALID)
+            != UNC_VF_INVALID) {
+          propagate = true;
           port_map_change = true;
+        }
       }
     case UNC_OP_CREATE:
       {
@@ -540,22 +544,26 @@ upll_rc_t VtermIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
           port_map_change = true;
         }
         if (port_map_change) {
-          /* Sets val_db_vterm_if_st in ikey ConfigKeyVal */
-          val_db_vterm_if_st *vtermif_valdbst =
+          val_db_vterm_if_st *vtermif_st =
             reinterpret_cast<val_db_vterm_if_st *>(
                 ConfigKeyVal::Malloc(sizeof(val_db_vterm_if_st)));
-
-          ikey->AppendCfgVal(IpctSt::kIpcStValVtermIfSt, vtermif_valdbst);
-          val_vterm_if_st *vnif_st = &(reinterpret_cast<val_db_vterm_if_st  *>
-              (GetStateVal(ikey))->vterm_if_val_st);
-          vnif_st->oper_status = UPLL_OPER_STATUS_UNINIT;
-          vnif_st->valid[UPLL_IDX_OPER_STATUS_VTERMIS] = UNC_VF_VALID;
+          ikey->AppendCfgVal(IpctSt::kIpcStValVtermIfSt, vtermif_st);
+          val_db_vterm_if_st* vnif_st = reinterpret_cast<val_db_vterm_if_st  *>
+                                           (GetStateVal(ikey));
+          vnif_st->vterm_if_val_st.valid[UPLL_IDX_OPER_STATUS_VTERMIS] = UNC_VF_VALID;
           if (op == UNC_OP_CREATE)
-            vtermif_valdbst->down_count = 0;
+            if(driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+              vnif_st->vterm_if_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
+              vnif_st->down_count = PORT_UNKNOWN;
+            } else {
+              vnif_st->vterm_if_val_st.oper_status = UPLL_OPER_STATUS_UNINIT;
+              vnif_st->down_count = 0;
+            }
           else {
             val_db_vterm_if_st *run_vtermifst = reinterpret_cast<val_db_vterm_if_st *>
-              (GetStateVal(upd_key));
-            vtermif_valdbst->down_count = run_vtermifst->down_count;
+                                   (GetStateVal(upd_key));
+            vnif_st->vterm_if_val_st.oper_status = run_vtermifst->vterm_if_val_st.oper_status;
+            vnif_st->down_count = run_vtermifst->down_count;
           }
         }
       }
@@ -600,7 +608,7 @@ upll_rc_t VtermIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
       pm->cs_attr[loop] = UNC_CS_APPLIED;
     }
   }
-  return UPLL_RC_SUCCESS;
+  return (SetInterfaceOperStatus(ikey, dmi, op, propagate, driver_result));
 }
 
 upll_rc_t VtermIfMoMgr::UpdateAuditConfigStatus(
@@ -1242,7 +1250,7 @@ bool VtermIfMoMgr::FilterAttributes(void *&val1, void *val2,
   val_vterm_if_t *val_vterm_if1 = reinterpret_cast<val_vterm_if_t *>(val1);
 
   /* No need to configure description in controller. */
-  val_vterm_if1->valid[UPLL_IDX_DESC_VBRI] = UNC_VF_INVALID;
+  val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI] = UNC_VF_INVALID;
 
   if (op != UNC_OP_CREATE)
     return CompareValidValue(val1, val2, copy_to_running);
@@ -1272,71 +1280,64 @@ bool VtermIfMoMgr::CompareValidValue(void *&val1, void *val2,
         && UNC_VF_VALID == val_vterm_if2->portmap.valid[loop])
       val_vterm_if1->portmap.valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-
-  if ( UNC_VF_INVALID != val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI] ) {
-    if ( !copy_to_running ||
-        ((UNC_VF_VALID == val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI]) &&
-         (!strcmp(reinterpret_cast<char *>(val_vterm_if1->description),
-                reinterpret_cast<const char*>(val_vterm_if2->description)))) )
-      val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI] = UNC_VF_INVALID;
-  }
   val_vterm_if1->valid[UPLL_IDX_ADMIN_STATUS_VTERMI] = UNC_VF_INVALID;
+  if (copy_to_running) {
+    if ( UNC_VF_INVALID != val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI] ) {
+      if ((UNC_VF_VALID == val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI]) &&
+          (!strcmp(reinterpret_cast<char *>(val_vterm_if1->description),
+                   reinterpret_cast<const char*>(val_vterm_if2->description))))
+        val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI] = UNC_VF_INVALID;
+    }
+    /* Compares port map info between candidate and running config */
+    if (val_vterm_if1->valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID
+        && val_vterm_if2->valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
+      if (memcmp(&(val_vterm_if1->portmap), &(val_vterm_if2->portmap),
+                 sizeof(val_port_map_t))) {
+        if (val_vterm_if1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] ==
+            UNC_VF_VALID
+            && val_vterm_if2->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]
+            == UNC_VF_VALID) {
+          if (!strcmp(
+                  reinterpret_cast<char *>(val_vterm_if1->portmap.logical_port_id),
+                  reinterpret_cast<char *>(val_vterm_if2->portmap.logical_port_id)))
+            val_vterm_if1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_INVALID;
+        }
 
-  /*Compares port map info */
-  if (val_vterm_if1->valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID
-      && val_vterm_if2->valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
-    if (memcmp(&(val_vterm_if1->portmap), &(val_vterm_if2->portmap),
-               sizeof(val_port_map_t))) {
-      if (val_vterm_if1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] ==
-          UNC_VF_VALID
-          && val_vterm_if2->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]
-          == UNC_VF_VALID) {
-        if (!strcmp(
-             reinterpret_cast<char *>(val_vterm_if1->portmap.logical_port_id),
-             reinterpret_cast<char *>(val_vterm_if2->portmap.logical_port_id)))
-          val_vterm_if1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] =
-              (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
-      }
+        if (val_vterm_if1->portmap.valid[UPLL_IDX_VLAN_ID_PM] != UNC_VF_INVALID
+            && val_vterm_if2->portmap.valid[UPLL_IDX_VLAN_ID_PM] !=
+            UNC_VF_INVALID) {
+          if (val_vterm_if1->portmap.vlan_id == val_vterm_if2->portmap.vlan_id)
+            val_vterm_if1->portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_INVALID;
+        }
 
-      if (val_vterm_if1->portmap.valid[UPLL_IDX_VLAN_ID_PM] != UNC_VF_INVALID
-          && val_vterm_if2->portmap.valid[UPLL_IDX_VLAN_ID_PM] !=
-          UNC_VF_INVALID) {
-        if (val_vterm_if1->portmap.vlan_id == val_vterm_if2->portmap.vlan_id)
-          val_vterm_if1->portmap.valid[UPLL_IDX_VLAN_ID_PM] =
-              (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
+        if (val_vterm_if1->portmap.valid[UPLL_IDX_TAGGED_PM] != UNC_VF_INVALID
+            && val_vterm_if2->portmap.valid[UPLL_IDX_TAGGED_PM] !=
+            UNC_VF_INVALID) {
+          if (val_vterm_if1->portmap.tagged == val_vterm_if2->portmap.tagged)
+            val_vterm_if1->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_INVALID;
+        }
+      } else {
+        UPLL_LOG_DEBUG("Portmap details not modified");
+        val_vterm_if1->valid[UPLL_IDX_PM_VTERMI] = UNC_VF_INVALID;
+        val_vterm_if1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_INVALID;
+        val_vterm_if1->portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_INVALID;
+        val_vterm_if1->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_INVALID;
       }
-
-      if (val_vterm_if1->portmap.valid[UPLL_IDX_TAGGED_PM] != UNC_VF_INVALID
-          && val_vterm_if2->portmap.valid[UPLL_IDX_TAGGED_PM] !=
-          UNC_VF_INVALID) {
-        if (val_vterm_if1->portmap.tagged == val_vterm_if2->portmap.tagged)
-          val_vterm_if1->portmap.valid[UPLL_IDX_TAGGED_PM] =
-              (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
-      }
-    } else {
-      UPLL_LOG_DEBUG("Portmap details not modified");
-      val_vterm_if1->valid[UPLL_IDX_PM_VTERMI] =
-          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
-      val_vterm_if1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] =
-          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
-      val_vterm_if1->portmap.valid[UPLL_IDX_VLAN_ID_PM] =
-          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
-      val_vterm_if1->portmap.valid[UPLL_IDX_TAGGED_PM] =
-          (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
     }
   }
-
+  if (!copy_to_running)
+    val_vterm_if1->valid[UPLL_IDX_DESC_VTERMI] = UNC_VF_INVALID;
   for (unsigned int loop = 0;
        loop < sizeof(val_vterm_if1->valid) / sizeof(val_vterm_if1->valid[0]);
        ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_vterm_if1->valid[loop]) ||
         (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vterm_if1->valid[loop])) {
-      if (loop == UPLL_IDX_PM_VBRI) {
+      if (loop == UPLL_IDX_PM_VTERMI) {
         for (unsigned int i = 0;
              i < sizeof(val_vterm_if1->portmap.valid) / sizeof(uint8_t); ++i) {
           if ((UNC_VF_VALID == (uint8_t) val_vterm_if1->portmap.valid[i]) ||
               (UNC_VF_VALID_NO_VALUE ==
-                 (uint8_t)  val_vterm_if1->portmap.valid[i])) {
+               (uint8_t)  val_vterm_if1->portmap.valid[i])) {
             invalid_attr = false;
             break;
           }
@@ -1455,115 +1456,6 @@ upll_rc_t VtermIfMoMgr::GetPortmapInfo(ConfigKeyVal *ikey,
   }
 
   return UPLL_RC_SUCCESS;
-}
-
-#if 0
-upll_rc_t VtermIfMoMgr::PortStatusHandler(const char *ctrlr_name,
-                                          const char *domain_name,
-                                          const char *portid,
-                                          bool oper_status,
-                                          DalDmlIntf *dmi) {
-  UPLL_FUNC_TRACE;
-
-  upll_rc_t      result_code  = UPLL_RC_SUCCESS;
-  ConfigKeyVal   *vtermif_key = NULL;
-  val_vterm_if_t *vtermif_val = NULL;
-
-  UPLL_LOG_TRACE("controller_name is : (%s) portid :(%s) domain_id :(%s)"
-                 " oper_status :(%d)", ctrlr_name, portid,
-                 domain_name, oper_status);
-
-  /* Allocate Memory for UNC_KT_VTERM_IF key and value structure */
-  vtermif_val = reinterpret_cast<val_vterm_if*>(
-                  ConfigKeyVal::Malloc(sizeof(val_vterm_if)));
-  val_port_map *pm = &vtermif_val->portmap;
-  vtermif_val->valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
-
-  /* Copy port_id from input to port_id variable in portmap structure */
-  uuu::upll_strncpy(pm->logical_port_id, portid, (kMaxLenPortName + 1));
-  /* set valid flag as VALID */
-  pm->valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
-
-  result_code = GetChildConfigKey(vtermif_key, NULL);
-  if (!vtermif_key || (result_code != UPLL_RC_SUCCESS)) {
-    free(vtermif_val);
-    if (vtermif_key) delete vtermif_key;
-    return UPLL_RC_ERR_GENERIC;
-  }
-
-  vtermif_key->AppendCfgVal(IpctSt::kIpcStValVtermIf, vtermif_val);
-  SET_USER_DATA_CTRLR(vtermif_key, ctrlr_name);
-  SET_USER_DATA_DOMAIN(vtermif_key, domain_name);
-
-  state_notification notification =
-       (oper_status == UPLL_OPER_STATUS_UP) ? kPortFaultReset : kPortFault;
-
-  result_code = UpdateOperStatus(vtermif_key, dmi, notification, false,
-                                 false, false);
-  DELETE_IF_NOT_NULL(vtermif_key);
-  if (result_code != UPLL_RC_SUCCESS) {
-    if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
-      result_code = UPLL_RC_SUCCESS;
-    else
-      UPLL_LOG_DEBUG("Invalid oper status update %d", result_code);
-    return result_code;
-  }
-
-  if (notification == kPortFaultReset) {
-    VnodeMoMgr *mgr = reinterpret_cast<VnodeMoMgr *>
-                    (const_cast<MoManager *>(GetMoManager(UNC_KT_VTERMINAL)));
-    if (!mgr) {
-      UPLL_LOG_DEBUG("Invalid mgr");
-      return UPLL_RC_ERR_GENERIC;
-    }
-    result_code = mgr->TxUpdateDtState(UNC_KT_VTERMINAL, 0, 0, dmi);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("failed to update vnode oper status %d\n", result_code);
-      return result_code;
-    }
-
-    VtnMoMgr *vtn_mgr = reinterpret_cast<VtnMoMgr *>
-                    (const_cast<MoManager *>(GetMoManager(UNC_KT_VTN)));
-    if (!vtn_mgr) {
-      UPLL_LOG_DEBUG("Invalid mgr");
-      return UPLL_RC_ERR_GENERIC;
-    }
-    result_code = vtn_mgr->TxUpdateDtState(UNC_KT_VTN, 0, 0, dmi);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("failed to update vtn oper status %d\n", result_code);
-    }
-  }
-
-  return result_code;
-}
-#endif
-
-
-upll_rc_t VtermIfMoMgr::RestoreUnInitOPerStatus(DalDmlIntf *dmi) {
-  upll_rc_t  result_code = UPLL_RC_SUCCESS;
-  VnodeMoMgr *vnode_mgr  = NULL;
-  VtnMoMgr   *vtn_mgr    = NULL;
-
-  unc_key_type_t key_type[] = {UNC_KT_VBRIDGE, UNC_KT_VROUTER,
-                               UNC_KT_VTERMINAL, UNC_KT_VTN};
-  for (int count = 0;
-       count < static_cast<int>(sizeof(key_type)/sizeof(unc_key_type_t));
-       count++) {
-    if (key_type[count] == UNC_KT_VTN) {
-      vtn_mgr = reinterpret_cast<VtnMoMgr *>
-                 (const_cast<MoManager *>(GetMoManager(key_type[count])));
-      result_code = vtn_mgr->TxUpdateDtState(key_type[count], 0, 0, dmi);
-    } else {
-      vnode_mgr = reinterpret_cast<VnodeMoMgr *>
-          (const_cast<MoManager *>(GetMoManager(key_type[count])));
-      result_code = vnode_mgr->TxUpdateDtState(key_type[count], 0, 0, dmi);
-    }
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("failed to update vnode oper status %d\n", result_code);
-      return result_code;
-    }
-  }
-  return result_code;
 }
 
 upll_rc_t VtermIfMoMgr::IsVtermIfAlreadyExists(ConfigKeyVal *ikey,
@@ -1821,9 +1713,10 @@ upll_rc_t VtermIfMoMgr::GetVtermIfFromVexternal(uint8_t *vtn_name,
     delete ckv_vterm_rename;
     return result_code;
   }
-
+  #if 0
   uuu::upll_strncpy(vtn_name, vtermkey->vtn_key.vtn_name,
                     (kMaxLenVtnName + 1));
+  #endif
   uuu::upll_strncpy(vterminal, vtermkey->vterminal_name,
                     (kMaxLenVnodeName + 1));
   ConfigKeyVal *ckv_vterm_if  = NULL;
@@ -1838,10 +1731,10 @@ upll_rc_t VtermIfMoMgr::GetVtermIfFromVexternal(uint8_t *vtn_name,
   result_code = ReadConfigDB(ckv_vterm_if, UPLL_DT_RUNNING,
                                   UNC_OP_READ, dbop, dmi, MAINTBL);
   if (result_code == UPLL_RC_SUCCESS) {
-      uuu::upll_strncpy(vterminal, reinterpret_cast<key_vterm_if_t *>
+      uuu::upll_strncpy(vtermif, reinterpret_cast<key_vterm_if_t *>
                          (ckv_vterm_if->get_key())->if_name,
                         (kMaxLenInterfaceName + 1));
-      uuu::upll_strncpy(vtermif, reinterpret_cast<key_vterm_if_t *>
+      uuu::upll_strncpy(vterminal, reinterpret_cast<key_vterm_if_t *>
                          (ckv_vterm_if->get_key())->vterm_key.vterminal_name,
                         (kMaxLenVnodeName + 1));
   }
@@ -1851,6 +1744,37 @@ upll_rc_t VtermIfMoMgr::GetVtermIfFromVexternal(uint8_t *vtn_name,
   delete ckv_vterm_if;
   return result_code;
 }
+upll_rc_t VtermIfMoMgr::AdaptValToDriver(ConfigKeyVal *ck_new,
+                                         ConfigKeyVal *ck_old,
+                                         unc_keytype_operation_t op,
+                                         upll_keytype_datatype_t dt_type,
+                                         unc_key_type_t keytype,
+                                         DalDmlIntf *dmi,
+                                         bool &not_send_to_drv,
+                                         bool audit_update_phase) {
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (!audit_update_phase) {
+    if (op == UNC_OP_DELETE) {
+      // Perform semantic check for vnode interface deletion
+      // check whether the vnode interface is referred in the
+      // flowfilter-redirection.
+      result_code = CheckVnodeInterfaceForRedirection(ck_new,
+                                                      ck_old,
+                                                      dmi,
+                                                      UPLL_DT_CANDIDATE,
+                                                      op);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_INFO("Flowfilter redirection validation fails for keytype %d"
+                      " cannot perform operation  %d errcode %d",
+                      keytype, op, result_code);
+        return result_code;
+      }
+    }
+  }
+  return result_code;
+}
+
+
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

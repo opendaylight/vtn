@@ -31,7 +31,7 @@ public class CoordinatorVersionResourceValidator extends VtnServiceValidator {
 	 * validator object for common validations.
 	 * 
 	 * @param resource
-	 *            ,Abtsract class object
+	 *            ,Abstract class object
 	 */
 	public CoordinatorVersionResourceValidator(final AbstractResource resource) {
 
@@ -48,9 +48,8 @@ public class CoordinatorVersionResourceValidator extends VtnServiceValidator {
 	 *             , in case of failure
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.info("No validation required for Show Coordinator Version");
 	}
 }

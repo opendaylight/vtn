@@ -93,6 +93,8 @@ public class SessionsResource extends AbstractResource {
 					UncSessionEnums.ServiceID.kUsessSessAdd.ordinal(),
 					getExceptionHandler());
 			LOG.info("Session created successfully");
+			// set IPC timeout
+			session.setTimeout(null);
 			// create request packet for IPC call based on API key and
 			// JsonObject
 			final IpcStruct usessIpcReqSessAdd = new IpcStruct(
@@ -134,7 +136,7 @@ public class SessionsResource extends AbstractResource {
 						IpcDataUnitWrapper.setIpcUint8ArrayValue(sessionJson
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.PASSWORD)
-								.getAsString().trim()));
+								.getAsString()));
 
 				// add login name to usess_ipc_req_sess_add structure
 				if (sessionJson.has(VtnServiceJsonConsts.LOGINNAME)
@@ -146,7 +148,7 @@ public class SessionsResource extends AbstractResource {
 											.setIpcUint8ArrayValue(sessionJson
 													.getAsJsonPrimitive(
 															VtnServiceJsonConsts.LOGINNAME)
-													.getAsString().trim()));
+													.getAsString()));
 				} else {
 					usessIpcReqSessAdd
 							.set(VtnServiceIpcConsts.LOGIN_NAME,
@@ -159,7 +161,7 @@ public class SessionsResource extends AbstractResource {
 								VtnServiceJsonConsts.TYPE).getAsString() != null
 						&& sessionJson
 								.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-								.getAsString().trim()
+								.getAsString()
 								.equalsIgnoreCase(VtnServiceJsonConsts.WEBAPI)) {
 					usessIpcReqSessAdd
 							.set(VtnServiceIpcConsts.SESS_TYPE,
@@ -195,7 +197,7 @@ public class SessionsResource extends AbstractResource {
 									.setIpcUint8ArrayValue(sessionJson
 											.getAsJsonPrimitive(
 													VtnServiceJsonConsts.INFO)
-											.getAsString().trim()));
+											.getAsString()));
 				} else {
 					usessIpcReqSessAdd
 							.set(VtnServiceJsonConsts.INFO,
@@ -238,6 +240,8 @@ public class SessionsResource extends AbstractResource {
 								UncSessionEnums.ServiceID.kUsessEnable
 										.ordinal(), getExceptionHandler());
 						LOG.info("Session created successfully");
+						//set IPC timeout
+						sessionEnable.setTimeout(null);
 						// create request packet for IPC call based on API key
 						// and JsonObject
 						final IpcStruct usessIpcReqSessEnable = new IpcStruct(

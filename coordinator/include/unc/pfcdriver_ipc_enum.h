@@ -51,4 +51,11 @@ typedef enum {
   PFCDRV_IDX_BDRY_REF_COUNT,
 } pfcdrv_val_vlan_map_index_t;
 
+/* enum for controller versions */
+typedef enum {
+  PFCDRV_IDX_CTR_NONE = 0,
+  PFCDRV_IDX_CTR_FIVE_ZERO,
+  PFCDRV_IDX_CTR_FIVE_ONE,
+  PFCDRV_IDX_CTR_SIX_ZERO
+} pfcdrv_ctr_versions_index_t;
 #endif

@@ -29,24 +29,37 @@ TcMsg::TcMsg(uint32_t sess_id, tclib::TcMsgOperType oper)
 
 TcMsg::~TcMsg() {
   pfc_log_debug("Deleting TcMsg");
+  int32_t ipc_ret = 0;
   if (sess_) {
     delete sess_;
     sess_ = NULL;
-    if (TCOPER_RET_SUCCESS != pfc_ipcclnt_altclose(conn_)) {
+    ipc_ret = pfc_ipcclnt_altclose(conn_);
+    if (ipc_ret == EBADF) {
+      pfc_log_error("%s Cannot close sess_ conn. Already closed?",
+                    __FUNCTION__);
+    } else if (ipc_ret != TCOPER_RET_SUCCESS) {
       pfc_log_fatal("pfc_ipcclnt_altclose of sess_ failed");
     }
   }
   if (upll_sess_) {
     delete upll_sess_;
     upll_sess_ = NULL;
-    if (TCOPER_RET_SUCCESS != pfc_ipcclnt_altclose(upll_conn_)) {
+    ipc_ret = pfc_ipcclnt_altclose(upll_conn_);
+    if (ipc_ret == EBADF) {
+      pfc_log_error("%s Cannot close upll_sess_ conn. Already closed?",
+                    __FUNCTION__);
+    } else if (ipc_ret != TCOPER_RET_SUCCESS) {
       pfc_log_fatal("pfc_ipcclnt_altclose of upll_sess_ failed");
     }
   }
   if (uppl_sess_) {
     delete uppl_sess_;
     uppl_sess_ = NULL;
-    if (TCOPER_RET_SUCCESS != pfc_ipcclnt_altclose(uppl_conn_)) {
+    ipc_ret = pfc_ipcclnt_altclose(uppl_conn_);
+    if (ipc_ret == EBADF) {
+      pfc_log_error("%s Cannot close uppl_sess_ conn. Already closed?",
+                    __FUNCTION__);
+    } else if (ipc_ret != TCOPER_RET_SUCCESS) {
       pfc_log_fatal("pfc_ipcclnt_altclose of uppl_sess_ failed");
     }
   }
@@ -116,6 +129,11 @@ TcMsg* TcMsg::CreateInstance(uint32_t sess_id,
       ptr_tcmsg = new GetDriverId(sess_id, oper);
       break;
     }
+    case tclib::MSG_AUTOSAVE_ENABLE:
+    case tclib::MSG_AUTOSAVE_DISABLE: {
+      ptr_tcmsg = new TcMsgAutoSave(sess_id, oper);
+      break;
+    }
     default: {
       pfc_log_error("TcMsg::CreateInstance() exit::Invalid opertype:%d", oper);
       return NULL;
@@ -131,6 +149,92 @@ TcMsg* TcMsg::CreateInstance(uint32_t sess_id,
 
   return ptr_tcmsg;
 }
+
+/*TcMsgAutoSave class constructor*/
+TcMsgAutoSave::TcMsgAutoSave(uint32_t sess_id,
+                           tclib::TcMsgOperType oper)
+  :TcMsg(sess_id, oper) {
+}
+
+
+TcOperRet TcMsgAutoSave::Execute() {
+  pfc_log_debug("TcMsgAutoSave::Execute() entry");
+
+  pfc_ipcid_t service_id = 0;
+  pfc_ipcresp_t resp = 0;
+   pfc_ipcconn_t conn = 0;
+  std::string channel_name;
+  TcUtilRet util_resp = TCUTIL_RET_SUCCESS;
+
+  /*channel_names_ map should not be empty */
+
+  PFC_ASSERT(TCOPER_RET_SUCCESS == channel_names_.empty());
+
+  /*set notification order*/
+  pfc_log_info("Sending autosave notification to tclib");
+  notifyorder_.push_back(TC_UPLL);
+  notifyorder_.push_back(TC_UPPL);
+  if (opertype_ == tclib::MSG_AUTOSAVE_ENABLE) {
+    service_id = tclib::TCLIB_AUTOSAVE_ENABLE;
+  } else if (opertype_ == tclib::MSG_AUTOSAVE_DISABLE) {
+    service_id = tclib::TCLIB_AUTOSAVE_DISABLE;
+  } else {
+    pfc_log_error("unexpected operation type:%d", opertype_);
+    return TCOPER_RET_FAILURE;
+  }
+
+  /* send request to recipient module(s) */
+
+  for (NotifyList::iterator list_iter = notifyorder_.begin();
+       list_iter != notifyorder_.end(); list_iter++) {
+    channel_name = GetChannelName(*list_iter);
+    if (PFC_EXPECT_TRUE(channel_name.empty())) {
+      pfc_log_error("channel_name is empty");
+      return TCOPER_RET_FAILURE;
+    }
+
+    sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
+                                                           service_id,
+                                                           conn, PFC_TRUE);
+
+    if (NULL == sess_) {
+      return TCOPER_RET_FATAL;
+    }
+
+    // When notifying enable/disable AUTOSAVE, clear startup config
+    // or save running to startup is executed. So set timeout as infinite.
+    if (sess_->setTimeout(NULL) != TCOPER_RET_SUCCESS) {
+      pfc_log_warn("Cannot set timeout as Infinite. Operation may timeout");
+    }
+
+    util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      return ReturnUtilResp(util_resp);
+    }
+
+    pfc_log_info("notify %s with sessid(%d) srv_id %d",
+                 channel_name.c_str(), session_id_, service_id);
+
+    util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      TcClientSessionUtils::tc_session_close(&sess_, conn);
+      return ReturnUtilResp(util_resp);
+    }
+
+    TcClientSessionUtils::tc_session_close(&sess_, conn);
+
+    if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE)) {
+      pfc_log_info("Failure response from %s", channel_name.c_str());
+      break;
+    }
+    pfc_log_info("Success response from %s", channel_name.c_str());
+  }
+
+  notifyorder_.clear();
+  pfc_log_info("TcMsgAutoSave::Execute() exit");
+  return RespondToTc(resp);
+}
+
 
 /*!brief this method returns the channel name of daemon from TcChannelNameMap*/
 std::string TcMsg::GetChannelName(TcDaemonName daemon_id)  {
@@ -203,6 +307,10 @@ TcDaemonName TcMsg::MapTcDriverId(unc_keytype_ctrtype_t driver_id) {
       drv_daemon = TC_DRV_LEGACY;
       break;
     }*/
+    case UNC_CT_POLC: {
+      drv_daemon = TC_DRV_POLC;
+      break;
+    }
     default: {
        pfc_log_info("Invalid ControllerType:%d", driver_id);
       return TC_NONE;
@@ -273,11 +381,16 @@ TcMsg::ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
     to_index = respcount;
   }
 
-  if (clnt_sess->forwardTo(srv_sess, from_index, to_index)
-      != TCOPER_RET_SUCCESS) {
-    pfc_log_fatal("forwardTo failed!!");
+  int32_t ipc_ret = clnt_sess->forwardTo(srv_sess, from_index, to_index);
+  if (ipc_ret == ESHUTDOWN || ipc_ret == ECANCELED ||
+      ipc_ret == ECONNABORTED || ipc_ret == ECONNRESET) {
+    pfc_log_error("%s forwardTo failed!!", __FUNCTION__);
+    return TCOPER_RET_FATAL;
+  } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+    pfc_log_fatal("%s forwardTo failed!!", __FUNCTION__);
     return TCOPER_RET_FATAL;
   }
+
   pfc_log_info("data size forwarded to VTN: %d", to_index);
   return TCOPER_RET_SUCCESS;
 }
@@ -346,14 +459,18 @@ TcMsg::RespondToTc(pfc_ipcresp_t resp) {
 /*This method maps TcUtilRet ret to TcOperRet value.*/
 TcOperRet
 TcMsg::ReturnUtilResp(TcUtilRet ret) {
+  TcOperRet oper_ret = TCOPER_RET_UNKNOWN;
+
   if (PFC_EXPECT_TRUE(TCUTIL_RET_SUCCESS == ret)) {
-    return TCOPER_RET_SUCCESS;
+    oper_ret =  TCOPER_RET_SUCCESS;
   } else if (PFC_EXPECT_TRUE(TCUTIL_RET_FAILURE == ret)) {
-    return TCOPER_RET_FAILURE;
+    oper_ret =  TCOPER_RET_FAILURE;
   } else if (PFC_EXPECT_TRUE(TCUTIL_RET_FATAL == ret)) {
-    return TCOPER_RET_FATAL;
+    oper_ret =  TCOPER_RET_FATAL;
   }
-  return TCOPER_RET_UNKNOWN;
+  pfc_log_info("ReturnUtilResp: Received(%u); Returned(%u)",
+               ret, oper_ret);
+  return oper_ret;
 }
 
 /*method to validate the operational cause of failover*/
@@ -397,6 +514,13 @@ TcMsgSetUp::TcMsgSetUp(uint32_t sess_id,
 }
 
 
+/*!\brief SetData will set the validity  flag of the StartUpConfiguration
+ * @param[in] startupconfig_valid_flag_  - validity flag
+ * */
+void TcMsgSetUp::SetData(pfc_bool_t autosave_enabled) {
+  autosave_enabled_ = autosave_enabled;
+}
+
 /*!\brief Tcservice handler invokes this method to service
  * SETUP/SETUP_COMPLETE requests.
  * @result TCCommonRet - TCOPER_RET_SUCCESS/TCOPER_RET_FAILURE/TCOPER_RET_FATAL
@@ -422,6 +546,7 @@ TcOperRet TcMsgSetUp::Execute() {
     }
     case tclib::MSG_SETUP_COMPLETE: {
       pfc_log_info("sending SETUP COMPLETE notification");
+      notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
       service_id = tclib::TCLIB_SETUP_COMPLETE;
       break;
@@ -447,6 +572,12 @@ TcOperRet TcMsgSetUp::Execute() {
     if (NULL == sess_) {
       return TCOPER_RET_FATAL;
     }
+
+    util_resp = TcClientSessionUtils::set_uint8(sess_, autosave_enabled_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      return ReturnUtilResp(util_resp);
+    }
+    pfc_log_info("autosave_enabled?: %d", autosave_enabled_);
     pfc_log_info("notify %s with srv_id %d",
                  channel_name.c_str(), service_id);
 

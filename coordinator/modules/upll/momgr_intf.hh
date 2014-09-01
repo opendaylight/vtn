@@ -18,6 +18,7 @@
 #include "cxx/pfcxx/synch.hh"
 
 #include "unc/upll_errno.h"
+#include "unc/upll_ipc_enum.h"
 #include "dal/dal_dml_intf.hh"
 #include "ipc_util.hh"
 
@@ -62,9 +63,11 @@ class MoCfgServiceIntf {
   // domain_id is guaranteed for VTN, for vnode it might be there (driver team
   // need to confirm), for others it is optional and not present does not mean
   // no domain id.
+  // impor_type represets the  impor types is partial import / full import
   virtual upll_rc_t CreateImportMo(IpcReqRespHeader *req, ConfigKeyVal *key,
                                 DalDmlIntf *dmi, const char *ctrlr_id,
-                                const char *domain_id) = 0;
+                                const char *domain_id,
+                                upll_import_type import_type) = 0;
   virtual upll_rc_t DeleteMo(IpcReqRespHeader *req, ConfigKeyVal *key,
                              DalDmlIntf *dmi) = 0;
   virtual upll_rc_t UpdateMo(IpcReqRespHeader *req, ConfigKeyVal *key,
@@ -112,6 +115,13 @@ class MoTxServiceIntf {
                                     set<string> *affected_ctrlr_set,
                                     DalDmlIntf *dmi,
                                     ConfigKeyVal **err_ckv) = 0;
+
+
+  // To clear c_flag and u_flag from candidate db
+  virtual upll_rc_t TxClearCreateUpdateFlag(unc_key_type_t keytype,
+                                            upll_keytype_datatype_t cfg_type,
+                                            DalDmlIntf *dmi) = 0;
+
   virtual upll_rc_t TxVote(unc_key_type_t keytype, DalDmlIntf *dmi,
                            ConfigKeyVal **err_ckv) = 0;
   virtual upll_rc_t TxVoteCtrlrStatus(
@@ -171,15 +181,29 @@ class MoImportServiceIntf {
   virtual upll_rc_t MergeValidate(unc_key_type_t keytype,
                                   const char *ctrlr_id,
                                   ConfigKeyVal *conflict_ckv,
-                                  DalDmlIntf *dmi) = 0;
+                                  DalDmlIntf *dmi,
+                                  upll_import_type import_type = UPLL_IMPORT_TYPE_FULL) = 0;
   virtual upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
                                            const char *ctrlr_id,
-                                           DalDmlIntf *dmi) = 0;
+                                           DalDmlIntf *dmi,
+                                           upll_import_type import_type) = 0;
   // NOTE: During SBY to ACT transition, ImportClear will be called with empty
   // controlller-id ""
   virtual upll_rc_t ImportClear(unc_key_type_t keytype,
                                 const char *ctrlr_id,
                                 DalDmlIntf *dmi) = 0;
+  virtual upll_rc_t CopyRenameTables(const char *ctrlr_id, 
+                                     DalDmlIntf *dom) = 0;
+  virtual upll_rc_t PurgeCandidate(unc_key_type_t keytype,
+                                     const char *ctrlr_id,
+                                     DalDmlIntf *dom) = 0;
+  virtual upll_rc_t PurgeRenameTable(unc_key_type_t keytype,
+                                     const char *ctrlr_id,
+                                     DalDmlIntf *dom) = 0;
+  virtual upll_rc_t GetRenamedUncKeyWithRedirection(unc_key_type_t kt_type,
+		  const char *ctrlr_id,
+		  DalDmlIntf *dmi) = 0; 
+
 };
 
 // Interface class for database operations

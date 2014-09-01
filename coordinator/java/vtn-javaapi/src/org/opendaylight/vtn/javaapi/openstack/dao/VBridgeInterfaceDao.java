@@ -268,7 +268,7 @@ public class VBridgeInterfaceDao {
 		LOG.debug("Update status : " + status);
 		return status;
 	}
-	
+
 	/**
 	 * Retrieve if_id from database for specific vbr_name and vtn_name
 	 * 
@@ -302,5 +302,5 @@ public class VBridgeInterfaceDao {
 			}
 		}
 		return list;
-	}	
+	}
 }

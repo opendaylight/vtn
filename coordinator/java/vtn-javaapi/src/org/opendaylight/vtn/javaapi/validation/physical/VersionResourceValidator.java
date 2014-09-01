@@ -31,9 +31,8 @@ public class VersionResourceValidator extends VtnServiceValidator {
 	 * Validate request Json for UNC Version API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.info("No validation required for Show Version");
 	}
 }

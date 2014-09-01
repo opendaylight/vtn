@@ -147,7 +147,7 @@ bool NwMonitorHostMoMgr::IsValidKey(void *key, uint64_t index) {
           reinterpret_cast<char *>(nwmh_key->nwm_key.vbr_key.vtn_key.vtn_name),
           kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -156,7 +156,7 @@ bool NwMonitorHostMoMgr::IsValidKey(void *key, uint64_t index) {
           reinterpret_cast<char *>(nwmh_key->nwm_key.vbr_key.vbridge_name),
           kMinLenVnodeName, kMaxLenVnodeName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VBridge Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VBridge Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -165,7 +165,7 @@ bool NwMonitorHostMoMgr::IsValidKey(void *key, uint64_t index) {
           reinterpret_cast<char *>(nwmh_key->nwm_key.nwmonitor_name),
           kMinLenNwmName, kMaxLenNwmName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("NwMonitor Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("NwMonitor Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -354,7 +354,7 @@ upll_rc_t NwMonitorHostMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
     tmp = tmp->get_next_cfg_val();
   };
   if (tmp) {
-    if (tbl == MAINTBL) {
+    if (tbl == MAINTBL && (tmp->get_st_num() == IpctSt::kIpcStValNwmHostSt)) {
       val_nwm_host_st *ival = reinterpret_cast<val_nwm_host_st *>
                                               (tmp->get_val());
       if (ival == NULL) {
@@ -362,7 +362,11 @@ upll_rc_t NwMonitorHostMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
         delete tmp1;
         return UPLL_RC_ERR_GENERIC;
       }
-      val_nwm_host_st *val_nwmst = new val_nwm_host_st(*ival);
+      val_nwm_host_st *val_nwmst = reinterpret_cast<val_nwm_host_st *>
+          (ConfigKeyVal::Malloc(sizeof(val_nwm_host_st)));
+      memcpy(val_nwmst, ival, sizeof(val_nwm_host_st));
+
+      //        val_nwm_host_st *val_nwmst = new val_nwm_host_st(*ival);
       ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValNwmHostSt, val_nwmst);
       if (tmp1)
         tmp1->AppendCfgVal(tmp2);
@@ -766,8 +770,12 @@ upll_rc_t NwMonitorHostMoMgr::ValidateNwMonHostKey(
   }
   if ((operation == UNC_OP_READ_SIBLING_BEGIN) ||
       (operation == UNC_OP_READ_SIBLING_COUNT)) {
-
     key_nwm_host->host_address.s_addr = 0x00000000; 
+  } else {
+    if (key_nwm_host->host_address.s_addr == 0x00000000 ||
+        key_nwm_host->host_address.s_addr == 0xffffffff) {
+      return UPLL_RC_ERR_CFG_SYNTAX;
+    }
   }
   return UPLL_RC_SUCCESS;
 }

@@ -15,10 +15,10 @@
 #ifndef _ODBCM_UTILS_HH_
 #define _ODBCM_UTILS_HH_
 
-#include <map>
-#include <string>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <map>
+#include <string>
 #include "odbcm_common.hh"
 #include "odbcm_db_tableschema.hh"
 
@@ -277,7 +277,6 @@ class ODBCMUtils {
 
     static int SEM_DOWN();
     static int SEM_UP();
-
 
   private:
     /** No private members */

@@ -78,6 +78,10 @@ typedef struct {
   uint8_t reconnect_controller; /*filled only for audit start*/
   TcAuditResult audit_result; /* filled only for audit end */
   TcTransEndResult end_result; /* filled for transaction end */
+  uint8_t simplified_audit; /*filled only for audit start*/
+  uint64_t commit_number; /*Filled only for audit start */
+  uint64_t commit_date; /*Filled only for audit start */
+  std::string commit_application; /*Filled only for audit start */
 }TcAuditTransactionMsg;
 
 /*

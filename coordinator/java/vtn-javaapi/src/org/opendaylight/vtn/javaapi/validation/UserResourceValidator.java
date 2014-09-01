@@ -55,10 +55,10 @@ public class UserResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.USERNAME);
 		if (resource instanceof UserResource
 				&& ((UserResource) resource).getUserName() != null
-				&& !((UserResource) resource).getUserName().trim().isEmpty()) {
-			isValid = ((UserResource) resource).getUserName().trim()
-					.equalsIgnoreCase(VtnServiceJsonConsts.ADMIN)
-					|| ((UserResource) resource).getUserName().trim()
+				&& !((UserResource) resource).getUserName().isEmpty()) {
+			isValid = ((UserResource) resource).getUserName().equalsIgnoreCase(
+					VtnServiceJsonConsts.ADMIN)
+					|| ((UserResource) resource).getUserName()
 							.equalsIgnoreCase(VtnServiceJsonConsts.OPER);
 		}
 		LOG.trace("Complete UserResourceValidator#validateUri()");
@@ -69,9 +69,8 @@ public class UserResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Set Password API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start UserResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of UserResourceValidator");
@@ -126,10 +125,10 @@ public class UserResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = validator.isValidMaxLength(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
-					.getAsString().trim(), VtnServiceJsonConsts.LEN_72);
+					.getAsString(), VtnServiceJsonConsts.LEN_72);
 		} else {
 			isValid = false;
 		}

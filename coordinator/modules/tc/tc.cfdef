@@ -13,4 +13,5 @@
 defblock tc_db_params{
   tc_db_dsn_name = STRING: max=63;
   max_failover_instance = UINT32;
+  simultaneous_read_write_allowed = BOOL;
 }

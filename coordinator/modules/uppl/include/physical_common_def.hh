@@ -25,11 +25,14 @@
 #define PFCDRIVER_IPC_SVC_NAME              "pfcdriver"
 #define VNPDRIVER_IPC_CHN_NAME              "drvvnpd"
 #define VNPDRIVER_IPC_SVC_NAME              "vnpdriver"
+#define POLCDRIVER_IPC_CHN_NAME             "drvpolcd"
+#define POLCDRIVER_IPC_SVC_NAME             "polcdriver"
 #define UPLL_IPC_CHN_NAME                   "lgcnwd"
 #define UPLL_IPC_SVC_NAME                   "upll"
 #define TCLIB_MODULE_NAME                   "tclib"
 #define ODCDRIVER_IPC_CHN_NAME              "drvodcd"
 #define ODCDRIVER_IPC_SVC_NAME              "vtndrvintf"
+#define CONF_FILE_PATH_SEP                  "/"
 
 const unsigned int UPPL_MAX_REP_CT = 10000;
 /*
@@ -167,6 +170,14 @@ typedef enum {
   GLOBAL_COMMIT_DRIVER_RESULT,
   GLOBAL_COMMIT_SUCCESS
 }TransState;
+
+/*
+ * @brief unc mode 
+ */
+typedef enum {
+  UNC_SEPARATE_MODE = 0,
+  UNC_COEXISTS_MODE
+}UncMode;
 
 /*
  *  @brief Driver Response Status

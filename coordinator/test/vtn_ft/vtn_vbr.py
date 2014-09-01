@@ -36,7 +36,7 @@ def create_vtn(blockname):
     vtn_add['vtn']['description']=test_vtn_description
     r = requests.post(url,data=json.dumps(vtn_add),headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS and r.status_code != resp_code.RESP_CREATE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -51,7 +51,7 @@ def delete_vtn(blockname):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS and r.status_code != resp_code.RESP_DELETE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -130,7 +130,7 @@ def create_vbr(vtn_blockname,vbr_blockname,controller_blockname):
 
     r = requests.post(url,data=json.dumps(vbr_add),headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS and r.status_code != resp_code.RESP_CREATE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -151,7 +151,7 @@ def delete_vbr(vtn_blockname,vbr_blockname):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS and r.status_code != resp_code.RESP_DELETE_SUCCESS_U14:
         return 1
     else:
         return 0

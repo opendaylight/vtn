@@ -144,7 +144,7 @@ class TcLibInterface {
    */
   virtual TcCommonRet HandleAuditStart(uint32_t session_id,
                                        unc_keytype_ctrtype_t ctr_type,
-                                       std::string controller_id)=0;
+                                       std::string controller_id);
 
   /**
    * @brief      Handling of audit end in audit operation

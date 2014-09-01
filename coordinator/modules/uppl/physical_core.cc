@@ -18,6 +18,7 @@
 #include <unc/unc_base.h>
 #include <alarm.hh>
 #include <clstat_api.h>
+#include <uncxx/lib_unc.hh>
 #include "physical_core.hh"
 #include "physicallayer.hh"
 #include "tclib_module.hh"
@@ -27,15 +28,12 @@
 using unc::tclib::TcApiCommonRet;
 using unc::tclib::TcLibModule;
 
-// Configuration file handle
-extern pfc_cfdef_t ctr_cap_cfdef;
-
 // Alarm FD
 static int32_t fd;
+using unc::unclib::UncModeUtil;
 
 namespace unc {
 namespace uppl {
-
 
 // Static Variable initialization
 PhysicalCore* PhysicalCore::physical_core_ = NULL;
@@ -78,13 +76,6 @@ UncRespCode PhysicalCore::InitializePhysical() {
     return UNC_UPPL_RC_ERR_CONF_FILE_READ;
   }
 
-  // Call function to load static capability file
-  ret = ReadCtrlrStaticCapability();
-  pfc_log_debug("Static Capability return %d", ret);
-  if (ret != UNC_RC_SUCCESS)  {
-    return UNC_UPPL_RC_ERR_CAP_FILE_READ;
-  }
-
   // initialize alarm object
   pfc::alarm::alarm_return_code_t alarm_ret = pfc::alarm::ALM_OK;
   alarm_ret = pfc::alarm::pfc_alarm_initialize(&fd);
@@ -125,10 +116,12 @@ UncRespCode PhysicalCore::InitializePhysical() {
 
 UncRespCode PhysicalCore::FinalizePhysical() {
   // Finalize the class member data
-  ctr_cap_map_.clear();
   // IPC Event handler removal is taken care by ipc library itself during fini
   /* Cancel the event Subscription from driver
   UncRespCode ret = CancelEventSubscripInDriver(); */
+
+  NotificationManager::delete_taskq_util();
+
   UncRespCode ret = UNC_UPPL_RC_FAILURE;
   pfc_bool_t event_ret = UnRegisterStateHandlers();
   if (event_ret == PFC_TRUE) {
@@ -172,6 +165,7 @@ UncRespCode PhysicalCore::ReadConfigFile() {
   // Fill the driver name map
   drv_name_map_[UNC_CT_PFC] = ipcblock.getString("pfcdrv_service_name", "");
   drv_name_map_[UNC_CT_VNP] = ipcblock.getString("ovrlaydrv_service_name", "");
+  drv_name_map_[UNC_CT_POLC] = ipcblock.getString("polcdrv_service_name", "");
   drv_name_map_[UNC_CT_ODC] = ipcblock.getString("odcdrv_service_name", "");
 
   int kSize = ipcblock.arraySize("sb_ipc_service_ids");
@@ -206,191 +200,16 @@ UncRespCode PhysicalCore::ReadConfigFile() {
                                     "uppl_max_ro_db_connections", 100);
   pfc_log_debug("uppl_max_ro_db_connections_ - red from uppl.conf = %d",
                   uppl_max_ro_db_connections_);
-
+  // accessing the unclib UncModeUtil api to get unc_mode
+  int ret_code = 0;
+  UncModeUtil ouncmodeutil(ret_code);
+  if (ret_code != 0)
+    pfc_log_debug("Failed to access unclib.conf. default unc_mode is taken");
+  unc_mode_ = (UncMode)ouncmodeutil.libunc_get_unc_mode();
+  pfc_log_debug("unc_mode from unclib is %d", unc_mode_);
   return UNC_RC_SUCCESS;
 }
 
-/**
- * @Description : This function reads controller capability config and fills the
- *                capability map
- */
-
-UncRespCode PhysicalCore::ReadCtrlrStaticCapability() {
-  // Read the capability info from the static config file
-  string conf_file_path = string(UNC_MODULEDIR) +
-      string("/uppl_ctr_capability.conf");
-
-  string version = "";
-  attribute_struct attr_var;
-  cap_value_struct vals;
-  cap_key_struct keys;
-  vector<pfc::core::ConfBlock> cObjs;
-
-  pfc::core::ConfHandle conf_handle(conf_file_path, &ctr_cap_cfdef);
-
-  pfc::core::ConfBlock kt_map_blk(conf_handle, "kt_cap_map_list");
-
-  int kKtCapMapListSz = kt_map_blk.arraySize("kt_map_name");
-  for (int it = 0; it < kKtCapMapListSz; ++it) {
-    pfc::core::ConfBlock kt_cap_obj(conf_handle,
-                                    "kt_cap",
-                                    kt_map_blk.getStringAt("kt_map_name", it,
-                                                           0));
-    cObjs.push_back(kt_cap_obj);
-  }
-
-  for (uint32_t iter = 0; iter < cObjs.size(); ++iter) {
-    int kVersArraySize = cObjs[iter].arraySize("version_supported");
-    for (int idx = 0; idx < kVersArraySize; ++idx) {
-      version = cObjs[iter].getStringAt("version_supported", idx, 0);
-      UncRespCode parse_ret = UNC_RC_SUCCESS;
-      ControllerVersion ctr_obj(version, parse_ret);
-      if (parse_ret != UNC_RC_SUCCESS) {
-        return parse_ret;
-      }
-      int kAttribArraySize = cObjs[iter].arraySize("attribute_name");
-      vals.attrs.clear();
-      for (int i =0; i < kAttribArraySize; ++i) {
-        attr_var.attr_name = cObjs[iter].getStringAt("attribute_name", i, 0);
-        vals.attrs.push_back(attr_var);
-      }
-      vals.scalability_num = cObjs[iter].getUint32("scalability_num", 0);
-      keys.key_type = cObjs[iter].getUint32("key_type", 0);
-      ctr_cap_map_[ctr_obj].insert(std::make_pair(keys, vals));
-    }
-  }
-  return UNC_RC_SUCCESS;
-}
-
-/**
- * @Description : This function validates key type controller capability map
- */
-
-UncRespCode PhysicalCore::ValidateKeyTypeInCtrlrCap(string version,
-                                                       uint32_t key_type) {
-  /* check whether the version provided in request is available in capability
-   * controller map
-   */
-  PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
-  if (physical_layer == NULL) {
-    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
-  }
-  UncRespCode parse_ret = UNC_RC_SUCCESS;
-  ControllerVersion obj(version, parse_ret);
-  if (parse_ret != UNC_RC_SUCCESS) {
-    return parse_ret;
-  }
-  cap_key_struct keystructvar;
-  keystructvar.key_type = key_type;
-
-  cap_iter iter_cap_map = GetVersionIterator(obj);
-
-  if (iter_cap_map != ctr_cap_map_.end()) {
-    pfc_log_debug("Controller Version = %s\n",
-                  (iter_cap_map->first.version_).c_str());
-    map<cap_key_struct, cap_value_struct > key_type_map;
-    // Check the key type is available in the map
-    key_type_map = iter_cap_map->second;
-    map<cap_key_struct, cap_value_struct >::iterator
-    iter_key_type_map_ = key_type_map.find(keystructvar);
-
-    if (iter_key_type_map_ != key_type_map.end()) {
-      pfc_log_debug("Found key_type is %d",
-                    (iter_key_type_map_)->first.key_type);
-      return UNC_RC_SUCCESS;
-    } else {
-      pfc_log_info("Key Type not supported");
-      return UNC_UPPL_RC_ERR_KEYTYPE_NOT_SUPPORTED;
-    }
-  } else {
-    pfc_log_info("Version not supported");
-    return UNC_UPPL_RC_ERR_VERSION_NOT_SUPPORTED;
-  }
-  return UNC_RC_SUCCESS;
-}
-
-/**
- * @Description : This function checks the attribute name in associated key
- *                type is available in controller capability map
- */
-
-UncRespCode PhysicalCore::ValidateAttribInCtrlrCap(string version,
-                                                      uint32_t key_type,
-                                                      string attribute_name) {
-  UncRespCode ret = ValidateKeyTypeInCtrlrCap(version, key_type);
-  PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
-  if (physical_layer == NULL) {
-    return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
-  }
-  pfc_log_debug("ValidateKeyTypeInCtrlrCap ret = %d\n", ret);
-  if (ret != UNC_RC_SUCCESS) {
-    pfc_log_debug("ValidateKeyTypeInCtrlrCap ret = %d\n", ret);
-    return ret;
-  }
-  UncRespCode parse_ret = UNC_RC_SUCCESS;
-  ControllerVersion obj(version, parse_ret);
-  if (parse_ret != UNC_RC_SUCCESS) {
-    return parse_ret;
-  }
-  cap_iter iter_cap_map = GetVersionIterator(obj);
-  pfc_log_debug("Controller Version = %s\n",
-                (iter_cap_map->first.version_).c_str());
-  map<cap_key_struct, cap_value_struct > key_type_map;
-  cap_key_struct keystructvar;
-  keystructvar.key_type = key_type;
-  key_type_map = (iter_cap_map)->second;
-  map<cap_key_struct, cap_value_struct >::iterator iter_key_type_map_ =
-      key_type_map.find(keystructvar);
-  if (iter_key_type_map_ != key_type_map.end()) {
-    pfc_log_debug("Found key_type is %d",
-                  (iter_key_type_map_)->first.key_type);
-    cap_value_struct vs = (iter_key_type_map_)->second;
-    pfc_log_debug("vector size is %"PFC_PFMT_SIZE_T, (vs.attrs).size());
-    pfc_log_debug("Attribute_name to search is %s", attribute_name.c_str());
-    for (uint32_t idx = 0; idx < (vs.attrs).size(); ++idx) {
-      if ((vs.attrs[idx]).attr_name == attribute_name) {
-        return UNC_RC_SUCCESS;
-      }
-    }
-  }
-  pfc_log_info("attribute not supported");
-  return UNC_UPPL_RC_ERR_ATTRIBUTE_NOT_SUPPORTED;
-}
-
-/**
- * @Description : This function gets the scalability number of associated
- *                key type
- */
-
-UncRespCode PhysicalCore::GetScalabilityNumber(string version,
-                                                  uint32_t key_type,
-                                                  uint32_t &scalability_num) {
-  UncRespCode parse_ret = UNC_RC_SUCCESS;
-  ControllerVersion obj(version, parse_ret);
-  if (parse_ret != UNC_RC_SUCCESS) {
-    return parse_ret;
-  }
-
-  cap_iter iter_cap_map = GetVersionIterator(obj);
-  map<cap_key_struct, cap_value_struct > key_type_map;
-
-  if (iter_cap_map != ctr_cap_map_.end()) {
-    cap_key_struct keystructvar;
-    keystructvar.key_type = key_type;
-    key_type_map = iter_cap_map->second;
-    map<cap_key_struct, cap_value_struct >::iterator iter_key_type_map_ =
-        key_type_map.find(keystructvar);
-
-    scalability_num = ((iter_key_type_map_)->second.scalability_num);
-    pfc_log_debug("Scalability number for key type %d is %d",
-                  key_type, scalability_num);
-    return UNC_RC_SUCCESS;
-  } else {
-    pfc_log_info("PhysicalCore::GetScalabilityNumber ret = %d",
-                 UNC_UPPL_RC_ERR_VERSION_NOT_SUPPORTED);
-    return UNC_UPPL_RC_ERR_VERSION_NOT_SUPPORTED;
-  }
-}
 
 /**
  * @Description : This function sends event subscription request to Driver
@@ -430,6 +249,9 @@ UncRespCode PhysicalCore::ValidateConfigId(uint32_t session_id,
                                               uint32_t config_id) {
   TcLibModule* tclib_ptr = static_cast<TcLibModule*>
   (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+  if (tclib_ptr == NULL) {  // cpptest issue fix
+    return UNC_UPPL_RC_ERR_INVALID_STATE;
+  }
 
   uint8_t resp = tclib_ptr->TcLibValidateUpdateMsg(session_id, config_id);
   UncRespCode return_code = UNC_UPPL_RC_FAILURE;
@@ -686,6 +508,7 @@ TcCommonRet PhysicalCore::HandleCommitGlobalCommit(
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+
   // Call ITC transaction handler function
   // ITC to fill driver_info map while sending response
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
@@ -790,10 +613,11 @@ TcCommonRet PhysicalCore::HandleAuditDriverResult(
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   pfc_log_debug("Received HandleAuditDriverResult from TC");
   // Call ITC transaction handler function
   UncRespCode resp = internal_transaction_coordinator_->audit_req()->
-      HandleAuditDriverResult(session_id,
+      HandleAuditDriverResult(&db_conn, session_id,
                               controller_id,
                               commitphase,
                               driver_result,
@@ -813,8 +637,13 @@ TcCommonRet PhysicalCore::HandleAuditDriverResult(
  */
 
 TcCommonRet PhysicalCore::HandleAuditStart(uint32_t session_id,
-                                           unc_keytype_ctrtype_t ctrl_type,
-                                           string controller_id) {
+                  unc_keytype_ctrtype_t ctrl_type, string controller_id,
+                  pfc_bool_t simplified_audit, 
+                  uint64_t  commit_number,  /*Latest Commit version PFC*/
+                  uint64_t  commit_date,  /*Latest committed time of PFC*/
+                  std::string commit_application
+                  /*Application that performed commit operation*/) {
+  //  If set, simplified audit will be executed
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
   if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
@@ -826,7 +655,7 @@ TcCommonRet PhysicalCore::HandleAuditStart(uint32_t session_id,
   // Call ITC transaction handler function
   UncRespCode resp = internal_transaction_coordinator_->audit_req()->
       StartAudit(&db_conn, ctrl_type,
-                 controller_id);
+                 controller_id, simplified_audit, commit_number, commit_date, commit_application);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -947,7 +776,8 @@ TcCommonRet PhysicalCore::HandleAbortCandidate(uint32_t session_id,
   }
 }
 
-TcCommonRet PhysicalCore::SendControllerInfoToUPLL(OdbcmConnectionHandler *db_conn
+TcCommonRet PhysicalCore::SendControllerInfoToUPLL(
+                          OdbcmConnectionHandler *db_conn
     , uint32_t dt_type) {
   Kt_Controller kt_ctr;
   vector<void *> vect_ctr_key, vect_ctr_val;
@@ -956,11 +786,12 @@ TcCommonRet PhysicalCore::SendControllerInfoToUPLL(OdbcmConnectionHandler *db_co
   vect_ctr_key.push_back(reinterpret_cast<void *>(&key_ctr_obj));
 
   // Getting the controller list from dt_type Database
-  UncRespCode read_status = kt_ctr.ReadInternal(db_conn,vect_ctr_key,
+  UncRespCode read_status = kt_ctr.ReadInternal(db_conn, vect_ctr_key,
                                                    vect_ctr_val,
                                                    dt_type,
                                                    UNC_OP_READ_SIBLING_BEGIN);
-  if (read_status != UNC_RC_SUCCESS && read_status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+  if (read_status != UNC_RC_SUCCESS &&
+                      read_status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
     pfc_log_info("read from %d db is %d", dt_type, read_status);
     return unc::tclib::TC_FAILURE;
   }
@@ -1018,16 +849,16 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
   ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
                                     PFC_TRUE);  // write lock
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
-  pfc_log_info("Received HandleAuditConfig from TC");
+  pfc_log_info("AuditDB from TC dt:%d failop:%d", db_target, fail_oper);
   // Call ITC transaction handler function
   UncRespCode resp = UNC_RC_SUCCESS;
   if (fail_oper == TC_OP_CANDIDATE_COMMIT) {
-    pfc_log_info("Received HandleAuditConfig from TC");
     uint32_t session_id = 0;
     uint32_t config_id = 0;
     TcDriverInfoMap driver_info;
 
-    TcCommonRet send_status = SendControllerInfoToUPLL(&db_conn, UNC_DT_CANDIDATE);
+    TcCommonRet send_status =
+               SendControllerInfoToUPLL(&db_conn, UNC_DT_CANDIDATE);
     if (send_status != unc::tclib::TC_SUCCESS) {
       pfc_log_debug("Send to UPLL failed with %d", send_status);
       return unc::tclib::TC_FAILURE;
@@ -1082,7 +913,8 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     }
     TcTransEndResult trans_res = unc::tclib::TRANS_END_SUCCESS;
     bool audit_flag = false;
-    resp = txn_req->EndTransaction(&db_conn, session_id, config_id, trans_res, audit_flag);
+    resp = txn_req->EndTransaction(
+        &db_conn, session_id, config_id, trans_res, audit_flag);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - EndTransaction COM PH failed with %d",
                     resp);
@@ -1099,7 +931,8 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
   } else if (fail_oper == TC_OP_CANDIDATE_ABORT) {
     pfc_log_debug("Handling Failover op - CANDIDATE_ABORT");
 
-    TcCommonRet send_status = SendControllerInfoToUPLL(&db_conn, UNC_DT_CANDIDATE);
+    TcCommonRet send_status = SendControllerInfoToUPLL(
+         &db_conn, UNC_DT_CANDIDATE);
     if (send_status != unc::tclib::TC_SUCCESS) {
       pfc_log_debug("Send to UPLL failed with %d", send_status);
       return unc::tclib::TC_FAILURE;
@@ -1200,11 +1033,21 @@ TcCommonRet PhysicalCore::HandleSetup() {
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
+  UncRespCode resp = UNC_UPPL_RC_FAILURE;
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   // Copy startup to candidate and running and commit
-  UncRespCode resp = internal_transaction_coordinator_->db_config_req()->
+  if (getStartupValidStatus()) {
+    resp = internal_transaction_coordinator_->db_config_req()->
       LoadAndCommitStartup(&db_conn);
+  } else {
+    resp = internal_transaction_coordinator_->db_config_req()->
+        CopyRunningtoCandidate(&db_conn);
+    pfc_log_debug("Startup Config is not valid copy running"
+                   " to candidate resp:%d\n", resp);
+    // send success response by default
+    resp = UNC_RC_SUCCESS;
+  }
 
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -1259,9 +1102,11 @@ unc_keytype_ctrtype_t PhysicalCore::HandleGetControllerType(
     pfc_log_error("db cxn open error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
         (TcLibModule::getInstance(TCLIB_MODULE_NAME));
-    tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
+    if (tclib_ptr != NULL) {
+      tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
                                         UNC_RC_INTERNAL_ERR,
                                         0);
+    }
     return UNC_CT_UNKNOWN;
   }
   UncRespCode resp = PhyUtil::get_controller_type(&db_conn,
@@ -1275,44 +1120,23 @@ unc_keytype_ctrtype_t PhysicalCore::HandleGetControllerType(
     pfc_log_error("Unknown controller-id");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
         (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+    if (tclib_ptr != NULL) {
     tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
                                         UNC_RC_NO_SUCH_INSTANCE,
                                         0);
+    }
     return UNC_CT_UNKNOWN;
   } else {
     pfc_log_error("DB access error");
     TcLibModule* tclib_ptr = static_cast<TcLibModule*>
         (TcLibModule::getInstance(TCLIB_MODULE_NAME));
-    tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
+    if (tclib_ptr != NULL) {
+      tclib_ptr->TcLibWriteControllerInfo(controller_id.c_str(),
                                         UNC_RC_INTERNAL_ERR,
                                         0);
+    }
     return UNC_CT_UNKNOWN;
   }
-}
-
-/**
- * @Description : This function returns the list of supported controller
- *                versions
- *                The controller version will be available in static capability
- *                file
- */
-
-list<string> PhysicalCore::GetControllerVersionList() {
-  // Obtain ctrlr version list from cap map
-  list<string> ctlr_version_list;
-  string conf_file_path = string(UNC_MODULEDIR) +
-      string("/uppl_ctr_capability.conf");
-
-  pfc::core::ConfHandle conf_handle(conf_file_path, &ctr_cap_cfdef);
-
-  pfc::core::ConfBlock version_list_blk(conf_handle, "version_list");
-
-  int kVersionListSize = version_list_blk.arraySize("version_list");
-  for (int i = 0; i < kVersionListSize; ++i) {
-    ctlr_version_list.push_back(version_list_blk.getStringAt("version_list",
-                                                             i, 0));
-  }
-  return ctlr_version_list;
 }
 
 /**
@@ -1441,7 +1265,7 @@ UncRespCode PhysicalCore::SendControllerConnectAlarm(string controller_id) {
   delete []data->alarm_key;
   delete data;
   if (!alarm_status_map_.empty()) {
-    if (alarm_map_iter != alarm_status_map_.end()) { /*there is no entry*/
+    if (alarm_map_iter != alarm_status_map_.end()) { /*there is entry*/
       pfc_log_debug("Clearing an element from map:%s",
                     alarm_map_iter->first.c_str());
       alarm_status_map_.erase(alarm_map_iter);
@@ -1518,7 +1342,7 @@ PhysicalCore::SendEventHandlingFailureAlarm(string controller_id,
   }
   delete []data->alarm_key;
   delete data;
-  pfc_log_info("Sent Event Handling Failure alarm - %s , %s",
+  pfc_log_debug("Sent Event Handling Failure alarm - %s , %s",
                controller_id.c_str(), event_details.c_str());
   return UNC_RC_SUCCESS;
 }
@@ -1592,23 +1416,130 @@ PhysicalCore::SendEventHandlingSuccessAlarm(string controller_id,
 }
 
 /**
- * @Description : This function returns the iterator of the matched version
- * in the capability map
+ * @Description : This function sends DRIVER AUDIT SUCCESS alarm to node manager
+ *                This is a recovery alarm for AUDIT FAILURE alarm
+ *                This function will be called from itc_audit_request when it
+ *                receives EndAudit notification from TC with audit status success
  */
-cap_iter PhysicalCore::GetVersionIterator(ControllerVersion version_in) {
-  cap_iter iter_cap = ctr_cap_map_.begin();
-  for (; iter_cap != ctr_cap_map_.end(); ++iter_cap) {
-    ControllerVersion version = (*iter_cap).first;
-    if (version.product_version_part1_ <= version_in.product_version_part1_ &&
-        version.product_version_part2_ <= version_in.product_version_part2_ &&
-        version.product_version_part3_ <= version_in.product_version_part3_) {
-      // match found
-      return iter_cap;
+UncRespCode PhysicalCore::SendControllerAuditSuccessAlarm(
+                                              string controller_id) {
+  pfc_log_debug("controller_name:%s", controller_id.c_str());
+  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
+    // system is in standby
+    pfc_log_info("System is in standby - audit is restricted");
+    return UNC_RC_SUCCESS;
+  }
+  std::string alarm_category = "2";  // as per alarm definition,
+                        //  alarm category is 2 for audit fail/success alarm
+  std::map<std::string, bool>::iterator alarm_map_iter;
+  std::string map_key = "";
+  map_key.append(controller_id).append("#").append(alarm_category);
+  alarm_map_iter = alarm_status_map_.find(map_key);
+  if (alarm_map_iter == alarm_status_map_.end()) { /*there is no entry*/
+    // Do nothing, return
+    pfc_log_debug("no occurence alarm entry found in alarm_status_map_ "
+                               "- NOT send recovery alarm");
+    return UNC_RC_SUCCESS;
+  }
+
+  string vtn_name = "";
+  const std::string& alm_msg = "Controller audit success.Controller Id - "+\
+                                controller_id;
+  const std::string& alm_msg_summary = "Controller audit success";
+  pfc::alarm::alarm_info_with_key_t* data =
+      new pfc::alarm::alarm_info_with_key_t;
+  data->alarm_class = pfc::alarm::ALM_NOTICE;
+  data->apl_No = UNCCID_PHYSICAL;
+  data->alarm_category = 2;
+  data->alarm_key_size = controller_id.length();
+  data->alarm_key = new uint8_t[controller_id.length()+1];
+  memcpy(data->alarm_key,
+         controller_id.c_str(),
+         controller_id.length()+1);
+  data->alarm_kind = 0;
+  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
+      vtn_name,
+      alm_msg,
+      alm_msg_summary,
+      data, fd);
+  if (ret != pfc::alarm::ALM_OK) {
+    delete []data->alarm_key;
+    delete data;
+    return UNC_UPPL_RC_ERR_ALARM_API;
+  }
+  delete []data->alarm_key;
+  delete data;
+  if (!alarm_status_map_.empty()) {
+    if (alarm_map_iter != alarm_status_map_.end()) { /*there is entry*/
+      pfc_log_debug("Clearing an element from map:%s",
+                    alarm_map_iter->first.c_str());
+      alarm_status_map_.erase(alarm_map_iter);
     }
   }
-  // Return end of map
-  iter_cap = ctr_cap_map_.end();
-  return iter_cap;
+  pfc_log_info("Sent Controller Audit Success alarm - %s",
+                   controller_id.c_str());
+  return UNC_RC_SUCCESS;
+}
+/**
+ * @Description: This function sends DRIVER AUDIT FAILURE alarm to node manager
+ *             This is a occurence alarm for AUDIT FAILURE
+ *             This function will be called from itc_audit_request when it
+ *             receives EndAudit notification from TC with audit status failure
+ */
+UncRespCode PhysicalCore::SendControllerAuditFailureAlarm(
+                                                string controller_id) {
+  // Do we need the same here? Pls test and confirm
+  pfc_log_debug("controller_name:%s", controller_id.c_str());
+  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
+    // system is in standby
+    pfc_log_info("System is in standby - audit is restricted");
+    return UNC_RC_SUCCESS;
+  }
+  std::string alarm_category = "2";  // as per alarm definition,
+                        //  alarm category is 2 for audit fail/success alarm
+  std::map<std::string, bool>::iterator alarm_map_iter;
+  std::string map_key = "";
+  map_key.append(controller_id).append("#").append(alarm_category);
+  alarm_map_iter = alarm_status_map_.find(map_key);
+  if (alarm_map_iter != alarm_status_map_.end()) { /*there is an entry found*/
+    //  Do nothing in this case, just return
+    pfc_log_debug("occurence alarm entry is available in alarm_status_map_"
+                  " - NOT send occurence alarm again");
+    return UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
+  }
+  alarm_status_map_.insert(std::pair<std::string, bool> (map_key, true));
+  pfc_log_debug("Controller inserted into alarm_status_map_:%s",
+                  map_key.c_str());
+  string vtn_name = "";
+  const std::string& alm_msg = "Controller audit failure.Controller Id - " +\
+                              controller_id;
+  const std::string& alm_msg_summary = "Controller audit failure";
+  pfc::alarm::alarm_info_with_key_t* data =
+        new pfc::alarm::alarm_info_with_key_t;
+  data->alarm_class = pfc::alarm::ALM_WARNING;
+  data->apl_No = UNCCID_PHYSICAL;
+  data->alarm_category = 2;
+  data->alarm_key_size = controller_id.length();
+  data->alarm_key = new uint8_t[controller_id.length()+1];
+  memcpy(data->alarm_key,
+             controller_id.c_str(),
+                    controller_id.length()+1);
+  data->alarm_kind = 1;
+  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
+          vtn_name,
+          alm_msg,
+          alm_msg_summary,
+          data, fd);
+  if (ret != pfc::alarm::ALM_OK) {
+    delete []data->alarm_key;
+    delete data;
+    return UNC_UPPL_RC_ERR_ALARM_API;
+  }
+  delete []data->alarm_key;
+  delete data;
+  pfc_log_info("Sent Controller Audit Failure alarm - %s",
+                   controller_id.c_str());
+  return UNC_RC_SUCCESS;
 }
 
 /** RaiseEventHandlingAlarm()
@@ -1642,11 +1573,12 @@ UncRespCode PhysicalCore::ClearEventHandlingAlarm(string controller_name) {
            controller_name);
   if (alarm_raised_iter != event_handling_controller_alarm_.end()) {
     pfc_log_debug(" Failure Alarm already raised for this controller id");
-    event_handling_controller_alarm_.erase(alarm_raised_iter);
+    alarm_raised_iter =
+               event_handling_controller_alarm_.erase(alarm_raised_iter);
     pfc_log_debug("Clearing the alarm");
     return UNC_RC_SUCCESS;
   }
-  pfc_log_info("Ignoring the clearance alarm");
+  pfc_log_debug("Ignoring the clearance alarm");
   return UNC_UPPL_RC_FAILURE;
 }
 
@@ -1668,8 +1600,12 @@ UncRespCode PhysicalCore::remove_ctr_from_alarm_status_map(
     // send recovery alarm and delete the entry
     if (alarm_category.compare("1") == 0)
       SendControllerConnectAlarm(controller_name);
-    else  // alarm_category == "3"
+    else if (alarm_category.compare("2") == 0)
+      SendControllerAuditSuccessAlarm(controller_name);
+    else if (alarm_category.compare("3") == 0)
       SendEventHandlingSuccessAlarm(controller_name, "KT_CONTROLLER - DELETE");
+    else
+      pfc_log_error("alarm category is not matched in alarm_status_map");
 
     pfc_log_debug("controller key is deleted in alarm_status_map_");
     return UNC_RC_SUCCESS;
@@ -1691,6 +1627,17 @@ unc::capa::CapaIntf *PhysicalCore::GetCapaInterface() {
     pfc_log_error("CapaModule is not found in UPPL daemon");
   }
   return capa;
+}
+/** 
+ * @Description : This function get and return the startup config validity
+ * @param[in] : None
+ * @return    : StartupValidity status
+ */
+
+uint16_t PhysicalCore::getStartupValidStatus() {
+  TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+    (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+  return tclib_ptr->IsStartupConfigValid();
 }
 
 }  // namespace uppl

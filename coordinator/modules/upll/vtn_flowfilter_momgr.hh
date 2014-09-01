@@ -155,11 +155,13 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
      */
 
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
                                      const char *ctrlr_name,
-                                     DalDmlIntf *dmi);
+                                     DalDmlIntf *dmi,
+                                     upll_import_type import_type);
     /**
      * @brief   This API is used to create the record  in candidate
      *          configuration
@@ -176,8 +178,7 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
                                                 ConfigKeyVal *ikey,
-                                                DalDmlIntf *dmi,
-                                                bool restore_flag = false);
+                                                DalDmlIntf *dmi);
 
     /**
      * @brief  Method used for Update Operation.
@@ -372,55 +373,6 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
         DalDmlIntf *dmi);
-     /**
-     * @brief  Method to Update the controller details .
-     *
-     * @param[out]  ck_main   Contains the Pointer to ConfigkeyVal Class
-     *                         and contains the Pfc Name.
-     * @param[in]   ipc_req   Describes Pointer variable for IpcRequest Class.
-     * @param[in]   ipc_resp  Describes Pointer variable for IpcResponse Class.
-     * @param[in]   op        Decribes the resp operation .
-     * @param[in]   dmi       Describes Pointer to DalDmlIntf Class.
-     * @param[in]   ctrlr_id  Describes Controller name
-     *
-     * @retval  UPLL_RT_SUCCESS      Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Failure.
-     */
-
-    upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-                              IpcResponse *ipc_resp,
-                              unc_keytype_operation_t op,
-                              DalDmlIntf *dmi,
-                              controller_domain *ctrlr_domi,
-                              set<string> *affected_ctrlr_set,bool *driver_resp);
-    /**
-     * @brief  Update controller with the new created / updated / deleted
-     *         configuration between the Candidate and the Running
-     *         configuration
-     *
-     * @param[in]  keytype               Specifies the keytype
-     * @param[in]  session_id            Ipc client session id
-     * @param[in]  config_id             Ipc request header config id
-     * @param[in]  phase                 Specifies the operation
-     * @param[in]  dmi                   Pointer to DalDmlIntf class.
-     * @param[out] affected_ctrlr_set    Returns the list of controller to
-     *                                   which the command has been delivered.
-     *
-     * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-     * @retval  UPLL_RC_ERR_GENERIC                Generic error.
-     * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-     * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
-     **/
-
-    upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                 uint32_t session_id,
-                                 uint32_t config_id,
-                                 uuc::UpdateCtrlrPhase phase,
-                                 set<string> *affected_ctrlr_set,
-                                 DalDmlIntf *dmi,
-                                 ConfigKeyVal **err_ckv);
 
     /**
      * @brief  Allocates Memory for the Incoming Pointer to the Class.
@@ -570,7 +522,8 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
                                    uuc::UpdateCtrlrPhase phase, MoMgrTables tbl,
                                    ConfigKeyVal *&ckv_driver_req,
                                    DalDmlIntf *dmi,
-                                   bool &invalid_attr);
+                                   bool &invalid_attr,
+                                   bool check_audit_phase);
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
@@ -595,6 +548,14 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t CopyVtnFlowFilterControllerCkv(ConfigKeyVal *ikey,
                            ConfigKeyVal *&okey);
+
+    upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                           unc_keytype_operation_t &op);
+
+    upll_rc_t CreatePIForVtnPom(IpcReqRespHeader *req,
+                                ConfigKeyVal *ikey,
+                                DalDmlIntf *dmi,
+                                const char *ctrlr_id);
 };
 
 typedef struct val_vtn_flowfilter_ctrlr {

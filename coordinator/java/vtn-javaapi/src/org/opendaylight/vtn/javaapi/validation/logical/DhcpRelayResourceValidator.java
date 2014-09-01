@@ -54,19 +54,18 @@ public class DhcpRelayResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof DhcpRelayResource
 				&& ((DhcpRelayResource) resource).getVtnName() != null
-				&& !((DhcpRelayResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((DhcpRelayResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((DhcpRelayResource) resource).getVtnName().trim(),
+					((DhcpRelayResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((DhcpRelayResource) resource).getVrtName() != null
-						&& !((DhcpRelayResource) resource).getVrtName().trim()
+						&& !((DhcpRelayResource) resource).getVrtName()
 								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((DhcpRelayResource) resource).getVrtName().trim(),
+							((DhcpRelayResource) resource).getVrtName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -82,9 +81,8 @@ public class DhcpRelayResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put method of DhcpRelay API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DhcpRelayResourceValidator");
@@ -107,13 +105,13 @@ public class DhcpRelayResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -151,14 +149,10 @@ public class DhcpRelayResourceValidator extends VtnServiceValidator {
 			// validation for key: relay_status(mandatory)
 			setInvalidParameter(VtnServiceJsonConsts.DHCPRELAYSTATUS);
 			if (dhcpRelay.has(VtnServiceJsonConsts.DHCPRELAYSTATUS)
-					&& dhcpRelay
-							.getAsJsonPrimitive(
-									VtnServiceJsonConsts.DHCPRELAYSTATUS)
-							.getAsString().trim() != null) {
-				final String relayStatus = dhcpRelay
-						.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DHCPRELAYSTATUS)
-						.getAsString().trim();
+					&& dhcpRelay.getAsJsonPrimitive(
+							VtnServiceJsonConsts.DHCPRELAYSTATUS).getAsString() != null) {
+				final String relayStatus = dhcpRelay.getAsJsonPrimitive(
+						VtnServiceJsonConsts.DHCPRELAYSTATUS).getAsString();
 				isValid = relayStatus
 						.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)
 						|| relayStatus

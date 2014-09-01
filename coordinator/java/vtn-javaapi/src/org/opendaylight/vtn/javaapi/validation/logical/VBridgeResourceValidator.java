@@ -54,25 +54,24 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VBridgesResource
 				&& ((VBridgesResource) resource).getVtnName() != null
-				&& !((VBridgesResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VBridgesResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBridgesResource) resource).getVtnName().trim(),
+					((VBridgesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		} else if (resource instanceof VBridgeResource
 				&& ((VBridgeResource) resource).getVtnName() != null
-				&& !((VBridgeResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VBridgeResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBridgeResource) resource).getVtnName().trim(),
+					((VBridgeResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VBridgeResource) resource).getVbrName() != null
-						&& !((VBridgeResource) resource).getVbrName().trim()
-								.isEmpty()) {
+						&& !((VBridgeResource) resource).getVbrName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VBridgeResource) resource).getVbrName().trim(),
+							((VBridgeResource) resource).getVbrName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -88,9 +87,8 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 	 * Validate request json for get, put and post method of VBridge API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VBridgeResourceValidator");
@@ -113,7 +111,7 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -122,7 +120,7 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -154,24 +152,6 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 			isValid = true;
 			final JsonObject vBridge = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VBRIDGE);
-			// validation for key: controller_id
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
-				if (vBridge.has(VtnServiceJsonConsts.CONTROLLERID)
-						&& vBridge.getAsJsonPrimitive(
-								VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString() != null
-						&& !vBridge
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vBridge.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
-				}
-			}
 			// validation for key: description
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
@@ -181,27 +161,12 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 						&& !vBridge
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DESCRIPTION)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(
 							vBridge.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
-				}
-			}
-			// validation for key: DomainID
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-				if (vBridge.has(VtnServiceJsonConsts.DOMAINID)
-						&& vBridge.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
-					isValid = validator.isValidDomainId(vBridge
-							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
-							|| vBridge
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.DOMAINID)
-									.getAsString().trim().isEmpty();
 				}
 			}
 		}
@@ -231,7 +196,7 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 							.getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vbridge
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VBRNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for mandatory key:controller_id
 			if (isValid) {
@@ -240,11 +205,12 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 						&& vbridge.getAsJsonPrimitive(
 								VtnServiceJsonConsts.CONTROLLERID)
 								.getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vbridge.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vbridge.getAsJsonPrimitive(
+											VtnServiceJsonConsts.CONTROLLERID)
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -258,11 +224,11 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 						&& !vbridge
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DESCRIPTION)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(
 							vbridge.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
 				}
 			}
@@ -274,7 +240,7 @@ public class VBridgeResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
 					isValid = validator.isValidDomainId(vbridge
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}

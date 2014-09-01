@@ -92,6 +92,8 @@ class ClientSession {
   int   addOutput(key_switch&);
   int   addOutput(key_ctr_dataflow&);
   int   addOutput(key_dataflow&);
+  int   addOutput(val_ctr_commit_ver&);
+
 
 
   int   getResponse(uint32_t index, int8_t &data);

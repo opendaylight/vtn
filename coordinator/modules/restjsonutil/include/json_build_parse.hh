@@ -56,6 +56,9 @@ class JsonBuildParse {
   static int parse(json_object* jobj, const std::string &key,
                  int arrindex, T &val);
 
+  template<typename T>
+  static int parse(json_object* jobj, const std::string &key, T &val);
+
   /**
    * GetArrayLength           - the length of the array
    * @param[in] json_object   - json object from which the val to be retieved
@@ -63,13 +66,14 @@ class JsonBuildParse {
    * @return int              - the length of the array
    */
   static int get_array_length(json_object* jobj, const std::string &key);
+  static int get_array_length(json_object* jobj);
 
   /**
    * @brief                      - Converts the json object to json string
    * @param[in]  json_object*    - which needs to converted to json string
    * return const char*          - converted from json object
    */
-  static const char* get_string(json_object* jobj);
+  static const char* get_json_string(json_object* jobj);
 
   /**
    * @brief                      - Converts string to json object
@@ -141,6 +145,18 @@ int JsonBuildParse::parse(json_object* jobj, const std::string &key,
   // If json object is NULL , get_value is not called return REST_OP_SUCCESS
   return REST_OP_SUCCESS;
 }
+
+
+// Parse the json object with the given key and gets the value and assign it to
+// template val instance
+template<typename T>
+int JsonBuildParse::parse(json_object* jobj,
+                          const std::string &key,
+                          T &val) {
+  return parse(jobj, key, -1, val);
+}
+
+
 }  //  namespace restjson
 }  //  namespace unc
 #endif  // RESTJSON_JSON_BUILD_PARSE_H_

@@ -48,7 +48,7 @@ CPPFLAGS += -include ut_stub.h
 
 CONTROLLER_SOURCES = controller_fw.cc
 
-TCLIBMODULE_STUBSOURCES += tclib_module.cc
+#TCLIBMODULE_STUBSOURCES += tclib_module.cc
 ODCDRIVER_STUB_SOURCES = odc_controller.cc odc_drv.cc
 VTNCACHEUTIL_STUB_SOURCES += keytree.cc confignode.cc
 MISC_SOURCES = ipc_client.cc ipc_server.cc module.cc

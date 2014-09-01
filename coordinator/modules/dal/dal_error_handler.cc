@@ -28,6 +28,8 @@ bool DalErrorHandler::err_map_filled_;
 // Commented out kDalRcGeneralError cases for efficiency
 static const DalErrMap dal_err_map[] = {
   // 01 prefix is for warnings - SQL_SUCCESS_WITH_INFO
+  // 00000 - Success with info
+  {"00000", kDalRcSuccess},
   // 01000 General Warning
   {"01000", kDalRcSuccess},
   // 01001 Cursor operation conflict
@@ -307,33 +309,33 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
     case SQL_INVALID_HANDLE:
       switch (handle_type) {
         case SQL_HANDLE_ENV:
-          UPLL_LOG_DEBUG("Invalid Environment Handle");
+          UPLL_LOG_INFO("Invalid environment handle");
           *dal_rc = kDalRcGeneralError;
           return;
 
         case SQL_HANDLE_DESC:
-          UPLL_LOG_DEBUG("Invalid Descriptor Handle");
+          UPLL_LOG_INFO("Invalid descriptor handle");
           *dal_rc = kDalRcGeneralError;
           return;
 
         case SQL_HANDLE_DBC:
-          UPLL_LOG_DEBUG("Invalid Connection Handle");
+          UPLL_LOG_INFO("Invalid connection handle");
           *dal_rc = kDalRcInvalidConnHandle;
           return;
 
         case SQL_HANDLE_STMT:
-          UPLL_LOG_DEBUG("Invalid Statement Handle");
+          UPLL_LOG_INFO("Invalid statement handle");
           *dal_rc = kDalRcGeneralError;
           return;
 
         default:
-          UPLL_LOG_DEBUG("Unknown Handle type");
+          UPLL_LOG_INFO("Unknown handle type");
           *dal_rc = kDalRcGeneralError;
           return;
       }  // switch (handle_type)
 
     case SQL_NEED_DATA:
-      UPLL_LOG_DEBUG("Need Data");
+      UPLL_LOG_INFO("Need Data");
       *dal_rc = kDalRcDataError;
       return;
 
@@ -341,7 +343,7 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
 
     // Asynchronous case
     case SQL_STILL_EXECUTING:
-      UPLL_LOG_DEBUG("Still Executing");
+      UPLL_LOG_INFO("Still Executing");
       *dal_rc = kDalRcGeneralError;
       return;
 
@@ -370,10 +372,10 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
           memset(err_msg, 0, kDalSqlErrMsgLen);
           rc = SQLGetDiagRec(handle_type, handle, rec_no, sql_state, &err_code,
                              err_msg, sizeof(err_msg), &err_msg_len);
-#ifdef UNC_LP64
+// #ifdef UNC_LP64
           UPLL_LOG_DEBUG("DB Error details[%d] - %s:%"UNC_PFMT_SQLINTEGER":%s",
                          rec_no, sql_state, err_code, err_msg);
-#endif
+// #endif
           rec_no++;
         } while (rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO);
 
@@ -383,7 +385,7 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
                   &err_code, err_msg, sizeof(err_msg), &err_msg_len);
 
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-          UPLL_LOG_DEBUG("Error Retrieving Diag Information");
+          UPLL_LOG_INFO("Error retrieving diag information");
           *dal_rc = kDalRcGeneralError;
           return;
         }
@@ -393,7 +395,7 @@ DalErrorHandler::ProcessOdbcErrors(const SQLSMALLINT handle_type,
       return;
 
     default:
-      UPLL_LOG_DEBUG("Unknown Return Code");
+      UPLL_LOG_INFO("Unknown return code");
       *dal_rc = kDalRcGeneralError;
       return;
   }  // switch(sql_rc)
@@ -443,8 +445,8 @@ DalErrorHandler::FindDalResultCode(const SQLCHAR *sql_state) {
   std::map<std::string, DalResultCode>::iterator iter;
   iter = err_map_.find(state);
   if (iter == err_map_.end()) {
-    UPLL_LOG_DEBUG("Warning - Error code data not available"
-                   " Returning General Error");
+    UPLL_LOG_INFO("Warning - Error code data not available"
+                  " Returning General Error");
     return kDalRcGeneralError;
   }
   return iter->second;

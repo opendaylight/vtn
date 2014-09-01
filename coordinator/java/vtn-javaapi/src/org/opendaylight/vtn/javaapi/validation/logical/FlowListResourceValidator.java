@@ -54,9 +54,9 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.FLNAME);
 		if (resource instanceof FlowListResource
 				&& ((FlowListResource) resource).getFlName() != null
-				&& !((FlowListResource) resource).getFlName().trim().isEmpty()) {
+				&& !((FlowListResource) resource).getFlName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((FlowListResource) resource).getFlName().trim(),
+					((FlowListResource) resource).getFlName(),
 					VtnServiceJsonConsts.LEN_32);
 			setListOpFlag(false);
 		} else if (resource instanceof FlowListsResource) {
@@ -71,9 +71,8 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get and post method of FlowList API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start FlowListResourceValidator#validate()");
 
 		LOG.info("Validating request for " + method
@@ -93,7 +92,7 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -131,10 +130,10 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 							.getAsString() != null
 					&& !flowList
 							.getAsJsonPrimitive(VtnServiceJsonConsts.FLNAME)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLengthAlphaNum(flowList
 						.getAsJsonPrimitive(VtnServiceJsonConsts.FLNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_32);
+						.getAsString(), VtnServiceJsonConsts.LEN_32);
 			}
 			// validation for key: ip_version(optional)
 			if (isValid) {
@@ -145,10 +144,9 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 						&& !flowList
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.IPVERSION)
-								.getAsString().trim().isEmpty()) {
-					final String ipVersion = flowList
-							.getAsJsonPrimitive(VtnServiceJsonConsts.IPVERSION)
-							.getAsString().trim();
+								.getAsString().isEmpty()) {
+					final String ipVersion = flowList.getAsJsonPrimitive(
+							VtnServiceJsonConsts.IPVERSION).getAsString();
 					isValid = ipVersion
 							.equalsIgnoreCase(VtnServiceJsonConsts.IP)
 							|| ipVersion
@@ -190,10 +188,9 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.IPVERSION).getAsString() != null
 					&& !requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.IPVERSION)
-							.getAsString().trim().isEmpty()) {
-				final String ipVersion = requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.IPVERSION)
-						.getAsString().trim();
+							.getAsString().isEmpty()) {
+				final String ipVersion = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.IPVERSION).getAsString();
 				isValid = ipVersion.equalsIgnoreCase(VtnServiceJsonConsts.IP)
 						|| ipVersion
 								.equalsIgnoreCase(VtnServiceJsonConsts.IPV6);
@@ -234,10 +231,10 @@ public class FlowListResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_32);
+							.getAsString(), VtnServiceJsonConsts.LEN_32);
 				}
 			}
 			// validation for key: max_repitition

@@ -41,16 +41,26 @@ typedef enum {
       Notfn_Link,
 }AuditStateObjects;
 
+typedef struct {
+  uint64_t commit_number;
+  uint64_t commit_date;
+  uint8_t commit_application[256];
+}commit_version;
+
 namespace unc {
 namespace uppl {
 
 class AuditRequest:public ITCReq  {
- public:
+  public:
   AuditRequest();
   ~AuditRequest();
   UncRespCode StartAudit(OdbcmConnectionHandler *db_conn,
                             unc_keytype_ctrtype_t driver_id,
-                            string controller_id);
+                            string controller_id, 
+                            pfc_bool_t simplified_audit, 
+                            uint64_t commit_number,
+                            uint64_t commit_date,
+                            string commit_application);
   UncRespCode StartAuditTransaction(uint32_t session_id,
                                        unc_keytype_ctrtype_t driver_id,
                                        string controller_id);
@@ -64,13 +74,12 @@ class AuditRequest:public ITCReq  {
                                         uint32_t driver_id,
                                         string controller_id,
                                         TcDriverInfoMap &driver_info);
-  UncRespCode HandleAuditDriverResult(uint32_t session_id,
+  UncRespCode HandleAuditDriverResult(OdbcmConnectionHandler *db_conn,
+                                         uint32_t session_id,
                                          string controller_id,
                                          TcCommitPhaseType commitphase,
                                          TcCommitPhaseResult driver_result,
-                                         TcAuditResult& audit_result) {
-    audit_result = unc::tclib::TC_AUDIT_SUCCESS;
-    return UNC_RC_SUCCESS;}
+                                         TcAuditResult& audit_result);
   UncRespCode HandleAuditAbort(uint32_t session_id,
                                   unc_keytype_ctrtype_t driver_id,
                                   string controller_id,
@@ -84,6 +93,7 @@ class AuditRequest:public ITCReq  {
                           TcAuditResult audit_result);
   UncRespCode MergeAuditDbToRunning(OdbcmConnectionHandler *db_conn,
                                        string controller_name);
+  static map<string, commit_version> comm_ver_;
 
  private:
   Kt_Base* GetClassPointerAndKey(AuditStateObjects audit_key_type,
@@ -113,6 +123,8 @@ class AuditRequest:public ITCReq  {
                              const vector<void *> &key_running,
                              const vector<void *> &val_running,
                              unsigned int index);
+  void SendAlarmAndClear(string controller_name,
+                         OdbcmConnectionHandler *db_conn);
 };
 
 class AuditNotification : public std::unary_function < void, void > {

@@ -11,6 +11,8 @@
 #include "uncxx/upll_log.hh"
 #include "dal_error_handler.hh"
 #include "dal_module.hh"
+#include "dal_schema.hh"
+#include "dal_odbc_mgr.hh"
 
 namespace unc {
 namespace upll {
@@ -27,6 +29,10 @@ DalModule::~DalModule() {
 pfc_bool_t DalModule::init(void) {
   pfc_log_notice("Init");
   DalErrorHandler::FillErrorMap();
+  // Fill TableName-Index map
+  if (!DalOdbcMgr::FillTableName2IndexMap()) {
+    return PFC_FALSE;
+  }
   return PFC_TRUE;
 }
 

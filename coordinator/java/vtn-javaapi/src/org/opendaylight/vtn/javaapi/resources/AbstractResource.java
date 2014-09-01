@@ -17,6 +17,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcDataUnit;
+import org.opendaylight.vtn.core.ipc.IpcUint32;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.VtnServiceResource;
 import org.opendaylight.vtn.javaapi.connection.IpcConnPool;
@@ -33,6 +34,7 @@ import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
+import org.opendaylight.vtn.javaapi.ipc.enums.UncOperationEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncSYSMGEnums;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncSessionEnums;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncTCEnums;
@@ -410,13 +412,14 @@ public abstract class AbstractResource implements VtnServiceResource {
 		requestProcessor.setServiceInfo(UncUPPLEnums.UPPL_IPC_SVC_NAME,
 				UncUPPLEnums.ServiceID.UPPL_SVC_READREQ.ordinal());
 		int status = ClientSession.RESP_FATAL;
-		int memberIndex = 0;
-		final VtnServiceConfiguration configuration = VtnServiceInitManager
-				.getConfigurationMap();
-		final int max_rep_count = Integer.parseInt(configuration
-				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+		long memberIndex = 0;
+		long max_repetition = 0;
+		//get max_repetition.
+		max_repetition = Long.parseLong(requestBody
+								.getAsJsonPrimitive(VtnServiceJsonConsts
+                                .MAX).getAsString());
 		memberIndex = responseArray.size();
-		if (memberIndex != 0) {
+		if (memberIndex != 0 && memberIndex < max_repetition) {
 			JsonObject memberLastIndex = (JsonObject) responseArray
 					.get(responseArray.size() - 1);
 			if (requestBody.has(VtnServiceJsonConsts.INDEX)) {
@@ -426,7 +429,11 @@ public abstract class AbstractResource implements VtnServiceResource {
 			} else {
 				uriParameters.add(memberLastIndex.get(IndexName).getAsString());
 			}
-			while (memberIndex == max_rep_count) {
+			// (noSuchInstanceFlag = 0 ) means that all data has been acquired
+			// (noSuchInstanceFlag != 0) means that there may be data.
+			int noSuchInstanceFlag = 0;
+			noSuchInstanceFlag = responseArray.size();
+			while (noSuchInstanceFlag != 0 && memberIndex < max_repetition) {
 
 				JsonArray memberArray = null;
 				memberLastIndex = (JsonObject) responseArray.get(responseArray
@@ -438,6 +445,13 @@ public abstract class AbstractResource implements VtnServiceResource {
 				requestProcessor.createIpcRequestPacket(requestPackeEnumName,
 						requestBody, uriParameters);
 
+				// update the operation to read_sibling.
+				if (requestProcessor.getRequestPacket().getOperation().intValue() !=
+				    UncOperationEnum.UNC_OP_READ_SIBLING.ordinal()) {
+					requestProcessor.getRequestPacket().setOperation(new IpcUint32
+							(UncOperationEnum.UNC_OP_READ_SIBLING.ordinal()));
+				}
+				
 				status = requestProcessor.processIpcRequest();
 				if (status == ClientSession.RESP_FATAL) {
 					throw new VtnServiceException(
@@ -466,6 +480,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.LIST))
 							.getAsJsonArray(JsonArrayName);
+					noSuchInstanceFlag = memberArray.size();
 				} catch (final Exception e) {
 					exceptionHandler.raise(
 							Thread.currentThread().getStackTrace()[1]
@@ -479,11 +494,19 @@ public abstract class AbstractResource implements VtnServiceResource {
 				}
 				if (null != memberArray && !memberArray.isJsonNull()
 						&& memberArray.size() > 0) {
-					responseArray.getAsJsonArray().addAll(memberArray);
+					// all the required data have been acquired.
+					if (memberIndex + memberArray.size() > max_repetition) {
+						for (long i = memberIndex; i<max_repetition; i++) {
+							responseArray.getAsJsonArray().add((memberArray.get((int)(i - memberIndex))));
+						}
+						memberIndex =  max_repetition;
+					} else {
+						responseArray.getAsJsonArray().addAll(memberArray);
+						memberIndex += memberArray.size();
+					}
 				} else {
 					break;
 				}
-				memberIndex = memberArray.size();
 			}
 		}
 		final JsonObject root = new JsonObject();
@@ -518,23 +541,31 @@ public abstract class AbstractResource implements VtnServiceResource {
 		requestProcessor.setServiceInfo(UncUPLLEnums.UPLL_IPC_SERVICE_NAME,
 				UncUPLLEnums.ServiceID.UPLL_READ_SVC_ID.ordinal());
 		int status = ClientSession.RESP_FATAL;
-		int memberIndex = 0;
-		final VtnServiceConfiguration configuration = VtnServiceInitManager
-				.getConfigurationMap();
-		final int max_rep_count = Integer.parseInt(configuration
-				.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
+		long memberIndex = 0;
+		long max_repetition = 0;
+		//get max_repetition.
+		max_repetition = Long.parseLong(requestBody
+								.getAsJsonPrimitive(VtnServiceJsonConsts
+					            .MAX).getAsString());
 		memberIndex = responseArray.size();
-		if (memberIndex != 0) {
+		
+		if (memberIndex != 0 && memberIndex < max_repetition) {
 			JsonObject memberLastIndex = (JsonObject) responseArray
 					.get(responseArray.size() - 1);
 			if (requestBody.has(VtnServiceJsonConsts.INDEX)) {
 				uriParameters.remove(uriParameters.size() - 1);
-				uriParameters.add(uriParameters.size(),
-						memberLastIndex.get(IndexName).getAsString());
-			} else {
-				uriParameters.add(memberLastIndex.get(IndexName).getAsString());
+			}			
+
+			String indexParams[] = IndexName.split(VtnServiceConsts.COMMA);
+			for (String param : indexParams) {
+				uriParameters.add(memberLastIndex.get(param).getAsString());
 			}
-			while (memberIndex == max_rep_count) {
+
+			// (noSuchInstanceFlag = 0 ) means that all data has been acquired.
+			// (noSuchInstanceFlag != 0) means that there may be data.
+			int noSuchInstanceFlag = 0;
+			noSuchInstanceFlag = responseArray.size();
+			while (noSuchInstanceFlag != 0 && memberIndex < max_repetition) {
 
 				JsonArray memberArray = null;
 				memberLastIndex = (JsonObject) responseArray.get(responseArray
@@ -545,7 +576,14 @@ public abstract class AbstractResource implements VtnServiceResource {
 
 				requestProcessor.createIpcRequestPacket(requestPackeEnumName,
 						requestBody, uriParameters);
-
+				
+				// update the operation to read_sibling.
+				if (requestProcessor.getRequestPacket().getOperation().intValue() !=
+				    UncOperationEnum.UNC_OP_READ_SIBLING.ordinal()) {
+					requestProcessor.getRequestPacket().setOperation(new IpcUint32
+							(UncOperationEnum.UNC_OP_READ_SIBLING.ordinal()));
+				}
+				
 				status = requestProcessor.processIpcRequest();
 				if (status == ClientSession.RESP_FATAL) {
 					throw new VtnServiceException(
@@ -574,6 +612,7 @@ public abstract class AbstractResource implements VtnServiceResource {
 							requestProcessor.getIpcResponsePacket(),
 							requestBody, VtnServiceJsonConsts.LIST))
 							.getAsJsonArray(JsonArrayName);
+					noSuchInstanceFlag = memberArray.size();
 				} catch (final Exception e) {
 					exceptionHandler.raise(
 							Thread.currentThread().getStackTrace()[1]
@@ -587,11 +626,19 @@ public abstract class AbstractResource implements VtnServiceResource {
 				}
 				if (null != memberArray && !memberArray.isJsonNull()
 						&& memberArray.size() > 0) {
-					responseArray.getAsJsonArray().addAll(memberArray);
+					// all the required data have been acquired.
+					if (memberIndex + memberArray.size() > max_repetition) {
+						for (long i = memberIndex; i<max_repetition; i++) {
+							responseArray.getAsJsonArray().add((memberArray.get((int)(i - memberIndex))));
+						}
+						memberIndex =  max_repetition;
+					} else {
+						responseArray.getAsJsonArray().addAll(memberArray);
+						memberIndex += memberArray.size();
+					}
 				} else {
 					break;
 				}
-				memberIndex = memberArray.size();
 			}
 		}
 		final JsonObject root = new JsonObject();

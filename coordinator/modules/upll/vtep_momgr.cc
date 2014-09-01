@@ -240,6 +240,10 @@ upll_rc_t VtepMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   if (tmp) {
     if (tbl == MAINTBL) {
       val_vtep *ival = static_cast<val_vtep *>(GetVal(req));
+      if (ival == NULL) {
+        UPLL_LOG_DEBUG("Null Val structure");
+        return UPLL_RC_ERR_GENERIC;
+      }
       val_vtep *vtep_val = static_cast<val_vtep *>
         (ConfigKeyVal::Malloc(sizeof(val_vtep)));
       memcpy(vtep_val, ival, sizeof(val_vtep));
@@ -256,10 +260,6 @@ upll_rc_t VtepMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
       val_db_vtep_st *ival = static_cast<val_db_vtep_st *>(tmp->get_val());
       val_db_vtep_st *vtep_st = static_cast<val_db_vtep_st *>
                                 (ConfigKeyVal::Malloc(sizeof(val_db_vtep_st)));
-      if (!vtep_st) {
-        delete tmp1;
-        return UPLL_RC_ERR_GENERIC;
-      }
       memcpy(vtep_st, ival, sizeof(val_db_vtep_st));
       ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValVtepSt, vtep_st);
       if (!tmp2) {
@@ -271,13 +271,14 @@ upll_rc_t VtepMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
     }
   };
   void *tkey = (req != NULL)?(req)->get_key():NULL;
+  if (!tkey) {
+    UPLL_LOG_DEBUG("Null tkey");
+    DELETE_IF_NOT_NULL(tmp1);
+    return UPLL_RC_ERR_GENERIC;
+  }
   key_vtep *ikey = static_cast<key_vtep *>(tkey);
   key_vtep *vtep_key = static_cast<key_vtep *>
                        (ConfigKeyVal::Malloc(sizeof(key_vtep)));
-  if (!vtep_key) {
-    if (tmp1) delete tmp1;
-    return UPLL_RC_ERR_GENERIC;
-  }
   memcpy(vtep_key, ikey, sizeof(key_vtep));
   okey = new ConfigKeyVal(UNC_KT_VTEP, IpctSt::kIpcStKeyVtep, vtep_key, tmp1);
   if (okey) {
@@ -309,10 +310,12 @@ upll_rc_t VtepMoMgr::UpdateConfigStatus(ConfigKeyVal *vtep_key,
     val_db_vtep_st *vtep_db_valst = static_cast<val_db_vtep_st *>
       (ConfigKeyVal::Malloc(sizeof(val_db_vtep_st)));
     val_vtep_st *vtepst_val = &vtep_db_valst->vtep_val_st;
-    vtepst_val->oper_status = UPLL_OPER_STATUS_UP;
+    vtepst_val->oper_status = (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)?
+                               UPLL_OPER_STATUS_UNKNOWN:
+                              UPLL_OPER_STATUS_UP;
     vtepst_val->valid[UPLL_IDX_OPER_STATUS_VTEPS] = UNC_VF_VALID;
     vtep_db_valst->down_count  = 0;
-    vtep_db_valst->fault_count = 0;
+    vtep_db_valst->unknown_count = 0;
     vtep_key->AppendCfgVal(IpctSt::kIpcStValVtepSt, vtep_db_valst);
   } else if (op == UNC_OP_UPDATE) {
     void *val = reinterpret_cast<void *>(vtep_val);
@@ -369,33 +372,35 @@ bool VtepMoMgr::CompareValidValue(void *&val1, void *val2,
   val_vtep_t *val_vtep1 = reinterpret_cast<val_vtep_t *>(val1);
   val_vtep_t *val_vtep2  = reinterpret_cast<val_vtep_t *>(val2);
   for (unsigned int loop = 0;
-      loop < sizeof(val_vtep1->valid)/sizeof(uint8_t); ++loop ) {
+       loop < sizeof(val_vtep1->valid)/sizeof(uint8_t); ++loop ) {
     if (UNC_VF_INVALID == val_vtep1->valid[loop]
-       && UNC_VF_VALID == val_vtep2->valid[loop])
+        && UNC_VF_VALID == val_vtep2->valid[loop])
       val_vtep1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (UNC_VF_VALID == val_vtep1->valid[UPLL_IDX_DESC_VTEP]
-      && UNC_VF_VALID == val_vtep2->valid[UPLL_IDX_DESC_VTEP]) {
-    if (!strcmp(reinterpret_cast<char*>(val_vtep1->description),
-          reinterpret_cast<char*>(val_vtep2->description)))
-      val_vtep1->valid[UPLL_IDX_DESC_VTEP] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vtep1->valid[UPLL_IDX_CONTROLLER_ID_VTEP]
-      && UNC_VF_VALID == val_vtep2->valid[UPLL_IDX_CONTROLLER_ID_VTEP]) {
-    if (!strcmp(reinterpret_cast<char*>(val_vtep1->controller_id),
-          reinterpret_cast<char*>(val_vtep2->controller_id)))
-      val_vtep1->valid[UPLL_IDX_CONTROLLER_ID_VTEP] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vtep1->valid[UPLL_IDX_DOMAIN_ID_VTEP]
-      && UNC_VF_VALID == val_vtep2->valid[UPLL_IDX_DOMAIN_ID_VTEP]) {
-    if (!strcmp(reinterpret_cast<char*>(val_vtep1->domain_id),
-          reinterpret_cast<char*>(val_vtep2->domain_id)))
-      val_vtep1->valid[UPLL_IDX_DOMAIN_ID_VTEP] = UNC_VF_INVALID;
+  if (copy_to_running) {
+    if (UNC_VF_VALID == val_vtep1->valid[UPLL_IDX_DESC_VTEP]
+        && UNC_VF_VALID == val_vtep2->valid[UPLL_IDX_DESC_VTEP]) {
+      if (!strcmp(reinterpret_cast<char*>(val_vtep1->description),
+                  reinterpret_cast<char*>(val_vtep2->description)))
+        val_vtep1->valid[UPLL_IDX_DESC_VTEP] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == val_vtep1->valid[UPLL_IDX_CONTROLLER_ID_VTEP]
+        && UNC_VF_VALID == val_vtep2->valid[UPLL_IDX_CONTROLLER_ID_VTEP]) {
+      if (!strcmp(reinterpret_cast<char*>(val_vtep1->controller_id),
+                  reinterpret_cast<char*>(val_vtep2->controller_id)))
+        val_vtep1->valid[UPLL_IDX_CONTROLLER_ID_VTEP] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == val_vtep1->valid[UPLL_IDX_DOMAIN_ID_VTEP]
+        && UNC_VF_VALID == val_vtep2->valid[UPLL_IDX_DOMAIN_ID_VTEP]) {
+      if (!strcmp(reinterpret_cast<char*>(val_vtep1->domain_id),
+                  reinterpret_cast<char*>(val_vtep2->domain_id)))
+        val_vtep1->valid[UPLL_IDX_DOMAIN_ID_VTEP] = UNC_VF_INVALID;
+    }
   }
   if (!copy_to_running)
     val_vtep1->valid[UPLL_IDX_DESC_VTEP] = UNC_VF_INVALID;
   for (unsigned int loop = 0;
-      loop < sizeof(val_vtep1->valid) / sizeof(uint8_t); ++loop) {
+       loop < sizeof(val_vtep1->valid) / sizeof(uint8_t); ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_vtep1->valid[loop]) ||
         (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vtep1->valid[loop])) {
       invalid_attr = false;
@@ -853,8 +858,6 @@ upll_rc_t VtepMoMgr::CreateVtepGrpConfigKey(ConfigKeyVal *&okey,
   key_vtep_grp_member_t *vtep_grp_mem_key = static_cast<key_vtep_grp_member_t *>
     (ConfigKeyVal::Malloc(sizeof(key_vtep_grp_member_t)));
   key_vtep *vtep_key = static_cast<key_vtep *>(ikey->get_key());
-  if (!vtep_grp_mem_key)
-    return UPLL_RC_ERR_GENERIC;
   if (!strlen(reinterpret_cast<char *>(vtep_key->vtn_key.vtn_name))) {
     FREE_IF_NOT_NULL(vtep_grp_mem_key);
     return UPLL_RC_ERR_GENERIC;
@@ -907,12 +910,12 @@ upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
     return UPLL_RC_ERR_GENERIC;
   }
   result_code =  mgr2->UpdateConfigDB(okey, dt_type, UNC_OP_READ, dmi, MAINTBL);
+  DELETE_IF_NOT_NULL(okey);
   if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code)
-    return UPLL_RC_ERR_CFG_SEMANTIC;
+    result_code = UPLL_RC_ERR_CFG_SEMANTIC;
 
   result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
          UPLL_RC_SUCCESS:result_code;
-  DELETE_IF_NOT_NULL(okey);
   return result_code;
 }
 

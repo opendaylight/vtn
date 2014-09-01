@@ -33,7 +33,7 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 			.getLogger(VtnMappingResourceValidator.class.getName());
 
 	/**
-	 * Abstract resouce reference.
+	 * Abstract resource reference.
 	 */
 	private final AbstractResource resource;
 	/**
@@ -64,28 +64,25 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VtnMappingsResource
 				&& ((VtnMappingsResource) resource).getVtnName() != null
-				&& !((VtnMappingsResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((VtnMappingsResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VtnMappingsResource) resource).getVtnName().trim(),
+					((VtnMappingsResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		} else if (resource instanceof VtnMappingResource
 				&& ((VtnMappingResource) resource).getVtnName() != null
-				&& !((VtnMappingResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((VtnMappingResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VtnMappingResource) resource).getVtnName().trim(),
+					((VtnMappingResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.MAPPINGID);
 				if (((VtnMappingResource) resource).getMappingId() != null
 						&& !((VtnMappingResource) resource).getMappingId()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					final String[] mappingId = ((VtnMappingResource) resource)
-							.getMappingId().trim()
-							.split(VtnServiceJsonConsts.HYPHEN);
+							.getMappingId().split(VtnServiceJsonConsts.HYPHEN);
 					isValid = validator.isValidMappingId(mappingId);
 				} else {
 					isValid = false;
@@ -108,9 +105,8 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 	 *             , for vtn exceptions
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VtnMappingResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VtnMappingResourceValidator");
@@ -128,7 +124,7 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -137,7 +133,7 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -157,7 +153,7 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 	 *            , for request
 	 * @param opFlag
 	 *            , for getting option1 type
-	 * @return true , if parameter are in corret format values
+	 * @return true , if parameter are in correct format values
 	 */
 	public final boolean isValidGetForMappingIdIndex(
 			final JsonObject requestBody, final boolean opFlag) {
@@ -202,8 +198,7 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null) {
 					final String[] mappingId = requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim()
-							.split(VtnServiceJsonConsts.HYPHEN);
+							.getAsString().split(VtnServiceJsonConsts.HYPHEN);
 					isValid = validator.isValidMappingId(mappingId);
 				}
 			}
@@ -212,6 +207,45 @@ public class VtnMappingResourceValidator extends VtnServiceValidator {
 				setInvalidParameter(VtnServiceJsonConsts.MAX);
 				isValid = validator.isValidMaxRepetition(requestBody);
 			}
+			
+			// validation for key: vnode_type
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.VNODETYPE);
+				if (requestBody.has(VtnServiceJsonConsts.VNODETYPE)
+						&& requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.VNODETYPE).getAsString() != null) {
+					final String vnodeType = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.VNODETYPE).getAsString();
+					isValid = validator.isValidVnodeType(vnodeType);
+				}
+			}
+
+			// validation for key: vnode_name
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.VNODENAME);
+				if (requestBody.has(VtnServiceJsonConsts.VNODENAME)
+						&& requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.VNODENAME).getAsString() != null) {
+					final String vnodeName = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.VNODENAME).getAsString();
+					isValid = validator.isValidMaxLengthAlphaNum(vnodeName,
+							VtnServiceJsonConsts.LEN_31);
+				}
+			}
+			
+			// validation for key: if_name
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.VIFNAME);
+				if (requestBody.has(VtnServiceJsonConsts.VIFNAME)
+						&& requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.VIFNAME).getAsString() != null) {
+					final String ifName = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.VIFNAME).getAsString();
+					isValid = validator.isValidMaxLengthAlphaNum(ifName,
+							VtnServiceJsonConsts.LEN_31);
+				}
+			}
+
 		}
 		LOG.trace("Complete CommonValidator#isValidGetForMappingIdIndex");
 		return isValid;

@@ -1170,7 +1170,7 @@ TEST_F(PortTest, ReadInternal_NotRead_01) {
   int ret  =  ktportobj.ReadInternal(db_conn, k, v, UNC_DT_STATE,
                                      operation_type);
 
-  EXPECT_EQ(UNC_RC_SUCCESS, ret);
+  EXPECT_EQ(2008, ret);
 }
 
 /*ReadInternal when Db is SUCCESS */

@@ -13,6 +13,7 @@
 #include <pfc/ipc_struct.h>
 #include <unc/unc_base.h>
 #include <driver/controller_interface.hh>
+#include <driver/vtn_read_value_util.hh>
 #include <vector>
 
 
@@ -53,6 +54,21 @@ class vtn_driver_command: public driver_command {
       unc::driver::controller* ctr,
       void* parent_key,
       std::vector<unc::vtndrvcache::ConfigNode *>&) {
+    return UNC_RC_SUCCESS;
+  }
+};
+
+class vtn_driver_read_command : public driver_command {
+  public:
+  virtual UncRespCode read_cmd(unc::driver::controller*,
+                               unc::vtnreadutil::driver_read_util*) {
+    return UNC_RC_SUCCESS;
+  }
+
+  virtual UncRespCode fetch_config(
+             unc::driver::controller* ctr,
+             void* parent_key,
+             std::vector<unc::vtndrvcache::ConfigNode *>&) {
     return UNC_RC_SUCCESS;
   }
 };

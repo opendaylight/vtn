@@ -203,7 +203,6 @@ upll_rc_t VtunnelMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
      return UPLL_RC_ERR_GENERIC;
   key_vtn *vtn_key = static_cast<key_vtn *>
                      (ConfigKeyVal::Malloc(sizeof(key_vtn)));
-  if (!vtn_key) return UPLL_RC_ERR_GENERIC;
   uuu::upll_strncpy(vtn_key->vtn_name,
        reinterpret_cast<key_vtunnel *>(pkey)->vtn_key.vtn_name,
        (kMaxLenVtnName+1));
@@ -229,7 +228,6 @@ upll_rc_t VtunnelMoMgr::AllocVal(ConfigVal *&ck_val,
     case MAINTBL:
       val = reinterpret_cast<void *>
         (ConfigKeyVal::Malloc(sizeof(val_vtunnel)));
-      if (!val) return UPLL_RC_ERR_GENERIC;
       ck_val = new ConfigVal(IpctSt::kIpcStValVtunnel, val);
       if (!ck_val) {
         FREE_IF_NOT_NULL(reinterpret_cast<val_vtunnel *>(val));
@@ -281,10 +279,6 @@ upll_rc_t VtunnelMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
                                   (tmp->get_val());
         val_db_vtunnel_st *vtunnel_st = static_cast<val_db_vtunnel_st *>
                            (ConfigKeyVal::Malloc(sizeof(val_db_vtunnel_st)));
-        if (!vtunnel_st) {
-          delete tmp1;
-          return UPLL_RC_ERR_GENERIC;
-        }
         memcpy(vtunnel_st, ival, sizeof(val_db_vtunnel_st));
         ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValVtunnelSt,
                                         vtunnel_st);
@@ -297,13 +291,14 @@ upll_rc_t VtunnelMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
       }
   };
   void *tkey = (req != NULL)?(req)->get_key():NULL;
+  if (!tkey) {
+    UPLL_LOG_DEBUG("Null tkey");
+    DELETE_IF_NOT_NULL(tmp1);
+    return UPLL_RC_ERR_GENERIC;
+  }
   key_vtunnel *ikey = static_cast<key_vtunnel *>(tkey);
   key_vtunnel *vtunnel_key = static_cast<key_vtunnel *>
                              (ConfigKeyVal::Malloc(sizeof(key_vtunnel)));
-  if (!vtunnel_key) {
-    delete tmp1;
-    return UPLL_RC_ERR_GENERIC;
-  }
   memcpy(vtunnel_key, ikey, sizeof(key_vtunnel));
   okey = new ConfigKeyVal(UNC_KT_VTUNNEL, IpctSt::kIpcStKeyVtunnel,
          vtunnel_key, tmp1);
@@ -336,11 +331,14 @@ upll_rc_t VtunnelMoMgr::UpdateConfigStatus(ConfigKeyVal *vtunnel_key,
     vtunnel_val->cs_row_status = cs_status;
     vtunnelst_val = reinterpret_cast<val_db_vtunnel_st *>
                     (ConfigKeyVal::Malloc(sizeof(val_db_vtunnel_st)));
-    vtunnelst_val->vtunnel_val_st.oper_status = UPLL_OPER_STATUS_UP;
+    vtunnelst_val->vtunnel_val_st.oper_status =
+                   (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)?
+                    UPLL_OPER_STATUS_UNKNOWN:
+                    UPLL_OPER_STATUS_UP;
     vtunnelst_val->vtunnel_val_st.valid[UPLL_IDX_OPER_STATUS_VTNLS] =
         UNC_VF_VALID;
     vtunnelst_val->down_count  = 0;
-    vtunnelst_val->fault_count = 0;
+    vtunnelst_val->unknown_count = 0;
     vtunnel_key->AppendCfgVal(IpctSt::kIpcStValVtunnelSt, vtunnelst_val);
   } else if (op == UNC_OP_UPDATE) {
     void *val = reinterpret_cast<void *>(vtunnel_val);
@@ -401,52 +399,49 @@ bool VtunnelMoMgr::CompareValidValue(void *&val1, void *val2,
         UNC_VF_VALID == valtunnel2->valid[loop])
       valtunnel1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_DESC_VTNL] &&
-       UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_DESC_VTNL]) {
-    if (!strcmp(reinterpret_cast<char*>(valtunnel1->description),
-                reinterpret_cast<char*>(valtunnel2->description)))
-       valtunnel1->valid[UPLL_IDX_DESC_VTNL] = UNC_VF_INVALID;
+  if (copy_to_running) {
+    if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_DESC_VTNL] &&
+        UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_DESC_VTNL]) {
+      if (!strcmp(reinterpret_cast<char*>(valtunnel1->description),
+                  reinterpret_cast<char*>(valtunnel2->description)))
+        valtunnel1->valid[UPLL_IDX_DESC_VTNL] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_CONTROLLER_ID_VTNL]
+        && UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_CONTROLLER_ID_VTNL]) {
+      if (!strcmp(reinterpret_cast<char*>(valtunnel1->controller_id),
+                  reinterpret_cast<char*>(valtunnel2->controller_id)))
+        valtunnel1->valid[UPLL_IDX_CONTROLLER_ID_VTNL] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_DOMAIN_ID_VTNL]
+        && UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_DOMAIN_ID_VTNL]) {
+      if (!strcmp(reinterpret_cast<char*>(valtunnel1->domain_id),
+                  reinterpret_cast<char*>(valtunnel2->domain_id)))
+        valtunnel1->valid[UPLL_IDX_DOMAIN_ID_VTNL] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_VTN_NAME_VTNL] &&
+        UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_VTN_NAME_VTNL]) {
+      if (!strcmp(reinterpret_cast<char*>(valtunnel1->vtn_name),
+                  reinterpret_cast<char*>(valtunnel2->vtn_name)))
+        valtunnel1->valid[UPLL_IDX_VTN_NAME_VTNL] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL] &&
+        UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL]) {
+      if (!strcmp(reinterpret_cast<char*>(valtunnel1->vtep_grp_name),
+                  reinterpret_cast<char*>(valtunnel2->vtep_grp_name)))
+        valtunnel1->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_LABEL_VTNL] &&
+        UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_LABEL_VTNL]) {
+      if (valtunnel1->label == valtunnel2->label)
+        valtunnel1->valid[UPLL_IDX_LABEL_VTNL] = UNC_VF_INVALID;
+    }
   }
-  if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_CONTROLLER_ID_VTNL]
-      && UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_CONTROLLER_ID_VTNL]) {
-    if (!strcmp(reinterpret_cast<char*>(valtunnel1->controller_id),
-                reinterpret_cast<char*>(valtunnel2->controller_id)))
-      valtunnel1->valid[UPLL_IDX_CONTROLLER_ID_VTNL] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_DOMAIN_ID_VTNL]
-      && UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_DOMAIN_ID_VTNL]) {
-    if (!strcmp(reinterpret_cast<char*>(valtunnel1->domain_id),
-                reinterpret_cast<char*>(valtunnel2->domain_id)))
-      valtunnel1->valid[UPLL_IDX_DOMAIN_ID_VTNL] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_VTN_NAME_VTNL] &&
-      UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_VTN_NAME_VTNL]) {
-    if (!strcmp(reinterpret_cast<char*>(valtunnel1->vtn_name),
-                reinterpret_cast<char*>(valtunnel2->vtn_name)))
-      valtunnel1->valid[UPLL_IDX_VTN_NAME_VTNL] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-  }
-  if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL] &&
-      UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL]) {
-    if (!strcmp(reinterpret_cast<char*>(valtunnel1->vtep_grp_name),
-                reinterpret_cast<char*>(valtunnel2->vtep_grp_name)))
-      valtunnel1->valid[UPLL_IDX_VTEP_GRP_NAME_VTNL] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-  }
-  if (UNC_VF_VALID == valtunnel1->valid[UPLL_IDX_LABEL_VTNL] &&
-      UNC_VF_VALID == valtunnel2->valid[UPLL_IDX_LABEL_VTNL]) {
-    if (valtunnel1->label == valtunnel2->label)
-      valtunnel1->valid[UPLL_IDX_LABEL_VTNL] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-  }
-  if (!copy_to_running) valtunnel1->valid[UPLL_IDX_DESC_VTNL] = UNC_VF_INVALID;
+  if (!copy_to_running)
+    valtunnel1->valid[UPLL_IDX_DESC_VTNL] = UNC_VF_INVALID;
   for (unsigned int loop = 0;
-      loop < sizeof(valtunnel1->valid) / sizeof(uint8_t); ++loop) {
+       loop < sizeof(valtunnel1->valid) / sizeof(uint8_t); ++loop) {
     if ((UNC_VF_VALID == (uint8_t) valtunnel1->valid[loop]) ||
-       (UNC_VF_VALID_NO_VALUE == (uint8_t) valtunnel1->valid[loop])) {
+        (UNC_VF_VALID_NO_VALUE == (uint8_t) valtunnel1->valid[loop])) {
       invalid_attr = false;
       break;
     }
@@ -1106,36 +1101,6 @@ upll_rc_t VtunnelMoMgr::IsReferenced(ConfigKeyVal *ikey,
   UPLL_LOG_DEBUG("IsReferenced result code (%d)", result_code);
   return result_code;
 }
-
-/*
-upll_rc_t VtunnelMoMgr::MergeValidate(unc_key_type_t keytype,
-                     const char *ctrlr_id,
-                     ConfigKeyVal *ikey,
-                     DalDmlIntf *dmi) {
-  return UPLL_RC_ERR_GENERIC;
-}
-*/
-
-upll_rc_t VtunnelMoMgr::PopulateDriverDeleteCkv(ConfigKeyVal *&vnpCkv,
-                                      DalDmlIntf *dmi,
-                                      upll_keytype_datatype_t dt_type) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result = UPLL_RC_SUCCESS;
-  if (!vnpCkv || !vnpCkv->get_key() || (!(vnpCkv->get_cfg_val()))) {
-    UPLL_LOG_TRACE("Key or Val is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  val_vtunnel *vtunnel_val = static_cast<val_vtunnel *>(GetVal(vnpCkv));
-  vnpdrv_val_vtunnel *vnp_vtunnel = static_cast<vnpdrv_val_vtunnel *>
-               (ConfigKeyVal::Malloc(sizeof(vnpdrv_val_vtunnel)));
-  vnp_vtunnel->label = vtunnel_val->label;
-  vnp_vtunnel->valid[VNPDRV_IDX_LABEL_VTNL] = UNC_VF_VALID;
-  ConfigVal *ck_val = new ConfigVal(IpctSt::kIpcStVnpdrvValVtunnel,
-                                    vnp_vtunnel);
-  vnpCkv->SetCfgVal(ck_val);
-  return result;
-}
-
 
 }  // namespace vtn
 }  // namespace upll

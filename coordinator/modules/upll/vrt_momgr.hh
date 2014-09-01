@@ -350,7 +350,8 @@ class VrtMoMgr : public VnodeMoMgr {
   upll_rc_t MergeValidate(unc_key_type_t keytype,
                           const char *ctrlr_id,
                           ConfigKeyVal *conflict_ckv,
-                          DalDmlIntf *dmi);
+                          DalDmlIntf *dmi,
+                          upll_import_type import_type);
   /* Rename */
   upll_rc_t GetRenameInfo(ConfigKeyVal *ikey,
                           ConfigKeyVal *okey,

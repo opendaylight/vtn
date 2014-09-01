@@ -2663,6 +2663,9 @@ OUT
 	$odbcvars->{ODBC_LDFLAGS} = join(' ', @$ldflags)
 		if (defined($ldflags));
 
+	# Define absolute path to ODBC wrapper header file.
+	$odbcvars->{ODBC_WRAPPER_H} = "$SRCROOT/include/unc/odbc.h";
+
 	push(@runpath, @libpath);
 	$odbcvars->{ODBC_RUNPATH} = join(' ', @runpath) if (@runpath);
 }

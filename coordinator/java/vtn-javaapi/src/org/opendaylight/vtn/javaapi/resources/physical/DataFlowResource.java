@@ -56,7 +56,7 @@ public class DataFlowResource extends AbstractResource {
 	 * 
 	 * @return Error code
 	 * @throws VtnServiceException
-	 *             ,in case of wrong request paramter.
+	 *             ,in case of wrong request parameter.
 	 */
 	@Override
 	public final int get(final JsonObject requestBody)

@@ -94,6 +94,7 @@ usess_ipc_err_e UsessUsers::GetUser(const std::string& name, UsessUser& user)
 
   L_FUNCTION_START();
 
+  user.SetConf(conf_);
   func_rtn = user.Retrieve(name);
   RETURN_IF((func_rtn != USESS_E_OK), func_rtn,
       "Failure get user data. err=%d", func_rtn);

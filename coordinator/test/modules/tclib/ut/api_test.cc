@@ -513,10 +513,10 @@ TEST(test_26, test_ipcService) {
   EXPECT_EQ(TC_FAILURE, ret);
 
   ret = tclib_obj.ipcService(sess, TCLIB_SETUP);
-  EXPECT_EQ(TC_SUCCESS, ret);
+  EXPECT_EQ(TC_FAILURE, ret);
 
   ret = tclib_obj.ipcService(sess, TCLIB_SETUP_COMPLETE);
-  EXPECT_EQ(TC_SUCCESS, ret);
+  EXPECT_EQ(TC_FAILURE, ret);
 
   ret = tclib_obj.ipcService(sess, TCLIB_GET_DRIVERID);
   EXPECT_EQ(UNC_CT_UNKNOWN, ret);

@@ -53,7 +53,7 @@ def create_vlanmap(vtn_blockname,vbr_blockname,vlanmap_blockname,no_vlan=0):
     print json.dumps(vlan_map_add)
     r = requests.post(url,data=json.dumps(vlan_map_add),headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS and r.status_code != resp_code.RESP_CREATE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -74,7 +74,7 @@ def delete_vlanmap(vtn_blockname,vbr_blockname,vlanmap_blockname,no_vlan=0):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS and r.status_code != resp_code.RESP_DELETE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -227,7 +227,7 @@ def update_vlanmap(vtn_blockname,vbr_blockname,vlanmap_blockname,update_id=0):
     print json.dumps(vlan_map_add)
     r = requests.put(url,data=json.dumps(vlan_map_add),headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_UPDATE_SUCCESS:
+    if r.status_code != resp_code.RESP_UPDATE_SUCCESS and r.status_code != resp_code.RESP_UPDATE_SUCCESS_U14:
         return 1
     else:
         return 0

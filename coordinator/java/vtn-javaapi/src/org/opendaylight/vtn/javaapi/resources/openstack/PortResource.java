@@ -20,7 +20,6 @@ import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -96,7 +95,7 @@ public class PortResource extends AbstractResource {
 	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#delete()
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public int delete() {
 		LOG.trace("Start PortResource#delete()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -131,22 +130,19 @@ public class PortResource extends AbstractResource {
 				}
 
 				final VBridgeInterfaceDao vBridgeInterfaceDao = new VBridgeInterfaceDao();
-				
+
 				/*
-				 * retrieve map_type if vlan-map required to
-				 * be delete
+				 * retrieve map_type if vlan-map required to be delete
 				 */
 				final String mapType = vBridgeInterfaceDao.getMapType(
 						connection, vInterfaceBean);
 
 				/*
-				 * retrieve logical_port_id if vlan-map required to
-				 * be delete
+				 * retrieve logical_port_id if vlan-map required to be delete
 				 */
-				 String logicalPortId = vBridgeInterfaceDao
-						.getLogicalPortId(connection,
-								vInterfaceBean);
-				
+				String logicalPortId = vBridgeInterfaceDao.getLogicalPortId(
+						connection, vInterfaceBean);
+
 				final ResourceIdManager resourceIdManager = new ResourceIdManager();
 
 				final FreeCounterBean freeCounterBean = new FreeCounterBean();
@@ -178,8 +174,8 @@ public class PortResource extends AbstractResource {
 							 * 2 - do nothing
 							 */
 							if (mapModeValue == 0) {
-								errorCode = deleteVlanMapModeZero(logicalPortId,
-										restResource);
+								errorCode = deleteVlanMapModeZero(
+										logicalPortId, restResource);
 							} else if (mapModeValue == 1) {
 								// retrieve list of all vlan-maps
 								JsonArray vlanmaps = getVlanMapList(
@@ -271,7 +267,7 @@ public class PortResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error ocuurred.");
+			LOG.error(exception, "Internal server error ocuurred.");
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
@@ -279,7 +275,7 @@ public class PortResource extends AbstractResource {
 				try {
 					connection.rollback();
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -334,7 +330,8 @@ public class PortResource extends AbstractResource {
 	 */
 	private int deleteVlanMapModeZero(String logicalPortId,
 			final RestResource restResource) {
-		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();;
+		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+		;
 		if (logicalPortId != null
 				&& !logicalPortId.equalsIgnoreCase(VtnServiceJsonConsts.NONE)) {
 			if (!logicalPortId.equalsIgnoreCase(VtnServiceJsonConsts.NOLPID)) {
@@ -420,7 +417,7 @@ public class PortResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
@@ -435,7 +432,7 @@ public class PortResource extends AbstractResource {
 						+ getPortId());
 				if (new VBridgeInterfaceDao().isVbrIfFound(connection,
 						vInterfaceBean)) {
-					notFoundStatus = true;
+					resourceFound = true;
 				} else {
 					createErrorInfo(
 							UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -458,7 +455,7 @@ public class PortResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 
 	/**

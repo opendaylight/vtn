@@ -54,20 +54,19 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof HostAddressResource
 				&& ((HostAddressResource) resource).getVtnName() != null
-				&& !((HostAddressResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((HostAddressResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((HostAddressResource) resource).getVtnName().trim(),
+					((HostAddressResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((HostAddressResource) resource).getVbrName() != null
 						&& !((HostAddressResource) resource).getVbrName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((HostAddressResource) resource).getVbrName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((HostAddressResource) resource).getVbrName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -83,9 +82,8 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 	 * API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start HostAddressResourceValidator#validate()");
 		boolean isValid = false;
 		try {
@@ -108,13 +106,13 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -150,9 +148,8 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 			if (ipaddr.has(VtnServiceJsonConsts.IPADDR)
 					&& ipaddr.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
 							.getAsString() != null) {
-				isValid = validator.isValidIpV4(ipaddr
-						.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-						.getAsString().trim());
+				isValid = validator.isValidIpV4(ipaddr.getAsJsonPrimitive(
+						VtnServiceJsonConsts.IPADDR).getAsString());
 			}
 			if (isValid) {
 				// validation for mandatory keys: netmask
@@ -162,8 +159,8 @@ public class HostAddressResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.PREFIX).getAsString() != null) {
 					isValid = validator.isValidRange(
 							ipaddr.getAsJsonPrimitive(
-									VtnServiceJsonConsts.PREFIX).getAsString()
-									.trim(), VtnServiceJsonConsts.VAL_1,
+									VtnServiceJsonConsts.PREFIX).getAsString(),
+							VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_30);
 				} else {
 					isValid = false;

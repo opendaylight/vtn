@@ -76,7 +76,8 @@ class Kt_Controller: public Kt_Base {
                                      void* key_struct,
                                      void* val_struct,
                                      uint32_t data_type,
-                                     uint32_t key_type);
+                                     uint32_t key_type,
+                                    pfc_bool_t commit_ver_flag = false);
 
     UncRespCode Delete(OdbcmConnectionHandler *db_conn,
                           uint32_t session_id,
@@ -139,13 +140,6 @@ class Kt_Controller: public Kt_Base {
                                    vector<void *> &key_struct,
                                    CsRowStatus row_status);
 
-    UncRespCode ValidateCtrlrValueCapability(string version,
-                                                uint32_t key_type);
-
-    UncRespCode ValidateCtrlrScalability(OdbcmConnectionHandler *db_conn,
-                                            string version,
-                                            uint32_t key_type,
-                                            uint32_t data_type);
     UncRespCode ValidateUnknownCtrlrScalability(
         OdbcmConnectionHandler *db_conn,
         void *key_struct,
@@ -187,9 +181,56 @@ class Kt_Controller: public Kt_Base {
         uint32_t key_type,
         void* key_struct,
         void* val_struct);
+    UncRespCode ValidateControllerCount(OdbcmConnectionHandler *db_conn,
+                               void *key_struct,
+                               void *val_struct,
+                               uint32_t data_type);
+    UncRespCode SendOperStatusNotification(key_ctr_t ctr_key,
+                                              uint8_t old_oper_st,
+                                              uint8_t new_oper_st);
+    UncRespCode CheckAuditFlag(OdbcmConnectionHandler *db_conn,
+                               key_ctr_t key_ctr,
+                               uint8_t &audit_flag);
+
+    UncRespCode SetActualVersion(OdbcmConnectionHandler *db_conn,
+                                    void* key_struct, string actual_version,
+                                    uint32_t data_type,
+                                    uint32_t valid_flag);
+    void FillControllerCommitVerStructure(
+            OdbcmConnectionHandler *db_conn,
+            DBTableSchema &kt_controller_dbtableschema,
+            vector<val_ctr_commit_ver_t> &vect_obj_val_ctr,
+            uint32_t &max_rep_ct,
+            uint32_t operation_type,
+            vector<string> &controller_id);
+    void FrameCVValidValue(string attr_value,
+                            val_ctr_commit_ver_t &obj_cv_ctr);
+    UncRespCode ReadCtrCommitVerFromDB(
+            OdbcmConnectionHandler *db_conn,
+            void* key_struct,
+            void* val_struct,
+            uint32_t data_type,
+            uint32_t operation_type,
+            uint32_t &max_rep_ct,
+            vector<val_ctr_commit_ver_t> &vect_val_ctr_cv,
+            vector<string> &controller_id);
 
   private:
     void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
+        DBTableSchema &kt_dbtableschema,
+        void* key_struct,
+        void* val_struct,
+        uint8_t operation_type,
+        uint32_t data_type,
+        uint32_t option1,
+        uint32_t option2,
+        vector<ODBCMOperator> &vect_key_operations,
+        void* &old_value_struct,
+        CsRowStatus row_status= NOTAPPLIED,
+        pfc_bool_t is_filtering= false,
+        pfc_bool_t is_state= PFC_FALSE);
+
+    void PopulateDBSchemaForCommitVersion(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_dbtableschema,
         void* key_struct,
         void* val_struct,
@@ -256,10 +297,6 @@ class Kt_Controller: public Kt_Base {
                                    void *key_struct,
                                    val_ctr_st_t &val_ctr_st,
                                    uint32_t data_type);
-    UncRespCode SetActualVersion(OdbcmConnectionHandler *db_conn,
-                                    void* key_struct, string actual_version,
-                                    uint32_t data_type,
-                                    uint32_t valid_flag);
     void FrameValidValue(string attr_value, val_ctr_st &obj_val_ctr_st,
                          val_ctr_t &obj_val_ctr);
     void FrameCsAttrValue(string attr_value, val_ctr_t &obj_val_ctr);
@@ -316,9 +353,6 @@ class Kt_Controller: public Kt_Base {
         unc_keytype_ctrtype_t ctr_type,
         UncRespCode ctr_type_code,
         val_ctr *val_ctr);
-    UncRespCode SendOperStatusNotification(key_ctr_t ctr_key,
-                                              uint8_t old_oper_st,
-                                              uint8_t new_oper_st);
     UncRespCode CheckIpAndClearStateDB(OdbcmConnectionHandler *db_conn,
                                           void *key_struct);
     UncRespCode CheckSameIp(OdbcmConnectionHandler *db_conn,

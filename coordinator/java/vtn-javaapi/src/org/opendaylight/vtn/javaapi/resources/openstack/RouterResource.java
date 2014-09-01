@@ -15,7 +15,6 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.RestResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -71,67 +70,69 @@ public class RouterResource extends AbstractResource {
 		return routerId;
 	}
 
-//	/**
-//	 * Handler method for PUT operation of Router
-//	 * 
-//	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#put(com.
-//	 *      google.gson.JsonObject)
-//	 */
-//	@Override
-//	public int put(JsonObject requestBody) throws VtnServiceException {
-//		LOG.trace("Start RouterResource#put()");
-//
-//		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
-//
-//		Connection connection = null;
-//
-//		try {
-//			connection = VtnServiceInitManager.getDbConnectionPoolMap()
-//					.getConnection();
-//
-//			/*
-//			 * Check for instances that they exists or not, if not then return
-//			 * 404 error
-//			 */
-//			if (checkForNotFoundResources(connection)) {
-//
-//				final RestResource restResource = new RestResource();
-//
-//				errorCode = updateVRouter(requestBody, restResource);
-//
-//				if (errorCode == UncCommonEnum.UncResultCode.UNC_SUCCESS
-//						.getValue()) {
-//					LOG.error("vRouter Update at UNC is successful.");
-//				} else {
-//					LOG.info("vRouter Update at UNC is failed.");
-//				}
-//				checkForSpecificErrors(restResource.getInfo());
-//			} else {
-//				LOG.error("Resource not found error.");
-//			}
-//			/*
-//			 * set response, if it is not set during above processing
-//			 */
-//			if (errorCode != UncResultCode.UNC_SUCCESS.getValue()) {
-//				if (getInfo() == null) {
-//					createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR
-//							.getValue());
-//				}
-//			}
-//		} catch (final SQLException exception) {
-//			LOG.error("Internal server error : " + exception);
-//			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
-//			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
-//		} finally {
-//			if (connection != null) {
-//				LOG.info("Free connection...");
-//				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
-//						connection);
-//			}
-//		}
-//		LOG.trace("Complete RouterResource#put()");
-//		return errorCode;
-//	}
+	// PUT method's is retained, as it might be required in future
+	// /**
+	// * Handler method for PUT operation of Router
+	// *
+	// * @see
+	// org.opendaylight.vtn.javaapi.resources.AbstractResource#put(com.
+	// * google.gson.JsonObject)
+	// */
+	// @Override
+	// public int put(JsonObject requestBody){
+	// LOG.trace("Start RouterResource#put()");
+	//
+	// int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+	//
+	// Connection connection = null;
+	//
+	// try {
+	// connection = VtnServiceInitManager.getDbConnectionPoolMap()
+	// .getConnection();
+	//
+	// /*
+	// * Check for instances that they exists or not, if not then return
+	// * 404 error
+	// */
+	// if (checkForNotFoundResources(connection)) {
+	//
+	// final RestResource restResource = new RestResource();
+	//
+	// errorCode = updateVRouter(requestBody, restResource);
+	//
+	// if (errorCode == UncCommonEnum.UncResultCode.UNC_SUCCESS
+	// .getValue()) {
+	// LOG.error("vRouter Update at UNC is successful.");
+	// } else {
+	// LOG.info("vRouter Update at UNC is failed.");
+	// }
+	// checkForSpecificErrors(restResource.getInfo());
+	// } else {
+	// LOG.error("Resource not found error.");
+	// }
+	// /*
+	// * set response, if it is not set during above processing
+	// */
+	// if (errorCode != UncResultCode.UNC_SUCCESS.getValue()) {
+	// if (getInfo() == null) {
+	// createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR
+	// .getValue());
+	// }
+	// }
+	// } catch (final SQLException exception) {
+	// LOG.error("Internal server error : " + exception);
+	// errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+	// createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
+	// } finally {
+	// if (connection != null) {
+	// LOG.info("Free connection...");
+	// VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
+	// connection);
+	// }
+	// }
+	// LOG.trace("Complete RouterResource#put()");
+	// return errorCode;
+	// }
 
 	/**
 	 * Handler method for DELETE operation of Router
@@ -140,7 +141,7 @@ public class RouterResource extends AbstractResource {
 	 *      .google.gson.JsonObject)
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public int delete() {
 		LOG.trace("Start RouterResource#delete()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -216,7 +217,7 @@ public class RouterResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error ocuurred.");
+			LOG.error(exception, "Internal server error ocuurred.");
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
@@ -224,7 +225,7 @@ public class RouterResource extends AbstractResource {
 				try {
 					connection.rollback();
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -235,40 +236,40 @@ public class RouterResource extends AbstractResource {
 		return errorCode;
 	}
 
-//	/**
-//	 * Update vRouter at UNC
-//	 * 
-//	 * @param requestBody
-//	 *            - OpenStack request body
-//	 * @param restResource
-//	 *            - RestResource instance
-//	 * @return - erorrCode, 200 for Success
-//	 */
-//	private int updateVRouter(JsonObject requestBody,
-//			final RestResource restResource) {
-//		/*
-//		 * Create request body for vRouter update
-//		 */
-//		final JsonObject vrtRequestBody = VrtResourcesGenerator
-//				.getUpdateVrtRequestBody(requestBody);
-//
-//		/*
-//		 * execute update vBridge request
-//		 */
-//		StringBuilder sb = new StringBuilder();
-//		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
-//		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
-//		sb.append(getTenantId());
-//		sb.append(VtnServiceOpenStackConsts.VROUTER_PATH);
-//		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
-//		sb.append(getRouterId());
-//
-//		restResource.setPath(sb.toString());
-//		restResource.setSessionID(getSessionID());
-//		restResource.setConfigID(getConfigID());
-//
-//		return restResource.put(vrtRequestBody);
-//	}
+	// /**
+	// * Update vRouter at UNC
+	// *
+	// * @param requestBody
+	// * - OpenStack request body
+	// * @param restResource
+	// * - RestResource instance
+	// * @return - erorrCode, 200 for Success
+	// */
+	// private int updateVRouter(JsonObject requestBody,
+	// final RestResource restResource) {
+	// /*
+	// * Create request body for vRouter update
+	// */
+	// final JsonObject vrtRequestBody = VrtResourcesGenerator
+	// .getUpdateVrtRequestBody(requestBody);
+	//
+	// /*
+	// * execute update vBridge request
+	// */
+	// StringBuilder sb = new StringBuilder();
+	// sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+	// sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+	// sb.append(getTenantId());
+	// sb.append(VtnServiceOpenStackConsts.VROUTER_PATH);
+	// sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+	// sb.append(getRouterId());
+	//
+	// restResource.setPath(sb.toString());
+	// restResource.setSessionID(getSessionID());
+	// restResource.setConfigID(getConfigID());
+	//
+	// return restResource.put(vrtRequestBody);
+	// }
 
 	/**
 	 * Delete vRouter at UNC
@@ -306,7 +307,7 @@ public class RouterResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
@@ -314,7 +315,7 @@ public class RouterResource extends AbstractResource {
 			vRouterBean.setVtnName(getTenantId());
 			vRouterBean.setVrtName(getRouterId());
 			if (new VRouterDao().isVrtFound(connection, vRouterBean)) {
-				notFoundStatus = true;
+				resourceFound = true;
 			} else {
 				createErrorInfo(
 						UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -330,6 +331,6 @@ public class RouterResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 }

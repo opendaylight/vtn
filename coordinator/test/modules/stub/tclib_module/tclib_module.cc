@@ -12,17 +12,16 @@
 namespace unc {
 namespace tclib {
 
-std::map<TcLibModule::TCCommonRet, TcCommonRet>
-    TcLibModule::method_tccommon_map;
-std::map<TcLibModule::TCApiCommonRet, TcApiCommonRet>
-    TcLibModule::method_tcapi_map;
+std::map<TcLibModule::TCCommonRet,TcCommonRet> TcLibModule::method_tccommon_map;
+std::map<TcLibModule::TCApiCommonRet,TcApiCommonRet> TcLibModule::method_tcapi_map;
+
 unc_keytype_ctrtype_t TcLibModule::driverId;
 unc_keytype_ctrtype_t TcLibModule::controllerType;
 uint32_t TcLibModule::keyIndex;
 TcLibInterface* TcLibModule::pTcLibInterface_= 0;
 
-static TcLibModule  theInstance(NULL);
-
+//static TcLibModule  theInstance(NULL);
+/*
 void
     TcLibModule::stub_loadtcLibModule(void) {
       pfc::core::Module::tcLib = &theInstance;
@@ -32,6 +31,9 @@ void
     TcLibModule::stub_unloadtcLibModule(void) {
       pfc::core::Module::tcLib = NULL;
     }
+*/
+TcLibModule::TcLibModule(const pfc_modattr_t *mattr):
+  pfc::core::Module(NULL) {}
 
 TcApiCommonRet TcLibModule::TcLibRegisterHandler(TcLibInterface* handler) {
   pTcLibInterface_ = handler;

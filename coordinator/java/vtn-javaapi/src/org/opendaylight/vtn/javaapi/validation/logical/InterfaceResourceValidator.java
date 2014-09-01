@@ -58,9 +58,8 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 	 * ,VTunnelInterfaceResource,
 	 * VTunnelInterfacesResource,VBridgeInterfaceResource
 	 * ,VBridgeInterfacesResource,DhcpRelayInterfaceResource,
-	 * DhcpRelayInterfacesResource,VTepInterfaceResource 
-	 * VTerminalInterfaceResource and
-	 * VTepInterfacesResource
+	 * DhcpRelayInterfacesResource,VTepInterfaceResource
+	 * VTerminalInterfaceResource and VTepInterfacesResource
 	 * 
 	 * @return true, if successful
 	 */
@@ -72,20 +71,20 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VBypassInterfaceResource
 				&& ((VBypassInterfaceResource) resource).getVtnName() != null
-				&& !((VBypassInterfaceResource) resource).getVtnName().trim()
+				&& !((VBypassInterfaceResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBypassInterfaceResource) resource).getVtnName().trim(),
+					((VBypassInterfaceResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBYPASS_NAME);
 				if (((VBypassInterfaceResource) resource).getVbypassName() != null
 						&& !((VBypassInterfaceResource) resource)
-								.getVbypassName().trim().isEmpty()) {
+								.getVbypassName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((VBypassInterfaceResource) resource)
-									.getVbypassName().trim(),
+									.getVbypassName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -96,10 +95,10 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IFNAME);
 				if (((VBypassInterfaceResource) resource).getIfName() != null
 						&& !((VBypassInterfaceResource) resource).getIfName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VBypassInterfaceResource) resource).getIfName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VBypassInterfaceResource) resource).getIfName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -107,20 +106,20 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof VBypassInterfacesResource
 				&& ((VBypassInterfacesResource) resource).getVtnName() != null
-				&& !((VBypassInterfacesResource) resource).getVtnName().trim()
+				&& !((VBypassInterfacesResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBypassInterfacesResource) resource).getVtnName().trim(),
+					((VBypassInterfacesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBYPASS_NAME);
 				if (((VBypassInterfacesResource) resource).getVbypassName() != null
 						&& !((VBypassInterfacesResource) resource)
-								.getVbypassName().trim().isEmpty()) {
+								.getVbypassName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((VBypassInterfacesResource) resource)
-									.getVbypassName().trim(),
+									.getVbypassName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -129,20 +128,20 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof VTunnelInterfaceResource
 				&& ((VTunnelInterfaceResource) resource).getVtnName() != null
-				&& !((VTunnelInterfaceResource) resource).getVtnName().trim()
-						.trim().isEmpty()) {
+				&& !((VTunnelInterfaceResource) resource).getVtnName()
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTunnelInterfaceResource) resource).getVtnName().trim(),
+					((VTunnelInterfaceResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTUNNELNAME);
 				if (((VTunnelInterfaceResource) resource).getvTunnelName() != null
 						&& !((VTunnelInterfaceResource) resource)
-								.getvTunnelName().trim().isEmpty()) {
+								.getvTunnelName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((VTunnelInterfaceResource) resource)
-									.getvTunnelName().trim(),
+									.getvTunnelName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -153,10 +152,10 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IFNAME);
 				if (((VTunnelInterfaceResource) resource).getIfName() != null
 						&& !((VTunnelInterfaceResource) resource).getIfName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTunnelInterfaceResource) resource).getIfName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTunnelInterfaceResource) resource).getIfName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -164,20 +163,20 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof VTunnelInterfacesResource
 				&& ((VTunnelInterfacesResource) resource).getVtnName() != null
-				&& !((VTunnelInterfacesResource) resource).getVtnName().trim()
+				&& !((VTunnelInterfacesResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTunnelInterfacesResource) resource).getVtnName().trim(),
+					((VTunnelInterfacesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTUNNELNAME);
 				if (((VTunnelInterfacesResource) resource).getvTunnelName() != null
 						&& !((VTunnelInterfacesResource) resource)
-								.getvTunnelName().trim().isEmpty()) {
+								.getvTunnelName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((VTunnelInterfacesResource) resource)
-									.getvTunnelName().trim(),
+									.getvTunnelName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -186,20 +185,20 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof VBridgeInterfaceResource
 				&& ((VBridgeInterfaceResource) resource).getVtnName() != null
-				&& !((VBridgeInterfaceResource) resource).getVtnName().trim()
+				&& !((VBridgeInterfaceResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBridgeInterfaceResource) resource).getVtnName().trim(),
+					((VBridgeInterfaceResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VBridgeInterfaceResource) resource).getVbrName() != null
 						&& !((VBridgeInterfaceResource) resource).getVbrName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VBridgeInterfaceResource) resource).getVbrName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VBridgeInterfaceResource) resource).getVbrName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -209,10 +208,10 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IFNAME);
 				if (((VBridgeInterfaceResource) resource).getIfName() != null
 						&& !((VBridgeInterfaceResource) resource).getIfName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VBridgeInterfaceResource) resource).getIfName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VBridgeInterfaceResource) resource).getIfName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -220,20 +219,22 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof VBridgeInterfacesResource
 				&& ((VBridgeInterfacesResource) resource).getVtnName() != null
-				&& !((VBridgeInterfacesResource) resource).getVtnName().trim()
+				&& !((VBridgeInterfacesResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBridgeInterfacesResource) resource).getVtnName().trim(),
+					((VBridgeInterfacesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VBridgeInterfacesResource) resource).getVbrName() != null
 						&& !((VBridgeInterfacesResource) resource).getVbrName()
-								.trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							((VBridgeInterfacesResource) resource).getVbrName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+								.isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									((VBridgeInterfacesResource) resource)
+											.getVbrName(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -241,23 +242,20 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof DhcpRelayInterfaceResource
 				&& ((DhcpRelayInterfaceResource) resource).getVtnName() != null
-				&& !((DhcpRelayInterfaceResource) resource).getVtnName().trim()
+				&& !((DhcpRelayInterfaceResource) resource).getVtnName()
 						.isEmpty()) {
-			isValid = validator
-					.isValidMaxLengthAlphaNum(
-							((DhcpRelayInterfaceResource) resource)
-									.getVtnName().trim(),
-							VtnServiceJsonConsts.LEN_31);
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((DhcpRelayInterfaceResource) resource).getVtnName(),
+					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((DhcpRelayInterfaceResource) resource).getVrtName() != null
 						&& !((DhcpRelayInterfaceResource) resource)
-								.getVrtName().trim().isEmpty()) {
+								.getVrtName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((DhcpRelayInterfaceResource) resource)
-									.getVrtName().trim(),
-							VtnServiceJsonConsts.LEN_31);
+									.getVrtName(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -267,10 +265,12 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IFNAME);
 				if (((DhcpRelayInterfaceResource) resource).getIfName() != null
 						&& !((DhcpRelayInterfaceResource) resource).getIfName()
-								.trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							((DhcpRelayInterfaceResource) resource).getIfName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+								.isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									((DhcpRelayInterfaceResource) resource)
+											.getIfName(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -279,20 +279,19 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 		} else if (resource instanceof DhcpRelayInterfacesResource
 				&& ((DhcpRelayInterfacesResource) resource).getVtnName() != null
 				&& !((DhcpRelayInterfacesResource) resource).getVtnName()
-						.trim().isEmpty()) {
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((DhcpRelayInterfacesResource) resource).getVtnName()
-							.trim(), VtnServiceJsonConsts.LEN_31);
+					((DhcpRelayInterfacesResource) resource).getVtnName(),
+					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((DhcpRelayInterfacesResource) resource).getVrtName() != null
 						&& !((DhcpRelayInterfacesResource) resource)
-								.getVrtName().trim().isEmpty()) {
+								.getVrtName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((DhcpRelayInterfacesResource) resource)
-									.getVrtName().trim(),
-							VtnServiceJsonConsts.LEN_31);
+									.getVrtName(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -300,20 +299,19 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof VTepInterfaceResource
 				&& ((VTepInterfaceResource) resource).getVtnName() != null
-				&& !((VTepInterfaceResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((VTepInterfaceResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTepInterfaceResource) resource).getVtnName().trim(),
+					((VTepInterfaceResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTEPNAME);
 				if (((VTepInterfaceResource) resource).getvTepName() != null
 						&& !((VTepInterfaceResource) resource).getvTepName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTepInterfaceResource) resource).getvTepName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTepInterfaceResource) resource).getvTepName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -323,10 +321,10 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IFNAME);
 				if (((VTepInterfaceResource) resource).getIfName() != null
 						&& !((VTepInterfaceResource) resource).getIfName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTepInterfaceResource) resource).getIfName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTepInterfaceResource) resource).getIfName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -334,20 +332,19 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof VTepInterfacesResource
 				&& ((VTepInterfacesResource) resource).getVtnName() != null
-				&& !((VTepInterfacesResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((VTepInterfacesResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTepInterfacesResource) resource).getVtnName().trim(),
+					((VTepInterfacesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTEPNAME);
 				if (((VTepInterfacesResource) resource).getvTepName() != null
 						&& !((VTepInterfacesResource) resource).getvTepName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTepInterfacesResource) resource).getvTepName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTepInterfacesResource) resource).getvTepName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -355,20 +352,21 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof VTerminalInterfaceResource
 				&& ((VTerminalInterfaceResource) resource).getVtnName() != null
-				&& !((VTerminalInterfaceResource) resource).getVtnName().trim()
+				&& !((VTerminalInterfaceResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTerminalInterfaceResource) resource).getVtnName().trim(),
+					((VTerminalInterfaceResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTERMINALNAME);
 				if (((VTerminalInterfaceResource) resource).getVterminalName() != null
-						&& !((VTerminalInterfaceResource) resource).getVterminalName()
-								.trim().isEmpty()) {
+						&& !((VTerminalInterfaceResource) resource)
+								.getVterminalName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTerminalInterfaceResource) resource).getVterminalName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTerminalInterfaceResource) resource)
+									.getVterminalName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -378,31 +376,34 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IFNAME);
 				if (((VTerminalInterfaceResource) resource).getIfName() != null
 						&& !((VTerminalInterfaceResource) resource).getIfName()
-								.trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTerminalInterfaceResource) resource).getIfName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+								.isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									((VTerminalInterfaceResource) resource)
+											.getIfName(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
 			}
 			setListOpFlag(false);
-		}else if (resource instanceof VTerminalInterfacesResource
+		} else if (resource instanceof VTerminalInterfacesResource
 				&& ((VTerminalInterfacesResource) resource).getVtnName() != null
-				&& !((VTerminalInterfacesResource) resource).getVtnName().trim()
+				&& !((VTerminalInterfacesResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTerminalInterfacesResource) resource).getVtnName().trim(),
+					((VTerminalInterfacesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTERMINALNAME);
 				if (((VTerminalInterfacesResource) resource).getVterminalName() != null
-						&& !((VTerminalInterfacesResource) resource).getVterminalName()
-								.trim().isEmpty()) {
+						&& !((VTerminalInterfacesResource) resource)
+								.getVterminalName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTerminalInterfacesResource) resource).getVterminalName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTerminalInterfacesResource) resource)
+									.getVterminalName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -417,9 +418,8 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 	 * validate request Json for get, put and post method of Interface API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start InterfaceResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of InterfaceResourceValidator");
@@ -448,7 +448,7 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -457,7 +457,7 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -490,10 +490,9 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-					.getAsString().trim()
-					.equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
+					.getAsString().equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
 		}
 		LOG.trace("Complete InterfaceResourceValidator#validateOpDhcpInterface()");
 		return isValid;
@@ -524,10 +523,10 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.IFNAME).getAsString() != null
 					&& !commonInterface
 							.getAsJsonPrimitive(VtnServiceJsonConsts.IFNAME)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLengthAlphaNum(commonInterface
 						.getAsJsonPrimitive(VtnServiceJsonConsts.IFNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			if (isValid) {
 				isValid = validatePut(requestBody);
@@ -564,10 +563,10 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 					&& !commonInterface
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(commonInterface
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_127);
+						.getAsString(), VtnServiceJsonConsts.LEN_127);
 			}
 			// validation for key: adminstatus(optional)
 			if (isValid) {
@@ -578,7 +577,7 @@ public class InterfaceResourceValidator extends VtnServiceValidator {
 					final String adminStatus = commonInterface
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.ADMINSTATUS)
-							.getAsString().trim();
+							.getAsString();
 					isValid = adminStatus
 							.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)
 							|| adminStatus

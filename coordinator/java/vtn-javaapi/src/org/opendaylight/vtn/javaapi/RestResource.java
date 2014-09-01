@@ -44,10 +44,10 @@ public class RestResource implements VtnServiceResource {
 	/* Resource path and Response information instances */
 	private String path;
 	private transient JsonObject info;
-	
+
 	/* OpenStack DB Connection instance */
 	Connection openStackConnection;
-	
+
 	/**
 	 * Instantiates a new rest resource.
 	 */
@@ -217,7 +217,7 @@ public class RestResource implements VtnServiceResource {
 						UncJavaAPIErrorCode.INTERNAL_ERROR.getErrorMessage(),
 						exception);
 			}
-		}		
+		}
 		responseCode = convertResponseCode(responseCode);
 		LOG.trace("Complete RestResource#delete()");
 		return responseCode;
@@ -237,7 +237,7 @@ public class RestResource implements VtnServiceResource {
 		if (resource != null && queryString != null) {
 			LOG.debug("Input value for queryString : " + queryString);
 			try {
-				validateJson(VtnServiceConsts.DELETE, queryString);
+				validateJson(VtnServiceConsts.DELETE, queryString, resource);
 				/*
 				 * ERROR CODE (500) will be returned for any other type of
 				 * errors Performs validation before initiating the delete
@@ -343,7 +343,7 @@ public class RestResource implements VtnServiceResource {
 		if (resource != null && queryString != null) {
 			LOG.debug("Input value for queryString : " + queryString);
 			try {
-				validateJson(VtnServiceConsts.GET, queryString);
+				validateJson(VtnServiceConsts.GET, queryString, resource);
 				validateJsonOp(queryString);
 				/*
 				 * ERROR CODE (500) will be returned for any other type of
@@ -396,7 +396,7 @@ public class RestResource implements VtnServiceResource {
 		if (resource != null && requestBody != null) {
 			LOG.debug("Input value for requestBody : " + requestBody);
 			try {
-				validateJson(VtnServiceConsts.POST, requestBody);
+				validateJson(VtnServiceConsts.POST, requestBody, resource);
 				/*
 				 * ERROR CODE (500) will be returned for any other type of
 				 * errors Performs validation before initiating the post
@@ -451,7 +451,7 @@ public class RestResource implements VtnServiceResource {
 		if (resource != null && requestBody != null) {
 			LOG.debug("Input value for requestBody : " + requestBody);
 			try {
-				validateJson(VtnServiceConsts.PUT, requestBody);
+				validateJson(VtnServiceConsts.PUT, requestBody, resource);
 				/*
 				 * ERROR CODE (500) will be returned for any other type of
 				 * errors Performs validation before initiating the put
@@ -626,9 +626,10 @@ public class RestResource implements VtnServiceResource {
 	 * @return
 	 */
 	private void validateJson(final String requestType,
-			final JsonObject requestBody) throws VtnServiceException {
+			final JsonObject requestBody, AbstractResource resource)
+			throws VtnServiceException {
 		try {
-			VtnServiceUtil.trimParamValues(requestBody);
+			VtnServiceUtil.trimParamValues(requestBody, resource);
 			/*
 			 * remove the parameters which contains empty strings
 			 */

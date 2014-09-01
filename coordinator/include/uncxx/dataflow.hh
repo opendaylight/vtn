@@ -98,6 +98,7 @@ class DataflowDetail {
   ~DataflowDetail();
   // Read the DataflowCmn details from session as mentioned in FD API doc
   int sessReadDataflow(ClientSession& sess, uint32_t& getres_pos);
+  int RedirectCheck(val_vtn_dataflow_path_info_t *path_info);
   val_df_data_flow_cmn_t *df_common;
   val_vtn_dataflow_cmn_t *vtn_df_common;
   map<UncDataflowFlowMatchType, void *> matches;
@@ -106,6 +107,8 @@ class DataflowDetail {
   vector<val_vtn_dataflow_path_info_t *> vtn_path_infos;
   void *ckv_egress;
   uint32_t flow_traversed;
+  bool is_flow_redirect;
+  bool is_flow_drop;
   IpctStructNum st_num_;
 };
 
@@ -122,6 +125,7 @@ class DataflowCmn {
   uint32_t total_flow_count;
   bool is_vlan_src_mac_changed_;
   DataflowCmn *parent_node;
+  bool action_applied;
 
   std::string ToStr();
   // Write the DataflowCmn details into session as mentioned in FD API doc
@@ -130,6 +134,7 @@ class DataflowCmn {
   UncDataflowReason appendFlow(DataflowCmn* nextCtrlrFlow
                   , map<string, uint32_t> & ctrlr_dom_count_map);
 
+  UncDataflowReason deleteflow(DataflowCmn* nextCtrlrFlow);
   // check given 'output_matches' against 'matches'
   bool check_match_condition(map <UncDataflowFlowMatchType
                             , void *> output_matches);
@@ -197,7 +202,6 @@ class DataflowUtil {
   // Method for PFCDriver module. Write the DataflowCmn details
   // into physical session as mentioned in FD API doc
   int sessOutDataflowsFromDriver(ServerSession& sess);
-  uint32_t storeFlowDetails(key_dataflow_t, vector<DataflowDetail*> );
 
   uint32_t get_total_flow_count();
   // Append given firstCtrlrFlow to 'firstCtrlrFlows' vector

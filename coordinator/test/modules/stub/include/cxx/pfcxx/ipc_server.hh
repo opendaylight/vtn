@@ -87,6 +87,7 @@ class ServerSession {
   int addOutput(val_boundary_st& data);
   int addOutput(key_ctr& data);
   int addOutput(val_ctr& data);
+  int addOutput(val_ctr_commit_ver& data);
   int addOutput(key_ctr_domain& data);
   int addOutput(val_ctr_domain& data);
   int addOutput(key_logical_port data);
@@ -114,6 +115,10 @@ class ServerSession {
   int addOutput(val_switch_st_detail_t&);
   int addOutput(val_df_data_flow_st_t&);
   int addOutput(key_ctr_dataflow&);
+  int addOutput(key_vtnstation_controller&);
+  int addOutput(val_vtnstation_controller_st&);
+  int addOutput(val_vtnstation_controller_stat&);
+  
 
   int   getArgument(uint32_t index, int8_t &data);
   int   getArgument(uint32_t index, uint8_t &data);
@@ -157,6 +162,10 @@ class ServerSession {
   int getArgument(int index, val_link_st_t& key);
   int getArgument(int, key_ctr_dataflow_t&);
   int getArgument(int, key_dataflow_t&);
+  int getArgument(int, val_ctr_commit_ver&);
+  int getArgument(int, key_vtnstation_controller&);
+  int getArgument(int, val_vtnstation_controller_st&);
+  int getArgument(int, val_vtnstation_controller_stat&);
 
   uint32_t getArgCount(void);
   int   getArgType(uint32_t index, pfc_ipctype_t &type);

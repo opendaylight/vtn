@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,7 @@
 #include <pfcxx/task_queue.hh>
 #include <string>
 #include "physical_common_def.hh"
+#include "physical_taskq.hh"
 
 using pfc::core::ipc::IpcEventHandler;
 using pfc::core::ipc::IpcEvent;
@@ -28,6 +29,7 @@ using std::string;
 using pfc::core::timer_func_t;
 using pfc::core::TaskQueue;
 using pfc::core::Timer;
+using unc::uppl::PhyEventTaskqUtil;
 
 namespace unc {
 namespace uppl {
@@ -41,11 +43,16 @@ class NotificationManager:public IpcEventHandler {
   virtual const char *getName(void);
   static NotificationManager* get_notification_manager(unc_keytype_ctrtype_t);
   static void release_notification_manager();
+  static void delete_taskq_util();
+  static PhyEventTaskqUtil* taskq_util_;
+  static PhyEventTaskqUtil* get_taskq_util();
+
   private:
   NotificationManager() {}
   ~NotificationManager() {}
   static NotificationManager* pfc_notification_manager_;
   static NotificationManager* vnp_notification_manager_;
+  static NotificationManager* polc_notification_manager_;
   static NotificationManager* odc_notification_manager_;
 };
 

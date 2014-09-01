@@ -215,7 +215,8 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_SUCCESS  Successfull completion.
      */
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     /**
      * @brief  Method used for Rename Operation.
@@ -421,8 +422,7 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
                                        ConfigKeyVal *ikey,
-                                       DalDmlIntf *dmi,
-                                       bool restore_flag = false);
+                                       DalDmlIntf *dmi);
 
     upll_rc_t ConstructReadDetailResponse(ConfigKeyVal *ikey,
                                          ConfigKeyVal *drv_resp_ckv,
@@ -458,6 +458,24 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                           DalDmlIntf *dmi,
                           IpcReqRespHeader *req);
+
+  upll_rc_t SendInterfaceRequestToDriver(
+      ConfigKeyVal *ckv_running, ConfigKeyVal *ckv_audit,
+      unc_keytype_operation_t op, controller_domain_t ctrlr_dom,
+      upll_keytype_datatype_t vext_datatype, DalDmlIntf *dmi,
+      uint32_t session_id, uint32_t config_id,
+      uint8_t db_flag, set<string> *affected_ctrlr_set, bool &ipc_result);
+
+  upll_rc_t HandleAuditDriverIpcError(uuc::UpdateCtrlrPhase phase,
+    IpcResponse ipc_response, DalDmlIntf *dmi,
+    ConfigKeyVal *ckv_running_db, ConfigKeyVal **err_ckv);
+
+  upll_rc_t SendInterfaceAuditRequestToDriver(
+      ConfigKeyVal *ckv_running, ConfigKeyVal *ckv_audit,
+      unc_keytype_operation_t op, controller_domain_t ctrlr_dom,
+      upll_keytype_datatype_t vext_datatype,  DalDmlIntf *dmi,
+      uint32_t session_id, uint32_t config_id,
+      uint8_t db_flag, IpcResponse &ipc_response);
 };
 }  // namespace kt_momgr
 }  // namespace upll

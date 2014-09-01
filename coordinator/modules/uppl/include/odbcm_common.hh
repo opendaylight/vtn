@@ -64,8 +64,6 @@ namespace uppl {
  * 10.database user's password
  */
 #define ODBCM_CONF_FILE                 "odbcm.conf"
-/**relative path of ODBCM_CONF_FILE*/
-#define ODBCM_CONF_FILE_PATH            "/"
 /**null string assign*/
 #define ODBCM_NULL_STRING ""
 
@@ -94,26 +92,30 @@ typedef enum {
   CTR_OPER_STATUS,
   CTR_VALID,
   CTR_CS_ROW_STATUS,
-  CTR_CS_ATTR = 12,
-  DOMAIN_NAME = 13,
+  CTR_CS_ATTR,
+  CTR_COMMIT_NUMBER,
+  CTR_COMMIT_DATE,
+  CTR_COMMIT_APPLICATION,
+  CTR_VALID_COMMIT_VERSION,
+  DOMAIN_NAME,
   DOMAIN_TYPE,
   DOMAIN_DESCRIPTION,
   DOMAIN_OP_STATUS,
   DOMAIN_VALID,
   DOMAIN_CS_ROW_STATUS,
-  DOMAIN_CS_ATTR = 19,
-  LP_PORT_ID = 20,
+  DOMAIN_CS_ATTR,
+  LP_PORT_ID,
   LP_DESCRIPTION,
   LP_PORT_TYPE,
   LP_SWITCH_ID,
   LP_PHYSICAL_PORT_ID,
   LP_OPER_DOWN_CRITERIA,
   LP_OPER_STATUS,
-  LP_CTR_VALID = 27,
-  LMP_SWITCH_ID = 28,
+  LP_CTR_VALID,
+  LMP_SWITCH_ID,
   LMP_PHYSICAL_PORT_ID,
-  LMP_LP_PORT_ID = 30,
-  SWITCH_ID = 31,
+  LMP_LP_PORT_ID,
+  SWITCH_ID,
   SWITCH_DESCRIPTION,
   SWITCH_MODEL,
   SWITCH_IP_ADDRESS,
@@ -125,8 +127,8 @@ typedef enum {
   SWITCH_SOFTWARE,
   SWITCH_ALARM_STATUS,
   SWITCH_OPER_STATUS,
-  SWITCH_VALID = 43,
-  PORT_ID = 44,
+  SWITCH_VALID,
+  PORT_ID,
   PORT_NUMBER,
   PORT_DESCRIPTION,
   PORT_ADMIN_STATUS,
@@ -138,15 +140,15 @@ typedef enum {
   PORT_SPEED,
   PORT_ALARM_STATUS,
   PORT_LOGIC_PORT_ID,
-  PORT_VALID = 56,
-  LINK_SWITCH_ID1 = 57,
+  PORT_VALID,
+  LINK_SWITCH_ID1,
   LINK_PORT_ID1,
   LINK_SWITCH_ID2,
   LINK_PORT_ID2,
   LINK_DESCRIPTION,
   LINK_OPER_STATUS,
-  LINK_VALID = 63,
-  BDRY_ID = 64,
+  LINK_VALID,
+  BDRY_ID,
   BDRY_DESCRIPTION,
   BDRY_CTR_NAME1,
   BDRY_DM_NAME1,
@@ -157,7 +159,7 @@ typedef enum {
   BDRY_OPER_STATUS,
   BDRY_VALID,
   BDRY_ROW_STATUS,
-  BDRY_ATTR = 75,
+  BDRY_ATTR,
   UNKNOWN_COLUMN
 }ODBCMTableColumns;
 
@@ -179,11 +181,15 @@ typedef struct {
 #define CTR_USER_NAME_STR       "user_name"
 #define CTR_PASSWORD_STR        "password"
 #define CTR_ENABLE_AUDIT_STR    "enable_audit"
+#define CTR_COMMIT_NUMBER_STR    "commit_number"
+#define CTR_COMMIT_DATE_STR    "commit_date"
+#define CTR_COMMIT_APPLICATION_STR    "commit_application"
 #define CTR_ACTUAL_VERSION_STR  "actual_version"
 #define CTR_OPER_STATUS_STR     "oper_status"
 #define CTR_VALID_STR           "valid"
 #define CTR_CS_ROW_STATUS_STR   "cs_row_status"
 #define CTR_CS_ATTR_STR         "cs_attr"
+#define CTR_VALID_COMMIT_VERSION_STR    "valid_commit_version"
 
 // ctr_domain_table columns
 #define DOMAIN_NAME_STR          "domain_name"

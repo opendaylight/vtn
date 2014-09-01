@@ -16,6 +16,7 @@
 
 #include "unc/pfcdriver_include.h"
 #include "unc/vnpdriver_include.h"
+#include "unc/polcdriver_include.h"
 #include "unc/odcdriver_include.h"
 #include "unc/unc_base.h"
 
@@ -255,8 +256,10 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
             // case UNC_DRV_RC_MISSING_VAL_STRUCT: move to default case
             // case UNC_DRV_RC_ERR_GENERIC: move to default case
             // case UNC_RC_INTERNAL_ERR: move to default case
+            // case UNC_RC_UNSUPPORTED_CTRL_CONFIG: only for READ operation
 
           case UNC_RC_CTRLAPI_FAILURE:
+          case UNC_RC_ERR_DRIVER_NOT_PRESENT:
             return static_cast<upll_rc_t>(driver_result_code);
           default:
             UPLL_LOG_INFO("Received error %d from driver,"
@@ -299,6 +302,10 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
 
           case UNC_RC_NO_SUCH_INSTANCE:
             return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+
+          case UNC_RC_UNSUPPORTED_CTRL_CONFIG:
+          case UNC_RC_ERR_DRIVER_NOT_PRESENT:
+            return static_cast<upll_rc_t>(driver_result_code);
 
             // case UNC_DRV_RC_MISSING_KEY_STRUCT: move to default case
             // case UNC_DRV_RC_MISSING_VAL_STRUCT: move to default case
@@ -358,6 +365,11 @@ bool IpcUtil::SendReqToDriver(const char *ctrlr_name, char *domain_id,
       channel_name = VNPDRIVER_CHANNEL_NAME;
       service_name = VNPDRIVER_SERVICE_NAME;
       service_id = VNPDRV_SVID_LOGICAL;
+      break;
+    case UNC_CT_POLC:
+      channel_name = POLCDRIVER_CHANNEL_NAME;
+      service_name = POLCDRIVER_SERVICE_NAME;
+      service_id = POLCDRV_SVID_LOGICAL;
       break;
     case UNC_CT_ODC:
       channel_name = ODCDRIVER_CHANNEL_NAME;
@@ -521,9 +533,14 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
   if (err != 0) {
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     if (err == ETIMEDOUT) {
-      UPLL_LOG_DEBUG("IPC Session to %s:%s:%d has timed out",
-                     channel_name, service_name, service_id);
+      UPLL_LOG_INFO("IPC Session to %s:%s:%d has timed out",
+                    channel_name, service_name, service_id);
       resp->return_code = PFC_IPCRESP_FATAL;
+    } else if ((err == ECONNREFUSED) && (driver_msg)) {
+       UPLL_LOG_INFO("Connection to IPC Session %s:%s:%d is refused",
+                     channel_name, service_name, service_id);
+       resp->return_code = PFC_IPCRESP_FATAL;
+       resp->header.result_code = UPLL_RC_ERR_DRIVER_NOT_PRESENT;
     } else {
       UPLL_LOG_FATAL("Failed to send IPC request to %s:%s:%d. Err=%d",
                   channel_name, service_name, service_id, err);
@@ -531,17 +548,17 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
     }
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
-      UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
+      UPLL_LOG_INFO("Failed to close the IPC connection %s:%s:%d. Err=%d",
                     channel_name, service_name, service_id, err);
     }
     return false;
   }
   if (ipcresp != 0) {
-    UPLL_LOG_DEBUG("Error at IPC server %s:%s:%d. ErrResp=%d",
+    UPLL_LOG_INFO("Error at IPC server %s:%s:%d. ErrResp=%d",
                   channel_name, service_name, service_id, ipcresp);
     err = pfc_ipcclnt_altclose(connid);  // Close the IPC connection handle
     if (err != 0) {
-      UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
+      UPLL_LOG_INFO("Failed to close the IPC connection %s:%s:%d. Err=%d",
                     channel_name, service_name, service_id, err);
     }
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
@@ -576,16 +593,29 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
   /* Close the IPC connection handle. */
   err = pfc_ipcclnt_altclose(connid);
   if (err != 0) {
-    UPLL_LOG_DEBUG("Failed to close the IPC connection %s:%s:%d. Err=%d",
+    UPLL_LOG_INFO("Failed to close the IPC connection %s:%s:%d. Err=%d",
                   channel_name, service_name, service_id, err);
   }
 
-  UPLL_LOG_TRACE("dest=%s:%s:%d, controller_name=%s domain_id=%s\n"
-                 "Response: %s\n%s",
-                 channel_name, service_name, service_id,
-                 ctrlr_name, domain_id,
-                 IpcUtil::IpcResponseToStr(resp->header).c_str(),
-                 resp->ckv_data->ToStrAll().c_str());
+  UncRespCode unc_rc = (UncRespCode)resp->header.result_code;
+  if (unc_rc != UNC_RC_SUCCESS &&
+      unc_rc != UNC_RC_ERR_DRIVER_NOT_PRESENT &&
+      unc_rc != UNC_RC_CTR_DISCONNECTED &&
+      unc_rc != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+    UPLL_LOG_INFO("dest=%s:%s:%d, controller_name=%s domain_id=%s\n"
+                  "Response: %s\n%s",
+                  channel_name, service_name, service_id,
+                  ctrlr_name, domain_id,
+                  IpcUtil::IpcResponseToStr(resp->header).c_str(),
+                  resp->ckv_data->ToStrAll().c_str());
+  } else {
+    UPLL_LOG_TRACE("dest=%s:%s:%d, controller_name=%s domain_id=%s\n"
+                   "Response: %s\n%s",
+                   channel_name, service_name, service_id,
+                   ctrlr_name, domain_id,
+                   IpcUtil::IpcResponseToStr(resp->header).c_str(),
+                   resp->ckv_data->ToStrAll().c_str());
+  }
   return true;
 }
 
@@ -1451,27 +1481,27 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
 std::string IpcUtil::IpcRequestToStr(const IpcReqRespHeader &msghdr) {
   std::stringstream ss;
   ss << "-------------IpcRequest--------------" << std::endl
-     << "  clnt_sess_id:  " << msghdr.clnt_sess_id << std::endl
-     << "  config_id:     " << msghdr.config_id << std::endl
-     << "  operation:     " << msghdr.operation << std::endl
-     << "  max_rep_count: " << msghdr.rep_count << std::endl
-     << "  option1:       " << msghdr.option1 << std::endl
-     << "  option2:       " << msghdr.option2 << std::endl
-     << "  datatype:      " << msghdr.datatype;
+     << "  Hdr=clnt_sess_id:" << msghdr.clnt_sess_id 
+     << ",  config_id:" << msghdr.config_id 
+     << ",  operation:" << msghdr.operation 
+     << ",  max_rep_count:" << msghdr.rep_count 
+     << ",  option1:" << msghdr.option1 
+     << ",  option2:" << msghdr.option2 
+     << ",  datatype:" << msghdr.datatype;
   return ss.str();
 }
 
 std::string IpcUtil::IpcResponseToStr(const IpcReqRespHeader &msghdr) {
   std::stringstream ss;
   ss << "-------------IpcResponse--------------" << std::endl
-     << "  clnt_sess_id:  " << msghdr.clnt_sess_id << std::endl
-     << "  config_id:     " << msghdr.config_id << std::endl
-     << "  operation:     " << msghdr.operation << std::endl
-     << "  rep_count:     " << msghdr.rep_count << std::endl
-     << "  option1:       " << msghdr.option1 << std::endl
-     << "  option2:       " << msghdr.option2 << std::endl
-     << "  datatype:      " << msghdr.datatype << std::endl
-     << "  result_code:   " << msghdr.result_code;
+     << "  Hdr=clnt_sess_id:" << msghdr.clnt_sess_id 
+     << ",  config_id:" << msghdr.config_id 
+     << ",  operation:" << msghdr.operation 
+     << ",  rep_count:" << msghdr.rep_count 
+     << ",  option1:" << msghdr.option1 
+     << ",  option2:" << msghdr.option2 
+     << ",  datatype:" << msghdr.datatype 
+     << ",  result_code:" << msghdr.result_code;
   return ss.str();
 }
 
@@ -1556,6 +1586,10 @@ bool ConfigNotifier::SendBufferedNotificationsToUpllUser() {
       continue;
     }
 
+    ConfigKeyVal *ckv = cn->get_ckv();
+    if (ckv == NULL)
+      continue;
+
     // Event format: operation, datatype, keytype, key, new-val, old-val
     if ((0 != (err = event.addOutput((uint32_t)cn->get_operation()))) ||
         (0 != (err = event.addOutput((uint32_t)cn->get_datatype()))) ||
@@ -1565,10 +1599,6 @@ bool ConfigNotifier::SendBufferedNotificationsToUpllUser() {
                     " Err=%d", err);
       continue;
     }
-
-    ConfigKeyVal *ckv = cn->get_ckv();
-    if (ckv == NULL)
-      continue;
     ConfigVal *val1 = ckv->get_cfg_val();
     ConfigVal *val2 = (val1 ? val1->get_next_cfg_val() : NULL);
 

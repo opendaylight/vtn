@@ -234,7 +234,7 @@ UncRespCode Kt_Base::ReadSiblingBegin(OdbcmConnectionHandler *db_conn,
                                            option1,
                                            option2,
                                            max_rep_ct);
-  pfc_log_info("Read Sibling Begin operation return %d", read_status);
+  pfc_log_debug("Read Sibling Begin operation return %d", read_status);
   return read_status;
 }
 
@@ -275,7 +275,7 @@ UncRespCode Kt_Base::ReadSibling(OdbcmConnectionHandler *db_conn,
                                            option1,
                                            option2,
                                            max_rep_ct);
-  pfc_log_info("Read Sibling operation return %d", read_status);
+  pfc_log_debug("Read Sibling operation return %d", read_status);
   return read_status;
 }
 
@@ -322,7 +322,7 @@ UncRespCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= AddKeyStructuretoSession(key_type, &sess, key_struct);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return (UncRespCode)rsh.result_code;
@@ -362,7 +362,7 @@ UncRespCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= AddKeyStructuretoSession(key_type, &sess, key_struct);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return (UncRespCode)rsh.result_code;
@@ -373,7 +373,7 @@ UncRespCode Kt_Base::ReadSiblingCount(OdbcmConnectionHandler *db_conn,
   int err = PhyUtil::sessOutRespHeader(sess, rsh);
   err |= AddKeyStructuretoSession(key_type, &sess, key_struct);
   if (err != 0) {
-    pfc_log_debug("addOutput failed for physical_response_header");
+    pfc_log_info("addOutput failed for physical_response_header");
     return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
   sess.addOutput(count);
@@ -424,7 +424,7 @@ UncRespCode Kt_Base::ConfigurationChangeNotification(
   } else {
     status = (UncRespCode) physical_layer->get_ipc_connection_manager()->
         SendEvent(&ser_evt);
-    pfc_log_info(
+    pfc_log_debug(
         "Configuration notification status: %d for operation %d",
         status, oper_type);
   }

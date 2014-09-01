@@ -38,6 +38,7 @@ static const uint32_t kIpcTimeoutPing = 330;
 static const uint32_t kIpcTimeoutImport = 300;
 static const uint32_t kIpcTimeoutDataflow = 3600;
 static const uint32_t kIpcTimeoutVtnstation = 300;
+static const uint32_t kIpcTimeoutCandidate = 600;
 
 namespace ipc_util {
 

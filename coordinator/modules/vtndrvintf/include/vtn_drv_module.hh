@@ -22,6 +22,7 @@
 #include <unc/unc_events.h>
 #include <string>
 #include <map>
+#include <utility>
 
 namespace unc {
 namespace driver {
@@ -124,6 +125,14 @@ class VtnDrvIntf :public pfc::core::Module {
   KtHandler*  get_kt_handler(unc_key_type_t kt);
 
   /**
+   * @brief     : This Function  returns the key type handler pointer for
+   *              the appropriate key types
+   * @param[in] : key type
+   * @retval    : KtHandler pointer
+   */
+  KtHandler*  get_read_kt_handler(unc_key_type_t kt);
+
+  /**
    * @brief     : This Function  intialize controller instance
    * @param[in] : ControllerFramework pointer
    * @retval    : None
@@ -208,6 +217,14 @@ class VtnDrvIntf :public pfc::core::Module {
   template <typename key, typename value>
   void create_handler(unc_key_type_t keytype);
 
+  /**
+   * @brief     : Method to create Kt handler for read
+   * @param[in] : unc_key_type_t
+   * @retval    : None
+   */
+  template <typename key, typename value>
+  void create_handler_read(unc_key_type_t keytype);
+
 #define POPULATE_STDEF(key, value, keytype, stdef_k, stdef_v)  \
   pfc_ipcstdef_t *stdef_k = new pfc_ipcstdef_t; \
   PFC_IPC_STDEF_INIT(stdef_k, key); \
@@ -224,6 +241,7 @@ class VtnDrvIntf :public pfc::core::Module {
  private:
   // To store key type handler pointer for supported keytypes
   std::map <unc_key_type_t, unc::driver::KtHandler*> map_kt_;
+  std::map <unc_key_type_t, unc::driver::KtHandler*> read_map_kt_;
 
   // To store ControllerFramework instance
   ControllerFramework* ctrl_inst_;

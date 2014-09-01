@@ -54,20 +54,19 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.FLNAME);
 		if (resource instanceof FlowListEntryResource
 				&& ((FlowListEntryResource) resource).getFlName() != null
-				&& !((FlowListEntryResource) resource).getFlName().trim()
-						.isEmpty()) {
+				&& !((FlowListEntryResource) resource).getFlName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((FlowListEntryResource) resource).getFlName().trim(),
+					((FlowListEntryResource) resource).getFlName(),
 					VtnServiceJsonConsts.LEN_32);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.SEQNUM);
 				if (((FlowListEntryResource) resource).getSeqnum() != null
 						&& !((FlowListEntryResource) resource).getSeqnum()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidRange(
-							((FlowListEntryResource) resource).getSeqnum()
-									.trim(), VtnServiceJsonConsts.VAL_1,
+							((FlowListEntryResource) resource).getSeqnum(),
+							VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_65535);
 				} else {
 					isValid = false;
@@ -76,10 +75,9 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof FlowListEntriesResource
 				&& ((FlowListEntriesResource) resource).getFlName() != null
-				&& !((FlowListEntriesResource) resource).getFlName().trim()
-						.isEmpty()) {
+				&& !((FlowListEntriesResource) resource).getFlName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((FlowListEntriesResource) resource).getFlName().trim(),
+					((FlowListEntriesResource) resource).getFlName(),
 					VtnServiceJsonConsts.LEN_32);
 			setListOpFlag(true);
 		}
@@ -92,9 +90,8 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 	 * FlowListEntry API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start FlowListEntryResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of FlowListEntryResourceValidator");
@@ -121,13 +118,13 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -169,7 +166,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 							.isValidMacAddress(flowListEntry
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.MACDSTADDR)
-									.getAsString().trim());
+									.getAsString());
 				}
 			}
 			// validation for key: macsrcaddr
@@ -182,7 +179,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 							.isValidMacAddress(flowListEntry
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.MACSRCADDR)
-									.getAsString().trim());
+									.getAsString());
 				}
 			}
 			// validation for key: macethertype
@@ -195,7 +192,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidEtherType(flowListEntry
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.MACETHERTYPE)
-							.getAsString().trim());
+							.getAsString());
 				}
 			}
 			// validation for key: macvlanpriority
@@ -205,14 +202,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.MACVLANPRIORITY)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.MACVLANPRIORITY)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_0,
-									VtnServiceJsonConsts.VAL_7);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.MACVLANPRIORITY)
+									.getAsString(), VtnServiceJsonConsts.VAL_0,
+							VtnServiceJsonConsts.VAL_7);
 				}
 			}
 			// validation for key: ipdstaddr
@@ -223,7 +217,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.IPDSTADDR).getAsString() != null) {
 					isValid = validator.isValidIpV4(flowListEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.IPDSTADDR)
-							.getAsString().trim());
+							.getAsString());
 				}
 			}
 			// validation for key: ipdstaddrprefix
@@ -233,14 +227,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IPDSTADDRPREFIX)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.IPDSTADDRPREFIX)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_1,
-									VtnServiceJsonConsts.VAL_32);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.IPDSTADDRPREFIX)
+									.getAsString(), VtnServiceJsonConsts.VAL_1,
+							VtnServiceJsonConsts.VAL_32);
 				}
 			}
 			// validation for key: ipsrcaddr
@@ -251,7 +242,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.IPSRCADDR).getAsString() != null) {
 					isValid = validator.isValidIpV4(flowListEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.IPSRCADDR)
-							.getAsString().trim());
+							.getAsString());
 				}
 			}
 			// validation for key: ipsrcaddrprefix
@@ -261,14 +252,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IPSRCADDRPREFIX)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.IPSRCADDRPREFIX)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_1,
-									VtnServiceJsonConsts.VAL_32);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.IPSRCADDRPREFIX)
+									.getAsString(), VtnServiceJsonConsts.VAL_1,
+							VtnServiceJsonConsts.VAL_32);
 				}
 			}
 			// validation for key: ipv6dstaddr"
@@ -280,7 +268,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidIpV6(flowListEntry
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.IPV6DSTADDR)
-							.getAsString().trim());
+							.getAsString());
 				}
 			}
 			// validation for key: ipv6dstaddrprefix
@@ -290,14 +278,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IPV6DSTADDRPREFIX)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.IPV6DSTADDRPREFIX)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_1,
-									VtnServiceJsonConsts.VAL_128);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.IPV6DSTADDRPREFIX)
+									.getAsString(), VtnServiceJsonConsts.VAL_1,
+							VtnServiceJsonConsts.VAL_128);
 				}
 			}
 			// validation for key: ipv6srcaddr
@@ -309,7 +294,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidIpV6(flowListEntry
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.IPV6SRCADDR)
-							.getAsString().trim());
+							.getAsString());
 				}
 			}
 			// validation for key: ipv6srcaddrprefix
@@ -319,14 +304,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IPV6SRCADDRPREFIX)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.IPV6SRCADDRPREFIX)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_1,
-									VtnServiceJsonConsts.VAL_128);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.IPV6SRCADDRPREFIX)
+									.getAsString(), VtnServiceJsonConsts.VAL_1,
+							VtnServiceJsonConsts.VAL_128);
 				}
 			}
 			// validation for key: ipproto
@@ -337,7 +319,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.IPPROTO).getAsString() != null) {
 					isValid = validator.isValidRange(flowListEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.IPPROTO)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
+							.getAsString(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_255);
 				}
 			}
@@ -349,7 +331,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.IPDSCP).getAsString() != null) {
 					isValid = validator.isValidRange(flowListEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.IPDSCP)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_0,
+							.getAsString(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_63);
 				}
 			}
@@ -361,7 +343,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.L4DSTPORT).getAsString() != null) {
 					isValid = validator.isValidRange(flowListEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.L4DSTPORT)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_0,
+							.getAsString(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_65535);
 				}
 			}
@@ -373,11 +355,9 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.L4DSTENDPORT)
 								.getAsString() != null) {
 					isValid = validator.isValidRange(
-							flowListEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.L4DSTENDPORT)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_1,
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.L4DSTENDPORT)
+									.getAsString(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_65535);
 				}
 			}
@@ -389,7 +369,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.L4SRCPORT).getAsString() != null) {
 					isValid = validator.isValidRange(flowListEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.L4SRCPORT)
-							.getAsString().trim(), VtnServiceJsonConsts.VAL_0,
+							.getAsString(), VtnServiceJsonConsts.VAL_0,
 
 					VtnServiceJsonConsts.VAL_65535);
 				}
@@ -402,11 +382,9 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.L4SRCENDPORT)
 								.getAsString() != null) {
 					isValid = validator.isValidRange(
-							flowListEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.L4SRCENDPORT)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_1,
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.L4SRCENDPORT)
+									.getAsString(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_65535);
 				}
 			}
@@ -417,11 +395,9 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.ICMPTYPENUM).getAsString() != null) {
 					isValid = validator.isValidRange(
-							flowListEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.ICMPTYPENUM)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_0,
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.ICMPTYPENUM)
+									.getAsString(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_255);
 				}
 			}
@@ -432,11 +408,9 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.ICMPCODENUM).getAsString() != null) {
 					isValid = validator.isValidRange(
-							flowListEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.ICMPCODENUM)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_0,
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.ICMPCODENUM)
+									.getAsString(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_255);
 				}
 			}
@@ -447,14 +421,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IPV6ICMPTYPENUM)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.IPV6ICMPTYPENUM)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_0,
-									VtnServiceJsonConsts.VAL_255);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.IPV6ICMPTYPENUM)
+									.getAsString(), VtnServiceJsonConsts.VAL_0,
+							VtnServiceJsonConsts.VAL_255);
 				}
 			}
 			// validation for key: ipv6icmpcodenum
@@ -464,14 +435,11 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 						&& flowListEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IPV6ICMPCODENUM)
 								.getAsString() != null) {
-					isValid = validator
-							.isValidRange(
-									flowListEntry
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.IPV6ICMPCODENUM)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.VAL_0,
-									VtnServiceJsonConsts.VAL_255);
+					isValid = validator.isValidRange(
+							flowListEntry.getAsJsonPrimitive(
+									VtnServiceJsonConsts.IPV6ICMPCODENUM)
+									.getAsString(), VtnServiceJsonConsts.VAL_0,
+							VtnServiceJsonConsts.VAL_255);
 				}
 			}
 		}
@@ -505,7 +473,7 @@ public class FlowListEntryResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.SEQNUM).getAsString() != null) {
 				isValid = validator.isValidRange(flowListEntry
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
-						.getAsString().trim(), VtnServiceJsonConsts.VAL_1,
+						.getAsString(), VtnServiceJsonConsts.VAL_1,
 						VtnServiceJsonConsts.VAL_65535);
 			}
 			if (isValid) {

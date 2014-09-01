@@ -1,21 +1,20 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
-
 #ifndef _UNC_TCLIB_TCLIB_COMMON_HH_
 #define _UNC_TCLIB_TCLIB_COMMON_HH_
 
 #include <gtest/gtest.h>
 #include <pfcxx/ipc_server.hh>
 #include <tclib_module.hh>
-#include <unc/keytype.h>
 #include <stub/tclib_module/tclib_interface_stub.hh>
 #include <stub/tclib_module/libtc_common.hh>
+#include <unc/keytype.h>
 #include <stdio.h>
 
 using namespace unc::tc;
@@ -33,9 +32,9 @@ TEST(test_13, test_ReleaseTransactionResources) {
 
   tclib_obj.ReleaseTransactionResources();
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
-  EXPECT_EQ(0U, tclib_obj.key_map_.size());
-  EXPECT_EQ(0U, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(0U, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(0, tclib_obj.key_map_.size());
+  EXPECT_EQ(0, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(0, tclib_obj.commit_phase_result_.size());
 
   TcControllerResult ctrl_res;
 
@@ -51,15 +50,15 @@ TEST(test_13, test_ReleaseTransactionResources) {
   tclib_obj.commit_phase_result_.push_back(ctrl_res);
 
   EXPECT_EQ(MSG_AUDIT_DRIVER_GLOBAL, tclib_obj.oper_state_);
-  EXPECT_EQ(1U, tclib_obj.key_map_.size());
-  EXPECT_EQ(1U, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(1U, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(1, tclib_obj.key_map_.size());
+  EXPECT_EQ(1, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(1, tclib_obj.commit_phase_result_.size());
 
   tclib_obj.ReleaseTransactionResources();
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
-  EXPECT_EQ(0U, tclib_obj.key_map_.size());
-  EXPECT_EQ(0U, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(0U, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(0, tclib_obj.key_map_.size());
+  EXPECT_EQ(0, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(0, tclib_obj.commit_phase_result_.size());
 
   tclib_obj.fini();
 }
@@ -232,7 +231,11 @@ TEST(test_17, test_Setup) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  ret = tclib_obj.Setup();
+
+  pfc_ipcsrv_t *srv = NULL;
+  pfc::core::ipc::ServerSession sess(srv);
+
+  ret = tclib_obj.Setup(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
@@ -240,12 +243,12 @@ TEST(test_17, test_Setup) {
 
   // handle interface success
   if_stub_obj.tclib_stub_failure_ = PFC_FALSE;
-  ret = tclib_obj.Setup();
+  ret = tclib_obj.Setup(&sess);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // handle interface failure
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
-  ret = tclib_obj.Setup();
+  ret = tclib_obj.Setup(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -259,7 +262,9 @@ TEST(test_17, test_SetupComplete) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  ret = tclib_obj.SetupComplete();
+  pfc_ipcsrv_t *srv = NULL;
+  pfc::core::ipc::ServerSession sess(srv);
+  ret = tclib_obj.SetupComplete(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
@@ -267,12 +272,12 @@ TEST(test_17, test_SetupComplete) {
 
   // handle interface success
   if_stub_obj.tclib_stub_failure_ = PFC_FALSE;
-  ret = tclib_obj.SetupComplete();
+  ret = tclib_obj.SetupComplete(&sess);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // handle interface failure
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
-  ret = tclib_obj.SetupComplete();
+  ret = tclib_obj.SetupComplete(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -329,29 +334,30 @@ TEST(test_19, test_AuditConfig) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  ret = tclib_obj.AuditConfig();
+  pfc_ipcsrv_t *srv = NULL;
+  pfc::core::ipc::ServerSession sess(srv);
+
+  ret = tclib_obj.AuditConfig(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
   tclib_obj.sess_ = NULL;
-  ret = tclib_obj.AuditConfig();
-  EXPECT_EQ(TC_FAILURE, ret);
+  ret = tclib_obj.AuditConfig(&sess);
+  EXPECT_EQ(TC_SUCCESS, ret);
 
-  pfc_ipcsrv_t *srv = NULL;
-  pfc::core::ipc::ServerSession sess(srv);
   TcServerSessionUtils sessutil;
 
   tclib_obj.sess_ = &sess;
   arg_count = 0;
-  ret = tclib_obj.AuditConfig();
+  ret = tclib_obj.AuditConfig(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   arg_count = 2;
   sessutil.set_read_type(LIB_AUDIT_CONFIG);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.AuditConfig();
+  ret = tclib_obj.AuditConfig(&sess);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // handle interface failure
@@ -359,7 +365,7 @@ TEST(test_19, test_AuditConfig) {
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
   sessutil.set_read_type(LIB_AUDIT_CONFIG);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.AuditConfig();
+  ret = tclib_obj.AuditConfig(&sess);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -370,16 +376,15 @@ TEST(test_31, test_fini) {
   mattr.pma_name = "tclib";
   TcLibModule tclib_obj(&mattr);
   tclib_obj.init();
-  TcLibInterface *compare_ptr = NULL;
-  pfc::core::ipc::ServerSession *compare_sess_ptr = NULL;
-  EXPECT_EQ(compare_ptr, tclib_obj.pTcLibInterface_);
-  EXPECT_EQ(compare_sess_ptr, tclib_obj.sess_);
+
+  EXPECT_EQ(NULL, tclib_obj.pTcLibInterface_);
+  EXPECT_EQ(NULL, tclib_obj.sess_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.session_id_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.config_id_);
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
-  EXPECT_EQ(0U, tclib_obj.key_map_.size());
-  EXPECT_EQ(0U, tclib_obj.controller_key_map_.size());
-  EXPECT_EQ(0U, tclib_obj.commit_phase_result_.size());
+  EXPECT_EQ(0, tclib_obj.key_map_.size());
+  EXPECT_EQ(0, tclib_obj.controller_key_map_.size());
+  EXPECT_EQ(0, tclib_obj.commit_phase_result_.size());
   EXPECT_EQ(PFC_FALSE, tclib_obj.audit_in_progress_);
 }
 

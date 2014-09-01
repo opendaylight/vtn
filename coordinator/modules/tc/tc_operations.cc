@@ -41,12 +41,15 @@ TcOperStatus TcOperations::GetOperType() {
                                    TC_REQ_OP_TYPE_INDEX,
                                    &oper_type);
   if ( ret == TCUTIL_RET_FAILURE ) {
+    pfc_log_error("GetOperType failed");
     return TC_OPER_INVALID_INPUT;
   } else if ( ret == TCUTIL_RET_FATAL ) {
+    pfc_log_error("GetOperType fatal");
     return TC_OPER_FAILURE;
   }
 
   tc_oper_=(TcServiceType)oper_type;
+  pfc_log_info("Received oper_type:%d", tc_oper_);
   return TC_OPER_SUCCESS;
 }
 
@@ -60,12 +63,18 @@ TcOperStatus TcOperations::GetSessionId() {
                                        TC_REQ_SESSION_ID_INDEX,
                                        &session_id_);
   if ( ret == TCUTIL_RET_FAILURE ) {
+    pfc_log_error("GetSessionId failed");
     return TC_OPER_INVALID_INPUT;
   } else if ( ret == TCUTIL_RET_FATAL ) {
+    pfc_log_error("GetSessionId fatal");
     return TC_OPER_FAILURE;
   }
-  if ( session_id_ == 0 )
+  if ( session_id_ == 0 ) {
+    pfc_log_error("GetSessionId - session_id(0) invalid");
     return TC_OPER_INVALID_INPUT;
+  }
+
+  pfc_log_info("SessionId: %u", session_id_);
 
   return TC_OPER_SUCCESS;
 }
@@ -79,8 +88,10 @@ TcOperStatus TcOperations::SetOperType() {
       TcServerSessionUtils::set_uint32(ssess_,
                                        oper_type);
   if ( ret == TCUTIL_RET_FAILURE ) {
+    pfc_log_error("SetOperType failed");
     return TC_OPER_INVALID_INPUT;
   } else if ( ret == TCUTIL_RET_FATAL ) {
+    pfc_log_error("SetOperType fatal");
     return TC_OPER_FAILURE;
   }
   return TC_OPER_SUCCESS;
@@ -94,8 +105,10 @@ TcOperStatus TcOperations::SetSessionId() {
       TcServerSessionUtils::set_uint32(ssess_,
                                        session_id_);
   if ( ret == TCUTIL_RET_FAILURE ) {
+    pfc_log_error("SetSessionId  failed");
     return TC_OPER_INVALID_INPUT;
   } else if ( ret == TCUTIL_RET_FATAL ) {
+    pfc_log_error("SetSessionId  fatal");
     return TC_OPER_FAILURE;
   }
   return TC_OPER_SUCCESS;
@@ -105,12 +118,15 @@ TcOperStatus TcOperations::SetSessionId() {
  * @brief Set the Result of Operation to the session
  */
 TcOperStatus TcOperations::SetOperStatus(TcOperStatus resp_status) {
+  pfc_log_info("SetOperStatus: resp:%d", resp_status);
   TcUtilRet ret=
       TcServerSessionUtils::set_uint32(ssess_,
                                        resp_status);
   if ( ret == TCUTIL_RET_FAILURE ) {
+    pfc_log_error("SetOperStatus failed");
     return TC_OPER_INVALID_INPUT;
   } else if ( ret == TCUTIL_RET_FATAL ) {
+    pfc_log_error("SetOperStatus fatal");
     return TC_OPER_FAILURE;
   }
   return TC_OPER_SUCCESS;
@@ -182,6 +198,7 @@ TcOperStatus TcOperations::SendResponse(TcOperStatus send_oper_status) {
  * @brief  Method to revoke in case of failure
  */
 TcOperStatus TcOperations::RevokeOperation(TcOperStatus oper_status) {
+  pfc_log_info("RevokeOperation Oper_status:%u", oper_status);
   switch ( tc_oper_status_ ) {
     case INPUT_VALIDATION:
       return SendResponse(oper_status);
@@ -194,12 +211,20 @@ TcOperStatus TcOperations::RevokeOperation(TcOperStatus oper_status) {
       if ( TcReleaseExclusion() == TC_OPER_SUCCESS ) {
         return SendResponse(oper_status);
       } else {
-        pfc_log_fatal("Revoke Operation failed in Release Lock");
+        if (tclock_->GetUncCurrentState() == TC_STOP) {
+          pfc_log_error("Revoke Operation failed in Release Lock");
+        } else {
+          pfc_log_fatal("Revoke Operation failed in Release Lock");
+        }
         return SendResponse(TC_SYSTEM_FAILURE);
       }
 
     case RELEASE_EXCLUSION_PHASE:
-      pfc_log_fatal("Revoke Operation failed in Release Lock");
+      if (tclock_->GetUncCurrentState() == TC_STOP) {
+        pfc_log_error("Revoke Operation failed in Release Lock");
+      } else {
+        pfc_log_fatal("Revoke Operation failed in Release Lock");
+      }
       return SendResponse(TC_SYSTEM_FAILURE);
 
     default:
@@ -256,13 +281,20 @@ TcOperStatus TcOperations::Dispatch() {
  * @brief  Method to map TcMsg return types 
  */
 TcOperStatus TcOperations::HandleMsgRet(TcOperRet MsgRet) {
+  TcOperStatus oper_status = TC_OPER_SUCCESS;
+
   if ( MsgRet == TCOPER_RET_FATAL ||
-      MsgRet == TCOPER_RET_FAILURE ) {
-    return TC_SYSTEM_FAILURE;
+       MsgRet == TCOPER_RET_FAILURE ) {
+    oper_status = TC_SYSTEM_FAILURE;
   } else  if ( MsgRet == TCOPER_RET_ABORT ) {
-    return TC_OPER_ABORT;
+    oper_status = TC_OPER_ABORT;
+  } else if ( MsgRet == TCOPER_RET_NO_DRIVER) {
+    oper_status = TC_OPER_DRIVER_NOT_PRESENT;
   }
-  return TC_OPER_SUCCESS;
+
+  pfc_log_info("HandleMsgRet: Received(%u), returning (%u)",
+               MsgRet, oper_status);
+  return oper_status;
 }
 
 
@@ -295,6 +327,11 @@ TcOperStatus TcOperations::Execute() {
         audit_db_fail_ = PFC_TRUE;
       }
       return HandleMsgRet(MsgRet);
+    }
+
+    if (*MsgIter == unc::tclib::MSG_SETUP_COMPLETE) {
+      tclock_->TcSetSetupComplete(PFC_TRUE);
+      pfc_log_info("MSG_SETUP_COMPLETE completed");
     }
 
     MsgIter++;

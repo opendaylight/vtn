@@ -42,7 +42,8 @@ typedef enum {
   UPPL_CONTROLLER_OPER_DOWN = 0,
   UPPL_CONTROLLER_OPER_UP,
   UPPL_CONTROLLER_OPER_WAITING_AUDIT,
-  UPPL_CONTROLLER_OPER_AUDITING
+  UPPL_CONTROLLER_OPER_AUDITING,
+  UPPL_CONTROLLER_OPER_EVENTS_MERGED
 }UpplControllerOperStatus;
 
 typedef enum {
@@ -68,7 +69,12 @@ typedef enum {
   kIdxOperStatus
 }uppl_val_ctr_st_index;
 
-
+typedef enum {
+  kIdxCtrVal = 0,
+  kIdxCtrCommitNumber,
+  kIdxCtrCommitDate,
+  kIdxCtrCommitApplication
+}uppl_val_ctr_commit_version_index;
 //  Enum for the structure val_path_fault_alarm
 typedef enum {
   kIdxIngressLogicalPort = 0,
@@ -111,7 +117,8 @@ typedef enum {
   UPPL_LP_PHYSICAL_PORT = 2,
   UPPL_LP_TRUNK_PORT = 11,
   UPPL_LP_SUBDOMAIN = 12,
-  UPPL_LP_TUNNEL_ENDPOINT = 13
+  UPPL_LP_TUNNEL_ENDPOINT = 13,
+  UPPL_LP_PORT_GROUP = 14
 }UpplLogicalPortType;
 
 typedef enum {

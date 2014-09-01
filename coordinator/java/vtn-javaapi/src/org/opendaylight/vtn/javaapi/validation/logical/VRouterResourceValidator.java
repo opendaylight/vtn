@@ -54,25 +54,24 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VRoutersResource
 				&& ((VRoutersResource) resource).getVtnName() != null
-				&& !((VRoutersResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VRoutersResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VRoutersResource) resource).getVtnName().trim(),
+					((VRoutersResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		} else if (resource instanceof VRouterResource
 				&& ((VRouterResource) resource).getVtnName() != null
-				&& !((VRouterResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VRouterResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VRouterResource) resource).getVtnName().trim(),
+					((VRouterResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((VRouterResource) resource).getVrtName() != null
-						&& !((VRouterResource) resource).getVrtName().trim()
-								.isEmpty()) {
+						&& !((VRouterResource) resource).getVrtName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VRouterResource) resource).getVrtName().trim(),
+							((VRouterResource) resource).getVrtName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -88,9 +87,8 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of VRouter API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VRouterResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VRouterResourceValidator");
@@ -113,7 +111,7 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -122,7 +120,7 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -162,7 +160,7 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 							.getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vRouter
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VRTNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for key: controller_id(mandatory)
 			if (isValid) {
@@ -171,11 +169,12 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 						&& vRouter.getAsJsonPrimitive(
 								VtnServiceJsonConsts.CONTROLLERID)
 								.getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vRouter.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vRouter.getAsJsonPrimitive(
+											VtnServiceJsonConsts.CONTROLLERID)
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -189,7 +188,7 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidMaxLength(
 							vRouter.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127)
 							|| vRouter
 									.getAsJsonPrimitive(
@@ -205,7 +204,7 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
 					isValid = validator.isValidDomainId(vRouter
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -234,19 +233,6 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 			isValid = true;
 			final JsonObject vRouter = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VROUTER);
-			// validation for key: controller_id(optional)
-			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
-			if (vRouter.has(VtnServiceJsonConsts.CONTROLLERID)
-					&& vRouter.getAsJsonPrimitive(
-							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
-				isValid = validator.isValidMaxLengthAlphaNum(vRouter
-						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
-						|| vRouter
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString().trim().isEmpty();
-			}
 			// validation for key: description(optional)
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
@@ -256,26 +242,12 @@ public class VRouterResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidMaxLength(
 							vRouter.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127)
 							|| vRouter
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim().isEmpty();
-				}
-			}
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-				if (vRouter.has(VtnServiceJsonConsts.DOMAINID)
-						&& vRouter.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
-					isValid = validator.isValidDomainId(vRouter
-							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
-							|| vRouter
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.DOMAINID)
-									.getAsString().trim().isEmpty();
+									.getAsString().isEmpty();
 				}
 			}
 		}

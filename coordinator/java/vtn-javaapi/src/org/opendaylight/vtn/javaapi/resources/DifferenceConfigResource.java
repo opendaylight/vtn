@@ -61,6 +61,7 @@ public class DifferenceConfigResource extends AbstractResource {
 	public final int get() throws VtnServiceException {
 		LOG.trace("Starts DifferenceConfigResource#get()");
 		ClientSession session = null;
+		ClientSession sessionUppl = null;
 		int status = ClientSession.RESP_FATAL;
 		try {
 			LOG.debug("Start Ipc framework call");
@@ -97,27 +98,27 @@ public class DifferenceConfigResource extends AbstractResource {
 			} else {
 				if (UncStructIndexEnum.DirtyStatus.FALSE.getValue().equals(
 						dirtyStatus)) {
-					session = getConnPool().getSession(
+					sessionUppl = getConnPool().getSession(
 							UncUPPLEnums.UPPL_IPC_CHN_NAME,
 							UncUPPLEnums.UPPL_IPC_SVC_NAME,
 							UncUPPLEnums.ServiceID.UPPL_SVC_GLOBAL_CONFIG
 									.ordinal(), getExceptionHandler());
 					// set session timeout as infinity for config diff operation
-					session.setTimeout(null);
-					session.addOutput(IpcDataUnitWrapper
+					sessionUppl.setTimeout(null);
+					sessionUppl.addOutput(IpcDataUnitWrapper
 							.setIpcUint32Value(UncUPPLEnums.UncAddlOperationT.UNC_OP_IS_CANDIDATE_DIRTY
 									.ordinal()));
 					LOG.debug("Request packet created successfully");
-					status = session.invoke();
+					status = sessionUppl.invoke();
 					LOG.debug("Request packet processed with status:" + status);
 					operationType = IpcDataUnitWrapper
-							.getIpcDataUnitValue(session
+							.getIpcDataUnitValue(sessionUppl
 									.getResponse(VtnServiceJsonConsts.VAL_0));
 					result = Integer.parseInt(IpcDataUnitWrapper
-							.getIpcDataUnitValue(session
+							.getIpcDataUnitValue(sessionUppl
 									.getResponse(VtnServiceJsonConsts.VAL_1)));
 					dirtyStatus = IpcDataUnitWrapper
-							.getIpcDataUnitValue(session
+							.getIpcDataUnitValue(sessionUppl
 									.getResponse(VtnServiceJsonConsts.VAL_2));
 					LOG.debug("Response retreived successfully");
 					LOG.debug("Operation type: " + operationType);
@@ -170,6 +171,7 @@ public class DifferenceConfigResource extends AbstractResource {
 			}
 			// destroy session by common handler
 			getConnPool().destroySession(session);
+			getConnPool().destroySession(sessionUppl);
 		}
 		LOG.trace("Completed DifferenceConfigResource#get()");
 		return status;

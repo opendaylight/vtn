@@ -33,7 +33,11 @@ create table if not exists s_controller_table (
   port integer,
   valid char(10),
   cs_row_status smallint,
-  cs_attr char(10) 
+  cs_attr char(10), 
+  commit_number bytea,
+  commit_date bytea,
+  commit_application varchar(256),
+  valid_commit_version char(3)
   );
 
 create table if not exists s_ctr_domain_table(
@@ -77,7 +81,11 @@ create table if not exists c_controller_table (
   port integer,
   valid char(10),
   cs_row_status smallint,
-  cs_attr char(10) 
+  cs_attr char(10), 
+  commit_number bytea,
+  commit_date bytea,
+  commit_application varchar(256),
+  valid_commit_version char(3)
   );
 
 create table if not exists c_ctr_domain_table(
@@ -121,7 +129,11 @@ create table if not exists r_controller_table (
   port integer,
   valid char(10),
   cs_row_status smallint default 5,
-  cs_attr char(10) 
+  cs_attr char(10), 
+  commit_number bytea,
+  commit_date bytea,
+  commit_application varchar(256),
+  valid_commit_version char(3)
   );
 
 create table if not exists r_ctr_domain_table(

@@ -239,7 +239,8 @@ TEST_F(ControllerTest, Create_01) {
                                ses);
   EXPECT_EQ(UNC_UPPL_RC_ERR_IPC_WRITE_ERROR, ret);
 }
-
+#if 0
+//TODO(ODC)
 //  Domain Create success
 TEST_F(ControllerTest, Create_02) {
   key_ctr_t k;
@@ -280,7 +281,7 @@ TEST_F(ControllerTest, Create_02) {
                                ses);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
-
+#endif
 //  get_controller_type returns failure
 TEST_F(ControllerTest, Create_03) {
   key_ctr_t k;
@@ -549,7 +550,8 @@ TEST_F(ControllerTest, CreateKeyInstance_05) {
                                           key_type);
   EXPECT_EQ(UNC_UPPL_RC_ERR_DB_CREATE, ret);
 }
-
+#if 0
+//TODO(ODC)
 //  CreateKeyInstance with UNC_DT_CANDIDATE datatype ODBC ODBCM_RC_SUCCESS
 TEST_F(ControllerTest, CreateKeyInstance_06) {
   key_ctr_t k;
@@ -575,7 +577,7 @@ TEST_F(ControllerTest, CreateKeyInstance_06) {
                                           key_type);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
-
+#endif
 //  CreateKeyInstance with UNC_DT_STATE  datatype ODBC return Failure
 TEST_F(ControllerTest, CreateKeyInstance_07) {
   key_ctr_t k;
@@ -2750,7 +2752,8 @@ TEST_F(ControllerTest, ReadBulkInternal_Success) {
                                        vect_val_ctr_st, vect_ctr_id);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
 }
-
+#if 0
+//TODO(ODC)
 /*********ValidateCtrlrValueCapability*******/
 // returns config syntax error
 TEST_F(ControllerTest, ValidateCtrlrValueCapability_Err_CFG_SYNTAX) {
@@ -2760,9 +2763,10 @@ TEST_F(ControllerTest, ValidateCtrlrValueCapability_Err_CFG_SYNTAX) {
   int ret =  KtctrObj.ValidateCtrlrValueCapability(version, key_type);
   EXPECT_EQ(UNC_UPPL_RC_ERR_CFG_SYNTAX, ret);
 }
-
+#endif
 /*******ValidateCtrlrScalability****/
 // Returns Connxn Error
+/*
 TEST_F(ControllerTest, ValidateCtrlrScalability_Err_DB_Access) {
   OdbcmConnectionHandler *db_conn =NULL;
   string version;
@@ -2803,7 +2807,7 @@ TEST_F(ControllerTest, ValidateCtrlrScalability_DB_Err) {
       db_conn, version, key_type, data_type);
   EXPECT_EQ(UNC_UPPL_RC_ERR_DB_GET, ret);
 }
-
+*/
 /******ValidateTypeIpAddress*******/
 
 // Not required to validate type and ip

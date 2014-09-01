@@ -229,7 +229,8 @@ class VrtIfFlowFilterMoMgr : public MoMgrImpl {
     * @retval UPLL_RC_ERR_MERGE_CONFLICT  MetgeConflict
     */
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     /**
     * @brief  Method used for rename Operation.
@@ -418,8 +419,7 @@ class VrtIfFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
                                 ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi,
-                                bool restore_flag = false);
+                                DalDmlIntf *dmi);
 
 
     upll_rc_t GetControllerDomainID(ConfigKeyVal *ikey,

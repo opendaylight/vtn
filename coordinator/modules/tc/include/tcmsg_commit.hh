@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -71,6 +71,9 @@ class TwoPhaseCommit : public TcMsgCommit {
                                             tmpsess);
   /*method to handle response from UPLL/UPPL for Driver Result*/
   TcOperRet HandleDriverResultResponse(pfc::core::ipc::ClientSession* tmpsess);
+
+  //Method to handle driver not present and send dummoy resp to UPPL/UPLL
+  TcOperRet HandleDriverNotPresent(unc_keytype_ctrtype_t);
 
   /*driver-id and controller list map*/
   TcDriverInfoMap driverinfo_map_;

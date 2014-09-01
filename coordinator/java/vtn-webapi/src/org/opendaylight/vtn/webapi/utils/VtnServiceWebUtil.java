@@ -21,6 +21,7 @@ import org.json.JSONObject;
 
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
+import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 import org.opendaylight.vtn.webapi.constants.ApplicationConstants;
 import org.opendaylight.vtn.webapi.enums.HttpErrorCodeEnum;
 import org.opendaylight.vtn.webapi.enums.SessionEnum;
@@ -230,6 +231,25 @@ public class VtnServiceWebUtil {
 		if (!opForce.isEmpty()) {
 			configJson.addProperty(ApplicationConstants.OP, opForce);
 		}
+
+		/* Set timeout. */
+		String timeout = ConfigurationManager.getInstance()
+				.getConfProperty(ApplicationConstants.CFG_MODE_TIMEOUT);
+		if (timeout != null && !timeout.isEmpty()) {
+			CommonValidator validator = new CommonValidator();
+			long min = Integer.MIN_VALUE;
+			long max = Integer.MAX_VALUE;
+			try {
+				if (!validator.isValidRange(timeout, min, max)) {
+					timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+				}
+			} catch (Exception e) {
+				timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+			}
+		} else {
+			timeout = ApplicationConstants.CFG_TIMEOUT_DEFAULT;
+		}
+		configJson.addProperty(ApplicationConstants.TIMEOUT, timeout);
 		LOG.trace("Complete VtnServiceWebUtil#prepareAquireConfigJSON()");
 		return configJson;
 	}
@@ -313,7 +333,7 @@ public class VtnServiceWebUtil {
 						VtnServiceCommonUtil.getErrorMessage(errCode));
 				errJson.put(ApplicationConstants.ERROR, temErrorJSON);
 			} catch (final JSONException e) {
-				LOG.error("Internal server error : " + e);
+				LOG.error(e, "Internal server error : " + e);
 			}
 		}
 		LOG.trace("Complete VtnServiceWebUtil#prepareErrResponseJson()");

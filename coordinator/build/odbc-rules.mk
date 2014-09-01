@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2014 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -26,6 +26,13 @@ EXTRA_CPPFLAGS		+= $(ODBC_CPPFLAGS)
 EXTRA_LIBDIRS		+= $(ODBC_LIBDIRS)
 EXTRA_LDLIBS		+= $(ODBC_LDFLAGS)
 EXTRA_RUNTIME_DIR	+= $(ODBC_RUNPATH)
+
+ifdef	UNC_ODBC_NOWRAPPER
+EXTRA_CPPFLAGS		+= -D_UNC_ODBC_NOWRAPPER
+else	# !UNC_ODBC_NOWRAPPER
+EXTRA_CPPFLAGS		+= -include $(ODBC_WRAPPER_H)
+EXTRA_LDLIBS		+= -lunc_odbc
+endif	# UNC_ODBC_NOWRAPPER
 
 endif	# !empty(USE_ODBC)
 

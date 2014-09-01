@@ -75,6 +75,10 @@ class OdcDriver : public unc::driver::driver {
   }
 
   unc::driver::driver_command* create_driver_command(unc_key_type_t key_type);
+  unc::driver::vtn_driver_read_command* create_driver_read_command(
+							unc_key_type_t key_type){ 
+    return NULL;	
+  }
 
   unc::tclib::TcCommonRet HandleVote(unc::driver::controller* ctlptr);
 

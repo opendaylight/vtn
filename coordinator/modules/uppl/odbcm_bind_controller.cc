@@ -21,6 +21,9 @@
 #include "odbcm_mgr.hh"
 
 using unc::uppl::DBVarbind;
+
+SQLLEN *p_commit_number_len = NULL;
+SQLLEN *p_commit_date_len = NULL;
 /**
  * @Description : Function to bind input parameter of controller_table
  * @param[in]   : column_attr - DBTableSchema->rowlist_entry
@@ -228,6 +231,64 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_input(
               0,
               p_ctr_table->scs_attr,
               sizeof(p_ctr_table->scs_attr)-1,
+              NULL);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_COMMIT_NUMBER:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          *p_commit_number_len = sizeof(SQLLEN);
+          odbc_rc = BindInputParameter_SQL_BINARY(
+              r_hstmt,
+              ++col_no,
+              0,
+              0,
+              &p_ctr_table->scommit_number,
+              sizeof(p_ctr_table->scommit_number),
+              p_commit_number_len);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_COMMIT_DATE:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          *p_commit_date_len = sizeof(SQLLEN);
+          odbc_rc = BindInputParameter_SQL_BINARY(
+              r_hstmt,
+              ++col_no,
+              0,
+              0,
+              &p_ctr_table->scommit_date,
+              sizeof(p_ctr_table->scommit_date),
+              p_commit_date_len);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_COMMIT_APPLICATION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+          odbc_rc = BindInputParameter_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              ODBCM_SIZE_256,
+              0,
+              p_ctr_table->szcommit_application,
+              sizeof(p_ctr_table->szcommit_application)-1,
+              NULL);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_VALID_COMMIT_VERSION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+          odbc_rc = BindInputParameter_SQL_CHAR(
+              r_hstmt,
+              ++col_no,
+              ODBCM_SIZE_3,
+              0,
+              p_ctr_table->svalid_commit_version,
+              sizeof(p_ctr_table->svalid_commit_version)-1,
               NULL);
           /**set flag value 0 to print column binding details */
           log_flag = 0;
@@ -441,6 +502,54 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               p_ctr_table->scs_attr,
               ODBCM_SIZE_9+1,
               (&p_ctr_table->cbcsattr));
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_COMMIT_NUMBER:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          odbc_rc = BindCol_SQL_BINARY(
+              r_hstmt,
+              ++col_no,
+              &p_ctr_table->scommit_number,
+              sizeof(p_ctr_table->scommit_number),
+              p_commit_number_len/*buffer to fetch values*/);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_COMMIT_DATE:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          odbc_rc = BindCol_SQL_BINARY(
+              r_hstmt,
+              ++col_no,
+              &p_ctr_table->scommit_date,
+              sizeof(p_ctr_table->scommit_date),
+              p_commit_date_len/*buffer to fetch values*/);
+      /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_COMMIT_APPLICATION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              p_ctr_table->szcommit_application,
+              ODBCM_SIZE_256+1,
+              (&p_ctr_table->cbcommitapplication));
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_VALID_COMMIT_VERSION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              p_ctr_table->svalid_commit_version,
+              ODBCM_SIZE_3+1,
+              (&p_ctr_table->cbvalid_cv));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -689,6 +798,69 @@ ODBCM_RC_STATUS DBVarbind::fill_controller_table(
               "sCs_attr = %s", p_ctr_table->scs_attr);
         }
         break;
+      case CTR_COMMIT_NUMBER:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+         /**ColumnAttrValue is a template to receive the void* values from
+           * caller and typecast it into appropriate data type,
+           * for speed CHAR[64]*/
+          ColumnAttrValue <uint64_t> commit_number_value;
+          commit_number_value = *((ColumnAttrValue <uint64_t>*)
+              ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(&p_ctr_table->scommit_number, 0,
+              sizeof(p_ctr_table->scommit_number));
+          p_ctr_table->scommit_number = commit_number_value.value;
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE:"
+              "scommit_number = %"PFC_PFMT_d64, p_ctr_table->scommit_number);
+        }
+        break;
+      case CTR_COMMIT_DATE:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          /**ColumnAttrValue is a template to receive the void* values from
+            * caller and typecast it into appropriate data type,
+            * for speed CHAR[64]*/
+          ColumnAttrValue <uint64_t> commit_date_value;
+          commit_date_value = *((ColumnAttrValue <uint64_t>*)
+              ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(&p_ctr_table->scommit_date, 0,
+              sizeof(p_ctr_table->scommit_date));
+          p_ctr_table->scommit_date = commit_date_value.value;
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE:"
+              "scommit_date = %"PFC_PFMT_d64, p_ctr_table->scommit_date);
+        }
+        break;
+      case CTR_COMMIT_APPLICATION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+          /**ColumnAttrValue is a template to receive the void* values from
+           * caller and typecast it into appropriate data type,
+           * for password CHAR[256]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_256]> commit_application_value =
+            *((ColumnAttrValue <uint8_t[ODBCM_SIZE_256]>*)
+                ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(p_ctr_table->szcommit_application, 0, ODBCM_SIZE_256+1);
+          /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(p_ctr_table->szcommit_application,
+               &commit_application_value.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE: "
+              "szcommit_application = %s", p_ctr_table->szcommit_application);
+        }
+        break;
+      case CTR_VALID_COMMIT_VERSION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+          /**ColumnAttrValue is a template to receive the void* values from
+           * caller and typecast it into appropriate data type,
+           * for valid CHAR[3]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_3]> valid_value =
+              *((ColumnAttrValue <uint8_t[ODBCM_SIZE_3]>*)
+                ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(p_ctr_table->svalid_commit_version, 0, ODBCM_SIZE_3+1);
+          /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(p_ctr_table->svalid_commit_version, &valid_value.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE: "
+             "svalid_commit_version = %s", p_ctr_table->svalid_commit_version);
+        }
+        break;
       default:
         break;
     }
@@ -920,6 +1092,64 @@ ODBCM_RC_STATUS DBVarbind::fetch_controller_table(
           odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
               "cs_attr = %s", cs_value->value);
           (*i).p_table_attribute_value = cs_value;
+        }
+        break;
+      case CTR_COMMIT_NUMBER:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          /**ColumnAttrValue is a template to send the fetched values to
+            * caller. typecast it into void*, memory will be allocated
+            * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint64_t,  commit_number_value);
+          commit_number_value->value = p_ctr_table->scommit_number;
+          (*i).p_table_attribute_value = commit_number_value;
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
+              "scommit_number= %" PFC_PFMT_u64, commit_number_value->value);
+        }
+        break;
+      case CTR_COMMIT_DATE:
+        if ((*i).request_attribute_type == DATATYPE_UINT64) {
+          /**ColumnAttrValue is a template to send the fetched values to
+            * caller. typecast it into void*, memory will be allocated
+            * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint64_t,  commit_date_value);
+          commit_date_value->value = p_ctr_table->scommit_date;
+          (*i).p_table_attribute_value = commit_date_value;
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
+              "scommit_date= %" PFC_PFMT_u64, commit_date_value->value);
+        }
+        break;
+      case CTR_COMMIT_APPLICATION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_256) {
+          /**ColumnAttrValue is a template to send the fetched values to
+              * caller. typecast it into void*, memory will be allocated
+              * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(
+                uint8_t[ODBCM_SIZE_256+1],
+                commit_application_value);
+          ODBCM_MEMCPY(
+                commit_application_value->value,
+                p_ctr_table->szcommit_application,
+                sizeof(p_ctr_table->szcommit_application));
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
+              "commit_application = %s", commit_application_value->value);
+          (*i).p_table_attribute_value = commit_application_value;
+        }
+        break;
+      case CTR_VALID_COMMIT_VERSION:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_3) {
+          /**ColumnAttrValue is a template to send the fetched values to
+              * caller. typecast it into void*, memory will be allocated
+              * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(
+                  uint8_t[ODBCM_SIZE_3+1],
+                  valid_value);
+          ODBCM_MEMCPY(
+                  valid_value->value,
+                  p_ctr_table->svalid_commit_version,
+                  sizeof(p_ctr_table->svalid_commit_version));
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
+              "valid = %s", valid_value->value);
+          (*i).p_table_attribute_value = valid_value;
         }
         break;
       default:

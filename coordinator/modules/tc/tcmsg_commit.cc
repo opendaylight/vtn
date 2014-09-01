@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -68,6 +68,8 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
         TcClientSessionUtils::create_tc_client_session(channel_name,
                               tclib::TCLIB_COMMIT_GLOBAL_ABORT, conn);
     if (NULL == abortsess) {
+      pfc_log_error("SendAbortRequest:Error creating abort sess for channel:%s",
+                    channel_name.c_str());
       return TCOPER_RET_FATAL;
     }
 
@@ -76,6 +78,7 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
                                                 tclib::MSG_COMMIT_ABORT);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&abortsess, conn);
+      pfc_log_error("SendAbortRequest: Setting ABORT msg failed");
       return ReturnUtilResp(util_resp);
     }
     /*validate session_id_ and config_id_*/
@@ -84,11 +87,13 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
       util_resp = TcClientSessionUtils::set_uint32(abortsess, session_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         TcClientSessionUtils::tc_session_close(&abortsess, conn);
+        pfc_log_error("SendAbortRequest: Setting sess_id failed");
         return ReturnUtilResp(util_resp);
       }
       util_resp = TcClientSessionUtils::set_uint32(abortsess, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         TcClientSessionUtils::tc_session_close(&abortsess, conn);
+        pfc_log_error("SendAbortRequest: Setting config_id failed");
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -99,12 +104,14 @@ TcMsgCommit::SendAbortRequest(AbortOnFailVector abort_on_fail_) {
     util_resp = TcClientSessionUtils::set_uint8(abortsess, fail_phase);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&abortsess, conn);
+      pfc_log_error("SendAbortRequest: Setting fail_phase failed");
       return ReturnUtilResp(util_resp);
     }
     /*invoke session*/
     util_resp = TcClientSessionUtils::tc_session_invoke(abortsess, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&abortsess, conn);
+      pfc_log_error("SendAbortRequest: Session invoke failed");
       return ReturnUtilResp(util_resp);
     }
 
@@ -141,7 +148,7 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
   for (rit = abort_on_fail_.rbegin() ; rit != abort_on_fail_.rend(); rit++) {
     channel_name = GetChannelName(*rit);
     if (PFC_EXPECT_TRUE(channel_name.empty())) {
-      pfc_log_error("channel name is empty");
+      pfc_log_error("SendTransEndRequest:channel name is empty");
       return TCOPER_RET_FAILURE;
     }
     pfc_log_info("notify TxEND to %s", channel_name.c_str());
@@ -151,6 +158,7 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
         TcClientSessionUtils::create_tc_client_session(channel_name,
                               tclib::TCLIB_COMMIT_TRANSACTION, conn);
     if (NULL == end_sess) {
+      pfc_log_error("SendTransEndRequest:Sess creation failed");
       return TCOPER_RET_FATAL;
     }
     /*append data to channel */
@@ -158,6 +166,7 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
                                                 tclib::MSG_COMMIT_TRANS_END);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&end_sess, conn);
+      pfc_log_error("SendTransEndRequest: Settng MSG_COMMIT_TRANS_END failed");
       return ReturnUtilResp(util_resp);
     }
     /*validate session_id_ and config_id_*/
@@ -165,11 +174,13 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
       util_resp = TcClientSessionUtils::set_uint32(end_sess, session_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         TcClientSessionUtils::tc_session_close(&end_sess, conn);
+        pfc_log_error("SendTransEndRequest: Settng sess_id failed");
         return ReturnUtilResp(util_resp);
       }
       util_resp = TcClientSessionUtils::set_uint32(end_sess, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         TcClientSessionUtils::tc_session_close(&end_sess, conn);
+        pfc_log_error("SendTransEndRequest: Settng config_id failed");
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -182,12 +193,14 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
                                                 tclib::TRANS_END_FAILURE);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&end_sess, conn);
+      pfc_log_error("SendTransEndRequest: Settng TX_END_FAILURE failed");
       return ReturnUtilResp(util_resp);
     }
     /*invoke session*/
     util_resp = TcClientSessionUtils::tc_session_invoke(end_sess, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
       TcClientSessionUtils::tc_session_close(&end_sess, conn);
+      pfc_log_error("SendTransEndRequest: Session invoke failed");
       return ReturnUtilResp(util_resp);
     }
 
@@ -242,6 +255,7 @@ TcOperRet AbortCandidateDB::Execute() {
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                   tclib::TCLIB_USER_ABORT, conn_);
     if (NULL == sess_) {
+      pfc_log_error("AbortCandidateDB::Execute sess creation failed");
       return TCOPER_RET_FATAL;
     }
 
@@ -250,10 +264,12 @@ TcOperRet AbortCandidateDB::Execute() {
         PFC_EXPECT_TRUE(config_id_ > 0)) {
       util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("AbortCandidateDB::Execute Set sess_id failed");
         return ReturnUtilResp(util_resp);
       }
       util_resp = TcClientSessionUtils::set_uint32(sess_, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("AbortCandidateDB::Execute Set config_id failed");
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -263,6 +279,7 @@ TcOperRet AbortCandidateDB::Execute() {
     /*invoke session*/
     util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("AbortCandidateDB::Execute Session invoke failed");
       return ReturnUtilResp(util_resp);
     }
 
@@ -309,32 +326,38 @@ CommitTransaction::SendRequest(std::string channel_name) {
   sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                 tclib::TCLIB_COMMIT_TRANSACTION, conn_);
   if (NULL == sess_) {
+    pfc_log_error("CommitTx::SendRequest Create sess failed");
     return TCOPER_RET_FATAL;
   }
 
   /*append data to channel */
   util_resp = TcClientSessionUtils::set_uint8(sess_, opertype_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("CommitTx::SendRequest Set opertype failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("CommitTx::SendRequest Set sess_id failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = TcClientSessionUtils::set_uint32(sess_, config_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("CommitTx::SendRequest Set config_id failed");
     return ReturnUtilResp(util_resp);
   }
   /*send end result of transaction operation */
   if (PFC_EXPECT_TRUE(opertype_ == tclib::MSG_COMMIT_TRANS_END)) {
     util_resp = TcClientSessionUtils::set_uint8(sess_, trans_result_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("CommitTx::SendRequest Set txn_result failed");
       return ReturnUtilResp(util_resp);
     }
   }
   /*invoke session*/
   util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("CommitTx::SendRequest Session invoke failed");
     return ReturnUtilResp(util_resp);
   }
 
@@ -399,6 +422,7 @@ TcOperRet CommitTransaction::Execute() {
       notifyorder_.push_back(TC_DRV_ODL);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
       notifyorder_.push_back(TC_DRV_OVERLAY);
+      notifyorder_.push_back(TC_DRV_POLC);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
@@ -409,6 +433,7 @@ TcOperRet CommitTransaction::Execute() {
       notifyorder_.push_back(TC_UPPL);
       notifyorder_.push_back(TC_UPLL);
       // notifyorder_.push_back(TC_DRV_LEGACY);
+      notifyorder_.push_back(TC_DRV_POLC);
       notifyorder_.push_back(TC_DRV_OVERLAY);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
       notifyorder_.push_back(TC_DRV_ODL);
@@ -485,6 +510,7 @@ TwoPhaseCommit::SetSessionToForwardDriverResult(pfc::core::ipc::ClientSession*
   /*append data to channel */
   util_resp = TcClientSessionUtils::set_uint8(tmpsess, oper);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SetSessionToForwardDriverResult: Set oper failed");
     return ReturnUtilResp(util_resp);
   }
   /*validate session_id_ and config_id_*/
@@ -492,10 +518,12 @@ TwoPhaseCommit::SetSessionToForwardDriverResult(pfc::core::ipc::ClientSession*
       PFC_EXPECT_TRUE(config_id_ > 0)) {
     util_resp = TcClientSessionUtils::set_uint32(tmpsess, session_id_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SetSessionToForwardDriverResult: Set sess_id failed");
       return ReturnUtilResp(util_resp);
     }
     util_resp = TcClientSessionUtils::set_uint32(tmpsess, config_id_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SetSessionToForwardDriverResult: Set config_id failed");
       return ReturnUtilResp(util_resp);
     }
   } else {
@@ -504,6 +532,7 @@ TwoPhaseCommit::SetSessionToForwardDriverResult(pfc::core::ipc::ClientSession*
   }
   util_resp = TcClientSessionUtils::set_uint8(tmpsess, phase);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SetSessionToForwardDriverResult: Set phase failed");
     return ReturnUtilResp(util_resp);
   }
   pfc_log_debug("TwoPhaseCommit::SetSessionToForwardDriverResult exit");
@@ -538,6 +567,7 @@ TcOperRet TwoPhaseCommit::CreateSessionsToForwardDriverResult() {
                                      tclib::TCLIB_COMMIT_DRV_RESULT,
                                      uppl_conn_);
   if (NULL == uppl_sess_) {
+    pfc_log_error("CreateSessionsToForwardDriverResult sess creation failed");
     return TCOPER_RET_FATAL;
   }
 
@@ -616,6 +646,7 @@ TwoPhaseCommit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
     idx++;
     util_resp = TcClientSessionUtils::get_uint8(sess_, idx, &driver_id);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("GetControllerInfo getting driver_id failed");
       return ReturnUtilResp(util_resp);
     }
     driver_type = (unc_keytype_ctrtype_t)driver_id;
@@ -626,6 +657,7 @@ TwoPhaseCommit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
     idx++;
     util_resp = TcClientSessionUtils::get_uint8(sess_, idx, &controller_count);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("GetControllerInfo getting ctrl_count failed");
       return ReturnUtilResp(util_resp);
     }
     pfc_log_info("driver_id:%d controller_count:%d", driver_id,
@@ -634,6 +666,7 @@ TwoPhaseCommit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
       idx++;
       util_resp = TcClientSessionUtils::get_string(sess_, idx, controller_id);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("GetControllerInfo getting ctrl_id failed");
         return ReturnUtilResp(util_resp);
       }
       controllers.push_back(controller_id);
@@ -708,25 +741,41 @@ TwoPhaseCommit::SendRequestToDriver() {
     /*map the driver type and get the channel name*/
     tc_driverid = MapTcDriverId((*it).first);
     if (tc_driverid != TC_NONE) {
-      channel_name = channel_names_.find(tc_driverid)->second;
-      pfc_log_debug("tc_driverid:%d channel_name:%s",
-                   tc_driverid, channel_name.c_str());
+      TcChannelNameMap::iterator chname = channel_names_.find(tc_driverid);
+      if (chname != channel_names_.end()) {
+        channel_name = chname->second;
+        pfc_log_debug("tc_driverid:%d channel_name:%s",
+                      tc_driverid, channel_name.c_str());
+      } else {
+        pfc_log_error("Channel not available for driver:%u", tc_driverid);
+        channel_name.clear();
+      }
     } else {
-      pfc_log_fatal("Driver daemon %d does not exist", (*it).first);
+      pfc_log_error("Driver daemon %d does not exist", (*it).first);
       return TCOPER_RET_FATAL;
     }
-    PFC_ASSERT(TCOPER_RET_SUCCESS == channel_name.empty());
+    if (channel_name.empty()) {
+      pfc_log_error("Driver not present; Adding dummy response");
+      ret_val = HandleDriverNotPresent(it->first);
+      if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
+        pfc_log_error("HandleDriverNotPresent not successful");
+        return TCOPER_RET_FATAL;
+      }
+      continue;
+    }
 
     /*Create session for the given module name and service id*/
     sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                   tclib::TCLIB_COMMIT_DRV_VOTE_GLOBAL, conn_);
     if (NULL == sess_) {
+      pfc_log_error("SendRequestToDriver: Session creation failed");
       return TCOPER_RET_FATAL;
     }
 
     /*append data to channel */
     util_resp = TcClientSessionUtils::set_uint8(sess_, oper);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Set oper failed");
       return ReturnUtilResp(util_resp);
     }
     /*validate session_id_ and config_id_*/
@@ -734,10 +783,12 @@ TwoPhaseCommit::SendRequestToDriver() {
         PFC_EXPECT_TRUE(config_id_ > 0)) {
       util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("SendRequestToDriver: Set sess_id failed");
         return ReturnUtilResp(util_resp);
       }
       util_resp = TcClientSessionUtils::set_uint32(sess_, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("SendRequestToDriver: Set config_id failed");
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -749,11 +800,13 @@ TwoPhaseCommit::SendRequestToDriver() {
     uint8_t controller_count = clist.size();
     util_resp = TcClientSessionUtils::set_uint8(sess_, controller_count);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Set ctrl_count failed");
       return ReturnUtilResp(util_resp);
     }
     for (cntrl_it = clist.begin(); cntrl_it != clist.end(); cntrl_it++) {
       util_resp = TcClientSessionUtils::set_string(sess_, *cntrl_it);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("SendRequestToDriver: Set ctrl_id failed");
         return ReturnUtilResp(util_resp);
       }
     }
@@ -762,6 +815,7 @@ TwoPhaseCommit::SendRequestToDriver() {
     /*Invoke the session */
     util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
     if (util_resp != TCUTIL_RET_SUCCESS) {
+      pfc_log_error("SendRequestToDriver: Session invoke failed");
       return ReturnUtilResp(util_resp);
     }
 
@@ -772,18 +826,38 @@ TwoPhaseCommit::SendRequestToDriver() {
       /*validate the driver_id saved from UPLL controllerinfo*/
       if (PFC_EXPECT_TRUE(dmndrvinfo.find((*it).first) != dmndrvinfo.end())) {
         pfc_log_debug("forward response to UPLL session");
-        if (TCOPER_RET_SUCCESS != upll_sess_->forward(*sess_, 0, UINT32_MAX)) {
-          pfc_log_fatal("forward failed");
+
+        int32_t ipc_ret = upll_sess_->forward(*sess_, 0, UINT32_MAX);
+        if (ipc_ret == ESHUTDOWN ||
+            ipc_ret == ECANCELED ||
+            ipc_ret == ECONNABORTED) {
+          pfc_log_error("%s forward upll_sess_ failed; ipc_ret=%d",
+                        __FUNCTION__, ipc_ret);
+          return TCOPER_RET_FATAL;
+        } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+          pfc_log_fatal("%s forward upll_sess_ failed; ipc_ret=%d",
+                        __FUNCTION__, ipc_ret);
           return TCOPER_RET_FATAL;
         }
       }
       dmndrvinfo.clear();
-      dmndrvinfo = driverset_map_[TC_UPPL];
+      /*Controller list of UPLL is considered since
+       *controller list from UPPL is always empty during VOTE/COMMIT phase*/
+      dmndrvinfo = driverset_map_[TC_UPLL];
       /*validate the driver_id saved from UPPL controllerinfo*/
       if (PFC_EXPECT_TRUE(dmndrvinfo.find((*it).first) != dmndrvinfo.end())) {
         pfc_log_debug("forward response to UPPL session");
-        if (TCOPER_RET_SUCCESS != upll_sess_->forward(*sess_, 0, UINT32_MAX)) {
-          pfc_log_fatal("forward failed");
+
+        int32_t ipc_ret = uppl_sess_->forward(*sess_, 0, UINT32_MAX);
+        if (ipc_ret == ESHUTDOWN ||
+            ipc_ret == ECANCELED ||
+            ipc_ret == ECONNABORTED) {
+          pfc_log_error("%s forward uppl_sess_ failed; ipc_ret=%d",
+                        __FUNCTION__, ipc_ret);
+          return TCOPER_RET_FATAL;
+        } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+          pfc_log_fatal("%s forward uppl_sess_ failed; ipc_ret=%d",
+                        __FUNCTION__, ipc_ret);
           return TCOPER_RET_FATAL;
         }
       }
@@ -837,6 +911,118 @@ TwoPhaseCommit::SendRequestToDriver() {
   return ret_val;
 }
 
+/*!\brief In case of driver-not-present, send dummy response
+ *        to UPPL and UPLL for the specific driver.
+ *        For all controllers of driver, set the following:
+ *        Set controller_id
+ *        Set resp code: UNC_RC_ERR_DRIVER_NOT_PRESENT
+ *        Set num_of_errors = 0
+ *        Set commit_number = 0
+ *        Set commit_date = 0
+ *        Set commit_application = ""
+ **/
+TcOperRet
+TwoPhaseCommit::HandleDriverNotPresent(unc_keytype_ctrtype_t driver) {
+  pfc_log_debug("TwoPhaseCommit::HandleDriverNotPresent entry");
+
+  TcOperRet ret_val = TCOPER_RET_SUCCESS;
+  TcUtilRet util_resp = TCUTIL_RET_SUCCESS;
+
+  TcDriverInfoMap::iterator it = driverinfo_map_.find(driver);
+
+  if (it != driverinfo_map_.end()) {
+    ControllerList ctrl_list = it->second;
+    ControllerList::iterator ctr;
+    // Loop through controller list
+    for (ctr = ctrl_list.begin(); ctr != ctrl_list.end(); ctr++) {
+      pfc_log_info("Creating dummy resp for ctrl(%s) of driver:%d",
+                   (*ctr).c_str(), driver);
+
+      // Set the controller_id
+      util_resp = TcClientSessionUtils::set_string(upll_sess_, *ctr);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set controller_id to upll_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_string(uppl_sess_, *ctr);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set controller_id to uppl_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+
+      // Set resp_code
+      uint32_t resp_code = TC_OPER_DRIVER_NOT_PRESENT;
+      util_resp = TcClientSessionUtils::set_uint32(upll_sess_, resp_code);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set resp_code to upll_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_uint32(uppl_sess_, resp_code);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set resp_code to uppl_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+
+      // Set No. of errors
+      uint32_t no_of_err = 0;
+      util_resp = TcClientSessionUtils::set_uint32(upll_sess_, no_of_err);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set num_of_err to upll_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_uint32(uppl_sess_, no_of_err);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set num_of_err to uppl_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      // Set commit number
+      uint64_t commit_number = 0;
+      util_resp = TcClientSessionUtils::set_uint64(upll_sess_, commit_number);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set commit_number to upll_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_uint64(uppl_sess_, commit_number);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set commit_number to uppl_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      // Set commit date
+      uint64_t commit_date = 0;
+      util_resp = TcClientSessionUtils::set_uint64(upll_sess_, commit_date);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set commit_date to upll_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_uint64(uppl_sess_, commit_date);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set commit_date to uppl_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      // Set commit applicateion
+      std::string commit_application = "";
+      util_resp = TcClientSessionUtils::set_string(upll_sess_,
+                                                   commit_application);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set commit_application to upll_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_string(uppl_sess_,
+                                                   commit_application);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("Cannot set commit_application to uppl_sess_");
+        return ReturnUtilResp(util_resp);
+      }
+    }
+  } else {
+    pfc_log_error("Cannot find driver(%d) in driverinfo_map_", driver);
+    ret_val = TCOPER_RET_FAILURE;
+  }
+
+  pfc_log_debug("TwoPhaseCommit::HandleDriverNotPresent exit");
+  return ret_val;
+}
+
 /*!\brief this method sends VOTE/GLOBAL COMMIT
  * request of commit operation to UPLL/UPPL/DRIVER modules.
  *@result TcOperRet - TCOPER_RET_SUCCESS/TCOPER_RET_FAILURE/TCOPER_RET_ABORT
@@ -855,20 +1041,24 @@ TwoPhaseCommit::SendRequest(std::string channel_name) {
   sess_ = TcClientSessionUtils::create_tc_client_session(channel_name,
                                 tclib::TCLIB_COMMIT_TRANSACTION, conn_);
   if (NULL == sess_) {
+    pfc_log_error("SendRequest: Session creation failed");
     return TCOPER_RET_FATAL;
   }
 
   /*append data to channel */
   util_resp = TcClientSessionUtils::set_uint8(sess_, opertype_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Set oper failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = TcClientSessionUtils::set_uint32(sess_, session_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Set sess_id failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = TcClientSessionUtils::set_uint32(sess_, config_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Set config_id failed");
     return ReturnUtilResp(util_resp);
   }
   pfc_log_info("notify %s - session_id:%d config_id:%d",
@@ -876,6 +1066,7 @@ TwoPhaseCommit::SendRequest(std::string channel_name) {
   /*invoke session*/
   util_resp = TcClientSessionUtils::tc_session_invoke(sess_, resp);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Session invoke failed");
     return ReturnUtilResp(util_resp);
   }
 

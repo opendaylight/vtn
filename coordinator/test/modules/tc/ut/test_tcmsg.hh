@@ -32,7 +32,7 @@ int stub_response = CLEAR;
 int stub_set_arg = CLEAR;
 int stub_clnt_forward = CLEAR;
 int stub_same_driverid = CLEAR;
-
+int stub_set_string = CLEAR;
 #define CLEAR_STUB_FLAGS() \
   stub_session_invoke = CLEAR;\
   stub_create_session = CLEAR;\

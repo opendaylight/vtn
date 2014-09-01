@@ -18,6 +18,7 @@
 #include <sql.h>
 #include <string>
 #include <set>
+#include <map>
 #include "pfcxx/module.hh"
 #include "unc/config.h"
 #include "dal_defines.hh"
@@ -437,7 +438,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      */
     DalResultCode DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
-                                const DalBindInfo *matching_attr_info) const;
+                                const DalBindInfo *matching_attr_info,
+                                const bool truncate) const;
 
     /**
      * CreateRecord
@@ -502,8 +504,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const DalBindInfo *input_and_matching_attr_info) const;
 
     /**
-     * UpdateRecords
-     *   Updates the records of table with the given sql query.
+     * ExecuteAppQuery
+     *   Updates(create/update/delete) the records of table with the given
+     *   sql query.
      *   Increments the write count if operation is successful.
      *
      * @param[in] query_stmt      - User supplied executable query statement
@@ -512,6 +515,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * @param[in] table_index     - Valid Index of the table
      * @param[in] input_and_matching_attr_info
      *                            - Bind Information for updating records
+     * @param[in] dirty_op        - How to treat the modification -
+     *                              create/update/delete
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -528,10 +533,11 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *     BindMatch if not used, updates all the records from the table.
      *  4. BindOutput if used for any attributes in the user defiuned query, ignored.
      */
-    DalResultCode UpdateRecords(std::string query_stmt,
-                                const UpllCfgType cfg_type,
-                                const DalTableIndex table_index,
-                                const DalBindInfo *bind_info) const;
+    DalResultCode ExecuteAppQuery(std::string query_stmt,
+                                  const UpllCfgType cfg_type,
+                                  const DalTableIndex table_index,
+                                  const DalBindInfo *bind_info,
+                                  const unc_keytype_operation_t dirty_op) const;
 
     /**
      * GetDeletedRecords
@@ -618,6 +624,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
                                     DalCursor **cursor) const;
+
+    DalResultCode ClearCreateUpdateFlags(const DalTableIndex table_index,
+                                    const UpllCfgType cfg_type) const;
 
     /**
      * GetUpdatedRecords
@@ -898,14 +907,15 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                          DalCursor **cursor) const;
 
     // Clears all the tables from dirty list
-    inline void ClearDirty() const {
+    inline void ClearDirtyTblCache() const {
       delete_dirty.clear();
       create_dirty.clear();
       update_dirty.clear();
     }
 
     // Add all the tables to dirty list
-    inline void MakeAllDirty() const {
+    inline void MakeAllTableDirtyInCache() const {
+      UPLL_FUNC_TRACE;
       delete_dirty.clear();
       create_dirty.clear();
       update_dirty.clear();
@@ -915,7 +925,46 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
         create_dirty.insert(tbl_idx);
         update_dirty.insert(tbl_idx);
       }
-    }  // DalOdbcMgr::MakeAllDirty
+    }  // DalOdbcMgr::MakeAllTableDirtyInCache
+
+    inline bool IsAnyTableDirtyShallow() const {
+      return ((delete_dirty.size() > 0) ||
+              (create_dirty.size() > 0) ||
+              (update_dirty.size() > 0));
+    }
+    inline bool IsTableDirtyShallow(const DalTableIndex table_index) const {
+      return !((delete_dirty.end() == delete_dirty.find(table_index)) &&
+               (create_dirty.end() == create_dirty.find(table_index)) &&
+               (update_dirty.end() == update_dirty.find(table_index)));
+    }
+
+    inline bool IsTableDirtyShallowForOp(const DalTableIndex table_index,
+                                         const unc_keytype_operation_t op)
+                                         const {
+      if (UNC_OP_DELETE == op) {
+        return !(delete_dirty.end() == delete_dirty.find(table_index));
+      } else if (op == UNC_OP_CREATE) {
+        return !(create_dirty.end() == create_dirty.find(table_index));
+      } else if (op == UNC_OP_UPDATE) {
+        return !(update_dirty.end() == update_dirty.find(table_index));
+      }
+      return false;
+    }
+
+    DalResultCode SetTableDirty(const UpllCfgType cfg_type,
+                                const DalTableIndex table_index,
+                                const unc_keytype_operation_t op) const;
+
+    DalResultCode  ExecuteAppQueryModifyRecord(
+      const UpllCfgType cfg_type,
+      const DalTableIndex table_index,
+      const std::string query_stmt,
+      const DalBindInfo *bind_info,
+      const unc_keytype_operation_t op) const ; 
+
+    DalResultCode UpdateDirtyTblCacheFromDB() const;
+    DalResultCode ClearAllDirtyTblInDB(UpllCfgType cfg_type) const;
+    static bool FillTableName2IndexMap();
 
   private:
     /**
@@ -1098,6 +1147,14 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
 
     std::string GetConnString(const DalConnType conn_type) const;
 
+    DalResultCode SetCfgTblDirtyInDB(const UpllCfgType cfg_type,
+                                     const unc_keytype_operation_t op,
+                                     const DalTableIndex table_index) const;
+    DalResultCode UpdateDirtyTblCache(const UpllCfgType cfg_type,
+                                      const char *tbl_name,
+                                      const unc_keytype_operation_t op) const;
+    DalResultCode GetTableIndex(const char* tbl_name,
+                                DalTableIndex *tbl_idx) const;
     mutable std::set<uint32_t> create_dirty;
        // List of tables modified by candidate create operation
     mutable std::set<uint32_t> delete_dirty;
@@ -1108,7 +1165,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
     SQLHANDLE dal_conn_handle_;  // Connection Handle
     mutable DalConnType conn_type_;  // Connection Type
     mutable DalConnState conn_state_;  // Connection State
-    mutable uint32_t write_count_;  
+    mutable uint32_t write_count_;
+    static std::map<std::string, DalTableIndex> tbl_name_to_idx_map_; 
 };  // class DalOdbcMgr
 
 }  // namespace dal

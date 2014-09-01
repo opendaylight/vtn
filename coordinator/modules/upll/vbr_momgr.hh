@@ -53,7 +53,7 @@ class VbrMoMgr : public VnodeMoMgr {
                                 vbr_val_st.valid[UPLL_IDX_OPER_STATUS_VBRS];
             break;
           case uudst::vbridge::kDbiDownCount:
-          case uudst::vbridge::kDbiFaultCount:
+          case uudst::vbridge::kDbiUnknownCount:
             valid = NULL;
             break;
           case uudst::vbridge::kDbiCtrlrName:
@@ -370,7 +370,8 @@ class VbrMoMgr : public VnodeMoMgr {
     upll_rc_t MergeValidate(unc_key_type_t keytype,
                             const char *ctrlr_id,
                             ConfigKeyVal *conflict_ckv,
-                            DalDmlIntf *dmi);
+                            DalDmlIntf *dmi,
+                            upll_import_type import_type);
     /*
      * @Brief  Validates the syntax for KT_VBR Keytype key structure.
      *
@@ -431,8 +432,24 @@ class VbrMoMgr : public VnodeMoMgr {
 
     upll_rc_t GetControllerDomainId(ConfigKeyVal *ikey,
                                     controller_domain_t *ctrlr_dom);
+    /**
+     * @Brief Validates Same host address present in another vnode
+     *        during VTN stiching.
+     *
+     * @param[in] org_vtn_ckv       Orginal VTN ConfigKeyVal.
+     * @param[in] rename_vtn_ckv    Rename VTN ConfigKeyVal.
+     * @param[in] dmi               Pointer to the DalDmlIntf(DB Interface)
+     *
+     * @retval UPLL_RC_SUCCESS            validation succeeded.
+     * @retval UPLL_RC_ERR_MERGE_CONFLICT Same host address exist.
+     *
+     */
+    upll_rc_t ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
+                                ConfigKeyVal *rename_vtn_ckv, DalDmlIntf *dmi);
+#if 0
     upll_rc_t IsHostAddrAndPrefixLenInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi, 
 					     IpcReqRespHeader *req);
+#endif
 };
 
 }  // namespace kt_momgr

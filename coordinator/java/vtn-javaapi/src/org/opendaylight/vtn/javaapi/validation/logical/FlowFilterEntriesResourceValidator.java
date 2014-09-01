@@ -55,23 +55,23 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof FlowFilterEntriesResource
 				&& ((FlowFilterEntriesResource) resource).getVtnName() != null
-				&& !((FlowFilterEntriesResource) resource).getVtnName().trim()
+				&& !((FlowFilterEntriesResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((FlowFilterEntriesResource) resource).getVtnName().trim(),
+					((FlowFilterEntriesResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.FFTYPE);
 				if (((FlowFilterEntriesResource) resource).getFfType() != null
 						&& !((FlowFilterEntriesResource) resource).getFfType()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = VtnServiceJsonConsts.IN
 							.equalsIgnoreCase(((FlowFilterEntriesResource) resource)
-									.getFfType().trim())
+									.getFfType())
 							|| VtnServiceJsonConsts.OUT
 									.equalsIgnoreCase(((FlowFilterEntriesResource) resource)
-											.getFfType().trim());
+											.getFfType());
 				} else {
 					isValid = false;
 				}
@@ -116,13 +116,13 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 			if (validator.getInvalidParameter() != null) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (validator.getInvalidParameter() != null) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -159,11 +159,10 @@ public class FlowFilterEntriesResourceValidator extends VtnServiceValidator {
 					&& ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
 							.getAsString() != null
 					&& !ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidRange(
 						ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.SEQNUM)
-								.getAsString().trim(),
-						VtnServiceJsonConsts.VAL_1,
+								.getAsString(), VtnServiceJsonConsts.VAL_1,
 						VtnServiceJsonConsts.VAL_65535);
 			} else {
 				isValid = false;

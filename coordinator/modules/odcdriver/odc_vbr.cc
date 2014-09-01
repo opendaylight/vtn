@@ -36,19 +36,22 @@ UncRespCode OdcVbrCommand::create_cmd(key_vbr_t& key_vbr,
     pfc_log_error("vbrif url is empty");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  unc::restjson::JsonBuildParse json_obj;
+  // unc::restjson::JsonBuildParse json_obj;
   json_object *json_req_body = create_request_body(val_vbr);
-  const char* request = NULL;
+/*  const char* request = NULL;
 
   if (!(json_object_is_type(json_req_body, json_type_null))) {
-    request = json_obj.get_string(json_req_body);
+     json_obj.get_string(json_req_body,request);
   }
-  pfc_log_debug("Request body formed in vbr create_cmd : %s", request);
+  pfc_log_debug("Request body formed in vbr create_cmd : %s", request);*/
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                   ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
-  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
-     vbr_url, restjson::HTTP_METHOD_POST, request, conf_file_values_);
+  unc::restjson::HttpResponse_t* response =
+                    rest_util_obj.send_http_request(vbr_url,
+                                                    restjson::HTTP_METHOD_POST,
+                 unc::restjson::JsonBuildParse::get_json_string(json_req_body),
+                                                    conf_file_values_);
 
   json_object_put(json_req_body);
   if (NULL == response) {
@@ -104,17 +107,20 @@ UncRespCode OdcVbrCommand::update_cmd(key_vbr_t& key_vbr,
     return UNC_DRV_RC_ERR_GENERIC;
   }
   json_object *json_req_body = create_request_body(val_vbr);
-  unc::restjson::JsonBuildParse json_obj;
-  const char* request = NULL;
+  // unc::restjson::JsonBuildParse json_obj;
+/*  const char* request = NULL;
   if (!(json_object_is_type(json_req_body, json_type_null))) {
-    request = json_obj.get_string(json_req_body);
-  }
-  pfc_log_debug("Request body formed in vbr update_cmd : %s", request);
+    json_obj.get_string(json_req_body,request);
+  } */
+  // pfc_log_debug("Request body formed in vbr update_cmd : %s", request);
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                   ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
-  unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
-               vbr_url, restjson::HTTP_METHOD_PUT, request, conf_file_values_);
+  unc::restjson::HttpResponse_t* response =
+                rest_util_obj.send_http_request(vbr_url,
+                                                restjson::HTTP_METHOD_PUT,
+            unc::restjson::JsonBuildParse::get_json_string(json_req_body),
+                                                conf_file_values_);
 
   json_object_put(json_req_body);
   if (NULL == response) {
@@ -166,14 +172,15 @@ UncRespCode OdcVbrCommand::delete_cmd(key_vbr_t& key_vbr,
 // Creates Request Body
 json_object* OdcVbrCommand::create_request_body(const val_vbr_t& val_vbr) {
   ODC_FUNC_TRACE;
-  unc::restjson::JsonBuildParse json_obj;
-  json_object *jobj = json_obj.create_json_obj();
+  //unc::restjson::JsonBuildParse json_obj;
+  json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();
   const char* description = reinterpret_cast<const char*>
       (val_vbr.vbr_description);
   uint32_t ret_val = ODC_DRV_FAILURE;
   if (UNC_VF_VALID == val_vbr.valid[UPLL_IDX_DESC_VBR]) {
     if (0 != strlen(description)) {
-      ret_val = json_obj.build("description", description, jobj);
+      ret_val = unc::restjson::JsonBuildParse::build("description", description,
+                                                     jobj);
       if (restjson::REST_OP_SUCCESS != ret_val) {
         pfc_log_error("Error in building request body - description");
         json_object_put(jobj);
@@ -184,7 +191,9 @@ json_object* OdcVbrCommand::create_request_body(const val_vbr_t& val_vbr) {
   std::ostringstream age_interval_str_format;
   age_interval_str_format << age_interval_;
 
-  ret_val = json_obj.build("ageInterval", age_interval_str_format.str(), jobj);
+  ret_val = unc::restjson::JsonBuildParse::build("ageInterval",
+                                                 age_interval_str_format.str(),
+                                                 jobj);
   if (restjson::REST_OP_SUCCESS != ret_val) {
     pfc_log_error("Error in building request body - description");
     json_object_put(jobj);

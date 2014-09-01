@@ -107,8 +107,8 @@ class ScopedConfigLock {
                    ConfigLock::LockType locktype3,
                    upll_keytype_datatype_t dt4,
                    ConfigLock::LockType locktype4,
-                   upll_keytype_datatype_t dt5,
-                   ConfigLock::LockType locktype5)
+                   upll_keytype_datatype_t dt5 = UPLL_DT_INVALID,
+                   ConfigLock::LockType locktype5 = ConfigLock::CFG_READ_LOCK)
       : clk_(clk) {
     num_locks_ = 5;
     dt1_ = dt1;

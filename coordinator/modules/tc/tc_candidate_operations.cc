@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -48,26 +48,36 @@ uint32_t TcCandidateOperations::TcGetMinArgCount() {
  * @brief Handle return value from TcLock
  */
 TcOperStatus TcCandidateOperations::HandleLockRet(TcLockRet lock_ret) {
+  TcOperStatus ret = TC_OPER_FAILURE;
+
   switch ( lock_ret ) {
     case TC_LOCK_INVALID_UNC_STATE:
     case TC_LOCK_OPERATION_NOT_ALLOWED:
-      return TC_INVALID_STATE;
+      ret = TC_INVALID_STATE;
+      break;
     case TC_LOCK_BUSY:
-      return TC_SYSTEM_BUSY;
+      ret = TC_SYSTEM_BUSY;
+      break;
     case TC_LOCK_NO_CONFIG_SESSION_EXIST:
-      return TC_CONFIG_NOT_PRESENT;
+      ret = TC_CONFIG_NOT_PRESENT;
+      break;
     default:
-      return TC_OPER_FAILURE;
+      ret = TC_OPER_FAILURE;
   }
-  return TC_OPER_FAILURE;
+  pfc_log_info("HandleLockRet: Received(%u), return (%u)",
+               lock_ret, ret); 
+  return ret;
 }
 
 /*
  * @brief Check Count of Arguments
  */
 TcOperStatus TcCandidateOperations::TcCheckOperArgCount(uint32_t avail_count) {
-  if ( avail_count != UNC_CANDIDATE_OPS_ARG_COUNT )
+  if ( avail_count != UNC_CANDIDATE_OPS_ARG_COUNT ) {
+    pfc_log_error("TcCheckOperArgCount args expected(%u) received(%u)",
+                  UNC_CANDIDATE_OPS_ARG_COUNT, avail_count);
     return TC_OPER_INVALID_INPUT;
+  }
   return TC_OPER_SUCCESS;
 }
 
@@ -77,6 +87,8 @@ TcOperStatus TcCandidateOperations::TcCheckOperArgCount(uint32_t avail_count) {
 TcOperStatus TcCandidateOperations::TcValidateOperType() {
   if ((tc_oper_ != TC_OP_CANDIDATE_ABORT) &&
       (tc_oper_ != TC_OP_CANDIDATE_COMMIT)) {
+    pfc_log_error("TcValidateOperType: oper != TC_OP_CANDIDATE_ABORT or "
+                  "TC_OP_CANDIDATE_COMMIT");
     return TC_INVALID_OPERATION_TYPE;
   }
 
@@ -353,18 +365,6 @@ pfc_bool_t TcCandidateOperations::TransEndMsg() {
   }
   delete tc_end_msg;
 
-  if ( autosave_enabled_ == PFC_TRUE     &&
-       user_response_ == TC_OPER_SUCCESS ) {
-    TcMsg* tc_save_msg = TcMsg::CreateInstance(session_id_,
-                                               unc::tclib::MSG_SAVE_CONFIG,
-                                               unc_oper_channel_map_);
-    TcOperRet save_ret(tc_save_msg->Execute());
-    if ( save_ret != TCOPER_RET_SUCCESS ) {
-      pfc_log_error("Auto Save Operation Failed");
-      user_response_ = TC_SYSTEM_FAILURE;
-    }
-    delete tc_save_msg;
-  }
   return PFC_TRUE;
 }
 
