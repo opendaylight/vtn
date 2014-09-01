@@ -390,7 +390,7 @@ TEST_F(VbrIfMoMgrTest, ValidateCapability_Success) {
                             IpctSt::kIpcStKeyVbrIf,
                             key, cfgval);
 
-  CtrlrMgr::Ctrlr ctrlrobj("CTR_1", UNC_CT_PFC, "5.0");
+  CtrlrMgr::Ctrlr ctrlrobj("CTR_1", UNC_CT_PFC, "5.0", true);
   CtrlrMgr::GetInstance()->Add(ctrlrobj, UPLL_DT_CANDIDATE);
 
   IPC_REQ_RESP_HEADER_DECL(req);
@@ -729,20 +729,6 @@ TEST_F(VbrIfMoMgrTest, ValVbrAttributeSupportCheck_13) {
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, vst);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, kst, config_val);
   EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.ValVbrIfAttributeSupportCheck(attrs,ikey,operation,UPLL_DT_IMPORT));
-  delete ikey;
-}
-
-TEST_F(VbrIfMoMgrTest, RestoreUnInitOPerStatus_01) {
-  VbrIfMoMgr vbr;
-  key_vbr_if *key;
-  val_vbr_if *val;
-  GetKeyValStruct(key, val);
-
-  ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
-  ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
-  DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.RestoreUnInitOPerStatus(dmi));
-
   delete ikey;
 }
 
@@ -1622,7 +1608,7 @@ TEST_F(VbrIfMoMgrTest, IsLogicalPortAndVlanIdInUse_05) {
   delete ikey;
 }
 #endif
-
+#if 0
 TEST_F(VbrIfMoMgrTest, GetBoundaryInterfaces_01) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
@@ -1674,7 +1660,7 @@ TEST_F(VbrIfMoMgrTest, SetBoundaryIfOperStatusforPathFault_02) {
 
   delete ikey;
 }
-
+#endif
 TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_01) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
@@ -3240,12 +3226,15 @@ TEST_F(VbrIfMoMgrTest, GetVbrIfFromVexternal_TmpckvNonNull){
   uint8_t *vexternal=&vexternal1;
   uint8_t *vtn1=&vtnname;
   GetKeyValStruct(key, val);
+  controller_domain ctrlrdom ; 
+  upll_keytype_datatype_t  dt_type = UPLL_DT_CANDIDATE;
+
 
   ConfigVal *cfgval(new ConfigVal(IpctSt::kIpcStValVbrIf, val));
   ConfigKeyVal *ikey(new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf,
                                       key ,cfgval));
 
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.GetVbrIfFromVExternal(vtn1,vexternal,ikey,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.GetVbrIfFromVExternal(vtn1,vexternal,ikey,dmi,ctrlrdom,dt_type));
 
   delete ikey;
 }
@@ -3256,8 +3245,12 @@ TEST_F(VbrIfMoMgrTest, GetVbrIfFromVexternal_TmpckvNull){
   uint8_t vtnname[2] = {1, 0};
   uint8_t vexternal[2] = {1, 0};
   ConfigKeyVal *ikey =NULL;
+  controller_domain ctrlrdom ;
+  upll_keytype_datatype_t  dt_type = UPLL_DT_CANDIDATE;
+
+
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,
-            obj.GetVbrIfFromVExternal(vtnname, vexternal, ikey, dmi));
+            obj.GetVbrIfFromVExternal(vtnname, vexternal, ikey, dmi, ctrlrdom, dt_type));
 }
 #if 0
 TEST_F(VbrIfMoMgrTest, PortStatusHandler_TrueOperStatus){

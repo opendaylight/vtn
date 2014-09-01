@@ -223,6 +223,35 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
    *
    **/
   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
+  
+  /** 
+   * @brief     Perform validation on key type specific, 
+   *            before sending to driver
+   *
+   * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  op                       Operation name.
+   * @param[in]  dt_type                  Specifies the configuration CANDIDATE/RUNNING
+   * @param[in]  keytype                  Specifies the keytype
+   * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
+   * @param[out] not_send_to_drv          Decides whether the configuration needs
+   *                                      to be sent to controller or not 
+   * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
+   *
+   * @retval  UPLL_RC_SUCCESS             Completed successfully.
+   * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
+   * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
+   * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
+   *
+   */
+  upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+      ConfigKeyVal *ck_old,
+      unc_keytype_operation_t op,
+      upll_keytype_datatype_t dt_type,
+      unc_key_type_t keytype,
+      DalDmlIntf *dmi,
+      bool &not_send_to_drv,
+      bool audit_update_phase);
 
  public:
   /* Default constructor */
@@ -333,7 +362,6 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                ConfigKeyVal *parent_key);
 
-  upll_rc_t RestoreUnInitOPerStatus(DalDmlIntf *dmi);
 
   /**
     * @brief Verifies whether an interface is already created

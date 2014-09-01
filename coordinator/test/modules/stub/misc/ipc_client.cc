@@ -271,6 +271,11 @@ ClientSession::addOutput(key_ctr_dataflow&) {
 }
 
 int
+ClientSession::addOutput(val_ctr_commit_ver&) {
+  return addOutPut_;
+}
+
+int
 ClientSession::addOutput(key_dataflow&) {
   return addOutPut_;
 }

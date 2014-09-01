@@ -14,7 +14,7 @@
 
 #include "cxx/pfcxx/synch.hh"
 #include "uncxx/upll_log.hh"
-// #include "config_mgr.hh"
+#include "config_mgr.hh"
 #include "ctrlr_mgr.hh"
 
 pfc::core::Mutex ctrlr_mutex_;
@@ -37,7 +37,7 @@ CtrlrMgr *CtrlrMgr::singleton_instance_;
  */
 upll_rc_t CtrlrMgr::Add(const Ctrlr &ctrlr,
                         const upll_keytype_datatype_t datatype) {
-  // UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
+  UPLL_FUNC_TRACE;
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
 
   if (datatype != UPLL_DT_CANDIDATE && datatype != UPLL_DT_RUNNING) {
@@ -55,7 +55,7 @@ upll_rc_t CtrlrMgr::Add(const Ctrlr &ctrlr,
          it != ctrlrs_.end(); ++it) {
       if ((*it)->name_.compare(pctrlr->name_) == 0 &&
           (*it)->datatype_ == pctrlr->datatype_) {
-        UPLL_LOG_ERROR("Ctrlr(%s) Already exists in datatype(%d)",
+        UPLL_LOG_DEBUG("Ctrlr(%s) Already exists in datatype(%d)",
                        pctrlr->name_.c_str(), datatype);
         delete pctrlr;
         return UPLL_RC_ERR_INSTANCE_EXISTS;
@@ -93,7 +93,6 @@ upll_rc_t CtrlrMgr::Add(const Ctrlr &ctrlr,
  */
 upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
                            const upll_keytype_datatype_t datatype) {
-  // UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
 
   if (datatype != UPLL_DT_CANDIDATE && datatype != UPLL_DT_RUNNING) {
@@ -101,12 +100,14 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
   }
   /* Deleting in the map */
   bool deleted = false;
+  bool invalid_config = false;
   Ctrlr *ctrlr = NULL;
   for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
        it != ctrlrs_.end(); ++it) {
     if ((*it)->name_.compare(ctrlr_name) == 0 &&
       (*it)->datatype_ == datatype) {
       ctrlr = *it;
+      invalid_config = ctrlr->invalid_config_;
       ctrlrs_.erase(it);
       delete ctrlr;
       deleted = true;
@@ -117,6 +118,11 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
   if (deleted) {
     UPLL_LOG_INFO("Deleted controller(%s) from datatype(%d)",
                   ctrlr_name.c_str(), datatype);
+    if (invalid_config && datatype ==  UPLL_DT_RUNNING) {
+      // clear invalid config alarm
+      UpllConfigMgr::GetUpllConfigMgr()->SendInvalidConfigAlarm(ctrlr_name,
+                                                                false);
+    }
   } else {
     UPLL_LOG_ERROR("controller(%s) not found in datatype(%d)",
                    ctrlr_name.c_str(), datatype);
@@ -138,7 +144,6 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
 upll_rc_t CtrlrMgr::UpdateVersion(const std::string &ctrlr_name,
                                   const upll_keytype_datatype_t datatype,
                                   const std::string &ctrlr_version) {
-  // UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
 
   if (datatype != UPLL_DT_CANDIDATE && datatype != UPLL_DT_RUNNING) {
@@ -178,7 +183,6 @@ upll_rc_t CtrlrMgr::UpdateVersion(const std::string &ctrlr_name,
  */
 upll_rc_t CtrlrMgr::UpdateAuditDone(const std::string &ctrlr_name,
                                     const bool audit_done) {
-  // UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
 
   /* Updating the entry in map */
@@ -216,7 +220,6 @@ upll_rc_t CtrlrMgr::UpdateAuditDone(const std::string &ctrlr_name,
  */
 upll_rc_t CtrlrMgr::UpdateConfigDone(const std::string &ctrlr_name,
                                      const bool config_done) {
-  // UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
 
   /* Updating the entry in map */
@@ -254,7 +257,6 @@ upll_rc_t CtrlrMgr::UpdateConfigDone(const std::string &ctrlr_name,
  */
 upll_rc_t CtrlrMgr::UpdateInvalidConfig(const std::string &ctrlr_name,
                                         const bool invalid_config) {
-  // UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
 
   /* Updating the entry in list */
@@ -597,6 +599,343 @@ void CtrlrMgr::PrintCtrlrList() {
   UPLL_LOG_DEBUG("\n%s", ss.str().c_str());
   ss << "\n***********************************************************";
   return;
+}
+
+/**
+ * @brief Check controller audit type
+ *
+ * @param ctrlr[in]       Controller instance
+ * @param datatype[in]    Datatype
+ * @param audit_type[out] Audit type
+ *
+ * @retval  UPLL_RC_SUCCESS, if controller added
+ * @retval  UPLL_RC_ERR_INSTANCE_EXISTS, if entry already exists
+ * @retval  UPLL_RC_ERR_GENERIC, otherwise
+ */
+upll_rc_t CtrlrMgr::GetAuditType(const std::string &ctrlr_name,
+                        const upll_keytype_datatype_t datatype,
+                        bool *audit_type) {
+  UPLL_FUNC_TRACE;
+  pfc::core::ScopedMutex lock(ctrlr_mutex_);
+
+  if (datatype != UPLL_DT_CANDIDATE && datatype != UPLL_DT_RUNNING
+      && UPLL_DT_IMPORT != datatype) {
+    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
+  }
+
+  bool get_audit_type_ = false;
+  for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
+       it != ctrlrs_.end(); ++it) {
+    if ((*it)->name_.compare(ctrlr_name) == 0 &&
+        (*it)->datatype_ == datatype) {
+      *audit_type = (*it)->audit_type_ ;
+      get_audit_type_ = true;
+      break;
+    }
+    continue;
+  }
+  if (!get_audit_type_) {
+    UPLL_LOG_ERROR("controller(%s) not found in datatype(%d)",
+                   ctrlr_name.c_str(), datatype);
+    return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+  }
+  UPLL_LOG_INFO("Updated controller(%s) with audit type(%d) in datatype(%d)",
+                ctrlr_name.c_str(), *audit_type, datatype);
+  return UPLL_RC_SUCCESS;
+}
+
+/**
+ * @brief Update controller's audit type
+ *
+ * @param ctrlr[in]       Controller instance
+ * @param datatype[in]    Datatype
+ * @param audit_type[in] Audit type
+ *
+ * @retval  UPLL_RC_SUCCESS, if controller added
+ * @retval  UPLL_RC_ERR_INSTANCE_EXISTS, if entry already exists
+ * @retval  UPLL_RC_ERR_GENERIC, otherwise
+ */
+upll_rc_t CtrlrMgr::UpdateAuditType(const std::string &ctrlr_name,
+                                  const upll_keytype_datatype_t datatype,
+                                  bool audit_type) {
+  pfc::core::ScopedMutex lock(ctrlr_mutex_);
+
+  if (datatype != UPLL_DT_CANDIDATE && datatype != UPLL_DT_RUNNING) {
+    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
+  }
+  /* Updating the entry in map */
+  bool updated = false;
+  for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
+       it != ctrlrs_.end(); ++it) {
+    if ((*it)->name_.compare(ctrlr_name) == 0 &&
+        (*it)->datatype_ == datatype) {
+      (*it)->audit_type_ = audit_type;
+      updated = true;
+      break;
+    }
+    continue;
+  }
+  if (!updated) {
+    UPLL_LOG_ERROR("controller(%s) not found in datatype(%d)",
+                   ctrlr_name.c_str(), datatype);
+    return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+  }
+  UPLL_LOG_INFO("Updated controller(%s) with audittype(%d) in datatype(%d)",
+                ctrlr_name.c_str(), audit_type, datatype);
+  return UPLL_RC_SUCCESS;
+} 
+
+/**
+ * @brief Get list of controllers which have invalidConfig
+ *
+ * @param invalidConfigCtr[in/out]  Controller Name list
+ */
+void CtrlrMgr::GetInvalidConfigList(std::list<std::string> &invalidConfigCtr) {
+  UPLL_FUNC_TRACE;
+  pfc::core::ScopedMutex lock(ctrlr_mutex_);
+  for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
+       it != ctrlrs_.end(); ++it) {
+    if((*it)->datatype_ == UPLL_DT_RUNNING && (*it)->invalid_config_) {
+      invalidConfigCtr.push_back((*it)->name_);
+      UPLL_LOG_TRACE("Ctrlr name(%s), invalid_config(%d) in Running",
+                     (*it)->name_.c_str(), (*it)->invalid_config_);
+    }
+  }
+}
+
+
+bool CtrlrMgr::UpdatePathFault(const char *ctr_na,
+                               const char *domain_na, bool assert_alarm) {
+  UPLL_FUNC_TRACE;
+  bool update_operstatus(false);
+
+  if (ctr_na == NULL || domain_na == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p domain_name %p",
+                   ctr_na, domain_na);
+    return false;
+  }
+  std::string ctr_name(ctr_na);
+  std::string domain_name(domain_na);
+
+  path_fault_lock_.wrlock();
+  // path fault asserted
+  if (assert_alarm) {
+    if (path_fault_map_.end() == path_fault_map_.find(ctr_name)) {
+      // path fault occurred first time on a ctr domain
+      // initialize fault count to 1
+      UPLL_LOG_INFO("first path fault occurred on ctrlr %s:%s",
+                    ctr_name.c_str(), domain_name.c_str() );
+      const uint32_t fault_count(1);
+      // create map for domain  name with fault count
+      std::map<std::string, uint32_t> domain_map;
+      domain_map[domain_name] = fault_count;
+      // update path fault map
+      path_fault_map_[ctr_name] = domain_map;
+      update_operstatus = true;
+    } else if (path_fault_map_[ctr_name].end() ==
+        path_fault_map_[ctr_name].find(domain_name)){
+      // path fault  occurred on a new domain
+      // initialize fault count to 1
+      UPLL_LOG_INFO("first path fault occurred on domain %s:%s",
+                    ctr_name.c_str(), domain_name.c_str() );
+      const uint32_t fault_count(1);
+      path_fault_map_[ctr_name][domain_name] = fault_count;
+      update_operstatus = true;
+    } else {
+      // path fault already occurred on this controller domain
+      ++path_fault_map_[ctr_name][domain_name];
+      UPLL_LOG_INFO("path fault already occurred for %s:%s fault count:%d",
+                     ctr_name.c_str(), domain_name.c_str(),
+                     path_fault_map_[ctr_name][domain_name]);
+    }
+  } else {
+    if (path_fault_map_.end() != path_fault_map_.find(ctr_name) &&
+        path_fault_map_[ctr_name].end() !=
+                path_fault_map_[ctr_name].find(domain_name)) {
+      // path fault recovered on this controller domain
+      --path_fault_map_[ctr_name][domain_name];
+      UPLL_LOG_INFO("path fault recovery for %s:%s fault count:%d",
+                    ctr_name.c_str(), domain_name.c_str(),
+                    path_fault_map_[ctr_name][domain_name]);
+      if (path_fault_map_[ctr_name][domain_name] == 0) {
+        path_fault_map_[ctr_name].erase(domain_name);
+        if (path_fault_map_[ctr_name].empty()) {
+          path_fault_map_.erase(ctr_name);
+        }
+        update_operstatus = true;
+      }
+    }
+  }
+  path_fault_lock_.unlock();
+  return update_operstatus;
+}
+
+/**
+ * @brief : This function returns true if path fault occurred
+ */
+bool CtrlrMgr::IsPathFaultOccured(const char *ctr_na, const char *domain_na) {
+  UPLL_FUNC_TRACE;
+  bool bOccurence(false);
+
+  if (ctr_na == NULL || domain_na == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p domain_name %p",
+                   ctr_na, domain_na);
+    return false;
+  }
+  std::string ctr_name(ctr_na);
+  std::string domain_name(domain_na);
+
+  path_fault_lock_.rdlock();
+  if (!path_fault_map_.empty()) {
+    if (ctr_name == "*") {
+      bOccurence = true;
+    } else if (path_fault_map_.end() != path_fault_map_.find(ctr_name)){
+      if (domain_name == "*") {
+        bOccurence = true;
+      } else if (path_fault_map_[ctr_name].end() !=
+                 path_fault_map_[ctr_name].find(domain_name)) {
+        bOccurence = true;
+        UPLL_LOG_TRACE("path fault on %s:%s fault count:%d",
+                       ctr_name.c_str(), domain_name.c_str(),
+                       path_fault_map_[ctr_name][domain_name]);
+      }
+    }
+  }
+  path_fault_lock_.unlock();
+
+  UPLL_LOG_TRACE("path fault for %s:%s asserted:%d",
+                 ctr_name.c_str(), domain_name.c_str(), bOccurence);
+  return bOccurence;
+}
+
+/**
+ * @brief : This function clears path fault count
+ * To clear for all entries pass ctr_name and domain_name as "*"
+ * To clear for a controller, pass ctr_name and * as domain name
+ * To clear for a controller domain, pass valid ctr_name and domain_name
+ */
+void CtrlrMgr::ClearPathfault(const char *ctr_na, const char *domain_na) {
+  UPLL_FUNC_TRACE;
+  if (ctr_na == NULL || domain_na == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p domain_name %p",
+                   ctr_na, domain_na);
+    return;
+  }
+  std::string ctr_name(ctr_na);
+  std::string domain_name(domain_na);
+
+  path_fault_lock_.wrlock();
+  if (ctr_name == "*") {
+    path_fault_map_.clear();
+  } else {
+    if (path_fault_map_.end() != path_fault_map_.find(ctr_name)) {
+      if (domain_name == "*") {
+        path_fault_map_.erase(ctr_name);
+      } else if (path_fault_map_[ctr_name].end() !=
+          path_fault_map_[ctr_name].find(domain_name)){
+        path_fault_map_[ctr_name].erase(domain_name);
+        if (path_fault_map_[ctr_name].empty()) {
+          path_fault_map_.erase(ctr_name);
+        }
+      }
+    }
+  }
+  path_fault_lock_.unlock();
+}
+
+bool CtrlrMgr::IsCtrDisconnected(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+  bool bDisconnect(false);
+
+  if (ctr_name == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p", ctr_name);
+    return false;
+  }
+  std::string ctr(ctr_name);
+
+  ctr_discon_lock_.rdlock();
+  if (ctr_discon_map_.end() != ctr_discon_map_.find(ctr)) {
+    bDisconnect = true;
+  }
+  ctr_discon_lock_.unlock();
+  return bDisconnect;
+}
+
+bool CtrlrMgr::GetLogicalPortSt(const char *ctr_na, const char *logical_port,
+                                uint8_t &state) {
+  UPLL_FUNC_TRACE;
+  bool bFound(false);
+
+  if (ctr_na == NULL || logical_port == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p logical_port %p",
+                   ctr_na, logical_port);
+    return false;
+  }
+
+  std::string ctr_name(ctr_na);
+  std::string logical_port_id(logical_port);
+
+  ctr_discon_lock_.rdlock();
+  if (ctr_discon_map_.end() != ctr_discon_map_.find(ctr_name) &&
+      ctr_discon_map_[ctr_name].end() !=
+          ctr_discon_map_[ctr_name].find(logical_port_id)) {
+    state = ctr_discon_map_[ctr_name][logical_port_id];
+    bFound = true;
+  }
+  ctr_discon_lock_.unlock();
+
+  return bFound;
+}
+
+void CtrlrMgr::AddCtrToDisconnectList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+
+  if (ctr_name == NULL ) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p", ctr_name);
+    return;
+  }
+  std::string ctr(ctr_name);
+
+  ctr_discon_lock_.wrlock();
+  // add new logical port map to ctr
+  std::map<std::string, uint8_t> logical_port_map;
+  ctr_discon_map_[ctr] = logical_port_map;
+  ctr_discon_lock_.unlock();
+}
+
+void CtrlrMgr::AddLogicalPort(const char *ctr_na, const char *logical_port,
+                              uint8_t state) {
+  UPLL_FUNC_TRACE;
+
+  if (ctr_na == NULL || logical_port == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p logical_port %p",
+                   ctr_na, logical_port);
+    return;
+  }
+  std::string ctr_name(ctr_na);
+  std::string logical_port_id(logical_port);
+
+  ctr_discon_lock_.wrlock();
+  if (ctr_discon_map_.end() != ctr_discon_map_.find(ctr_name)) {
+    ctr_discon_map_[ctr_name][logical_port_id] = state;
+  }
+  ctr_discon_lock_.unlock();
+}
+
+void CtrlrMgr::RemoveCtrFromDisconnectList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+
+  if (ctr_name == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p ", ctr_name);
+    return;
+  }
+  std::string ctr(ctr_name);
+
+  ctr_discon_lock_.wrlock();
+  if (ctr_discon_map_.end() != ctr_discon_map_.find(ctr_name)) {
+    ctr_discon_map_.erase(ctr);
+  }
+  ctr_discon_lock_.unlock();
 }
 
 }  // namespace config_momgr

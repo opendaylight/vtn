@@ -16,6 +16,7 @@ import java.util.Map;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
 import org.opendaylight.vtn.javaapi.init.PackageScan;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
@@ -40,9 +41,10 @@ public final class AnnotationReflect {
 	 *            the path
 	 * @param exceptionHandler
 	 * @return the resource
+	 * @throws VtnServiceException 
 	 */
 	public static AbstractResource getResource(final String path,
-			final VtnServiceExceptionHandler exceptionHandler) {
+			final VtnServiceExceptionHandler exceptionHandler) throws VtnServiceException {
 		LOG.trace("Start AnnotationReflect#getResource()");
 		LOG.debug("Resource path: " + path);
 		AbstractResource resource = null;
@@ -83,7 +85,7 @@ public final class AnnotationReflect {
 								fields.get(value), VtnServiceConsts.UTF8));
 					}
 				} catch (final Exception e) {
-					exceptionHandler.handle(
+					exceptionHandler.raise(
 							Thread.currentThread().getStackTrace()[1]
 									.getClassName()
 									+ VtnServiceConsts.HYPHEN

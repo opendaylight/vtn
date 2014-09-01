@@ -123,7 +123,7 @@ public class VrtResourcesGenerator {
 		final JsonObject root = new JsonObject();
 		final JsonObject interfaceJson = new JsonObject();
 		setIpAndMacAddress(openStackResourceBody, interfaceJson);
-		
+
 		// special case handling for IP address
 		if (openStackResourceBody.has(VtnServiceOpenStackConsts.IP_ADDRESS)
 				&& VtnServiceOpenStackConsts.DEFAULT_CIDR_IP
@@ -145,7 +145,7 @@ public class VrtResourcesGenerator {
 			interfaceJson.addProperty(VtnServiceJsonConsts.MACADDR,
 					VtnServiceConsts.EMPTY_STRING);
 		}
-		
+
 		root.add(VtnServiceJsonConsts.INTERFACE, interfaceJson);
 		return root;
 	}
@@ -163,10 +163,10 @@ public class VrtResourcesGenerator {
 			final String[] ipAddress = openStackResourceBody
 					.get(VtnServiceOpenStackConsts.IP_ADDRESS).getAsString()
 					.split(VtnServiceConsts.SLASH);
-			interfaceJson
-					.addProperty(VtnServiceJsonConsts.IPADDR, ipAddress[0]);
-			interfaceJson
-					.addProperty(VtnServiceJsonConsts.PREFIX, ipAddress[1]);
+			interfaceJson.addProperty(VtnServiceJsonConsts.IPADDR,
+					ipAddress[VtnServiceJsonConsts.VAL_0]);
+			interfaceJson.addProperty(VtnServiceJsonConsts.PREFIX,
+					ipAddress[VtnServiceJsonConsts.VAL_1]);
 		}
 
 		if (openStackResourceBody.has(VtnServiceOpenStackConsts.MAC_ADDRESS)) {
@@ -175,9 +175,12 @@ public class VrtResourcesGenerator {
 			macAddress = macAddress.replaceAll(VtnServiceConsts.COLON,
 					VtnServiceConsts.EMPTY_STRING);
 
-			final String macFirstPart = macAddress.substring(0, 4);
-			final String macSeconfPart = macAddress.substring(4, 8);
-			final String macThirdPart = macAddress.substring(8, 12);
+			final String macFirstPart = macAddress.substring(
+					VtnServiceJsonConsts.VAL_0, VtnServiceJsonConsts.VAL_4);
+			final String macSeconfPart = macAddress.substring(
+					VtnServiceJsonConsts.VAL_4, VtnServiceJsonConsts.VAL_8);
+			final String macThirdPart = macAddress.substring(
+					VtnServiceJsonConsts.VAL_8, VtnServiceJsonConsts.VAL_12);
 
 			interfaceJson.addProperty(VtnServiceJsonConsts.MACADDR,
 					macFirstPart + VtnServiceConsts.DOT + macSeconfPart

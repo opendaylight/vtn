@@ -419,7 +419,7 @@ upll_rc_t FlowListMoMgr::GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
   } else {
     dbop.matchop = kOpMatchNone;
   }
-
+  dbop.inoutop = kOpInOutCtrlr;
   result_code = ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
                              RENAMETBL);
 
@@ -429,6 +429,8 @@ upll_rc_t FlowListMoMgr::GetRenamedUncKey(ConfigKeyVal *ctrlr_key,
     uuu::upll_strncpy(ctrlr_flowlist_key->flowlist_name,
                  flowlist_key->flowlist_name,
                  (kMaxLenFlowListName + 1));
+    SET_USER_DATA(ctrlr_key, unc_key);
+    SET_USER_DATA_FLAGS(ctrlr_key, FL_RENAME);
   }
   UPLL_LOG_TRACE("%s GetRenamedUncKey fl end",
                   ctrlr_key->ToStrAll().c_str());
@@ -442,6 +444,11 @@ upll_rc_t FlowListMoMgr::GetRenamedControllerKey(
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   ConfigKeyVal *okey = NULL;
+  /* Read controller name from running rename table,
+   * since there is no rename table for audit case */
+  if (dt_type == UPLL_DT_AUDIT)
+    dt_type = UPLL_DT_RUNNING;
+
   result_code = GetChildConfigKey(okey, ikey);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_DEBUG("GetChildConfigKey fail (%d)", result_code);
@@ -451,7 +458,7 @@ upll_rc_t FlowListMoMgr::GetRenamedControllerKey(
   if (ctrlr_dom != NULL) {
     SET_USER_DATA_CTRLR_DOMAIN(okey, *ctrlr_dom);
   } else {
-    UPLL_LOG_DEBUG("Controller id is null");
+    UPLL_LOG_ERROR("Controller id is null");
     DELETE_IF_NOT_NULL(okey);
     return UPLL_RC_ERR_GENERIC;
   }
@@ -681,13 +688,18 @@ upll_rc_t FlowListMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
 upll_rc_t FlowListMoMgr::MergeValidate(unc_key_type_t keytype,
                                        const char *ctrl_id,
                                        ConfigKeyVal *configkey,
-                                       DalDmlIntf *dmi) {
+                                       DalDmlIntf *dmi,
+                                       upll_import_type import_type) {
   UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   // DbSubOp dbop = NULL;
 
   ConfigKeyVal *ckey = NULL;
   ConfigKeyVal *temp_ckey = NULL;
+
+  unc_keytype_operation_t op[] = { UNC_OP_UPDATE };
+  int nop = sizeof(op)/ sizeof(op[0]);
+
   if (ctrl_id == NULL) return result_code;
   // Read the Configuration from the IMPORT
   result_code = GetChildConfigKey(temp_ckey, NULL);
@@ -715,10 +727,12 @@ upll_rc_t FlowListMoMgr::MergeValidate(unc_key_type_t keytype,
 
     // Check the flow list as stand alone 
     DbSubOp dbop = { kOpReadExist, kOpMatchNone, kOpInOutNone };
+    // ckey has rename val set, so removing  that to read from ctrlr tbl
+    ckey->SetCfgVal(NULL);
     result_code = UpdateConfigDB(ckey, UPLL_DT_IMPORT, UNC_OP_READ, dmi, &dbop,
                                  CTRLRTBL);
     if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-      UPLL_LOG_DEBUG("flow list is stand alone");
+      UPLL_LOG_ERROR("flow list is stand alone");
       result_code = GetChildConfigKey(configkey, ckey);
       DELETE_IF_NOT_NULL(temp_ckey);
       if (result_code != UPLL_RC_SUCCESS) {
@@ -731,32 +745,16 @@ upll_rc_t FlowListMoMgr::MergeValidate(unc_key_type_t keytype,
       DELETE_IF_NOT_NULL(temp_ckey);
       return result_code;
     }
-
-    // Check whether the configuration exists in the Running configuration or
-    // not
-    // if exists then return an error
-    result_code = UpdateConfigDB(ckey, UPLL_DT_RUNNING, UNC_OP_READ, dmi,
-                                 MAINTBL);
-    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
-      UPLL_LOG_DEBUG("record exists");
-      result_code = GetChildConfigKey(configkey, ckey);
-      DELETE_IF_NOT_NULL(temp_ckey);
-      if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("DupConfigKeyVal fail");
-        return result_code;
-      }
-      return UPLL_RC_ERR_MERGE_CONFLICT;
-    } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
-      UPLL_LOG_DEBUG("record not available");
-      ckey = ckey->get_next_cfg_key_val();
-    } else {
-      UPLL_LOG_DEBUG("UpdateConfigDB fail");
-      DELETE_IF_NOT_NULL(temp_ckey);
-      return result_code;
-    }
+    ckey = ckey->get_next_cfg_key_val();
   }
   DELETE_IF_NOT_NULL(temp_ckey);
-  UPLL_LOG_DEBUG("MergeValidate result_code (%d)", result_code);
+
+  result_code = ValidateImportWithRunning(keytype, ctrl_id, configkey, op, nop, dmi);
+  if ((result_code != UPLL_RC_SUCCESS) &&
+      (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE)) {
+     UPLL_LOG_INFO("ValidateImportWithRunning db err (%d)", result_code);
+     return result_code;
+  }
   return UPLL_RC_SUCCESS;
 }
 upll_rc_t FlowListMoMgr::IsReferenced(ConfigKeyVal *ikey,
@@ -793,7 +791,7 @@ upll_rc_t FlowListMoMgr::IsReferenced(ConfigKeyVal *ikey,
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     if (UPLL_RC_SUCCESS == result_code)
       result_code = UPLL_RC_ERR_CFG_SEMANTIC;
-    UPLL_LOG_DEBUG("IsRef failed %d", result_code);
+    UPLL_LOG_INFO("IsFlowlistConfigured failed %d", result_code);
     return result_code;
   }
   VtnFlowFilterEntryMoMgr *vtn_mgr =
@@ -807,7 +805,7 @@ upll_rc_t FlowListMoMgr::IsReferenced(ConfigKeyVal *ikey,
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     if (UPLL_RC_SUCCESS == result_code)
       result_code = UPLL_RC_ERR_CFG_SEMANTIC;
-    UPLL_LOG_DEBUG("IsRef failed %d", result_code);
+    UPLL_LOG_INFO("IsFlowListConfigured failed %d", result_code);
     return result_code;
   }
 
@@ -824,7 +822,7 @@ upll_rc_t FlowListMoMgr::IsReferenced(ConfigKeyVal *ikey,
   result_code = mgr->IsFlowListMatched(reinterpret_cast<const char *>
     (fl_key->flowlist_name), dt_type, dmi);
   if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_DEBUG("IsFlowListMatched failed from ppe %d", result_code);
+    UPLL_LOG_INFO("IsFlowListMatched failed from ppe %d", result_code);
     return UPLL_RC_ERR_CFG_SEMANTIC;
   }
   return UPLL_RC_SUCCESS;
@@ -1114,6 +1112,7 @@ upll_rc_t FlowListMoMgr::DeleteFlowListToController(char *flowlist_name,
     val_flowlist_ctrl_t *ctrlr_val = reinterpret_cast
       <val_flowlist_ctrl_t *>(GetVal(okey));
     ctrlr_val->refcount -= 1;
+    UPLL_LOG_DEBUG("Ref_count in flowlist %d", ctrlr_val->refcount);
     if (1 > ctrlr_val->refcount) {
       ctrlr_val->valid[1] = UNC_VF_VALID;
       result_code = UpdateConfigDB(okey, dt_type, UNC_OP_DELETE, dmi,
@@ -1124,6 +1123,17 @@ upll_rc_t FlowListMoMgr::DeleteFlowListToController(char *flowlist_name,
         return result_code;
       }
       fl_entry_del  = true;
+      // Renametbl entry should be deleted when no entry in flowlist ctrlr tbl
+      result_code = UpdateConfigDB(okey, dt_type, UNC_OP_DELETE,
+                                        dmi, &dbop, RENAMETBL);
+      if (UPLL_RC_SUCCESS != result_code &&
+          UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+        UPLL_LOG_TRACE("UpdateConfigDB Failed %d", result_code);
+        DELETE_IF_NOT_NULL(okey);
+        return result_code;
+      }
+      result_code = (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)?
+                     UPLL_RC_SUCCESS:result_code;
     } else {
       ctrlr_val->valid[1] = UNC_VF_VALID;
       result_code = UpdateConfigDB(okey, dt_type, UNC_OP_UPDATE, dmi,
@@ -1147,7 +1157,7 @@ upll_rc_t FlowListMoMgr::DeleteFlowListToController(char *flowlist_name,
     result_code = mgr->AddFlowListToController(
         flowlist_name, dmi, ctrl_id, dt_type, op);
     if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Unable to update the controller table for flowlistentry");
+      UPLL_LOG_INFO("FLE controller table update failed:%d", result_code);
       return result_code;
     }
   } 
@@ -1162,6 +1172,8 @@ upll_rc_t FlowListMoMgr::CreateFlowListToController(char *flowlist_name,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *okey = NULL;
+  ConfigKeyVal *rename_key = NULL;
+  bool flag_chk = false;
   result_code = GetChildConfigKey(okey, NULL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
@@ -1189,23 +1201,157 @@ upll_rc_t FlowListMoMgr::CreateFlowListToController(char *flowlist_name,
   //  for ref_count to be updated. So Create a record in DB
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
     UPLL_LOG_DEBUG("No entry in ctrlr tbl");
-    ConfigKeyVal *main_ckv = NULL;
+    // scenario: flowlist1 is renamed into flowlist2 and it stored into candidate
+    // now user created flowlist1 in candidate. UNC accept this configuration.
+    // But UNC should return error, when this flowlist (flowlist1) is referred by any 
+    if (dt_type == UPLL_DT_CANDIDATE) {
+     uint8_t *ctrlrid = NULL;
+     result_code = GetChildConfigKey(rename_key, okey);
+     if (result_code != UPLL_RC_SUCCESS) {
+       UPLL_LOG_DEBUG("GetChildConfigKey failed (%d)", result_code);
+       DELETE_IF_NOT_NULL(okey);
+       return result_code;
+     }
+     if (!rename_key) {
+       UPLL_LOG_DEBUG("rename_key NULL");
+       DELETE_IF_NOT_NULL(okey);
+       return UPLL_RC_ERR_GENERIC;
+     }
+     GET_USER_DATA_CTRLR(rename_key, ctrlrid);
+
+     result_code = GetRenamedUncKey(rename_key, UPLL_DT_CANDIDATE, dmi, ctrlrid);
+     if (result_code == UPLL_RC_SUCCESS) {
+       UPLL_LOG_DEBUG("flowlist name already renamed & exists %d", result_code);
+       DELETE_IF_NOT_NULL(rename_key);
+       DELETE_IF_NOT_NULL(okey);
+       return UPLL_RC_ERR_CFG_SEMANTIC;
+     } else if (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+       UPLL_LOG_DEBUG("GetRenamedUncKey Failed err_code %d", result_code);
+       DELETE_IF_NOT_NULL(rename_key);
+       DELETE_IF_NOT_NULL(okey);
+       return result_code;
+     } else { // If NO_SUCH_INSTANCE check in RUNNING
+       result_code = GetRenamedUncKey(rename_key, UPLL_DT_RUNNING, dmi, ctrlrid);
+       DELETE_IF_NOT_NULL(rename_key);
+       if (result_code == UPLL_RC_SUCCESS) {
+         UPLL_LOG_DEBUG("flowlist name already renamed & exists %d", result_code);
+         DELETE_IF_NOT_NULL(okey);
+         return UPLL_RC_ERR_CFG_SEMANTIC;
+       } else if (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+         UPLL_LOG_DEBUG("GetRenamedUncKey Failed err_code %d", result_code);
+         DELETE_IF_NOT_NULL(okey);
+         return result_code;
+       }
+     }
+#if 1
+     // scenario: During import/partial import the flowlist name got renamed.
+     // merge, commit, audit done. rename tbl info will be removed, when delete
+     // the flowlist from candidate and create it again and commit.
+     // Fix: copy the running renametbl configuration and placed it in
+     // candidate configuration
+     ConfigKeyVal *ckv_running_rename = NULL, *ckv_main = NULL;
+     DbSubOp dbop = {kOpReadSingle, kOpMatchCtrlr, kOpInOutNone};
+
+     result_code = GetChildConfigKey(ckv_running_rename, okey);
+     if (result_code != UPLL_RC_SUCCESS) {
+       UPLL_LOG_DEBUG("GetChildConfigKey failed (%d)", result_code);
+       DELETE_IF_NOT_NULL(okey);
+       return result_code;
+     }
+     if (!ckv_running_rename) {
+       UPLL_LOG_DEBUG("rename_key NULL");
+       DELETE_IF_NOT_NULL(okey);
+       return UPLL_RC_ERR_GENERIC;
+     }
+     GET_USER_DATA_CTRLR(ckv_running_rename, ctrlrid);
+
+     result_code = ReadConfigDB(ckv_running_rename, UPLL_DT_RUNNING,
+            UNC_OP_READ, dbop, dmi, RENAMETBL);
+     if (UPLL_RC_SUCCESS != result_code &&
+            UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+          UPLL_LOG_DEBUG("ReadConfigDB failed %d", result_code)
+          DELETE_IF_NOT_NULL(okey);
+          DELETE_IF_NOT_NULL(ckv_running_rename);
+          return result_code;
+     }
+     if (UPLL_RC_SUCCESS == result_code) {
+        val_rename_flowlist_t* rename_flowlist = reinterpret_cast
+           <val_rename_flowlist_t *>(GetVal(ckv_running_rename));
+        rename_flowlist->valid[UPLL_IDX_RENAME_FLOWLIST_RFL] = UNC_VF_VALID;
+        result_code = UpdateConfigDB(ckv_running_rename, UPLL_DT_CANDIDATE,
+              UNC_OP_CREATE, dmi, RENAMETBL);
+        if (UPLL_RC_SUCCESS != result_code &&
+            UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+            UPLL_LOG_DEBUG("UpdateConfigDB failed %d", result_code)
+            DELETE_IF_NOT_NULL(okey);
+            DELETE_IF_NOT_NULL(ckv_running_rename);
+            return result_code;
+        }
+
+        result_code = GetChildConfigKey(ckv_main, NULL);
+        if (result_code != UPLL_RC_SUCCESS) {
+          UPLL_LOG_DEBUG("GetChildConfigKey failed (%d)", result_code);
+          DELETE_IF_NOT_NULL(okey);
+          DELETE_IF_NOT_NULL(ckv_running_rename);
+          return result_code;
+        }
+        key_flowlist_t *okey_key1 = reinterpret_cast<key_flowlist_t *>
+          (ckv_main->get_key());
+        uuu::upll_strncpy(okey_key1->flowlist_name, flowlist_name,
+        (kMaxLenFlowListName+1));
+
+        DbSubOp dbop_1 = {kOpNotRead, kOpMatchNone, kOpInOutFlag};
+
+        SET_USER_DATA_FLAGS(ckv_main, 0x01);
+        flag_chk = true;
+        result_code = UpdateConfigDB(ckv_main, UPLL_DT_CANDIDATE,
+              UNC_OP_UPDATE, dmi, &dbop_1, MAINTBL);
+        DELETE_IF_NOT_NULL(ckv_main);
+        DELETE_IF_NOT_NULL(ckv_running_rename);
+        if (UPLL_RC_SUCCESS != result_code &&
+            UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+            UPLL_LOG_DEBUG("UpdateConfigDB failed %d", result_code)
+            DELETE_IF_NOT_NULL(okey);
+            return result_code;
+        }
+     }
+     DELETE_IF_NOT_NULL(ckv_running_rename);
+#endif
+   }
+   ConfigKeyVal *main_ckv = NULL;
     result_code = GetChildConfigKey(main_ckv, okey);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
       DELETE_IF_NOT_NULL(okey);
       return result_code;
     }
-    DbSubOp dbop1 = {kOpReadSingle, kOpMatchNone, kOpInOutCs};
+    DbSubOp dbop1 = {kOpReadSingle, kOpMatchNone, kOpInOutFlag | kOpInOutCs};
     result_code = ReadConfigDB(main_ckv,
                             dt_type,
                             UNC_OP_READ,
                             dbop1, dmi, MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("ReadConfigDB in maintbl failed %d", result_code);
+      if ((UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)
+          && (UPLL_DT_AUDIT == dt_type)) {
+        // For AUDIT,If flowlist name which is referred in policing profile
+        // or flowfilter is not configured then
+        // ignore the error  and return success
+        UPLL_LOG_DEBUG("Skipping the controller table insertion for AUDIT");
+        DELETE_IF_NOT_NULL(okey);
+        DELETE_IF_NOT_NULL(main_ckv);
+        return UPLL_RC_SUCCESS;
+      }
+      UPLL_LOG_ERROR("ReadConfigDB in maintbl failed %d", result_code);
       DELETE_IF_NOT_NULL(okey);
       DELETE_IF_NOT_NULL(main_ckv);
       return result_code;
+    }
+    if (UPLL_DT_IMPORT == dt_type || flag_chk == true) {
+      // Copy the flag from maintbl and update into ctrlrtbl
+      uint8_t fl_flag = 0x00;
+      GET_USER_DATA_FLAGS(main_ckv, fl_flag);
+      SET_USER_DATA_FLAGS(okey, fl_flag);
     }
     val_flowlist_t *main_val = reinterpret_cast<val_flowlist_t *>
         (GetVal(main_ckv));
@@ -1272,183 +1418,18 @@ upll_rc_t FlowListMoMgr::CreateFlowListToController(char *flowlist_name,
       return result_code;
     }
     DELETE_IF_NOT_NULL(main_ckv);
-  } 
+  }
   FlowListEntryMoMgr *mgr = reinterpret_cast<FlowListEntryMoMgr *>
     (const_cast<MoManager *> (GetMoManager(UNC_KT_FLOWLIST_ENTRY)));
   result_code = mgr->AddFlowListToController(
                       flowlist_name, dmi, ctrl_id, dt_type, op);
   if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Unable to update the controller table for flowlistentry");
-    DELETE_IF_NOT_NULL(okey);;
+    DELETE_IF_NOT_NULL(okey);
+    UPLL_LOG_INFO("flowlistentry controller table update failed:%d",
+				 result_code);
     return result_code;
   }
   DELETE_IF_NOT_NULL(okey);
-  return result_code;
-}
-
-upll_rc_t FlowListMoMgr::TxUpdateController(unc_key_type_t keytype,
-                                            uint32_t session_id,
-                                            uint32_t config_id,
-                                            uuc::UpdateCtrlrPhase phase,
-                                            set<string> *affected_ctrlr_set,
-                                            DalDmlIntf *dmi,
-                                            ConfigKeyVal **err_ckv) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
-  DalResultCode dal_result = uud::kDalRcSuccess;
-  ConfigKeyVal *req = NULL, *nreq = NULL, *ck_main = NULL;
-  controller_domain ctrlr_dom;
-  ctrlr_dom.ctrlr = NULL;
-  ctrlr_dom.domain = NULL;
-  DalCursor *dal_cursor_handle = NULL;
-  IpcResponse resp;
-  if (phase == uuc::kUpllUcpDelete) return UPLL_RC_SUCCESS;
-  unc_keytype_operation_t op = (phase == uuc::kUpllUcpCreate)?UNC_OP_CREATE:
-          ((phase == uuc::kUpllUcpUpdate)?UNC_OP_UPDATE:
-          ((phase == uuc::kUpllUcpDelete2)?UNC_OP_DELETE:UNC_OP_INVALID));
-  switch (op) {
-    case UNC_OP_CREATE:
-    case UNC_OP_DELETE:
-      result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING,
-          op, req, nreq, &dal_cursor_handle, dmi, CTRLRTBL);
-      break;
-    case UNC_OP_UPDATE:
-      // not supported by keytype
-      // return success
-      UPLL_LOG_TRACE(" Not supported operation");
-      return UPLL_RC_SUCCESS;
-    default:
-      UPLL_LOG_TRACE(" Invalid operation");
-      return UPLL_RC_ERR_GENERIC;
-  }
-  resp.header.clnt_sess_id = session_id;
-  resp.header.config_id = config_id;
-  while (result_code == UPLL_RC_SUCCESS) {
-    // Get Next Record
-    dal_result = dmi->GetNextRecord(dal_cursor_handle);
-    result_code = DalToUpllResCode(dal_result);
-    if (result_code != UPLL_RC_SUCCESS) {
-      break;
-    }
-    ck_main = NULL;
-    if ((op == UNC_OP_CREATE) || (op == UNC_OP_DELETE)) {
-      result_code = DupConfigKeyVal(ck_main, req, MAINTBL);
-      if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("FlowListMoMgr:DupConfigKeyVal failed during TxUpdate.");
-        return result_code;
-      }
-
-      GET_USER_DATA_CTRLR_DOMAIN(ck_main, ctrlr_dom);
-      UPLL_LOG_DEBUG("ctrlr : %s; domain : %s", ctrlr_dom.ctrlr,
-                     ctrlr_dom.domain);
-      if (NULL == ctrlr_dom.ctrlr) {
-        UPLL_LOG_DEBUG("Invalid controller/domain");
-        result_code = UPLL_RC_ERR_GENERIC;
-        DELETE_IF_NOT_NULL(ck_main);
-        break;
-      }
-      bool driver_resp = false;
-      result_code = TxUpdateProcess(ck_main, &resp, op,
-          dmi, &ctrlr_dom, affected_ctrlr_set, &driver_resp);
-      if (result_code != UPLL_RC_SUCCESS && driver_resp) {
-        UPLL_LOG_DEBUG("TxUpdateProcess error %d", result_code);
-        if (resp.ckv_data != NULL) {
-          upll_keytype_datatype_t dt_type = (UNC_OP_DELETE == op)?
-              UPLL_DT_RUNNING:UPLL_DT_CANDIDATE;
-          upll_rc_t local_rc = GetRenamedUncKey(resp.ckv_data, dt_type, dmi,
-                                         ctrlr_dom.ctrlr);
-          if (UPLL_RC_SUCCESS != local_rc &&
-              UPLL_RC_ERR_NO_SUCH_INSTANCE != local_rc) {
-            UPLL_LOG_DEBUG("GetRenamedUncKey failed %d", local_rc);
-            DELETE_IF_NOT_NULL(ck_main);
-            DELETE_IF_NOT_NULL(resp.ckv_data);
-            result_code = UPLL_RC_ERR_GENERIC;
-            break;
-          }
-          SET_USER_DATA_CTRLR(resp.ckv_data, ctrlr_dom.ctrlr);
-          *err_ckv = resp.ckv_data;
-        }
-        DELETE_IF_NOT_NULL(ck_main);
-        break;
-      } else if (result_code != UPLL_RC_SUCCESS) {
-        DELETE_IF_NOT_NULL(ck_main);
-        DELETE_IF_NOT_NULL(resp.ckv_data);
-        break;
-      }
-      DELETE_IF_NOT_NULL(resp.ckv_data);
-    }
-    DELETE_IF_NOT_NULL(ck_main);
-  }
-  DELETE_IF_NOT_NULL(nreq);
-  DELETE_IF_NOT_NULL(req);
-  if (dal_cursor_handle) {
-    dmi->CloseCursor(dal_cursor_handle, true);
-    dal_cursor_handle = NULL;
-  }
-  result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) ?
-      UPLL_RC_SUCCESS:result_code;
-  return result_code;
-}
-
-upll_rc_t FlowListMoMgr::TxUpdateProcess(ConfigKeyVal *ck_main,
-                                         IpcResponse *ipc_resp,
-                                         unc_keytype_operation_t op,
-                                         DalDmlIntf *dmi,
-                                         controller_domain *ctrlr_dom,
-                                         set<string> *affected_ctrlr_set,
-                                         bool *driver_resp) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code;
-  /* read from main table */
-  ConfigKeyVal *dup_ckmain = ck_main;
-  if (op == UNC_OP_CREATE)  {
-    dup_ckmain = NULL;
-    result_code = GetChildConfigKey(dup_ckmain, ck_main);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Returning error %d", result_code);
-      if (dup_ckmain) delete dup_ckmain;
-      return result_code;
-    }
-    DbSubOp dbop = {kOpReadSingle, kOpMatchNone, kOpInOutCs};
-    result_code = ReadConfigDB(dup_ckmain, UPLL_DT_CANDIDATE,
-                               UNC_OP_READ, dbop, dmi, MAINTBL);
-    if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_DEBUG("%s flowlist read failed from candidatedb (%d)",
-                     (dup_ckmain->ToStrAll()).c_str(), result_code);
-      delete dup_ckmain;
-      return result_code;
-    }
-  }
- /* Get renamed key if key is renamed */
-  if (op == UNC_OP_DELETE)
-    result_code = GetRenamedControllerKey(dup_ckmain, UPLL_DT_RUNNING,
-                                              dmi, ctrlr_dom);
-  else
-    result_code =  GetRenamedControllerKey(dup_ckmain, UPLL_DT_CANDIDATE,
-                                         dmi, ctrlr_dom);
-  if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("Failed to get the Renamed ControllerKey");
-    DELETE_IF_NOT_NULL(dup_ckmain);
-    return result_code;
-  }
-  result_code = SendIpcReq(ipc_resp->header.clnt_sess_id,
-                           ipc_resp->header.config_id, op,
-                           UPLL_DT_CANDIDATE,
-                           dup_ckmain, ctrlr_dom, ipc_resp);
-  if (result_code == UPLL_RC_ERR_CTR_DISCONNECTED) {
-    result_code = UPLL_RC_SUCCESS;
-    UPLL_LOG_DEBUG("controller disconnected error proceed with commit");
-  }
-  if (result_code != UPLL_RC_SUCCESS) {
-    UPLL_LOG_DEBUG("IpcSend failed %d", result_code);
-    *driver_resp = true;
-  }
-  affected_ctrlr_set->insert((const char *)ctrlr_dom->ctrlr);
-  if ((op == UNC_OP_CREATE) && dup_ckmain) {
-    delete dup_ckmain;
-    dup_ckmain = NULL;
-  }
-  UPLL_LOG_TRACE("Driver response received %d", *driver_resp)
   return result_code;
 }
 
@@ -1458,7 +1439,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DalResultCode db_result;
-  unc_keytype_operation_t op[] = { UNC_OP_CREATE, UNC_OP_DELETE,
+  unc_keytype_operation_t op[] = { UNC_OP_DELETE, UNC_OP_CREATE,
                                    UNC_OP_UPDATE};
   int nop = sizeof(op) / sizeof(op[0]);
   ConfigKeyVal *flowlist_key = NULL, *req = NULL, *nreq = NULL , *instance_key = NULL;
@@ -1484,7 +1465,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
           result_code = GetRenamedUncKey(ck_err, UPLL_DT_CANDIDATE, dmi,
               ctrlr_id);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_DEBUG("Unable to get the Renamed UncKey %d", result_code);
+            UPLL_LOG_INFO("Unable to get the Renamed UncKey %d", result_code);
             return result_code;
           }
         }
@@ -1495,7 +1476,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
   for (int i = 0; i < nop; i++) {
     cfg1_cursor = NULL;
     // Update the Main table
-    if (op[i] != UNC_OP_UPDATE) {
+//    if (op[i] != UNC_OP_UPDATE) {
       result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i],
                                  req, nreq, &cfg1_cursor, dmi, NULL, MAINTBL ,true);
       while (result_code == UPLL_RC_SUCCESS) {
@@ -1508,7 +1489,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
         result_code = UpdateMainTbl(req, op[i], UPLL_RC_SUCCESS,
                                     nreq, dmi);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("Updating Main table Error %d", result_code);
+          UPLL_LOG_INFO("Updating Main table Error %d", result_code);
 
           if (cfg1_cursor)
             dmi->CloseCursor(cfg1_cursor, true);
@@ -1525,7 +1506,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
         DELETE_IF_NOT_NULL(req);
         DELETE_IF_NOT_NULL(nreq);
       req = NULL;
-    }
+//    }
     UPLL_LOG_DEBUG("Updating main table complete with op %d", op[i]);
   }
   for (int i = 0; i < nop; i++) {
@@ -1557,7 +1538,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
                                    UNC_OP_READ, dbop, dmi, MAINTBL);
         if ((result_code != UPLL_RC_SUCCESS) &&
             (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)) {
-          UPLL_LOG_DEBUG("Unable to read configuration from CandidateDb");
+          UPLL_LOG_INFO("CandidateDB read failed:%d", result_code);
           DELETE_IF_NOT_NULL(flowlist_key);
           if (cfg1_cursor)
             dmi->CloseCursor(cfg1_cursor, true);
@@ -1578,9 +1559,9 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
         }
         result_code = GetChildConfigKey(instance_key, flowlist_key);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
-                         result_code);
-          DELETE_IF_NOT_NULL(flowlist_ctrlr_key); 
+          UPLL_LOG_DEBUG("GetChildConfigKey for instance_key is failed: %d",
+                        result_code);
+          DELETE_IF_NOT_NULL(flowlist_ctrlr_key);
           DELETE_IF_NOT_NULL(flowlist_key);
           if (cfg1_cursor)
             dmi->CloseCursor(cfg1_cursor, true);
@@ -1615,7 +1596,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
                                            dmi, flowlist_ctrlr_key);
         }
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG(" UpdateConfigStatus Function Failed - %d ",
+          UPLL_LOG_INFO("UpdateConfigStatus function failed - %d ",
                          result_code);
           DELETE_IF_NOT_NULL(flowlist_key);
           DELETE_IF_NOT_NULL(flowlist_ctrlr_key);
@@ -1656,7 +1637,7 @@ upll_rc_t FlowListMoMgr::TxCopyCandidateToRunning(
             result_code = SetFlowListConsolidatedStatus(flowlist_key,
                                                           ctrlr_id, dmi);
             if (result_code != UPLL_RC_SUCCESS) {
-              UPLL_LOG_DEBUG("Could not set consolidated status %d",
+              UPLL_LOG_INFO("Could not set consolidated status %d",
                               result_code);
               DELETE_IF_NOT_NULL(flowlist_key);
               if (cfg1_cursor)
@@ -1815,7 +1796,7 @@ upll_rc_t FlowListMoMgr::SetConsolidatedStatus(ConfigKeyVal *ikey,
                              UPLL_DT_RUNNING,
                              UNC_OP_READ, dbop, dmi, CTRLRTBL);
   if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_DEBUG("Unable to read the configuration from CTRLR Table");
+    UPLL_LOG_ERROR("CTRLR table read failed:%d", result_code);
     if (ckv != NULL) {
       delete ckv;
       ckv = NULL;
@@ -2204,6 +2185,8 @@ upll_rc_t FlowListMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
   }
 
   DbSubOp dbop = {kOpReadExist, kOpMatchNone, kOpInOutNone};
+  // ikey has rename val set, so removing  that to read from ctrlr tbl
+  ikey->SetCfgVal(NULL);
   result_code = UpdateConfigDB(ikey, UPLL_DT_IMPORT,
                              UNC_OP_READ, dmi, &dbop, CTRLRTBL);
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
@@ -2338,6 +2321,7 @@ upll_rc_t FlowListMoMgr::UpdateMainTbl(ConfigKeyVal *key_fl,
 
   switch (op) {
     case UNC_OP_CREATE:
+    case UNC_OP_UPDATE:
       result_code = DupConfigKeyVal(ck_fl, key_fl, MAINTBL);
       if (!ck_fl || (result_code != UPLL_RC_SUCCESS)) {
         UPLL_LOG_DEBUG("DupConfigKeyVal() Returning error %d", result_code);
@@ -2458,10 +2442,75 @@ upll_rc_t FlowListMoMgr::UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
     query_string = QUERY_FF_IMP_REF_COUNT_UPDATE;
   }
   upll_rc_t result_code = DalToUpllResCode(
-         dmi->UpdateRecords(query_string, dt_type, tbl_index,
-                              db_info));
+         dmi->ExecuteAppQuery(query_string, dt_type, tbl_index,
+                              db_info, UNC_OP_UPDATE));
   DELETE_IF_NOT_NULL(db_info);
   return result_code;
+}
+
+upll_rc_t FlowListMoMgr::GetOperation(uuc::UpdateCtrlrPhase phase,
+                                      unc_keytype_operation_t &op) {
+ if (uuc::kUpllUcpDelete == phase) {
+   UPLL_LOG_DEBUG("Delete phase 1");
+   return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
+  } else if (uuc::kUpllUcpUpdate == phase) {
+    op = UNC_OP_UPDATE;
+  } else if (uuc::kUpllUcpCreate == phase) {
+    op = UNC_OP_CREATE;
+  } else if (uuc::kUpllUcpDelete2 == phase) {
+    op = UNC_OP_DELETE;
+  } else {
+    return UPLL_RC_ERR_GENERIC;
+  }
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t FlowListMoMgr::CopyKeyToVal(ConfigKeyVal *ikey,
+                                 ConfigKeyVal *&okey) {
+  UPLL_FUNC_TRACE;
+  if (!ikey)
+    return UPLL_RC_ERR_GENERIC;
+  upll_rc_t result_code = GetChildConfigKey(okey, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed");
+    return result_code;
+  }
+  val_rename_flowlist *val = reinterpret_cast<val_rename_flowlist_t *>(
+                          ConfigKeyVal::Malloc(sizeof(val_rename_flowlist)));
+  // Note: Validate message is take care of validate the key part
+  key_flowlist_t *key = reinterpret_cast<key_flowlist_t *>(ikey->get_key());
+  uuu::upll_strncpy(val->flowlist_newname, key->flowlist_name,
+                    (kMaxLenFlowListName+1));
+  val->valid[UPLL_CTRLR_VTN_NAME_VALID] = UNC_VF_VALID;
+  okey->SetCfgVal(new ConfigVal(IpctSt::kIpcStValRenameFlowlist, val));
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t FlowListMoMgr::GetControllerDomainSpan(
+    ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code;
+  DbSubOp dbop = {kOpReadExist|kOpReadMultiple, kOpMatchNone,
+                  kOpInOutCtrlr};
+
+  result_code = ReadConfigDB(ikey, dt_type, UNC_OP_READ, dbop, dmi, CTRLRTBL);
+  return result_code;
+}
+
+upll_rc_t FlowListMoMgr::GetDomainsForController(
+    ConfigKeyVal *ckv_drvr,
+    ConfigKeyVal *&ctrlr_ckv,
+    DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = GetChildConfigKey(ctrlr_ckv, ckv_drvr);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_INFO("GetChildConfigKey failed %d", result_code);
+    return result_code;
+  }
+  DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr, kOpInOutCtrlr };
+  return ReadConfigDB(ctrlr_ckv, UPLL_DT_RUNNING, UNC_OP_READ, dbop, dmi,
+                             CTRLRTBL);
 }
 }  // namespace kt_momgr
 }  // namespace upll

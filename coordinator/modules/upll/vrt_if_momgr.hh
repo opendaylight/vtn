@@ -300,6 +300,35 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
                               BindInfo *&binfo,
                               int &nattr,
                               MoMgrTables tbl);
+    /** 
+     * @brief     Perform validation on key type specific, 
+     *            before sending to driver
+     *
+     * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
+     * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
+     * @param[in]  op                       Operation name.
+     * @param[in]  dt_type                  Specifies the configuration CANDIDATE/RUNNING
+     * @param[in]  keytype                  Specifies the keytype
+     * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
+     * @param[out] not_send_to_drv          Decides whether the configuration needs
+     *                                      to be sent to controller or not 
+     * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
+     *
+     * @retval  UPLL_RC_SUCCESS             Completed successfully.
+     * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
+     * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
+     * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
+     *
+     */
+
+    upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+        ConfigKeyVal *ck_old,
+        unc_keytype_operation_t op,
+        upll_keytype_datatype_t dt_type,
+        unc_key_type_t keytype,
+        DalDmlIntf *dmi,
+        bool &not_send_to_drv,
+        bool audit_update_phase);
 
   public:
     VrtIfMoMgr();
@@ -340,7 +369,8 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
     upll_rc_t MergeValidate(unc_key_type_t keytype,
                             const char *ctrlr_id,
                             ConfigKeyVal *ikey,
-                            DalDmlIntf *dmi);
+                            DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     upll_rc_t GetVexternal(ConfigKeyVal *ikey, 
                            upll_keytype_datatype_t data_type,
@@ -363,6 +393,21 @@ class VrtIfMoMgr : public VnodeChildMoMgr {
 
     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
                                  ConfigKeyVal *ikey);
+
+   /**
+     * @Brief Validates Same ip address present in another vnode
+     *        during VTN stiching.
+     *
+     * @param[in] org_vtn_ckv       Orginal VTN ConfigKeyVal.
+     * @param[in] rename_vtn_ckv    Rename VTN ConfigKeyVal.
+     * @param[in] dmi               Pointer to the DalDmlIntf(DB Interface)
+     *
+     * @retval UPLL_RC_SUCCESS            validation succeeded.
+     * @retval UPLL_RC_ERR_MERGE_CONFLICT Same ip address exist.
+     *
+     */
+    upll_rc_t ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
+                                ConfigKeyVal *rename_vtn_ckv, DalDmlIntf *dmi);
 };
 
 }  // namespace kt_momgr

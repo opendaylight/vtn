@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -25,7 +25,7 @@ namespace tclib {
 /* default argument count */
 #define IPC_DEFAULT_ARG_COUNT 0
 /* supported tclib services */
-#define TCLIB_IPC_SERVICES    17
+#define TCLIB_IPC_SERVICES    19
 
 /*
  * All Virtual Functions of TcLibInterface returns with 
@@ -33,7 +33,8 @@ namespace tclib {
  */
 typedef enum {
   TC_SUCCESS = 0,
-  TC_FAILURE
+  TC_FAILURE,
+  TC_SIMPLIFIED_AUDIT
 }TcCommonRet;
 
 /*
@@ -72,6 +73,8 @@ typedef enum {
   MSG_AUDIT_ABORT,
   MSG_GET_DRIVERID,
   MSG_CONTROLLER_TYPE,
+  MSG_AUTOSAVE_ENABLE,
+  MSG_AUTOSAVE_DISABLE,
   MSG_MAX
 }TcMsgOperType;
 
@@ -99,7 +102,9 @@ typedef enum {
   TCLIB_SETUP_COMPLETE,
   TCLIB_GET_DRIVERID,
   TCLIB_AUDIT_CONFIG,
-  TCLIB_CONTROLLER_TYPE
+  TCLIB_CONTROLLER_TYPE,
+  TCLIB_AUTOSAVE_ENABLE,
+  TCLIB_AUTOSAVE_DISABLE
 }TcLibServiceId;
 
 /*
@@ -141,7 +146,8 @@ typedef enum {
  */
 typedef enum {
   TC_AUDIT_FAILURE = 0,
-  TC_AUDIT_SUCCESS
+  TC_AUDIT_SUCCESS,
+  TC_SIMPLIFIED_AUDIT_SUCCESS
 }TcAuditResult;
 
 /*
@@ -186,6 +192,9 @@ typedef struct {
   uint32_t  resp_code;
   uint32_t  num_of_errors;
   std::list<uint32_t> key_list;
+  uint64_t commit_number;
+  uint64_t commit_date;
+  std::string commit_application;
 }TcControllerResult;
 
 /*

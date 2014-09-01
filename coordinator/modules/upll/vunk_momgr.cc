@@ -244,6 +244,8 @@ upll_rc_t VunknownMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
   if (okey != NULL) return UPLL_RC_ERR_GENERIC;
   if (req->get_key_type() != UNC_KT_VUNKNOWN) return UPLL_RC_ERR_GENERIC;
   ConfigVal *tmp1 = NULL, *tmp = (req)->get_cfg_val();
+  void *tkey = (req)->get_key();
+  if (tkey == NULL) return UPLL_RC_ERR_GENERIC;
 
   if (tmp) {
     if (tbl == MAINTBL) {
@@ -259,11 +261,9 @@ upll_rc_t VunknownMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
       tmp1 = new ConfigVal(IpctSt::kIpcStValVunknown, vunk_val);
     }
   };
-  void *tkey = (req != NULL) ? (req)->get_key() : NULL;
   key_vunknown *ikey = reinterpret_cast<key_vunknown *>(tkey);
   key_vunknown *vunk_key = reinterpret_cast<key_vunknown *>
-                                      (malloc(sizeof(key_vunknown)));
-  if (!vunk_key) { delete tmp1; return UPLL_RC_ERR_GENERIC;}
+                                      (ConfigKeyVal::Malloc(sizeof(key_vunknown)));
   memcpy(vunk_key, ikey, sizeof(key_vunknown));
   okey = new ConfigKeyVal(UNC_KT_VUNKNOWN, IpctSt::kIpcStKeyVunknown, vunk_key,
                           tmp1);
@@ -292,7 +292,7 @@ upll_rc_t VunknownMoMgr::UpdateConfigStatus(ConfigKeyVal *vunk_key,
   vunk_val = reinterpret_cast<val_vunknown *>(GetVal(vunk_key));
   val_vunknown *vunk_val2 = reinterpret_cast<val_vunknown *>(GetVal(upd_key));
   UPLL_LOG_TRACE("Key in Candidate %s",(vunk_key->ToStrAll()).c_str());
-  if (vunk_val == NULL) return UPLL_RC_ERR_GENERIC;
+  if (vunk_val == NULL || vunk_val2 == NULL) return UPLL_RC_ERR_GENERIC;
   if (op == UNC_OP_CREATE) {
     vunk_val->cs_row_status = cs_status;
   } else if (op == UNC_OP_UPDATE) {
@@ -461,6 +461,7 @@ upll_rc_t VunknownMoMgr::CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
   UPLL_FUNC_TRACE;
   val_vunknown *vunk_val = reinterpret_cast<val_vunknown *>(GetVal(ikey));
   val_vunknown *vunk_val1 = reinterpret_cast<val_vunknown *>(GetVal(okey));
+  if (!vunk_val || !vunk_val1) return UPLL_RC_ERR_GENERIC;
   if (vunk_val->valid[UPLL_IDX_DOMAIN_ID_VUN] == UNC_VF_VALID) {
     if (strncmp(reinterpret_cast<const char *>(vunk_val->domain_id),
                 reinterpret_cast<const char *>(vunk_val1->domain_id),
@@ -699,6 +700,7 @@ upll_rc_t VunknownMoMgr::IsReferenced(ConfigKeyVal *ikey,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
                                                 (GetMoManager(UNC_KT_VUNK_IF)));
+  if (mgr == NULL) return UPLL_RC_ERR_GENERIC;
   result_code = mgr->IsReferenced(ikey, dt_type, dmi);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code (%d)",

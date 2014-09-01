@@ -116,40 +116,71 @@ UncRespCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
                                      vector<void *> &val_struct,
                                      uint32_t data_type,
                                      uint32_t operation_type) {
+  if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
+      operation_type != UNC_OP_READ_SIBLING_BEGIN) {
+    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+  }
   pfc_log_debug("Inside ReadInternal of KT_LINK");
-  vector<key_link_t> vect_link_id;
-  vector<val_link_st_t> vect_val_link_st;
   uint32_t max_rep_ct = 1;
   if (operation_type != UNC_OP_READ) {
     max_rep_ct = UPPL_MAX_REP_CT;
   }
   // Get read response from database
+  val_link_st_t obj_link_val;
+  memset(&obj_link_val, '\0', sizeof(val_link_st_t));
   void *key_struct = key_val[0];
   void *void_val_struct = NULL;
-  if (!val_struct.empty()) {
-    void_val_struct = val_struct[0];
+  if ((!val_struct.empty()) && (val_struct[0] != NULL)) {
+    memcpy(&obj_link_val, (reinterpret_cast <val_link_st_t*>
+                                      (val_struct[0])),
+           sizeof(val_link_st_t));
+    void_val_struct = reinterpret_cast<void *>(&obj_link_val);
   }
+  UncRespCode read_status = UNC_RC_SUCCESS;
+  bool firsttime = true;
   uint32_t option = 0;
-  UncRespCode read_status = ReadLinkValFromDB(db_conn, key_struct,
-                                                 void_val_struct,
-                                                 data_type,
-                                                 operation_type,
-                                                 max_rep_ct,
-                                                 vect_val_link_st,
-                                                 vect_link_id, option,
-                                                 option);
-  key_val.clear();
-  val_struct.clear();
-  if (read_status == UNC_RC_SUCCESS) {
-    pfc_log_debug("Read operation is success");
-    for (unsigned int iIndex = 0 ; iIndex < vect_val_link_st.size();
-        ++iIndex) {
-      key_link_t *key_link = new key_link_t(vect_link_id[iIndex]);
-      val_link_st_t *val_link = new val_link_st_t(vect_val_link_st[iIndex]);
-      key_val.push_back(reinterpret_cast<void *>(key_link));
-      val_struct.push_back(reinterpret_cast<void *>(val_link));
+  do {
+    vector<key_link_t> vect_link_id;
+    vector<val_link_st_t> vect_val_link_st;
+    read_status = ReadLinkValFromDB(db_conn, key_struct,
+                                     void_val_struct,
+                                     data_type,
+                                     operation_type,
+                                     max_rep_ct,
+                                     vect_val_link_st,
+                                     vect_link_id, option,
+                                     option);
+    if (firsttime) {
+      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      key_val.clear();
+      val_struct.clear();
+      firsttime = false;
     }
-  }
+    if (read_status == UNC_RC_SUCCESS) {
+      pfc_log_debug("Read operation is success");
+      for (unsigned int iIndex = 0 ; iIndex < vect_val_link_st.size();
+          ++iIndex) {
+        key_link_t *key_link = new key_link_t(vect_link_id[iIndex]);
+        val_link_st_t *val_link = new val_link_st_t(vect_val_link_st[iIndex]);
+        key_val.push_back(reinterpret_cast<void *>(key_link));
+        val_struct.push_back(reinterpret_cast<void *>(val_link));
+      }
+    } else if ((read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE &&
+               val_struct.size() != 0)) {
+      read_status = UNC_RC_SUCCESS;
+    }
+    if ((vect_val_link_st.size() == UPPL_MAX_REP_CT) &&
+                     (operation_type != UNC_OP_READ)) {
+      pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
+                    operation_type,key_val.size());
+      key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
+      operation_type = UNC_OP_READ_SIBLING;
+      continue;
+    } else {
+      break;
+    }
+  } while(true);
   return read_status;
 }
 
@@ -324,7 +355,7 @@ UncRespCode Kt_Link::ReadBulkInternal(
   uint32_t index = 0;
   for (; index < no_of_query ; ++index) {
     if (kt_link_dbtableschema.primary_keys_.size() <2) {
-    pfc_log_debug("No record found");
+      pfc_log_debug("No record found");
       read_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
       break;
     }
@@ -359,7 +390,7 @@ UncRespCode Kt_Link::ReadBulkInternal(
                       max_rep_ct_new, max_rep_ct);
        for (uint32_t uindex = 1; uindex < max_rep_ct_new; uindex++) {
           pfc_log_debug("Ktlink:Row list Removed");
-          kt_link_dbtableschema.row_list_.pop_front();
+          kt_link_dbtableschema.DeleteRowListFrontElement();
         }
         max_rep_ct -= max_rep_ct_new;
 
@@ -395,7 +426,6 @@ UncRespCode Kt_Link::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                                 void* val_struct,
                                                 uint32_t operation,
                                                 uint32_t data_type) {
-  pfc_log_info("Performing Syntax Validation of KT_LINK");
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_ipcresp_t mandatory = PFC_TRUE;
 
@@ -496,7 +526,7 @@ UncRespCode Kt_Link::PerformSemanticValidation(
       pfc_log_error("DB Access failure");
       status = key_status;
     } else {
-      pfc_log_info("key instance not exist Create operation allowed");
+      pfc_log_debug("key not exist, create allowed");
     }
 
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
@@ -510,7 +540,7 @@ UncRespCode Kt_Link::PerformSemanticValidation(
       pfc_log_error("Hence update/delete/read operation not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
-      pfc_log_info("key instance exist update/del/read operation allowed");
+      pfc_log_debug("key exist, update/del/read oper allowed");
     }
   }
 
@@ -564,10 +594,10 @@ UncRespCode Kt_Link::HandleOperStatus(OdbcmConnectionHandler *db_conn,
         db_conn, data_type, reinterpret_cast<void*>(&ctr_key),
         ctrl_oper_status);
     if (read_status == UNC_RC_SUCCESS) {
-      pfc_log_info("Controller's oper_status %d", ctrl_oper_status);
+      pfc_log_debug("Ctr oper_status %d", ctrl_oper_status);
       if (ctrl_oper_status ==
           (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
-        pfc_log_info("Set Link oper status as up");
+        pfc_log_debug("Set Link oper status as up");
         link_oper_status = UPPL_LINK_OPER_UP;
       }
     } else {
@@ -837,10 +867,8 @@ void Kt_Link::PopulateDBSchemaForKtTable(
   val_link_st_t *obj_val_link = reinterpret_cast<val_link_st_t*>(val_struct);
 
   stringstream valid;
-  pfc_log_info("operation: %d", operation_type);
   // Controller_name
   string controller_name = (const char*)obj_key_link->ctr_key.controller_name;
-  pfc_log_info("controller name: %s", controller_name.c_str());
   PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -856,7 +884,6 @@ void Kt_Link::PopulateDBSchemaForKtTable(
     // Ignore switch_id1 key value
     switch_id1 = "";
   }
-  pfc_log_info("switch_id1: %s", switch_id1.c_str());
   PhyUtil::FillDbSchema(unc::uppl::LINK_SWITCH_ID1, switch_id1,
                         switch_id1.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
@@ -869,7 +896,6 @@ void Kt_Link::PopulateDBSchemaForKtTable(
     // Ignore switch_id2 key value
     switch_id2 = "";
   }
-  pfc_log_info("switch_id2: %s", switch_id2.c_str());
   PhyUtil::FillDbSchema(unc::uppl::LINK_SWITCH_ID2, switch_id2,
                         switch_id2.length(), DATATYPE_UINT8_ARRAY_256,
                         vect_table_attr_schema);
@@ -881,7 +907,6 @@ void Kt_Link::PopulateDBSchemaForKtTable(
     // Ignore port_id1 key value
     port_id1 = "";
   }
-  pfc_log_info("port_id1: %s", port_id1.c_str());
   PhyUtil::FillDbSchema(unc::uppl::LINK_PORT_ID1, port_id1,
                         port_id1.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -893,7 +918,6 @@ void Kt_Link::PopulateDBSchemaForKtTable(
     // Ignore port_id2 key value
     port_id2 = "";
   }
-  pfc_log_info("port_id2: %s", port_id2.c_str());
   PhyUtil::FillDbSchema(unc::uppl::LINK_PORT_ID2, port_id2,
                         port_id2.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -1128,8 +1152,6 @@ UncRespCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
                                     uint32_t option1,
                                     uint32_t option2,
                                     uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
-               operation_type, data_type);
 
   physical_response_header rsh = {session_id,
       configuration_id,
@@ -1151,7 +1173,7 @@ UncRespCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_LINK);
     err |= sess.addOutput(*obj_key_link);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -1172,7 +1194,7 @@ UncRespCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
       err |= sess.addOutput((uint32_t)UNC_KT_LINK);
       err |= sess.addOutput(*obj_key_link);
       if (err != 0) {
-        pfc_log_debug("addOutput failed for physical_response_header");
+        pfc_log_info("addOutput failed for physical_response_header");
         return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
       return UNC_RC_SUCCESS;
@@ -1222,7 +1244,7 @@ UncRespCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
     err |= sess.addOutput((uint32_t)UNC_KT_LINK);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
@@ -1291,6 +1313,11 @@ UncRespCode Kt_Link::ReadLinkValFromDB(
               option2 == UNC_OPT2_MATCH_SWITCH2 ||
               option2 == UNC_OPT2_MATCH_BOTH_SWITCH))) {
     pfc_log_debug("calling get sibling rows with filtering");
+    if(option2 == UNC_OPT2_MATCH_SWITCH2) {
+      pfc_log_debug("get sibling rows with reorder based on sw2");
+      kt_link_dbtableschema.frame_explicit_order_=
+        " ORDER BY controller_name, switch_id2, port_id2, switch_id1, port_id1 ";
+    }
     read_db_status = physical_layer->get_odbc_manager()->
         GetSiblingRows((unc_keytype_datatype_t)data_type, max_rep_ct,
                        kt_link_dbtableschema,
@@ -1334,7 +1361,7 @@ UncRespCode Kt_Link::ReadLinkValFromDB(
         pfc_log_debug("max_rep_ct_new=%d max_rep_ct=%d",
                       max_rep_ct_new, max_rep_ct);
         for (uint32_t uindex = 1; uindex < max_rep_ct_new; uindex++) {
-          kt_link_dbtableschema.row_list_.pop_front();
+          kt_link_dbtableschema.DeleteRowListFrontElement();
         }
         max_rep_ct -= max_rep_ct_new;
       } else {
@@ -1677,19 +1704,16 @@ void Kt_Link::PopulatePrimaryKeys(
   }
   } else {
     if (!port_id1.empty()) {
-      vect_prim_keys.push_back(LINK_PORT_ID1_STR);
       if (option2 == UNC_OPT2_MATCH_SWITCH1 ||
-          option2 == UNC_OPT2_MATCH_SWITCH2 ||
           option2 == UNC_OPT2_MATCH_BOTH_SWITCH) {
+        vect_prim_keys.push_back(LINK_PORT_ID1_STR);
         vect_prim_keys_operation.push_back(unc::uppl::GREATER);
       }
     }
 
     if (!port_id2.empty()) {
-      vect_prim_keys.push_back(LINK_PORT_ID2_STR);
-      if (option2 == UNC_OPT2_MATCH_SWITCH1 ||
-          option2 == UNC_OPT2_MATCH_SWITCH2 ||
-          option2 == UNC_OPT2_MATCH_BOTH_SWITCH) {
+      if (option2 == UNC_OPT2_MATCH_SWITCH2) {
+        vect_prim_keys.push_back(LINK_PORT_ID2_STR);
         vect_prim_keys_operation.push_back(unc::uppl::GREATER);
       }
     }

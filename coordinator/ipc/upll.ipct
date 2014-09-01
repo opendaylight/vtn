@@ -37,8 +37,9 @@ ipc_struct val_vtn {
 };
 
 ipc_struct val_rename_vtn {
-  UINT8  valid[1];
+  UINT8  valid[2];
   UINT8  new_name[32];
+  UINT8  rename_type;
 };
 
 ipc_struct val_vtn_st {
@@ -56,15 +57,16 @@ ipc_struct key_vtn_controller {
 };
 
 ipc_struct val_vtn_mapping_controller_st {
- UINT8     valid[8];
+ UINT8     valid[9];
  UINT8     switch_id[256];
  UINT8     port_name[32];
  UINT8     logical_port_id[320]; 
  UINT16    vlan_id;
  UINT8     tagged; 
  UINT8     map_type; 
- UINT8     vbr_name[32];
- UINT8     vbrif_name[32];
+ UINT8     vnode_type;
+ UINT8     vnode_name[32];
+ UINT8     vnode_if_name[32];
 };
 
 ipc_struct key_vtnstation_controller {
@@ -72,7 +74,7 @@ ipc_struct key_vtnstation_controller {
 };
 
 ipc_struct val_vtnstation_controller_st {
-  UINT8    valid[15];
+  UINT8    valid[16];
   UINT64   station_id;
   UINT64   created_time;
   UINT8    mac_addr[6];
@@ -85,9 +87,10 @@ ipc_struct val_vtnstation_controller_st {
   UINT8    map_status; 
   UINT8    vtn_name[32];
   UINT8    domain_id[32];
-  UINT8    vbr_name[32];
-  UINT8    vbrif_name[32];
-  UINT8    vbrif_status; 
+  UINT8    vnode_type;
+  UINT8    vnode_name[32];
+  UINT8    vnode_if_name[32];
+  UINT8    vnode_if_status; 
 };
 
 ipc_struct val_vtnstation_controller_stat {
@@ -133,8 +136,9 @@ ipc_struct val_vbr {
 };
 
 ipc_struct val_rename_vbr {
-  UINT8   valid[1];
+  UINT8   valid[2];
   UINT8   new_name[32];
+  UINT8   rename_type;
 };
 
 ipc_struct val_vbr_st {
@@ -218,8 +222,9 @@ ipc_struct val_vrt {
 };
 
 ipc_struct val_rename_vrt {
-  UINT8   valid[1];
+  UINT8   valid[2];
   UINT8   new_name[32];
+  UINT8   rename_type;
 };
 
 ipc_struct val_vrt_st {
@@ -515,8 +520,9 @@ ipc_struct val_vlink_st {
 };
 
 ipc_struct val_rename_vlink {
-  UINT8   valid[1];
+  UINT8   valid[2];
   UINT8   new_name[32];
+  UINT8   rename_type;
 };
 
 ##
@@ -546,8 +552,9 @@ ipc_struct val_flowlist {
 #
 
 ipc_struct val_rename_flowlist {
-  UINT8   valid[1];               # valid flag
+  UINT8   valid[2];               # valid flag
   UINT8   flowlist_newname[33];   # flowlist new name
+  UINT8   rename_type;
 };
 
 #
@@ -795,8 +802,9 @@ ipc_struct val_policingprofile {
 # PolicingProfile rename value
 #
 ipc_struct val_rename_policingprofile {
-  UINT8   valid[1];                     # valid flag
+  UINT8   valid[2];                     # valid flag
   UINT8   policingprofile_newname[33];  # policing profile new name
+  UINT8   rename_type;
 };
 
 #
@@ -867,8 +875,8 @@ ipc_struct val_policingmap_switch_st {
   UINT32      policer_id;         # policer id
   UINT8       switch_id[256];     # switch id
   UINT8       status;             # status
-  UINT8       vbr_name[32];       # vbridge name
-  UINT8       if_name[32];        # interface name
+  UINT8       vnode_name[32];     # vnode name
+  UINT8       vnode_if_name[32];  # vnode interface name
   UINT8       port_name[32];      # port name
   UINT16      vlanid;             # vlan identifier
   pom_stats   total;              # total statistics
@@ -937,8 +945,9 @@ ipc_struct val_vterm {
 # vTerminal rename value
 #
 ipc_struct val_rename_vterm {
-  UINT8   valid[1];                   
+  UINT8   valid[2];                   
   UINT8   new_name[32];
+  UINT8   rename_type;
 };
 
 #

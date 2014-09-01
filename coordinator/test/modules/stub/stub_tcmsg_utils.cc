@@ -112,6 +112,78 @@ TcUtilRet
       return TCUTIL_RET_SUCCESS;
     }
 
+TcUtilRet
+TcClientSessionUtils::get_uint8(pfc::core::ipc::ClientSession* csess,
+                                uint32_t index,
+                                uint8_t* data) {
+  if ( index == 0 ) {
+    *data = DRIVER_COUNT;
+  } else if ( index == 1 ) {
+    *data = UNC_CT_PFC;
+  } else if ( index == 2 || index == 7 ) {
+    *data = CNTRL_COUNT;
+  } else if ( index == 6 ) {
+    if ( stub_same_driverid ) {
+      *data = UNC_CT_PFC;
+    } else {
+      *data = UNC_CT_VNP;
+    }
+  }
+  return TCUTIL_RET_SUCCESS;
+}
+
+TcUtilRet
+    TcClientSessionUtils::get_uint64(pfc::core::ipc::ClientSession* csess,
+                                    uint32_t index,
+                                    uint64_t* data) {
+      if ( index == 0 ) {
+        *data = DRIVER_COUNT;
+      } else if ( index == 1 ) {
+        *data = UNC_CT_PFC;
+      } else if ( index == 2 || index == 7 ) {
+        *data = CNTRL_COUNT;
+      } else if ( index == 6 ) {
+        if ( stub_same_driverid ) {
+          *data = UNC_CT_PFC;
+        } else {
+          *data = UNC_CT_VNP;
+        }
+      }
+      return TCUTIL_RET_SUCCESS;
+    }
+
+
+
+TcUtilRet
+TcClientSessionUtils::set_uint64(pfc::core::ipc::ClientSession* csess,
+                                 uint64_t data) {
+  if ( stub_set_arg ) {
+    pfc_log_error("set_uint failed");
+    return TCUTIL_RET_FAILURE;
+  }
+
+  uint8_t err = 0;
+  if ( csess == NULL ) {
+    pfc_log_error("Session param is NULL");
+    return TCUTIL_RET_FAILURE;
+  }
+  err = csess->addOutput(data);
+  if ( err != 0 ) {
+    pfc_log_fatal("Appending data to ClientSession failed");
+    return TCUTIL_RET_FATAL;
+  }
+  return TCUTIL_RET_SUCCESS;
+}
+
+
+
+TcUtilRet TcServerSessionUtils::get_int32(
+                          pfc::core::ipc::ServerSession* ssess,
+                          uint32_t index,
+                          int32_t * data) {
+return TCUTIL_RET_SUCCESS;
+}
+
 
 TcUtilRet
     TcClientSessionUtils::set_uint32(pfc::core::ipc::ClientSession* csess,
@@ -147,7 +219,7 @@ TcUtilRet
       else
         return TCUTIL_RET_FAILURE;
     }
-
+/*
 TcUtilRet
     TcClientSessionUtils::get_uint8(pfc::core::ipc::ClientSession* csess,
                                     uint32_t index,
@@ -167,7 +239,7 @@ TcUtilRet
       }
       return TCUTIL_RET_SUCCESS;
     }
-
+*/
 TcUtilRet TcClientSessionUtils::get_uint32(
     pfc::core::ipc::ClientSession* csess,
     uint32_t index,

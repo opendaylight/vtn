@@ -41,6 +41,7 @@ class IpctUtil  {
     static string get_string(const key_ctr_t &k);
     static string get_string(const val_ctr_t &v);
     static string get_string(const val_ctr_st_t &v);
+    static string get_string(const val_ctr_commit_ver_t &v);
 
     static string get_string(const key_boundary_t &key_obj);
     static string get_string(const val_boundary_t &val_obj);

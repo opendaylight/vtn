@@ -134,7 +134,19 @@ TcOperStatus
   if (oper_type == unc::tclib::MSG_SETUP_COMPLETE) {
     tclock_->TcUpdateUncState(TC_ACT);
   }
-  tc_msg->SetData(database_type_, fail_oper_);
+
+  pfc_bool_t autosave_enabled = PFC_FALSE;
+  TcOperRet ret = db_hdlr_->GetConfTable(&autosave_enabled);
+  if ( ret == TCOPER_RET_FAILURE ) {
+    pfc_log_info("Database Read Failed for getting autosave");
+    return TC_OPER_FAILURE;
+  }
+  tc_msg->SetData(autosave_enabled);
+
+  if (oper_type == unc::tclib::MSG_AUDITDB) {
+    tc_msg->SetData(database_type_, fail_oper_);
+  }
+
   return TC_OPER_SUCCESS;
 }
 

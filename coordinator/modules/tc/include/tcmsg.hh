@@ -43,7 +43,9 @@ typedef enum {
   TCOPER_RET_FAILURE,
   TCOPER_RET_FATAL,
   TCOPER_RET_ABORT,
-  TCOPER_RET_UNKNOWN
+  TCOPER_RET_NO_DRIVER,
+  TCOPER_RET_UNKNOWN,
+  TCOPER_RET_SIMPLIFIED_AUDIT
 }TcOperRet;
 /*class to send notifications to all intended modules*/
 class TcMsg {
@@ -62,6 +64,8 @@ class TcMsg {
   static TcOperRet ValidateAuditDBAttributes(unc_keytype_datatype_t data_base,
                                              TcServiceType operation);
   /*setter functions*/
+
+  virtual void SetData(pfc_bool_t autosave_enabled){}
   virtual void SetData(unc_keytype_datatype_t target_db,
                        TcServiceType fail_oper) {}
 
@@ -78,6 +82,7 @@ class TcMsg {
   tclib::TcTransEndResult GetTransResult();
   TcOperRet SetTransResult(tclib::TcTransEndResult result);
   virtual void SetReconnect(pfc_bool_t force_reconnect){}
+  virtual void IsUserAudit(pfc_bool_t user_audit){}
   /*method to send response to VTN*/
   TcOperRet ForwardResponseInternal(pfc::core::ipc::ServerSession& srv_sess,
                                     pfc::core::ipc::ClientSession* clnt_sess,
@@ -116,11 +121,21 @@ class TcMsg {
   AbortOnFailVector abort_on_fail_;
 };
 
+/* Handles Autosave enable/disable */
+class TcMsgAutoSave : public TcMsg {
+ public:
+  TcMsgAutoSave(uint32_t sess_id, tclib::TcMsgOperType oper);
+  TcOperRet Execute();
+};
+
 /*handles SETUP and SETUP_COMPLETE notifications*/
 class TcMsgSetUp : public TcMsg {
  public:
   TcMsgSetUp(uint32_t sess_id, tclib::TcMsgOperType oper);
+  void SetData (pfc_bool_t autosave_enabled);
   TcOperRet Execute();
+ private:
+  pfc_bool_t autosave_enabled_;
 };
 /*handles NOTIFY_CONFIGID notification*/
 class TcMsgNotifyConfigId : public TcMsg {

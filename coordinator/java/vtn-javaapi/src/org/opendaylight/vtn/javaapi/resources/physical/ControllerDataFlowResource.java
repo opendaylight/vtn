@@ -80,7 +80,7 @@ public class ControllerDataFlowResource extends AbstractResource {
 	 * 
 	 * @return Error code
 	 * @throws VtnServiceException
-	 *             , in case vtn excpetion occurs
+	 *             , in case vtn exception occurs
 	 */
 	@Override
 	public final int get(final JsonObject requestBody)
@@ -153,7 +153,7 @@ public class ControllerDataFlowResource extends AbstractResource {
 	 * 
 	 * @param requestBody
 	 *            , for request purpose .
-	 * @return List , containing all URI paramters
+	 * @return List , containing all URI parameters
 	 */
 
 	private List<String> getUriParameters(final JsonObject requestBody) {

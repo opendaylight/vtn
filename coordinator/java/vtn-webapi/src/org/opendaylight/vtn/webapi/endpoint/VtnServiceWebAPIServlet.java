@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONObject;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.webapi.constants.ApplicationConstants;
@@ -62,7 +63,7 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			InitManager.initialize();
 			LOG.info("Successful initialization of VTN Service");
 		} catch (final Exception e) {
-			LOG.error("Servlet Initialization failed error " + e.getMessage());
+			LOG.error(e, "Servlet Initialization failed error " + e.getMessage());
 		}
 		LOG.trace("Complete VtnServiceWebAPIServlet#init()");
 	}
@@ -93,16 +94,16 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			super.service(request, response);
 		} catch (final VtnServiceWebAPIException e) {
 			VtnServiceCommonUtil.logErrorDetails(e.getErrorCode());
-			LOG.error("VTN Service erorr occurred : " + e.getMessage());
+			LOG.error(e, "VTN Service erorr occurred : " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(e
 					.getErrorCode());
 		} catch (final ClassCastException e) {
-			LOG.error("Internal server error " + e.getMessage());
+			LOG.error(e, "Internal server error " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_BAD_REQUEST
 							.getCode());
 		} catch (final Exception e) {
-			LOG.error("Internal server error " + e.getMessage());
+			LOG.error(e, "Internal server error " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 							.getCode());
@@ -111,17 +112,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				try {
 					createErrorResponse(request, response, serviceErrorJSON);
 				} catch (IOException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (NumberFormatException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (final VtnServiceWebAPIException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(e.getErrorCode());
 				}
@@ -152,16 +153,16 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		VtnServiceWebAPIHandler vtnServiceWebAPIHandler = null;
 		try {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
-			final String responseString = vtnServiceWebAPIHandler.get(request);
+			final JSONObject responseJson = vtnServiceWebAPIHandler.get(request);
 			response.setStatus(HttpServletResponse.SC_OK);
-			setResponseHeader(request, response, responseString,
+			setResponseHeader(request, response, responseJson,
 					VtnServiceCommonUtil.getContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_BAD_REQUEST
 							.getCode());
 		} catch (final VtnServiceWebAPIException e) {
-			LOG.error("VTN Service erorr occurred " + e.getMessage());
+			LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(e
 					.getErrorCode());
 		} finally {
@@ -169,17 +170,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				try {
 					createErrorResponse(request, response, serviceErrorJSON);
 				} catch (IOException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (NumberFormatException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (final VtnServiceWebAPIException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(e.getErrorCode());
 				}
@@ -214,16 +215,16 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		VtnServiceWebAPIHandler vtnServiceWebAPIHandler = null;
 		try {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
-			final String responseString = vtnServiceWebAPIHandler.post(request);
+			final JSONObject responseJson = vtnServiceWebAPIHandler.post(request);
 			response.setStatus(HttpServletResponse.SC_CREATED);
-			setResponseHeader(request, response, responseString,
+			setResponseHeader(request, response, responseJson,
 					VtnServiceCommonUtil.getContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 							.getCode());
 		} catch (final VtnServiceWebAPIException e) {
-			LOG.error("VTN Service erorr occurred " + e.getMessage());
+			LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(e
 					.getErrorCode());
 		} finally {
@@ -231,17 +232,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				try {
 					createErrorResponse(request, response, serviceErrorJSON);
 				} catch (IOException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (NumberFormatException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (final VtnServiceWebAPIException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(e.getErrorCode());
 				}
@@ -270,16 +271,16 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		VtnServiceWebAPIHandler vtnServiceWebAPIHandler = null;
 		try {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
-			final String responseString = vtnServiceWebAPIHandler.put(request);
+			final JSONObject responseJson = vtnServiceWebAPIHandler.put(request);
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-			setResponseHeader(request, response, responseString,
+			setResponseHeader(request, response, responseJson,
 					VtnServiceCommonUtil.getContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 							.getCode());
 		} catch (final VtnServiceWebAPIException e) {
-			LOG.error("VTN Service erorr occurred " + e.getMessage());
+			LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(e
 					.getErrorCode());
 		} finally {
@@ -287,17 +288,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				try {
 					createErrorResponse(request, response, serviceErrorJSON);
 				} catch (IOException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (NumberFormatException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (final VtnServiceWebAPIException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(e.getErrorCode());
 				}
@@ -326,17 +327,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 		VtnServiceWebAPIHandler vtnServiceWebAPIHandler = null;
 		try {
 			vtnServiceWebAPIHandler = new VtnServiceWebAPIHandler();
-			final String responseString = vtnServiceWebAPIHandler
+			final JSONObject responseJson = vtnServiceWebAPIHandler
 					.delete(request);
 			response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-			setResponseHeader(request, response, responseString,
+			setResponseHeader(request, response, responseJson,
 					VtnServiceCommonUtil.getContentType(request));
 		} catch (final IOException e) {
 			serviceErrorJSON = VtnServiceWebUtil
 					.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 							.getCode());
 		} catch (final VtnServiceWebAPIException e) {
-			LOG.error("VTN Service erorr occurred " + e.getMessage());
+			LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 			serviceErrorJSON = VtnServiceWebUtil.prepareErrResponseJson(e
 					.getErrorCode());
 		} finally {
@@ -344,17 +345,17 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 				try {
 					createErrorResponse(request, response, serviceErrorJSON);
 				} catch (IOException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (NumberFormatException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR
 									.getCode());
 				} catch (final VtnServiceWebAPIException e) {
-					LOG.error("VTN Service erorr occurred " + e.getMessage());
+					LOG.error(e, "VTN Service erorr occurred " + e.getMessage());
 					serviceErrorJSON = VtnServiceWebUtil
 							.prepareErrResponseJson(e.getErrorCode());
 				}
@@ -388,20 +389,21 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 	 *            the request
 	 * @param response
 	 *            the response
-	 * @see HttpServlet#doPut(HttpServletRequest, HttpServletResponse)
+	 * @see HttpServlet#setResponseHeader(HttpServletRequest, HttpServletResponse, JSONObject, String)
 	 */
 	private void setResponseHeader(final HttpServletRequest request,
-			final HttpServletResponse response, final String responseString,
+			final HttpServletResponse response, final JSONObject responseJSON,
 			final String contentType) throws IOException,
 			VtnServiceWebAPIException {
 		LOG.trace("Start VtnServiceWebAPIServlet#setResponseHeader()");
+		final JsonParser parser = new JsonParser();
 		response.setContentType(contentType);
 		response.setCharacterEncoding(ApplicationConstants.CHAR_ENCODING);
-		if (null != responseString && !responseString.isEmpty()) {
+		if (null != responseJSON && !responseJSON.toString().isEmpty()) {
 			// Set response status in cases where returned response in not
 			// success from JavaAPI
-			final JsonObject responseJson = DataConverter
-					.getConvertedRequestObject(responseString, contentType);
+			final JsonObject responseJson = (JsonObject) parser
+					.parse(responseJSON.toString());
 			if (responseJson.has(ApplicationConstants.ERROR)) {
 				String actualErrorCode = responseJson
 						.get(ApplicationConstants.ERROR).getAsJsonObject()
@@ -484,6 +486,8 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 					response.getWriter().write(responseJson.toString());
 				}
 			} else {
+				final String responseString = DataConverter.getConvertedResponse(responseJSON,
+												contentType);
 				response.getWriter().write(responseString);
 			}
 		}
@@ -505,17 +509,15 @@ public class VtnServiceWebAPIServlet extends HttpServlet {
 			throws VtnServiceWebAPIException, IOException {
 		String contentType = VtnServiceCommonUtil.getContentType(request);
 		if (contentType == null
-				|| !contentType
+				||(!contentType
 						.equalsIgnoreCase(ContentTypeEnum.APPLICATION_JSON
 								.getContentType())
-				|| !contentType
+				&& !contentType
 						.equalsIgnoreCase(ContentTypeEnum.APPLICATION_XML
-								.getContentType())) {
+								.getContentType()))) {
 			contentType = ContentTypeEnum.APPLICATION_JSON.getContentType();
 		}
-		final String responseString = DataConverter.getConvertedResponse(
-				serviceErrorJSON, contentType);
-		setResponseHeader(request, response, responseString, contentType);
+		setResponseHeader(request, response, serviceErrorJSON, contentType);
 	}
 
 }

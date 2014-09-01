@@ -12,7 +12,9 @@
 
 #include <string>
 #include <list>
+#include <map>
 
+#include "cxx/pfcxx/synch.hh"
 #include "uncxx/upll_log.hh"
 #include "upll/keytype_upll_ext.h"
 #include "unc/upll_errno.h"
@@ -28,8 +30,9 @@ class CtrlrMgr {
   class Ctrlr {
     public:
       friend class CtrlrMgr;
-      Ctrlr(const char *name, unc_keytype_ctrtype_t type, const char *version)
-        :name_(name), type_(type), version_(version) {
+      Ctrlr(const char *name, unc_keytype_ctrtype_t type, const char *version,
+            bool audit_type)
+        :name_(name), type_(type), version_(version), audit_type_(audit_type) {
         invalid_config_ = false;
         audit_done_ = false;
         config_done_ = false;
@@ -42,6 +45,7 @@ class CtrlrMgr {
         invalid_config_ = ctrlr.invalid_config_;
         audit_done_ = ctrlr.audit_done_;
         config_done_ = ctrlr.config_done_;
+        audit_type_ = ctrlr.audit_type_;
         datatype_ = datatype;
       }
       ~Ctrlr() {
@@ -59,6 +63,7 @@ class CtrlrMgr {
       bool config_done_;     // available only in running
       bool invalid_config_;  // Invalid config status after audit failure
                              // available only in running
+      bool audit_type_;      //  Auto Audit disable or Enable
       upll_keytype_datatype_t datatype_;
         // if it is Running, Ctrlr is available in both candidate and running
   };  // Class Ctrlr
@@ -106,6 +111,27 @@ class CtrlrMgr {
   upll_keytype_datatype_t MapDataType(const upll_keytype_datatype_t datatype);
   void CleanUp();
   void PrintCtrlrList();
+  upll_rc_t GetAuditType(const std::string &ctrlr_name,
+                        const upll_keytype_datatype_t datatype,
+                        bool *audit_type);
+  upll_rc_t UpdateAuditType(const std::string &ctrlr_name,
+                            const upll_keytype_datatype_t datatype,
+                            bool audit_type);
+  // Get list of invalid-config ctrlr
+  void GetInvalidConfigList(std::list<std::string> &invalid_config_ctr);
+  bool UpdatePathFault(const char *ctr_name, const char *domain_name,
+                       bool assert_alarm);
+  bool IsPathFaultOccured(const char *ctr_name, const char *domain_name);
+  void ClearPathfault(const char *ctr_name, const char *domain_name);
+
+  //disconnect port status handling
+  bool GetLogicalPortSt(const char *ctr_name, const char *logical_port,
+                        uint8_t &state);
+  void AddLogicalPort(const char *ctr_name, const char *logical_port,
+                      uint8_t state);
+  bool IsCtrDisconnected(const char *ctr_name);
+  void AddCtrToDisconnectList(const char *ctr_name);
+  void RemoveCtrFromDisconnectList(const char *ctr_name);
 
  private:
   CtrlrMgr() { }
@@ -116,6 +142,14 @@ class CtrlrMgr {
 
   static CtrlrMgr *singleton_instance_;
   std::list<Ctrlr*> ctrlrs_;
+
+  // path fault map <ctrlr, <domain, fault-count>>
+  std::map<std::string, std::map<std::string, uint32_t> > path_fault_map_;
+  pfc::core::ReadWriteLock path_fault_lock_;
+
+  // controller disconnect handling
+  std::map<std::string, std::map<std::string, uint8_t> > ctr_discon_map_;
+  pfc::core::ReadWriteLock ctr_discon_lock_;
 };
 
 }  // namespace config_momgr

@@ -19,6 +19,7 @@
 #include "cxx/pfcxx/ipc_server.hh"
 #include "cxx/pfcxx/ipc_client.hh"
 
+#include "ipc_event_queue.hh"
 #include "config_mgr.hh"
 
 namespace unc {
@@ -93,6 +94,8 @@ class UpllConfigSvc : public pfc::core::Module {
   UpllIpcEventHandler *pfcdriver_evhdlr_;
 
   pfc::core::Mutex ipc_event_mutex_;
+
+  unc::upll::ctrlr_events::UpllIpcEventQueue event_queue_;
 };
 
 class UpllIpcEventHandler : public pfc::core::ipc::IpcEventHandler {

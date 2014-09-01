@@ -38,7 +38,6 @@ namespace uppl {
 #define ODBCM_SIZE_8            8
 #define ODBCM_SIZE_9            9
 #define ODBCM_SIZE_11           11
-#define ODBCM_SIZE_13           13
 #define ODBCM_SIZE_14           14
 #define ODBCM_SIZE_15           15
 #define ODBCM_SIZE_16           16
@@ -206,6 +205,10 @@ typedef struct {
     SQLCHAR       svalid[ODBCM_SIZE_9+1];
     SQLSMALLINT   scs_row_status;
     SQLCHAR       scs_attr[ODBCM_SIZE_9+1];
+    SQLUBIGINT    scommit_number;
+    SQLUBIGINT    scommit_date;
+    SQLVARCHAR    szcommit_application[ODBCM_SIZE_256+1];
+    SQLVARCHAR    svalid_commit_version[ODBCM_SIZE_3+1];
     SQLLEN        cbname;
     SQLLEN        cbtype;
     SQLLEN        cbversion;
@@ -220,6 +223,10 @@ typedef struct {
     SQLLEN        cbvalid;
     SQLLEN        cbrowstatus;
     SQLLEN        cbcsattr;
+    SQLLEN        cbcommitnumber;
+    SQLLEN        cbcommitdate;
+    SQLLEN        cbcommitapplication;
+    SQLLEN        cbvalid_cv;
 }controller_table_t;
 
 /** 
@@ -464,14 +471,14 @@ class DBVarbind {
     /* 
      * Pointer to db table structures
      */
-    controller_table_t          *p_ctr_table;
-    ctr_domain_table_t          *p_domain_table;
-    logicalport_table_t         *p_logicalport_table;
-    logical_memberport_table_t  *p_logical_memberport_table;
-    switch_table_t              *p_switch_table;
-    port_table_t                *p_port_table;
-    link_table_t                *p_link_table;
-    boundary_table_t            *p_boundary_table;
+    controller_table_t                  *p_ctr_table;
+    ctr_domain_table_t                  *p_domain_table;
+    logicalport_table_t                 *p_logicalport_table;
+    logical_memberport_table_t          *p_logical_memberport_table;
+    switch_table_t                      *p_switch_table;
+    port_table_t                        *p_port_table;
+    link_table_t                        *p_link_table;
+    boundary_table_t                    *p_boundary_table;
     /** 
       * is_row_exists output structure
       */
@@ -487,6 +494,8 @@ class DBVarbind {
     SQLLEN *p_alarms_status_len;
     SQLLEN *p_mac_len;
     SQLLEN *p_speed_len;
+    SQLLEN *p_commit_number_len;
+    SQLLEN *p_commit_date_len;
 
   private:
     /** Binding methods for controller_table*/

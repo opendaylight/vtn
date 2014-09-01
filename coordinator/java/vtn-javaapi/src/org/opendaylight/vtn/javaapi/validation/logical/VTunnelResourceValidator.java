@@ -55,26 +55,26 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VTunnelsResource
 				&& ((VTunnelsResource) resource).getVtnName() != null
-				&& !((VTunnelsResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VTunnelsResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTunnelsResource) resource).getVtnName().trim(),
+					((VTunnelsResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		} else if (resource instanceof VTunnelResource
 				&& ((VTunnelResource) resource).getVtnName() != null
-				&& !((VTunnelResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VTunnelResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTunnelResource) resource).getVtnName().trim(),
+					((VTunnelResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTUNNELNAME);
 				if (((VTunnelResource) resource).getvTunnelName() != null
 						&& !((VTunnelResource) resource).getvTunnelName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTunnelResource) resource).getvTunnelName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((VTunnelResource) resource).getvTunnelName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -89,9 +89,8 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of VTunnel API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTunnelResource#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VTunnelResourceValidator");
@@ -114,7 +113,7 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -123,7 +122,7 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -163,7 +162,7 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VTUNNELNAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vTunnel
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VTUNNELNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for key: controller_id(mandatory)
 			if (isValid) {
@@ -172,33 +171,53 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 						&& vTunnel.getAsJsonPrimitive(
 								VtnServiceJsonConsts.CONTROLLERID)
 								.getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vTunnel.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vTunnel.getAsJsonPrimitive(
+											VtnServiceJsonConsts.CONTROLLERID)
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
 			}
+
+			// validation for key: label(mandatory)
+			setInvalidParameter(VtnServiceJsonConsts.LABEL);
+			if (isValid
+					&& vTunnel.has(VtnServiceJsonConsts.LABEL)
+					&& vTunnel.getAsJsonPrimitive(VtnServiceJsonConsts.LABEL)
+							.getAsString() != null) {
+				isValid = validator.isValidRange(
+						vTunnel.getAsJsonPrimitive(VtnServiceJsonConsts.LABEL)
+								.getAsString(),
+						VtnServiceJsonConsts.LONG_VAL_0,
+						VtnServiceJsonConsts.LONG_VAL_4294967295);
+			} else {
+				isValid = false;
+			}
+
+			// validation for key: DomainId(mandatory)
+			setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
+			if (isValid
+					&& vTunnel.has(VtnServiceJsonConsts.DOMAINID)
+					&& vTunnel
+							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
+							.getAsString() != null) {
+				isValid = validator.isValidDomainId(
+						vTunnel.getAsJsonPrimitive(
+								VtnServiceJsonConsts.DOMAINID).getAsString(),
+						VtnServiceJsonConsts.LEN_31);
+			} else {
+				isValid = false;
+			}
+
 			if (isValid) {
 				// validation for key: description(optional),
-				// vtn_name(optional), vtepgroup_name(optional), label(optional)
+				// vtn_name(optional), vtepgroup_name(optional)
 				isValid = commonValidations(isValid, vTunnel);
 			}
-			// validation for key: DomainId(optional)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-				if (vTunnel.has(VtnServiceJsonConsts.DOMAINID)
-						&& vTunnel.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
-					isValid = validator.isValidDomainId(vTunnel
-							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
-				} else {
-					isValid = false;
-				}
-			}
+
 		}
 		LOG.trace("complete VTunnelResourceValidator#validatePost()");
 		return isValid;
@@ -209,8 +228,7 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 	 * @param vTunnel
 	 * @return
 	 */
-	private boolean
-			commonValidations(boolean isValid, final JsonObject vTunnel) {
+	private boolean commonValidations(boolean isValid, final JsonObject vTunnel) {
 		LOG.trace("Start VTunnelResourceValidator#commonValidations()");
 		// validation for key: description(optional)
 		setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
@@ -221,12 +239,12 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 					.isValidMaxLength(
 							vTunnel.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127)
 					|| vTunnel
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString().trim().isEmpty();
+							.getAsString().isEmpty();
 		}
 		// validation for key: vtn_name(optional)
 		if (isValid) {
@@ -236,11 +254,11 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 							.getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vTunnel
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VTNNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| vTunnel
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VTNNAME)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
 		// validation for key: vtepgroup_name(optional)
@@ -251,22 +269,11 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VTEPGROUPNAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vTunnel
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VTEPGROUPNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| vTunnel
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VTEPGROUPNAME)
-								.getAsString().trim().isEmpty();
-			}
-		}
-		// validation for key: label(optional)
-		if (isValid) {
-			setInvalidParameter(VtnServiceJsonConsts.LABEL);
-			if (isValid && vTunnel.has(VtnServiceJsonConsts.LABEL)) {
-				isValid = validator.isValidRange(
-						vTunnel.getAsJsonPrimitive(VtnServiceJsonConsts.LABEL)
-								.getAsString().trim(),
-						VtnServiceJsonConsts.LONG_VAL_0,
-						VtnServiceJsonConsts.LONG_VAL_4294967295);
+								.getAsString().isEmpty();
 			}
 		}
 		LOG.trace("complete VTunnelResourceValidator#commonValidations()");
@@ -295,37 +302,25 @@ public class VTunnelResourceValidator extends VtnServiceValidator {
 			// validation for key: description(optional), vtn_name(optional),
 			// vtepgroup_name(optional), label(optional)
 			isValid = commonValidations(isValid, vTunnel);
-			// validation for key: controller_id(optional)
+			// validation for key: controller_id
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
-				if (vTunnel.has(VtnServiceJsonConsts.CONTROLLERID)
-						&& vTunnel.getAsJsonPrimitive(
-								VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString() != null
-						&& !vTunnel
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vTunnel.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+				if (vTunnel.has(VtnServiceJsonConsts.CONTROLLERID)) {
+					isValid = false;
 				}
 			}
-			// validation for key: DomainId(optional)
+			// validation for key: DomainId
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-				if (vTunnel.has(VtnServiceJsonConsts.DOMAINID)
-						&& vTunnel.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DOMAINID).getAsString() != null
-						&& !vTunnel
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.DOMAINID)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidDomainId(vTunnel
-							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+				if (vTunnel.has(VtnServiceJsonConsts.DOMAINID)) {
+					isValid = false;
+				}
+			}
+			// validation for key: label
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.LABEL);
+				if (vTunnel.has(VtnServiceJsonConsts.LABEL)) {
+					isValid = false;
 				}
 			}
 		}

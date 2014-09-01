@@ -51,8 +51,8 @@ BindInfo VbrMoMgr::vbr_bind_info[] = { { uudst::vbridge::kDbiVtnName, CFG_KEY,
                                        { uudst::vbridge::kDbiDownCount, ST_VAL,
                                          offsetof(val_db_vbr_st, down_count),
                                          uud::kDalUint32, 1 },
-                                       { uudst::vbridge::kDbiFaultCount, ST_VAL,
-                                         offsetof(val_db_vbr_st, fault_count),
+                                       { uudst::vbridge::kDbiUnknownCount, ST_VAL,
+                                         offsetof(val_db_vbr_st, unknown_count),
                                          uud::kDalUint32, 1 },
                                        { uudst::vbridge::kDbiValidCtrlrName,
                                          CFG_META_VAL, offsetof(val_vbr,
@@ -286,6 +286,11 @@ upll_rc_t VbrMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
                         parent_key->get_key())->vtn_key.vtn_name , (kMaxLenVtnName+1));
      }
      break;  
+    case UNC_KT_VRT_IF:
+      uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
+             reinterpret_cast<key_vrt_if *>(pkey)->vrt_key.vtn_key.vtn_name,
+             (kMaxLenVtnName+1));
+      break;
     case UNC_KT_VTN:
     default:
       uuu::upll_strncpy(vbr_key->vtn_key.vtn_name,
@@ -522,31 +527,67 @@ upll_rc_t VbrMoMgr::GetRenamedUncKey(ConfigKeyVal *ikey,
   }
   if (ctrlr_id) {
     SET_USER_DATA_CTRLR(unc_key, ctrlr_id);
-  }else 
+  }else
     dbop.matchop = kOpMatchNone;
   unc_key->AppendCfgVal(IpctSt::kIpcStValRenameVtn, rename_vnode);
+
+    uint8_t rename  = 0;
 //  UPLL_LOG_TRACE("Before Read from Rename Table %s", (unc_key->ToStrAll()).c_str());
+  dbop.inoutop = kOpInOutCtrlr | kOpInOutDomain ;
   result_code = ReadConfigDB(unc_key, dt_type, UNC_OP_READ, dbop, dmi,
                               RENAMETBL);
   if (result_code == UPLL_RC_SUCCESS) {
-//    uint8_t rename  = 0;
     key_vbr *vbr_key = reinterpret_cast<key_vbr *>(unc_key->get_key());
     if (strcmp(reinterpret_cast<char *>(ctrlr_key->vtn_key.vtn_name),
                reinterpret_cast<char*>(vbr_key->vtn_key.vtn_name))) {
       UPLL_LOG_DEBUG("Not Same Vtn Name");
       uuu::upll_strncpy(ctrlr_key->vtn_key.vtn_name, vbr_key->vtn_key.vtn_name,
                         (kMaxLenVtnName+1));
-//      rename |= VTN_RENAME;
+      rename |= VTN_RENAME;
     }
     if (strcmp(reinterpret_cast<char *>(ctrlr_key->vbridge_name),
                reinterpret_cast<const char *>(vbr_key->vbridge_name))) {
       UPLL_LOG_DEBUG("Not same Vbridge Name");
       uuu::upll_strncpy(ctrlr_key->vbridge_name, vbr_key->vbridge_name,
                         (kMaxLenVnodeName+1));
-//      rename |= VN_RENAME;
+      rename |= VN_RENAME;
     }
-    SET_USER_DATA(ikey, unc_key);
+  SET_USER_DATA(ikey, unc_key);
+  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+
+    upll_rc_t res_code = UPLL_RC_SUCCESS;
+    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+                                                       (GetMoManager(UNC_KT_VTN)));
+    if (!vtn_mgr) {
+      UPLL_LOG_DEBUG("mgr is NULL");
+      DELETE_IF_NOT_NULL(unc_key);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    DELETE_IF_NOT_NULL(unc_key);
+    res_code = vtn_mgr->GetChildConfigKey(unc_key, NULL);
+    if (res_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetChildConfigKey Failed with res_code %d",
+                     res_code);
+      return res_code;
+    }
+    SET_USER_DATA_CTRLR(unc_key, ctrlr_id);
+    key_vtn *vtn_key = reinterpret_cast<key_vtn *>(unc_key->get_key());
+    uuu::upll_strncpy(vtn_key->vtn_name, ctrlr_key->vtn_key.vtn_name,
+                      (kMaxLenVtnName+1));
+    res_code = vtn_mgr->GetRenamedUncKey(unc_key, dt_type,
+                                            dmi, ctrlr_id);
+    if (res_code == UPLL_RC_SUCCESS) {
+      if (strcmp(reinterpret_cast<char *>(ctrlr_key->vtn_key.vtn_name),
+                 reinterpret_cast<char*>(vtn_key->vtn_name))) {
+        UPLL_LOG_DEBUG("Not Same Vtn Name");
+        uuu::upll_strncpy(ctrlr_key->vtn_key.vtn_name, vtn_key->vtn_name,
+                          (kMaxLenVtnName+1));
+        rename |= VTN_RENAME;
+      }
+    }
+  SET_USER_DATA_CTRLR(ikey, ctrlr_id);
   }
+  SET_USER_DATA_FLAGS(ikey, rename);
   delete unc_key;
   return result_code;
 }
@@ -618,6 +659,11 @@ upll_rc_t VbrMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
 #endif
   if (rename == 0)
     return UPLL_RC_SUCCESS;
+  /* Read controller name from running rename table,
+   * since there is no rename table for audit case */
+  if (dt_type == UPLL_DT_AUDIT)
+    dt_type = UPLL_DT_RUNNING;
+
   result_code = GetChildConfigKey(okey, ikey);
   if (result_code != UPLL_RC_SUCCESS) {
      UPLL_LOG_DEBUG("Returning error %d",result_code);
@@ -627,31 +673,64 @@ upll_rc_t VbrMoMgr::GetRenamedControllerKey(ConfigKeyVal *ikey,
   DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr | kOpMatchDomain,
                                   kOpInOutFlag };
   result_code = ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop, dmi, RENAMETBL);
-  if (result_code != UPLL_RC_SUCCESS) {
+  if (result_code != UPLL_RC_SUCCESS &&
+      result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
     DELETE_IF_NOT_NULL(okey);
     return result_code;
   }
-  val_rename_vnode *rename_val = reinterpret_cast<val_rename_vnode *>
-                                                         (GetVal(okey));
-  if (!rename_val) {
-    UPLL_LOG_DEBUG("Val is Empty");
-    DELETE_IF_NOT_NULL(okey);
-    return UPLL_RC_ERR_GENERIC;
-  }
   key_vbr *ctrlr_key = reinterpret_cast<key_vbr *>(ikey->get_key());
-  if (!ctrlr_key) {
-    UPLL_LOG_DEBUG("Key is Empty");
+  if (result_code == UPLL_RC_SUCCESS) {
+    val_rename_vnode *rename_val = reinterpret_cast<val_rename_vnode *>
+        (GetVal(okey));
+    if (!rename_val) {
+      UPLL_LOG_DEBUG("Val is Empty");
+      DELETE_IF_NOT_NULL(okey);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    if (!ctrlr_key) {
+      UPLL_LOG_DEBUG("Key is Empty");
+      DELETE_IF_NOT_NULL(okey);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    UPLL_LOG_TRACE("Rename flag %d", rename);
+    if (rename & VTN_RENAME) { /* vtn renamed */
+      uuu::upll_strncpy(ctrlr_key->vtn_key.vtn_name, rename_val->ctrlr_vtn_name,
+                        (kMaxLenVtnName+1));
+    }
+    if (rename & VN_RENAME) { /* vnode renamed */
+      uuu::upll_strncpy(ctrlr_key->vbridge_name, rename_val->ctrlr_vnode_name,
+                        (kMaxLenVnodeName+1));
+    }
+  } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    MoMgrImpl *vtn_mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
+                                                       (GetMoManager(UNC_KT_VTN)));
+    if (!vtn_mgr) {
+      UPLL_LOG_DEBUG("mgr is NULL");
+      DELETE_IF_NOT_NULL(okey);
+      return UPLL_RC_ERR_GENERIC;
+    }
     DELETE_IF_NOT_NULL(okey);
-    return UPLL_RC_ERR_GENERIC;
-  }
-  UPLL_LOG_TRACE("Rename flag %d", rename);
-  if (rename & VTN_RENAME) { /* vtn renamed */
-    uuu::upll_strncpy(ctrlr_key->vtn_key.vtn_name, rename_val->ctrlr_vtn_name,
+    result_code = vtn_mgr->GetChildConfigKey(okey, NULL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetChildConfigKey Failed with result_code %d",
+                     result_code);
+      DELETE_IF_NOT_NULL(okey);
+      return result_code;
+    }
+    key_vtn *unc_key = reinterpret_cast<key_vtn *>(okey->get_key());
+    uuu::upll_strncpy(unc_key->vtn_name, ctrlr_key->vtn_key.vtn_name,
                       (kMaxLenVtnName+1));
-  }
-  if (rename & VN_RENAME) { /* vnode renamed */
-    uuu::upll_strncpy(ctrlr_key->vbridge_name, rename_val->ctrlr_vnode_name,
-                     (kMaxLenVnodeName+1));
+    SET_USER_DATA_CTRLR_DOMAIN(okey, *ctrlr_dom);
+    result_code = vtn_mgr->GetRenamedControllerKey(okey, dt_type,
+                                                   dmi, ctrlr_dom);
+    if (result_code == UPLL_RC_SUCCESS) {
+      if (strcmp(reinterpret_cast<char *>(ctrlr_key->vtn_key.vtn_name),
+                 reinterpret_cast<char*>(unc_key->vtn_name))) {
+        UPLL_LOG_DEBUG("Not Same Vtn Name");
+        uuu::upll_strncpy(ctrlr_key->vtn_key.vtn_name, unc_key->vtn_name,
+                          (kMaxLenVtnName+1));
+      }
+    }
   }
   SET_USER_DATA_FLAGS(ikey, rename);
   DELETE_IF_NOT_NULL(okey);
@@ -667,7 +746,6 @@ upll_rc_t VbrMoMgr::UpdateConfigStatus(ConfigKeyVal *vbr_key,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   val_vbr *vbr_val;
-  val_db_vbr_st *val_vbrst;
 
   unc_keytype_configstatus_t cs_status =
       (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED
@@ -679,14 +757,15 @@ upll_rc_t VbrMoMgr::UpdateConfigStatus(ConfigKeyVal *vbr_key,
 
   if (op == UNC_OP_CREATE) {
     vbr_val->cs_row_status = cs_status;
-    val_vbrst = reinterpret_cast<val_db_vbr_st *>
+    val_db_vbr_st *val_vbrst = reinterpret_cast<val_db_vbr_st *>
         (ConfigKeyVal::Malloc(sizeof(val_db_vbr_st)));
-    // val_vbrst->vbr_val_st.oper_status = UPLL_OPER_STATUS_UNINIT;
-    val_vbrst->vbr_val_st.oper_status = 
-         (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)? 
-         UPLL_OPER_STATUS_UNKNOWN:UPLL_OPER_STATUS_DOWN;
+    if(driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+      val_vbrst->vbr_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
+    } else {
+      val_vbrst->vbr_val_st.oper_status = UPLL_OPER_STATUS_UNINIT;
+    }
     val_vbrst->down_count  = 0;
-    val_vbrst->fault_count  = 0;
+    val_vbrst->unknown_count  = 0;
     val_vbrst->vbr_val_st.valid[UPLL_IDX_OPER_STATUS_VBRS] = UNC_VF_VALID;
     vbr_key->AppendCfgVal(IpctSt::kIpcStValVbrSt, val_vbrst);
   } else if (op == UNC_OP_UPDATE) {
@@ -870,7 +949,8 @@ upll_rc_t VbrMoMgr::UpdateAuditConfigStatus(
 upll_rc_t VbrMoMgr::MergeValidate(unc_key_type_t keytype,
                                   const char *ctrlr_id,
                                   ConfigKeyVal *ikey,
-                                  DalDmlIntf *dmi) {
+                                  DalDmlIntf *dmi,
+                                  upll_import_type import_type) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
@@ -897,7 +977,93 @@ upll_rc_t VbrMoMgr::MergeValidate(unc_key_type_t keytype,
     if (dup_key) delete dup_key;
      return result_code;
   }
+
   ConfigKeyVal *travel = dup_key;
+  while (travel) {
+    /*
+     * Checks the Val structure is available or not.If availabl
+     * Checks Host address value is available or not in import ckval
+     */
+    result_code = DupConfigKeyVal(tkey, travel, MAINTBL);
+
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG(" DupConfigKeyVal is Failed");
+      if (tkey) delete tkey;
+      if (dup_key) delete dup_key;
+      return result_code;
+    }
+   /* Same Name should not present in the vnodes in running*/
+    if (import_type == UPLL_IMPORT_TYPE_FULL) {
+      result_code = VnodeChecks(tkey, UPLL_DT_CANDIDATE, dmi);
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
+        UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
+        ikey->ResetWith(tkey);
+        DELETE_IF_NOT_NULL(tkey);
+        if (dup_key) delete dup_key;
+        UPLL_LOG_DEBUG("VBridge Name Conflict %s", (ikey->ToStrAll()).c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+    } else {
+      result_code = PartialImport_VnodeChecks(tkey,
+                                  UPLL_DT_CANDIDATE, ctrlr_id ,dmi);
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
+        UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
+        ikey->ResetWith(tkey);
+        DELETE_IF_NOT_NULL(tkey);
+        if (dup_key) delete dup_key;
+        UPLL_LOG_DEBUG("VBridge Name Conflict %s", (ikey->ToStrAll()).c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+    }
+    /* Any other DB error */
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG("VnodeChecks Failed %d", result_code);
+       if (tkey) delete tkey;
+       if (dup_key) delete dup_key;
+      return result_code;
+    }
+    result_code = MergeValidateIpAddress(travel, UPLL_DT_CANDIDATE,
+        dmi, ctrlr_id, import_type);
+    if (UPLL_RC_SUCCESS != result_code) {
+      /* If Merge conflict ikey should reset with that ConfigKeyVal */
+      if (result_code == UPLL_RC_ERR_MERGE_CONFLICT) {
+        ikey->ResetWith(tkey);
+        delete dup_key;
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+      if (dup_key) delete dup_key;
+      return result_code;
+    }
+    DELETE_IF_NOT_NULL(tkey);
+    travel = travel->get_next_cfg_key_val();
+  }
+  if (dup_key)
+    delete dup_key;
+  return result_code;
+}
+
+
+#if 0
+  while (travel) {
+    result_code = MergeValidateIpAddress(travel, UPLL_DT_CANDIDATE,
+                                         dmi, ctrlr_id, import_type);
+    if (result_code != UPLL_RC_SUCCESS) {
+      /* If Merge conflict ikey should reset with that ConfigKeyVal */
+      if (result_code == UPLL_RC_ERR_MERGE_CONFLICT) {
+        ikey->ResetWith(tkey);
+        delete dup_key;
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+      if (dup_key) delete dup_key;
+      return result_code;
+    }
+    travel = travel->get_next_cfg_key_val();
+  }  //  while end
+  if (dup_key)
+    delete dup_key;
+  return result_code;
+}
+
   while (travel) {
     /*
      * Checks the Val structure is available or not.If availabl
@@ -912,14 +1078,19 @@ upll_rc_t VbrMoMgr::MergeValidate(unc_key_type_t keytype,
       return result_code;
     }
    /* Same Name should not present in the vnodes in running*/
-    result_code = VnodeChecks(tkey, UPLL_DT_CANDIDATE, dmi);
-    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
+    if (import_type == UPLL_IMPORT_TYPE_FULL) {
+      result_code = VnodeChecks(tkey, UPLL_DT_CANDIDATE, dmi);
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code ||
         UPLL_RC_ERR_CFG_SEMANTIC == result_code) {
-      ikey->ResetWith(tkey);
-      if (tkey) delete tkey;
-      if (dup_key) delete dup_key;
-      UPLL_LOG_DEBUG("VBridge Name Conflict %s", (ikey->ToStrAll()).c_str());
-      return UPLL_RC_ERR_MERGE_CONFLICT;
+        ikey->ResetWith(tkey);
+        if (tkey) delete tkey;
+        if (dup_key) delete dup_key;
+        UPLL_LOG_DEBUG("VBridge Name Conflict %s", (ikey->ToStrAll()).c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+    } else {
+      result_code = PartialImport_VnodeChecks(tkey,
+                                  UPLL_DT_CANDIDATE, ctrlr_id ,dmi);
     }
     /* Any other DB error */
     if (UPLL_RC_SUCCESS != result_code) {
@@ -942,18 +1113,38 @@ upll_rc_t VbrMoMgr::MergeValidate(unc_key_type_t keytype,
       tval->valid[UPLL_IDX_CONTROLLER_ID_VBR] = UNC_VF_INVALID;
       tval->valid[UPLL_IDX_DESC_VBR] = UNC_VF_INVALID;
 
-    /*Checsk the hostaddress should not be present same vtn */
-       memset(reinterpret_cast<key_vbr_t *>
-                 (tkey->get_key())->vbridge_name, 0, (kMaxLenVnodeName+1));
-       result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dbop, dmi,
-                                   MAINTBL);
+      /*Checsk the hostaddress should not be present same vtn */
+      memset(reinterpret_cast<key_vbr_t *>
+          (tkey->get_key())->vbridge_name, 0, (kMaxLenVnodeName+1));
+      result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dbop1, dmi,
+          MAINTBL);
+
+      result_code = MergeValidateIpAddress(travel, UPLL_DT_CANDIDATE,
+                                         dmi, ctrlr_id, import_type);
       if (UPLL_RC_SUCCESS == result_code) {
-        ikey->ResetWith(tkey);
-        if (tkey) delete tkey;
-        if(dup_key) delete dup_key;
-        UPLL_LOG_DEBUG("VBridge Host Address Conflict");
-        return UPLL_RC_ERR_MERGE_CONFLICT;
+        if (import_type == UPLL_IMPORT_TYPE_FULL) {
+          ikey->ResetWith(tkey);
+          if (tkey) delete tkey;
+          if (dup_key) delete dup_key;
+          UPLL_LOG_DEBUG("VBridge Host Address Conflict");
+          return UPLL_RC_ERR_MERGE_CONFLICT;
+        } else { 
+          uint8_t *ctrlr_name = NULL;
+          GET_USER_DATA_CTRLR(tkey,ctrlr_name);
+          if (strcmp(ctrlr_id,(const char *)ctrlr_name)) {
+            UPLL_LOG_INFO("controller names are mismatched");
+            return UPLL_RC_ERR_MERGE_CONFLICT;
+          }
+ 
+          if (strcmp(reinterpret_cast< const char *>(reinterpret_cast<key_vbr_t *>(
+              ikey->get_key())->vtn_key.vtn_name), reinterpret_cast< const char *>
+             (reinterpret_cast<key_vbr_t *>(tkey->get_key())->vtn_key.vtn_name))) {
+            UPLL_LOG_INFO("vtn names are mismatched");
+            return UPLL_RC_ERR_MERGE_CONFLICT;
+          }
+        }
       }
+
       /* Any other DB error */
       if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
         UPLL_LOG_DEBUG("ReadConfigDB Failed %d", result_code);
@@ -961,18 +1152,18 @@ upll_rc_t VbrMoMgr::MergeValidate(unc_key_type_t keytype,
         if (dup_key) delete dup_key;
         return result_code;
       }
-    }
-    if (tkey) {
+ 
+      if (tkey) {
       delete tkey;
       tkey = NULL; 
-    }
+      }
     travel = travel->get_next_cfg_key_val();
   }
   if (dup_key)
     delete dup_key;
   return result_code;
 }
-
+#endif
 upll_rc_t VbrMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
                                     ConfigKeyVal *ikey) {
   if (!ikey || !(ikey->get_key())) return UPLL_RC_ERR_GENERIC;
@@ -1857,64 +2048,53 @@ bool VbrMoMgr::CompareValidValue(void *&val1,
   val_vbr_t *val_vbr1 = reinterpret_cast<val_vbr_t *>(val1);
   val_vbr_t *val_vbr2 = reinterpret_cast<val_vbr_t *>(val2);
   if (!val_vbr2) {
-      UPLL_LOG_TRACE("Invalid param");
-      return UPLL_RC_ERR_GENERIC;
+    UPLL_LOG_TRACE("Invalid param");
+    return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
-        loop < sizeof(val_vbr1->valid) / sizeof(uint8_t); ++loop) {
-      if (UNC_VF_INVALID == val_vbr1->valid[loop]
-          && UNC_VF_VALID == val_vbr2->valid[loop]) 
-        val_vbr1->valid[loop] = UNC_VF_VALID_NO_VALUE;
+       loop < sizeof(val_vbr1->valid) / sizeof(uint8_t); ++loop) {
+    if (UNC_VF_INVALID == val_vbr1->valid[loop]
+        && UNC_VF_VALID == val_vbr2->valid[loop]) 
+      val_vbr1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  /* Specify the configured ip address for
-   * PFC to clear the configured IP address
-   */
-  if (!copy_to_running) {
-    if (UNC_VF_VALID_NO_VALUE == val_vbr1->valid[UPLL_IDX_HOST_ADDR_VBR]) {
-       memcpy(&val_vbr1->host_addr, &val_vbr2->host_addr,
-                sizeof(val_vbr2->host_addr));
-    }
-    if (UNC_VF_VALID_NO_VALUE == val_vbr1->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR]) {
-      val_vbr1->host_addr_prefixlen = val_vbr2->host_addr_prefixlen;
-    }
-  }
-  if (UNC_VF_INVALID != val_vbr1->valid[UPLL_IDX_DESC_VBR]) {
-    if (!copy_to_running || 
-        ((UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_DESC_VBR]) &&
-        !strcmp(reinterpret_cast<char*>(val_vbr1->vbr_description),
-                  reinterpret_cast<char*>(val_vbr2->vbr_description))))
+  if (copy_to_running) {
+    if (UNC_VF_INVALID != val_vbr1->valid[UPLL_IDX_DESC_VBR]) {
+      if ((UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_DESC_VBR]) &&
+          !strcmp(reinterpret_cast<char*>(val_vbr1->vbr_description),
+                  reinterpret_cast<char*>(val_vbr2->vbr_description)))
         val_vbr1->valid[UPLL_IDX_DESC_VBR] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_CONTROLLER_ID_VBR]
-      && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_CONTROLLER_ID_VBR]) {
-    if (!strcmp(reinterpret_cast<char*>(val_vbr1->controller_id),
-                reinterpret_cast<char*>(val_vbr2->controller_id)))
-      val_vbr1->valid[UPLL_IDX_CONTROLLER_ID_VBR] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_DOMAIN_ID_VBR]
-      && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_DOMAIN_ID_VBR]) {
-    if (!strcmp(reinterpret_cast<char*>(val_vbr1->domain_id),
-                reinterpret_cast<char*>(val_vbr2->domain_id)))
-      val_vbr1->valid[UPLL_IDX_DOMAIN_ID_VBR] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_HOST_ADDR_VBR]
-      && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_HOST_ADDR_VBR]) {
-    if (!memcmp(&val_vbr1->host_addr, &val_vbr2->host_addr,
-                sizeof(val_vbr2->host_addr)))
-      val_vbr1->valid[UPLL_IDX_HOST_ADDR_VBR] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR]
-      && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR]) {
-    if (val_vbr1->host_addr_prefixlen == val_vbr2->host_addr_prefixlen)
-      val_vbr1->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_CONTROLLER_ID_VBR]
+        && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_CONTROLLER_ID_VBR]) {
+      if (!strcmp(reinterpret_cast<char*>(val_vbr1->controller_id),
+                  reinterpret_cast<char*>(val_vbr2->controller_id)))
+        val_vbr1->valid[UPLL_IDX_CONTROLLER_ID_VBR] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_DOMAIN_ID_VBR]
+        && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_DOMAIN_ID_VBR]) {
+      if (!strcmp(reinterpret_cast<char*>(val_vbr1->domain_id),
+                  reinterpret_cast<char*>(val_vbr2->domain_id)))
+        val_vbr1->valid[UPLL_IDX_DOMAIN_ID_VBR] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_HOST_ADDR_VBR]
+        && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_HOST_ADDR_VBR]) {
+      if (!memcmp(&val_vbr1->host_addr, &val_vbr2->host_addr,
+                  sizeof(val_vbr2->host_addr)))
+        val_vbr1->valid[UPLL_IDX_HOST_ADDR_VBR] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_VALID == val_vbr1->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR]
+        && UNC_VF_VALID == val_vbr2->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR]) {
+      if (val_vbr1->host_addr_prefixlen == val_vbr2->host_addr_prefixlen)
+        val_vbr1->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR] = UNC_VF_INVALID;
+    }
   }
   // Description is not send to Controller
   if (!copy_to_running)
     val_vbr1->valid[UPLL_IDX_DESC_VBR] = UNC_VF_INVALID;
   for (unsigned int loop = 0;
-      loop < sizeof(val_vbr1->valid) / sizeof(uint8_t); ++loop) {
+       loop < sizeof(val_vbr1->valid) / sizeof(uint8_t); ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_vbr1->valid[loop]) ||
-       (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vbr1->valid[loop])) {
+        (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vbr1->valid[loop])) {
       invalid_attr = false;
       break;
     }
@@ -1929,6 +2109,10 @@ upll_rc_t VbrMoMgr::IsReferenced(ConfigKeyVal *ikey,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
                                                 (GetMoManager(UNC_KT_VBR_IF)));
+  if (!mgr) {
+    UPLL_LOG_DEBUG("Invalid MoMgr");
+    return UPLL_RC_ERR_GENERIC;
+  }
   result_code = mgr->IsReferenced(ikey, dt_type, dmi);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code (%d)",
@@ -1939,6 +2123,62 @@ upll_rc_t VbrMoMgr::IsReferenced(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 
+upll_rc_t VbrMoMgr::ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
+                                      ConfigKeyVal *rename_vtn_ckv,
+                                      DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t    result_code = UPLL_RC_SUCCESS;
+  DbSubOp      dbop        = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
+  ConfigKeyVal *vbr_ckv    = NULL;
+
+  if (!org_vtn_ckv || !org_vtn_ckv->get_key() ||
+      !rename_vtn_ckv || !rename_vtn_ckv->get_key()) {
+    UPLL_LOG_DEBUG("Input is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  result_code = GetChildConfigKey(vbr_ckv, org_vtn_ckv);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey Failed");
+    return result_code;
+  }
+
+  /* Gets All VBRIDGE ConfigKeyVall based on original vtn name */
+  result_code = ReadConfigDB(vbr_ckv, UPLL_DT_IMPORT, UNC_OP_READ, dbop, dmi,
+                             MAINTBL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)
+      result_code = UPLL_RC_SUCCESS;
+
+    DELETE_IF_NOT_NULL(vbr_ckv);
+    return result_code;
+  }
+
+  uint8_t *vtn_rename = reinterpret_cast<key_vtn_t*>(
+      rename_vtn_ckv->get_key())->vtn_name;
+  ConfigKeyVal *travel = vbr_ckv;
+  while (travel) {
+    /* Verifies whether the same hostaddress is exist under the
+     * new vtn name */
+    uuu::upll_strncpy(reinterpret_cast<key_vbr_t*>(
+                   travel->get_key())->vtn_key.vtn_name,
+                   vtn_rename, (kMaxLenVtnName + 1));
+    result_code = MergeValidateIpAddress(travel, UPLL_DT_IMPORT, dmi, NULL,
+                                         UPLL_IMPORT_TYPE_FULL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("Vbridge host address validation failed "
+                     "during VTN stiching");
+      DELETE_IF_NOT_NULL(vbr_ckv);
+      return result_code;
+    }
+
+    travel = travel->get_next_cfg_key_val();
+  }
+  DELETE_IF_NOT_NULL(vbr_ckv);
+  return UPLL_RC_SUCCESS;
+}
+#if 0
 upll_rc_t VbrMoMgr::IsHostAddrAndPrefixLenInUse(ConfigKeyVal *ckv, DalDmlIntf *dmi, 
 					     IpcReqRespHeader *req) {
   UPLL_FUNC_TRACE;
@@ -1978,6 +2218,8 @@ upll_rc_t VbrMoMgr::IsHostAddrAndPrefixLenInUse(ConfigKeyVal *ckv, DalDmlIntf *d
 
   vbr_val->host_addr = vbrval->host_addr;
   vbr_val->valid[UPLL_IDX_HOST_ADDR_VBR] = UNC_VF_VALID;
+  vbr_val->host_addr_prefixlen = vbrval->host_addr_prefixlen;
+  vbr_val->valid[UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR] = UNC_VF_VALID;
   ckv_vbr->AppendCfgVal(IpctSt::kIpcStValVbr, vbr_val);
 
   UPLL_LOG_TRACE(" existence check %s",(ckv_vbr->ToStrAll()).c_str());
@@ -1996,7 +2238,7 @@ upll_rc_t VbrMoMgr::IsHostAddrAndPrefixLenInUse(ConfigKeyVal *ckv, DalDmlIntf *d
   }
   return UPLL_RC_SUCCESS;
 }
-
+#endif
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

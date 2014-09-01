@@ -160,8 +160,9 @@ class Kt_Switch : public Kt_State_Base {
                                          memcmp(
                                              switch_val1.software,
                                              switch_val2.software,
-                                             sizeof(switch_val1.software))
-    == 0) {
+                                sizeof(switch_val1.software)) == 0 &&
+                                switch_val1.alarms_status ==
+                                switch_val2.alarms_status ) {
       delete []ip_value1;
       delete []ip_value2;
       return PFC_TRUE;

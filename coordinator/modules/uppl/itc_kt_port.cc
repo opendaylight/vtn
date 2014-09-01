@@ -185,7 +185,7 @@ UncRespCode Kt_Port::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
       delete_status = UNC_UPPL_RC_ERR_DB_DELETE;
     }
   } else {
-    pfc_log_info("Delete of a port in data_type(%d) is success",
+    pfc_log_info("Delete of a port in dt(%d) is success",
                  data_type);
     delete_status = UNC_RC_SUCCESS;
   }
@@ -209,6 +209,11 @@ UncRespCode Kt_Port::ReadInternal(OdbcmConnectionHandler *db_conn,
                                      vector<void *> &val_struct,
                                      uint32_t data_type,
                                      uint32_t operation_type) {
+  if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
+      operation_type != UNC_OP_READ_SIBLING_BEGIN) {
+    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+  }
   pfc_log_debug("Processing Kt_Port::ReadInternal");
   vector<key_port_t> vect_port_id;
   vector<val_port_st_t> vect_val_port_st;
@@ -217,35 +222,58 @@ UncRespCode Kt_Port::ReadInternal(OdbcmConnectionHandler *db_conn,
     max_rep_ct = UPPL_MAX_REP_CT;
   }
   // Get read response from database
+  val_port_st_t obj_port_val;
+  memset(&obj_port_val, '\0', sizeof(val_port_st_t));
   void *key_struct = key_val[0];
   void *void_val_struct = NULL;
-  if (!val_struct.empty()) {
-    void_val_struct = val_struct[0];
+  if ((!val_struct.empty()) && (val_struct[0] != NULL)) {
+    memcpy(&obj_port_val, (reinterpret_cast <val_port_st_t*>
+                                      (val_struct[0])),
+           sizeof(val_port_st_t)); 
+    void_val_struct = reinterpret_cast<void *>(&obj_port_val);
   }
-  UncRespCode read_status = ReadPortValFromDB(db_conn,
-                                                 key_struct,
-                                                 void_val_struct,
-                                                 data_type,
-                                                 operation_type,
-                                                 max_rep_ct,
-                                                 vect_val_port_st,
-                                                 vect_port_id);
-  key_val.clear();
-  val_struct.clear();
-  pfc_log_info("ReadPortValFromDB returned %d with response size %"
-               PFC_PFMT_SIZE_T, read_status,
-               vect_val_port_st.size());
-  if (read_status == UNC_RC_SUCCESS) {
-    pfc_log_debug("ReadPortValFromDB returned %d with response size %"
-                  PFC_PFMT_SIZE_T, read_status, vect_val_port_st.size());
-    for (unsigned int iIndex = 0 ; iIndex < vect_val_port_st.size();
-        ++iIndex) {
-      key_port_t *key_port = new key_port_t(vect_port_id[iIndex]);
-      val_port_st_t *val_port = new val_port_st_t(vect_val_port_st[iIndex]);
-      key_val.push_back(reinterpret_cast<void *>(key_port));
-      val_struct.push_back(reinterpret_cast<void *>(val_port));
+  UncRespCode read_status = UNC_RC_SUCCESS;
+  bool firsttime = true;
+  do {
+    read_status = ReadPortValFromDB(db_conn,
+                                     key_struct,
+                                     void_val_struct,
+                                     data_type,
+                                     operation_type,
+                                     max_rep_ct,
+                                     vect_val_port_st,
+                                     vect_port_id);
+    if (firsttime) {
+      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      key_val.clear();
+      val_struct.clear();
+      firsttime = false;
     }
-  }
+    if (read_status == UNC_RC_SUCCESS) {
+      pfc_log_debug("ReadPortValFromDB returned %d with response size %"
+                  PFC_PFMT_SIZE_T, read_status, vect_val_port_st.size());
+      for (unsigned int iIndex = 0 ; iIndex < vect_val_port_st.size();
+          ++iIndex) {
+        key_port_t *key_port = new key_port_t(vect_port_id[iIndex]);
+        val_port_st_t *val_port = new val_port_st_t(vect_val_port_st[iIndex]);
+        key_val.push_back(reinterpret_cast<void *>(key_port));
+        val_struct.push_back(reinterpret_cast<void *>(val_port));
+      }
+    } else if ((read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE &&
+               val_struct.size() != 0)) {
+      read_status = UNC_RC_SUCCESS;
+    }
+    if ((vect_val_port_st.size() == UPPL_MAX_REP_CT) &&
+                     (operation_type != UNC_OP_READ)) {
+      pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
+                    operation_type,key_val.size());
+      key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
+      operation_type = UNC_OP_READ_SIBLING;
+      continue;
+    } else {
+      break;
+    }
+  } while(true);
   return read_status;
 }
 
@@ -273,7 +301,6 @@ UncRespCode Kt_Port::ReadBulk(OdbcmConnectionHandler *db_conn,
                                  pfc_bool_t parent_call,
                                  pfc_bool_t is_read_next,
                                  ReadRequest *read_req) {
-  pfc_log_info("Processing ReadBulk of Kt_Port");
   UncRespCode read_status = UNC_RC_SUCCESS;
   key_port_t *obj_key_port= reinterpret_cast<key_port_t*>(key_struct);
   if ((unc_keytype_datatype_t)data_type != UNC_DT_STATE) {
@@ -457,7 +484,6 @@ UncRespCode Kt_Port::PerformSyntaxValidation(OdbcmConnectionHandler *db_conn,
                                                 void* val_struct,
                                                 uint32_t operation,
                                                 uint32_t data_type) {
-  pfc_log_info("Performing Syntax Validation of KT_PORT");
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
   map<string, Kt_Class_Attr_Syntax> attr_syntax_map =
@@ -594,17 +620,17 @@ UncRespCode Kt_Port::PerformSemanticValidation(
       pfc_log_error("Hence create operation not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else {
-      pfc_log_info("key instance not exist create operation allowed");
+      pfc_log_debug("key not exist, create oper allowed");
     }
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
       operation == UNC_OP_READ) {
     // In case of update/delete/read operation, key should exist
     if (key_status != UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance does not exist");
+      pfc_log_error("Key does not exist");
       pfc_log_error("Hence update/delete/read operation not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
-      pfc_log_info("key instance exist update/del/read operation allowed");
+      pfc_log_debug("key exist, update/del/read operation allowed");
     }
   }
   if (operation == UNC_OP_CREATE && status == UNC_RC_SUCCESS) {
@@ -662,7 +688,6 @@ UncRespCode Kt_Port::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
   memcpy(obj_key_port->sw_key.ctr_key.controller_name,
          controller_name.c_str(),
          controller_name.length()+1);
-  pfc_log_info("alarm sent by driver is: %d", alarm_type);
   uint64_t alarm_status_db = 0;
   UncRespCode read_alarm_status = GetAlarmStatus(db_conn, data_type,
                                                     key_struct,
@@ -671,7 +696,7 @@ UncRespCode Kt_Port::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
   if (read_alarm_status == UNC_RC_SUCCESS) {
     uint64_t new_alarm_status = 0;
     uint64_t old_alarm_status = alarm_status_db;
-    pfc_log_info("alarm_status received from db: %" PFC_PFMT_u64,
+    pfc_log_debug("alarm_status received from db: %" PFC_PFMT_u64,
                  old_alarm_status);
     if (alarm_type == UNC_DEFAULT_FLOW) {
       if (oper_type == UNC_OP_CREATE) {
@@ -890,7 +915,7 @@ UncRespCode Kt_Port::HandleOperStatus(OdbcmConnectionHandler *db_conn,
   ADD_CTRL_OPER_STATUS(controller_name, ctrl_oper_status, ref_oper_status);
   if (ctrl_oper_status ==
       (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
-    pfc_log_info("Set Port oper status as up");
+    pfc_log_debug("Set Port oper status as up");
     port_oper_status = UPPL_PORT_OPER_UP;
   }
   // Get the switch oper status and decide on the oper_status
@@ -908,7 +933,7 @@ UncRespCode Kt_Port::HandleOperStatus(OdbcmConnectionHandler *db_conn,
     ADD_SWITCH_OPER_STATUS(sw_key, switch_oper_status, ref_oper_status);
     if (switch_oper_status ==
         (UpplSwitchOperStatus) UPPL_SWITCH_OPER_UP) {
-      pfc_log_info("Set Port oper status as up");
+      pfc_log_debug("Set Port oper status as up");
       port_oper_status = UPPL_PORT_OPER_UP;
     }
   } else {
@@ -918,7 +943,7 @@ UncRespCode Kt_Port::HandleOperStatus(OdbcmConnectionHandler *db_conn,
   return_code = SetOperStatus(db_conn, data_type,
                               key_struct,
                               port_oper_status);
-  pfc_log_debug("Set Port oper status status %d", return_code);
+  pfc_log_debug("SetOperStatus ret_code: %d", return_code);
 
   // Call referred classes' notify oper_status functions
   // Get all ports associated with switch
@@ -962,7 +987,7 @@ UncRespCode Kt_Port::HandleOperStatus(OdbcmConnectionHandler *db_conn,
                     (unc_keytype_operation_t)UNC_OP_READ_SIBLING_BEGIN,
                     db_conn);
     if (db_status != ODBCM_RC_SUCCESS) {
-      pfc_log_info("No other port available");
+      pfc_log_debug("error, No other port available");
       break;
     }
     list<vector<TableAttrSchema> > ::iterator iter_list;
@@ -1006,7 +1031,7 @@ UncRespCode Kt_Port::HandleOperStatus(OdbcmConnectionHandler *db_conn,
       vectPortKey.push_back(port);
     }
     if (kt_port_dbtableschema.row_list_.size() < UPPL_MAX_REP_CT) {
-      pfc_log_info("No other port available");
+      pfc_log_debug("No other port available");
       break;
     }
   }
@@ -1215,7 +1240,7 @@ UncRespCode Kt_Port::GetOperStatus(OdbcmConnectionHandler *db_conn,
         PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                       DATATYPE_UINT16);
         oper_status = atoi(attr_value.c_str());
-        pfc_log_info("oper_status: %d", oper_status);
+        pfc_log_debug("oper_status: %d", oper_status);
         break;
       }
     }
@@ -1463,11 +1488,9 @@ void Kt_Port::PopulateDBSchemaForKtTable(
   val_port_st_t *obj_val_port = reinterpret_cast<val_port_st_t*>(val_struct);
 
   stringstream valid;
-  pfc_log_info("operation: %d", operation_type);
   // controller_name
   string controller_name = (const char*)obj_key_port
       ->sw_key.ctr_key.controller_name;
-  pfc_log_debug("controller name: %s", controller_name.c_str());
   if (!controller_name.empty()) {
     vect_prim_keys.push_back(CTR_NAME_STR);
   }
@@ -1476,7 +1499,6 @@ void Kt_Port::PopulateDBSchemaForKtTable(
                         vect_table_attr_schema);
   // switch_id
   string switch_id = (const char*)obj_key_port->sw_key.switch_id;
-  pfc_log_debug("switch id: %s", switch_id.c_str());
   if (!switch_id.empty()) {
     vect_prim_keys.push_back(SWITCH_ID_STR);
   }
@@ -1491,7 +1513,11 @@ void Kt_Port::PopulateDBSchemaForKtTable(
     port_id = "";
   }
 
-  pfc_log_debug("port id: %s", port_id.c_str());
+  pfc_log_info("ctr name:%s,switch id:%s,port id:%s,oper_type:%d",
+                 controller_name.c_str(),
+                 switch_id.c_str(),
+                 port_id.c_str(),
+                 operation_type);
   PhyUtil::FillDbSchema(unc::uppl::PORT_ID, port_id,
                         port_id.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -1641,11 +1667,6 @@ void Kt_Port::FillPortValueStructure(
           PhyUtil::GetValueFromDbSchemaStr(tab_schema,
                                            obj_val_port.mac_address,
                                            DATATYPE_UINT8_ARRAY_6);
-          pfc_log_info(""
-              "FillPortValueStructure:mac_address %02x%02x.%02x%02x.%02x%02x",
-              obj_val_port.mac_address[0], obj_val_port.mac_address[1],
-              obj_val_port.mac_address[2], obj_val_port.mac_address[3],
-              obj_val_port.mac_address[4], obj_val_port.mac_address[5]);
           break;
 
         case unc::uppl::PORT_DIRECTION:
@@ -1745,7 +1766,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
                                     uint32_t option1,
                                     uint32_t option2,
                                     uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
+  pfc_log_debug("PerformRead oper=%d,dt=%d",
                operation_type, data_type);
   key_port_t *obj_key_port =
       reinterpret_cast<key_port_t*>(key_struct);
@@ -1768,7 +1789,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_PORT);
     err |= sess.addOutput(*obj_key_port);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -1782,7 +1803,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_PORT);
     err |= sess.addOutput(*obj_key_port);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -1795,7 +1816,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_PORT);
     err |= sess.addOutput(*obj_key_port);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -1809,7 +1830,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_PORT);
     err |= sess.addOutput(*obj_key_port);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -1821,7 +1842,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
       ctr_key.controller_name;
   ClientSession *cli_session = NULL;
   if (option1 == UNC_OPT1_DETAIL && option2 == UNC_OPT2_NONE) {
-    pfc_log_info("Inside Detail:KT_PORT");
+    pfc_log_trace("Inside Detail:KT_PORT");
     // Not allowing the STANDBY request
      PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
      if (physical_layer->get_physical_core()->get_system_state() == \
@@ -1833,7 +1854,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
         err |= sess.addOutput((uint32_t) UNC_KT_PORT);
         err |= sess.addOutput(*obj_key_port);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
@@ -1863,12 +1884,11 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
         err |= sess.addOutput((uint32_t) UNC_KT_PORT);
         err |= sess.addOutput(*obj_key_port);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
       }
-      pfc_log_info("Filling the key structure and value into map");
       // Filling the key structure and value strucute to the map from DB
       map<string, val_port_stats_t> nb_port_stats_map;
 
@@ -1897,7 +1917,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
     pfc_log_debug("Port:controller type is %d ", controller_type);
     if (controller_type ==  UNC_CT_PFC) {
       UncRespCode driver_response = UNC_RC_SUCCESS;
-      pfc_log_info("Controller is PFC");
+
      UncRespCode err_resp = UNC_RC_SUCCESS;
      IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err_resp);
      if (err_resp == 0) {
@@ -1928,13 +1948,11 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
       driver_response_header rsp;
       driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
       if (driver_response == UNC_RC_SUCCESS) {
-      pfc_log_info("Filled te key structure and value into map");
       uint8_t response_count = cli_session->getResponseCount();
-      pfc_log_info("Response count=%d", response_count);
+      pfc_log_info("drv resp cnt=%d", response_count);
       if (response_count > 10) {
       for (uint32_t idx = 11;
                idx < response_count ; ) {
-         pfc_log_info("Reading stats from drv session %d", idx);
          key_port_t key_port_drv_resp;
          int err1 = cli_session->getResponse(idx++, key_port_drv_resp);
          if (err1 != UNC_RC_SUCCESS) {
@@ -1942,7 +1960,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
            break;
          }
         string port_name = (const char*)key_port_drv_resp.port_id;
-        pfc_log_info("Key value struct from drv %s", port_name.c_str());
+        pfc_log_debug("Portname from drv resp %s", port_name.c_str());
         val_port_stats_t port_stat_val;
         memset(&port_stat_val, '\0', sizeof(val_port_stats_t));
         err1 = cli_session->getResponse(idx++, port_stat_val);
@@ -1953,8 +1971,6 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
         map<string, val_port_stats_t> :: iterator it_port_key_val =
                                    nb_port_stats_map.find(port_name);
         if (it_port_key_val != nb_port_stats_map.end()) {
-          pfc_log_info("Found entry in nb_port_stats_map for %s",
-                                                      port_name.c_str());
           val_port_stats_t val_port_stat = it_port_key_val->second;
           memcpy(&port_stat_val.port_st_val, &val_port_stat.port_st_val
               , sizeof(port_stat_val.port_st_val));
@@ -1981,7 +1997,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
         err |= sess.addOutput((uint32_t) UNC_KT_PORT);
         err |= sess.addOutput(*obj_key_port);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
@@ -1990,7 +2006,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
 
       int err = PhyUtil::sessOutRespHeader(sess, rsh);
       if (err != 0) {
-        pfc_log_debug("addOutput failed for physical_response_header");
+        pfc_log_info("addOutput failed for physical_response_header");
         return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
 
@@ -2012,7 +2028,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
           pfc_log_debug("%s", IpctUtil::get_string(val_stats_obj).c_str());
           err |= sess.addOutput(val_stats_obj);
           if (err != 0) {
-            pfc_log_debug("addOutput failed for physical_response_header");
+            pfc_log_info("addOutput failed for physical_response_header");
             return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
           }
           if (index < vect_port_id.size() - 1) {
@@ -2044,14 +2060,14 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
         err |= sess.addOutput((uint32_t) UNC_KT_PORT);
         err |= sess.addOutput(*obj_key_port);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
       }
       int err = PhyUtil::sessOutRespHeader(sess, rsh);
       if (err != 0) {
-        pfc_log_debug("addOutput failed for physical_response_header");
+        pfc_log_info("addOutput failed for physical_response_header");
         return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
       for (unsigned int index = 0; index < vect_port_id.size();
@@ -2078,13 +2094,13 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
       err |= sess.addOutput((uint32_t)UNC_KT_PORT);
       err |= sess.addOutput(*obj_key_port);
       if (err != 0) {
-        pfc_log_debug("addOutput failed for physical_response_header");
+        pfc_log_info("addOutput failed for physical_response_header");
         return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
       if (read_status == UNC_RC_SUCCESS) {
         err = sess.addOutput(obj_neighbor);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
       } else {
@@ -3024,7 +3040,7 @@ UncRespCode Kt_Port::SubDomainOperStatusHandling(
                   (unc_keytype_operation_t)UNC_OP_READ_SIBLING_BEGIN,
                   db_conn);
   if (db_status != ODBCM_RC_SUCCESS) {
-    pfc_log_debug("No associated logical member port");
+    pfc_log_info("No associated logical member port");
     return UNC_RC_SUCCESS;
   }
   // To traverse the list
@@ -3070,7 +3086,8 @@ UncRespCode Kt_Port::SubDomainOperStatusHandling(
            log_port_id.c_str(),
            log_port_id.length()+1);
     vector<OperStatusHolder> ref_oper_status;
-    GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
+    GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status,
+                             data_type, db_conn);
     Kt_LogicalPort log_port_obj;
     UncRespCode return_code = log_port_obj.HandleOperStatus(
         db_conn, data_type, reinterpret_cast<void *> (&logical_port_key),

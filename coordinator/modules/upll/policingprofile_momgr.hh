@@ -279,7 +279,8 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_MERGE_CONFLICT    Merge conflict
      */
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     /**
      * @brief     Method to Copy Candidate DB to Running DB
@@ -375,48 +376,6 @@ class PolicingProfileMoMgr : public MoMgrImpl {
                                  unc_keytype_operation_t op,
                                  uint32_t driver_result, ConfigKeyVal *nreq,
                                  DalDmlIntf *dmi,  ConfigKeyVal *ctrlr_key);
-
-    /**
-     * @brief  Method to Update Controller with created, deleted and updated records
-     *
-     * @param[in]   keytype             Defines the keytype for which operation has
-     *                                  to be carried out.
-     * @param[in]   session_id          Session id to send req to driver
-     * @param[in]   config_id           Config id to send req to driver
-     * @param[in]   phase               List describes Commit Control Status
-     *                                  Information.
-     * @param[out]  affected_ctrlr_set  Set of affected controllers.
-     * @param[in]   dmi                 Pinter to DalDmlIntf Class.
-     *
-     * @retval  UPLL_RC_SUCCESS               Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC           Failure
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
-     * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
-     */
-    upll_rc_t TxUpdateController(unc_key_type_t keytype,
-        uint32_t session_id, uint32_t config_id,
-        uuc::UpdateCtrlrPhase phase,
-        set<string> *affected_ctrlr_set, DalDmlIntf *dmi,
-        ConfigKeyVal **err_ckv);
-
-    /**
-     * @brief  Method to send req to driver
-     *
-     * @param[in]  ck_main   Pointer to ConfigKeyVal
-     * @param[in]  ipc_req   Pointer to ipc_request structure.
-     * @param[in]  ipc_resp  Pointer to ipc_response structure.
-     * @param[in]  op        Operation to be carried out
-     * @param[in]  dmi       Pointer to DalDmlIntf Class.
-     * @param[in]  ctrlr_id  Pointer to ctrlr_id
-     *
-     * @retval  UPLL_RC_SUCCESS               Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC           Failure
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
-     * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
-     */
-    upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-        IpcResponse *ipc_resp, unc_keytype_operation_t op, DalDmlIntf *dmi,
-        controller_domain *ctrlr_dom, set<string> *affected_ctrlr_set, bool *driver_resp);
 
     /**
      * @brief  Method to old policingprofile name from rename struct to
@@ -572,7 +531,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      */
     upll_rc_t PolicingProfileCtrlrTblOper(const char *policingprofile_name,
        const char *ctrlr_id, DalDmlIntf *dmi, unc_keytype_operation_t oper,
-       upll_keytype_datatype_t dt_type);
+       upll_keytype_datatype_t dt_type, uint8_t pp_flag);
 
     /**
      * @brief  Method to Get Policingprofile COnfigKeyVal
@@ -600,7 +559,8 @@ class PolicingProfileMoMgr : public MoMgrImpl {
                             uuc::UpdateCtrlrPhase phase, MoMgrTables tbl,
                             ConfigKeyVal *&okey,
                             DalDmlIntf *dmi,
-                            bool &invalid_attr);
+                            bool &invalid_attr,
+                            bool check_audit_phase);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
@@ -616,6 +576,12 @@ class PolicingProfileMoMgr : public MoMgrImpl {
     upll_rc_t UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
                                        DalDmlIntf *dmi,
                                        upll_keytype_datatype_t dt_type);
+
+    upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                           unc_keytype_operation_t &op);
+
+     upll_rc_t CopyKeyToVal(ConfigKeyVal *ikey,
+                            ConfigKeyVal *&okey);
 
 };
 

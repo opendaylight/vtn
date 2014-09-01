@@ -638,45 +638,76 @@ UncRespCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
                                            vector<void *> &val_struct,
                                            uint32_t data_type,
                                            uint32_t operation_type) {
+  if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
+      operation_type != UNC_OP_READ_SIBLING_BEGIN) {
+    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+  }
   pfc_log_debug("Inside ReadInternal of KT_CTR_DOMAIN");
-  vector<key_ctr_domain> vect_domain_id;
-  vector<val_ctr_domain> vect_val_ctr_domain;
-  vector<val_ctr_domain_st> vect_val_ctr_domain_st;
   uint32_t max_rep_ct = 1;
   if (operation_type != UNC_OP_READ) {
     max_rep_ct = UPPL_MAX_REP_CT;
   }
+  val_ctr_domain_st_t obj_dom_val;
+  memset(&obj_dom_val, '\0', sizeof(val_ctr_domain_st_t));
   void *key_struct = key_val[0];
   void *void_val_struct = NULL;
-  if (!val_struct.empty()) {
-    void_val_struct = val_struct[0];
+  if ((!val_struct.empty()) && (val_struct[0] != NULL)) {
+    memcpy(&obj_dom_val, (reinterpret_cast <val_ctr_domain_st_t*>
+                                      (val_struct[0])),
+           sizeof(val_ctr_domain_st_t)); 
+    void_val_struct = reinterpret_cast<void *>(&obj_dom_val);
   }
+  UncRespCode read_status = UNC_RC_SUCCESS;
+  bool firsttime = true;
+  do {
   // Get read response from database
-  UncRespCode read_status = ReadDomainValFromDB(db_conn, key_struct,
-                                                   void_val_struct,
-                                                   data_type,
-                                                   operation_type,
-                                                   max_rep_ct,
-                                                   vect_val_ctr_domain_st,
-                                                   vect_domain_id);
-  key_val.clear();
-  val_struct.clear();
-  pfc_log_info("ReadDomainValFromDB returned %d with response size %"
+    vector<key_ctr_domain> vect_domain_id;
+    vector<val_ctr_domain> vect_val_ctr_domain;
+    vector<val_ctr_domain_st> vect_val_ctr_domain_st;
+    read_status = ReadDomainValFromDB(db_conn, key_struct,
+                                        void_val_struct,
+                                        data_type,
+                                        operation_type,
+                                        max_rep_ct,
+                                        vect_val_ctr_domain_st,
+                                        vect_domain_id);
+    if (firsttime) {
+       pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      key_val.clear();
+      val_struct.clear();
+       firsttime = false;
+    }
+    pfc_log_debug("ReadDomainValFromDB returned %d with response size %"
                PFC_PFMT_SIZE_T,
                read_status,
                vect_val_ctr_domain_st.size());
-  if (read_status == UNC_RC_SUCCESS) {
-    pfc_log_debug("Read operation is success");
-    for (unsigned int iIndex = 0 ; iIndex < vect_val_ctr_domain_st.size();
-        ++iIndex) {
-      key_ctr_domain_t *key_domain =
-          new key_ctr_domain(vect_domain_id[iIndex]);
-      key_val.push_back(reinterpret_cast<void *>(key_domain));
-      val_ctr_domain_st *val_domain =
-          new val_ctr_domain_st(vect_val_ctr_domain_st[iIndex]);
-      val_struct.push_back(reinterpret_cast<void *>(val_domain));
+    if (read_status == UNC_RC_SUCCESS) {
+      pfc_log_debug("Read operation is success");
+      for (unsigned int iIndex = 0 ; iIndex < vect_val_ctr_domain_st.size();
+          ++iIndex) {
+        key_ctr_domain_t *key_domain =
+            new key_ctr_domain(vect_domain_id[iIndex]);
+        key_val.push_back(reinterpret_cast<void *>(key_domain));
+        val_ctr_domain_st *val_domain =
+            new val_ctr_domain_st(vect_val_ctr_domain_st[iIndex]);
+        val_struct.push_back(reinterpret_cast<void *>(val_domain));
+      }
+    } else if ((read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE &&
+               val_struct.size() != 0)) {
+      read_status = UNC_RC_SUCCESS;
     }
-  }
+    if ((vect_val_ctr_domain_st.size() == UPPL_MAX_REP_CT) &&
+                     (operation_type != UNC_OP_READ)) {
+      pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
+                    operation_type,key_val.size());
+      key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
+      operation_type = UNC_OP_READ_SIBLING;
+      continue;
+    } else {
+      break;
+    }
+  } while(true);
   pfc_log_debug("Returned Key vector size: %" PFC_PFMT_SIZE_T,
                 key_val.size());
   return read_status;
@@ -706,7 +737,6 @@ UncRespCode Kt_Ctr_Domain::ReadBulk(OdbcmConnectionHandler *db_conn,
                                        pfc_bool_t parent_call,
                                        pfc_bool_t is_read_next,
                                        ReadRequest *read_req) {
-  pfc_log_info("Processing ReadBulk of Kt_Domain");
   key_ctr_domain obj_key_ctr_domain=
       *(reinterpret_cast<key_ctr_domain*>(key_struct));
   UncRespCode read_status = UNC_RC_SUCCESS;
@@ -988,7 +1018,6 @@ UncRespCode Kt_Ctr_Domain::PerformSyntaxValidation(
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  pfc_log_info("Syntax Validation of KT_CTR_DOMAIN");
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
 
@@ -1071,7 +1100,7 @@ UncRespCode Kt_Ctr_Domain::PerformSemanticValidation(
     uint32_t operation,
     uint32_t data_type) {
   UncRespCode status = UNC_RC_SUCCESS;
-  pfc_log_debug("Inside PerformSemanticValidation of KT_CTR_DOMAIN");
+  pfc_log_debug("PerformSemanticValidation:KT_CTR_DOMAIN");
   // Check whether the given instance of domain exists in DB
   key_ctr_domain *obj_key_ctr_domain =
       reinterpret_cast<key_ctr_domain*>(key_struct);
@@ -1095,7 +1124,7 @@ UncRespCode Kt_Ctr_Domain::PerformSemanticValidation(
       pfc_log_error("DB Access failure");
       status = key_status;
     } else {
-      pfc_log_info("key instance not exist create operation allowed");
+      pfc_log_debug("key instance not exist create operation allowed");
     }
 
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
@@ -1109,7 +1138,7 @@ UncRespCode Kt_Ctr_Domain::PerformSemanticValidation(
       pfc_log_error("Hence update/delete/read operation not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
-      pfc_log_info("key instance exist update/del/read operation allowed");
+      pfc_log_debug("key instance exist update/del/read operation allowed");
     }
   }
 
@@ -1166,8 +1195,6 @@ UncRespCode Kt_Ctr_Domain::HandleDriverAlarms(
     return read_status;
   }
   UpplDomainOperStatus new_oper_status = UPPL_CTR_DOMAIN_OPER_DOWN;
-  pfc_log_info("UNC_COREDOMAIN_SPLIT alarm sent by driver");
-  pfc_log_info("operation type: %d", oper_type);
   // Read old_oper_status from DB
   if (oper_type == UNC_OP_CREATE) {
     new_oper_status = UPPL_CTR_DOMAIN_OPER_DOWN;
@@ -1176,12 +1203,15 @@ UncRespCode Kt_Ctr_Domain::HandleDriverAlarms(
   }
   UpplDomainOperStatus old_oper_status =
       (UpplDomainOperStatus)oper_status_db;
-  pfc_log_info("Oper_status received from db: %d", old_oper_status);
-  pfc_log_info("New Oper_status to be set is: %d", new_oper_status);
+  pfc_log_debug("Oper_status received from db: %d "
+                "New Oper_status to be set is: %d"
+                , old_oper_status, new_oper_status);
   if (new_oper_status != old_oper_status) {
     // Set oper_status update in DB
     status = SetOperStatus(db_conn, data_type, key_struct, new_oper_status);
-    pfc_log_info("Update oper_status return: %d", status);
+    if (status != 0) {
+      pfc_log_info("Update oper_status return: %d", status);
+    }
   }
   return status;
 }
@@ -1218,10 +1248,9 @@ UncRespCode Kt_Ctr_Domain::HandleOperStatus(
         db_conn, data_type, reinterpret_cast<void*>(&ctr_key),
         ctrl_oper_status);
     if (read_status == UNC_RC_SUCCESS) {
-      pfc_log_info("Controller's oper_status %d", ctrl_oper_status);
       if (ctrl_oper_status ==
           (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
-        pfc_log_info("Set Domain oper status as up");
+        pfc_log_debug("Set Domain oper status as up");
         domain_oper_status = UPPL_CTR_DOMAIN_OPER_UP;
       }
     } else {
@@ -1260,7 +1289,8 @@ UncRespCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
   string domain_name =
       (const char*)obj_key_ctr_domain->domain_name;
   vector<OperStatusHolder> ref_oper_status;
-  GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
+  GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status,
+                          data_type, db_conn);
   Kt_Boundary boundary;
   val_boundary_t obj_val_boundary1;
   memset(&obj_val_boundary1, 0, sizeof(obj_val_boundary1));
@@ -1275,7 +1305,7 @@ UncRespCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
       data_type, NULL,
       reinterpret_cast<void *> (&obj_val_boundary1),
       ref_oper_status);
-  pfc_log_info("HandleOperStatus for boundary C1D1 class %d", return_code);
+  pfc_log_debug("HandleOperStatus for boundary C1D1 class %d", return_code);
   val_boundary_t obj_val_boundary2;
   memset(&obj_val_boundary2, 0, sizeof(obj_val_boundary2));
   memcpy(obj_val_boundary2.controller_name2,
@@ -1289,7 +1319,7 @@ UncRespCode Kt_Ctr_Domain::InvokeBoundaryNotifyOperStatus(
       data_type, NULL,
       reinterpret_cast<void *> (&obj_val_boundary2),
       ref_oper_status);
-  pfc_log_info("HandleOperStatus for boundary C2D2 class %d", return_code);
+  pfc_log_debug("HandleOperStatus for boundary C2D2 class %d", return_code);
   ClearOperStatusHolder(ref_oper_status);
   return return_code;
 }
@@ -1376,7 +1406,7 @@ UncRespCode Kt_Ctr_Domain::GetOperStatus(OdbcmConnectionHandler *db_conn,
         PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                       DATATYPE_UINT16);
         oper_status = atoi(attr_value.c_str());
-        pfc_log_info("oper_status: %d", oper_status);
+        pfc_log_debug("oper_status: %d", oper_status);
         break;
       }
     }
@@ -1616,12 +1646,10 @@ void Kt_Ctr_Domain::PopulateDBSchemaForKtTable(
     obj_val_ctr_domain = reinterpret_cast<val_ctr_domain*>(val_struct);
   }
   stringstream valid;
-  pfc_log_info("operation: %d", operation_type);
 
   // controller_name
   string controller_name = (const char*)obj_key_ctr_domain->
       ctr_key.controller_name;
-  pfc_log_info("controller name: %s", controller_name.c_str());
   PhyUtil::FillDbSchema(unc::uppl::CTR_NAME, controller_name,
                         controller_name.length(),
                         DATATYPE_UINT8_ARRAY_32,
@@ -1634,7 +1662,6 @@ void Kt_Ctr_Domain::PopulateDBSchemaForKtTable(
     domain_name = "";
   }
 
-  pfc_log_info("domain_name: %s", domain_name.c_str());
   PhyUtil::FillDbSchema(unc::uppl::DOMAIN_NAME, domain_name,
                         domain_name.length(), DATATYPE_UINT8_ARRAY_32,
                         vect_table_attr_schema);
@@ -1680,7 +1707,9 @@ void Kt_Ctr_Domain::PopulateDBSchemaForKtTable(
   value.clear();
   // oper_status will be set as 1 by default in DB during create
   if (operation_type == UNC_OP_CREATE) {
-    value = "1";
+    if ((unc_keytype_datatype_t)data_type == UNC_DT_CANDIDATE) {
+      value = "1";
+    }
   }
   valid_val = UPPL_NO_VAL_STRUCT;
   if (operation_type == UNC_OP_UPDATE && is_state == PFC_TRUE &&
@@ -1695,6 +1724,7 @@ void Kt_Ctr_Domain::PopulateDBSchemaForKtTable(
   } else if (is_state == PFC_TRUE) {
     // Add oper_status as well if state value structure is passed
     valid_val = UNC_VF_VALID;
+    value = PhyUtil::uint8tostr(obj_val_ctr_domain_st->oper_status);
     PhyUtil::FillDbSchema(unc::uppl::DOMAIN_OP_STATUS, DOMAIN_OP_STATUS_STR,
                           value, value.length(), DATATYPE_UINT16,
                           operation_type, valid_val, prev_db_val,
@@ -1771,8 +1801,6 @@ UncRespCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
                                           uint32_t option1,
                                           uint32_t option2,
                                           uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
-               operation_type, data_type);
   key_ctr_domain *obj_key_ctr_domain=
       reinterpret_cast<key_ctr_domain*>(key_struct);
   physical_response_header rsh = {session_id,

@@ -17,6 +17,10 @@
 #include <odc_port.hh>
 #include <odc_link.hh>
 #include <odc_vbr_vlanmap.hh>
+#include <odc_dataflow.hh>
+#include <odc_vtnstation.hh>
+#include <odc_vterminal.hh>
+#include <odc_vterminal_if.hh>
 #include <odc_driver_common_defs.hh>
 #include <unc/keytype.h>
 #include <rest_util.hh>
@@ -107,6 +111,8 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    *                             key type
    */
   unc::driver::driver_command* create_driver_command(unc_key_type_t key_type);
+  unc::driver::vtn_driver_read_command* create_driver_read_command(
+                                                   unc_key_type_t key_type);
 
   /**
    * @brief     -  HandleVote

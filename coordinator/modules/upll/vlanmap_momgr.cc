@@ -431,7 +431,7 @@ upll_rc_t VlanMapMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
         vlanmap_val->cs_attr[loop] = vlanmap_val2->cs_attr[loop];
     }
   }
-  upll_rc_t result_code = UpdateParentOperStatus(ikey,dmi);
+  upll_rc_t result_code = UpdateVnodeOperStatus(ikey,dmi,driver_result);
   if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_TRACE("Update parent vbridge failed\n");
   }
@@ -1198,6 +1198,8 @@ upll_rc_t VlanMapMoMgr::ReadSiblingCount(IpcReqRespHeader *header,
     (ikey->get_cfg_val())->SetVal(IpctSt::kIpcStPfcdrvValVlanMap, val);
   }
   header->operation = UNC_OP_READ_SIBLING_BEGIN;
+  // Ignore max_repetition in read sibling count
+  header->rep_count = 0;
 
   uint32_t found_count = 0;
   result_code = ReadInfoFromDB(header, ikey, dmi, &ctrlr_dom);
@@ -1512,9 +1514,108 @@ bool VlanMapMoMgr::ResetDataForSibling(key_vlan_map *key_vmap,
   return true;
 }
 
-
 upll_rc_t VlanMapMoMgr::UpdateParentOperStatus(ConfigKeyVal *ikey, 
-                                                  DalDmlIntf *dmi) {
+                                               DalDmlIntf *dmi,
+                                               uint32_t driver_result) {
+  UPLL_FUNC_TRACE;
+  if (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+    return UPLL_RC_SUCCESS;
+  }
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  key_vlan_map_t *vlanmap_key = NULL;
+  vlanmap_key = reinterpret_cast<key_vlan_map_t*>(ikey->get_key());
+  if (!vlanmap_key) {
+    UPLL_LOG_ERROR("Bad ikey");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  MoMgrImpl *if_mgr = reinterpret_cast<MoMgrImpl*>(const_cast<MoManager *>(
+      GetMoManager(UNC_KT_VBR_IF)));
+  if (if_mgr == NULL) {
+    UPLL_LOG_ERROR("VbrIfMoMgr does not exist");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  key_vbr_if_t *vbr_key_if = reinterpret_cast<key_vbr_if_t *>(
+      ConfigKeyVal::Malloc(sizeof(key_vbr_if_t)));
+
+  uuu::upll_strncpy(vbr_key_if->vbr_key.vtn_key.vtn_name,
+                    vlanmap_key->vbr_key.vtn_key.vtn_name,
+                    (kMaxLenVtnName + 1));
+  uuu::upll_strncpy(vbr_key_if->vbr_key.vbridge_name,
+                    vlanmap_key->vbr_key.vbridge_name,
+                    (kMaxLenVnodeName + 1));
+  ConfigKeyVal *tmp_if_key = new ConfigKeyVal(UNC_KT_VBR_IF,
+                                              IpctSt::kIpcStKeyVbrIf,
+                                              vbr_key_if,
+                                              NULL);
+
+  // Return if interface exists under the parent vBridge
+  DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutNone };
+  result_code = if_mgr->UpdateConfigDB(tmp_if_key, UPLL_DT_RUNNING, UNC_OP_READ,
+                                       dmi, &dbop, MAINTBL);
+  DELETE_IF_NOT_NULL(tmp_if_key);
+  if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
+    // vbridge operstatus does not depend on vlanmap when interface exists
+    return UPLL_RC_SUCCESS;
+  } else if (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    return result_code;
+  }
+
+  // Return if other vlan-map exists for the same parent vBridge
+  ConfigKeyVal *ck_vlanmap = NULL;
+  result_code = GetChildConfigKey(ck_vlanmap, ikey);
+  if (result_code != UPLL_RC_SUCCESS) {
+    return result_code; 
+  }
+  key_vlan_map_t *tmp_vlan_key = reinterpret_cast<key_vlan_map_t*>(ck_vlanmap->get_key());
+  tmp_vlan_key->logical_port_id_valid = INVALID_LOG_PORT_ID_VALID;
+  tmp_vlan_key->logical_port_id[0] = 0;
+  uint32_t count = 0;
+  result_code = GetInstanceCount(ck_vlanmap, NULL, UPLL_DT_RUNNING, &count, dmi,
+                                 MAINTBL);
+  DELETE_IF_NOT_NULL(ck_vlanmap);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("GetInstanceCount failed : %d", result_code);
+    return result_code;
+  }
+  if (count > 1) {  // self vlanmap needs to be excluded
+    return UPLL_RC_SUCCESS;
+  }
+
+  // There is no other vlanmap exists for the vbridge. Bring vbridge down.
+ 
+  VnodeMoMgr *vbr_mgr = reinterpret_cast<VnodeMoMgr *>(const_cast<MoManager *>(
+      GetMoManager(UNC_KT_VBRIDGE)));
+  if (vbr_mgr == NULL) {
+    UPLL_LOG_ERROR("VbrMoMgr does not exist");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  ConfigKeyVal *ck_vbr = NULL;
+  result_code = GetParentConfigKey(ck_vbr, ikey);
+  if (result_code != UPLL_RC_SUCCESS) {
+    return result_code; 
+  }
+  result_code = vbr_mgr->ReadConfigDB(ck_vbr, UPLL_DT_STATE, UNC_OP_READ, dbop,
+                                      dmi, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      // parent wont be there if parent or grandparent is getting deleted.
+      result_code = UPLL_RC_SUCCESS;
+    } else {
+      UPLL_LOG_DEBUG("Returning error %d\n",result_code);
+    }
+    DELETE_IF_NOT_NULL(ck_vbr);
+    return result_code;
+  }
+  result_code = vbr_mgr->SetStandAloneOperStatus(ck_vbr, kPortFault, dmi);
+  DELETE_IF_NOT_NULL(ck_vbr);
+  return result_code; 
+}
+
+upll_rc_t VlanMapMoMgr::UpdateVnodeOperStatus(ConfigKeyVal *ikey, 
+                                               DalDmlIntf *dmi,
+                                               uint32_t driver_result) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (!ikey) {
@@ -1541,7 +1642,7 @@ upll_rc_t VlanMapMoMgr::UpdateParentOperStatus(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("Returning error %d\n",result_code);
     delete ck_vn;
     result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
-                   UPLL_RC_SUCCESS:result_code;
+                   UPLL_RC_SUCCESS : result_code;
     return result_code;
   }
   val_db_vbr_st *valst = reinterpret_cast<val_db_vbr_st *>(GetStateVal(ck_vn)); 
@@ -1550,12 +1651,14 @@ upll_rc_t VlanMapMoMgr::UpdateParentOperStatus(ConfigKeyVal *ikey,
     delete ck_vn;
     return UPLL_RC_ERR_GENERIC;
   }
-  if ((valst->down_count == 0) && (valst->fault_count == 0)) {
-    state_notification notification = kAdminStatusEnabled; 
-    result_code = mgr->UpdateOperStatus(ck_vn, dmi, notification, true, true);
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Returning error %d\n",result_code);
-    }
+  if ((valst->down_count == 0) && (valst->unknown_count == 0) &&
+      (driver_result != UPLL_RC_ERR_CTR_DISCONNECTED)) {
+    result_code = mgr->UpdateOperStatus(ck_vn, dmi, kCommit, true);
+  } else if (valst->down_count == STAND_ALONE_VNODE) {
+    result_code = mgr->UpdateOperStatus(ck_vn, dmi, kPortUp, true);
+  }
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Returning error %d\n",result_code);
   }
   delete ck_vn;
   return result_code; 
@@ -1635,9 +1738,19 @@ upll_rc_t VlanMapMoMgr::UpdateMo(IpcReqRespHeader *req,
     delete temp_ck;
     return result_code;
   }
+
+  val_vlan_map_t *ival = NULL;
+  if ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVlanMap) {
+    ival = reinterpret_cast<val_vlan_map_t *>
+        (GetVal(ikey));
+  } else {
+    pfcdrv_val_vlan_map_t *drv_val = reinterpret_cast<pfcdrv_val_vlan_map_t *>
+        (GetVal(ikey));
+    ival = &(drv_val->vm);
+  }
+
   // To validate all the flags are INVALID during Update
-  bool is_invalid = IsAllAttrInvalid(reinterpret_cast<val_vlan_map_t *>
-                                    (GetVal(ikey)));
+  bool is_invalid = IsAllAttrInvalid(ival);
   if (is_invalid) {
     UPLL_LOG_INFO("No attributes to be updated");
     DELETE_IF_NOT_NULL(temp_ck);
@@ -1650,15 +1763,6 @@ upll_rc_t VlanMapMoMgr::UpdateMo(IpcReqRespHeader *req,
 
   pfcdrv_val_vlan_map_t *tval = reinterpret_cast<pfcdrv_val_vlan_map_t *>
       (GetVal(temp_ck));
-  val_vlan_map_t *ival = NULL;
-  if ((ikey->get_cfg_val())->get_st_num() == IpctSt::kIpcStValVlanMap) {
-    ival = reinterpret_cast<val_vlan_map_t *>
-        (GetVal(ikey));
-  } else {
-    pfcdrv_val_vlan_map_t *drv_val = reinterpret_cast<pfcdrv_val_vlan_map_t *>
-        (GetVal(ikey));
-    ival = &(drv_val->vm);
-  }
 
   UPLL_LOG_TRACE("Vlanmap bdry_ref_count = %u", tval->bdry_ref_count);
   /* Verifies whether the recived vlanmap is refered with boundary vlink  */
@@ -1710,16 +1814,17 @@ upll_rc_t VlanMapMoMgr::UpdateMo(IpcReqRespHeader *req,
   result_code = ValidateAttribute(okey, dmi, req);
   if (UPLL_RC_SUCCESS  != result_code) {
     UPLL_LOG_ERROR("Validate Attribute is Failed");
+    DELETE_IF_NOT_NULL(okey);
     return result_code;
   }
   DbSubOp dbop1 = { kOpNotRead, kOpMatchNone, kOpInOutNone };
   result_code = UpdateConfigDB(okey, req->datatype, UNC_OP_UPDATE,
                                dmi, &dbop1, MAINTBL);
+  DELETE_IF_NOT_NULL(okey);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_ERROR("Updation Failure in DB : %d", result_code);
     return result_code;
   }
-  DELETE_IF_NOT_NULL(okey);
   UPLL_LOG_TRACE("Updated Done Successfully %d", result_code);
   return result_code;
 }
@@ -2060,6 +2165,12 @@ upll_rc_t VlanMapMoMgr::BoundaryVlanmapReq(IpcReqRespHeader *req,
       (ival->valid[UPLL_IDX_BOUNDARY_NAME_VLNK] == UNC_VF_VALID)) {
     val_vlanmap = reinterpret_cast<pfcdrv_val_vlan_map_t *>
         (GetVal(vlanmap_ckv));
+    if ((ival->valid[UPLL_IDX_VLAN_ID_VLNK] != UNC_VF_VALID) ||
+        (ival->vlan_id == 0xFFFF)) {
+      UPLL_LOG_ERROR("vlan-id is mandatory when boundary port is SW or SD");
+      return UPLL_RC_ERR_CFG_SEMANTIC;
+    }
+
     if (result_code == UPLL_RC_SUCCESS) {
       GET_USER_DATA_FLAGS(vlanmap_ckv, flags);
 
@@ -2274,6 +2385,168 @@ upll_rc_t VlanMapMoMgr::CheckIfVnodeisVlanmapped(ConfigKeyVal *ikey,
   DELETE_IF_NOT_NULL(ck_vlanmap);
   return result_code;
 }
+
+upll_rc_t VlanMapMoMgr::PartialMergeValidate(unc_key_type_t keytype,
+                                               const char *ctrlr_id,
+                                               ConfigKeyVal *err_ckv,
+                                               DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  ConfigKeyVal *run_ckv = NULL;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (!ctrlr_id || !err_ckv) {
+    UPLL_LOG_DEBUG("Invalid input");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  result_code = GetChildConfigKey(run_ckv, NULL); 
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed");
+    return result_code;
+  }
+  SET_USER_DATA_CTRLR(run_ckv, ctrlr_id);
+  DbSubOp dbop = { kOpReadMultiple, kOpMatchCtrlr, kOpInOutFlag };
+
+  result_code = ReadConfigDB(run_ckv, UPLL_DT_RUNNING, UNC_OP_READ, dbop,
+                                            dmi, MAINTBL);
+  if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code &&
+      UPLL_RC_SUCCESS != result_code) {
+    delete run_ckv;
+    UPLL_LOG_DEBUG("ReadConfigDB failed %d", result_code);
+    return result_code;
+  }
+  if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
+    /*
+     * In Running there is not vlanmap so no boundary information
+     * will available so reutrun success
+     */
+    delete run_ckv;
+    return UPLL_RC_SUCCESS;
+  }
+  uint8_t rename_flag = 0x00;
+  ConfigKeyVal *start_ckv = run_ckv;
+  while (run_ckv) {
+    GET_USER_DATA_FLAGS(run_ckv, rename_flag);
+    if (rename_flag & BOUNDARY_VLANMAP_FLAG) {
+      ConfigKeyVal *imp_ckv = NULL;
+      result_code = GetChildConfigKey(imp_ckv, run_ckv);
+      if (UPLL_RC_SUCCESS != result_code) {
+        delete start_ckv;
+        UPLL_LOG_DEBUG("DupConfigKeyVal failed");
+        return result_code;
+      }
+      dbop.readop = kOpReadSingle;
+      result_code = ReadConfigDB(imp_ckv, UPLL_DT_IMPORT, UNC_OP_READ,
+                                 dbop, dmi, MAINTBL);
+      if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+        delete imp_ckv;
+        err_ckv->ResetWithoutNextCkv(run_ckv);
+        delete start_ckv;
+        UPLL_LOG_DEBUG("MergeConflict with %s", err_ckv->ToStr().c_str());
+        return UPLL_RC_ERR_MERGE_CONFLICT;
+      }
+      pfcdrv_val_vlan_map  *run_val = reinterpret_cast<pfcdrv_val_vlan_map *>(
+          GetVal(run_ckv));
+      pfcdrv_val_vlan_map *imp_val = reinterpret_cast<pfcdrv_val_vlan_map *>(
+          GetVal(imp_ckv));
+
+      /*
+       * Checks only the vlan id so need to
+       * check only this value
+       */
+      /*
+       * If both are valid anc checks the value
+       */
+       if (run_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID &&
+           imp_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID) {
+         /*
+          * if value is different then merge conflict
+          */
+         if(run_val->vm.vlan_id != imp_val->vm.vlan_id) {
+           delete imp_ckv;
+           err_ckv->ResetWithoutNextCkv(run_ckv);
+           UPLL_LOG_DEBUG("MergeConflicts with %s", err_ckv->ToStr().c_str());
+           delete start_ckv;
+           return UPLL_RC_ERR_MERGE_CONFLICT;
+         } else {
+           /*
+            * Update the Boundary ref count in import 
+            * and rename flag for the imported vlan map
+            */
+           imp_val->bdry_ref_count = run_val->bdry_ref_count;
+           imp_val->valid[PFCDRV_IDX_BDRY_REF_COUNT] =
+               run_val->valid[PFCDRV_IDX_BDRY_REF_COUNT];
+           rename_flag = 0x00;
+           GET_USER_DATA_FLAGS(imp_ckv, rename_flag);
+           rename_flag |= BOUNDARY_VLANMAP_FLAG;
+           SET_USER_DATA_FLAGS(imp_ckv, rename_flag);
+           dbop.inoutop = kOpInOutFlag;
+           result_code = UpdateConfigDB(imp_ckv, UPLL_DT_IMPORT, UNC_OP_UPDATE,
+                               dmi, &dbop, MAINTBL);
+           if (UPLL_RC_SUCCESS != result_code) {
+             UPLL_LOG_DEBUG("UpdateConfigDB failed %d", result_code);
+             delete start_ckv;
+             delete imp_ckv;
+             return result_code;
+           }
+         }
+         /*If the running only valid import is invalid
+          * then return merge conflicts
+          */
+       } else if (run_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID) {
+           delete imp_ckv;
+           err_ckv->ResetWithoutNextCkv(run_ckv);
+           UPLL_LOG_DEBUG("MergeConflicts with %s", err_ckv->ToStr().c_str());
+           delete start_ckv;
+           return UPLL_RC_ERR_MERGE_CONFLICT;
+       } else {
+          if (run_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_INVALID &&
+             ((imp_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_INVALID)||
+              imp_val->vm.valid[UPLL_IDX_VLAN_ID_VM] == UNC_VF_VALID_NO_VALUE)) {
+            // No Issue
+          } else {
+            err_ckv->ResetWithoutNextCkv(run_ckv);
+            UPLL_LOG_DEBUG("MergeConflicts with %s", err_ckv->ToStr().c_str());
+            delete start_ckv;
+            return UPLL_RC_ERR_MERGE_CONFLICT;
+          }
+         // do nothing move next
+       }
+
+       /*
+        * Both the side is not valid then  continue
+        */
+       delete imp_ckv;
+    }
+    run_ckv = run_ckv->get_next_cfg_key_val();
+  }
+  delete start_ckv;
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t VlanMapMoMgr::AdaptValToDriver(ConfigKeyVal *ck_new,
+                                         ConfigKeyVal *ck_old,
+                                         unc_keytype_operation_t op,
+                                         upll_keytype_datatype_t dt_type,
+                                         unc_key_type_t keytype,
+                                         DalDmlIntf *dmi,
+                                         bool &not_send_to_drv,
+                                         bool audit_update_phase) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  // If the attribute inside 'vlanmap_val' is not invalid,
+  // then 'vlanmap_val' is set to UNC_VF_VALID, since only then,
+  // UPLL_IDX_VLAN_ID_VM is checked for its value.
+  pfcdrv_val_vlan_map *vlanmap_val =
+    reinterpret_cast<pfcdrv_val_vlan_map_t *>(GetVal(ck_new));
+  if (vlanmap_val) {
+    vlanmap_val->valid[0] = UNC_VF_INVALID;
+    if (vlanmap_val->vm.valid[UPLL_IDX_VLAN_ID_VM] != UNC_VF_INVALID)
+      vlanmap_val->valid[0] = UNC_VF_VALID;
+  }
+
+  return result_code;
+}
+
+
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

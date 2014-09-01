@@ -28,12 +28,19 @@ typedef uint16_t DalColumnIndex;
 typedef uint16_t DalTableIndex;
 
 namespace schema {
+// column flags
+static const int kDcsPrimaryKey = 0x01;
+static const int kDcsSecondaryKey = 0x02;
+static const int kDcsCtrlrName = 0x04;
+static const int kDcsDomainId = 0x08;
+
 /* Type Definition of Schema structure */
 struct DalColumnSchema {
   const char *column_name;       // Column Name
   SQLSMALLINT db_data_type_id;   // DB Data type Identifier from unixodbc
   SQLSMALLINT dal_data_type_id;  // DAL C Data type Identifier from unixodbc
   size_t db_array_size;          // size used in DB
+  int column_info;               // column specific flags
 };
 
 struct DalRelnSchema {
@@ -69,7 +76,10 @@ enum kVtnIndex {
   kDbiValidVtnLastUpdatedTime,
   kDbiVtnCsRowStatus,
   kDbiVtnCsDesc,
-  kDbiVtnNumCols
+  kDbiUnknownCount,
+  kDbiVtnNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -88,7 +98,10 @@ enum kVtnCtrlrIndex {
   kDbiValidAlarmStatus,
   kDbiCsRowstatus,
   kDbiCsDesc,
-  kDbiVtnCtrlrNumCols
+  kDbiUnknownCount,
+  kDbiVtnCtrlrNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -99,7 +112,9 @@ enum kVtnRenameIndex {
   kDbiControllerName,
   kDbiDomainId,
   kDbiUncVtnName,
-  kDbiVtnRenameNumCols
+  kDbiVtnRenameNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -115,7 +130,7 @@ enum kVbrIndex {
   kDbiHostAddrMask,
   kDbiOperStatus,
   kDbiDownCount,
-  kDbiFaultCount,
+  kDbiUnknownCount,
   kDbiValidCtrlrName,
   kDbiValidDomainId,
   kDbiValidVbrDesc,
@@ -129,7 +144,9 @@ enum kVbrIndex {
   kDbiCsHostAddr,
   kDbiCsHostAddrMask,
   kDbiVbrFlags,
-  kDbiVbrNumCols
+  kDbiVbrNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -149,7 +166,9 @@ enum kVbrVlanMapIndex {
   kDbiValidBdryRefCount,
   kDbiCsRowStatus,
   kDbiCsVlanid,
-  kDbiVbrVlanMapNumCols
+  kDbiVbrVlanMapNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -189,7 +208,9 @@ enum kVbrIfIndex {
   kDbiCsLogicalPortId,
   kDbiCsVlanid,
   kDbiCsTagged,
-  kDbiVbrIfNumCols
+  kDbiVbrIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -215,7 +236,9 @@ enum kVrtIndex {
   kDbiCsDomainId,
   kDbiCsVrtDesc,
   kDbiCsDhcprelayAdminstatus,
-  kDbiVrtNumCols
+  kDbiVrtNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -247,7 +270,9 @@ enum kVrtIfIndex {
   kDbiCsMask,
   kDbiCsMacAddr,
   kDbiCsAdminStatus,
-  kDbiVrtIfNumCols
+  kDbiVrtIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -261,7 +286,7 @@ enum kVterminalIndex {
   kDbiVterminalDesc,
   kDbiOperStatus,
   kDbiDownCount,
-  kDbiFaultCount,
+  kDbiUnknownCount,
   kDbiValidCtrlrName,
   kDbiValidDomainId,
   kDbiValidVterminalDesc,
@@ -271,7 +296,9 @@ enum kVterminalIndex {
   kDbiCsDomainId,
   kDbiCsVterminalDesc,
   kDbiVterminalFlags,
-  kDbiVterminalNumCols
+  kDbiVterminalNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -305,7 +332,9 @@ enum kVtermIfIndex {
   kDbiCsLogicalPortId,
   kDbiCsVlanid,
   kDbiCsTagged,
-  kDbiVtermIfNumCols
+  kDbiVtermIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -318,7 +347,9 @@ enum kVnodeRenameIndex {
   kDbiDomainId,
   kDbiUncVtnName,
   kDbiUncvnodeName,
-  kDbiVnodeRenameNumCols
+  kDbiVnodeRenameNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -361,7 +392,9 @@ enum kVlinkIndex {
   kDbiCsBoundaryName,
   kDbiCsVlanid,
   kDbiCsDesc,
-  kDbiVlinkNumCols
+  kDbiVlinkNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -374,7 +407,9 @@ enum kVlinkRenameIndex {
   kDbiDomainId,
   kDbiVtnName,
   kDbiVlinkName,
-  kDbiVlinkRenameNumCols
+  kDbiVlinkRenameNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -394,7 +429,9 @@ enum kStaticIpRouteIndex {
   kDbiValidMetric,
   kDbiCsRowstatus,
   kDbiCsMetric,
-  kDbiStaticIpRouteNumCols
+  kDbiStaticIpRouteNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -408,7 +445,9 @@ enum kDhcpRelayServerIndex {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowstatus,
-  kDbiDhcpRelayServerNumCols
+  kDbiDhcpRelayServerNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -422,7 +461,9 @@ enum kDhcpRelayIfIndex {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowstatus,
-  kDbiDhcpRelayIfNumCols
+  kDbiDhcpRelayIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -441,7 +482,9 @@ enum kVbrNwMonGrpIndex {
   kDbiValidOperStatus,
   kDbiCsRowstatus,
   kDbiCsAdminStatus,
-  kDbiVbrNwMonGrpNumCols
+  kDbiVbrNwMonGrpNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -471,7 +514,9 @@ enum kVbrNwMonHostIndex {
   kDbiCsFailureCount,
   kDbiCsRecoveryCount,
   kDbiCsWaitTime,
-  kDbiVbrNwMonHostNumCols
+  kDbiVbrNwMonHostNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -491,7 +536,9 @@ enum kVunknownIndex {
   kDbiCsDesc,
   kDbiCsType,
   kDbiCsDomainId,
-  kDbiVunknownNumCols
+  kDbiVunknownNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -510,7 +557,9 @@ enum kVunknownIfIndex {
   kDbiCsRowstatus,
   kDbiCsDesc,
   kDbiCsAdminStatus,
-  kDbiVunknownIfNumCols
+  kDbiVunknownIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -533,7 +582,9 @@ enum kVtepIndex {
   kDbiCsDesc,
   kDbiCsCtrlrName,
   kDbiCsDomainId,
-  kDbiVtepNumCols
+  kDbiVtepNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -567,7 +618,9 @@ enum kVtepIfIndex {
   kDbiCsLogicalPortId,
   kDbiCsVlanid,
   kDbiCsTagged,
-  kDbiVtepIfNumCols
+  kDbiVtepIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -584,7 +637,9 @@ enum kVtepGrpIndex {
   kDbiCsRowstatus,
   kDbiCsCtrlrName,
   kDbiCsDesc,
-  kDbiVtepGrpNumCols
+  kDbiVtepGrpNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -598,7 +653,9 @@ enum kVtepGrpMemIndex {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowstatus,
-  kDbiVtepGrpMemNumCols
+  kDbiVtepGrpMemNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -630,7 +687,9 @@ enum kVtunnelIndex {
   kDbiCsUnderlayVtnName,
   kDbiCsVtepgrpName,
   kDbiCsLabel,
-  kDbiVtunnelNumCols
+  kDbiVtunnelNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 
@@ -664,7 +723,9 @@ enum kVtunnelIfIndex {
   kDbiCsLogicalPortId,
   kDbiCsVlanid,
   kDbiCsTagged,
-  kDbiVtunnelIfNumCols
+  kDbiVtunnelIfNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };
 }
 // L2/L3 MoMgr Enum End
@@ -681,7 +742,9 @@ enum FlowListSchema {
   kDbiValidIpType,
   kDbiCsRowStatus,
   kDbiCsIpType,
-  kDbiFlowListNumCols    // Number of Columns
+  kDbiFlowListNumCols,    // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // enum FlowListSchema
 }  // namespace flowlist
 
@@ -696,7 +759,9 @@ enum FlowListCtrlrSchema {
   kDbiValidIpType,
   kDbiCsRowStatus,
   kDbiCsIpType,
-  kDbiFlowListCtrlrNumCols  // Number of Columns
+  kDbiFlowListCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // enum FlowListCtrlrSchema
 }  // namespace flowlist_ctrlr
 
@@ -707,7 +772,9 @@ enum FlowListRenameSchema {
   kDbiFlowListNameCtrlr = 0,
   kDbiCtrlrName,
   kDbiFlowListName,
-  kDbiFlowListRenameNumCols  // Number of Columns
+  kDbiFlowListRenameNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // enum FlowListRenameSchema
 }  // namespace flowlist_rename
 
@@ -786,7 +853,9 @@ enum FlowListEntrySchema {
   kDbiCsIcmpCode,
   kDbiCsIcmpV6Type,
   kDbiCsIcmpV6Code,
-  kDbiFlowListEntryNumCols  // Number of Columns
+  kDbiFlowListEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // FlowFilterEntrySchema
 }  // namespace flowlist_entry
 
@@ -843,7 +912,9 @@ enum FlowListEntryCtrlrSchema {
   kDbiCsIcmpCode,
   kDbiCsIcmpV6Type,
   kDbiCsIcmpV6Code,
-  kDbiFlowListEntryCtrlrNumCols  // Number of Columns
+  kDbiFlowListEntryCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // FlowFilterEntryCtrlrSchema
 }  // namespace flowlist_entry_Ctrlr
 
@@ -854,7 +925,9 @@ enum PolicingProfileSchema {
   kDbiPolicingProfileName = 0,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiPolicingProfileNumCols  // Number of Columns
+  kDbiPolicingProfileNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // PolicingProfileSchema
 }  // namespace policingprofile
 
@@ -867,7 +940,9 @@ enum PolicingProfileCtrlrSchema {
   kDbiRefCount,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiPolicingProfileCtrlrNumCols  // Number of Columns
+  kDbiPolicingProfileCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // PolicingProfileCtrlrSchema
 }  // namespace policingprofile_ctrlr
 
@@ -878,7 +953,9 @@ enum PolicingProfileRenameSchema {
   kDbiPolicingProfileNameCtrlr = 0,
   kDbiCtrlrName,
   kDbiPolicingProfileName,
-  kDbiPolicingProfileRenameNumCols  // Number of Columns
+  kDbiPolicingProfileRenameNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // PolicingProfileRenameSchema
 }  // namespace policingprofile_rename
 
@@ -945,7 +1022,9 @@ enum PolicingProfileEntrySchema {
   kDbiCsRedPriority,
   kDbiCsRedDscp,
   kDbiCsRedDrop,
-  kDbiPolicingProfileEntryNumCols  // Number of Columns
+  kDbiPolicingProfileEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // PolicingProfileEntrySchema
 }  // namespace policingprofile_entry
 
@@ -995,7 +1074,9 @@ enum PolicingProfileEntryCtrlrSchema {
   kDbiCsRedPriority,
   kDbiCsRedDscp,
   kDbiCsRedDrop,
-  kDbiPolicingProfileEntryCtrlrNumCols  // Number of Columns
+  kDbiPolicingProfileEntryCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // PolicingProfileEntryCtrlrSchema
 }  // namespace policingprofile_entry_ctrlr
 
@@ -1008,7 +1089,9 @@ enum VtnFlowFilterSchema {
   kDbiInputDirection,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiVtnFlowFilterNumCols  // Number of Columns
+  kDbiVtnFlowFilterNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtnFlowFilterSchema
 }  // namespace vtn_flowfilter
 
@@ -1022,7 +1105,9 @@ enum VtnFlowFilterCtrlrSchema {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiVtnFlowFilterCtrlrNumCols  // Number of Columns
+  kDbiVtnFlowFilterCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtnFlowFilterCtrlrSchema
 }  // namespace vtn_flowfilter_ctrlr
 
@@ -1050,7 +1135,9 @@ enum VtnFlowFilterEntrySchema {
   kDbiCsNwnName,
   kDbiCsDscp,
   kDbiCsPriority,
-  kDbiVtnFlowFilterEntryNumCols  // Number of Columns
+  kDbiVtnFlowFilterEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtnFlowFilterEntrySchema
 }  // namespace vtn_flowfilter_entry
 
@@ -1075,7 +1162,9 @@ enum VtnFlowFilterEntryCtrlrSchema {
   kDbiCsNwnName,
   kDbiCsDscp,
   kDbiCsPriority,
-  kDbiVtnFlowFilterEntryCtrlrNumCols  // Number of Columns
+  kDbiVtnFlowFilterEntryCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtnFlowFilterEntryCtrlrSchema
 }  // namespace vtn_flowfilter_entry_ctrlr
 
@@ -1090,7 +1179,9 @@ enum VbrFlowFilterSchema {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiVbrFlowFilterNumCols  // Number of Columns
+  kDbiVbrFlowFilterNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VbrFlowFilterSchema
 }  // namespace vbr_flowfilter
 
@@ -1136,7 +1227,9 @@ enum VbrFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
-  kDbiVbrFlowFilterEntryNumCols  // Number of Columns
+  kDbiVbrFlowFilterEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VbrFlowFilterEntrySchema
 }  // namespace vbr_flowfilter_entry
 
@@ -1153,7 +1246,9 @@ enum VbrIfFlowFilterSchema {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiVbrIfFlowFilterNumCols  // Number of Columns
+  kDbiVbrIfFlowFilterNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VbrFlowFilterEntrySchema
 }  // namespace vbr_if_flowfilter
 
@@ -1200,7 +1295,9 @@ enum VbrIfFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
-  kDbiVbrIfFlowFilterEntryNumCols  // Number of Columns
+  kDbiVbrIfFlowFilterEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VbrIfFlowFilterEntrySchema
 }  // namespace vbr_if_flowfilter_entry
 
@@ -1217,7 +1314,9 @@ enum VrtIfFlowFilterSchema {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiVrtIfFlowFilterNumCols  // Number of Columns
+  kDbiVrtIfFlowFilterNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VrtIfFlowFilterSchema
 }  // namespace vrt_if_flowfilter
 
@@ -1264,7 +1363,9 @@ enum VrtIfFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
-  kDbiVrtIfFlowFilterEntryNumCols  // Number of Columns
+  kDbiVrtIfFlowFilterEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VrtIfFlowFilterEntrySchema
 }  // namespace vrt_if_flowfilter_entry
 
@@ -1280,7 +1381,9 @@ enum VtermIfFlowFilterSchema {
   kDbiDomainId,
   kDbiFlags,
   kDbiCsRowStatus,
-  kDbiVtermIfFlowFilterNumCols  // Number of Columns
+  kDbiVtermIfFlowFilterNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtermIfFlowFilterSchema
 }  // namespace vterm_if_flowfilter
 
@@ -1327,7 +1430,9 @@ enum VtermIfFlowFilterEntrySchema {
   kDbiCsNwmName,
   kDbiCsDscp,
   kDbiCsPriority,
-  kDbiVtermIfFlowFilterEntryNumCols  // Number of Columns
+  kDbiVtermIfFlowFilterEntryNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtermIfFlowFilterEntrySchema
 }  // namespace vterm_if_flowfilter_entry
 
@@ -1341,7 +1446,9 @@ enum VtnPolicingMapSchema {
   kDbiValidPolicername,
   kDbiCsRowStatus,
   kDbiCsPolicername,
-  kDbiVtnPolicingMapNumCols  // Number of Columns
+  kDbiVtnPolicingMapNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtnPolicingMap
 }  // namespace vtn_policingmap
 
@@ -1357,7 +1464,9 @@ enum VtnPolicingMapCtrlrSchema {
   kDbiValidPolicername,
   kDbiCsRowStatus,
   kDbiCsPolicername,
-  kDbiVtnPolicingMapCtrlrNumCols  // Number of Columns
+  kDbiVtnPolicingMapCtrlrNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtnPolicingMapCtrlr
 }  // namespace vtn_policingmap_ctrlr
 
@@ -1375,7 +1484,9 @@ enum VbrPolicingMapSchema {
   kDbiValidPolicername,
   kDbiCsRowStatus,
   kDbiCsPolicername,
-  kDbiVbrPolicingMapNumCols  // Number of Columns
+  kDbiVbrPolicingMapNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VbrPolicingMap
 }  // namespace vbr_policingmap
 
@@ -1393,7 +1504,9 @@ enum VbrIfPolicingMapSchema {
   kDbiValidPolicername,
   kDbiCsRowStatus,
   kDbiCsPolicername,
-  kDbiVbrIfPolicingMapNumCols  // Number of Columns
+  kDbiVbrIfPolicingMapNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VbrIfPolicingMap
 }  // namespace vbr_if_policingmap
 
@@ -1410,7 +1523,9 @@ enum VtermIfPolicingMapSchema {
   kDbiValidPolicername,
   kDbiCsRowStatus,
   kDbiCsPolicername,
-  kDbiVtermIfPolicingMapNumCols  // Number of Columns
+  kDbiVtermIfPolicingMapNumCols,  // Number of Columns
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // VtermIfPolicingMap
 }  // namespace vterm_if_policingmap
 
@@ -1425,9 +1540,23 @@ enum CtrlrSchema {
   kDbiAuditDone,
   kDbiConfigDone,
   kDbiInvalidConfig,
-  kCtrlrNumCols
+  kDbiState,
+  kCtrlrNumCols,
+  kDbiCreateFlag,
+  kDbiUpdateFlag
 };  // CtrlrSchema
 }  // namespace ctrlr
+
+namespace cfg_tbl_dirty {
+static const int max_cfg_tbl_name_len = 32;
+static const uint8_t kCfgTblDirtyNumPkCols = 2;
+enum CfgTblDirtySchema {
+   kDbiTblName=0,
+   kDbiOperation,
+   kDbiDirty,
+   kCfgTblDirtyNumCols
+};  // CfgTblDirtySchema
+}  // namespace cfg_tbl_dirty
 
 enum kDalTableIndex {
   // L2/L3 MoMgr Table Enum Start
@@ -1488,6 +1617,7 @@ enum kDalTableIndex {
   kDbiVtermIfPolicingMapTbl,
   // POM MoMgr Table Enum End
 
+  kDbiCfgTblDirtyTbl,
   kDbiCtrlrTbl,
   kDalNumTables
 };  // enum kDalTableIndex
@@ -1536,11 +1666,34 @@ ColumnName(uint16_t table_index, uint16_t column_index) {
              NULL) :
            NULL);
 }
+// To add c_flag and u_flag in candidate table, 
+// num_colunms + 2 is added
+inline const char *
+CandColumnName(uint16_t table_index, uint16_t column_index) {
+  return ((table_index < table::kDalNumTables) ?
+           ((column_index < (table::table_schema[table_index].num_columns)+2) ?
+             table::table_schema[table_index].
+             column_schema[column_index].column_name :
+             NULL) :
+           NULL);
+}
 
 inline SQLSMALLINT
 ColumnDbDataTypeId(uint16_t table_index, uint16_t column_index) {
   return ((table_index < table::kDalNumTables) ?
            ((column_index < table::table_schema[table_index].num_columns) ?
+             table::table_schema[table_index].
+             column_schema[column_index].db_data_type_id :
+             SQL_UNKNOWN_TYPE) :
+           SQL_UNKNOWN_TYPE);
+}
+
+// To add c_flag and u_flag in candidate table, 
+// num_colunms + 2 is added
+inline SQLSMALLINT
+CandColumnDbDataTypeId(uint16_t table_index, uint16_t column_index) {
+  return ((table_index < table::kDalNumTables) ?
+           ((column_index < (table::table_schema[table_index].num_columns) + 2) ?
              table::table_schema[table_index].
              column_schema[column_index].db_data_type_id :
              SQL_UNKNOWN_TYPE) :
@@ -1567,13 +1720,33 @@ ColumnDbArraySize(uint16_t table_index, uint16_t column_index) {
            0);
 }
 
+// To add c_flag and u_flag in candidate table, 
+// num_colunms + 2 is added
+inline size_t
+CandColumnDbArraySize(uint16_t table_index, uint16_t column_index) {
+  return ((table_index < table::kDalNumTables) ?
+           ((column_index < (table::table_schema[table_index].num_columns) + 2) ?
+             table::table_schema[table_index].
+             column_schema[column_index].db_array_size :
+             0) :
+           0);
+}
+
 inline bool
 ColumnIsPKeyIndex(uint16_t table_index, uint16_t column_index) {
   return (column_index < TableNumPkCols(table_index));
 }
 
-};  // namespace schema
+inline bool
+AddtlBindForInstanceExistsCheck(const DalTableIndex table_index,
+                                const DalColumnIndex col_index) {
+    return(((table::table_schema[table_index].column_schema[col_index].
+             column_info & kDcsCtrlrName) ||
+            (table::table_schema[table_index].column_schema[col_index].
+             column_info & kDcsDomainId)) ? true : false);
+}
 
+};  // namespace schema
 }  // namespace dal
 }  // namespace upll
 }  // namespace unc

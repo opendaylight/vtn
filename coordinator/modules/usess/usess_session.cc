@@ -50,7 +50,6 @@ UsessSession::~UsessSession(void)
  */
 usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
 {
-  tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
   tc::TcModule *tc_instance = NULL;
 
 
@@ -70,10 +69,7 @@ usess_ipc_err_e UsessSession::TransitMode(const usess_mode_e sess_mode)
         "%s", "Failure TC module getinstance.");
 
     // release configuration mode session.
-    tc_rtn = tc_instance->TcReleaseSession(sess_.sess.id);
-    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && tc_rtn == tc::TC_INVALID_PARAM),
-      "Without notification to TC. id=%d err=%d", sess_.sess.id, tc_rtn);
-
+    tc_instance->TcReleaseSession(sess_.sess.id);
   }
 
   // modify session mode.

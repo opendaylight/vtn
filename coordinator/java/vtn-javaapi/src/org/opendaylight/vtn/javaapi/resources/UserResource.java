@@ -110,7 +110,7 @@ public class UserResource extends AbstractResource {
 					VtnServiceIpcConsts.SESS_PASSWD,
 					IpcDataUnitWrapper.setIpcUint8ArrayValue(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
-							.getAsString().trim()));
+							.getAsString()));
 
 			session.addOutput(usessIpcReqUserPasswd);
 			LOG.info("Request packet created successfully");

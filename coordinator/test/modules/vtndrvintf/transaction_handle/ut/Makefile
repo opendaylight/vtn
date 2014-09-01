@@ -53,7 +53,7 @@ VTNCACHEUTIL_SOURCES += confignode.cc
 VTNCACHEUTIL_SOURCES += vtn_cache_mod.cc
 VTNDRVINTF_SOURCES = vtn_drv_transaction_handle.cc
 RESTJSONUTIL_SOURCES = http_client.cc json_build_parse.cc rest_client.cc
-MISC_SOURCES = ipc_client.cc ipc_server.cc module.cc
+MISC_SOURCES = ipc_client.cc ipc_server.cc module.cc audit_keytypes.cc
 CONTROLLER_STUB_SOURCES = vtn_drv_module.cc controller_fw.cc
 TCLIBMODULE_STUBSOURCES = tclib_module.cc
 

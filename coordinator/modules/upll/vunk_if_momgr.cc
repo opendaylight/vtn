@@ -373,7 +373,10 @@ upll_rc_t VunkIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
       val_vunk_if *ival = static_cast<val_vunk_if *>(GetVal(req));
       val_vunk_if *vunk_val_if = static_cast<val_vunk_if *>
                                            (malloc(sizeof(val_vunk_if)));
-      if (!vunk_val_if) return UPLL_RC_ERR_GENERIC;
+      if (!vunk_val_if || !ival) {
+        FREE_IF_NOT_NULL(vunk_val_if);
+        return UPLL_RC_ERR_GENERIC;
+      }
       memcpy(vunk_val_if, ival, sizeof(val_vunk_if));
       tmp1 = new ConfigVal(IpctSt::kIpcStValVunkIf, vunk_val_if);
     }
@@ -382,8 +385,9 @@ upll_rc_t VunkIfMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
   key_vunk_if *ikey = static_cast<key_vunk_if *>(tkey);
   key_vunk_if *vunk_if_key = static_cast<key_vunk_if *>
                                     (malloc(sizeof(key_vunk_if)));
-  if (!vunk_if_key) {
+  if (!vunk_if_key || !ikey) {
     delete tmp1;
+    FREE_IF_NOT_NULL(vunk_if_key);
     return UPLL_RC_ERR_GENERIC;
   }
   memcpy(vunk_if_key, ikey, sizeof(key_vunk_if));
@@ -414,7 +418,7 @@ upll_rc_t VunkIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
 
   unc_keytype_configstatus_t cs_status = UNC_CS_APPLIED;
   UPLL_LOG_TRACE("Key in Candidate %s",(ikey->ToStrAll()).c_str());
-  if (vunk_if_val == NULL) {
+  if (vunk_if_val == NULL || vunk_if_val2 == NULL) {
     UPLL_LOG_TRACE("Value of Vunknown Interface is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -466,7 +470,7 @@ upll_rc_t VunkIfMoMgr::PopulateValVtnNeighbor(ConfigKeyVal *&in_ckv,
                                              (vlink_ckv->get_key());
     if (!vlink_key) {
       UPLL_LOG_DEBUG("Invalid param");
-      if (vlink_ckv) delete vlink_ckv;
+      delete vlink_ckv;
       return UPLL_RC_ERR_GENERIC;
     }
     if ((iftype == kVlinkBoundaryNode1) || (iftype == kVlinkInternalNode1))

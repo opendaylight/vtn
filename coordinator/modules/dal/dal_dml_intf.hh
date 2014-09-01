@@ -378,7 +378,8 @@ class DalDmlIntf {
      */
     virtual DalResultCode DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
-                                const DalBindInfo *matching_attr_info) const = 0;
+                                const DalBindInfo *matching_attr_info,
+                                const bool truncate) const = 0;
 
     /**
      * CreateRecord
@@ -437,8 +438,8 @@ class DalDmlIntf {
                     const DalBindInfo *input_and_matching_attr_info) const = 0;
 
     /**
-     * UpdateRecords
-     *   Updates the records of table with the given sql query.
+     * ExecuteAppQuery
+     *   Updates(create/update/delete) the records of table with the given sql query.
      *   Increments the write count if operation is successful.
      *
      * @param[in] query_stmt      - The update sql query to be executed
@@ -447,6 +448,8 @@ class DalDmlIntf {
      * @param[in] table_index     - Valid Index of the table
      * @param[in] input_and_matching_attr_info
      *                            - Bind Information for updating records
+     * @param[in] dirty_op        - How to treat the modification -
+     *                              create/update/delete
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -463,11 +466,12 @@ class DalDmlIntf {
      *     BindMatch if not used, updates all the records from the table.
      *  4. BindOutput if used for any attributes, ignored.
      */
-    virtual DalResultCode UpdateRecords(
+    virtual DalResultCode ExecuteAppQuery(
                               std::string query_stmt,
                               const UpllCfgType cfg_type,
                               const DalTableIndex table_index,
-                              const DalBindInfo *bind_info) const = 0;
+                              const DalBindInfo *bind_info,
+                              const unc_keytype_operation_t dirty_op) const = 0;
     /**
      * GetDeletedRecords
      *   Fetches the records from cfg_type_2 which are not in cfg_type_1
@@ -553,6 +557,9 @@ class DalDmlIntf {
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
                                     DalCursor **cursor) const = 0;
+
+    virtual DalResultCode ClearCreateUpdateFlags(const DalTableIndex table_index,
+                                    const UpllCfgType cfg_type) const = 0;
 
     /**
      * GetUpdatedRecords
@@ -833,6 +840,20 @@ class DalDmlIntf {
                          const size_t max_record_count,
                          const DalBindInfo *bind_info,
                          DalCursor **cursor) const = 0;
+     virtual DalResultCode ExecuteAppQueryModifyRecord(
+             const UpllCfgType cfg_type,
+             const DalTableIndex table_index,
+             const std::string query_stmt,
+             const DalBindInfo *bind_info,
+             const unc_keytype_operation_t op) const = 0;
+
+     virtual void MakeAllTableDirtyInCache() const = 0;
+     virtual  bool IsTableDirtyShallow(
+                    const DalTableIndex table_index) const = 0; 
+
+     virtual bool IsTableDirtyShallowForOp(
+                    const DalTableIndex table_index,
+                    const unc_keytype_operation_t op) const = 0;
 };  // class DalDmlIntf
 
 };  // namespace dal

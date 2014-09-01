@@ -49,6 +49,10 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
   ODBCM_RC_STATUS copy_db_status = ODBCM_RC_SUCCESS;
   UncRespCode result_code = UNC_RC_SUCCESS;
   /* copy StartUp to Candidate */
+  // if unc is running in coexists mode
+  UncMode unc_mode = PhysicalLayer::get_instance()->\
+                        get_physical_core()->getunc_mode();
+  if (unc_mode != UNC_COEXISTS_MODE) {
   copy_db_status = physical_layer->get_odbc_manager()->
       CopyDatabase(UNC_DT_STARTUP, UNC_DT_CANDIDATE, db_conn);
   if (copy_db_status != ODBCM_RC_SUCCESS) {
@@ -65,6 +69,17 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
     }
     return result_code;
   }
+  } else {
+  // Clear Candidate entries
+  ODBCM_RC_STATUS clear_status =
+      PhysicalLayer::get_instance()->get_odbc_manager()->
+      ClearDatabase(UNC_DT_CANDIDATE, db_conn);
+  if (clear_status != ODBCM_RC_SUCCESS) {
+    pfc_log_info("Candidate DB clearing failed");
+    result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
+    return result_code;
+  }
+  }
   // Clear Running entries
   ODBCM_RC_STATUS clear_status =
       PhysicalLayer::get_instance()->get_odbc_manager()->
@@ -72,6 +87,7 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("Running DB clearing failed");
     result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
+    return result_code;
   }
   // Clear Import Database entries
   clear_status = PhysicalLayer::get_instance()->get_odbc_manager()->
@@ -79,7 +95,9 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("Import DB clearing failed");
     result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
+    return result_code;
   }
+  if (unc_mode != UNC_COEXISTS_MODE) {
   /* copy Candidate to Running */
   copy_db_status = physical_layer->get_odbc_manager()->
       CopyDatabase(UNC_DT_CANDIDATE, UNC_DT_RUNNING, db_conn);
@@ -99,6 +117,7 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
     }
     return result_code;
   }
+  }
   // Clear State entries
   clear_status =
       PhysicalLayer::get_instance()->get_odbc_manager()->
@@ -106,6 +125,38 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("State DB clearing failed");
     result_code = UNC_UPPL_RC_ERR_CLEAR_DB;
+  }
+  return result_code;
+}
+
+/**CopyRunningtoCandidate
+ * @Description    : This function copy the entries from Running to Candidate
+ *                   when Startup is invalid
+ * @param[in]      : None
+ * @Return         : UNC_RC_SUCCESS if copy is successful
+ *                   or UNC_UPPL_RC_ERR_* if failure occurs
+ * */
+UncRespCode DBConfigurationRequest::CopyRunningtoCandidate(
+    OdbcmConnectionHandler *db_conn) {
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  ODBCM_RC_STATUS copy_db_status = ODBCM_RC_SUCCESS;
+  UncRespCode result_code = UNC_RC_SUCCESS;
+  /* copy StartUp to Candidate */
+  copy_db_status = physical_layer->get_odbc_manager()->
+      CopyDatabase(UNC_DT_RUNNING, UNC_DT_CANDIDATE, db_conn);
+  if (copy_db_status != ODBCM_RC_SUCCESS) {
+    if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
+      // log fatal error to log daemon
+      pfc_log_fatal("DB connection not available or cannot access DB");
+      result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
+    } else {
+      // log error to log daemon
+      string log_msg = string("StartupInvalidCopyRunningtoCandidate:")+
+          "Copying the Running to Candidate database failed";
+      pfc_log_error(log_msg.c_str());
+      result_code = UNC_UPPL_RC_ERR_COPY_RUNNING_TO_CANDID;
+    }
+    return result_code;
   }
   return result_code;
 }

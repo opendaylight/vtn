@@ -17,7 +17,6 @@ import org.opendaylight.vtn.javaapi.RestResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -62,7 +61,7 @@ public class TenantResource extends AbstractResource {
 	 *      google.gson.JsonObject)
 	 */
 	@Override
-	public int put(JsonObject requestBody) throws VtnServiceException {
+	public int put(JsonObject requestBody) {
 		LOG.trace("Start TenantsResource#put()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -104,7 +103,7 @@ public class TenantResource extends AbstractResource {
 			}
 
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
@@ -124,7 +123,7 @@ public class TenantResource extends AbstractResource {
 	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#delete()
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public int delete() {
 		LOG.trace("Start TenantResource#delete()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -145,14 +144,18 @@ public class TenantResource extends AbstractResource {
 				final VtnBean vtnBean = new VtnBean();
 				vtnBean.setVtnName(getTenantId());
 
-				final String counter = getTenantId().replace(
-						VtnServiceOpenStackConsts.VTN_PREFIX,
-						VtnServiceConsts.EMPTY_STRING);
-				try {
-					vtnBean.setVtnId(Integer.parseInt(counter));
-				} catch (final NumberFormatException e) {
-					LOG.debug("Resource Id was not auto-generated during Create operation : "
-							+ counter);
+				if (getTenantId().startsWith(VtnServiceOpenStackConsts.VTN_PREFIX)) {
+					final String counter = getTenantId().replace(
+							VtnServiceOpenStackConsts.VTN_PREFIX,
+							VtnServiceConsts.EMPTY_STRING);
+					try {
+						vtnBean.setVtnId(Integer.parseInt(counter));
+					} catch (final NumberFormatException e) {
+						LOG.debug("Resource Id was not auto-generated during Create operation : "
+								+ counter);
+						vtnBean.setVtnId(0);
+					}
+				} else {
 					vtnBean.setVtnId(0);
 				}
 
@@ -212,7 +215,7 @@ public class TenantResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
@@ -221,7 +224,7 @@ public class TenantResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -288,11 +291,11 @@ public class TenantResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
-			notFoundStatus = true;
+			resourceFound = true;
 		} else {
 			createErrorInfo(
 					UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -300,6 +303,6 @@ public class TenantResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 }

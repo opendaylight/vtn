@@ -216,6 +216,14 @@ public class VRouterResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			//removal of unused parameter in request body.
+			JsonObject vRouter = requestBody.getAsJsonObject(VtnServiceJsonConsts.VROUTER);
+			if (vRouter.has(VtnServiceJsonConsts.CONTROLLERID)) {
+				vRouter.remove(VtnServiceJsonConsts.CONTROLLERID);
+			}
+			if (vRouter.has(VtnServiceJsonConsts.DOMAINID)) {
+				vRouter.remove(VtnServiceJsonConsts.DOMAINID);
+			}
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VROUTER_UPDATE, requestBody,
 					getUriParameters());

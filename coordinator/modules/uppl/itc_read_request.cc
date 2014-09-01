@@ -34,9 +34,12 @@ using unc::uppl::PhysicalLayer;
  * @param[in]   : None
  * @return      : None
  * */
-ReadRequest::ReadRequest() {
-  // The class member structures are initialized
-  // based on request received
+ReadRequest::ReadRequest() : key_root_obj(), key_ctr_obj(), val_ctr_obj(),
+  key_dataflow_obj(), key_ctr_dataflow_obj(), key_domain_obj(),
+  val_domain_obj(), key_logical_port_obj(), val_logical_port_obj(),
+  key_logical_member_port_obj(), key_switch_obj(), val_switch_obj(),
+  key_port_obj(), val_port_obj(), key_link_obj(), val_link_obj(),
+  key_boundary_obj(), val_boundary_obj() {
 }
 
 /**~ReadRequest

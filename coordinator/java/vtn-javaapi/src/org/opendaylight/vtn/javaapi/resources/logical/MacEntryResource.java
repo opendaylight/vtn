@@ -113,7 +113,6 @@ public class MacEntryResource extends AbstractResource {
 					getUriParameters());
 			if (requestBody.has(VtnServiceJsonConsts.TYPE)
 					&& requestBody.get(VtnServiceJsonConsts.TYPE).getAsString()
-							.trim()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATIC)) {
 				requestProcessor
 						.getRequestPacket()
@@ -123,7 +122,6 @@ public class MacEntryResource extends AbstractResource {
 												.ordinal()));
 			} else if (requestBody.has(VtnServiceJsonConsts.TYPE)
 					&& requestBody.get(VtnServiceJsonConsts.TYPE).getAsString()
-							.trim()
 							.equalsIgnoreCase(VtnServiceJsonConsts.DYNAMIC)) {
 				requestProcessor
 						.getRequestPacket()

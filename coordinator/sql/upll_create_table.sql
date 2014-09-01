@@ -9,7 +9,7 @@
 
 --
 -- upll_create_table.sql
---   Contains SQL commands to create all the tables need for UPLL
+--   Contains SQL commands to create/update all the tables need for UPLL
 --
 
 CREATE TABLE su_vtn_tbl (
@@ -28,11 +28,12 @@ CREATE TABLE su_vtn_tbl (
     valid_last_updated_time smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
+    unknown_count bigint default 0,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE su_vtn_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     alarm_status smallint default 0,
@@ -43,34 +44,35 @@ CREATE TABLE su_vtn_ctrlr_tbl (
     valid_alarm_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-  PRIMARY KEY(vtn_name, controller_name, domain_id));
+    unknown_count bigint default 0,
+  PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE su_vtn_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE su_vbr_tbl (
     vtn_name varchar(32) default ' ',
     vbridge_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vbr_description varchar(128) default ' ',
     host_addr bytea default '\000\000\000\000',
     host_addr_mask smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vbr_description smallint default 0,
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vbr_description smallint default 3,
     cs_host_addr smallint default 3,
@@ -85,7 +87,7 @@ CREATE TABLE su_vbr_vlanmap_tbl (
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
     bdry_ref_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
@@ -108,7 +110,7 @@ CREATE TABLE su_vbr_if_tbl (
     vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -133,20 +135,20 @@ CREATE TABLE su_vbr_if_tbl (
 CREATE TABLE su_vrt_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vrt_description varchar(128) default ' ',
     dhcprelay_admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vrt_description smallint default 3,
     cs_dhcprelay_admin_status smallint default 3,
@@ -163,7 +165,7 @@ CREATE TABLE su_vrt_if_tbl (
     admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -183,18 +185,18 @@ CREATE TABLE su_vrt_if_tbl (
 CREATE TABLE su_vterminal_tbl (
     vtn_name varchar(32) default ' ',
     vterminal_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vterminal_description varchar(128) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vterminal_description smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vterminal_description smallint default 3,
     flags smallint default 0,
@@ -211,7 +213,7 @@ CREATE TABLE su_vterm_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -233,11 +235,11 @@ CREATE TABLE su_vterm_if_tbl (
 CREATE TABLE su_vnode_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vnode_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, ctrlr_name, domain_id));
 
 CREATE TABLE su_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -281,11 +283,11 @@ CREATE TABLE su_vlink_tbl (
 CREATE TABLE su_vlink_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vlink_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, ctrlr_name, domain_id));
 
 CREATE TABLE su_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
@@ -295,7 +297,7 @@ CREATE TABLE su_static_ip_route_tbl (
     next_hop_addr bytea default '\000\000\000\000',
     nwm_name varchar(32) default ' ',
     metric integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
@@ -307,7 +309,7 @@ CREATE TABLE su_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     server_ip_addr bytea default '\000\000\000\000',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
@@ -317,7 +319,7 @@ CREATE TABLE su_dhcp_relay_if_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     if_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
@@ -329,7 +331,7 @@ CREATE TABLE su_vbr_nwmon_grp_tbl (
     nwm_name varchar(32) default ' ',
     admin_status smallint default 0,
     oper_status smallint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -348,7 +350,7 @@ CREATE TABLE su_vbr_nwmon_host_tbl (
     failure_count integer default 0,
     recovery_count integer default 0,
     wait_time integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_health_interval smallint default 0,
@@ -399,18 +401,18 @@ CREATE TABLE su_vtep_tbl (
     vtn_name varchar(32) default ' ',
     vtep_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
   PRIMARY KEY(vtn_name, vtep_name));
 
@@ -425,7 +427,7 @@ CREATE TABLE su_vtep_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -447,13 +449,13 @@ CREATE TABLE su_vtep_if_tbl (
 CREATE TABLE su_vtep_grp_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_description smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_description smallint default 3,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
@@ -461,7 +463,7 @@ CREATE TABLE su_vtep_grp_mem_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
     vtepgrp_member_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
@@ -471,7 +473,7 @@ CREATE TABLE su_vtunnel_tbl (
     vtn_name varchar(32) default ' ',
     vtunnel_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
@@ -480,7 +482,7 @@ CREATE TABLE su_vtunnel_tbl (
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_underlay_vtn_name smallint default 0,
     valid_vtepgrp_name smallint default 0,
@@ -488,7 +490,7 @@ CREATE TABLE su_vtunnel_tbl (
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_underlay_vtn_name smallint default 3,
     cs_vtepgrp_name smallint default 3,
@@ -506,7 +508,7 @@ CREATE TABLE su_vtunnel_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -1127,6 +1129,12 @@ CREATE TABLE su_vterm_if_policingmap_tbl (
     cs_policername smallint default 3,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name));
 
+CREATE TABLE su_upll_cfg_dirty_tbl (
+    table_name varchar(32) default ' ',
+    operation smallint default 0,
+    dirty smallint default 0,
+  PRIMARY KEY(table_name, operation));
+
 CREATE TABLE ca_vtn_tbl (
     vtn_name varchar(32) default ' ',
     description varchar(128) default ' ',
@@ -1143,11 +1151,14 @@ CREATE TABLE ca_vtn_tbl (
     valid_last_updated_time smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
+    unknown_count bigint default 0,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE ca_vtn_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     alarm_status smallint default 0,
@@ -1158,39 +1169,46 @@ CREATE TABLE ca_vtn_ctrlr_tbl (
     valid_alarm_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-  PRIMARY KEY(vtn_name, controller_name, domain_id));
+    unknown_count bigint default 0,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
+  PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE ca_vtn_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
+    c_flag smallint default 0,
+    u_flag smallint default 0,
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE ca_vbr_tbl (
     vtn_name varchar(32) default ' ',
     vbridge_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vbr_description varchar(128) default ' ',
     host_addr bytea default '\000\000\000\000',
     host_addr_mask smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vbr_description smallint default 0,
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vbr_description smallint default 3,
     cs_host_addr smallint default 3,
     cs_host_addr_mask smallint default 3,
     flags smallint default 0,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1201,13 +1219,15 @@ CREATE TABLE ca_vbr_vlanmap_tbl (
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
     bdry_ref_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
     valid_bdry_ref_count smallint default 0,
     cs_rowstatus smallint default 3,
     cs_vlanid smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name, logical_port_id, logical_port_id_valid),
   FOREIGN KEY(vtn_name, vbridge_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
@@ -1225,7 +1245,7 @@ CREATE TABLE ca_vbr_if_tbl (
     vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -1245,29 +1265,33 @@ CREATE TABLE ca_vbr_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name, if_name),
   FOREIGN KEY(vtn_name, vbridge_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
 CREATE TABLE ca_vrt_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vrt_description varchar(128) default ' ',
     dhcprelay_admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vrt_description smallint default 3,
     cs_dhcprelay_admin_status smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrouter_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1282,7 +1306,7 @@ CREATE TABLE ca_vrt_if_tbl (
     admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -1297,27 +1321,31 @@ CREATE TABLE ca_vrt_if_tbl (
     cs_mask smallint default 3,
     cs_mac_addr smallint default 3,
     cs_admin_status smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrouter_name, if_name),
   FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
 CREATE TABLE ca_vterminal_tbl (
     vtn_name varchar(32) default ' ',
     vterminal_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vterminal_description varchar(128) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vterminal_description smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vterminal_description smallint default 3,
     flags smallint default 0,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vterminal_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1332,7 +1360,7 @@ CREATE TABLE ca_vterm_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -1349,17 +1377,21 @@ CREATE TABLE ca_vterm_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vterminal_name, if_name),
   FOREIGN KEY(vtn_name, vterminal_name) REFERENCES ca_vterminal_tbl(vtn_name, vterminal_name));
 
 CREATE TABLE ca_vnode_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vnode_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
+    c_flag smallint default 0,
+    u_flag smallint default 0,
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, ctrlr_name, domain_id));
 
 CREATE TABLE ca_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -1398,17 +1430,21 @@ CREATE TABLE ca_vlink_tbl (
     cs_boundary_name smallint default 3,
     cs_vlanid smallint default 3,
     cs_description smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vlink_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
 CREATE TABLE ca_vlink_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vlink_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
+    c_flag smallint default 0,
+    u_flag smallint default 0,
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, ctrlr_name, domain_id));
 
 CREATE TABLE ca_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
@@ -1418,12 +1454,14 @@ CREATE TABLE ca_static_ip_route_tbl (
     next_hop_addr bytea default '\000\000\000\000',
     nwm_name varchar(32) default ' ',
     metric integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
     cs_rowstatus smallint default 3,
     cs_metric smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrouter_name, dst_ip_addr, mask, next_hop_addr, nwm_name),
   FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
@@ -1431,10 +1469,12 @@ CREATE TABLE ca_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     server_ip_addr bytea default '\000\000\000\000',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrouter_name, server_ip_addr),
   FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
@@ -1442,10 +1482,12 @@ CREATE TABLE ca_dhcp_relay_if_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     if_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrouter_name, if_name),
   FOREIGN KEY(vtn_name, vrouter_name) REFERENCES ca_vrt_tbl(vtn_name, vrouter_name));
 
@@ -1455,13 +1497,15 @@ CREATE TABLE ca_vbr_nwmon_grp_tbl (
     nwm_name varchar(32) default ' ',
     admin_status smallint default 0,
     oper_status smallint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_admin_status smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name, nwm_name),
   FOREIGN KEY(vtn_name, vbridge_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
@@ -1475,7 +1519,7 @@ CREATE TABLE ca_vbr_nwmon_host_tbl (
     failure_count integer default 0,
     recovery_count integer default 0,
     wait_time integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_health_interval smallint default 0,
@@ -1489,6 +1533,8 @@ CREATE TABLE ca_vbr_nwmon_host_tbl (
     cs_failure_count smallint default 3,
     cs_recovery_count smallint default 3,
     cs_wait_time smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbridge_name, nwm_name, host_address),
   FOREIGN KEY(vtn_name, vbridge_name, nwm_name) REFERENCES ca_vbr_nwmon_grp_tbl(vtn_name, vbridge_name, nwm_name));
 
@@ -1506,6 +1552,8 @@ CREATE TABLE ca_vunknown_tbl (
     cs_description smallint default 3,
     cs_type smallint default 3,
     cs_domain_id smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vunknown_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1522,6 +1570,8 @@ CREATE TABLE ca_vunknown_if_tbl (
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
     cs_admin_status smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vunknown_name, if_name),
   FOREIGN KEY(vtn_name, vunknown_name) REFERENCES ca_vunknown_tbl(vtn_name, vunknown_name));
 
@@ -1529,19 +1579,21 @@ CREATE TABLE ca_vtep_tbl (
     vtn_name varchar(32) default ' ',
     vtep_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vtep_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1556,7 +1608,7 @@ CREATE TABLE ca_vtep_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -1573,20 +1625,24 @@ CREATE TABLE ca_vtep_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vtep_name, if_name),
   FOREIGN KEY(vtn_name, vtep_name) REFERENCES ca_vtep_tbl(vtn_name, vtep_name));
 
 CREATE TABLE ca_vtep_grp_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_description smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_description smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vtepgrp_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1594,10 +1650,12 @@ CREATE TABLE ca_vtep_grp_mem_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
     vtepgrp_member_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vtepgrp_name, vtepgrp_member_name),
   FOREIGN KEY(vtn_name, vtepgrp_name) REFERENCES ca_vtep_grp_tbl(vtn_name, vtepgrp_name));
 
@@ -1605,7 +1663,7 @@ CREATE TABLE ca_vtunnel_tbl (
     vtn_name varchar(32) default ' ',
     vtunnel_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
@@ -1614,7 +1672,7 @@ CREATE TABLE ca_vtunnel_tbl (
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_underlay_vtn_name smallint default 0,
     valid_vtepgrp_name smallint default 0,
@@ -1622,11 +1680,13 @@ CREATE TABLE ca_vtunnel_tbl (
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_underlay_vtn_name smallint default 3,
     cs_vtepgrp_name smallint default 3,
     cs_label smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vtunnel_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1641,7 +1701,7 @@ CREATE TABLE ca_vtunnel_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -1658,6 +1718,8 @@ CREATE TABLE ca_vtunnel_if_tbl (
     cs_logical_port_id smallint default 3,
     cs_vlanid smallint default 3,
     cs_tagged smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vtunnel_name, if_name),
   FOREIGN KEY(vtn_name, vtunnel_name) REFERENCES ca_vtunnel_tbl(vtn_name, vtunnel_name));
 
@@ -1668,6 +1730,8 @@ CREATE TABLE ca_flowlist_tbl (
     valid_ip_type smallint default 0,
     cs_rowstatus smallint default 3,
     cs_ip_type smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(flowlist_name));
 
 CREATE TABLE ca_flowlist_ctrlr_tbl (
@@ -1678,12 +1742,16 @@ CREATE TABLE ca_flowlist_ctrlr_tbl (
     valid_ip_type smallint default 0,
     cs_rowstatus smallint default 3,
     cs_ip_type smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(flowlist_name, ctrlr_name));
 
 CREATE TABLE ca_flowlist_rename_tbl (
     ctrlr_flowlist_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_flowlist_name varchar(33) default ' ',
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(ctrlr_flowlist_name, ctrlr_name));
 
 CREATE TABLE ca_flowlist_entry_tbl (
@@ -1757,6 +1825,8 @@ CREATE TABLE ca_flowlist_entry_tbl (
     cs_icmp_code smallint default 3,
     cs_icmpv6_type smallint default 3,
     cs_icmpv6_code smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(flowlist_name, sequence_num),
   FOREIGN KEY(flowlist_name) REFERENCES ca_flowlist_tbl(flowlist_name));
 
@@ -1810,12 +1880,16 @@ CREATE TABLE ca_flowlist_entry_ctrlr_tbl (
     cs_icmp_code smallint default 3,
     cs_icmpv6_type smallint default 3,
     cs_icmpv6_code smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(flowlist_name, sequence_num, ctrlr_name));
 
 CREATE TABLE ca_policingprofile_tbl (
     policingprofile_name varchar(33) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(policingprofile_name));
 
 CREATE TABLE ca_policingprofile_ctrlr_tbl (
@@ -1824,12 +1898,16 @@ CREATE TABLE ca_policingprofile_ctrlr_tbl (
     ref_count bigint default 0,
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(policingprofile_name, ctrlr_name));
 
 CREATE TABLE ca_policingprofile_rename_tbl (
     ctrlr_policingprofile_name varchar(33) default ' ',
     ctrlr_name varchar(32) default ' ',
     unc_policingprofile_name varchar(33) default ' ',
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(ctrlr_policingprofile_name, ctrlr_name));
 
 CREATE TABLE ca_policingprofile_entry_tbl (
@@ -1891,6 +1969,8 @@ CREATE TABLE ca_policingprofile_entry_tbl (
     cs_red_priority smallint default 3,
     cs_red_dscp smallint default 3,
     cs_red_drop smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(policingprofile_name, sequence_num),
   FOREIGN KEY(policingprofile_name) REFERENCES ca_policingprofile_tbl(policingprofile_name));
 
@@ -1936,6 +2016,8 @@ CREATE TABLE ca_policingprofile_entry_ctrlr_tbl (
     cs_red_priority smallint default 3,
     cs_red_dscp smallint default 3,
     cs_red_drop smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(policingprofile_name, sequence_num, ctrlr_name));
 
 CREATE TABLE ca_vtn_flowfilter_tbl (
@@ -1943,6 +2025,8 @@ CREATE TABLE ca_vtn_flowfilter_tbl (
     direction smallint default 0,
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, direction),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -1953,6 +2037,8 @@ CREATE TABLE ca_vtn_flowfilter_ctrlr_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, direction, ctrlr_name, domain_id));
 
 CREATE TABLE ca_vtn_flowfilter_entry_tbl (
@@ -1976,6 +2062,8 @@ CREATE TABLE ca_vtn_flowfilter_entry_tbl (
     cs_nwn_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, direction, sequence_num),
   FOREIGN KEY(vtn_name, direction) REFERENCES ca_vtn_flowfilter_tbl(vtn_name, direction));
 
@@ -1997,6 +2085,8 @@ CREATE TABLE ca_vtn_flowfilter_entry_ctrlr_tbl (
     cs_nwn_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, direction, sequence_num, ctrlr_name, domain_id));
 
 CREATE TABLE ca_vbr_flowfilter_tbl (
@@ -2007,6 +2097,8 @@ CREATE TABLE ca_vbr_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbr_name, direction),
   FOREIGN KEY(vtn_name, vbr_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
@@ -2049,6 +2141,8 @@ CREATE TABLE ca_vbr_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbr_name, direction, sequence_num),
   FOREIGN KEY(vtn_name, vbr_name, direction) REFERENCES ca_vbr_flowfilter_tbl(vtn_name, vbr_name, direction));
 
@@ -2061,6 +2155,8 @@ CREATE TABLE ca_vbr_if_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction),
   FOREIGN KEY(vtn_name, vbr_name, vbr_if_name) REFERENCES ca_vbr_if_tbl(vtn_name, vbridge_name, if_name));
 
@@ -2104,6 +2200,8 @@ CREATE TABLE ca_vbr_if_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name, direction, sequence_num),
   FOREIGN KEY(vtn_name, vbr_name, vbr_if_name, direction) REFERENCES ca_vbr_if_flowfilter_tbl(vtn_name, vbr_name, vbr_if_name, direction));
 
@@ -2116,6 +2214,8 @@ CREATE TABLE ca_vrt_if_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction),
   FOREIGN KEY(vtn_name, vrt_name, vrt_if_name) REFERENCES ca_vrt_if_tbl(vtn_name, vrouter_name, if_name));
 
@@ -2159,6 +2259,8 @@ CREATE TABLE ca_vrt_if_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vrt_name, vrt_if_name, direction, sequence_num),
   FOREIGN KEY(vtn_name, vrt_name, vrt_if_name, direction) REFERENCES ca_vrt_if_flowfilter_tbl(vtn_name, vrt_name, vrt_if_name, direction));
 
@@ -2171,6 +2273,8 @@ CREATE TABLE ca_vterm_if_flowfilter_tbl (
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name, direction),
   FOREIGN KEY(vtn_name, vterm_name, vterm_if_name) REFERENCES ca_vterm_if_tbl(vtn_name, vterminal_name, if_name));
 
@@ -2214,6 +2318,8 @@ CREATE TABLE ca_vterm_if_flowfilter_entry_tbl (
     cs_nwm_name smallint default 3,
     cs_dscp smallint default 3,
     cs_priority smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name, direction, sequence_num),
   FOREIGN KEY(vtn_name, vterm_name, vterm_if_name, direction) REFERENCES ca_vterm_if_flowfilter_tbl(vtn_name, vterm_name, vterm_if_name, direction));
 
@@ -2224,6 +2330,8 @@ CREATE TABLE ca_vtn_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name),
   FOREIGN KEY(vtn_name) REFERENCES ca_vtn_tbl(vtn_name));
 
@@ -2236,6 +2344,8 @@ CREATE TABLE ca_vtn_policingmap_ctrlr_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE ca_vbr_policingmap_tbl (
@@ -2248,6 +2358,8 @@ CREATE TABLE ca_vbr_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbr_name),
   FOREIGN KEY(vtn_name, vbr_name) REFERENCES ca_vbr_tbl(vtn_name, vbridge_name));
 
@@ -2262,6 +2374,8 @@ CREATE TABLE ca_vbr_if_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vbr_name, vbr_if_name),
   FOREIGN KEY(vtn_name, vbr_name, vbr_if_name) REFERENCES ca_vbr_if_tbl(vtn_name, vbridge_name, if_name));
 
@@ -2276,8 +2390,16 @@ CREATE TABLE ca_vterm_if_policingmap_tbl (
     valid_policername smallint default 0,
     cs_rowstatus smallint default 3,
     cs_policername smallint default 3,
+    c_flag smallint default 0,
+    u_flag smallint default 0,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name),
   FOREIGN KEY(vtn_name, vterm_name, vterm_if_name) REFERENCES ca_vterm_if_tbl(vtn_name, vterminal_name, if_name));
+
+CREATE TABLE ca_upll_cfg_dirty_tbl (
+    table_name varchar(32) default ' ',
+    operation smallint default 0,
+    dirty smallint default 0,
+  PRIMARY KEY(table_name, operation));
 
 CREATE TABLE ca_ctrlr_tbl (
     name varchar(32) default ' ',
@@ -2286,6 +2408,7 @@ CREATE TABLE ca_ctrlr_tbl (
     audit_done smallint default 0,
     config_done smallint default 0,
     invalid_config smallint default 0,
+    state smallint default 0,
   PRIMARY KEY(name));
 
 CREATE TABLE ru_vtn_tbl (
@@ -2304,11 +2427,12 @@ CREATE TABLE ru_vtn_tbl (
     valid_last_updated_time smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
+    unknown_count bigint default 0,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE ru_vtn_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     alarm_status smallint default 0,
@@ -2319,34 +2443,35 @@ CREATE TABLE ru_vtn_ctrlr_tbl (
     valid_alarm_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-  PRIMARY KEY(vtn_name, controller_name, domain_id));
+    unknown_count bigint default 0,
+  PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE ru_vtn_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE ru_vbr_tbl (
     vtn_name varchar(32) default ' ',
     vbridge_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vbr_description varchar(128) default ' ',
     host_addr bytea default '\000\000\000\000',
     host_addr_mask smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vbr_description smallint default 0,
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vbr_description smallint default 3,
     cs_host_addr smallint default 3,
@@ -2361,7 +2486,7 @@ CREATE TABLE ru_vbr_vlanmap_tbl (
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
     bdry_ref_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
@@ -2384,7 +2509,7 @@ CREATE TABLE ru_vbr_if_tbl (
     vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -2409,20 +2534,20 @@ CREATE TABLE ru_vbr_if_tbl (
 CREATE TABLE ru_vrt_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vrt_description varchar(128) default ' ',
     dhcprelay_admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vrt_description smallint default 3,
     cs_dhcprelay_admin_status smallint default 3,
@@ -2439,7 +2564,7 @@ CREATE TABLE ru_vrt_if_tbl (
     admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -2459,18 +2584,18 @@ CREATE TABLE ru_vrt_if_tbl (
 CREATE TABLE ru_vterminal_tbl (
     vtn_name varchar(32) default ' ',
     vterminal_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vterminal_description varchar(128) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vterminal_description smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_vterminal_description smallint default 3,
     flags smallint default 0,
@@ -2487,7 +2612,7 @@ CREATE TABLE ru_vterm_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -2509,11 +2634,11 @@ CREATE TABLE ru_vterm_if_tbl (
 CREATE TABLE ru_vnode_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vnode_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, ctrlr_name, domain_id));
 
 CREATE TABLE ru_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -2557,11 +2682,11 @@ CREATE TABLE ru_vlink_tbl (
 CREATE TABLE ru_vlink_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vlink_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, ctrlr_name, domain_id));
 
 CREATE TABLE ru_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
@@ -2571,7 +2696,7 @@ CREATE TABLE ru_static_ip_route_tbl (
     next_hop_addr bytea default '\000\000\000\000',
     nwm_name varchar(32) default ' ',
     metric integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
@@ -2583,7 +2708,7 @@ CREATE TABLE ru_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     server_ip_addr bytea default '\000\000\000\000',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
@@ -2593,7 +2718,7 @@ CREATE TABLE ru_dhcp_relay_if_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     if_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
@@ -2605,7 +2730,7 @@ CREATE TABLE ru_vbr_nwmon_grp_tbl (
     nwm_name varchar(32) default ' ',
     admin_status smallint default 0,
     oper_status smallint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -2624,7 +2749,7 @@ CREATE TABLE ru_vbr_nwmon_host_tbl (
     failure_count integer default 0,
     recovery_count integer default 0,
     wait_time integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_health_interval smallint default 0,
@@ -2675,18 +2800,18 @@ CREATE TABLE ru_vtep_tbl (
     vtn_name varchar(32) default ' ',
     vtep_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
   PRIMARY KEY(vtn_name, vtep_name));
 
@@ -2701,7 +2826,7 @@ CREATE TABLE ru_vtep_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -2723,13 +2848,13 @@ CREATE TABLE ru_vtep_if_tbl (
 CREATE TABLE ru_vtep_grp_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_description smallint default 0,
     cs_rowstatus smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_description smallint default 3,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
@@ -2737,7 +2862,7 @@ CREATE TABLE ru_vtep_grp_mem_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
     vtepgrp_member_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 3,
@@ -2747,7 +2872,7 @@ CREATE TABLE ru_vtunnel_tbl (
     vtn_name varchar(32) default ' ',
     vtunnel_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
@@ -2756,7 +2881,7 @@ CREATE TABLE ru_vtunnel_tbl (
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_underlay_vtn_name smallint default 0,
     valid_vtepgrp_name smallint default 0,
@@ -2764,7 +2889,7 @@ CREATE TABLE ru_vtunnel_tbl (
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 3,
     cs_description smallint default 3,
-    cs_controller_name smallint default 3,
+    cs_ctrlr_name smallint default 3,
     cs_domain_id smallint default 3,
     cs_underlay_vtn_name smallint default 3,
     cs_vtepgrp_name smallint default 3,
@@ -2782,7 +2907,7 @@ CREATE TABLE ru_vtunnel_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -3403,6 +3528,12 @@ CREATE TABLE ru_vterm_if_policingmap_tbl (
     cs_policername smallint default 3,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name));
 
+CREATE TABLE ru_upll_cfg_dirty_tbl (
+    table_name varchar(32) default ' ',
+    operation smallint default 0,
+    dirty smallint default 0,
+  PRIMARY KEY(table_name, operation));
+
 CREATE TABLE im_vtn_tbl (
     vtn_name varchar(32) default ' ',
     description varchar(128) default ' ',
@@ -3419,11 +3550,12 @@ CREATE TABLE im_vtn_tbl (
     valid_last_updated_time smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
+    unknown_count bigint default 0,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE im_vtn_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     alarm_status smallint default 0,
@@ -3434,34 +3566,35 @@ CREATE TABLE im_vtn_ctrlr_tbl (
     valid_alarm_status smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
-  PRIMARY KEY(vtn_name, controller_name, domain_id));
+    unknown_count bigint default 0,
+  PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE im_vtn_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE im_vbr_tbl (
     vtn_name varchar(32) default ' ',
     vbridge_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vbr_description varchar(128) default ' ',
     host_addr bytea default '\000\000\000\000',
     host_addr_mask smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vbr_description smallint default 0,
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_vbr_description smallint default 1,
     cs_host_addr smallint default 1,
@@ -3476,7 +3609,7 @@ CREATE TABLE im_vbr_vlanmap_tbl (
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
     bdry_ref_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
@@ -3499,7 +3632,7 @@ CREATE TABLE im_vbr_if_tbl (
     vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -3524,20 +3657,20 @@ CREATE TABLE im_vbr_if_tbl (
 CREATE TABLE im_vrt_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vrt_description varchar(128) default ' ',
     dhcprelay_admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_vrt_description smallint default 1,
     cs_dhcprelay_admin_status smallint default 1,
@@ -3554,7 +3687,7 @@ CREATE TABLE im_vrt_if_tbl (
     admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -3574,18 +3707,18 @@ CREATE TABLE im_vrt_if_tbl (
 CREATE TABLE im_vterminal_tbl (
     vtn_name varchar(32) default ' ',
     vterminal_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vterminal_description varchar(128) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vterminal_description smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_vterminal_description smallint default 1,
     flags smallint default 0,
@@ -3602,7 +3735,7 @@ CREATE TABLE im_vterm_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -3624,11 +3757,11 @@ CREATE TABLE im_vterm_if_tbl (
 CREATE TABLE im_vnode_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vnode_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, ctrlr_name, domain_id));
 
 CREATE TABLE im_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -3672,11 +3805,11 @@ CREATE TABLE im_vlink_tbl (
 CREATE TABLE im_vlink_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vlink_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, ctrlr_name, domain_id));
 
 CREATE TABLE im_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
@@ -3686,7 +3819,7 @@ CREATE TABLE im_static_ip_route_tbl (
     next_hop_addr bytea default '\000\000\000\000',
     nwm_name varchar(32) default ' ',
     metric integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
@@ -3698,7 +3831,7 @@ CREATE TABLE im_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     server_ip_addr bytea default '\000\000\000\000',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 1,
@@ -3708,7 +3841,7 @@ CREATE TABLE im_dhcp_relay_if_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     if_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 1,
@@ -3720,7 +3853,7 @@ CREATE TABLE im_vbr_nwmon_grp_tbl (
     nwm_name varchar(32) default ' ',
     admin_status smallint default 0,
     oper_status smallint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -3739,7 +3872,7 @@ CREATE TABLE im_vbr_nwmon_host_tbl (
     failure_count integer default 0,
     recovery_count integer default 0,
     wait_time integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_health_interval smallint default 0,
@@ -3790,18 +3923,18 @@ CREATE TABLE im_vtep_tbl (
     vtn_name varchar(32) default ' ',
     vtep_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
   PRIMARY KEY(vtn_name, vtep_name));
 
@@ -3816,7 +3949,7 @@ CREATE TABLE im_vtep_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -3838,13 +3971,13 @@ CREATE TABLE im_vtep_if_tbl (
 CREATE TABLE im_vtep_grp_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_description smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_description smallint default 1,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
@@ -3852,7 +3985,7 @@ CREATE TABLE im_vtep_grp_mem_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
     vtepgrp_member_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 1,
@@ -3862,7 +3995,7 @@ CREATE TABLE im_vtunnel_tbl (
     vtn_name varchar(32) default ' ',
     vtunnel_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
@@ -3871,7 +4004,7 @@ CREATE TABLE im_vtunnel_tbl (
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_underlay_vtn_name smallint default 0,
     valid_vtepgrp_name smallint default 0,
@@ -3879,7 +4012,7 @@ CREATE TABLE im_vtunnel_tbl (
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_underlay_vtn_name smallint default 1,
     cs_vtepgrp_name smallint default 1,
@@ -3897,7 +4030,7 @@ CREATE TABLE im_vtunnel_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -4518,6 +4651,12 @@ CREATE TABLE im_vterm_if_policingmap_tbl (
     cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name));
 
+CREATE TABLE im_upll_cfg_dirty_tbl (
+    table_name varchar(32) default ' ',
+    operation smallint default 0,
+    dirty smallint default 0,
+  PRIMARY KEY(table_name, operation));
+
 CREATE TABLE au_vtn_tbl (
     vtn_name varchar(32) default ' ',
     description varchar(128) default ' ',
@@ -4534,11 +4673,12 @@ CREATE TABLE au_vtn_tbl (
     valid_last_updated_time smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
+    unknown_count bigint default 0,
   PRIMARY KEY(vtn_name));
 
 CREATE TABLE au_vtn_ctrlr_tbl (
     vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     alarm_status smallint default 0,
@@ -4549,34 +4689,35 @@ CREATE TABLE au_vtn_ctrlr_tbl (
     valid_alarm_status smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
-  PRIMARY KEY(vtn_name, controller_name, domain_id));
+    unknown_count bigint default 0,
+  PRIMARY KEY(vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE au_vtn_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_name, domain_id));
 
 CREATE TABLE au_vbr_tbl (
     vtn_name varchar(32) default ' ',
     vbridge_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vbr_description varchar(128) default ' ',
     host_addr bytea default '\000\000\000\000',
     host_addr_mask smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vbr_description smallint default 0,
     valid_host_addr smallint default 0,
     valid_host_addr_mask smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_vbr_description smallint default 1,
     cs_host_addr smallint default 1,
@@ -4591,7 +4732,7 @@ CREATE TABLE au_vbr_vlanmap_tbl (
     logical_port_id_valid smallint default 0,
     vlanid integer default 0,
     bdry_ref_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_vlanid smallint default 0,
@@ -4614,7 +4755,7 @@ CREATE TABLE au_vbr_if_tbl (
     vex_link_name varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -4639,20 +4780,20 @@ CREATE TABLE au_vbr_if_tbl (
 CREATE TABLE au_vrt_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vrt_description varchar(128) default ' ',
     dhcprelay_admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vrt_description smallint default 0,
     valid_dhcprelay_admin_status smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_vrt_description smallint default 1,
     cs_dhcprelay_admin_status smallint default 1,
@@ -4669,7 +4810,7 @@ CREATE TABLE au_vrt_if_tbl (
     admin_status smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -4689,18 +4830,18 @@ CREATE TABLE au_vrt_if_tbl (
 CREATE TABLE au_vterminal_tbl (
     vtn_name varchar(32) default ' ',
     vterminal_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     vterminal_description varchar(128) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
-    fault_count bigint default 0,
-    valid_controller_name smallint default 0,
+    unknown_count bigint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_vterminal_description smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_vterminal_description smallint default 1,
     flags smallint default 0,
@@ -4717,7 +4858,7 @@ CREATE TABLE au_vterm_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -4739,11 +4880,11 @@ CREATE TABLE au_vterm_if_tbl (
 CREATE TABLE au_vnode_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vnode_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vnode_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vnode_name, ctrlr_name, domain_id));
 
 CREATE TABLE au_vlink_tbl (
     vtn_name varchar(32) default ' ',
@@ -4787,11 +4928,11 @@ CREATE TABLE au_vlink_tbl (
 CREATE TABLE au_vlink_rename_tbl (
     ctrlr_vtn_name varchar(32) default ' ',
     ctrlr_vlink_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     unc_vtn_name varchar(32) default ' ',
     unc_vlink_name varchar(32) default ' ',
-  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, controller_name, domain_id));
+  PRIMARY KEY(ctrlr_vtn_name, ctrlr_vlink_name, ctrlr_name, domain_id));
 
 CREATE TABLE au_static_ip_route_tbl (
     vtn_name varchar(32) default ' ',
@@ -4801,7 +4942,7 @@ CREATE TABLE au_static_ip_route_tbl (
     next_hop_addr bytea default '\000\000\000\000',
     nwm_name varchar(32) default ' ',
     metric integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_metric smallint default 0,
@@ -4813,7 +4954,7 @@ CREATE TABLE au_dhcp_relay_server_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     server_ip_addr bytea default '\000\000\000\000',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 1,
@@ -4823,7 +4964,7 @@ CREATE TABLE au_dhcp_relay_if_tbl (
     vtn_name varchar(32) default ' ',
     vrouter_name varchar(32) default ' ',
     if_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 1,
@@ -4835,7 +4976,7 @@ CREATE TABLE au_vbr_nwmon_grp_tbl (
     nwm_name varchar(32) default ' ',
     admin_status smallint default 0,
     oper_status smallint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_admin_status smallint default 0,
@@ -4854,7 +4995,7 @@ CREATE TABLE au_vbr_nwmon_host_tbl (
     failure_count integer default 0,
     recovery_count integer default 0,
     wait_time integer default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_health_interval smallint default 0,
@@ -4905,18 +5046,18 @@ CREATE TABLE au_vtep_tbl (
     vtn_name varchar(32) default ' ',
     vtep_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     oper_status smallint default 0,
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
   PRIMARY KEY(vtn_name, vtep_name));
 
@@ -4931,7 +5072,7 @@ CREATE TABLE au_vtep_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -4953,13 +5094,13 @@ CREATE TABLE au_vtep_if_tbl (
 CREATE TABLE au_vtep_grp_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     description varchar(128) default ' ',
     flags smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_description smallint default 0,
     cs_rowstatus smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_description smallint default 1,
   PRIMARY KEY(vtn_name, vtepgrp_name));
 
@@ -4967,7 +5108,7 @@ CREATE TABLE au_vtep_grp_mem_tbl (
     vtn_name varchar(32) default ' ',
     vtepgrp_name varchar(32) default ' ',
     vtepgrp_member_name varchar(32) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     cs_rowstatus smallint default 1,
@@ -4977,7 +5118,7 @@ CREATE TABLE au_vtunnel_tbl (
     vtn_name varchar(32) default ' ',
     vtunnel_name varchar(32) default ' ',
     description varchar(128) default ' ',
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     underlay_vtn_name varchar(32) default ' ',
     vtepgrp_name  varchar(32) default ' ',
@@ -4986,7 +5127,7 @@ CREATE TABLE au_vtunnel_tbl (
     down_count bigint default 0,
     flags smallint default 0,
     valid_description smallint default 0,
-    valid_controller_name smallint default 0,
+    valid_ctrlr_name smallint default 0,
     valid_domain_id smallint default 0,
     valid_underlay_vtn_name smallint default 0,
     valid_vtepgrp_name smallint default 0,
@@ -4994,7 +5135,7 @@ CREATE TABLE au_vtunnel_tbl (
     valid_oper_status smallint default 0,
     cs_rowstatus smallint default 1,
     cs_description smallint default 1,
-    cs_controller_name smallint default 1,
+    cs_ctrlr_name smallint default 1,
     cs_domain_id smallint default 1,
     cs_underlay_vtn_name smallint default 1,
     cs_vtepgrp_name smallint default 1,
@@ -5012,7 +5153,7 @@ CREATE TABLE au_vtunnel_if_tbl (
     tagged smallint default 0,
     oper_status smallint default 0,
     down_count bigint default 0,
-    controller_name varchar(32) default ' ',
+    ctrlr_name varchar(32) default ' ',
     domain_id varchar(32) default ' ',
     flags smallint default 0,
     valid_description smallint default 0,
@@ -5633,9 +5774,207 @@ CREATE TABLE au_vterm_if_policingmap_tbl (
     cs_policername smallint default 1,
   PRIMARY KEY(vtn_name, vterm_name, vterm_if_name));
 
-CREATE INDEX ca_vbr_if_tbl_semindex ON ca_vbr_if_tbl USING btree (logical_port_id, controller_name, domain_id, valid_portmap, valid_logical_port_id);
+CREATE TABLE au_upll_cfg_dirty_tbl (
+    table_name varchar(32) default ' ',
+    operation smallint default 0,
+    dirty smallint default 0,
+  PRIMARY KEY(table_name, operation));
+
+CREATE INDEX ca_vbr_if_tbl_semindex ON ca_vbr_if_tbl USING btree (logical_port_id, ctrlr_name, domain_id, valid_portmap, valid_logical_port_id);
 CREATE INDEX ca_policingprofile_entry_tbl_semindex ON ca_policingprofile_entry_tbl USING btree (flowlist, valid_flowlist);
 CREATE INDEX ca_vtn_policingmap_tbl_semindex ON ca_vtn_policingmap_tbl USING btree (policername, valid_policername);
 CREATE INDEX ca_vbr_policingmap_tbl_semindex ON ca_vbr_policingmap_tbl USING btree (policername, valid_policername);
 CREATE INDEX ca_vbr_if_policingmap_tbl_semindex ON ca_vbr_if_policingmap_tbl USING btree (policername, valid_policername);
 CREATE INDEX ru_vbr_if_tbl_showindex ON ru_vbr_if_tbl (vtn_name, vex_name, valid_vex_name);
+CREATE INDEX ca_vbr_vlanmap_tbl_index_1 ON ca_vbr_vlanmap_tbl USING btree (logical_port_id, logical_port_id_valid, domain_id, vlanid, ctrlr_name, valid_vlanid);
+CREATE INDEX ca_vterm_if_tbl_index_1 ON ca_vterm_if_tbl USING btree (logical_port_id, ctrlr_name, domain_id, valid_portmap, valid_logical_port_id);
+CREATE INDEX ru_vbr_if_tbl_index_1 ON ru_vbr_if_tbl USING btree (logical_port_id, ctrlr_name, domain_id, valid_portmap, valid_logical_port_id);
+CREATE INDEX im_vbr_if_tbl_index_1 ON im_vbr_if_tbl USING btree (logical_port_id, ctrlr_name, domain_id, valid_portmap, valid_logical_port_id);
+CREATE INDEX im_policingprofile_entry_tbl_index_1 ON im_policingprofile_entry_tbl USING btree (flowlist, valid_flowlist);
+CREATE INDEX im_vtn_policingmap_tbl_index_1 ON im_vtn_policingmap_tbl USING btree (policername, valid_policername);
+CREATE INDEX im_vbr_policingmap_tbl_index_1 ON im_vbr_policingmap_tbl USING btree (policername, valid_policername);
+CREATE INDEX im_vbr_if_policingmap_tbl_index_1 ON im_vbr_if_policingmap_tbl USING btree (policername, valid_policername);
+CREATE INDEX im_vbr_vlanmap_tbl_index_1 ON im_vbr_vlanmap_tbl USING btree (logical_port_id, logical_port_id_valid, domain_id, vlanid, ctrlr_name, valid_vlanid);
+CREATE INDEX im_vterm_if_tbl_index_1 ON im_vterm_if_tbl USING btree (logical_port_id, ctrlr_name, domain_id, valid_portmap, valid_logical_port_id);
+
+
+/* INSERTING DEFAULT ROWS IN DIRTY TABLE */
+
+CREATE OR REPLACE function f_insert_row_if_not_exists(_dest_tblname varchar(32)) RETURNS VOID
+LANGUAGE plpgsql AS
+$func$
+DECLARE row_count integer;
+BEGIN
+  EXECUTE 'SELECT count(*) FROM ' || _dest_tblname INTO row_count;
+  IF ( row_count = 0) THEN
+    EXECUTE 'INSERT INTO ' || _dest_tblname || ' values ' || 
+      '(' || quote_literal('vtn_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_rename_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_rename_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_rename_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_vlanmap_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_vlanmap_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_vlanmap_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('vrt_tbl') || ', 1, 0),'
+      '(' || quote_literal('vrt_tbl') || ', 2, 0),'
+      '(' || quote_literal('vrt_tbl') || ', 3, 0),'
+      '(' || quote_literal('vrt_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('vrt_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('vrt_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('vterminal_tbl') || ', 1, 0),'
+      '(' || quote_literal('vterminal_tbl') || ', 2, 0),'
+      '(' || quote_literal('vterminal_tbl') || ', 3, 0),'
+      '(' || quote_literal('vterm_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('vterm_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('vterm_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('vnode_rename_tbl') || ', 1, 0),'
+      '(' || quote_literal('vnode_rename_tbl') || ', 2, 0),'
+      '(' || quote_literal('vnode_rename_tbl') || ', 3, 0),'
+      '(' || quote_literal('vlink_tbl') || ', 1, 0),'
+      '(' || quote_literal('vlink_tbl') || ', 2, 0),'
+      '(' || quote_literal('vlink_tbl') || ', 3, 0),'
+      '(' || quote_literal('vlink_rename_tbl') || ', 1, 0),'
+      '(' || quote_literal('vlink_rename_tbl') || ', 2, 0),'
+      '(' || quote_literal('vlink_rename_tbl') || ', 3, 0),'
+      '(' || quote_literal('static_ip_route_tbl') || ', 1, 0),'
+      '(' || quote_literal('static_ip_route_tbl') || ', 2, 0),'
+      '(' || quote_literal('static_ip_route_tbl') || ', 3, 0),'
+      '(' || quote_literal('dhcp_relay_server_tbl') || ', 1, 0),'
+      '(' || quote_literal('dhcp_relay_server_tbl') || ', 2, 0),'
+      '(' || quote_literal('dhcp_relay_server_tbl') || ', 3, 0),'
+      '(' || quote_literal('dhcp_relay_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('dhcp_relay_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('dhcp_relay_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_nwmon_grp_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_nwmon_grp_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_nwmon_grp_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_nwmon_host_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_nwmon_host_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_nwmon_host_tbl') || ', 3, 0),'
+      '(' || quote_literal('vunknown_tbl') || ', 1, 0),'
+      '(' || quote_literal('vunknown_tbl') || ', 2, 0),'
+      '(' || quote_literal('vunknown_tbl') || ', 3, 0),'
+      '(' || quote_literal('vunknown_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('vunknown_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('vunknown_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtep_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtep_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtep_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtep_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtep_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtep_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtep_grp_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtep_grp_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtep_grp_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtep_grp_mem_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtep_grp_mem_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtep_grp_mem_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtunnel_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtunnel_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtunnel_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtunnel_if_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtunnel_if_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtunnel_if_tbl') || ', 3, 0),'
+      '(' || quote_literal('flowlist_tbl') || ', 1, 0),'
+      '(' || quote_literal('flowlist_tbl') || ', 2, 0),'
+      '(' || quote_literal('flowlist_tbl') || ', 3, 0),'
+      '(' || quote_literal('flowlist_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('flowlist_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('flowlist_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('flowlist_rename_tbl') || ', 1, 0),'
+      '(' || quote_literal('flowlist_rename_tbl') || ', 2, 0),'
+      '(' || quote_literal('flowlist_rename_tbl') || ', 3, 0),'
+      '(' || quote_literal('flowlist_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('flowlist_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('flowlist_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('flowlist_entry_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('flowlist_entry_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('flowlist_entry_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('policingprofile_tbl') || ', 1, 0),'
+      '(' || quote_literal('policingprofile_tbl') || ', 2, 0),'
+      '(' || quote_literal('policingprofile_tbl') || ', 3, 0),'
+      '(' || quote_literal('policingprofile_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('policingprofile_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('policingprofile_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('policingprofile_rename_tbl') || ', 1, 0),'
+      '(' || quote_literal('policingprofile_rename_tbl') || ', 2, 0),'
+      '(' || quote_literal('policingprofile_rename_tbl') || ', 3, 0),'
+      '(' || quote_literal('policingprofile_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('policingprofile_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('policingprofile_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('policingprofile_entry_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('policingprofile_entry_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('policingprofile_entry_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_flowfilter_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_flowfilter_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_flowfilter_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_flowfilter_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_flowfilter_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_flowfilter_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_flowfilter_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_flowfilter_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_flowfilter_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_flowfilter_entry_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_flowfilter_entry_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_flowfilter_entry_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_flowfilter_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_flowfilter_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_flowfilter_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_flowfilter_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_flowfilter_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_flowfilter_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_if_flowfilter_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_if_flowfilter_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_if_flowfilter_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_if_flowfilter_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_if_flowfilter_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_if_flowfilter_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('vrt_if_flowfilter_tbl') || ', 1, 0),'
+      '(' || quote_literal('vrt_if_flowfilter_tbl') || ', 2, 0),'
+      '(' || quote_literal('vrt_if_flowfilter_tbl') || ', 3, 0),'
+      '(' || quote_literal('vrt_if_flowfilter_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('vrt_if_flowfilter_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('vrt_if_flowfilter_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('vterm_if_flowfilter_tbl') || ', 1, 0),'
+      '(' || quote_literal('vterm_if_flowfilter_tbl') || ', 2, 0),'
+      '(' || quote_literal('vterm_if_flowfilter_tbl') || ', 3, 0),'
+      '(' || quote_literal('vterm_if_flowfilter_entry_tbl') || ', 1, 0),'
+      '(' || quote_literal('vterm_if_flowfilter_entry_tbl') || ', 2, 0),'
+      '(' || quote_literal('vterm_if_flowfilter_entry_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_policingmap_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_policingmap_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_policingmap_tbl') || ', 3, 0),'
+      '(' || quote_literal('vtn_policingmap_ctrlr_tbl') || ', 1, 0),'
+      '(' || quote_literal('vtn_policingmap_ctrlr_tbl') || ', 2, 0),'
+      '(' || quote_literal('vtn_policingmap_ctrlr_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_policingmap_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_policingmap_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_policingmap_tbl') || ', 3, 0),'
+      '(' || quote_literal('vbr_if_policingmap_tbl') || ', 1, 0),'
+      '(' || quote_literal('vbr_if_policingmap_tbl') || ', 2, 0),'
+      '(' || quote_literal('vbr_if_policingmap_tbl') || ', 3, 0),'
+      '(' || quote_literal('vterm_if_policingmap_tbl') || ', 1, 0),'
+      '(' || quote_literal('vterm_if_policingmap_tbl') || ', 2, 0),'
+      '(' || quote_literal('vterm_if_policingmap_tbl') || ', 3, 0);';
+  ELSE
+    RAISE NOTICE 'Table % already contains % rows', _dest_tblname, row_count;
+  END IF;
+  RETURN;
+END
+$func$;
+
+SELECT f_insert_row_if_not_exists('ca_upll_cfg_dirty_tbl');
+
+DROP function f_insert_row_if_not_exists(_dest_tblname varchar(32));
+

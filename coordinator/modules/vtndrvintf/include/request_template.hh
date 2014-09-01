@@ -23,6 +23,8 @@
 namespace unc {
 namespace driver {
 
+extern audit_key_type audit_key[AUDIT_KT_SIZE];
+
 typedef std::map <unc_key_type_t, KtHandler*> kt_handler_map;
 
 /**
@@ -365,11 +367,11 @@ KtRequestHandler<key, val>::execute(
    **/
 template<>
 UncRespCode
-KtRequestHandler<key_ctr_t, val_ctr_t>::parse_request(
+KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_ctr_t &key_generic_,
-    val_ctr_t &val_generic_) {
+    val_ctr_commit_ver_t &val_generic_) {
   ODC_FUNC_TRACE;
   uint32_t ret_value = 0;
   ret_value = sess.getArgument(INPUT_KEY_STRUCT_INDEX, key_generic_);
@@ -561,12 +563,12 @@ KtRequestHandler<key, val>::get_handler(unc_key_type_t keytype) {
  **/
 template<>
 UncRespCode
-KtRequestHandler<key_ctr_t, val_ctr_t>::execute(
+KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::execute(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
     key_ctr_t &key_generic_,
-    val_ctr_t &val_generic_) {
+    val_ctr_commit_ver_t &val_generic_) {
   ODC_FUNC_TRACE;
   unc::driver::driver *drv_ptr = NULL;
   unc::driver::controller* ctl_ptr = NULL;
@@ -577,10 +579,10 @@ KtRequestHandler<key_ctr_t, val_ctr_t>::execute(
     case UNC_OP_CREATE: {
       pfc_log_debug("%s: Creates new controller ", PFC_FUNCNAME);
       controller_operation util_obj(ctrl_int, CONTROLLER_ADD, ctrl_name,
-                            (unc_keytype_ctrtype_t) val_generic_.type);
+                            (unc_keytype_ctrtype_t) val_generic_.controller.type);
       drv_ptr = util_obj.get_driver_handle();
       PFC_ASSERT(drv_ptr != NULL);
-      ctl_ptr = drv_ptr->add_controller(key_generic_, val_generic_);
+      ctl_ptr = drv_ptr->add_controller(key_generic_, val_generic_.controller);
       if (ctl_ptr != NULL) {
         resp_code_ = UNC_RC_SUCCESS;
       } else {
@@ -601,7 +603,7 @@ KtRequestHandler<key_ctr_t, val_ctr_t>::execute(
       PFC_ASSERT(ctl_ptr != NULL);
 
       resp_code_ = ctrl_int->UpdateControllerConfiguration(ctrl_name,
-                             ctl_ptr, drv_ptr, key_generic_, val_generic_);
+                             ctl_ptr, drv_ptr, key_generic_, val_generic_.controller);
       break;
     }
 
@@ -926,8 +928,8 @@ KtRequestHandler<key_root_t, val_root_t>::handle_response(
 
         void* key = get_key_struct(cfgnode);
         void* val = get_val_struct(cfgnode);
-        pfc_ipcstdef_t* key_sdf =VtnDrvIntf::key_map.find(keytype)->second;
-        pfc_ipcstdef_t* val_sdf =VtnDrvIntf::val_map.find(keytype)->second;
+        pfc_ipcstdef_t* key_sdf = VtnDrvIntf::key_map.find(keytype)->second;
+        pfc_ipcstdef_t* val_sdf = VtnDrvIntf::val_map.find(keytype)->second;
         ret_code = sess.addOutput(*key_sdf, key);
         if (ret_code) {
           pfc_log_error("%s: addOutput failed for key_sdf with ret_code , %u",

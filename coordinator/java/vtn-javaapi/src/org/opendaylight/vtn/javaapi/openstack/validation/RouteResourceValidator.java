@@ -64,23 +64,27 @@ public class RouteResourceValidator extends VtnServiceValidator {
 		LOG.info("Start RouteResourceValidator#validate()");
 		boolean isValid = false;
 		try {
-			isValid = validateUri();
-			if (isValid && requestBody != null
-					&& VtnServiceConsts.POST.equalsIgnoreCase(method)) {
-				isValid = validatePost(requestBody);
-			} else if (isValid && requestBody != null
-					&& VtnServiceConsts.GET.equalsIgnoreCase(method)) {
-				isValid = true;
-			} else if (isValid) {
-				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+			if (requestBody != null) {
+				isValid = validateUri();
+				if (isValid && VtnServiceConsts.POST.equalsIgnoreCase(method)) {
+					isValid = validatePost(requestBody);
+				} else if (isValid
+						&& VtnServiceConsts.GET.equalsIgnoreCase(method)) {
+					isValid = true;
+				} else if (isValid) {
+					setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+							.getMessage());
+					isValid = false;
+				}
+			} else {
+				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
 						.getMessage());
-				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Invalid value : " + e.getMessage());
+			LOG.error(e, "Invalid value : " + e.getMessage());
 			isValid = false;
 		} catch (final ClassCastException e) {
-			LOG.error("Invalid type : " + e.getMessage());
+			LOG.error(e, "Invalid type : " + e.getMessage());
 			isValid = false;
 		}
 
@@ -222,7 +226,7 @@ public class RouteResourceValidator extends VtnServiceValidator {
 									.getAsString()));
 				}
 			}
-			
+
 			/*
 			 * Check special case for IP address in POST operation
 			 */
@@ -233,17 +237,6 @@ public class RouteResourceValidator extends VtnServiceValidator {
 					isValid = false;
 					setInvalidParameter(VtnServiceOpenStackConsts.NEXTHOP
 							+ VtnServiceConsts.COLON + nexthopIp);
-				}
-			}
-			
-			if (isValid) {
-				final String destinationIp = requestBody.get(
-						VtnServiceOpenStackConsts.DESTNATION).getAsString();
-				if (VtnServiceOpenStackConsts.DEFAULT_IP.equals(destinationIp
-						.split(VtnServiceConsts.SLASH)[0])) {
-					isValid = false;
-					setInvalidParameter(VtnServiceOpenStackConsts.DESTNATION
-							+ VtnServiceConsts.COLON + destinationIp);
 				}
 			}
 		}

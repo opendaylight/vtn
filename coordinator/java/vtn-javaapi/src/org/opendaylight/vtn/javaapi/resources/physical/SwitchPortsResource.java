@@ -100,6 +100,7 @@ public class SwitchPortsResource extends AbstractResource {
 
 			final IpcPhysicalResponseFactory responseGenerator = new IpcPhysicalResponseFactory();
 			JsonArray switchPortArray = null;
+			IpcRequestPacketEnum ipcRequestPacketEnum = IpcRequestPacketEnum.KT_PORT_GET;
             if (requestBody.has(VtnServiceJsonConsts.OP)
                     && requestBody.get(VtnServiceJsonConsts.OP).getAsString()
                             .equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)) {
@@ -109,6 +110,7 @@ public class SwitchPortsResource extends AbstractResource {
                                 IpcDataUnitWrapper
                                         .setIpcUint32Value(UncOption1Enum.UNC_OPT1_DETAIL
                                                 .ordinal()));
+                ipcRequestPacketEnum = IpcRequestPacketEnum.KT_PORT_GET_DETAIL;
             }
 			if (!requestBody.has(VtnServiceJsonConsts.PORTNAME)) {
 
@@ -162,22 +164,24 @@ public class SwitchPortsResource extends AbstractResource {
 				root = responseGenerator.getSwitchPortResponse(
 						requestProcessor.getIpcResponsePacket(), requestBody);
 
-				if (root.get(VtnServiceJsonConsts.PORTS).isJsonArray()) {
-					switchPortArray = root
-							.getAsJsonArray(VtnServiceJsonConsts.PORTS);
+				//if port_id is specified,no need to send requestion to UPPL many times
+				if (!requestBody.has(VtnServiceJsonConsts.PORT_ID)) {
+					if (root.get(VtnServiceJsonConsts.PORTS).isJsonArray()) {
+						switchPortArray = root
+								.getAsJsonArray(VtnServiceJsonConsts.PORTS);
 
-					root = getResponseJsonArrayPhysical(
-							requestBody,
-							requestProcessor,
-							responseGenerator,
-							switchPortArray,
-							VtnServiceJsonConsts.PORTS,
-							VtnServiceJsonConsts.PORTNAME,
-							IpcRequestPacketEnum.KT_PORT_GET,
-							getUriParameters(requestBody),
-							VtnServiceIpcConsts.GET_SWITCH_PORT_INTERFACE_RESPONSE);
+						root = getResponseJsonArrayPhysical(
+								requestBody,
+								requestProcessor,
+								responseGenerator,
+								switchPortArray,
+								VtnServiceJsonConsts.PORTS,
+								VtnServiceJsonConsts.PORTNAME,
+								ipcRequestPacketEnum,
+								getUriParameters(requestBody),
+								VtnServiceIpcConsts.GET_SWITCH_PORT_INTERFACE_RESPONSE);
+					}
 				}
-
 			} else {
 				requestProcessor.getRequestPacket().setOperation(
 						IpcDataUnitWrapper

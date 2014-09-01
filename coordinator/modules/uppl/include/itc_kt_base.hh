@@ -58,10 +58,9 @@ class OperStatusHolder {
  public:
   OperStatusHolder(unc_key_type_t key_type,
                    void* key_struct,
-                   uint8_t oper_status) {
-    key_type_ = key_type;
-    key_struct_ = key_struct;
-    oper_status_ = oper_status;
+                   uint8_t oper_status): key_type_(key_type),
+                   key_struct_(key_struct),
+                   oper_status_(oper_status) {
   };
   unc_key_type_t get_key_type() {return key_type_;}
   void* get_key_struct() {return key_struct_;}
@@ -247,6 +246,13 @@ class Kt_Base {
   };
 
   virtual void Fill_Attr_Syntax_Map() {
+  };
+
+  virtual UncRespCode ValidateControllerCount(OdbcmConnectionHandler *db_conn,
+                               void *key_struct,
+                               void *val_struct,
+                               uint32_t data_type) {
+    return UNC_RC_SUCCESS;
   };
 
   virtual UncRespCode HandleOperStatus(OdbcmConnectionHandler *db_conn,
@@ -444,7 +450,7 @@ class Kt_Base {
       if (objAttr.data_type == PFC_IPCTYPE_UINT16) { \
         if ((value) < objAttr.min_value || \
             (value) > objAttr.max_value) { \
-          if((value) == 0xffff) { \
+          if ((value) == 0xffff) { \
             pfc_log_info("no_vlan_id value is allowed");\
             (ret_code) = UNC_RC_SUCCESS; \
           } else { \
@@ -550,7 +556,7 @@ class Kt_Base {
                                      (oper_status)); \
     (ref_oper_status).push_back(obj_oper_status_ctr); \
 
-#define GET_ADD_CTRL_OPER_STATUS(ctr_name, vect_operstatus) \
+#define GET_ADD_CTRL_OPER_STATUS(ctr_name, vect_operstatus, data_type, db_conn)\
     key_ctr_t *ctr_key = new key_ctr_t; \
     memset(ctr_key->controller_name, 0, 32); \
     memcpy((ctr_key->controller_name), ((ctr_name).c_str()), \
@@ -559,12 +565,12 @@ class Kt_Base {
     Kt_Controller controller; \
     uint8_t ctr_oper_status = \
           (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP; \
-    uint32_t ctrl_data_type = data_type; \
-    if (data_type == UNC_DT_IMPORT) { \
+    uint32_t ctrl_data_type = (data_type); \
+    if ((data_type) == UNC_DT_IMPORT) { \
        ctrl_data_type = UNC_DT_RUNNING; \
     } \
     UncRespCode read_status = controller.GetOperStatus( \
-        db_conn, ctrl_data_type, key_type_struct, ctr_oper_status); \
+        (db_conn), ctrl_data_type, key_type_struct, ctr_oper_status); \
     pfc_log_debug("Controller's read_status %d, oper_status %d", \
               read_status, ctr_oper_status); \
     OperStatusHolder obj_oper_status_ctr(UNC_KT_CONTROLLER, \

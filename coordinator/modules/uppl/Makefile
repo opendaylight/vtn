@@ -17,7 +17,6 @@ CXX_SOURCES	= physicallayer.cc \
 		odbcm_mgr.cc \
                 odbcm_connection.cc \
 		odbcm_mgr_dboperations.cc \
-		controller_version.cc \
 		unc_state_handler.cc \
 		physical_core.cc \
 		phy_util.cc \
@@ -49,6 +48,7 @@ CXX_SOURCES	= physicallayer.cc \
 		ipc_client_configuration_handler.cc \
 		physical_notification_manager.cc \
 		itc_notification_request.cc \
+		physical_taskq.cc \
 		odbcm_query_factory.cc \
 		odbcm_db_tableschema.cc \
 		odbcm_db_varbind.cc \
@@ -66,15 +66,14 @@ CXX_SOURCES	= physicallayer.cc \
 # Use ODBC library.
 USE_ODBC	= 1
 
-CFDEF_FILES = odbcm.cfdef	\
-              uppl_ctr_capability.cfdef
+CFDEF_FILES = odbcm.cfdef
 
-MODULE_EXTRA_FILES = uppl_ctr_capability.conf	\
-		     odbcm.conf
+MODULE_EXTRA_FILES = odbcm.conf
 
 EXTRA_INCDIRS   = $(CURDIR)/ \
                   $(CURDIR)/../capa/include \
-                  $(CURDIR)/../capa
+                  $(CURDIR)/../capa \
+                  $(CURDIR)/../unclib
 
 include ../rules.mk
 

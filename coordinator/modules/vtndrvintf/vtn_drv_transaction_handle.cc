@@ -81,6 +81,16 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitGlobalCommit(
                       (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
         continue;
       }
+    // Not Audit
+    // Reject Commits if audit is not successful for the controller
+     if ( config_id != 0 ) {
+       if ( ctr->get_audit_result() != PFC_TRUE ) {
+         tclib_ptr->TcLibWriteControllerInfo(ctr_name,
+                       (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
+         ret_code = unc::tclib::TC_SUCCESS;
+         continue;
+       }
+     }
     }
     commit =  drv->is_2ph_commit_support_needed();
     if (commit == PFC_TRUE) {
@@ -250,6 +260,16 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
       ret_code = unc::tclib::TC_SUCCESS;
       continue;
     }
+    // Not Audit
+    // Reject Commits if audit is not successful for the controller
+    if ( config_id != 0 ) {
+      if ( ctr->get_audit_result() != PFC_TRUE ) {
+        tclib_ptr->TcLibWriteControllerInfo(ctr_name,
+                      (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
+        ret_code = unc::tclib::TC_SUCCESS;
+        continue;
+      }
+    }
     vote =  drv->is_2ph_commit_support_needed();
     if (vote == PFC_TRUE) {
       ret_code = drv->HandleVote(ctr);
@@ -380,10 +400,41 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditEnd(uint32_t session_id,
   PFC_ASSERT(ctr != NULL);
   if (audit_result == unc::tclib::TC_AUDIT_SUCCESS) {
     pfc_log_debug("AUDIT_END result:%d", audit_result);
-    ctr->audit_result_ = PFC_TRUE;
+    ctr->set_audit_result(PFC_TRUE);
   }
   return unc::tclib::TC_SUCCESS;
 }
+
+unc::tclib::TcCommonRet DriverTxnInterface::HandleAuditStart(
+    uint32_t session_id,
+    unc_keytype_ctrtype_t ctr_type,
+    std::string controller_id,
+    pfc_bool_t simplified_audit,
+    uint64_t commit_number,
+    uint64_t commit_date,
+    std::string commit_application) {
+  controller* ctr = NULL;
+  unc::tclib::TcLibModule* tclib_ptr =
+      static_cast<unc::tclib::TcLibModule*>
+      (unc::tclib::TcLibModule::getInstance("tclib"));
+  PFC_ASSERT(tclib_ptr != NULL);
+  controller_operation util_obj(crtl_inst_,
+                                READ_FROM_CONTROLLER,
+                                controller_id);
+  if (util_obj.get_controller_status() == PFC_FALSE) {
+    pfc_log_debug("%s Controller not exist, send disconnected", \
+                  PFC_FUNCNAME);
+    tclib_ptr->TcLibWriteControllerInfo(controller_id,
+                                        (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
+    return unc::tclib::TC_SUCCESS;
+  }
+
+  ctr = util_obj.get_controller_handle();
+  PFC_ASSERT(ctr != NULL);
+  ctr->set_audit_result(PFC_FALSE);
+  return unc::tclib::TC_SUCCESS;
+}
+
 
 }  // namespace driver
 }  // namespace unc

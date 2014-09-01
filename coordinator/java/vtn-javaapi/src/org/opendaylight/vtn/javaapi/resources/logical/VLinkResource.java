@@ -105,6 +105,20 @@ public class VLinkResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			//removal of unused parameter in request body.
+			JsonObject vLink = requestBody.getAsJsonObject(VtnServiceJsonConsts.VLINK);
+			if (vLink.has(VtnServiceJsonConsts.VNODE1NAME)) {
+				vLink.remove(VtnServiceJsonConsts.VNODE1NAME);
+			}
+			if (vLink.has(VtnServiceJsonConsts.IF1NAME)) {
+				vLink.remove(VtnServiceJsonConsts.IF1NAME);
+			}
+			if (vLink.has(VtnServiceJsonConsts.VNODE2NAME)) {
+				vLink.remove(VtnServiceJsonConsts.VNODE2NAME);
+			}
+			if (vLink.has(VtnServiceJsonConsts.IF2NAME)) {
+				vLink.remove(VtnServiceJsonConsts.IF2NAME);
+			}
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VLINK_UPDATE, requestBody,
 					getUriParameters());

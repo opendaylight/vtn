@@ -14,7 +14,7 @@ package org.opendaylight.vtn.javaapi.constants;
  */
 public final class VtnServiceConsts {
 
-	public static final String JAVAAPI_VERSION = "V1.1";
+	public static final String JAVAAPI_VERSION = "V1.2";
 
 	public static final int IPC_RESUL_CODE_INDEX = 7;
 	public static final int IPC_COUNT_INDEX = 2;
@@ -41,6 +41,7 @@ public final class VtnServiceConsts {
 
 	public static final String CONN_POOL_SIZE = "max_ipc_conn_pool_size_";
 	public static final String MAX_REP_DEFAULT = "max_repetition_default";
+	public static final int MAX_REP_COUNT = 100;
 
 	public static final String DOT_REGEX = "\\.";
 	public static final String MAC_ADD_REGEX = "^([0-9a-fA-F]{4}(\\.[0-9a-fA-F]{4}){2})$";
@@ -101,4 +102,6 @@ public final class VtnServiceConsts {
 	public static final String QUESTION_MARK = "?";
 
 	public static final String QUOTE_CHAR = "\"";
+	
+	public static final String CONF_FILE_FIELD_POLC = "polc";
 }

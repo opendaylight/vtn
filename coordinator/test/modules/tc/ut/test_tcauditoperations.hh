@@ -32,8 +32,7 @@ pfc::core::ipc::ServerSession sess_(srv); \
 std::string dsn_name = "UNC_DB_DSN";      \
 TcDbHandler* db_handler = new TcDbHandler(dsn_name);\
 TcChannelNameMap  unc_map_;               \
-int32_t alarm_id = 1;                     \
-TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY,  alarm_id);
+TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY);
 
 #define DEL_AUDIT_PARAMS() \
     delete tc_lock_; \

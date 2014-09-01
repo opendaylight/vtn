@@ -128,6 +128,40 @@ public class VRouterInterfaceDao {
 		return vbrName;
 	}
 
+	
+	/**
+	 * Retrieve vrt_name from database
+	 * 
+	 * @param connection
+	 *            - DB Connection instance
+	 * @param vInterfaceBean
+	 *            - Bean corresponding to os_vrt_if_tbl
+	 * @return - retrieved vbr_name
+	 * @throws SQLException
+	 */
+	public String getVrouterName(Connection connection,
+			VRouterInterfaceBean vInterfaceBean) throws SQLException {
+		final String sql = VtnOpenStackSQLFactory.SEL_VRT_IF_VRT_SQL;
+		String vrtName = null;
+		PreparedStatement statement = null;
+		ResultSet resultSet = null;
+		try {
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, vInterfaceBean.getVtnName());
+			statement.setString(2, vInterfaceBean.getVbrName());
+			statement.setInt(3, vInterfaceBean.getVrtIfId());
+			resultSet = statement.executeQuery();
+			if (resultSet.next()) {
+				vrtName = resultSet.getString(1);
+				LOG.debug("Retrieved vrt_name : " + vrtName);
+			}
+		} finally {
+			if (statement != null) {
+				statement.close();
+			}
+		}
+		return vrtName;
+	}
 	/**
 	 * Delete Router interface information from database
 	 * 
@@ -191,7 +225,7 @@ public class VRouterInterfaceDao {
 		}
 		return isFound;
 	}
-	
+
 	/**
 	 * Retrieve list of counters from database
 	 * 

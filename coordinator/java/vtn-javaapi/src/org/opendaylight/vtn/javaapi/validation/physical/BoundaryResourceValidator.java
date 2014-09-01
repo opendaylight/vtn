@@ -54,10 +54,9 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.BOUNDARYID);
 		if (resource instanceof BoundaryResource
 				&& ((BoundaryResource) resource).getboundaryId() != null
-				&& !((BoundaryResource) resource).getboundaryId().trim()
-						.isEmpty()) {
+				&& !((BoundaryResource) resource).getboundaryId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((BoundaryResource) resource).getboundaryId().trim(),
+					((BoundaryResource) resource).getboundaryId(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(false);
 		} else if (resource instanceof BoundariesResource) {
@@ -72,9 +71,8 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 	 * Validate request json for put, post and get methods of Boundary API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start BoundaryResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VtnResourceValidator");
@@ -96,7 +94,7 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -158,10 +156,10 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: max_repitition
@@ -179,13 +177,13 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 						&& !requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.CONTROLLER1ID)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							requestBody
-									.getAsJsonPrimitive(
+								.getAsString().isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									requestBody.getAsJsonPrimitive(
 											VtnServiceJsonConsts.CONTROLLER1ID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: controller2_id
@@ -198,13 +196,13 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 						&& !requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.CONTROLLER2ID)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							requestBody
-									.getAsJsonPrimitive(
+								.getAsString().isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									requestBody.getAsJsonPrimitive(
 											VtnServiceJsonConsts.CONTROLLER2ID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				}
 			}
 		}
@@ -237,7 +235,7 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.BOUNDARYID).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(boundary
 						.getAsJsonPrimitive(VtnServiceJsonConsts.BOUNDARYID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			if (isValid) {
 				// validation for key: description
@@ -248,11 +246,11 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 						&& !boundary
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DESCRIPTION)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(
 							boundary.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
 				}
 			}
@@ -270,7 +268,7 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 						isValid = validator.isValidMaxLengthAlphaNum(
 								link.getAsJsonPrimitive(
 										VtnServiceJsonConsts.CONTROLLER1ID)
-										.getAsString().trim(),
+										.getAsString(),
 								VtnServiceJsonConsts.LEN_31);
 					} else {
 						isValid = false;
@@ -285,7 +283,7 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 							isValid = validator.isValidDomainId(
 									link.getAsJsonPrimitive(
 											VtnServiceJsonConsts.DOMAIN1_ID)
-											.getAsString().trim(),
+											.getAsString(),
 									VtnServiceJsonConsts.LEN_31);
 						} else {
 							isValid = false;
@@ -300,12 +298,12 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 										.getAsString() != null
 								&& !link.getAsJsonPrimitive(
 										VtnServiceJsonConsts.LOGICAL_PORT1_ID)
-										.getAsString().trim().isEmpty()) {
+										.getAsString().isEmpty()) {
 							isValid = validator
 									.isValidMaxLength(
 											link.getAsJsonPrimitive(
 													VtnServiceJsonConsts.LOGICAL_PORT1_ID)
-													.getAsString().trim(),
+													.getAsString(),
 											VtnServiceJsonConsts.LEN_319);
 						}
 					}
@@ -319,7 +317,7 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 							isValid = validator.isValidMaxLengthAlphaNum(
 									link.getAsJsonPrimitive(
 											VtnServiceJsonConsts.CONTROLLER2ID)
-											.getAsString().trim(),
+											.getAsString(),
 									VtnServiceJsonConsts.LEN_31);
 						} else {
 							isValid = false;
@@ -335,7 +333,7 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 							isValid = validator.isValidDomainId(
 									link.getAsJsonPrimitive(
 											VtnServiceJsonConsts.DOMAIN2_ID)
-											.getAsString().trim(),
+											.getAsString(),
 									VtnServiceJsonConsts.LEN_31);
 						} else {
 							isValid = false;
@@ -350,12 +348,12 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 										.getAsString() != null
 								&& !link.getAsJsonPrimitive(
 										VtnServiceJsonConsts.LOGICAL_PORT2_ID)
-										.getAsString().trim().isEmpty()) {
+										.getAsString().isEmpty()) {
 							isValid = validator
 									.isValidMaxLength(
 											link.getAsJsonPrimitive(
 													VtnServiceJsonConsts.LOGICAL_PORT2_ID)
-													.getAsString().trim(),
+													.getAsString(),
 											VtnServiceJsonConsts.LEN_319);
 						}
 					}
@@ -395,10 +393,10 @@ public class BoundaryResourceValidator extends VtnServiceValidator {
 					&& !boundary
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(boundary
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_127);
+						.getAsString(), VtnServiceJsonConsts.LEN_127);
 			}
 			if (isValid && boundary.has(VtnServiceJsonConsts.LINK)) {
 				boundary.remove(VtnServiceJsonConsts.LINK);

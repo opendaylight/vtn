@@ -251,9 +251,11 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   unc::tclib::TcCommonRet HandleAuditStart(uint32_t session_id,
                                            unc_keytype_ctrtype_t ctr_type,
-                                           std::string controller_id) {
-    return unc::tclib::TC_SUCCESS;
-  }
+                                           std::string controller_id,
+				           pfc_bool_t simplified_audit,
+                                           uint64_t commit_number,
+                                           uint64_t commit_date,
+                                           std::string commit_application);
 
   /**
    * @brief      Handling of audit start in driver modules for audit operation

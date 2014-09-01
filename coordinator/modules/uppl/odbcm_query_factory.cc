@@ -123,7 +123,7 @@ SQLQUERY QueryFactory::operation_createonerow(
   } else {
     create_query << ") VALUES (" << values.str() << ");";
   }
-  pfc_log_info("ODBCM::QueryFactory::CreateOneRow: Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::CreateOneRow: Query: \"%s\"",
     (create_query.str()).c_str());
   return create_query.str();
 }
@@ -243,8 +243,8 @@ SQLQUERY QueryFactory::operation_updateonerow(
                 btemp);
             where_query << (*iter_keys).c_str() << " = '" <<
                 btemp << "'";
-        } else if (
-            ((*iter_keys).compare(ODBCManager::get_ODBCManager()->GetColumnName(
+        } else if ((
+            (*iter_keys).compare(ODBCManager::get_ODBCManager()->GetColumnName(
                (*iter_vector).table_attribute_name)) ==0) &&
             ((*iter_vector).request_attribute_type ==
                 DATATYPE_UINT8_ARRAY_256)) {
@@ -308,7 +308,7 @@ SQLQUERY QueryFactory::operation_updateonerow(
   }
   /** Frame the final query for one row updation */
   update_query << " WHERE " << where_query.str() << ";";
-  pfc_log_info("ODBCM::QueryFactory::UpdateOneRow: Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::UpdateOneRow: Query: \"%s\"",
                (update_query.str()).c_str());
   return update_query.str();
 }
@@ -371,7 +371,7 @@ SQLQUERY QueryFactory::operation_deleteonerow(unc_keytype_datatype_t db_name,
     }
   }  // for
   delete_query << ";";
-  pfc_log_info("ODBCM::QueryFactory::DeleteOneRow: Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::DeleteOneRow: Query: \"%s\"",
       (delete_query.str()).c_str());
 
   return delete_query.str();
@@ -426,7 +426,7 @@ SQLQUERY QueryFactory::operation_clearonerow(unc_keytype_datatype_t db_name,
     }
   }  // for
   clearone_query << ";";
-  pfc_log_info("ODBCM::QueryFactory::ClearOneRow: Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::ClearOneRow: Query: \"%s\"",
       (clearone_query.str()).c_str());
   return clearone_query.str();
 }
@@ -509,7 +509,7 @@ SQLQUERY QueryFactory::operation_getonerow(unc_keytype_datatype_t db_name,
                     primarykeys);
   get_query << ";";
 
-  pfc_log_info("ODBCM::QueryFactory::GetOneRow: Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::GetOneRow: Query: \"%s\"",
       (get_query.str()).c_str());
   return get_query.str();
 }
@@ -583,7 +583,7 @@ SQLQUERY QueryFactory::operation_isrowexists(unc_keytype_datatype_t db_name,
     exists_query << " WHERE " << exists_pkeys.str();
   }
   exists_query << ";";
-  pfc_log_info("ODBCM::QueryFactory::IsRowExists: Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::IsRowExists: Query: \"%s\"",
       (exists_query.str()).c_str());
   return exists_query.str();
 }
@@ -657,7 +657,7 @@ SQLQUERY QueryFactory::operation_getmodifiedrows
             ((ColumnAttrValue <uint16_t>*)
                 ((*iter_vector).p_table_attribute_value));
         where_query << "cs_row_status = " << rs_value->value;
-        pfc_log_info("ODBCM::QueryFactory::GetModifiedRows: "
+        pfc_log_debug("ODBCM::QueryFactory::GetModifiedRows: "
             "cs_row_status:%d", rs_value->value);
       }
     }  // for attribute vectors
@@ -671,7 +671,7 @@ SQLQUERY QueryFactory::operation_getmodifiedrows
   get_query << getOrderByString(db_table_schema.table_name_,
                   p_key);
   get_query << ";";
-  pfc_log_info("ODBCM::QueryFactory::GetModifiedRows(): Query: \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::GetModifiedRows(): Query: \"%s\"",
     (get_query.str()).c_str());
   return get_query.str();
 }
@@ -733,7 +733,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
   src_vector = (db_table_list_map.find(src_db_name))->second;
   dst_vector = (db_table_list_map.find(dst_db_name))->second;
   /** Frame the query for every table in DB */
-  pfc_log_info("ODBCM::QueryFactory::CopyDatabase: %s->%s",
+  pfc_log_debug("ODBCM::QueryFactory::CopyDatabase: %s->%s",
     g_log_db_name[src_db_name], g_log_db_name[dst_db_name]);
 
   /** Frame the query for clearing all the rows in given db*/
@@ -747,7 +747,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
     } else {
       copy_query << "DELETE FROM " << (*iter_dstvector) << ";";
     }
-    pfc_log_info("ODBCM::QueryFactory::CopyDatabase: "
+    pfc_log_debug("ODBCM::QueryFactory::CopyDatabase: "
         "Clear Query:%d is \"%s\"", loop1, (copy_query.str()).c_str());
     p_copy_db[loop1] = copy_query.str();
     /** Reset the query */
@@ -759,7 +759,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
     std::string tmp = p_copy_db[0];
     p_copy_db[0] = p_copy_db[1];
     p_copy_db[1] = tmp;
-    pfc_log_info("ODBCM::QueryFactory::CopyDatabase: "
+    pfc_log_debug("ODBCM::QueryFactory::CopyDatabase: "
         "after Swap queries \n Query:[0] %s \n Query[1]: %s",
         p_copy_db[0].c_str(), p_copy_db[1].c_str());
   }
@@ -774,7 +774,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
     /** Take the pointer to _ and check both tables are same */
     p_src_table = strstr(const_cast <char*>((*iter_dstvector).c_str()), "_");
     p_dst_table = strstr(const_cast <char*>((*iter_srcvector).c_str()), "_");
-    pfc_log_info("ODBCM::QueryFactory::CopyDatabase: Table ."
+    pfc_log_debug("ODBCM::QueryFactory::CopyDatabase: Table ."
               "loop:%d, %s->%s", loop2, p_src_table, p_dst_table);
     /** Compare the tables */
     if (strcmp(p_src_table, p_dst_table) == 0) {
@@ -791,7 +791,7 @@ SQLQUERY* QueryFactory::operation_copydatabase(
         copy_query << "INSERT INTO " << (*iter_dstvector) <<
             " SELECT * FROM " << (*iter_srcvector) << " ;";
       }
-      pfc_log_info("ODBCM::QueryFactory::CopyDatabase: "
+      pfc_log_debug("ODBCM::QueryFactory::CopyDatabase: "
           "Copy Query:%d is \"%s\"", loop2, (copy_query.str()).c_str());
       /** Index should be less than 3 */
       if (loop2 < 2*ODBCM_MAX_UPPL_TABLES)
@@ -856,13 +856,13 @@ SQLQUERY* QueryFactory::operation_cleardatabase
   /** Get the table list map */
   db_table_list_map = p_odbc_mgr->get_db_table_list_map_();
   db_vector = db_table_list_map.find(db_name)->second;
-  pfc_log_info("ODBCM::QueryFactory::ClearDatabase: %s",
+  pfc_log_debug("ODBCM::QueryFactory::ClearDatabase: %s",
     g_log_db_name[db_name]);
   /** Frame the query for clearing all the rows in given db*/
   for (loop = 0, iter_vector = db_vector.begin();
     iter_vector != db_vector.end(); iter_vector++, loop++ ) {
     clear_query << "TRUNCATE " << (*iter_vector) << ";";
-    pfc_log_info("ODBCM::QueryFactory::ClearDatabase: "
+    pfc_log_debug("ODBCM::QueryFactory::ClearDatabase: "
         "Query:%d is \"%s\"", loop, (clear_query.str()).c_str());
     p_clear_db[loop] = clear_query.str();
     /** Reset the query */
@@ -874,7 +874,7 @@ SQLQUERY* QueryFactory::operation_cleardatabase
         " WHERE " << CTR_NAME_STR << " IN (SELECT " << CTR_NAME_STR <<
         " FROM r_" << UPPL_CTR_TABLE << " WHERE " << CTR_TYPE_STR <<
         "!=" << UNC_CT_UNKNOWN << ");";
-    pfc_log_info("ODBCM::QueryFactory::ClearDatabase: "
+    pfc_log_debug("ODBCM::QueryFactory::ClearDatabase: "
         "CTR_DOMAIN Query is:%d  \"%s\"", loop, (clear_query.str()).c_str());
     p_clear_db[loop] = clear_query.str();
     /** Reset the query */
@@ -954,7 +954,7 @@ SQLQUERY* QueryFactory::operation_clearoneinstance(
     } else {
       query << "controller_name ='" << controller_name.c_str() << "';";
     }
-    pfc_log_info("ODBCM::QueryFactory::ClearOneInstance(): "
+    pfc_log_debug("ODBCM::QueryFactory::ClearOneInstance(): "
         "Query:%d is \"%s\"", loop1, (query.str()).c_str());
     if (loop1 < table_count)
       p_clear_inst_query[loop1] = query.str();
@@ -966,7 +966,7 @@ SQLQUERY* QueryFactory::operation_clearoneinstance(
       query << "controller_name ='" << controller_name.c_str() << "';";
       p_clear_inst_query[loop1] = query.str();
     }
-    pfc_log_info("ODBCM::QueryFactory::ClearOneInstance(): "
+    pfc_log_debug("ODBCM::QueryFactory::ClearOneInstance(): "
         "Query:%d is \"%s\"", loop1, (query.str()).c_str());
     query.str("");
   }
@@ -1018,7 +1018,7 @@ SQLQUERY* QueryFactory::operation_iscandidatedirty() {
     isdirty_query.str("");
     isdirty_query << "SELECT * FROM " << (*iter_vector)
       <<" WHERE cs_row_status != " << APPLIED << ";";
-    pfc_log_info("ODBCM::QueryFactory::IsCandidateDirty: "
+    pfc_log_debug("ODBCM::QueryFactory::IsCandidateDirty: "
         "Query:%d is \"%s\"", loop1, (isdirty_query.str()).c_str());
     p_cand_db[loop1] = isdirty_query.str();
   }
@@ -1156,7 +1156,7 @@ SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
                   db_table_schema.primary_keys_) << " ASC ";
   getbulk_query << " LIMIT " << max_repetition_count << ";";
 
-  pfc_log_info("ODBCM::QueryFactory::GetBulkRows: Query is \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::GetBulkRows: Query is \"%s\"",
       (getbulk_query.str()).c_str());
   return getbulk_query.str();
 }
@@ -1237,7 +1237,7 @@ SQLQUERY QueryFactory::operation_getsiblingcount(
   query << getOrderByString(db_table_schema.table_name_,
                   db_table_schema.primary_keys_);
   query << ";";
-  pfc_log_info("ODBCM::QueryFactory::GetSiblingCount:: "
+  pfc_log_debug("ODBCM::QueryFactory::GetSiblingCount:: "
     "Query is \"%s\"", (query.str()).c_str());
   return query.str();
 }
@@ -1354,7 +1354,7 @@ SQLQUERY QueryFactory::operation_getsiblingcount_with_filter(
   query << " " << getOrderByString(db_table_schema.table_name_,
                   db_table_schema.primary_keys_);
   query << ";";
-  pfc_log_info("ODBCM::QueryFactory::GetSiblingCount:: "
+  pfc_log_debug("ODBCM::QueryFactory::GetSiblingCount:: "
     "Query is \"%s\"", (query.str()).c_str());
   return query.str();
 }
@@ -1481,10 +1481,20 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
   if (db_table_schema.primary_keys_.size() != 0) {
     getsibling_query << getsibling_where.str();
   }
-  getsibling_query << getOrderByString(db_table_schema.table_name_,
+
+  // modification for explict order changes
+  if(db_table_schema.frame_explicit_order_.empty()) {
+    getsibling_query << getOrderByString(db_table_schema.table_name_,
                                          db_table_schema.primary_keys_);
+  } else {
+    // should be in this case only for frame_explicit_order_
+    pfc_log_debug("ODBCM::QueryFactory::GetSiblingRows: Frame Explicit \
+               Order for Link\"%s\"",db_table_schema.frame_explicit_order_.c_str());
+    getsibling_query << db_table_schema.frame_explicit_order_;
+  }
+
   getsibling_query << " ASC LIMIT " << max_repetition_count << ";";
-  pfc_log_info("ODBCM::QueryFactory::GetSiblingRows: Query is \"%s\"",
+  pfc_log_debug("ODBCM::QueryFactory::GetSiblingRows: Query is \"%s\"",
         (getsibling_query.str()).c_str());
   return getsibling_query.str();
 }
@@ -1524,7 +1534,7 @@ SQLQUERY QueryFactory::operation_getrowcount(unc_keytype_datatype_t db_name,
   }
 
   query << "SELECT * FROM " << prefix << table_name;
-  pfc_log_info("ODBCM::QueryFactory::GetRowCount:: "
+  pfc_log_debug("ODBCM::QueryFactory::GetRowCount:: "
     "Query is \"%s\"", (query.str()).c_str());
   return query.str();
 }
@@ -1607,7 +1617,7 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
           << " OR cs_row_status = " << NOTAPPLIED
           << " OR cs_row_status = " << PARTIALLY_APPLIED << ";";
         p_commit_db[loop] = commit_query.str();
-        pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+        pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
             "CHANGE_ROWSTATUS1:Query:%d is \"%s\"", loop,
             (commit_query.str()).c_str());
         commit_query.str("");
@@ -1621,7 +1631,7 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
           << " cs_row_status = " << DELETED
           << " OR cs_row_status = " << ROW_INVALID << ";";
         p_commit_db[loop] = commit_query.str();
-        pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+        pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
             "CHANGE_ROWSTATUS2:Query:%d is \"%s\"", loop,
             (commit_query.str()).c_str());
         commit_query.str("");
@@ -1633,14 +1643,18 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       /**copy the actual_version, oper_status STATE details into 
       * candidate controller_table*/
       commit_query << "UPDATE " <<  "c_"UPPL_CTR_TABLE <<
-      " SET " << CTR_ACTUAL_VERSION_STR << " = " << "r_"UPPL_CTR_TABLE << "." <<
-      CTR_ACTUAL_VERSION_STR << ", " << CTR_OPER_STATUS_STR << " = " <<
-      "r_"UPPL_CTR_TABLE << "." << CTR_OPER_STATUS_STR << " from " <<
+      " SET " 
+      << CTR_ACTUAL_VERSION_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_ACTUAL_VERSION_STR << ", " 
+      << CTR_OPER_STATUS_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_OPER_STATUS_STR << ", "
+      << CTR_COMMIT_NUMBER_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_COMMIT_NUMBER_STR << ", "
+      << CTR_COMMIT_DATE_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_COMMIT_DATE_STR << ", "
+      << CTR_COMMIT_APPLICATION_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_COMMIT_APPLICATION_STR 
+      << " from " <<
       "r_"UPPL_CTR_TABLE << " where " << "c_"UPPL_CTR_TABLE <<
       "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_TABLE << "." <<
       CTR_NAME_STR << ";";
       p_commit_db[loop] = commit_query.str();
-      pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+      pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
           "COPY_STATE_INFO:Query:%d is \"%s\"", loop,
           (commit_query.str()).c_str());
       commit_query.str("");
@@ -1653,7 +1667,7 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_DOMAIN_TABLE << "." <<
       CTR_NAME_STR << ";";
       p_commit_db[loop] = commit_query.str();
-      pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+      pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
           "COPY_STATE_INFO:Query:%d is \"%s\"", loop,
           (commit_query.str()).c_str());
       commit_query.str("");
@@ -1666,7 +1680,7 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       "." << BDRY_ID_STR << " = " << "r_"UPPL_BOUNDARY_TABLE<< "." <<
       BDRY_ID_STR << ";";
       p_commit_db[loop] = commit_query.str();
-      pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+      pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
           "COPY_STATE_INFO:Query:%d is \"%s\"", loop,
           (commit_query.str()).c_str());
       commit_query.str("");
@@ -1692,7 +1706,7 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
           }
 
           p_commit_db[index] = commit_query.str();
-          pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+          pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
               "TRUNCATE_RUNNING:Query:%d is \"%s\"", loop,
                (commit_query.str()).c_str());
           commit_query.str("");
@@ -1704,7 +1718,7 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
         std::string tmp = p_commit_db[0];
         p_commit_db[0] = p_commit_db[1];
         p_commit_db[1] = tmp;
-        pfc_log_info("ODBCM::QueryFactory::CommitAllConfiguration: "
+        pfc_log_debug("ODBCM::QueryFactory::CommitAllConfiguration: "
             "after Swap queries \n Query:[0] %s \n Query[1]: %s",
             p_commit_db[0].c_str(), p_commit_db[1].c_str());
       }

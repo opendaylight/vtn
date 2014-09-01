@@ -12,11 +12,13 @@
 
 #include <driver/controller_interface.hh>
 #include <pfc/ipc_struct.h>
+#include <uncxx/dataflow.hh>
 #include <unc/unc_base.h>
 #include <confignode.hh>
 #include <tclib_module.hh>
 #include <vector>
 #include <string>
+#include <driver/vtn_read_value_util.hh>
 
 namespace unc {
 namespace driver {
@@ -75,7 +77,6 @@ class driver_command {
 template<class key_cmd, class val_cmd>
 class vtn_driver_command: public driver_command {
  public:
-
   /**
    * @brief    - Method to create VTN/Vbridge/Vbridge Interface/VLANMAP in
    *             controller
@@ -111,6 +112,25 @@ class vtn_driver_command: public driver_command {
   virtual UncRespCode delete_cmd(key_cmd& key_st,
                                  val_cmd& val_st,
                                  unc::driver::controller*)=0;
+};
+
+class vtn_driver_read_command : public driver_command {
+  public:
+  /**
+   * @brief    - Method to read only Dataflow config from controller
+   * @param[in]- key_dataflow , key_port, key_vtnstation
+   *             val_dataflow,  val_port, val_vtnstation
+   * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
+   */
+  virtual UncRespCode read_cmd(unc::driver::controller*,
+                               unc::vtnreadutil::driver_read_util*)=0;
+
+  virtual UncRespCode fetch_config(
+             unc::driver::controller* ctr,
+             void* parent_key,
+             std::vector<unc::vtndrvcache::ConfigNode *>&) {
+    return UNC_RC_SUCCESS;
+  }
 };
 
 /*

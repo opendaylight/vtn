@@ -56,20 +56,20 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof DhcpRelayServersResource
 				&& ((DhcpRelayServersResource) resource).getVtnName() != null
-				&& !((DhcpRelayServersResource) resource).getVtnName().trim()
+				&& !((DhcpRelayServersResource) resource).getVtnName()
 						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((DhcpRelayServersResource) resource).getVtnName().trim(),
+					((DhcpRelayServersResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((DhcpRelayServersResource) resource).getVrtName() != null
 						&& !((DhcpRelayServersResource) resource).getVrtName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((DhcpRelayServersResource) resource).getVrtName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((DhcpRelayServersResource) resource).getVrtName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -77,20 +77,19 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 			setListOpFlag(true);
 		} else if (resource instanceof DhcpRelayServerResource
 				&& ((DhcpRelayServerResource) resource).getVtnName() != null
-				&& !((DhcpRelayServerResource) resource).getVtnName().trim()
-						.isEmpty()) {
+				&& !((DhcpRelayServerResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((DhcpRelayServerResource) resource).getVtnName().trim(),
+					((DhcpRelayServerResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((DhcpRelayServerResource) resource).getVrtName() != null
 						&& !((DhcpRelayServerResource) resource).getVrtName()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((DhcpRelayServerResource) resource).getVrtName()
-									.trim(), VtnServiceJsonConsts.LEN_31);
+							((DhcpRelayServerResource) resource).getVrtName(),
+							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -100,10 +99,10 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 						+ VtnServiceJsonConsts.IPADDR);
 				if (((DhcpRelayServerResource) resource).getIpaddr() != null
 						&& !((DhcpRelayServerResource) resource).getIpaddr()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator
 							.isValidIpV4(((DhcpRelayServerResource) resource)
-									.getIpaddr().trim());
+									.getIpaddr());
 				} else {
 					isValid = false;
 				}
@@ -119,9 +118,8 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 	 * DhcpRelayServer API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DhcpRelayServerResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DhcpRelayServerResourceValidator");
@@ -173,7 +171,7 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.IPADDR).getAsString() != null) {
 				isValid = validator.isValidIpV4(dcpRelayServer
 						.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-						.getAsString().trim());
+						.getAsString());
 			}
 		}
 		LOG.trace("Complete DhcpRelayServerResourceValidator#validatePost()");
@@ -229,7 +227,7 @@ public class DhcpRelayServerResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null) {
 					isValid = validator.isValidIpV4(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim());
+							.getAsString());
 				}
 			}
 			// validation for key: max(optional)

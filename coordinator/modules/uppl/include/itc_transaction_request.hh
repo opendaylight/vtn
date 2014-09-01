@@ -7,14 +7,14 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#ifndef _ITC_TRANSACTION_REQUEST_HH_
-#define _ITC_TRANSACTION_REQUEST_HH_
-
 /**
  * @brief    Transaction Request
  * @file     itc_transaction_request.hh
  *
  **/
+
+#ifndef _ITC_TRANSACTION_REQUEST_HH_
+#define _ITC_TRANSACTION_REQUEST_HH_
 
 #include <unc/keytype.h>
 #include <uncxx/tclib/tclib_defs.hh>
@@ -48,6 +48,8 @@ class TransactionRequest : public ITCReq {
     vector<key_ctr> controller_updated;
     vector<key_ctr> controller_deleted;
     map<string, uint32_t> controller_type_map;
+    map<string, val_ctr_commit_ver_t> controller_old_upd_val;
+    map<string, val_ctr_commit_ver_t> controller_old_del_val;
     vector<key_boundary> boundary_created;
     vector<key_boundary> boundary_updated;
     vector<key_boundary> boundary_deleted;

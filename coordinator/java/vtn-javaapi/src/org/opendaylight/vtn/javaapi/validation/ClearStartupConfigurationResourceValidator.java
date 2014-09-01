@@ -49,9 +49,8 @@ public class ClearStartupConfigurationResourceValidator extends
 	 * Validate request Json for put method of Clear Startup Configuration API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ClearStartupConfigurationResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ClearStartupConfigurationResourceValidator");
@@ -64,7 +63,7 @@ public class ClearStartupConfigurationResourceValidator extends
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
@@ -102,10 +101,10 @@ public class ClearStartupConfigurationResourceValidator extends
 							VtnServiceJsonConsts.OPERATION).getAsString() != null
 					&& !startup
 							.getAsJsonPrimitive(VtnServiceJsonConsts.OPERATION)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = startup
 						.getAsJsonPrimitive(VtnServiceJsonConsts.OPERATION)
-						.getAsString().trim()
+						.getAsString()
 						.equalsIgnoreCase(VtnServiceJsonConsts.CLEAR);
 			}
 		}

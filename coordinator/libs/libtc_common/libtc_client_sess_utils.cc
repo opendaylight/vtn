@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -66,7 +66,7 @@ TcUtilRet TcClientSessionUtils::tc_session_invoke(
   /*invoke a session*/
   err = csess->invoke(response);
   if ( err != 0 ) {
-    pfc_log_fatal("Session invoke failed");
+    pfc_log_fatal("Session invoke failed. Errno:%d", err);
     return TCUTIL_RET_FATAL;
   }
   return TCUTIL_RET_SUCCESS;
@@ -89,6 +89,45 @@ TcClientSessionUtils::tc_session_close(pfc::core::ipc::ClientSession** csess,
   }
   return TCUTIL_RET_SUCCESS;
 }
+
+/*retrieve uint64_t data from IPC session*/
+TcUtilRet TcClientSessionUtils::get_uint64(
+                          pfc::core::ipc::ClientSession* csess,
+                          uint32_t index,
+                          uint64_t* data) {
+  uint8_t err = 0;
+  uint32_t arg_count = 0;
+  pfc_ipctype_t response;
+
+  if ( csess == NULL || data == NULL ) {
+    pfc_log_error("Session/Data param is NULL");
+    return TCUTIL_RET_FAILURE;
+  }
+  /*validate response count*/
+  arg_count = csess->getResponseCount();
+  if ( index > arg_count ) {
+    pfc_log_error("Index Exceeded Response Count");
+    return TCUTIL_RET_FAILURE;
+  }
+  /*validate response type*/
+  err = csess->getResponseType(index, response);
+  if (err != 0) {
+    pfc_log_fatal("Client Session Corrupted");
+    return TCUTIL_RET_FATAL;
+  }
+  if (response != PFC_IPCTYPE_UINT64) {
+    pfc_log_error("getResponseType failed");
+    return TCUTIL_RET_FAILURE;
+  }
+  /*retrieve data*/
+  err = csess->getResponse(index, *data);
+  if ( err != 0 ) {
+    pfc_log_fatal("getResponse failed");
+    return TCUTIL_RET_FATAL;
+  }
+  return TCUTIL_RET_SUCCESS;
+}
+
 /*retrieve uint32_t data from IPC session*/
 TcUtilRet TcClientSessionUtils::get_uint32(
                           pfc::core::ipc::ClientSession* csess,
@@ -198,6 +237,24 @@ TcUtilRet TcClientSessionUtils::get_string(
     return TCUTIL_RET_FATAL;
   }
   data.assign(temp);
+  return TCUTIL_RET_SUCCESS;
+}
+
+/*set uint64_t data to IPC session*/
+TcUtilRet TcClientSessionUtils::set_uint64(
+                          pfc::core::ipc::ClientSession* csess,
+                          uint64_t data) {
+  uint8_t err = 0;
+  if ( csess == NULL ) {
+    pfc_log_error("Session param is NULL");
+    return TCUTIL_RET_FAILURE;
+  }
+  /*append data to session*/
+  err = csess->addOutput(data);
+  if ( err != 0 ) {
+    pfc_log_fatal("Appending data to ClientSession failed");
+    return TCUTIL_RET_FATAL;
+  }
   return TCUTIL_RET_SUCCESS;
 }
 

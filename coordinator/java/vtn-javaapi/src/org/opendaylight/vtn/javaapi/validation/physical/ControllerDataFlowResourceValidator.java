@@ -32,7 +32,7 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 	private static final Logger LOG = Logger
 			.getLogger(BoundaryResourceValidator.class.getName());
 	/**
-	 * . AbsractResouce class refernce
+	 * . AbsractResouce class reference
 	 */
 	private final AbstractResource resource;
 	private final CommonValidator validator = new CommonValidator();
@@ -42,7 +42,7 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 	 * of AbstractResource.
 	 * 
 	 * @param mappingResource
-	 *            ,AbstarctResouce refernce assigned to derived class
+	 *            ,AbstarctResouce reference assigned to derived class
 	 */
 	public ControllerDataFlowResourceValidator(
 			final AbstractResource mappingResource) {
@@ -63,10 +63,10 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 		if (resource instanceof ControllerDataFlowResource
 				&& ((ControllerDataFlowResource) resource).getControllerId() != null
 				&& !((ControllerDataFlowResource) resource).getControllerId()
-						.trim().isEmpty()) {
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((ControllerDataFlowResource) resource).getControllerId()
-							.trim(), VtnServiceJsonConsts.LEN_31);
+					((ControllerDataFlowResource) resource).getControllerId(),
+					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		}
 
@@ -75,20 +75,18 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * . Validate request json for get method of Controller Data Flow API.
-	 */
-	/**
+	 * Validate request json for Controller Data Flow APIs.
+	 * 
 	 * @param method
 	 *            , contains info about get,post ,delete.
 	 * @param requestBody
-	 *            , contains request param.
+	 *            , contains request parameter.
 	 * @throws VtnServiceException
-	 *             , vtnexcpetion is thrown.
+	 *             , vtn exception is thrown.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ControllerDataFlowResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ControllerDataFlowResourceValidator");
@@ -104,7 +102,7 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -120,14 +118,14 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 	}
 
 	/**
-	 * . Validate request json for get method of Controller Data Flow API
+	 * Validate request json for get method of Controller Data Flow API
 	 * 
 	 * @param requestBody
 	 *            the request Json object
 	 * @return true, if successful
 	 * @throws VtnServiceException
 	 * @param opFlag
-	 *            , opertion type
+	 *            , operation type
 	 */
 	private boolean isValidateGet(final JsonObject requestBody,
 			final boolean opFlag) {
@@ -138,10 +136,10 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 		if (resource instanceof ControllerDataFlowResource
 				&& ((ControllerDataFlowResource) resource).getControllerId() != null
 				&& !((ControllerDataFlowResource) resource).getControllerId()
-						.trim().isEmpty()) {
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((ControllerDataFlowResource) resource).getControllerId()
-							.trim(), VtnServiceJsonConsts.LEN_31);
+					((ControllerDataFlowResource) resource).getControllerId(),
+					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		}
 		setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
@@ -150,7 +148,7 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
 			isValid = validator.isValidMaxLengthAlphaNum(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-					.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+					.getAsString(), VtnServiceJsonConsts.LEN_31);
 		}
 
 		setInvalidParameter(VtnServiceJsonConsts.FLOW_ID);
@@ -160,9 +158,10 @@ public class ControllerDataFlowResourceValidator extends VtnServiceValidator {
 			isValid = validator.isValidBigIntegerRangeString(new BigInteger(
 					requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.FLOW_ID)
-							.getAsString().trim()),
-					VtnServiceJsonConsts.BIG_VAL0,
+							.getAsString()), VtnServiceJsonConsts.BIG_VAL0,
 					VtnServiceJsonConsts.BIG_VAL_18446744073709551615);
+		} else {
+			isValid = false;
 		}
 
 		LOG.trace("Complete ControllerDataFlowResourceValidator#isValidateGet");

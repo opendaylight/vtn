@@ -147,8 +147,15 @@ upll_rc_t VrtIfMoMgr::ValidateAttribute(ConfigKeyVal *ikey,
                                         IpcReqRespHeader *req) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (req->operation != UNC_OP_CREATE && req->operation != UNC_OP_UPDATE) {
+   return UPLL_RC_SUCCESS;
+  }
+
+  result_code = ValidateIpAddress(ikey, req->datatype, dmi);
+#if 0
   if (ikey->get_key_type() != UNC_KT_VRT_IF) result_code =
       UPLL_RC_ERR_CFG_SYNTAX;
+#endif
   return result_code;
 }
 
@@ -162,7 +169,7 @@ bool VrtIfMoMgr::IsValidKey(void *key, uint64_t index) {
                     (vrtif_key->vrt_key.vtn_key.vtn_name),
                      kMinLenVtnName, kMaxLenVtnName);
       if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_INFO("VTN Name is not valid(%d)", ret_val);
+        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
         return false;
       }
       break;
@@ -285,6 +292,12 @@ upll_rc_t VrtIfMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
           uuu::upll_strncpy(vrt_key_if->if_name, if_name,
                           (kMaxLenInterfaceName + 1));
     }
+    break;
+    case UNC_KT_VBRIDGE:
+      uuu::upll_strncpy(vrt_key_if->vrt_key.vtn_key.vtn_name,
+             reinterpret_cast<key_vbr *>(pkey)->vtn_key.vtn_name,
+              (kMaxLenVtnName+1));
+      break;
     break;
     default:
       break;
@@ -451,12 +464,13 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
                                          DalDmlIntf *dmi,
                                          ConfigKeyVal *ctrlr_key) {
   UPLL_FUNC_TRACE;
-  upll_rc_t rs_code = UPLL_RC_SUCCESS;
   val_vrt_if_t *vrt_if_val = reinterpret_cast<val_vrt_if_t *>(GetVal(ikey));
 
   unc_keytype_configstatus_t cs_status =
       (driver_result == UPLL_RC_SUCCESS) ? UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
   bool oper_status_change = true;
+  bool propagate = true;
+
   if (vrt_if_val == NULL) return UPLL_RC_ERR_GENERIC;
   switch (op) {
   case UNC_OP_UPDATE: 
@@ -472,39 +486,35 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
   /* fall through intended */
   case UNC_OP_CREATE: 
   {
+    propagate = false;
     if (op == UNC_OP_CREATE)
       vrt_if_val->cs_row_status = cs_status;
-    val_db_vrt_if_st *vrt_if_valst = reinterpret_cast<val_db_vrt_if_st *>
-        (ConfigKeyVal::Malloc(sizeof(val_db_vrt_if_st)));
-    ikey->AppendCfgVal(IpctSt::kIpcStValVrtIfSt, vrt_if_valst);
     break;
   }
   default:
     return UPLL_RC_ERR_GENERIC;
   }
   if (oper_status_change) {
-#if 0
-    rs_code = InitOperStatus<val_vrt_if_st,val_db_vrt_if_st>(ikey,
-      vrt_if_val->valid[UPLL_IDX_ADMIN_ST_VI],
-      vrt_if_val->admin_status,(uint8_t)UNC_VF_INVALID);
-    if (rs_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("Error setting oper status");
-      return UPLL_RC_ERR_GENERIC;
-    }
-#else
-      val_vrt_if_st *vnif_st = &(reinterpret_cast<val_db_vrt_if_st  *>
-             (GetStateVal(ikey))->vrt_if_val_st);
-      if (!vnif_st) {
-        UPLL_LOG_DEBUG("Returning error\n");
-        return UPLL_RC_ERR_GENERIC;
+    val_db_vrt_if_st *vrt_if_valst = reinterpret_cast<val_db_vrt_if_st *>
+        (ConfigKeyVal::Malloc(sizeof(val_db_vrt_if_st)));
+    ikey->AppendCfgVal(IpctSt::kIpcStValVrtIfSt, vrt_if_valst);
+    val_db_vrt_if_st *vnif_st = reinterpret_cast<val_db_vrt_if_st  *>
+             (GetStateVal(ikey));
+    vnif_st->vrt_if_val_st.valid[UPLL_IDX_OPER_STATUS_VRTS] = UNC_VF_VALID;
+    if (op == UNC_OP_CREATE) {
+       if(driver_result == UPLL_RC_ERR_CTR_DISCONNECTED) {
+          vnif_st->vrt_if_val_st.oper_status = UPLL_OPER_STATUS_UNKNOWN;
+          vnif_st->down_count = PORT_UNKNOWN;
+        } else {
+          vnif_st->vrt_if_val_st.oper_status = UPLL_OPER_STATUS_UNINIT;
+          vnif_st->down_count = 0;
+        }
+      } else {
+        val_db_vrt_if_st *run_vrtifst = reinterpret_cast<val_db_vrt_if_st *>
+                                 (GetStateVal(upd_key));
+        vnif_st->vrt_if_val_st.oper_status = run_vrtifst->vrt_if_val_st.oper_status;
+        vnif_st->down_count = run_vrtifst->down_count;
       }
-#if 1
-      vnif_st->oper_status = 
-          (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)? 
-           UPLL_OPER_STATUS_UNKNOWN:UPLL_OPER_STATUS_UNINIT;
-#endif
-      vnif_st->valid[UPLL_IDX_OPER_STATUS_VRTS] = UNC_VF_VALID;
-#endif
   }
   UPLL_LOG_TRACE("%s",(ikey->ToStrAll()).c_str());
   val_vrt_if *vrt_if_val2 = reinterpret_cast<val_vrt_if *>(GetVal(upd_key));
@@ -529,7 +539,7 @@ upll_rc_t VrtIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
     }
 
   }
-  return rs_code;
+  return (SetInterfaceOperStatus(ikey, dmi, op, propagate, driver_result));
 }
 
 upll_rc_t VrtIfMoMgr::UpdateAuditConfigStatus(
@@ -814,44 +824,58 @@ upll_rc_t VrtIfMoMgr::ValidateVrtIfValue(val_vrt_if *vrt_if_val,
 
   if (vrt_if_val->valid[UPLL_IDX_DESC_VI] == UNC_VF_VALID) {
     if (!ValidateDesc(vrt_if_val->description,
-                          kMinLenDescription,
-                          kMaxLenDescription)) {
+                      kMinLenDescription,
+                      kMaxLenDescription)) {
       UPLL_LOG_DEBUG("Description syntax check failed."
-                    "received Description - %s",
-                    vrt_if_val->description);
+                     "received Description - %s",
+                     vrt_if_val->description);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if (vrt_if_val->valid[UPLL_IDX_DESC_VI] == UNC_VF_VALID_NO_VALUE
-      && (op == UNC_OP_CREATE || op == UNC_OP_UPDATE)) {
+             && (op == UNC_OP_CREATE || op == UNC_OP_UPDATE)) {
     uuu::upll_strncpy(vrt_if_val->description, " ", 2);
   }
 
-  if (vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI] == UNC_VF_VALID) {
-    if (ValidateNumericRange((uint8_t) vrt_if_val->prefixlen, kMinVnodeIpv4Prefix,
-                             kMaxVnodeIpv4Prefix, true, true)) {
-      UPLL_LOG_DEBUG("IPV4 prefixlength validation is success");
+  /* Ip address can't be configured without prefix length / mask value
+   * and both attributes must have same valid flag values during
+   * CREATE or UPDATE operation. 
+   * so, we skip the validation for both ip address and prefixlength attributes
+   * when the valid flag value is not as VALID value.
+   */
+  if (vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI] == UNC_VF_VALID &&
+      vrt_if_val->valid[UPLL_IDX_IP_ADDR_VI] == UNC_VF_VALID) {
+    if (ValidateNumericRange((uint8_t) vrt_if_val->prefixlen,
+                             kMinVnodeIpv4Prefix, kMaxVnodeIpv4Prefix, true, true)) {
       if (!ValidateIpv4Addr(vrt_if_val->ip_addr.s_addr,
-                                 vrt_if_val->prefixlen)) {
-        UPLL_LOG_DEBUG("Ip address Validation failed");
+                            vrt_if_val->prefixlen)) {
+        UPLL_LOG_ERROR("IP address Validation failed");
         return UPLL_RC_ERR_CFG_SYNTAX;
       }
     } else {
-      UPLL_LOG_DEBUG("prefixlen validation check failed."
-                    "prefixlen - %d",
-                    vrt_if_val->prefixlen);
+      UPLL_LOG_ERROR("Invalid prefixlength range value- %d",
+                     vrt_if_val->prefixlen);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
-
-  } else if (vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI] == UNC_VF_VALID_NO_VALUE
-      && (op == UNC_OP_UPDATE || op == UNC_OP_CREATE)) {
-    vrt_if_val->prefixlen = 0;
-  }
+  } else {
+    if ((vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI] ==
+         vrt_if_val->valid[UPLL_IDX_IP_ADDR_VI]) &&
+        (op == UNC_OP_UPDATE || op == UNC_OP_CREATE)) {
+      vrt_if_val->ip_addr.s_addr = 0;
+      vrt_if_val->prefixlen = 0; 
+    } else {   
+      UPLL_LOG_DEBUG("IP address and prefix length both do not have "
+                     "same valid flags: %d, %d",
+                     vrt_if_val->valid[UPLL_IDX_PREFIXLEN_VI],
+                     vrt_if_val->valid[UPLL_IDX_IP_ADDR_VI]);
+      return UPLL_RC_ERR_CFG_SYNTAX;
+    } 
+  } 
 
   if (vrt_if_val->valid[UPLL_IDX_MAC_ADDR_VI] == UNC_VF_VALID) {
     if (!ValidateMacAddr(vrt_if_val->macaddr)) {
       UPLL_LOG_DEBUG("Mac Address validation failure for KT_VRT_IF val struct."
-                    " Received  mac_address is - %s",
-                    vrt_if_val->macaddr);
+                     " Received  mac_address is - %s",
+                     vrt_if_val->macaddr);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   }
@@ -865,10 +889,10 @@ upll_rc_t VrtIfMoMgr::ValidateVrtIfValue(val_vrt_if *vrt_if_val,
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if (vrt_if_val->valid[UPLL_IDX_ADMIN_ST_VI] == UNC_VF_VALID_NO_VALUE
-      && (op == UNC_OP_CREATE || op == UNC_OP_UPDATE)) {
+             && (op == UNC_OP_CREATE || op == UNC_OP_UPDATE)) {
     vrt_if_val->admin_status = UPLL_ADMIN_ENABLE;
   } else if ((vrt_if_val->valid[UPLL_IDX_ADMIN_ST_VI] == UNC_VF_INVALID)
-      && (op == UNC_OP_CREATE)) {
+             && (op == UNC_OP_CREATE)) {
     vrt_if_val->admin_status = UPLL_ADMIN_ENABLE;
     vrt_if_val->valid[UPLL_IDX_ADMIN_ST_VI] = UNC_VF_VALID_NO_VALUE;
   }
@@ -887,12 +911,12 @@ upll_rc_t VrtIfMoMgr::ValidateVtnNeighborValue(val_vtn_neighbor *vtn_neighbor,
         kMinLenVnodeName, kMaxLenVnodeName);
     if (ret_val != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("connected_vnode_name syntax check failed."
-                    "Received connected_vnode_name - %s",
-                    vtn_neighbor->connected_vnode_name);
+                     "Received connected_vnode_name - %s",
+                     vtn_neighbor->connected_vnode_name);
       return UPLL_RC_ERR_CFG_SYNTAX;
     }
   } else if (vtn_neighbor->valid[UPLL_IDX_CONN_VNODE_NAME_VN]
-      == UNC_VF_VALID_NO_VALUE
+             == UNC_VF_VALID_NO_VALUE
       && (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE)) {
     uuu::upll_strncpy(vtn_neighbor->connected_vnode_name, " ",
                       kMaxLenVnodeName+1);
@@ -1127,48 +1151,36 @@ bool VrtIfMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running
     return UPLL_RC_ERR_GENERIC;
   }
   for (unsigned int loop = 0;
-        loop < sizeof(val_vrt_if1->valid) / sizeof(uint8_t); ++loop) {
-      if (UNC_VF_INVALID == val_vrt_if1->valid[loop]
-          && UNC_VF_VALID == val_vrt_if2->valid[loop])
-        val_vrt_if1->valid[loop] = UNC_VF_VALID_NO_VALUE;
+       loop < sizeof(val_vrt_if1->valid) / sizeof(uint8_t); ++loop) {
+    if (UNC_VF_INVALID == val_vrt_if1->valid[loop]
+        && UNC_VF_VALID == val_vrt_if2->valid[loop])
+      val_vrt_if1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (!copy_to_running) {
-    if (UNC_VF_VALID_NO_VALUE == val_vrt_if1->valid[UPLL_IDX_IP_ADDR_VI]) {
-      val_vrt_if1->ip_addr.s_addr = val_vrt_if2->ip_addr.s_addr;
+  if (copy_to_running) {
+    if (UNC_VF_INVALID != val_vrt_if1->valid[UPLL_IDX_DESC_VI]) {
+      if ((UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_DESC_VI]) &&
+          (!strncmp(reinterpret_cast<char*>(val_vrt_if1->description),
+                    reinterpret_cast<char*>(val_vrt_if2->description),
+                    sizeof(val_vrt_if2->description))))
+        val_vrt_if1->valid[UPLL_IDX_DESC_VI] = UNC_VF_INVALID;
     }
-    if (UNC_VF_VALID_NO_VALUE == val_vrt_if1->valid[UPLL_IDX_PREFIXLEN_VI]) {
-      val_vrt_if1->prefixlen = val_vrt_if2->prefixlen;
+    if (UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_IP_ADDR_VI]
+        && UNC_VF_VALID == val_vrt_if2->valid[UPLL_IDX_IP_ADDR_VI]) {
+      if (val_vrt_if1->ip_addr.s_addr == val_vrt_if2->ip_addr.s_addr)
+        val_vrt_if1->valid[UPLL_IDX_IP_ADDR_VI] = UNC_VF_INVALID;
     }
-    if (UNC_VF_VALID_NO_VALUE == val_vrt_if1->valid[UPLL_IDX_MAC_ADDR_VI]) {
-      memcpy(reinterpret_cast<char*>(val_vrt_if1->macaddr),
-             reinterpret_cast<char*>(val_vrt_if2->macaddr),
-             sizeof(val_vrt_if2->macaddr));
+    if (UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_PREFIXLEN_VI]
+        && UNC_VF_VALID == val_vrt_if2->valid[UPLL_IDX_PREFIXLEN_VI]) {
+      if (val_vrt_if1->prefixlen == val_vrt_if2->prefixlen)
+        val_vrt_if1->valid[UPLL_IDX_PREFIXLEN_VI] = UNC_VF_INVALID;
     }
-  }
-  if (UNC_VF_INVALID != val_vrt_if1->valid[UPLL_IDX_DESC_VI]) {
-    if (!copy_to_running ||
-        ((UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_DESC_VI]) &&
-         (!strncmp(reinterpret_cast<char*>(val_vrt_if1->description),
-                 reinterpret_cast<char*>(val_vrt_if2->description),
-                 sizeof(val_vrt_if2->description)))))
-      val_vrt_if1->valid[UPLL_IDX_DESC_VI] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_IP_ADDR_VI]
-      && UNC_VF_VALID == val_vrt_if2->valid[UPLL_IDX_IP_ADDR_VI]) {
-    if (val_vrt_if1->ip_addr.s_addr == val_vrt_if2->ip_addr.s_addr)
-      val_vrt_if1->valid[UPLL_IDX_IP_ADDR_VI] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_PREFIXLEN_VI]
-      && UNC_VF_VALID == val_vrt_if2->valid[UPLL_IDX_PREFIXLEN_VI]) {
-    if (val_vrt_if1->prefixlen == val_vrt_if2->prefixlen)
-      val_vrt_if1->valid[UPLL_IDX_PREFIXLEN_VI] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_MAC_ADDR_VI]
-      && UNC_VF_VALID == val_vrt_if2->valid[UPLL_IDX_MAC_ADDR_VI]) {
-    if (!memcmp(reinterpret_cast<char*>(val_vrt_if1->macaddr),
-          reinterpret_cast<char*>(val_vrt_if2->macaddr),
-          sizeof(val_vrt_if2->macaddr)))
-      val_vrt_if1->valid[UPLL_IDX_MAC_ADDR_VI] = UNC_VF_INVALID;
+    if (UNC_VF_VALID == val_vrt_if1->valid[UPLL_IDX_MAC_ADDR_VI]
+        && UNC_VF_VALID == val_vrt_if2->valid[UPLL_IDX_MAC_ADDR_VI]) {
+      if (!memcmp(reinterpret_cast<char*>(val_vrt_if1->macaddr),
+                  reinterpret_cast<char*>(val_vrt_if2->macaddr),
+                  sizeof(val_vrt_if2->macaddr)))
+        val_vrt_if1->valid[UPLL_IDX_MAC_ADDR_VI] = UNC_VF_INVALID;
+    }
   }
   val_vrt_if1->valid[UPLL_IDX_ADMIN_ST_VI] = UNC_VF_INVALID;
   // Description is not send to Controller
@@ -1178,9 +1190,9 @@ bool VrtIfMoMgr::CompareValidValue(void *&val1, void *val2, bool copy_to_running
        loop < sizeof(val_vrt_if1->valid) / sizeof(val_vrt_if1->valid[0]);
        ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_vrt_if1->valid[loop]) ||
-       (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vrt_if1->valid[loop])) {
-       invalid_attr = false;
-       break;
+        (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vrt_if1->valid[loop])) {
+      invalid_attr = false;
+      break;
     }
   }
   return invalid_attr;
@@ -1261,9 +1273,10 @@ upll_rc_t VrtIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
 
 upll_rc_t VrtIfMoMgr::MergeValidate(unc_key_type_t keytype,
                                     const char *ctrlr_id, ConfigKeyVal *ikey,
-                                    DalDmlIntf *dmi) {
+                                    DalDmlIntf *dmi,
+                                    upll_import_type import_type) {
+  UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  ConfigKeyVal *tkey = NULL;
   if (!ikey || !(ikey->get_key())) {
      UPLL_LOG_DEBUG("Input is NULL");
      return UPLL_RC_ERR_GENERIC;
@@ -1285,117 +1298,31 @@ upll_rc_t VrtIfMoMgr::MergeValidate(unc_key_type_t keytype,
     if (dup_key) delete dup_key;
     return result_code;
   }
-  bool tvalid1 = 0;
-  bool tvalid2 = 0;
   ConfigKeyVal * travel = dup_key;
   while (travel) {
-    /*
-     * Checks the Val structure is available or not.If availabl
-     * Checks Host address value is available or not in import ckval
-     */
+    ConfigKeyVal *tkey = NULL;
     result_code = DupConfigKeyVal(tkey, travel, MAINTBL);
-    if (UPLL_RC_SUCCESS != result_code){
-       UPLL_LOG_DEBUG("DupConfigKeyVal Failed %d", result_code);
-       if (dup_key) delete dup_key;
-       return result_code;
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG(" DupConfigKeyVal is Failed");
+      DELETE_IF_NOT_NULL(tkey);
+      DELETE_IF_NOT_NULL(dup_key);
+      return result_code;
     }
-
-    val_vrt_if_t *tval = reinterpret_cast<val_vrt_if_t *>
-                                          (GetVal(tkey));
-    if (tval) {
-      /* This  we have to check if its success */
-//     UPLL_LOG_DEBUG("NO VALUES WHAT TODO ");
-      if (tval->valid[UPLL_IDX_IP_ADDR_VI] != UNC_VF_VALID
-          && tval->valid[UPLL_IDX_MAC_ADDR_VI] != UNC_VF_VALID) {
-          UPLL_LOG_DEBUG(" MAIN VALUES ARE NOT VALID");
-      } else {
-        if (tval->valid[UPLL_IDX_IP_ADDR_VI] == UNC_VF_VALID &&
-            tval->valid[UPLL_IDX_PREFIXLEN_VI] == UNC_VF_VALID ) {
-        /* Reset the Valid flag to INVALID and check any one attribute is present
-         * in the DT */
-          tvalid1 = 1;
-          tval->valid[UPLL_IDX_IP_ADDR_VI] = UNC_VF_INVALID;
-          tval->valid[UPLL_IDX_PREFIXLEN_VI] = UNC_VF_INVALID; 
-        }
-        if (tval->valid[UPLL_IDX_MAC_ADDR_VI] == UNC_VF_VALID) {
-          tvalid2 = 1;
-          tval->valid[UPLL_IDX_MAC_ADDR_VI] = UNC_VF_INVALID;
-        }
-      
-        if (tvalid1) {
-          tval->valid[UPLL_IDX_DESC_VI] = UNC_VF_INVALID;
-          tval->valid[UPLL_IDX_ADMIN_ST_VI] = UNC_VF_INVALID;
-
-          /* The Same VTN should not have the same MAC and IP address so must
-           * remove the if_name */
-          memset(reinterpret_cast<key_vrt_if_t *>(tkey->get_key())->if_name, 0,
-                                                       kMaxLenInterfaceName);
-
-          memset(reinterpret_cast<key_vrt_if_t *>(tkey->get_key())->vrt_key.
-                                   vrouter_name, 0, kMaxLenVnodeName);
-          /* set Valid for IP address */
-          tval->valid[UPLL_IDX_IP_ADDR_VI] = UNC_VF_VALID;
-          tval->valid[UPLL_IDX_PREFIXLEN_VI] = UNC_VF_VALID; 
-          result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dbop,
-                                     dmi, MAINTBL);
-          if (UPLL_RC_SUCCESS == result_code) {
-            UPLL_LOG_DEBUG(" IP Address  Conflicts %d", result_code);
-            ikey->ResetWith(tkey);
-            delete tkey;
-            delete dup_key;
-            return UPLL_RC_ERR_MERGE_CONFLICT;
-          }
-          if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-            UPLL_LOG_DEBUG("ReadConfigDB Failed %d", result_code);
-            delete tkey;
-            if (dup_key) delete dup_key;
-            return result_code;
-          }
-        }
-        if (tvalid2) {
-          tval = reinterpret_cast<val_vrt_if_t *>
-                                                (GetVal(tkey));
-          if (tval) {
-             tval->valid[UPLL_IDX_DESC_VI] = UNC_VF_INVALID;
-             tval->valid[UPLL_IDX_ADMIN_ST_VI] = UNC_VF_INVALID;
-
-            /* The Same VTN should not have the same MAC and IP address so must
-             *  remove the if_name */
-              memset(reinterpret_cast<key_vrt_if_t *>(tkey->get_key())->if_name, 0,
-                                                     kMaxLenInterfaceName);
-          
-              memset(reinterpret_cast<key_vrt_if_t *>(tkey->get_key())->vrt_key.
-                                   vrouter_name, 0, kMaxLenVnodeName);
-             /* set Valid for MAC address */
-              if (tvalid1) {
-                tval->valid[UPLL_IDX_IP_ADDR_VI] = UNC_VF_INVALID;
-                tval->valid[UPLL_IDX_PREFIXLEN_VI] = UNC_VF_INVALID; 
-              }
-              tval->valid[UPLL_IDX_MAC_ADDR_VI] = UNC_VF_VALID;
-              result_code = ReadConfigDB(tkey, UPLL_DT_CANDIDATE, UNC_OP_READ, dbop, dmi,
-                                     MAINTBL);
-              if (UPLL_RC_SUCCESS == result_code) {
-                ikey->ResetWith(tkey);
-                delete tkey;
-                delete dup_key;
-                return UPLL_RC_ERR_MERGE_CONFLICT;
-              }
-              if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-                UPLL_LOG_DEBUG("ReadConfigDB Failed %d", result_code);
-                if (dup_key) delete dup_key;
-                delete tkey;
-                return result_code;
-              }
-          } 
-        }
+    result_code = MergeValidateIpAddress(tkey, UPLL_DT_CANDIDATE,
+                                         dmi, ctrlr_id, import_type);
+    if (result_code != UPLL_RC_SUCCESS) {
+      /* If Merge conflict ikey should reset with that ConfigKeyVal */
+      if (result_code == UPLL_RC_ERR_MERGE_CONFLICT) {
+        ikey->ResetWith(tkey);
+        DELETE_IF_NOT_NULL(tkey);
+        DELETE_IF_NOT_NULL(dup_key);
+        return UPLL_RC_ERR_MERGE_CONFLICT;
       }
-    } else {
-     UPLL_LOG_DEBUG("Vrt_If val is Empty");
+      DELETE_IF_NOT_NULL(tkey);
+      DELETE_IF_NOT_NULL(dup_key);
+      return result_code;
     }
-    if (tkey) {
-      delete tkey;
-      tkey = NULL;
-    }
+    DELETE_IF_NOT_NULL(tkey);
     travel = travel->get_next_cfg_key_val();
   }  //  while end
   if (dup_key)
@@ -1453,6 +1380,95 @@ upll_rc_t VrtIfMoMgr::GetVexternal(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 
+upll_rc_t VrtIfMoMgr::AdaptValToDriver(ConfigKeyVal *ck_new,
+                                       ConfigKeyVal *ck_old,
+                                       unc_keytype_operation_t op,
+                                       upll_keytype_datatype_t dt_type,
+                                       unc_key_type_t keytype,
+                                       DalDmlIntf *dmi,
+                                       bool &not_send_to_drv,
+                                       bool audit_update_phase) {
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  if (!audit_update_phase) {
+    if (op == UNC_OP_DELETE) {
+      // Perform semantic check for vnode interface deletion
+      // check whether the vnode interface is referred in the
+      // flowfilter-redirection.
+      result_code = CheckVnodeInterfaceForRedirection(ck_new,
+                                                      ck_old,
+                                                      dmi,
+                                                      UPLL_DT_CANDIDATE,
+                                                      op);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_INFO("Flowfilter redirection validation fails for keytype %d"
+                      " cannot perform operation  %d errcode %d",
+                      keytype, op, result_code);
+        return result_code;
+      }
+    }
+  }
+  return result_code;
+}
+
+upll_rc_t VrtIfMoMgr::ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
+                                        ConfigKeyVal *rename_vtn_ckv,
+                                        DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t     result_code = UPLL_RC_SUCCESS;
+  DbSubOp       dbop        = { kOpReadMultiple, kOpMatchNone, kOpInOutNone };
+  ConfigKeyVal *vrtif_ckv = NULL;
+
+  if (!org_vtn_ckv || !org_vtn_ckv->get_key() ||
+      !rename_vtn_ckv || !rename_vtn_ckv->get_key()) {
+    UPLL_LOG_DEBUG("Input is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  result_code = GetChildConfigKey(vrtif_ckv, org_vtn_ckv);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey Failed");
+    return result_code;
+  }
+
+  /* Gets All VRT_IF ConfigKeyVall based on original vtn name */
+  result_code = ReadConfigDB(vrtif_ckv, UPLL_DT_IMPORT, UNC_OP_READ, dbop, dmi,
+                             MAINTBL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)
+      result_code = UPLL_RC_SUCCESS;
+
+    DELETE_IF_NOT_NULL(vrtif_ckv);
+    return result_code;
+  }
+
+  uint8_t *vtn_rename = reinterpret_cast<key_vtn_t*>(
+      rename_vtn_ckv->get_key())->vtn_name;
+  ConfigKeyVal *travel = vrtif_ckv;
+  while (travel) {
+    /* Verifies whether the same ip address is exist under the
+     * new vtn name */
+    uuu::upll_strncpy(reinterpret_cast<key_vrt_if_t*>(
+                   travel->get_key())->vrt_key.vtn_key.vtn_name,
+                   vtn_rename,
+                   (kMaxLenVtnName + 1));
+    /* MAC Address Semantic validation within the IMPORT table is
+     * not required. MAC Address is unique for that Controller to be import*/
+    reinterpret_cast<val_vrt_if_t*>(GetVal(travel))->valid[UPLL_IDX_MAC_ADDR_VI]
+        = UNC_VF_INVALID;
+    result_code = MergeValidateIpAddress(travel, UPLL_DT_IMPORT, dmi, NULL,
+                                         UPLL_IMPORT_TYPE_FULL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("Vrouter IP Address validation failed during VTN stiching");
+      DELETE_IF_NOT_NULL(vrtif_ckv);
+      return result_code;
+    }
+
+    travel = travel->get_next_cfg_key_val();
+  }
+  DELETE_IF_NOT_NULL(vrtif_ckv);
+
+  return UPLL_RC_SUCCESS;
+}
 
 }  // namespace kt_momgr
 }  // namespace upll

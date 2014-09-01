@@ -531,7 +531,6 @@ void ODBCMUtils::print_odbc_details(SQLHDBC conn_handle) {
  **/
 std::string ODBCMUtils::get_ip_string(uint32_t ip_address) {
   struct sockaddr_in ip;
-  ODBCM_PRINT_DEBUG_LOG("uint32_t ip address is %d", ip_address);
   ip.sin_addr.s_addr = ip_address;
   /** Conver uint32_t ip adress to asci readable format */
   return inet_ntoa(ip.sin_addr);

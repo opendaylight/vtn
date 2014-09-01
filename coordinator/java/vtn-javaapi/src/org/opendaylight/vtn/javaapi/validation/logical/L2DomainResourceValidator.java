@@ -54,18 +54,18 @@ public class L2DomainResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof L2DomainResource
 				&& ((L2DomainResource) resource).getVtnName() != null
-				&& !((L2DomainResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((L2DomainResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((L2DomainResource) resource).getVtnName().trim(),
+					((L2DomainResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((L2DomainResource) resource).getVbrName() != null
-						&& !((L2DomainResource) resource).getVbrName().trim()
+						&& !((L2DomainResource) resource).getVbrName()
 								.isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((L2DomainResource) resource).getVbrName().trim(),
+							((L2DomainResource) resource).getVbrName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -81,9 +81,8 @@ public class L2DomainResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get method of L2DomainResource
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start L2DomainResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of L2DomainResourceValidator");
@@ -99,7 +98,7 @@ public class L2DomainResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails

@@ -32,6 +32,7 @@ public :
   DalCursor(const DalBindInfo *info1, const DalBindInfo *info2)
     : _bindInfo1(info1), _bindInfo2(info2) {}
 
+  DalCursor() {}
   ~DalCursor() {}
 
   inline DalResultCode

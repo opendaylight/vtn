@@ -43,9 +43,8 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Read Lock API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("ReadLockResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ReadLockResourceValidator");
@@ -58,7 +57,7 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -98,8 +97,8 @@ public class ReadLockResourceValidator extends VtnServiceValidator {
 							.getAsString() != null) {
 				isValid = validator.isValidRange(
 						readLock.getAsJsonPrimitive(
-								VtnServiceJsonConsts.TIMEOUT).getAsString()
-								.trim(), VtnServiceJsonConsts.LONG_VAL_0,
+								VtnServiceJsonConsts.TIMEOUT).getAsString(),
+						VtnServiceJsonConsts.LONG_VAL_0,
 						VtnServiceJsonConsts.LONG_VAL_4294967295);
 			}
 		}

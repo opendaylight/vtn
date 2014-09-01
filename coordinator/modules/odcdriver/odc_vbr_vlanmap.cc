@@ -689,19 +689,14 @@ UncRespCode OdcVbrVlanMapCommand::create_update_cmd(
     pfc_log_error("%s: Vlanmap url is empty", PFC_FUNCNAME);
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  unc::restjson::JsonBuildParse json_obj;
   json_object* vbrvlanmap_json_request_body = create_request_body(
       vlanmap_key, vlanmap_val, logical_port_id);
-  const char* str_vlanmap_reqbody = json_obj.get_string(
-      vbrvlanmap_json_request_body);
-  pfc_log_debug("%s: Request body for vlanmap: %s ", PFC_FUNCNAME,
-                str_vlanmap_reqbody);
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                   ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
   unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
           vbr_vlanmap_url, restjson::HTTP_METHOD_POST,
-          str_vlanmap_reqbody, conf_file_values_);
+          unc::restjson::JsonBuildParse::get_json_string(vbrvlanmap_json_request_body), conf_file_values_);
 
   json_object_put(vbrvlanmap_json_request_body);
   if (NULL == response) {
@@ -932,8 +927,8 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
     pfcdrv_val_vlan_map_t& vlanmap_val,
     const std::string &logical_port_id) {
   ODC_FUNC_TRACE;
-  unc::restjson::JsonBuildParse json_obj;
-  json_object *jobj_parent = json_obj.create_json_obj();
+  //unc::restjson::JsonBuildParse json_obj;
+  json_object *jobj_parent = unc::restjson::JsonBuildParse::create_json_obj();
   uint32_t ret_val = 1;
   std::string vlanid;
 
@@ -948,7 +943,7 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
   }
   pfc_log_debug("%s: Vlanid: %s", PFC_FUNCNAME, vlanid.c_str());
   if (!vlanid.empty()) {
-    ret_val = json_obj.build("vlan", vlanid, jobj_parent);
+    ret_val = unc::restjson::JsonBuildParse::build("vlan", vlanid, jobj_parent);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error("%s: Error in building vlanid in vlanmap", PFC_FUNCNAME);
       json_object_put(jobj_parent);
@@ -957,8 +952,9 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
   }
 
   if (vlanmap_key.logical_port_id_valid != 0) {
-    json_object *jobj_node = json_obj.create_json_obj();
-    ret_val = json_obj.build("type", "OF", jobj_node);
+    json_object *jobj_node = unc::restjson::JsonBuildParse::create_json_obj();
+    std::string vlan_type ("OF");
+    ret_val = unc::restjson::JsonBuildParse::build("type", vlan_type, jobj_node);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error("%s: Error in building type in vlanmap", PFC_FUNCNAME);
       json_object_put(jobj_parent);
@@ -974,7 +970,7 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
                     logical_port_id.c_str());
       pfc_log_debug("%s: Switch id(%s) ", PFC_FUNCNAME,
                     switch_id.c_str());
-      ret_val = json_obj.build("id", switch_id, jobj_node);
+      ret_val = unc::restjson::JsonBuildParse::build("id", switch_id, jobj_node);
       if (restjson::REST_OP_SUCCESS != ret_val) {
         pfc_log_error("%s: Error in building SwitchId in vlanmap",
                       PFC_FUNCNAME);
@@ -984,7 +980,7 @@ json_object* OdcVbrVlanMapCommand::create_request_body(
       }
     }
 
-    ret_val = json_obj.build("node", jobj_node, jobj_parent);
+    ret_val = unc::restjson::JsonBuildParse::build("node", jobj_node, jobj_parent);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error("%s: Error in building node in vlanmap", PFC_FUNCNAME);
       json_object_put(jobj_parent);

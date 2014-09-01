@@ -28,6 +28,7 @@ public class UncTCEnums {
 	public enum ServiceType {
 		TC_OP_CONFIG_ACQUIRE,
 		TC_OP_CONFIG_RELEASE,
+		TC_OP_CONFIG_ACQUIRE_TIMED,
 		TC_OP_CONFIG_ACQUIRE_FORCE,
 		TC_OP_CANDIDATE_COMMIT,
 		TC_OP_CANDIDATE_ABORT,
@@ -59,23 +60,59 @@ public class UncTCEnums {
 
 		TC_CONFIG_PRESENT(101, 50301, "Server Busy"),
 
-		TC_INVALID_CONFIG_ID(102, 40000, "Invalid config id"),
+		TC_STATE_CHANGED(102, 50000, "Cluster status is changed"),
 
-		TC_INVALID_OPERATION_TYPE(103, 50000, "Invalid operation type"),
+		TC_INVALID_CONFIG_ID(103, 40000, "Invalid config id"),
 
-		TC_INVALID_SESSION_ID(104, 40000, "Invalid session id"),
+		TC_INVALID_OPERATION_TYPE(104, 50000, "Invalid operation type"),
 
-		TC_INVALID_STATE(105, 50300, "Invalid state"),
+		TC_INVALID_SESSION_ID(105, 40000, "Invalid session id"),
 
-		TC_OPER_ABORT(106, 50000, "Operation abort"),
+		TC_INVALID_STATE(106, 50300, "Invalid state"),
 
-		TC_SESSION_ALREADY_ACTIVE(107, 50301, "Server Busy"),
+		TC_OPER_ABORT(107, 50000, "Operation abort"),
 
-		TC_SESSION_NOT_ACTIVE(108, 40400, "Session not active"),
+		TC_SESSION_ALREADY_ACTIVE(108, 50301, "Server Busy"),
 
-		TC_SYSTEM_BUSY(109, 50301, "Server Busy"),
+		TC_SESSION_NOT_ACTIVE(109, 40400, "Session not active"),
 
-		TC_SYSTEM_FAILURE(110, 50000, "System failure");
+		TC_SYSTEM_BUSY(110, 50301, "Server Busy"),
+
+		TC_SYSTEM_FAILURE(111, 50000, "System failure"),
+
+		TC_OPER_FORBIDDEN(112, 50000, "Operation forbidden in current setup"),
+		
+		/* Define for commit command start */
+		TC_INTERNAL_SERVER_ERROR(1000, 50000, "Internal server error"),
+
+		TC_OPER_SUCCESS_CTR_DISCONNECTED(1001, 20200,
+				"Succeed, but resource is disconnected"),
+
+		TC_OPER_SUCCESS_CTRLAPI_FAILURE(1002, 20200,
+				"Succeed, but resource is disconnected or error"),
+
+		TC_OPER_SUCCESS_CTR_CONFIG_STATUS_ERR(1003, 20200,
+				"Succeed, but resource is error state"),
+
+		TC_OPER_SUCCESS_OTHER_ERROR(1010, 20200,
+				"Succeed, but internal error has occurred in resource"),
+
+		TC_OPER_ABORT_INTERNAL_ERR(1011, 50000, "Internal server error"),
+
+		TC_OPER_ABORT_CONFIG_INVAL(1012, 40900,
+				"The configuration is not right"),
+
+		TC_OPER_ABORT_CTR_BUSY(1013, 50300,
+				"The other user is changing the configuration"),
+
+		TC_OPER_ABORT_CTRLAPI_FAILURE(1014, 50000,
+				"Resource is disconnected or error"),
+
+		TC_OPER_ABORT_ERR_DRIVER_NOT_PRESENT(1015, 50000,
+				"Internal server error"),
+
+		TC_OPER_ABORT_OTHER_ERROR(1020, 50000, "Internal server error");
+		/* Define for commit command end */
 
 		private final String message;
 		private final int code;
@@ -143,6 +180,27 @@ public class UncTCEnums {
 
 		public int getValue() {
 			return Integer.parseInt(value);
+		}
+	}
+
+	public enum TcResponseCode {
+		TC_ERR_DRIVER_NOT_PRESENT(200),
+		TC_INTERNAL_ERR(4000),
+		TC_CONFIG_INVAL(4001),
+		TC_CTRLAPI_FAILURE(4002),
+		TC_CTR_CONFIG_STATUS_ERR(4003),
+		TC_CTR_BUSY(4004),
+		TC_CTR_DISCONNECTED(4005),
+		TC_REQ_NOT_SENT_TO_CTR(4006);
+
+		private final int code;
+
+		TcResponseCode(final int code) {
+			this.code = code;
+		}
+
+		public int getCode() {
+			return code;
 		}
 	}
 }

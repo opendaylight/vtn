@@ -19,6 +19,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <list>
 #include "odbcm_common.hh"
 #include "odbcm_db_tableschema.hh"
 namespace unc {
@@ -284,7 +285,7 @@ class ODBCManager {
                                    QueryFactory*,
                                    QueryProcessor*);
     std::string GetColumnName(ODBCMTableColumns);
-    std::list<uint32_t> err_connx_list_;
+    std::list<uint64_t> err_connx_list_;
 
   private:
     /**constructor of ODBCManager class
@@ -323,7 +324,7 @@ class ODBCManager {
     // Connection handles to store nb and sb rw connection
     OdbcmConnectionHandler *rw_nb_conn_obj_;
     OdbcmConnectionHandler *rw_sb_conn_obj_;
-    std::map<uint32_t, OdbcmConnectionHandler*> conpool_inuse_map_;
+    std::map<uint64_t, OdbcmConnectionHandler*> conpool_inuse_map_;
     std::list<OdbcmConnectionHandler*> conpool_free_list_;
     uint32_t conn_max_limit_;
 };

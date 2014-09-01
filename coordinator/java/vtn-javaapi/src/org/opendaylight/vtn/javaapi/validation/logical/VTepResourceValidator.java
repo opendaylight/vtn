@@ -54,25 +54,24 @@ public class VTepResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VTepsResource
 				&& ((VTepsResource) resource).getVtnName() != null
-				&& !((VTepsResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VTepsResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTepsResource) resource).getVtnName().trim(),
+					((VTepsResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		} else if (resource instanceof VTepResource
 				&& ((VTepResource) resource).getVtnName() != null
-				&& !((VTepResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VTepResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VTepResource) resource).getVtnName().trim(),
+					((VTepResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VTEPNAME);
 				if (((VTepResource) resource).getvTepName() != null
-						&& !((VTepResource) resource).getvTepName().trim()
-								.isEmpty()) {
+						&& !((VTepResource) resource).getvTepName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTepResource) resource).getvTepName().trim(),
+							((VTepResource) resource).getvTepName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -88,9 +87,8 @@ public class VTepResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of VTep API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VTepResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VTepResourceValidator");
@@ -116,13 +114,13 @@ public class VTepResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -162,7 +160,7 @@ public class VTepResourceValidator extends VtnServiceValidator {
 							.getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vTep
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VTEPNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for key: controller_id(mandatory)
 			if (isValid) {
@@ -171,11 +169,12 @@ public class VTepResourceValidator extends VtnServiceValidator {
 						&& vTep.getAsJsonPrimitive(
 								VtnServiceJsonConsts.CONTROLLERID)
 								.getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vTep.getAsJsonPrimitive(
-									VtnServiceJsonConsts.CONTROLLERID)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vTep.getAsJsonPrimitive(
+											VtnServiceJsonConsts.CONTROLLERID)
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -188,15 +187,15 @@ public class VTepResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.DESCRIPTION).getAsString() != null
 						&& !vTep.getAsJsonPrimitive(
 								VtnServiceJsonConsts.DESCRIPTION).getAsString()
-								.trim().isEmpty()) {
+								.isEmpty()) {
 					isValid = validator.isValidMaxLength(
 							vTep.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
 				}
 			}
-			// validation for key: DomainID(optional)
+			// validation for key: DomainID(mandatory)
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
 				if (vTep.has(VtnServiceJsonConsts.DOMAINID)
@@ -204,7 +203,7 @@ public class VTepResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
 					isValid = validator.isValidDomainId(vTep
 							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -230,17 +229,10 @@ public class VTepResourceValidator extends VtnServiceValidator {
 			isValid = true;
 			final JsonObject vTep = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VTEP);
-			// validation for key: controller_id(optional)
+			// validation for key: controller_id
 			setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
-			if (vTep.has(VtnServiceJsonConsts.CONTROLLERID)
-					&& vTep.getAsJsonPrimitive(
-							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
-				isValid = validator.isValidMaxLengthAlphaNum(vTep
-						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
-						|| vTep.getAsJsonPrimitive(
-								VtnServiceJsonConsts.CONTROLLERID)
-								.getAsString().trim().isEmpty();
+			if (vTep.has(VtnServiceJsonConsts.CONTROLLERID)) {
+				isValid = false;
 			}
 			// validation for key: description(optional)
 			if (isValid) {
@@ -255,22 +247,15 @@ public class VTepResourceValidator extends VtnServiceValidator {
 					isValid = validator.isValidMaxLength(
 							vTep.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
+									.getAsString(),
 							VtnServiceJsonConsts.LEN_127);
 				}
 			}
-			// validation for key: DomainID(optional)
+			// validation for key: DomainID
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.DOMAINID);
-				if (vTep.has(VtnServiceJsonConsts.DOMAINID)
-						&& vTep.getAsJsonPrimitive(
-								VtnServiceJsonConsts.DOMAINID).getAsString() != null) {
-					isValid = validator.isValidDomainId(vTep
-							.getAsJsonPrimitive(VtnServiceJsonConsts.DOMAINID)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
-							|| vTep.getAsJsonPrimitive(
-									VtnServiceJsonConsts.DOMAINID)
-									.getAsString().trim().isEmpty();
+				if (vTep.has(VtnServiceJsonConsts.DOMAINID)) {
+					isValid = false;
 				}
 			}
 		}

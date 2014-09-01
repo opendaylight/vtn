@@ -26,9 +26,11 @@
 #include "itc_kt_boundary.hh"
 #include "ipc_client_configuration_handler.hh"
 #include "tclib_module.hh"
+#include "itc_notification_request.hh"
 
 using unc::tclib::TcLibModule;
-
+using unc::tclib::TcControllerResult;
+map<string, commit_version> unc::uppl::AuditRequest::comm_ver_;
 
 namespace unc {
 namespace uppl {
@@ -63,18 +65,30 @@ AuditRequest::~AuditRequest() {
 
 UncRespCode AuditRequest::StartAudit(OdbcmConnectionHandler *db_conn,
                                         unc_keytype_ctrtype_t driver_id,
-                                        string controller_id) {
-  pfc_log_info("Processing StartAudit");
+                                        string controller_id,
+                                        pfc_bool_t simplified_audit, 
+                                        uint64_t commit_number,
+                                        uint64_t commit_date,
+                                        string commit_application) {
+  pfc_log_info("Processing StartAudit commit_number: %" PFC_PFMT_u64 ", commit_date: %" PFC_PFMT_u64
+      "commit_application : %s simplified_audit:%d",
+      commit_number, commit_date, commit_application.c_str(),simplified_audit);
   Kt_Controller KtObj;
   uint8_t oper_status = 0;
   key_ctr_t obj_key_ctr;
-  memset(obj_key_ctr.controller_name,
-         '\0',
-         sizeof(obj_key_ctr.controller_name));
-  memcpy(obj_key_ctr.controller_name,
-         controller_id.c_str(),
+  memset(obj_key_ctr.controller_name, '\0',
+                    sizeof(obj_key_ctr.controller_name));
+  memcpy(obj_key_ctr.controller_name, controller_id.c_str(),
          controller_id.length()+1);
-
+  if (simplified_audit == false) {
+    commit_version ver_commit;
+    memset(&ver_commit, 0, sizeof(commit_version));
+    ver_commit.commit_number = commit_number;
+    ver_commit.commit_date = commit_date;
+    memcpy(&ver_commit.commit_application, commit_application.c_str(),
+        commit_application.length()+1);
+    comm_ver_[controller_id] =  ver_commit; 
+  }
   /* Checks controller existence and its oper status */
   pfc_log_debug("Get controller oper Status");
   val_ctr_st_t obj_val_ctr_st;
@@ -125,7 +139,6 @@ UncRespCode AuditRequest::StartAuditTransaction(
     uint32_t session_id,
     unc_keytype_ctrtype_t driver_id,
     string controller_id)  {
-  pfc_log_info("Returning success for StartAuditTransaction");
   return UNC_RC_SUCCESS;
 }
 
@@ -147,7 +160,6 @@ UncRespCode AuditRequest::HandleAuditVoteRequest(
     uint32_t driver_id,
     string controller_id,
     TcDriverInfoMap &driver_info) {
-  pfc_log_info("Processing HandleAuditVoteRequest");
   Kt_Controller KtObj;
   std::vector<std::string> controllers;
   controllers.push_back(controller_id);
@@ -182,16 +194,6 @@ UncRespCode AuditRequest::HandleAuditVoteRequest(
         (unc_keytype_ctrtype_t)
         (PhyUtil::uint8touint(obj_val_ctr->controller.type));
     pfc_log_debug("Controller Type is %d", controller_type);
-    if (controller_type != UNC_CT_PFC &&
-        controller_type != UNC_CT_VNP) {
-      pfc_log_debug("Unsupported controller type - ignoring ");
-    } else {
-      /* PHYSICAL SHOULD NOT SEND UPDATED CONTROLLER LIST
-        driver_info.insert(std::pair<unc_keytype_ctrtype_t,
-                           std::vector<std::string > >
-        (controller_type, controllers));
-       */
-    }
     // Release memory allocated for key struct
     key_ctr_t *ctr_key = reinterpret_cast<key_ctr_t*>(vect_ctr_key[0]);
     if (ctr_key != NULL) {
@@ -224,11 +226,96 @@ UncRespCode AuditRequest::HandleAuditGlobalCommit(
     string controller_id,
     TcDriverInfoMap& driver_info,
     TcAuditResult& audit_result) {
-  pfc_log_info("Returing Success for HandleAuditGlobalCommit");
   audit_result = unc::tclib::TC_AUDIT_SUCCESS;
   return UNC_RC_SUCCESS;
 }
 
+/**HandleAuditDriverResult
+ * @Description : This function is invoked when TC sends AuditDriverResult
+ *                to Physical Core
+ * @param[in]   : session_id - ipc session id used for TC validation
+ *                controller_id - controller name in which the audit occurs
+ *                commitphase - 
+ *                driver_result - 
+ * @return      : UNC_RC_SUCCESS if HandleAuditDriverResult is success for the
+ *                controller or UNC_UPPL_RC_ERR_* for the failure 
+ * */
+UncRespCode AuditRequest::HandleAuditDriverResult(OdbcmConnectionHandler *db_conn,
+            uint32_t session_id,
+            string controller_id,
+            TcCommitPhaseType commitphase,
+            TcCommitPhaseResult driver_result,
+            TcAuditResult& audit_result) {
+  pfc_log_info("HandleAuditDriverResult drv_res.size=%" PFC_PFMT_SIZE_T,
+                                          driver_result.size());
+  audit_result = unc::tclib::TC_AUDIT_SUCCESS;
+  if (commitphase != unc::tclib::TC_AUDIT_GLOBAL_COMMIT_PHASE) {
+    return UNC_RC_SUCCESS;
+  }
+  pfc_bool_t update_version = false;
+  key_ctr_t key_ctr_obj;
+  memset(&key_ctr_obj, 0, sizeof(key_ctr_t));
+  memcpy(&key_ctr_obj.controller_name, controller_id.c_str(),
+                          controller_id.length()+1);
+  val_ctr_commit_ver_t ctrlr_val;
+  memset(&ctrlr_val, 0, sizeof(val_ctr_commit_ver_t));
+  if(driver_result.size() == 0) {
+    // Update the commit version received in StartAudit
+    map<string, commit_version>::iterator it_cv;
+    it_cv = AuditRequest::comm_ver_.find(controller_id);
+    pfc_log_debug("size of Commitversion map:%" PFC_PFMT_SIZE_T ,
+                            AuditRequest::comm_ver_.size());
+    if (it_cv != AuditRequest::comm_ver_.end()) {
+      ctrlr_val.commit_number = it_cv->second.commit_number;
+      ctrlr_val.commit_date = it_cv->second.commit_date;
+      memcpy(&ctrlr_val.commit_application,
+                      (it_cv->second.commit_application),
+                      sizeof(ctrlr_val.commit_application));
+      update_version = true;
+    } 
+  } else {
+    std::vector<TcControllerResult>::iterator viter = driver_result.begin();
+    for ( ;viter != driver_result.end(); viter++) {
+      TcControllerResult tcResult = (*viter);
+      ctrlr_val.commit_number = tcResult.commit_number;
+      ctrlr_val.commit_date = tcResult.commit_date;
+      memcpy(&ctrlr_val.commit_application,
+         tcResult.commit_application.c_str(),
+         tcResult.commit_application.length()+1);
+      update_version = true;
+      break;
+    }
+  }
+  if (update_version == false) {
+    return UNC_RC_SUCCESS;
+  }
+  ctrlr_val.valid[kIdxCtrCommitNumber] = UNC_VF_VALID;
+  ctrlr_val.valid[kIdxCtrCommitDate] = UNC_VF_VALID;
+  ctrlr_val.valid[kIdxCtrCommitApplication] = UNC_VF_VALID;
+  pfc_log_info("Audit: Commit_number is %" PFC_PFMT_u64 ", commit_date is %" PFC_PFMT_u64
+        " commit_application:%s", ctrlr_val.commit_number,
+        ctrlr_val.commit_date, ctrlr_val.commit_application);
+  Kt_Controller KtCtrObj;
+  UncRespCode update_status = KtCtrObj.UpdateKeyInstance(db_conn,
+                reinterpret_cast<void*>(&key_ctr_obj),
+               reinterpret_cast<void*>(&ctrlr_val),
+               UNC_DT_RUNNING, UNC_KT_CONTROLLER,
+               (pfc_bool_t)true);
+  if (update_status != UNC_RC_SUCCESS) {
+    audit_result = unc::tclib::TC_AUDIT_FAILURE;
+    if(update_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
+      //Already fatal logged in KtCtrObj.UpdateKeyInstance
+      return update_status;
+    } else {
+      pfc_log_fatal(
+        "Audit: commit version update is failed for controller %s, status: %d",
+         key_ctr_obj.controller_name, update_status);
+      return UNC_UPPL_RC_ERR_DB_UPDATE;
+    }
+  }
+
+  return UNC_RC_SUCCESS;
+}
 
 /**HandleAuditAbort
  * @Description : This function is invoked when TC sends AuditGlobalAbort
@@ -264,7 +351,6 @@ UncRespCode AuditRequest::EndAuditTransaction(
     uint32_t session_id,
     unc_keytype_ctrtype_t& drivertype,
     string controller_id) {
-  pfc_log_info("Returning success for EndAuditTransaction");
   return UNC_RC_SUCCESS;
 }
 
@@ -282,7 +368,8 @@ UncRespCode AuditRequest::EndAudit(OdbcmConnectionHandler *db_conn,
                                       unc_keytype_ctrtype_t driver_id,
                                       string controller_id,
                                       TcAuditResult audit_result) {
-  pfc_log_info("Processing HandleEndAudit");
+  pfc_log_info("EndAudit cname:%s ares:%d",
+               controller_id.c_str(), audit_result);
   uint8_t oper_status = 0;
   Kt_Controller kt_controller;
   key_ctr_t key_ctr_obj;
@@ -292,44 +379,92 @@ UncRespCode AuditRequest::EndAudit(OdbcmConnectionHandler *db_conn,
   void *key_ctr_prt = reinterpret_cast<void *>(&key_ctr_obj);
   val_ctr_st_t obj_val_ctr_st;
   memset(&obj_val_ctr_st, '\0', sizeof(val_ctr_st_t));
-  pfc_log_debug("Audit result from TC %d", audit_result);
-  if (audit_result == unc::tclib::TC_AUDIT_SUCCESS) {
-    oper_status = UPPL_CONTROLLER_OPER_UP;
-    obj_val_ctr_st.oper_status = oper_status;
-    memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
-    obj_val_ctr_st.valid[kIdxOperStatus] = 1;
-    UncRespCode handle_oper_status = kt_controller.HandleOperStatus(
-        db_conn, UNC_DT_RUNNING,
-        key_ctr_prt,
-        reinterpret_cast<void *>(&obj_val_ctr_st),
-        true);
-    pfc_log_debug("Handle Oper Status return: %d", handle_oper_status);
-    // Add the controller to controller_in_audit vector
-    IPCConnectionManager *ipc_mgr = PhysicalLayer::get_instance()->
-        get_ipc_connection_manager();
-    if (ipc_mgr != NULL) {
-      pfc_log_debug("Adding controller to audit list %s",
-                    controller_id.c_str());
-      ipc_mgr->addControllerToAuditList(controller_id);
-      // Start timer for processing audit notification from driver
-      uint32_t ret = ipc_mgr->StartNotificationTimer(db_conn, controller_id);
-      pfc_log_debug("Start Timer return code %d for controller %s",
-                    ret, controller_id.c_str());
-    } else {
-      pfc_log_debug("IPC Connection Manager Object is NULL");
-    }
-  } else {
-    oper_status = UPPL_CONTROLLER_OPER_WAITING_AUDIT;
-    obj_val_ctr_st.oper_status = oper_status;
-    memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
-    obj_val_ctr_st.valid[kIdxOperStatus] = 1;
-    UncRespCode handle_oper_status = kt_controller.HandleOperStatus(
-        db_conn, UNC_DT_RUNNING,
-        key_ctr_prt,
-        reinterpret_cast<void *>(&obj_val_ctr_st),
-        true);
-    pfc_log_debug("Handle Oper Status return: %d", handle_oper_status);
+
+  PhysicalLayer* physical_layer = PhysicalLayer::get_instance();
+  uint8_t db_oper_status = UPPL_CONTROLLER_OPER_AUDITING;
+  UncRespCode read_status = kt_controller.GetOperStatus(db_conn, UNC_DT_RUNNING,
+                                key_ctr_prt, db_oper_status);
+  if (read_status != UNC_RC_SUCCESS) {
+    pfc_log_error("Unable to get controller oper status");
   }
+
+  if (audit_result == unc::tclib::TC_AUDIT_SUCCESS) {
+    if (db_oper_status != UPPL_CONTROLLER_OPER_DOWN) {
+      pfc_log_debug("Setting oper status as UP inside  if (db_oper_status != UPPL_CONTROLLER_OPER_DOWN");
+      oper_status = UPPL_CONTROLLER_OPER_UP;
+      obj_val_ctr_st.oper_status = oper_status;
+      memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
+      obj_val_ctr_st.valid[kIdxOperStatus] = 1;
+      UncRespCode handle_oper_status = kt_controller.HandleOperStatus(
+        db_conn, UNC_DT_RUNNING,
+        key_ctr_prt,
+        reinterpret_cast<void *>(&obj_val_ctr_st),
+        true);
+      pfc_log_debug("EndAudit: handle_oper_status ret = %d", handle_oper_status);
+      ODBCM_RC_STATUS clear_status =
+          PhysicalLayer::get_instance()->get_odbc_manager()->
+          ClearOneInstance(UNC_DT_IMPORT, controller_id, db_conn);
+      if (clear_status != ODBCM_RC_SUCCESS) {
+        pfc_log_info("Import DB clearing failed");
+      }
+    // Add the controller to controller_in_audit vector
+      IPCConnectionManager *ipc_mgr = PhysicalLayer::get_instance()->
+          get_ipc_connection_manager();
+      if (ipc_mgr != NULL) {
+        pfc_log_debug("Adding controller to audit list %s",
+                      controller_id.c_str());
+        ipc_mgr->addControllerToAuditList(controller_id);
+        // Start timer for processing audit notification from driver
+        uint32_t ret = ipc_mgr->StartNotificationTimer(db_conn, controller_id);
+        pfc_log_debug("Start Timer return code %d for controller %s",
+                    ret, controller_id.c_str());
+      } else {
+        pfc_log_debug("IPC Connection Manager Object is NULL");
+      }
+    map<string, vector<struct unc::uppl::alarm_buffer*> > ::iterator it =
+                     NotificationRequest::map_alarm_buff.find(controller_id);
+    if (it != NotificationRequest::map_alarm_buff.end()) {
+      for (vector<struct unc::uppl::alarm_buffer*> ::iterator next_iter =
+                                                   it->second.begin();
+            next_iter != it->second.end();
+            next_iter++) {
+        delete (*next_iter);
+        pfc_log_trace("next vector entry is deleted");
+      }
+      it->second.clear();
+      NotificationRequest::map_alarm_buff.erase(it);
+    }
+    }
+    // "user initiated audit/Driver audit recovery alarm will be sent
+    // if there is an occurence alarm
+    // send audit success (recovery) alarm
+    UncRespCode alarms_status = physical_layer->get_physical_core()->
+        SendControllerAuditSuccessAlarm(controller_id);
+    pfc_log_debug("Alarm status: %d", alarms_status);
+  } else {
+    if(db_oper_status != UPPL_CONTROLLER_OPER_DOWN) { 
+      oper_status = UPPL_CONTROLLER_OPER_WAITING_AUDIT;
+      obj_val_ctr_st.oper_status = oper_status;
+      memset(obj_val_ctr_st.valid, '\0', sizeof(obj_val_ctr_st.valid));
+      obj_val_ctr_st.valid[kIdxOperStatus] = 1;
+      UncRespCode handle_oper_status = kt_controller.HandleOperStatus(
+          db_conn, UNC_DT_RUNNING,
+          key_ctr_prt,
+          reinterpret_cast<void *>(&obj_val_ctr_st),
+          true);
+      pfc_log_debug("EndAudit: handle_oper_status ret = %d", handle_oper_status);
+      // send audit failure alarm (manual audit/driver audit)
+    }
+    UncRespCode alarms_status = physical_layer->get_physical_core()->
+        SendControllerAuditFailureAlarm(controller_id);
+    pfc_log_debug("Alarm status: %d", alarms_status);
+  }
+  /* Clearing the entry from commit version map */
+  map<string, commit_version>::iterator it_cv;
+  it_cv = AuditRequest::comm_ver_.find(controller_id);
+  if (it_cv != AuditRequest::comm_ver_.end()) {
+    AuditRequest::comm_ver_.erase(it_cv);
+  }  
   return UNC_RC_SUCCESS;
 }
 
@@ -349,6 +484,12 @@ UncRespCode AuditRequest::MergeAuditDbToRunning(
   // Check for MergeImportRunning Lock
   ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
                                     PFC_TRUE);  // write lock
+  pfc_bool_t is_controller_in_audit = PhysicalLayer::get_instance()->get_ipc_connection_manager()->
+            IsControllerInAudit(controller_name);
+  if (is_controller_in_audit == PFC_FALSE) {
+    //Not required to do merge, return SUCCESS
+    return UNC_RC_SUCCESS;
+  }
   UncRespCode return_code = UNC_RC_SUCCESS;
   // Remove the controller_name from controller_in_audit list
   return_code = PhysicalLayer::get_instance()->get_ipc_connection_manager()->
@@ -388,7 +529,7 @@ UncRespCode AuditRequest::MergeAuditDbToRunning(
         (uint32_t) UNC_OP_READ_SIBLING_BEGIN);
     if (read_running_status != UNC_RC_SUCCESS &&
         read_import_status != UNC_RC_SUCCESS) {
-      pfc_log_debug(
+      pfc_log_info(
           "Reading values from both import and running db failed for index %d",
           index);
       delete class_pointer;
@@ -429,9 +570,59 @@ UncRespCode AuditRequest::MergeAuditDbToRunning(
   if (clear_status != ODBCM_RC_SUCCESS) {
     pfc_log_info("Import DB clearing failed");
   }
-  pfc_log_info("MergeAuditDbToRunning return code: %d", return_code);
+  // Send UPPL_CONTROLLER_OPER_EVENTS_MERGED status notification to UPLL
+  uint8_t oper_status_db = UPPL_CONTROLLER_OPER_UP,
+          new_oper_status = UPPL_CONTROLLER_OPER_EVENTS_MERGED;
+  key_ctr_t ctr_key_struct;
+  memset(&ctr_key_struct, 0, sizeof(key_ctr_t));
+  strncpy(reinterpret_cast<char*>(ctr_key_struct.controller_name),
+                               controller_name.c_str(),
+                               controller_name.length());
+  Kt_Controller KtObj;
+  return_code = KtObj.SendOperStatusNotification(ctr_key_struct,
+                                        oper_status_db, new_oper_status);
+  if (return_code == UNC_RC_SUCCESS)
+    pfc_log_info("EVENTS_MERGED notification is sent to UPLL");
+  else
+    pfc_log_error("Err in sending EVENTS_MERGED notification to UPLL");
+  // Send path fault Alarm
+  SendAlarmAndClear(controller_name, db_conn);
   return return_code;
 }
+
+/** SendAlarm
+ * @Description : This function sends the alarm from the store buffer after
+ *                 Merging the Audit datbase to State Database
+ *
+ * */
+void AuditRequest::SendAlarmAndClear(string controller_name,
+                                     OdbcmConnectionHandler *db_conn) {
+  Kt_Controller NotifyController;
+  map<string, vector<struct unc::uppl::alarm_buffer*> > ::iterator it =
+                     NotificationRequest::map_alarm_buff.find(controller_name);
+  if (it != NotificationRequest::map_alarm_buff.end()) {
+    for (uint32_t size = 0; size < it->second.size(); size++) {
+      NotifyController.HandleDriverAlarms(
+                   db_conn,
+                   UNC_DT_STATE,
+                   it->second[size]->alarm_type,
+                   it->second[size]->oper_type,
+                   it->second[size]->key_struct,
+                   it->second[size]->val_struct);
+    }
+    for (vector<struct unc::uppl::alarm_buffer*> ::iterator next_iter =
+                                                     it->second.begin();
+        next_iter != it->second.end();
+        next_iter++) {
+      delete (*next_iter);
+      pfc_log_trace("next vector entry is deleted");
+    }
+
+    it->second.clear();
+    NotificationRequest::map_alarm_buff.erase(it);
+  }
+}
+
 
 /**GetClassPointerAndKey
  * @Description : This function is used to get the key and class pointer
@@ -452,10 +643,10 @@ Kt_Base* AuditRequest::GetClassPointerAndKey(
     case Notfn_Ctr_Domain: {
       class_pointer = new Kt_Ctr_Domain();
       key_ctr_domain_t *obj_key = new key_ctr_domain_t;
+      memset(obj_key, 0, sizeof(key_ctr_domain_t));
       memcpy(obj_key->ctr_key.controller_name,
              controller_name.c_str(),
              controller_name.length()+1);
-      memset(obj_key->domain_name, 0, 32);
       key = reinterpret_cast<void *>(obj_key);
       key_type = UNC_KT_CTR_DOMAIN;
       break;
@@ -463,11 +654,10 @@ Kt_Base* AuditRequest::GetClassPointerAndKey(
     case Notfn_Logical_Port: {
       class_pointer = new Kt_LogicalPort();
       key_logical_port_t *obj_key = new key_logical_port_t;
+      memset(obj_key, 0, sizeof(key_logical_port_t));
       memcpy(obj_key->domain_key.ctr_key.controller_name,
              controller_name.c_str(),
              controller_name.length()+1);
-      memset(obj_key->domain_key.domain_name, 0, 32);
-      memset(obj_key->port_id, 0, 320);
       key = reinterpret_cast<void *>(obj_key);
       key_type = UNC_KT_LOGICAL_PORT;
       break;
@@ -475,16 +665,11 @@ Kt_Base* AuditRequest::GetClassPointerAndKey(
     case Notfn_Logical_Member_Port: {
       class_pointer = new Kt_LogicalMemberPort();
       key_logical_member_port_t * obj_key = new key_logical_member_port_t;
+      memset(obj_key, 0, sizeof(key_logical_member_port_t));
       memcpy(obj_key->logical_port_key.domain_key.
              ctr_key.controller_name,
              controller_name.c_str(),
              controller_name.length()+1);
-      memset(obj_key->logical_port_key.domain_key.domain_name,
-             0, 32);
-      memset(obj_key->logical_port_key.port_id,
-             0, 320);
-      memset(obj_key->physical_port_id, 0, 32);
-      memset(obj_key->switch_id, 0, 256);
       key = reinterpret_cast<void *>(obj_key);
       key_type = UNC_KT_LOGICAL_MEMBER_PORT;
       break;
@@ -492,10 +677,10 @@ Kt_Base* AuditRequest::GetClassPointerAndKey(
     case Notfn_Switch: {
       class_pointer = new Kt_Switch();
       key_switch_t *obj_key = new key_switch_t;
+      memset(obj_key, 0, sizeof(key_switch_t));
       memcpy(obj_key->ctr_key.controller_name,
              controller_name.c_str(),
              controller_name.length()+1);
-      memset(obj_key->switch_id, 0, 256);
       key = reinterpret_cast<void *>(obj_key);
       key_type = UNC_KT_SWITCH;
       break;
@@ -503,11 +688,10 @@ Kt_Base* AuditRequest::GetClassPointerAndKey(
     case Notfn_Port: {
       class_pointer = new Kt_Port();
       key_port_t *obj_key = new key_port_t;
+      memset(obj_key, 0, sizeof(key_port_t));
       memcpy(obj_key->sw_key.ctr_key.controller_name,
              controller_name.c_str(),
              controller_name.length()+1);
-      memset(obj_key->sw_key.switch_id, 0, 256);
-      memset(obj_key->port_id, 0, 32);
       key = reinterpret_cast<void *>(obj_key);
       key_type = UNC_KT_PORT;
       break;
@@ -515,13 +699,10 @@ Kt_Base* AuditRequest::GetClassPointerAndKey(
     case Notfn_Link: {
       class_pointer = new Kt_Link();
       key_link_t *obj_key = new key_link_t;
+      memset(obj_key, 0, sizeof(key_link_t));
       memcpy(obj_key->ctr_key.controller_name,
              controller_name.c_str(),
              controller_name.length()+1);
-      memset(obj_key->switch_id1, 0, 256);
-      memset(obj_key->switch_id2, 0, 256);
-      memset(obj_key->port_id1, 0, 32);
-      memset(obj_key->port_id2, 0, 32);
       key = reinterpret_cast<void *>(obj_key);
       key_type = UNC_KT_LINK;
       break;
@@ -644,6 +825,7 @@ void AuditNotification::operator() ()  {
                 controller_name_.c_str());
   AuditRequest audit_req;
   UncRespCode db_ret = UNC_RC_SUCCESS;
+  PHY_DB_SB_CXN_LOCK();
   OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadWriteSb, db_ret);
   if (db_ret != UNC_RC_SUCCESS) {
     pfc_log_error("Error in opening DB connection");
@@ -805,7 +987,7 @@ void AuditRequest::AddToRunningDbFromImportDb(
           UNC_OP_CREATE, UNC_DT_STATE, key_type);
     }
     if (validate_status != UNC_RC_SUCCESS) {
-      pfc_log_info("Validation failed for index %d", index);
+      pfc_log_debug("Validation failed for index %d", index);
       continue;
     }
     pfc_log_debug("Create new entries in db for index: %d", index);

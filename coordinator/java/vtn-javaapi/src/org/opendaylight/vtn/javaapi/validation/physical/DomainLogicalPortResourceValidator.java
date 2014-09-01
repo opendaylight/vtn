@@ -55,22 +55,24 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 		if (resource instanceof DomainLogicalPortsResource) {
 			if (((DomainLogicalPortsResource) resource).getcontrollerId() != null
 					&& !((DomainLogicalPortsResource) resource)
-							.getcontrollerId().trim().isEmpty()) {
-				isValid = validator.isValidMaxLengthAlphaNum(
-						((DomainLogicalPortsResource) resource)
-								.getcontrollerId().trim(),
-						VtnServiceJsonConsts.LEN_31);
+							.getcontrollerId().isEmpty()) {
+				isValid = validator
+						.isValidMaxLengthAlphaNum(
+								((DomainLogicalPortsResource) resource)
+										.getcontrollerId(),
+								VtnServiceJsonConsts.LEN_31);
 			}
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.DOMAINID);
 				if (((DomainLogicalPortsResource) resource).getdomainId() != null
 						&& !((DomainLogicalPortsResource) resource)
-								.getdomainId().trim().isEmpty()) {
-					isValid = validator.isValidDomainId(
-							((DomainLogicalPortsResource) resource)
-									.getdomainId().trim(),
-							VtnServiceJsonConsts.LEN_31);
+								.getdomainId().isEmpty()) {
+					isValid = validator
+							.isValidDomainId(
+									((DomainLogicalPortsResource) resource)
+											.getdomainId(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -82,9 +84,8 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 	}
 
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DomainLogicalPortResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DomainLogicalPortResourceValidator");
@@ -100,7 +101,7 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -134,11 +135,10 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-					.getAsString().trim()
-					.equalsIgnoreCase(VtnServiceJsonConsts.STATE);
+					.getAsString().equalsIgnoreCase(VtnServiceJsonConsts.STATE);
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.TARGETDB);
 			requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
@@ -174,14 +174,10 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator
-							.isValidMaxLength(
-									requestBody
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.INDEX)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.LEN_319);
+								.getAsString().isEmpty()) {
+					isValid = validator.isValidMaxLength(requestBody
+							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
+							.getAsString(), VtnServiceJsonConsts.LEN_319);
 				}
 			}
 			// validation for key: max_repitition
@@ -194,7 +190,7 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 				 * .getAsString() != null) { isValid =
 				 * validator.isValidMaxLengthNumber(requestBody
 				 * .getAsJsonPrimitive(VtnServiceJsonConsts.MAX)
-				 * .getAsString().trim()); }
+				 * .getAsString()); }
 				 */
 			}
 		}
@@ -208,11 +204,9 @@ public class DomainLogicalPortResourceValidator extends VtnServiceValidator {
 									VtnServiceJsonConsts.LOGICAL_PORT_ID)
 							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(
-						requestBody
-								.getAsJsonPrimitive(
-										VtnServiceJsonConsts.LOGICAL_PORT_ID)
-								.getAsString().trim(),
-						VtnServiceJsonConsts.LEN_319);
+						requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.LOGICAL_PORT_ID)
+								.getAsString(), VtnServiceJsonConsts.LEN_319);
 			}
 		}
 		LOG.trace("Complete DomainLogicalPortResourceValidator#isValidGet");

@@ -17,7 +17,6 @@ import org.opendaylight.vtn.javaapi.RestResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
@@ -51,8 +50,8 @@ public class DestinationControllerResource extends AbstractResource {
 	 *      google.gson.JsonObject)
 	 */
 	@Override
-	public int put(JsonObject requestBody) throws VtnServiceException {
-		LOG.trace("Start TenantResource#put()");
+	public int put(JsonObject requestBody) {
+		LOG.trace("Start DestinationControllerResource#put()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 
@@ -143,7 +142,7 @@ public class DestinationControllerResource extends AbstractResource {
 			}
 
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error ocuurred.");
+			LOG.error(exception, "Internal server error ocuurred.");
 			if (exception.getSQLState().equalsIgnoreCase(
 					VtnServiceOpenStackConsts.CONFLICT_SQL_STATE)) {
 				LOG.error("Conflict found during setting controller id");
@@ -161,14 +160,14 @@ public class DestinationControllerResource extends AbstractResource {
 				try {
 					connection.rollback();
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
 						connection);
 			}
 		}
-		LOG.trace("Complete TenantResource#put()");
+		LOG.trace("Complete DestinationControllerResource#put()");
 		return errorCode;
 	}
 
@@ -178,8 +177,8 @@ public class DestinationControllerResource extends AbstractResource {
 	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#delete()
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
-		LOG.trace("Start TenantResource#delete()");
+	public int delete() {
+		LOG.trace("Start DestinationControllerResource#delete()");
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 
 		boolean isCommitRequired = false;
@@ -234,21 +233,21 @@ public class DestinationControllerResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error ocuurred.");
+			LOG.error(exception, "Internal server error ocuurred.");
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
 			if (connection != null && !isCommitRequired) {
 				try {
 					connection.rollback();
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
 						connection);
 			}
 		}
-		LOG.trace("Complete TenantResource#delete()");
+		LOG.trace("Complete DestinationControllerResource#delete()");
 		return errorCode;
 	}
 
@@ -258,8 +257,8 @@ public class DestinationControllerResource extends AbstractResource {
 	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#get()
 	 */
 	@Override
-	public int get() throws VtnServiceException {
-		LOG.trace("Start TenantResource#get()");
+	public int get() {
+		LOG.trace("Start DestinationControllerResource#get()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 
@@ -289,7 +288,7 @@ public class DestinationControllerResource extends AbstractResource {
 								VtnServiceConsts.EMPTY_STRING));
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error ocuurred.");
+			LOG.error(exception, "Internal server error ocuurred.");
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
 			if (connection != null) {
@@ -298,7 +297,7 @@ public class DestinationControllerResource extends AbstractResource {
 						connection);
 			}
 		}
-		LOG.trace("Complete TenantResource#get()");
+		LOG.trace("Complete DestinationControllerResource#get()");
 		return errorCode;
 	}
 }

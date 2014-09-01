@@ -41,7 +41,7 @@ public final class VtnServiceConfiguration {
 							.getResourceAsStream(
 									VtnServiceConsts.COMMON_CONF_FILEPATH));
 		} catch (final IOException e) {
-			LOG.error("Error in loading common properties " + e);
+			LOG.error(e, "Error in loading common properties " + e);
 		}
 	}
 

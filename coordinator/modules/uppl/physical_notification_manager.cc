@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -22,7 +22,9 @@ using unc::uppl::PhysicalLayer;
 
 NotificationManager* NotificationManager::pfc_notification_manager_ = NULL;
 NotificationManager* NotificationManager::vnp_notification_manager_ = NULL;
+NotificationManager* NotificationManager::polc_notification_manager_ = NULL;
 NotificationManager* NotificationManager::odc_notification_manager_ = NULL;
+PhyEventTaskqUtil* NotificationManager::taskq_util_ = NULL;
 
 /**
  * @Description : This function is used for handling different 
@@ -33,10 +35,9 @@ NotificationManager* NotificationManager::odc_notification_manager_ = NULL;
 void NotificationManager::eventHandler(const IpcEvent &event) {
   // Get Physical layer instance
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
-  pfc_log_info("NotificationManager - An event is received");
   pfc_log_info(
-      "Event:[Serial:%d , Type:%d , ChannelName:%s, "
-      "ServiceName:%s, isStateChangeEvent:%d]",
+      "Event:[Srl:%d, Type:%d, ChName:%s, "
+      "SvcName:%s, isStChEvt:%d]",
       event.getSerial(), event.getType(),
       event.getChannelName(),
       event.getServiceName(),
@@ -82,6 +83,12 @@ NotificationManager* NotificationManager::get_notification_manager(
     }
     physical_layer->notification_manager_mutex_.unlock();
     return vnp_notification_manager_;
+  } else if (ctr_type == UNC_CT_POLC) {
+    if (polc_notification_manager_ == NULL) {
+      polc_notification_manager_ = new NotificationManager();
+    }
+    physical_layer->notification_manager_mutex_.unlock();
+    return polc_notification_manager_;
   } else if (ctr_type == UNC_CT_ODC) {
     if (odc_notification_manager_ == NULL) {
       odc_notification_manager_ = new NotificationManager();
@@ -95,6 +102,25 @@ NotificationManager* NotificationManager::get_notification_manager(
 }
 
 /**
+ * @Description : Returns PhyEventTaskqUtil instance pointer. This
+ *                function make sure only one instance is created.
+ * @param[in]   : None
+ * @return      : PhyEventTaskqUtil instance pointer
+ * */
+PhyEventTaskqUtil* NotificationManager::get_taskq_util() {
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  physical_layer->notification_manager_mutex_.lock();
+  if (taskq_util_ == NULL) {
+    //  number of threads to be span by taskq
+    uint32_t concurrency = 1;
+    taskq_util_ = new PhyEventTaskqUtil(concurrency);
+  }
+  physical_layer->notification_manager_mutex_.unlock();
+  return taskq_util_;
+}
+
+
+/**
  * @Description : This function is used for release notification
  *                manager instances
  * @param[in]   : None
@@ -103,5 +129,18 @@ NotificationManager* NotificationManager::get_notification_manager(
 void NotificationManager::release_notification_manager() {
   pfc_notification_manager_ = NULL;
   vnp_notification_manager_ = NULL;
+  polc_notification_manager_ = NULL;
+  odc_notification_manager_ = NULL;
   pfc_log_debug("Released notification manager instances");
+}
+
+void NotificationManager::delete_taskq_util() {
+  pfc_log_debug("delete_taskq_util called");
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  physical_layer->notification_manager_mutex_.lock();
+  if (taskq_util_ != NULL) {
+    delete taskq_util_;
+    taskq_util_ = NULL;
+  }
+  physical_layer->notification_manager_mutex_.unlock();
 }

@@ -35,22 +35,29 @@ public class MapResourceGenerator {
 				VtnServiceOpenStackConsts.DATAPATH_ID).getAsString();
 
 		if (!datapathId.isEmpty()) {
-			datapathId = datapathId.substring(2, datapathId.length());
+			datapathId = datapathId.substring(VtnServiceJsonConsts.VAL_2,
+					datapathId.length());
 			final StringBuilder sb = new StringBuilder();
-			for (int toPrepend = 16 - datapathId.length(); toPrepend > 0; toPrepend--) {
+			for (int toPrepend = VtnServiceJsonConsts.VAL_16
+					- datapathId.length(); toPrepend > VtnServiceJsonConsts.VAL_0; toPrepend--) {
 				sb.append('0');
 			}
 			datapathId = sb.append(datapathId).toString();
-			final String logicalPortIdPartFirst = datapathId.substring(0, 4);
-			final String logicalPortIdPartSecond = datapathId.substring(4, 8);
-			final String logicalPortIdPartThird = datapathId.substring(8, 12);
-			final String logicalPortIdPartFour = datapathId.substring(12, 16);
+			final String logicalPortIdPartFirst = datapathId.substring(
+					VtnServiceJsonConsts.VAL_0, VtnServiceJsonConsts.VAL_4);
+			final String logicalPortIdPartSecond = datapathId.substring(
+					VtnServiceJsonConsts.VAL_4, VtnServiceJsonConsts.VAL_8);
+			final String logicalPortIdPartThird = datapathId.substring(
+					VtnServiceJsonConsts.VAL_8, VtnServiceJsonConsts.VAL_12);
+			final String logicalPortIdPartFour = datapathId.substring(
+					VtnServiceJsonConsts.VAL_12, VtnServiceJsonConsts.VAL_16);
 
-			vlanmap.addProperty(VtnServiceJsonConsts.LOGICAL_PORT_ID, "SW"
-					+ VtnServiceConsts.HYPHEN + logicalPortIdPartFirst
-					+ VtnServiceConsts.HYPHEN + logicalPortIdPartSecond
-					+ VtnServiceConsts.HYPHEN + logicalPortIdPartThird
-					+ VtnServiceConsts.HYPHEN + logicalPortIdPartFour);
+			vlanmap.addProperty(VtnServiceJsonConsts.LOGICAL_PORT_ID,
+					VtnServiceOpenStackConsts.SW + VtnServiceConsts.HYPHEN
+							+ logicalPortIdPartFirst + VtnServiceConsts.HYPHEN
+							+ logicalPortIdPartSecond + VtnServiceConsts.HYPHEN
+							+ logicalPortIdPartThird + VtnServiceConsts.HYPHEN
+							+ logicalPortIdPartFour);
 		}
 
 		final int vlanId = openStackResourceBody.get(
@@ -82,20 +89,26 @@ public class MapResourceGenerator {
 		String datapathId = openStackResourceBody.get(
 				VtnServiceOpenStackConsts.DATAPATH_ID).getAsString();
 
-		datapathId = datapathId.substring(2, datapathId.length());
+		datapathId = datapathId.substring(VtnServiceJsonConsts.VAL_2,
+				datapathId.length());
 		final StringBuilder sb = new StringBuilder();
-		for (int toPrepend = 16 - datapathId.length(); toPrepend > 0; toPrepend--) {
+		for (int toPrepend = VtnServiceJsonConsts.VAL_16 - datapathId.length(); 
+				toPrepend > VtnServiceJsonConsts.VAL_0; toPrepend--) {
 			sb.append('0');
 		}
 		datapathId = sb.append(datapathId).toString();
-		final String logicalPortIdPartFirst = datapathId.substring(0, 4);
-		final String logicalPortIdPartSecond = datapathId.substring(4, 8);
-		final String logicalPortIdPartThird = datapathId.substring(8, 12);
-		final String logicalPortIdPartFour = datapathId.substring(12, 16);
+		final String logicalPortIdPartFirst = datapathId.substring(
+				VtnServiceJsonConsts.VAL_0, VtnServiceJsonConsts.VAL_4);
+		final String logicalPortIdPartSecond = datapathId.substring(
+				VtnServiceJsonConsts.VAL_4, VtnServiceJsonConsts.VAL_8);
+		final String logicalPortIdPartThird = datapathId.substring(
+				VtnServiceJsonConsts.VAL_8, VtnServiceJsonConsts.VAL_12);
+		final String logicalPortIdPartFour = datapathId.substring(
+				VtnServiceJsonConsts.VAL_12, VtnServiceJsonConsts.VAL_16);
 
 		portmap.addProperty(
 				VtnServiceJsonConsts.LOGICAL_PORT_ID,
-				"PP"
+				VtnServiceOpenStackConsts.PP
 						+ VtnServiceConsts.HYPHEN
 						+ logicalPortIdPartFirst
 						+ VtnServiceConsts.HYPHEN

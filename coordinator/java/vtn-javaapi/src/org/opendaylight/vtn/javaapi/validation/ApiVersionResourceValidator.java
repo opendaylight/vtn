@@ -39,9 +39,8 @@ public class ApiVersionResourceValidator extends VtnServiceValidator {
 	 * Validate request for Show API Version
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.info("No validation required for Get Api Version");
 	}
 }

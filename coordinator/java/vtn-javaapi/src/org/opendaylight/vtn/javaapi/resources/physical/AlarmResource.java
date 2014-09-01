@@ -72,7 +72,7 @@ public class AlarmResource extends AbstractResource {
 			LOG.info("Session created successfully");
 			session.addOutput(IpcDataUnitWrapper.setIpcUint64Value(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
-					.getAsString().trim()));
+					.getAsString()));
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
 			LOG.info("Request packet processed with status:" + status);

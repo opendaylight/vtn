@@ -364,6 +364,35 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
     }
     return attr_invalid;
   }
+  /** 
+   * @brief     Perform validation on key type specific, 
+   *            before sending to driver
+   *
+   * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  op                       Operation name.
+   * @param[in]  dt_type                  Specifies the configuration CANDIDATE/RUNNING
+   * @param[in]  keytype                  Specifies the keytype
+   * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
+   * @param[out] not_send_to_drv          Decides whether the configuration needs
+   *                                      to be sent to controller or not 
+   * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
+   * 
+   * @retval  UPLL_RC_SUCCESS             Completed successfully.
+   * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
+   * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
+   * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
+   *
+   */
+
+  upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+      ConfigKeyVal *ck_old,
+      unc_keytype_operation_t op,
+      upll_keytype_datatype_t dt_type,
+      unc_key_type_t keytype,
+      DalDmlIntf *dmi,
+      bool &not_send_to_drv,
+      bool audit_update_phase);
 
  public:
   VbrIfMoMgr();
@@ -520,72 +549,14 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
                               ConfigKeyVal *&ck_drv_vbr_if,
                               upll_keytype_datatype_t dt_type,
                               DalDmlIntf *dmi);
-  /**
-   * @brief  update controller candidate configuration with the difference in
-   *      committed configuration between the UNC and the audited controller
-   *
-   * @param[in]  keytype     Specifies the keytype.
-   * @param[in]  ctrlr_id    Specifies the controller Name.
-   * @param[in]  session_id  Ipc client session id.
-   * @param[in]  config_id   Ipc request header config id.
-   * @param[in]  phase       Specifies the Controller name.
-   * @param[in]  dmi         Pointer to DalDmlIntf class.
-   *
-   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
-   * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
-   */
-  upll_rc_t AuditUpdateController(unc_key_type_t keytype,
-                                          const char *ctrlr_id,
-                                          uint32_t session_id,
-                                          uint32_t config_id,
-                                          uuc::UpdateCtrlrPhase phase,
-                                          DalDmlIntf *dmi,
-                                          ConfigKeyVal **err_ckv,
-                                          KTxCtrlrAffectedState *ctrlr_affected);
 
   upll_rc_t GetVbrIfFromVExternal(
       uint8_t *vtn_name,
       uint8_t *vext_name,
       ConfigKeyVal *&tmpckv,
       DalDmlIntf *dmi,
+      controller_domain_t ctr_dom,
       upll_keytype_datatype_t dt_type = UPLL_DT_RUNNING) ;
-
-/**
-   * @brief  Update controller with the new created / updated / deleted configuration
-   *                   between the Candidate and the Running configuration
-   *
-   * @param[in]  keytype                        Specifies the keytype
-   * @param[in]  session_id                     Ipc client session id
-   * @param[in]  config_id                      Ipc request header config id
-   * @param[in]  phase                          Specifies the operation
-   * @param[in]  dmi                            Pointer to DalDmlIntf class.
-   * @param[out] affected_ctrlr_set             Returns the list of controller to
-   *                                             which the command has been delivered.
-   *
-   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
-   * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Instance specified does not exist.
-   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS        Instance specified already exist.
-   */
-   upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                uint32_t session_id, uint32_t config_id,
-                                uuc::UpdateCtrlrPhase phase,
-                                set<string> *affected_ctrlr_set,
-                                DalDmlIntf *dmi,
-                                ConfigKeyVal **err_ckv);
-#if 0
-   upll_rc_t PortStatusHandler(const char *ctrlr_name, 
-                               const char *domain_name, 
-                               const char *portid, 
-                               bool oper_status, 
-                               DalDmlIntf *dmi);
-#endif
 
 /**
     * @brief      Method to get a configkeyval of the parent keytype 
@@ -599,33 +570,11 @@ class VbrIfMoMgr : public VnodeChildMoMgr {
     **/
   upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
       ConfigKeyVal *parent_key);
-  upll_rc_t PathFaultHandler(const char *ctrlr_name,
-                        const char *domain_id,
-                        std::vector<std::string> &ingress_ports,
-                        std::vector<std::string> &egress_ports,
-                        bool alarm_asserted,
-                        DalDmlIntf *dmi);
-  upll_rc_t GetBoundaryInterfaces(key_vnode_if_t boundary_if,
-                                DalDmlIntf *dmi,
-                                ConfigKeyVal *&ikey);
+  upll_rc_t PartialMergeValidate(unc_key_type_t key_type,
+                                 const char *ctrlr_name,
+                                 ConfigKeyVal *err_ckv,
+                                 DalDmlIntf *dmi);
 
-    /**
-    * @brief      Method to set the operstatus of boundary interfaces
-    *             and corresponding parent elements 
-    *
-    * @param[in]    boundary_if_set  set containing all the boundary interfaces
-    * @param[in]    notification     pathfault/pathfaultreset notification 
-    * @param[in]    dmi              Pointer to DalDmlIntf class 
-    * 
-    *
-    * @retval         UPLL_RC_SUCCESS      Success.
-    * @retval         UPLL_RC_ERR_GENERIC  Failure case.
-    **/
-  upll_rc_t SetBoundaryIfOperStatusforPathFault(
-                        const set<key_vnode_if_t, key_vnode_if_compare> &boundary_if_set,
-                        state_notification notification,
-                        DalDmlIntf *dmi);
-  upll_rc_t RestoreUnInitOPerStatus(DalDmlIntf *dmi);
 };
 
 }  // namespace kt_momgr

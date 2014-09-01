@@ -20,6 +20,7 @@ import org.opendaylight.vtn.core.ipc.ChannelAddress;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcException;
 import org.opendaylight.vtn.core.util.Logger;
+import org.opendaylight.vtn.core.util.TimeSpec;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
@@ -54,7 +55,7 @@ public final class IpcConnPool {
 
 	/**
 	 * Initialize the connection pooling for IPC servers. Open the connections,
-	 * with no session allocatted during initialization.
+	 * with no session allocated during initialization.
 	 * 
 	 * @param exceptionHandler
 	 *            the exception handler
@@ -270,6 +271,7 @@ public final class IpcConnPool {
 					// and
 					// return
 					try {
+						TimeSpec timeout = new TimeSpec(600L, 0);
 						clientSession = leastUsedIpcChannelConnection
 								.getSession(serviceName, serviceID,
 										exceptionHandler);
@@ -278,6 +280,9 @@ public final class IpcConnPool {
 								|| serviceID == UncUPPLEnums.ServiceID.UPPL_SVC_READREQ
 										.ordinal()) {
 							clientSession.setTimeout(null);
+						} else if (serviceID == UncUPLLEnums.ServiceID.UPLL_EDIT_SVC_ID
+								.ordinal()) {
+							clientSession.setTimeout(timeout);
 						}
 					} catch (final VtnServiceException e) {
 						exceptionHandler.raise(
@@ -292,7 +297,7 @@ public final class IpcConnPool {
 										.getErrorMessage(), e);
 						throw e;
 					} catch (final IpcException e) {
-						LOG.error("Error occured while performing addOutput operation");
+						LOG.error(e, "Error occured while performing addOutput operation");
 						exceptionHandler.raise(
 								Thread.currentThread().getStackTrace()[1]
 										.getClassName()

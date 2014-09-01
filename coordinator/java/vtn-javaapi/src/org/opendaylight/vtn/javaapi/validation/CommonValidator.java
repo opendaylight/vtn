@@ -20,7 +20,7 @@ import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpAddressUtil;
 
 /**
- * The Class CommonValidator validates request Json object.
+ * The Class CommonValidator validates request JSON object.
  */
 public class CommonValidator {
 
@@ -41,7 +41,7 @@ public class CommonValidator {
 	 * Checks if is valid get request.
 	 * 
 	 * @param requestBody
-	 *            the request Json object
+	 *            the request JSON object
 	 * @return true, if is valid get
 	 */
 	public final boolean isValidGet(final JsonObject requestBody,
@@ -89,7 +89,7 @@ public class CommonValidator {
 								.getAsString().isEmpty()) {
 					isValid = isValidMaxLengthAlphaNum(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: max_repitition
@@ -106,7 +106,7 @@ public class CommonValidator {
 	 * Checks if is valid get for integer index.
 	 * 
 	 * @param requestBody
-	 *            the request Json object
+	 *            the request JSON object
 	 * @return true, if is valid get for int index
 	 */
 	public final boolean isValidGetForIntIndex(final JsonObject requestBody,
@@ -149,9 +149,8 @@ public class CommonValidator {
 							VtnServiceJsonConsts.INDEX).getAsString() != null) {
 				invalidParameter = VtnServiceJsonConsts.INDEX;
 				isValid = isValidRange(
-						requestBody
-								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim(),
+						requestBody.getAsJsonPrimitive(
+								VtnServiceJsonConsts.INDEX).getAsString(),
 						VtnServiceJsonConsts.VAL_1,
 						VtnServiceJsonConsts.VAL_65535);
 
@@ -171,7 +170,7 @@ public class CommonValidator {
 	 * Checks if is valid tagetdb db.
 	 * 
 	 * @param targetdb
-	 *            the value of targetdb in the request Json object
+	 *            the value of targetdb in the request JSON object
 	 * @return true, if is valid request db
 	 */
 	public final boolean isValidRequestDB(final JsonObject requestBody) {
@@ -183,10 +182,9 @@ public class CommonValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-						.getAsString().trim().isEmpty()) {
-			final String targetdb = requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-					.getAsString().trim();
+						.getAsString().isEmpty()) {
+			final String targetdb = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.TARGETDB).getAsString();
 			isValid = targetdb.equalsIgnoreCase(VtnServiceJsonConsts.CANDIDATE)
 					|| targetdb.equalsIgnoreCase(VtnServiceJsonConsts.RUNNING)
 					|| targetdb.equalsIgnoreCase(VtnServiceJsonConsts.STATE)
@@ -204,7 +202,7 @@ public class CommonValidator {
 	 * Checks if is operation is count or detail.
 	 * 
 	 * @param operation
-	 *            the value of operation in the request Json object
+	 *            the value of operation in the request JSON object
 	 * @return true, if is valid operation
 	 */
 	public final boolean isValidOperation(final JsonObject requestBody) {
@@ -214,10 +212,9 @@ public class CommonValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
-			final String operation = requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.OP).getAsString()
-					.trim();
+						.getAsString().isEmpty()) {
+			final String operation = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.OP).getAsString();
 			isValid = operation.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
 					|| operation.equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
 		} else {
@@ -233,7 +230,7 @@ public class CommonValidator {
 	 * Checks if is operation is count or detail.
 	 * 
 	 * @param operation
-	 *            the value of operation in the request Json object
+	 *            the value of operation in the request JSON object
 	 * @return true, if is valid operation
 	 */
 	public final boolean isValidOperationInfo(final JsonObject requestBody) {
@@ -243,10 +240,9 @@ public class CommonValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
-			final String operation = requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.OP).getAsString()
-					.trim();
+						.getAsString().isEmpty()) {
+			final String operation = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.OP).getAsString();
 			isValid = operation.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
 					|| operation.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)
 					|| operation.equalsIgnoreCase(VtnServiceJsonConsts.INFO);
@@ -263,7 +259,7 @@ public class CommonValidator {
 	 * Checks if is operation is count or detail.
 	 * 
 	 * @param operation
-	 *            the value of operation in the request Json object
+	 *            the value of operation in the request JSON object
 	 * @return true, if is valid operation
 	 */
 	public final boolean isValidOperationShow(final JsonObject requestBody) {
@@ -273,10 +269,9 @@ public class CommonValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
-			final String operation = requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.OP).getAsString()
-					.trim();
+						.getAsString().isEmpty()) {
+			final String operation = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.OP).getAsString();
 			isValid = operation.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
 					|| operation.equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
 		} else {
@@ -292,7 +287,7 @@ public class CommonValidator {
 	 * Checks if is operation is count.
 	 * 
 	 * @param operation
-	 *            the value of operation in the request Json object
+	 *            the value of operation in the request JSON object
 	 * @return true, if is valid operation
 	 */
 	public boolean isValidOperationForCount(final JsonObject requestBody) {
@@ -302,10 +297,9 @@ public class CommonValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-					.getAsString().trim()
-					.equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
+					.getAsString().equalsIgnoreCase(VtnServiceJsonConsts.COUNT);
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.OP);
 			requestBody.addProperty(VtnServiceJsonConsts.OP,
@@ -319,20 +313,19 @@ public class CommonValidator {
 	 * Checks if is operation is detail.
 	 * 
 	 * @param operation
-	 *            the value of operation in the request Json object
+	 *            the value of operation in the request JSON object
 	 * @return true, if is valid operation
 	 */
-	public final boolean
-			isValidOperationForDetail(final JsonObject requestBody) {
+	public final boolean isValidOperationForDetail(final JsonObject requestBody) {
 		LOG.trace("Start CommonValidator#isValidOperationForDetail");
 		boolean isValid = true;
 		if (requestBody.has(VtnServiceJsonConsts.OP)
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-					.getAsString().trim()
+					.getAsString()
 					.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL);
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.OP);
@@ -347,7 +340,7 @@ public class CommonValidator {
 	 * Checks if is valid max repetition count.
 	 * 
 	 * @param operation
-	 *            the value of max repetition count in the request Json object
+	 *            the value of max repetition count in the request JSON object
 	 * @return true, if is valid operation
 	 */
 	public final boolean isValidMaxRepetition(final JsonObject requestBody) {
@@ -357,10 +350,9 @@ public class CommonValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.MAX)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.MAX)
-						.getAsString().trim().isEmpty()) {
-			final String max = requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()
-					.trim();
+						.getAsString().isEmpty()) {
+			final String max = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.MAX).getAsString();
 			isValid = isValidRange(max, VtnServiceJsonConsts.LONG_VAL_1,
 					VtnServiceJsonConsts.LONG_VAL_4294967295);
 		} else {
@@ -556,10 +548,13 @@ public class CommonValidator {
 			return true;
 		}
 		Boolean valid = false;
+		String polc = VtnServiceInitManager.getConfigurationMap()
+				.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_POLC);
 		if (VtnServiceJsonConsts.BYPASS.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.PFC.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.VNP.equalsIgnoreCase(input)
-				|| VtnServiceJsonConsts.ODC.equalsIgnoreCase(input)) {
+				|| VtnServiceJsonConsts.ODC.equalsIgnoreCase(input)
+				|| polc.equalsIgnoreCase(input)) {
 			valid = true;
 		}
 		LOG.trace("Complete CommonValidator#isValidType");
@@ -616,8 +611,7 @@ public class CommonValidator {
 		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
 			return true;
 		}
-		return input.matches(VtnServiceConsts.VERSION_REGEX)
-				&& input.length() <= length;
+		return input.length() <= length;
 	}
 
 	/**
@@ -664,11 +658,10 @@ public class CommonValidator {
 					&& ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.FLNAME)
 							.getAsString() != null
 					&& !ffEntry.get(VtnServiceJsonConsts.FLNAME).getAsString()
-							.trim().isEmpty()) {
+							.isEmpty()) {
 				isValid = isValidMaxLengthAlphaNum(
 						ffEntry.getAsJsonPrimitive(VtnServiceJsonConsts.FLNAME)
-								.getAsString().trim(),
-						VtnServiceJsonConsts.LEN_32);
+								.getAsString(), VtnServiceJsonConsts.LEN_32);
 			}
 			// validation for key: action_type
 			if (isValid) {
@@ -676,9 +669,8 @@ public class CommonValidator {
 				if (ffEntry.has(VtnServiceJsonConsts.ACTIONTYPE)
 						&& ffEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.ACTIONTYPE).getAsString() != null) {
-					final String actionType = ffEntry
-							.getAsJsonPrimitive(VtnServiceJsonConsts.ACTIONTYPE)
-							.getAsString().trim();
+					final String actionType = ffEntry.getAsJsonPrimitive(
+							VtnServiceJsonConsts.ACTIONTYPE).getAsString();
 					isValid = actionType
 							.equalsIgnoreCase(VtnServiceJsonConsts.PASS)
 							|| actionType
@@ -696,10 +688,10 @@ public class CommonValidator {
 						&& ffEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.NMGNAME).getAsString() != null
 						&& !ffEntry.get(VtnServiceJsonConsts.NMGNAME)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = isValidMaxLengthAlphaNum(ffEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.NMGNAME)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: priority
@@ -711,8 +703,7 @@ public class CommonValidator {
 					isValid = isValidRange(
 							ffEntry.getAsJsonPrimitive(
 									VtnServiceJsonConsts.PRIORITY)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.VAL_0,
+									.getAsString(), VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_7);
 				}
 			}
@@ -725,8 +716,8 @@ public class CommonValidator {
 								.getAsString() != null) {
 					isValid = isValidRange(
 							ffEntry.getAsJsonPrimitive(
-									VtnServiceJsonConsts.DSCP).getAsString()
-									.trim(), VtnServiceJsonConsts.VAL_0,
+									VtnServiceJsonConsts.DSCP).getAsString(),
+							VtnServiceJsonConsts.VAL_0,
 							VtnServiceJsonConsts.VAL_63);
 				}
 			}
@@ -759,11 +750,10 @@ public class CommonValidator {
 					isValid = isValidMaxLengthAlphaNum(
 							dest.getAsJsonPrimitive(
 									VtnServiceJsonConsts.VNODENAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31)
+									.getAsString(), VtnServiceJsonConsts.LEN_31)
 							|| dest.getAsJsonPrimitive(
 									VtnServiceJsonConsts.VNODENAME)
-									.getAsString().trim().isEmpty();
+									.getAsString().isEmpty();
 				}
 			}
 			// validation for key: if_name (optional)
@@ -774,11 +764,10 @@ public class CommonValidator {
 								.getAsString() != null) {
 					isValid = isValidMaxLengthAlphaNum(
 							dest.getAsJsonPrimitive(VtnServiceJsonConsts.IFNAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31)
+									.getAsString(), VtnServiceJsonConsts.LEN_31)
 							|| dest.getAsJsonPrimitive(
 									VtnServiceJsonConsts.IFNAME).getAsString()
-									.trim().isEmpty();
+									.isEmpty();
 				}
 			}
 			// validation for key: Direction (optional)
@@ -802,9 +791,8 @@ public class CommonValidator {
 				if (dest.has(VtnServiceJsonConsts.MACDSTADDR)
 						&& dest.getAsJsonPrimitive(
 								VtnServiceJsonConsts.MACDSTADDR).getAsString() != null) {
-					isValid = isValidMacAddress(dest
-							.getAsJsonPrimitive(VtnServiceJsonConsts.MACDSTADDR)
-							.getAsString().trim());
+					isValid = isValidMacAddress(dest.getAsJsonPrimitive(
+							VtnServiceJsonConsts.MACDSTADDR).getAsString());
 				}
 			}
 			// validation for key: macsrcaddr (optional)
@@ -814,9 +802,8 @@ public class CommonValidator {
 						&& dest.has(VtnServiceJsonConsts.MACSRCADDR)
 						&& dest.getAsJsonPrimitive(
 								VtnServiceJsonConsts.MACSRCADDR).getAsString() != null) {
-					isValid = isValidMacAddress(dest
-							.getAsJsonPrimitive(VtnServiceJsonConsts.MACSRCADDR)
-							.getAsString().trim());
+					isValid = isValidMacAddress(dest.getAsJsonPrimitive(
+							VtnServiceJsonConsts.MACSRCADDR).getAsString());
 				}
 			}
 		}
@@ -842,10 +829,9 @@ public class CommonValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-						.getAsString().trim().isEmpty()) {
-			final String targetdb = requestBody
-					.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-					.getAsString().trim();
+						.getAsString().isEmpty()) {
+			final String targetdb = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.TARGETDB).getAsString();
 			isValid = targetdb.equalsIgnoreCase(VtnServiceJsonConsts.STATE);
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.TARGETDB);
@@ -869,9 +855,9 @@ public class CommonValidator {
 
 		if (mappingId.length == VtnServiceJsonConsts.VAL_2
 				&& null != mappingId[VtnServiceJsonConsts.VAL_0]
-				&& !mappingId[VtnServiceJsonConsts.VAL_0].trim().isEmpty()
+				&& !mappingId[VtnServiceJsonConsts.VAL_0].isEmpty()
 				&& null != mappingId[VtnServiceJsonConsts.VAL_1]
-				&& !mappingId[VtnServiceJsonConsts.VAL_1].trim().isEmpty()
+				&& !mappingId[VtnServiceJsonConsts.VAL_1].isEmpty()
 				&& isValidMaxLengthAlphaNum(
 						mappingId[VtnServiceJsonConsts.VAL_0],
 						VtnServiceJsonConsts.LEN_31)
@@ -906,9 +892,8 @@ public class CommonValidator {
 				if (ffEntry.has(VtnServiceJsonConsts.ACTIONTYPE)
 						&& ffEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.ACTIONTYPE).getAsString() != null) {
-					final String actionType = ffEntry
-							.getAsJsonPrimitive(VtnServiceJsonConsts.ACTIONTYPE)
-							.getAsString().trim();
+					final String actionType = ffEntry.getAsJsonPrimitive(
+							VtnServiceJsonConsts.ACTIONTYPE).getAsString();
 					isValid = actionType
 							.equalsIgnoreCase(VtnServiceJsonConsts.PASS)
 							|| actionType
@@ -918,5 +903,31 @@ public class CommonValidator {
 		}
 		LOG.trace("Complete CommonValidator#isValidVtnFlowFilterEntry()");
 		return isValid;
+	}
+	
+	/**
+	 * Vnode type validation recommended values : vbridge, vrouter, vterminal,
+	 * vbypass, vtep, vtunnel
+	 * 
+	 * @param input
+	 *            the value to be validated
+	 * @return true, if is valid type
+	 */
+	public final boolean isValidVnodeType(final String input) {
+		LOG.trace("Start CommonValidator#isValidVnodeType");
+		if (VtnServiceConsts.EMPTY_STRING.equals(input)) {
+			return true;
+		}
+		Boolean valid = false;
+		if (VtnServiceJsonConsts.VBRIDGE.equalsIgnoreCase(input)
+				|| VtnServiceJsonConsts.VROUTER.equalsIgnoreCase(input)
+				|| VtnServiceJsonConsts.VTERMINAL.equalsIgnoreCase(input)
+				|| VtnServiceJsonConsts.VBYPASS.equalsIgnoreCase(input)
+				|| VtnServiceJsonConsts.VTEP.equalsIgnoreCase(input)
+				|| VtnServiceJsonConsts.VTUNNEL.equalsIgnoreCase(input)) {
+			valid = true;
+		}
+		LOG.trace("Complete CommonValidator#isValidVnodeType");
+		return valid;
 	}
 }

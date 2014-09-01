@@ -196,6 +196,14 @@ UncRespCode ConfigurationRequest::ValidateReq(
   physical_response_header rsh;
   PhyUtil::getRespHeaderFromReqHeader(obj_req_hdr, rsh);
   uint32_t key_type = obj_req_hdr.key_type;
+  //  other than kt_controller keytype create is not allowed from NB
+  // if unc is running in coexists mode
+  UncMode unc_mode = PhysicalLayer::get_instance()->\
+                        get_physical_core()->getunc_mode();
+  if (unc_mode == UNC_COEXISTS_MODE && key_type != UNC_KT_CONTROLLER) {
+    pfc_log_error("unc coexists mode will support only kt_controller keytype");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+  }
   // create the respective object to invoke appropriate Kt class
   switch (key_type) {
     case UNC_KT_ROOT:
@@ -232,6 +240,52 @@ UncRespCode ConfigurationRequest::ValidateReq(
       if (KtObj == NULL) {
         pfc_log_error("Resource allocation error");
         return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
+      //  check the uncmode, ctrtype and return error
+      //  if ctrtype is non-pfc controller
+      if (unc_mode == UNC_COEXISTS_MODE) {
+        if (obj_req_hdr.operation == UNC_OP_CREATE &&
+            val_ctr_obj.type != UNC_CT_PFC) {
+          pfc_log_error("non-pfc type controller create is not supported in"
+            "unc coexists mode");
+          return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+        }
+        if (obj_req_hdr.operation == UNC_OP_DELETE) {
+          //  retrieve the controller type from db
+          unc_keytype_ctrtype_t type = UNC_CT_UNKNOWN;
+          key_ctr_t *obj_key_ctr= reinterpret_cast<key_ctr_t*>(key_struct);
+          UncRespCode ctr_type_status =
+            PhyUtil::get_controller_type(db_conn,
+                   reinterpret_cast<const char*>(obj_key_ctr->controller_name),
+                   type, (unc_keytype_datatype_t) obj_req_hdr.data_type);
+          if (ctr_type_status !=  UNC_RC_SUCCESS) {
+            pfc_log_error(
+            "Operation %d is not allowed as controller instance %s not exists",
+            obj_req_hdr.operation, obj_key_ctr->controller_name);
+            return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+          }
+          pfc_log_debug("Controller type: %d", type);
+          if (type != UNC_CT_PFC) {
+            pfc_log_error("non-pfc type controller delete is not supported in"
+            "unc coexists mode");
+            return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+          }
+        }
+        if (obj_req_hdr.operation == UNC_OP_UPDATE) {
+          pfc_log_error("kt_controller update is not supported in"
+            "unc coexists mode");
+          return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+        }
+        if (obj_req_hdr.operation == UNC_OP_CREATE) {
+          UncRespCode ctr_count_status =
+                   KtObj->ValidateControllerCount(
+                        db_conn, key_struct, val_struct, UNC_DT_CANDIDATE);
+          if (ctr_count_status != UNC_RC_SUCCESS) {
+            pfc_log_error("kt_controller count is exceeds (>1) in"
+            "unc coexists mode");
+            return ctr_count_status;
+          }
+        }
       }
       break;
     }
@@ -340,7 +394,6 @@ UncRespCode ConfigurationRequest::ValidateController(
     void* &key_struct,
     void* &val_struct) {
   UncRespCode resp_code = UNC_RC_SUCCESS;
-  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   if (data_type != UNC_DT_CANDIDATE) {
     pfc_log_info("Operation not allowed in given data type %d",
                  data_type);
@@ -366,39 +419,6 @@ UncRespCode ConfigurationRequest::ValidateController(
   if (operation != UNC_OP_CREATE) {
     pfc_log_debug("Validation not required for other than create");
     return UNC_RC_SUCCESS;
-  }
-  if (val_ctr_obj.type != UNC_CT_PFC) {
-    pfc_log_debug(
-        "Capability validation not done for non-PFC controller");
-    return UNC_RC_SUCCESS;
-  }
-  // controller capability check
-  string version = reinterpret_cast<const char*> (val_ctr_obj.version);
-
-  resp_code = physical_layer->get_physical_core()->
-      ValidateKeyTypeInCtrlrCap(version,
-                                (uint32_t)UNC_KT_CONTROLLER);
-  if (resp_code != UNC_RC_SUCCESS) {
-    pfc_log_error("Key type validation failed in capability check");
-    return resp_code;
-  }
-  // validate value capability
-  Kt_Controller KtObj;
-  resp_code = KtObj.ValidateCtrlrValueCapability(version,
-                                                 (uint32_t)UNC_KT_CONTROLLER);
-  if (resp_code != UNC_RC_SUCCESS) {
-    pfc_log_error("Attribute validation failure");
-    return resp_code;
-  }
-  // validate scalability after basic validation
-  // Since it requires db call
-  resp_code = KtObj.ValidateCtrlrScalability(
-      db_conn, version,
-      (uint32_t)UNC_KT_CONTROLLER,
-      data_type);
-  if (resp_code != UNC_RC_SUCCESS) {
-    pfc_log_error("scalability range exceeded");
-    return resp_code;
   }
   return UNC_RC_SUCCESS;
 }

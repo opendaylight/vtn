@@ -282,39 +282,70 @@ UncRespCode Kt_Switch::ReadInternal(OdbcmConnectionHandler *db_conn,
                                        vector<void *> &val_struct,
                                        uint32_t data_type,
                                        uint32_t operation_type) {
+  if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
+      operation_type != UNC_OP_READ_SIBLING_BEGIN) {
+    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+  }
   pfc_log_debug("Inside ReadInternal of KT_SWITCH");
-  vector<key_switch_t> vect_switch_id;
-  vector<val_switch_st_t> vect_val_switch_st;
   uint32_t max_rep_ct = 1;
   if (operation_type != UNC_OP_READ) {
     max_rep_ct = UPPL_MAX_REP_CT;
   }
   // Get read response from database
+  val_switch_st_t obj_switch_val;
+  memset(&obj_switch_val, '\0', sizeof(val_switch_st_t));
   void *key_struct = key_val[0];
   void *void_val_struct = NULL;
-  if (!val_struct.empty()) {
-    void_val_struct = val_struct[0];
+  if ((!val_struct.empty()) && (val_struct[0] != NULL)) { 
+    memcpy(&obj_switch_val, (reinterpret_cast <val_switch_st_t*>
+                                      (val_struct[0])),
+              sizeof(val_switch_st_t)); 
+    void_val_struct = reinterpret_cast<void *>(&obj_switch_val);
   }
-  UncRespCode read_status = ReadSwitchValFromDB(db_conn,
-                                                   key_struct,
-                                                   void_val_struct,
-                                                   data_type,
-                                                   operation_type,
-                                                   max_rep_ct,
-                                                   vect_val_switch_st,
-                                                   vect_switch_id);
-  key_val.clear();
-  val_struct.clear();
-  if (read_status == UNC_RC_SUCCESS) {
-    for (unsigned int iIndex = 0 ; iIndex < vect_val_switch_st.size();
-        ++iIndex) {
-      key_switch_t *key_switch = new key_switch_t(vect_switch_id[iIndex]);
-      val_switch_st_t *val_switch = new val_switch_st_t
-          (vect_val_switch_st[iIndex]);
-      val_struct.push_back(reinterpret_cast<void *>(val_switch));
-      key_val.push_back(reinterpret_cast<void *>(key_switch));
+  UncRespCode read_status = UNC_RC_SUCCESS;
+  bool firsttime = true;
+  do {
+    vector<key_switch_t> vect_switch_id;
+    vector<val_switch_st_t> vect_val_switch_st;
+    read_status = ReadSwitchValFromDB(db_conn,
+                                      key_struct,
+                                      void_val_struct,
+                                      data_type,
+                                      operation_type,
+                                      max_rep_ct,
+                                      vect_val_switch_st,
+                                      vect_switch_id);
+    if (firsttime) {
+      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      key_val.clear();
+      val_struct.clear();
+      firsttime = false;
     }
-  }
+    if (read_status == UNC_RC_SUCCESS) {
+      for (unsigned int iIndex = 0 ; iIndex < vect_val_switch_st.size();
+          ++iIndex) {
+        key_switch_t *key_switch = new key_switch_t(vect_switch_id[iIndex]);
+        val_switch_st_t *val_switch = new val_switch_st_t
+            (vect_val_switch_st[iIndex]);
+        val_struct.push_back(reinterpret_cast<void *>(val_switch));
+        key_val.push_back(reinterpret_cast<void *>(key_switch));
+      }
+    } else if ((read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE &&
+               val_struct.size() != 0)) {
+      read_status = UNC_RC_SUCCESS;
+    }
+    if ((vect_val_switch_st.size() == UPPL_MAX_REP_CT) &&
+                     (operation_type != UNC_OP_READ)) {
+      pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
+                    operation_type,key_val.size());
+      key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
+      operation_type = UNC_OP_READ_SIBLING;
+      continue;
+    } else {
+      break;
+    }
+  } while(true);
   return read_status;
 }
 
@@ -339,7 +370,7 @@ UncRespCode Kt_Switch::ReadBulk(OdbcmConnectionHandler *db_conn,
                                    pfc_bool_t parent_call,
                                    pfc_bool_t is_read_next,
                                    ReadRequest *read_req) {
-  pfc_log_info("Processing ReadBulk of Kt_Switch");
+  pfc_log_debug("Processing ReadBulk of Kt_Switch");
   UncRespCode read_status = UNC_RC_SUCCESS;
   key_switch_t obj_key_switch =
       *(reinterpret_cast<key_switch_t*>(key_struct));
@@ -576,7 +607,7 @@ UncRespCode Kt_Switch::PerformSyntaxValidation(
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  pfc_log_info("Inside PerformSyntax Validation of KT_SWITCH");
+  pfc_log_trace("Inside PerformSyntax Validation of KT_SWITCH");
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_ipcresp_t mandatory = PFC_TRUE;
 
@@ -695,7 +726,7 @@ UncRespCode Kt_Switch::PerformSemanticValidation(
       pfc_log_error("Hence create operation not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else {
-      pfc_log_info("key instance not exist create operation allowed");
+      pfc_log_debug("key instance not exist create operation allowed");
     }
 
   } else if (operation == UNC_OP_UPDATE || operation == UNC_OP_DELETE ||
@@ -706,7 +737,7 @@ UncRespCode Kt_Switch::PerformSemanticValidation(
       pfc_log_error("Hence update/delete/read operation not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
-      pfc_log_info("key instance exist update/del/read operation allowed");
+      pfc_log_debug("key instance exist update/del/read operation allowed");
     }
   }
 
@@ -759,7 +790,6 @@ UncRespCode Kt_Switch::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
   memcpy(obj_key_switch->ctr_key.controller_name,
          controller_name.c_str(),
          controller_name.length()+1);
-  pfc_log_info("alarm sent by driver is: %d", alarm_type);
   // Read old_alarm_status from db
   uint64_t alarm_status_db = 0;
   UncRespCode read_alarm_status = GetAlarmStatus(db_conn,
@@ -842,14 +872,16 @@ UncRespCode Kt_Switch::HandleDriverAlarms(OdbcmConnectionHandler *db_conn,
       // Notify operstatus modifications
       status = (UncRespCode) physical_layer
           ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+      if (status != 0) {
       pfc_log_info("Update alarm send status to NB: %d",
                    status);
+      }
     } else {
       pfc_log_info("Error creating ServerEvent object");
       status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   } else {
-    pfc_log_info("Update alarm status in db status %d", status);
+    pfc_log_debug("Update alarm status in db status %d", status);
   }
   val_switch_st_t *val_switch =
       reinterpret_cast<val_switch_st_t*>(old_value_struct);
@@ -970,7 +1002,6 @@ void Kt_Switch::PopulateDBSchemaForKtTable(
       reinterpret_cast<val_switch_st_t*>(val_struct);
 
   stringstream valid;
-  pfc_log_info("operation: %d", operation_type);
 
   // controller_name
   string controller_name = (const char*)obj_key_switch
@@ -1226,7 +1257,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
                                       uint32_t option1,
                                       uint32_t option2,
                                       uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
+  pfc_log_trace("Inside PerformRead operation_type=%d data_type=%d",
                operation_type, data_type);
 
   physical_response_header rsh = {session_id,
@@ -1298,7 +1329,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
         err |= sess.addOutput((uint32_t) UNC_KT_SWITCH);
         err |= sess.addOutput(*obj_key_switch);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
@@ -1323,7 +1354,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
         err |= sess.addOutput((uint32_t) UNC_KT_SWITCH);
         err |= sess.addOutput(*obj_key_switch);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
@@ -1335,7 +1366,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
         int err = sess.addOutput((uint32_t) UNC_KT_SWITCH);
         err |= sess.addOutput(*obj_key_switch);
         if (err != 0) {
-          pfc_log_debug("addOutput failed for physical_response_header");
+          pfc_log_info("addOutput failed for physical_response_header");
           return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
         }
         return UNC_RC_SUCCESS;
@@ -1372,8 +1403,6 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
               // Add the response in the session object
               key_switch_t key_switch_drv;
               int err1 = cli_session->getResponse(11, key_switch_drv);
-              pfc_log_info("key value is %s",
-                          reinterpret_cast<char*>(key_switch_drv.switch_id));
               if (err1 != UNC_RC_SUCCESS) {
                 pfc_log_error("Read operation has failed"
                               "after reading response of key");
@@ -1383,7 +1412,6 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
                          vect_switch_id[0].switch_id,
                           sizeof(key_switch_drv.switch_id)) == 0) {
                 err1 = cli_session->getResponse(12, val_switch_detail);
-                pfc_log_info("got the Values from the driver");
                 if (err1 != UNC_RC_SUCCESS) {
                  pfc_log_error("Read operation has failed"
                                  "after reading response of val");
@@ -1410,11 +1438,9 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
       return UNC_RC_SUCCESS;
         }
       }
-      pfc_log_info("Received the values from state DB");
       memcpy(&val_switch_detail.switch_st_val, &vect_val_switch_st[0],
                sizeof(val_switch_detail.switch_st_val));
       val_switch_detail.valid[0] = 1;
-      pfc_log_info("Key matched from DB and Driver");
       rsh.result_code = UNC_RC_SUCCESS;
       int err = PhyUtil::sessOutRespHeader(sess, rsh);
       err |= sess.addOutput((uint32_t) UNC_KT_SWITCH);
@@ -1425,7 +1451,7 @@ UncRespCode Kt_Switch::PerformRead(OdbcmConnectionHandler *db_conn,
       pfc_log_debug("Val structre: %s",
                     IpctUtil::get_string(val_switch_detail).c_str());
       if (err != 0) {
-        pfc_log_debug("addOutput failed for physical_response_header");
+        pfc_log_info("addOutput failed for physical_response_header");
         return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
     return UNC_RC_SUCCESS;
@@ -1546,7 +1572,6 @@ UncRespCode Kt_Switch::ReadSwitchValFromDB(
     return read_status;
   }
 
-  pfc_log_debug("Read operation result: %d", read_status);
   FillSwitchValueStructure(db_conn, kt_switch_dbtableschema,
                            vect_val_switch_st,
                            max_rep_ct,
@@ -1713,10 +1738,10 @@ UncRespCode Kt_Switch::HandleOperStatus(OdbcmConnectionHandler *db_conn,
   }
   vector<OperStatusHolder> ref_oper_status;
   ADD_CTRL_OPER_STATUS(controller_name, ctrl_oper_status, ref_oper_status);
-  pfc_log_info("Controller's oper_status %d", ctrl_oper_status);
+  pfc_log_debug("Controller's oper_status %d", ctrl_oper_status);
   if (ctrl_oper_status ==
       (UpplControllerOperStatus) UPPL_CONTROLLER_OPER_UP) {
-    pfc_log_info("Set Switch oper status as up");
+    pfc_log_debug("Set Switch oper status as up");
     switch_oper_status = UPPL_SWITCH_OPER_UP;
   }
 
@@ -1797,7 +1822,7 @@ UncRespCode Kt_Switch::HandleOperStatus(OdbcmConnectionHandler *db_conn,
       vectSwitchKey.push_back(key_switch);
     }
     if (kt_switch_dbtableschema.row_list_.size() < UPPL_MAX_REP_CT) {
-      pfc_log_info("No other switch available");
+      pfc_log_debug("No other switch available");
       break;
     }
   }
@@ -1963,7 +1988,7 @@ UncRespCode Kt_Switch::GetOperStatus(OdbcmConnectionHandler *db_conn,
         PhyUtil::GetValueFromDbSchema(tab_schema, attr_value,
                                       DATATYPE_UINT16);
         oper_status = atoi(attr_value.c_str());
-        pfc_log_info("oper_status: %d", oper_status);
+        pfc_log_debug("oper_status: %d", oper_status);
         break;
       }
     }
@@ -2428,7 +2453,6 @@ void Kt_Switch::GetSwitchValStructure(
     valid_value_struct = PhyUtil::uint8touint(
         obj_val_switch->valid[kIdxSwitch]);
   }
-  
   string value;
   // Description
   if (obj_val_switch != NULL) {
@@ -2455,7 +2479,6 @@ void Kt_Switch::GetSwitchValStructure(
   value.clear();
   // model
   if (obj_val_switch != NULL) {
-
     if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchModel]);
@@ -2480,7 +2503,7 @@ void Kt_Switch::GetSwitchValStructure(
   char *ip_value = new char[16];
   memset(ip_value, '\0', 16);
   if (obj_val_switch != NULL) {
-    if(valid_value_struct == UNC_VF_VALID) {
+    if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(
         obj_val_switch->switch_val.
         valid[kIdxSwitchIPAddress]);
@@ -2510,7 +2533,6 @@ void Kt_Switch::GetSwitchValStructure(
   ip_value = new char[16];
   memset(ip_value, '\0', 16);
   if (obj_val_switch != NULL) {
-
     if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchIPV6Address]);
@@ -2535,8 +2557,7 @@ void Kt_Switch::GetSwitchValStructure(
   value.clear();
   // Admin Status
   if (obj_val_switch != NULL) {
-
-    if(valid_value_struct == UNC_VF_VALID) {
+    if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchAdminStatus]);
       value = PhyUtil::uint8tostr(obj_val_switch->
@@ -2559,7 +2580,6 @@ void Kt_Switch::GetSwitchValStructure(
   value.clear();
   // Domain Name
   if (obj_val_switch != NULL) {
-
     if (valid_value_struct == UNC_VF_VALID) {
       valid_val = PhyUtil::uint8touint(obj_val_switch->switch_val.
                                      valid[kIdxSwitchDomainName]);

@@ -34,9 +34,6 @@ public final class ConfigurationManager {
 	/** The access configuration. */
 	private static Properties accessConfiguration;
 
-	/** The pwd configuration. */
-	private static Properties pwdConfiguration;
-
 	/** The web api configuration. */
 	private static Properties webAPIConfiguration;
 
@@ -86,14 +83,6 @@ public final class ConfigurationManager {
 					.getResourceAsStream(
 							ApplicationConstants.ACCESS_PROPERTY_PATH));
 
-			pwdConfiguration = new Properties();
-			pwdConfiguration
-					.load(Thread
-							.currentThread()
-							.getContextClassLoader()
-							.getResourceAsStream(
-									ApplicationConstants.PWD_PROPERTY_PATH));
-
 			webAPIConfiguration = new Properties();
 			webAPIConfiguration.load(Thread
 					.currentThread()
@@ -101,7 +90,7 @@ public final class ConfigurationManager {
 					.getResourceAsStream(
 							ApplicationConstants.WEBAPI_CONF_PROPERTY_PATH));
 		} catch (final IOException exception) {
-			LOG.error("VTN Service configuration initialization error : "
+			LOG.error(exception, "VTN Service configuration initialization error : "
 					+ exception.getMessage());
 			throw new VtnServiceWebAPIException(
 					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
@@ -131,30 +120,6 @@ public final class ConfigurationManager {
 		}
 		LOG.debug("Key : " + key + " Value : " + value);
 		LOG.trace("Complete ConfigurationManager#getAccessProperty()");
-		return value;
-	}
-
-	/**
-	 * Gets the pWD resource file property.
-	 * 
-	 * @param key
-	 *            the key
-	 * @return the pWD property
-	 * @throws VtnServiceWebAPIException
-	 *             the vtn service exception
-	 */
-	public String getPWDProperty(final String key)
-			throws VtnServiceWebAPIException {
-		LOG.trace("Start ConfigurationManager#getPWDProperty()");
-		final String value = pwdConfiguration.getProperty(key);
-		// Check if value retrieved is null
-		if (null == value || value.isEmpty()) {
-			LOG.error("Configuration value not found for Key : " + key);
-			throw new VtnServiceWebAPIException(
-					HttpErrorCodeEnum.UNC_INTERNAL_SERVER_ERROR.getCode());
-		}
-		LOG.debug("Key : " + key + " Value : " + value);
-		LOG.trace("Complete ConfigurationManager#getPWDProperty()");
 		return value;
 	}
 
@@ -190,7 +155,6 @@ public final class ConfigurationManager {
 		LOG.trace("Start ConfigurationManager#finalize()");
 		confManager = null;
 		accessConfiguration = null;
-		pwdConfiguration = null;
 		webAPIConfiguration = null;
 		LOG.trace("Complete ConfigurationManager#finalize()");
 	}

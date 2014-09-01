@@ -64,7 +64,7 @@ UncRespCode Kt_Ctr_Dataflow::ReadInternal(OdbcmConnectionHandler *db_conn,
                                        vector<void *> &val_struct,
                                        uint32_t data_type,
                                        uint32_t operation_type) {
-  pfc_log_debug("Inside ReadInternal of KT_CTR_DATAFLOW");
+  pfc_log_debug("ReadInternal:KT_CTR_DATAFLOW");
   UncRespCode read_status = UNC_RC_SUCCESS;
   return read_status;
 }
@@ -90,7 +90,7 @@ UncRespCode Kt_Ctr_Dataflow::ReadBulk(OdbcmConnectionHandler *db_conn,
                                    pfc_bool_t parent_call,
                                    pfc_bool_t is_read_next,
                                    ReadRequest *read_req) {
-  pfc_log_debug("ReadBulk operation is not allowed in Kt_Ctr_Dataflow");
+  pfc_log_info("ReadBulk operation is not allowed in Kt_Ctr_Dataflow");
   UncRespCode read_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   return read_status;
 }
@@ -110,7 +110,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformSyntaxValidation(
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  pfc_log_info("Inside PerformSyntax Validation of KT_CTR_DATAFLOW");
+  pfc_log_info("PerformSyntax Validation:KT_CTR_DATAFLOW");
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
 
@@ -147,7 +147,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformSemanticValidation(
     uint32_t operation,
     uint32_t data_type) {
   UncRespCode ret_code = UNC_RC_SUCCESS;
-  pfc_log_trace("Inside PerformSemanticValidation of KT_CTR_DATAFLOW");
+  pfc_log_trace("PerformSemanticValidation:KT_CTR_DATAFLOW");
   uint32_t nums = 0;
   const uint8_t *attrs = 0;
   if (operation != UNC_OP_READ || data_type != UNC_DT_STATE) {
@@ -223,7 +223,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformSemanticValidation(
                        &attrs);
   pfc_log_debug("return of GetReadCapability = %d", ret_actual);
   if (ret_actual != true) {
-    pfc_log_debug("KEY TYPE is NOT supported for version : %s",
+    pfc_log_info("KEY TYPE is NOT supported for version : %s",
                        version.c_str());
      ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
@@ -266,7 +266,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
                                       uint32_t option1,
                                       uint32_t option2,
                                       uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
+  pfc_log_info("PerformRead oper=%d,dt=%d",
                operation_type, data_type);
 
   physical_response_header rsh = {session_id,

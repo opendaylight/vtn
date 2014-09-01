@@ -21,6 +21,7 @@ EXTRA_INCDIRS	= .. ../dal
 
 CXX_SOURCES	= ipct_st.cc kt_util.cc ipc_util.cc key_tree.cc dbconn_mgr.cc \
 	ipc_client_handler.cc \
+	ipc_event_queue.cc \
 	momgr_intf.cc \
 	ctrlr_mgr.cc \
 	config_svc.cc \

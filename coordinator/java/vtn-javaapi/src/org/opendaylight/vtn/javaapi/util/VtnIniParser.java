@@ -61,7 +61,7 @@ public class VtnIniParser {
 				parser = new VtnIniParser(path);
 			}
 		} catch (IOException exception) {
-			LOG.error("ERROR Occurecd in the UNCINIParser#getInstance:- "
+			LOG.error(exception, "ERROR Occurecd in the UNCINIParser#getInstance:- "
 					+ exception.toString());
 		}
 		return parser;
@@ -100,7 +100,7 @@ public class VtnIniParser {
 				}
 			}
 		} catch (Exception e) {
-			LOG.error("ERROR Occurecd in the UNCINIParser#load:- "
+			LOG.error(e, "ERROR Occurecd in the UNCINIParser#load:- "
 					+ e.toString());
 		} finally {
 			if (br != null) {
