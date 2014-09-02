@@ -11,12 +11,50 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.controller.sal.match.MatchType;
 
 /**
  * JUnit test for {@link MapType}.
  */
 public class MapTypeTest extends TestBase {
+    /**
+     * Verify parameters configured in {@link MapType}.
+     */
+    @Test
+    public void testParameters() {
+        for (MapType type: MapType.values()) {
+            switch (type) {
+            case PORT:
+                assertEquals(Reason.PORTMAPPED, type.getReason());
+                assertEquals(null, type.getMatchType());
+                break;
+
+            case MAC:
+                assertEquals(Reason.MACMAPPED, type.getReason());
+                assertEquals(MatchType.DL_SRC, type.getMatchType());
+                break;
+
+            case VLAN:
+                assertEquals(Reason.VLANMAPPED, type.getReason());
+                assertEquals(null, type.getMatchType());
+                break;
+
+            case ALL:
+                assertEquals(null, type.getReason());
+                assertEquals(null, type.getMatchType());
+                break;
+
+            default:
+                unexpected();
+                break;
+            }
+        }
+    }
+
     /**
      * Test case for {@link MapType#match(MapType)}.
      */

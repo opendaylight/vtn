@@ -66,8 +66,8 @@ public final class PassFlowFilterImpl extends FlowFilterImpl {
      */
     @Override
     protected void apply(VTNManagerImpl mgr, PacketContext pctx,
-                            FlowFilterMap ffmap) {
-        // REVISIT: Not yet implemented.
+                         FlowFilterMap ffmap) {
+        // Nothing to do.
     }
 
     /**

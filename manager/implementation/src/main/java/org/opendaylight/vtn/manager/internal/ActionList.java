@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -58,6 +58,19 @@ public class ActionList {
      */
     public List<Action> get() {
         return new ArrayList<Action>(actionList);
+    }
+
+    /**
+     * Append all SAL actions in the given list to the tail of the action list.
+     *
+     * @param list  A SAL actions.
+     * @return  This object is always returned.
+     */
+    public ActionList addAll(List<? extends Action> list) {
+        if (list != null) {
+            actionList.addAll(list);
+        }
+        return this;
     }
 
     /**

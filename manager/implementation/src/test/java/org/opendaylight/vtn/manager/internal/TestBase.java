@@ -834,6 +834,20 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a {@link PacketContext} object for unicast packet transmission.
+     *
+     * @param eth   A {@link Ethernet} object.
+     * @param nc    A incoming node connector.
+     * @return A {@link PacketContext} object.
+     */
+    protected PacketContext createUnicastPacketContext(Ethernet eth,
+                                                       NodeConnector nc) {
+        PacketContext pctx = createPacketContext(eth, nc);
+        pctx.addUnicastMatchFields();
+        return pctx;
+    }
+
+    /**
      * create a {@link RawPacket} object.
      *
      * @param eth   A {@link Ethernet} object.
@@ -953,7 +967,7 @@ public abstract class TestBase extends Assert {
     protected PacketContext createARPPacketContext(byte[] src, byte[] dst,
             byte[] sender, byte[] target, short vlan, NodeConnector nc,
             short arptype) {
-        return createPacketContext(
+        return createUnicastPacketContext(
                 createARPPacket(src, dst, sender, target, vlan, arptype), nc);
     }
 
@@ -970,7 +984,7 @@ public abstract class TestBase extends Assert {
      */
     protected PacketContext createIPv4PacketContext(byte[] src, byte[] dst,
             byte[] sender, byte[] target, short vlan, NodeConnector nc) {
-        return createPacketContext(
+        return createUnicastPacketContext(
                 createIPv4Packet(src, dst, sender, target, vlan), nc);
     }
 

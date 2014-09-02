@@ -53,7 +53,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6198751253263625812L;
+    private static final long serialVersionUID = 518889407387134507L;
 
     /**
      * Logger instance.
@@ -434,7 +434,8 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     // PortBridge
 
     /**
-     * Evaluate flow filters configured in this bridge.
+     * Evaluate flow filters configured in this vTerminal against the given
+     * outgoing packet.
      *
      * <p>
      *   This method does nothing because vTerminal can not have flow filters.
@@ -442,9 +443,13 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
+     * @param vid     A VLAN ID for the outgoing packet.
+     * @return  A value passed to {@code pctx} is always returned.
      */
     @Override
-    void filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx) {
+    PacketContext filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx,
+                                       short vid) {
+        return pctx;
     }
 
     /**

@@ -18,6 +18,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
@@ -45,7 +47,7 @@ public abstract class FlowActionImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6166295951874905466L;
+    private static final long serialVersionUID = 9015667825740105469L;
 
     /**
      * Suffix of action implementation class name.
@@ -71,8 +73,8 @@ public abstract class FlowActionImpl implements Serializable {
         CONSTRUCTORS = new HashMap<Class<?>, Constructor<?>>();
 
         // REVISIT:
-        //   Currenlty flow actions that require recalculation of checksum
-        //   are not yet supported.
+        //   Currenlty flow actions that require recalculation of TCP/UDP
+        //   checksum are not yet supported.
         Class<?>[] classes = {
             SetDlSrcAction.class,
             SetDlDstAction.class,
@@ -82,12 +84,12 @@ public abstract class FlowActionImpl implements Serializable {
             SetIcmpCodeAction.class,
         };
 
-        Logger log = LoggerFactory.getLogger(FlowActionImpl.class);
         Package pkg = FlowActionImpl.class.getPackage();
         for (Class<?> cl: classes) {
             try {
                 setConstructor(pkg, cl);
             } catch (Exception e) {
+                Logger log = LoggerFactory.getLogger(FlowActionImpl.class);
                 log.error("Failed to initialize implementation of " +
                           cl.getSimpleName(), e);
             }
@@ -200,6 +202,16 @@ public abstract class FlowActionImpl implements Serializable {
      * @return  A {@link FlowAction} instance.
      */
     public abstract FlowAction getFlowAction();
+
+    /**
+     * Apply this flow action to the given packet.
+     *
+     * @param pctx  The context of the received packet.
+     * @return  {@code true} is returned if this flow action is actually
+     *          applied.
+     *          {@code false} is returned if this flow action is ignored.
+     */
+    public abstract boolean apply(PacketContext pctx);
 
     /**
      * Determine whether the given object is identical to this object.

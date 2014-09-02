@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.internal.packet;
 
 import java.util.Set;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.NetUtils;
@@ -105,6 +107,28 @@ public abstract class PortProtoPacket implements CachedPacket {
         if (fields.contains(type)) {
             // Test destination port number.
             match.setField(type, (short)getDestinationPort());
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final boolean commit(PacketContext pctx) {
+        // REVISIT: Not yet supported.
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final PortProtoPacket clone() {
+        try {
+            return (PortProtoPacket)super.clone();
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
         }
     }
 }

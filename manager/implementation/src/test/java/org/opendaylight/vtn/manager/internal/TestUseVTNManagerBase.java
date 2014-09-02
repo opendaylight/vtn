@@ -1289,6 +1289,7 @@ public class TestUseVTNManagerBase extends TestBase {
         IDataPacketService pktSrv = vtnMgr.getDataPacketService();
         Packet decoded = pktSrv.decodeDataPacket(pkt);
         PacketContext pctx = new PacketContext(pkt, (Ethernet)decoded);
+        pctx.addUnicastMatchFields();
 
         // Packet.equals(Object) will not work if it contains byte array.
         // So we need to compare serialized payload.
@@ -1328,6 +1329,7 @@ public class TestUseVTNManagerBase extends TestBase {
         assertNotNull(port);
         Packet decoded = stubObj.decodeDataPacket(pkt);
         PacketContext pctx = new PacketContext((Ethernet)decoded, port);
+        pctx.addUnicastMatchFields();
 
         try {
             byte[] pld = pctx.getPayload().serialize();

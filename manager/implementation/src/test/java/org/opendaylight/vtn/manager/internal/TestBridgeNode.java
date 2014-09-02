@@ -125,18 +125,30 @@ public class TestBridgeNode implements VBridgeNode {
     }
 
     /**
-     * Evaluate flow filters configured in this virtual mapping.
+     * Evaluate flow filters for incoming packet mapped by this virtual
+     * mapping.
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param out     {@code true} means that the given packet is an outgoing
-     *                packet. {@code false} means that the given packet is
-     *                an incoming packet.
-     * @param bridge  A {@link PortBridge} instance associated with this
-     *                virtual mapping.
      */
     @Override
-    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
-                             boolean out, PortBridge<?> bridge) {
+    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx) {
+    }
+
+    /**
+     * Evaluate flow filters for outgoing packet to be transmitted by this
+     * virtual mapping.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param vid     A VLAN ID for the outgoing packet.
+     * @param bridge  A {@link PortBridge} instance associated with this
+     *                virtual mapping.
+     * @return  A {@link PacketContext} to be used for transmitting packet.
+     */
+    @Override
+    public PacketContext filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                                      short vid, PortBridge<?> bridge) {
+        return pctx;
     }
 }

@@ -15,6 +15,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.InetAddressAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
 
 import org.opendaylight.controller.sal.utils.Status;
 
@@ -31,7 +32,7 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6711928072439846526L;
+    private static final long serialVersionUID = -5303473358097612716L;
 
     /**
      * IP address to be set.
@@ -69,6 +70,15 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
      */
     protected final InetAddress getAddress() {
         return address;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final boolean apply(PacketContext pctx) {
+        // REVISIT: Not yet supported.
+        return false;
     }
 
     /**

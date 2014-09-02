@@ -14,6 +14,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -30,7 +32,7 @@ public final class SetVlanPcpActionImpl extends FlowActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2656305491316609840L;
+    private static final long serialVersionUID = -1355670340796521474L;
 
     /**
      * VLAN priority to be set.
@@ -107,5 +109,15 @@ public final class SetVlanPcpActionImpl extends FlowActionImpl {
     @Override
     public SetVlanPcpAction getFlowAction() {
         return new SetVlanPcpAction(priority);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        EtherPacket ether = pctx.getEtherPacket();
+        ether.setVlanPriority(priority);
+        return true;
     }
 }

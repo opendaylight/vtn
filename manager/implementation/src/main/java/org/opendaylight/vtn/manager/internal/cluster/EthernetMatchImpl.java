@@ -373,19 +373,20 @@ public final class EthernetMatchImpl implements PacketMatch {
     public boolean match(PacketContext pctx) {
         EtherPacket ether = pctx.getEtherPacket();
 
-        // We don't need to set DL_SRC, DL_DST, DL_VLAN fields to PacketContext
-        // because they are mandatory.
-
         // Test source MAC address.
-        if (sourceAddress != MAC_ANY &&
-            sourceAddress != ether.getSourceMacAddress()) {
-            return false;
+        if (sourceAddress != MAC_ANY) {
+            pctx.addMatchField(MatchType.DL_SRC);
+            if (sourceAddress != ether.getSourceMacAddress()) {
+                return false;
+            }
         }
 
         // Test destination MAC address.
-        if (destinationAddress != MAC_ANY &&
-            destinationAddress != ether.getDestinationMacAddress()) {
-            return false;
+        if (destinationAddress != MAC_ANY) {
+            pctx.addMatchField(MatchType.DL_DST);
+            if (destinationAddress != ether.getDestinationMacAddress()) {
+                return false;
+            }
         }
 
         // Test Ethernet type.
@@ -397,6 +398,8 @@ public final class EthernetMatchImpl implements PacketMatch {
         }
 
         // Test VLAN ID.
+        // We don't need to set DL_VLAN field to PacketContext because it is
+        // mandatory.
         if (vlan != VLAN_ANY) {
             if (vlan != ether.getVlan()) {
                 return false;

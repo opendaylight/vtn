@@ -49,7 +49,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -777381317561613808L;
+    private static final long serialVersionUID = 2909825600683228034L;
 
     /**
      * Logger instance.
@@ -333,20 +333,80 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      */
     public void evaluate(VTNManagerImpl mgr, PacketContext pctx)
         throws DropFlowException {
-        if (pctx.isResponseToController(mgr)) {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}:{}: Ignore response to the controller: {}",
-                          parent.getContainerName(), parent.getPath(),
-                          getFlowDirectionName(output), pctx.getDescription());
-            }
-            return;
+        if (pctx.isFilterDisabled()) {
+            logDisabled(mgr, pctx);
+        } else {
+            evaluateImpl(mgr, pctx);
+        }
+    }
+
+    /**
+     * Evaluate flow filters for outgoing packet.
+     *
+     * <p>
+     *   This method must be called with holding the lock for the parent node.
+     * </p>
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    A packet context which contains the packet.
+     * @param vid     A VLAN ID for the outgoing packet.
+     * @return  A {@link PacketContext} to be used for transmitting packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter configured in
+     *    this instance.
+     */
+    public PacketContext evaluate(VTNManagerImpl mgr, PacketContext pctx,
+                                  short vid)
+        throws DropFlowException {
+        if (pctx.isFilterDisabled()) {
+            logDisabled(mgr, pctx);
+            return pctx;
         }
 
+        PacketContext pc = pctx;
+        if (!flowFilters.isEmpty()) {
+            if (pctx.isFlooding()) {
+                // We have to preserve the original incoming packet for
+                // succeeding transmission.
+                pc = pctx.clone();
+            }
+
+            // Use new VLAN ID for packet matching.
+            pc.setVlan(vid);
+
+            // Evaluate flow filters.
+            evaluateImpl(mgr, pc);
+        }
+
+        return pc;
+    }
+
+    /**
+     * Set the virtual node that contains this flow filter.
+     *
+     * @param fnode  Virtual node that contains this flow filter.
+     */
+    void setParent(FlowFilterNode fnode) {
+        parent = fnode;
+    }
+
+    /**
+     * Evaluate flow filters configured in this instance.
+     *
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter configured in
+     *    this instance.
+     */
+    private void evaluateImpl(VTNManagerImpl mgr, PacketContext pctx)
+        throws DropFlowException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("{}:{}:{}: Evaluating flow filter map: {}",
                       parent.getContainerName(), parent.getPath(),
                       getFlowDirectionName(output), pctx.getDescription());
         }
+
         for (FlowFilterImpl fi: flowFilters.values()) {
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}: Evaluating flow filter",
@@ -365,12 +425,18 @@ public final class FlowFilterMap implements Serializable, Cloneable {
     }
 
     /**
-     * Set the virtual node that contains this flow filter.
+     * Record a log message that indicates the given packet disables the
+     * flow filter.
      *
-     * @param fnode  Virtual node that contains this flow filter.
+     * @param mgr    VTN Manager service.
+     * @param pctx   A packet context which contains the packet.
      */
-    void setParent(FlowFilterNode fnode) {
-        parent = fnode;
+    private void logDisabled(VTNManagerImpl mgr, PacketContext pctx) {
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}:{}:{}: Flow filter is disabled: {}",
+                      parent.getContainerName(), parent.getPath(),
+                      getFlowDirectionName(output), pctx.getDescription());
+        }
     }
 
     /**

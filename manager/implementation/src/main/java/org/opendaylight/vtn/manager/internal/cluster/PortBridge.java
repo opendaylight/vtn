@@ -50,7 +50,7 @@ public abstract class PortBridge<T extends PortInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4413669330044382305L;
+    private static final long serialVersionUID = -1842700126892000255L;
 
     /**
      * Construct an abstract bridge node that can have port mappings.
@@ -272,7 +272,7 @@ public abstract class PortBridge<T extends PortInterface>
                 // Evaluate flow filters configured in the virtual mapping.
                 // Actually this evaluates virtual interface flow filters for
                 // incoming packets.
-                vnode.filterPacket(mgr, pctx, false, this);
+                vnode.filterPacket(mgr, pctx);
 
                 handlePacket(mgr, pctx, vnode);
             } else {
@@ -575,10 +575,13 @@ public abstract class PortBridge<T extends PortInterface>
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
+     * @param vid     A VLAN ID for the outgoing packet.
+     * @return  A {@link PacketContext} to be used for transmitting packet.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
      */
-    abstract void filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx)
+    abstract PacketContext filterOutgoingPacket(VTNManagerImpl mgr,
+                                                PacketContext pctx, short vid)
         throws DropFlowException;
 
     /**

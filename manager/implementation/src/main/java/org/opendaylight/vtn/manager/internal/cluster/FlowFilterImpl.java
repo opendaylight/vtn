@@ -43,7 +43,7 @@ public abstract class FlowFilterImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2734872622088458798L;
+    private static final long serialVersionUID = -2804474498924166254L;
 
     /**
      * The minimum value of filter index.
@@ -69,6 +69,21 @@ public abstract class FlowFilterImpl implements Serializable {
      * A list of flow actions to modify packet.
      */
     private final List<FlowActionImpl>  actions;
+
+    /**
+     * An internal exception to notify that this flow filter does not support
+     * the given packet.
+     */
+    private final class UnsupportedPacketException extends Exception {
+        /**
+         * Construct a new exception.
+         *
+         * @param msg  A message.
+         */
+        private UnsupportedPacketException(String msg) {
+            super(msg);
+        }
+    }
 
     /**
      * Create a new flow filter implementation.
@@ -189,30 +204,30 @@ public abstract class FlowFilterImpl implements Serializable {
     public final boolean evaluate(VTNManagerImpl mgr, PacketContext pctx,
                                   FlowFilterMap ffmap)
         throws DropFlowException {
-        Logger logger = getLogger();
-        if (!pctx.isUnicast() && !isMulticastSupported()) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{}: Ignore flow filter: " +
-                             "multicast packet not supported: {}",
-                             ffmap.getLogPrefix(index), condition);
-            }
-            return false;
-        }
-
         boolean ret = false;
-        FlowCondImpl fc = mgr.getFlowCondDB().get(condition);
-        if (fc == null) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("{}: Ignore flow filter: condition not found: {}",
-                             ffmap.getLogPrefix(index), condition);
+        try {
+            FlowCondImpl fc = getCondition(mgr, pctx);
+            if (fc.match(mgr, pctx)) {
+                // Apply this flow filter.
+                if (needFlowAction()) {
+                    applyFlowActions(pctx, ffmap);
+                }
+                apply(mgr, pctx, ffmap);
+                ret = true;
+            } else {
+                Logger logger = getLogger();
+                if (logger.isTraceEnabled()) {
+                    logger.trace("{}: Packet does not match the condition: {}",
+                                 ffmap.getLogPrefix(index), condition);
+                }
             }
-        } else if (fc.match(mgr, pctx)) {
-            // Apply this flow filter.
-            apply(mgr, pctx, ffmap);
-            ret = true;
-        } else if (logger.isTraceEnabled()) {
-            logger.trace("{}: Packet does not match the condition: {}",
-                         ffmap.getLogPrefix(index), condition);
+        } catch (UnsupportedPacketException e) {
+            Logger logger = getLogger();
+            String msg = e.getMessage();
+            if (logger.isDebugEnabled()) {
+                logger.debug("{}: Ignore flow filter: {}: {}",
+                             ffmap.getLogPrefix(index), msg, condition);
+            }
         }
 
         return ret;
@@ -248,6 +263,38 @@ public abstract class FlowFilterImpl implements Serializable {
     }
 
     /**
+     * Determine whether this flow filter needs to apply flow actions to the
+     * packet.
+     *
+     * <p>
+     *   This method returns {@code true} which indicates that this flow filter
+     *   needs to apply flow actions configured in this instance.
+     *   Subclass may override this method to ignore flow actions.
+     * </p>
+     *
+     * @return  {@code true}.
+     */
+    protected boolean needFlowAction() {
+        return true;
+    }
+
+    /**
+     * Determine whether this flow filter supports packet flooding or not.
+     *
+     * <p>
+     *   This method returns {@code true} which indicates that this flow filter
+     *   needs to be evaluated even when the packet is going to be broadcasted
+     *   in the vBridge.
+     *   Subclass may override this method to ignore flow actions.
+     * </p>
+     *
+     * @return  {@code true}.
+     */
+    protected boolean isFloodingSuppoted() {
+        return true;
+    }
+
+    /**
      * Apply this flow filter to the given packet.
      *
      * @param mgr    VTN Manager service.
@@ -275,6 +322,64 @@ public abstract class FlowFilterImpl implements Serializable {
      * @return  A logger instance.
      */
     protected abstract Logger getLogger();
+
+    /**
+     * Apply flow actions to the given packet.
+     *
+     * @param pctx   A packet context which contains the packet.
+     * @param ffmap  A {@link FlowFilterMap} instance that contains this
+     *               flow filter.
+     */
+    private void applyFlowActions(PacketContext pctx, FlowFilterMap ffmap) {
+        Logger logger = getLogger();
+        boolean doTrace = logger.isTraceEnabled();
+        for (FlowActionImpl ai: actions) {
+            if (ai.apply(pctx)) {
+                if (doTrace) {
+                    logger.trace("{}: Flow action was applied: {}",
+                                 ffmap.getLogPrefix(index), ai);
+                }
+            } else if (doTrace) {
+                logger.trace("{}: Flow action was ignored: {}",
+                             ffmap.getLogPrefix(index), ai);
+            }
+        }
+    }
+
+    /**
+     * Return a {@link FlowCondImpl} instance which determines whether this
+     * flow filter needs to be applied to the given packet.
+     *
+     * <p>
+     *   Note that this method also checks whether this flow filter supports
+     *   the given packet or not.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  A packet context which contains the packet.
+     * @return  A {@link FlowCondImpl} instance which selects the packet.
+     * @throws UnsupportedPacketException
+     *    This flow filter does not support the given packet.
+     */
+    private FlowCondImpl getCondition(VTNManagerImpl mgr, PacketContext pctx)
+        throws UnsupportedPacketException {
+        if (!pctx.isUnicast() && !isMulticastSupported()) {
+            throw new UnsupportedPacketException(
+                "multicast packet is not supported");
+        }
+
+        if (pctx.isFlooding() && !isFloodingSuppoted()) {
+            throw new UnsupportedPacketException(
+                "flooding packet is not supported");
+        }
+
+        FlowCondImpl fc = mgr.getFlowCondDB().get(condition);
+        if (fc == null) {
+            throw new UnsupportedPacketException("flow condition not found");
+        }
+
+        return fc;
+    }
 
     /**
      * Determine whether the given object is identical to this object.

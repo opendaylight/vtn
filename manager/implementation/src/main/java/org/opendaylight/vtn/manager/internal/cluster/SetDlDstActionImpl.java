@@ -12,6 +12,9 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
+
 /**
  * Implementation of flow action that modifies destination MAC address in
  * Ethernet frame.
@@ -26,7 +29,7 @@ public final class SetDlDstActionImpl extends DlAddrActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7134765478589068419L;
+    private static final long serialVersionUID = -4389217399774516871L;
 
     /**
      * Construct a new instance.
@@ -47,5 +50,16 @@ public final class SetDlDstActionImpl extends DlAddrActionImpl {
     @Override
     public SetDlDstAction getFlowAction() {
         return new SetDlDstAction(getAddress());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        EtherPacket ether = pctx.getEtherPacket();
+        byte[] addr = getAddress();
+        ether.setDestinationAddress(addr);
+        return true;
     }
 }

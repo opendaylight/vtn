@@ -9,6 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+
+import org.opendaylight.controller.sal.match.MatchType;
+
 /**
  * {@code MapType} class represents types of mappings between virtual and
  * physical network.
@@ -17,17 +21,17 @@ public enum MapType {
     /**
      * Port mapping.
      */
-    PORT(1 << 0),
+    PORT(1 << 0, Reason.PORTMAPPED),
 
     /**
      * MAC mapping.
      */
-    MAC(1 << 1),
+    MAC(1 << 1, Reason.MACMAPPED, MatchType.DL_SRC),
 
     /**
      * VLAN mapping.
      */
-    VLAN(1 << 2),
+    VLAN(1 << 2, Reason.VLANMAPPED),
 
     /**
      * A pseudo mapping type which means a wildcard.
@@ -40,12 +44,50 @@ public enum MapType {
     private final int  mask;
 
     /**
+     * A {@link Reason} instance which represents the packet is mapped by
+     * this type of virtual mapping.
+     */
+    private final Reason  reason;
+
+    /**
+     * A {@link MatchType} instance which represents flow match field
+     * to be specfied in the ingress flow entry.
+     */
+    private final MatchType  matchType;
+
+    /**
      * Construct a new mapping type.
      *
-     * @param mask  A bitmask which identifies the mapping type.
+     * @param mask    A bitmask which identifies the mapping type.
      */
     private MapType(int mask) {
+        this(mask, null, null);
+    }
+
+    /**
+     * Construct a new mapping type.
+     *
+     * @param mask    A bitmask which identifies the mapping type.
+     * @param reason  A {@link Reason} instance associated with the mapping
+     *                type.
+     */
+    private MapType(int mask, Reason reason) {
+        this(mask, reason, null);
+    }
+
+    /**
+     * Construct a new mapping type.
+     *
+     * @param mask    A bitmask which identifies the mapping type.
+     * @param reason  A {@link Reason} instance associated with the mapping
+     *                type.
+     * @param mtype   A {@link MatchType} instance which represents flow match
+     *                fields to specify the packet.
+     */
+    private MapType(int mask, Reason reason, MatchType mtype) {
         this.mask = mask;
+        this.reason = reason;
+        matchType = mtype;
     }
 
     /**
@@ -57,5 +99,27 @@ public enum MapType {
      */
     public boolean match(MapType type) {
         return ((mask & type.mask) != 0);
+    }
+
+    /**
+     * Return a {@link Reason} instance associated with this type of
+     * virtual mapping.
+     *
+     * @return  A {@link Reason} instance.
+     */
+    public Reason getReason() {
+        return reason;
+    }
+
+    /**
+     * Return a {@link MatchType} instance which represents the flow match
+     * field to be specified in the ingress flow entry.
+     *
+     * @return  A {@link MatchType} instance.
+     *          {@code null} is returned if no additional match field is
+     *          required.
+     */
+    public MatchType getMatchType() {
+        return matchType;
     }
 }

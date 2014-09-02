@@ -33,7 +33,7 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5797523592920393192L;
+    private static final long serialVersionUID = -4839160630229249797L;
 
     /**
      * Logger instance.
@@ -69,6 +69,21 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
     @Override
     protected boolean isMulticastSupported() {
         return true;
+    }
+
+    /**
+     * Determine whether this flow filter needs to apply flow actions to the
+     * packet.
+     *
+     * <p>
+     *   This method always returns {@code false} because applying flow actions
+     *   to the packet to be discarded is meaningless.
+     * </p>
+     *
+     * @return  {@code false}.
+     */
+    protected boolean needFlowAction() {
+        return false;
     }
 
     /**

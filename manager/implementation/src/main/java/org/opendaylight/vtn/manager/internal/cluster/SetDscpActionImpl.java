@@ -14,6 +14,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -30,7 +32,7 @@ public final class SetDscpActionImpl extends FlowActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3906046474805749284L;
+    private static final long serialVersionUID = -1924798722051088828L;
 
     /**
      * DSCP field value to be set.
@@ -106,5 +108,19 @@ public final class SetDscpActionImpl extends FlowActionImpl {
     @Override
     public SetDscpAction getFlowAction() {
         return new SetDscpAction(dscp);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        Inet4Packet ipv4 = pctx.getInet4Packet();
+        if (ipv4 != null) {
+            ipv4.setDscp(dscp);
+            return true;
+        }
+
+        return false;
     }
 }

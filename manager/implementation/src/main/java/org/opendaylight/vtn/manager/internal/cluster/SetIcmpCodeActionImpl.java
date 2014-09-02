@@ -14,6 +14,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
+import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -31,7 +34,7 @@ public final class SetIcmpCodeActionImpl extends FlowActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3037343901730872355L;
+    private static final long serialVersionUID = -875563808348172512L;
 
     /**
      * ICMP code value to be set.
@@ -105,5 +108,20 @@ public final class SetIcmpCodeActionImpl extends FlowActionImpl {
     @Override
     public SetIcmpCodeAction getFlowAction() {
         return new SetIcmpCodeAction(code);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        CachedPacket packet = pctx.getL4Packet();
+        if (packet instanceof IcmpPacket) {
+            IcmpPacket icmp = (IcmpPacket)packet;
+            icmp.setCode(code);
+            return true;
+        }
+
+        return false;
     }
 }

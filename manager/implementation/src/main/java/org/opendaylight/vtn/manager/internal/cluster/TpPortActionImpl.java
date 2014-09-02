@@ -13,6 +13,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.TpPortAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.PacketContext;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -30,7 +31,7 @@ public abstract class TpPortActionImpl extends FlowActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2892201590657891707L;
+    private static final long serialVersionUID = -8000141230774734830L;
 
     /**
      * A port number to be set.
@@ -61,6 +62,15 @@ public abstract class TpPortActionImpl extends FlowActionImpl {
      */
     protected int getPort() {
         return port;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final boolean apply(PacketContext pctx) {
+        // REVISIT: Not yet supported.
+        return false;
     }
 
     /**

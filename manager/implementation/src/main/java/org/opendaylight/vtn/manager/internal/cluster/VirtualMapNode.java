@@ -13,6 +13,7 @@ import java.io.Serializable;
 
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -58,18 +59,31 @@ public interface VirtualMapNode extends Serializable {
     void disableInput(VTNManagerImpl mgr, PacketContext pctx);
 
     /**
-     * Evaluate flow filters configured in this virtual mapping.
+     * Evaluate flow filters for incoming packet mapped by this virtual
+     * mapping.
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param out     {@code true} means that the given packet is an outgoing
-     *                packet. {@code false} means that the given packet is
-     *                an incoming packet.
-     * @param bridge  A {@link PortBridge} instance associated with this
-     *                virtual mapping.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
      */
-    void filterPacket(VTNManagerImpl mgr, PacketContext pctx, boolean out,
-                      PortBridge<?> bridge) throws DropFlowException;
+    void filterPacket(VTNManagerImpl mgr, PacketContext pctx)
+        throws DropFlowException;
+
+    /**
+     * Evaluate flow filters for outgoing packet to be transmitted by this
+     * virtual mapping.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param vid     A VLAN ID for the outgoing packet.
+     * @param bridge  A {@link PortBridge} instance associated with this
+     *                virtual mapping.
+     * @return  A {@link PacketContext} to be used for transmitting packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    PacketContext filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                               short vid, PortBridge<?> bridge)
+        throws DropFlowException;
 }

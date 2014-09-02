@@ -59,7 +59,7 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7145233837389323463L;
+    private static final long serialVersionUID = 7528273171488986531L;
 
     /**
      * Port mapping configuration.
@@ -360,13 +360,30 @@ public abstract class PortInterface extends AbstractInterface
             return;
         }
 
-        Ethernet frame = pctx.createFrame(vlan);
+        // Apply outgoing flow filters.
         Logger logger = getLogger();
+        PacketContext pc;
+        try {
+            pc = outFlowFilters.evaluate(mgr, pctx, vlan);
+        } catch (DropFlowException e) {
+            // Filtered out by DROP filter.
+            return;
+        }
+
+        // Commit changes to the packet.
+        try {
+            pc.commit();
+        } catch (Exception e) {
+            mgr.logException(logger, getPath(), e);
+            return;
+        }
+
+        Ethernet frame = pc.createFrame(vlan);
         if (logger.isTraceEnabled()) {
             VInterfacePath path = getInterfacePath();
             logger.trace("{}:{}: Transmit packet to {} interface: {}",
                          getContainerName(), path, path.getNodeType(),
-                         pctx.getDescription(frame, mapped, vlan));
+                         pc.getDescription(frame, mapped, vlan));
         }
 
         mgr.transmit(mapped, frame);
@@ -909,23 +926,38 @@ public abstract class PortInterface extends AbstractInterface
     }
 
     /**
-     * Evaluate flow filters configured in this virtual mapping.
+     * Evaluate flow filters for incoming packet configured in this virtual
+     * interface.
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param out     {@code true} means that the given packet is an outgoing
-     *                packet. {@code false} means that the given packet is
-     *                an incoming packet.
-     * @param bridge  Never used.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
      */
     @Override
-    public final void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
-                                   boolean out, PortBridge<?> bridge)
+    public final void filterPacket(VTNManagerImpl mgr, PacketContext pctx)
         throws DropFlowException {
-        FlowFilterMap ffmap = (out) ? outFlowFilters : inFlowFilters;
-        ffmap.evaluate(mgr, pctx);
+        inFlowFilters.evaluate(mgr, pctx);
+    }
+
+    /**
+     * Evaluate flow filters for outgoing packet configured in this virtual
+     * interface.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the received packet.
+     * @param bridge  Never used.
+     * @param vid     A VLAN ID for the outgoing packet.
+     * @return  A {@link PacketContext} to be used for transmitting packet.
+     * @throws DropFlowException
+     *    The given packet was discarded by a flow filter.
+     */
+    @Override
+    public final PacketContext filterPacket(VTNManagerImpl mgr,
+                                            PacketContext pctx, short vid,
+                                            PortBridge<?> bridge)
+        throws DropFlowException {
+        return outFlowFilters.evaluate(mgr, pctx, vid);
     }
 
     // AbstractInterface

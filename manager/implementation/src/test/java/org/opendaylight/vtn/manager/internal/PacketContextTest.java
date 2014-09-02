@@ -539,9 +539,9 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 for (MatchType type : match.getMatchesList()) {
                     MatchField field = match.getField(type);
                     if (type == MatchType.DL_SRC) {
-                        assertEquals(field.getValue(), src);
+                        assertArrayEquals((byte[])field.getValue(), src);
                     } else if (type == MatchType.DL_DST) {
-                        assertEquals(field.getValue(), dst);
+                        assertArrayEquals((byte[])field.getValue(), dst);
                     } else if (type == MatchType.DL_VLAN) {
                         assertEquals(field.getValue(), (vlan > 0) ? vlan : 0);
                     } else if (type == MatchType.IN_PORT) {

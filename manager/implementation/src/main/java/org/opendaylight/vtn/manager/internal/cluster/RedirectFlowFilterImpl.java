@@ -39,7 +39,7 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4047222122155716062L;
+    private static final long serialVersionUID = -5004273201378790703L;
 
     /**
      * Logger instance.
@@ -153,7 +153,20 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
             append(",direction=").append((output) ? "out" : "in");
     }
 
-    // FlowFilterImpl
+    /**
+     * Determine whether this flow filter supports packet flooding or not.
+     *
+     * <p>
+     *   This method returns {@code false} because REDIRECT filter does not
+     *   support broadcast packets.
+     * </p>
+     *
+     * @return  {@code false}.
+     */
+    @Override
+    protected boolean isFloodingSuppoted() {
+        return false;
+    }
 
     /**
      * Apply this REDIRECT flow filter to the given packet.

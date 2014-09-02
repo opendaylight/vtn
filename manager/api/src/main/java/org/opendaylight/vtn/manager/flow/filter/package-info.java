@@ -359,6 +359,49 @@
  *         flow filter, then the packet is discarded.
  *       </li>
  *     </ul>
+ *     <p>
+ *       If an unicast packet is mapped to the vBridge, and its destination
+ *       MAC address is not learned in the vBridge, the packet is broadcasted
+ *       to all physical network elements mapped to the vBridge.
+ *       In that case all <a href="#type.REDIRECT">REDIRECT</a> flow filters
+ *       configured in the vBridge and vBridge interface for outgoing packets
+ *       are ignored.
+ *     </p>
+ *   </div>
+ *
+ *   <h4 id="multicast" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Self-originated packet
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       Flow filters never affect packets originated by the VTN Manager.
+ *       The following APIs may transmit self-originated ARP packet.
+ *     </p>
+ *     <ul>
+ *       <li>
+ *         {@link org.opendaylight.vtn.manager.IVTNManager#findHost(java.net.InetAddress, java.util.Set)}
+ *       </li>
+ *       <li>
+ *         {@link org.opendaylight.vtn.manager.IVTNManager#probeHost(org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector)}
+ *       </li>
+ *       <li>
+ *         {@link org.opendaylight.controller.hosttracker.hostAware.IHostFinder#find(java.net.InetAddress)}
+ *       </li>
+ *       <li>
+ *         {@link org.opendaylight.controller.hosttracker.hostAware.IHostFinder#probe(org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector)}
+ *       </li>
+ *     </ul>
+ *   </div>
+ *
+ *   <h4 id="multicast" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Packet sent to the controller
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       Flow filters never affect packets sent to the controller.
+ *       If the destination MAC address of the packet is equal to the
+ *       controller's MAC address, the VTN Manager ignores all flow filters.
+ *     </p>
  *   </div>
  * </div>
  *

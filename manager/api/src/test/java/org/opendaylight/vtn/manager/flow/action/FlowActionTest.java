@@ -52,7 +52,11 @@ public class FlowActionTest extends TestBase {
         };
         short[] vlans = {1, 2, 100, 1000, 4000, 4095};
         List<InetAddress> inet4Addrs = createInet4Addresses(false);
-        byte[] tos = {0, 1, 20, 30, 40, 50, 60, 63};
+        byte[] dscps = {
+            0, 1, 3, 10, 15,
+            // REVISIT: SetNwTos
+            // 30, 31, 32, 40, 50, 60, 63
+        };
         int[] protocols = {
             -1, 0,
             IPProtocols.TCP.intValue(),
@@ -90,14 +94,15 @@ public class FlowActionTest extends TestBase {
                 act = FlowAction.create(new SetNwSrc(iaddr), proto);
                 assertEquals(new SetInet4SrcAction(iaddr), act);
             }
-            for (byte dscp: tos) {
-                act = FlowAction.create(new SetNwTos(dscp), proto);
+            for (byte dscp: dscps) {
+                int tos = (dscp << 2) & 0xff;
+                act = FlowAction.create(new SetNwTos(tos), proto);
                 assertEquals(new SetDscpAction(dscp), act);
             }
         }
 
         int icmp = IPProtocols.ICMP.intValue();
-        short[] icmpValues = {1, 2, 64, 128, 200, 255};
+        short[] icmpValues = {0, 1, 2, 64, 128, 200, 255};
         for (short v: icmpValues) {
             Action sal = new SetTpSrc((int)v);
             FlowAction act = FlowAction.create(sal, icmp);

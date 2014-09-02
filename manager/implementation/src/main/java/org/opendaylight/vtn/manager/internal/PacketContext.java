@@ -10,18 +10,20 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.Set;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -36,6 +38,7 @@ import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
 import org.opendaylight.vtn.manager.internal.packet.TcpPacket;
 import org.opendaylight.vtn.manager.internal.packet.UdpPacket;
 
+import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
@@ -59,7 +62,7 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  *   This class is designed to be used by a single thread.
  * </p>
  */
-public class PacketContext {
+public class PacketContext implements Cloneable {
     /**
      * Logger instance.
      */
@@ -72,6 +75,14 @@ public class PacketContext {
     private static final int  ETHER_TYPE_MASK = 0xffff;
 
     /**
+     * Flow match fields to be configured in an unicast flow entry.
+     */
+    private static final MatchType[] UNICAST_MATCHES = {
+        MatchType.DL_SRC,
+        MatchType.DL_DST,
+    };
+
+    /**
      * A received raw packet.
      */
     private final RawPacket  rawPacket;
@@ -79,7 +90,7 @@ public class PacketContext {
     /**
      * Decoded ethernet frame.
      */
-    private final EtherPacket  etherFrame;
+    private EtherPacket  etherFrame;
 
     /**
      * Source IP address.
@@ -89,7 +100,7 @@ public class PacketContext {
     /**
      * Obsolete layer 2 host entries.
      */
-    private final Set<ObjectPair<MacVlan, NodeConnector>>  obsoleteHosts =
+    private Set<ObjectPair<MacVlan, NodeConnector>>  obsoleteHosts =
         new HashSet<ObjectPair<MacVlan, NodeConnector>>();
 
     /**
@@ -100,19 +111,19 @@ public class PacketContext {
     /**
      * Set of virtual node paths to be associated with the data flow.
      */
-    private final Set<VTenantPath>  virtualNodes = new HashSet<VTenantPath>();
+    private Set<VTenantPath>  virtualNodes = new HashSet<VTenantPath>();
 
     /**
      * A sequence of virtual packet routing.
      */
-    private final Map<VNodePath, VNodeRoute>  virtualRoute =
+    private Map<VNodePath, VNodeRoute>  virtualRoute =
         new LinkedHashMap<VNodePath, VNodeRoute>();
 
     /**
      * A set of {@link MatchType} instances which represents match fields
      * to be configured.
      */
-    private final EnumSet<MatchType>  matchFields =
+    private EnumSet<MatchType>  matchFields =
         EnumSet.noneOf(MatchType.class);
 
     /**
@@ -154,6 +165,28 @@ public class PacketContext {
     private MapReference  mapReference;
 
     /**
+     * A list of SAL actions created by flow filters.
+     */
+    private List<Action>  filterActions;
+
+    /**
+     * Set {@code true} if this packet is goint to be broadcasted in the
+     * vBridge.
+     */
+    private boolean  flooding;
+
+    /**
+     * Determine whether the flow filter should be disabled or not.
+     */
+    private boolean  filterDisabled;
+
+    /**
+     * Determine whether the destination MAC address of this packet is equal to
+     * the controller's MAC address or not.
+     */
+    private boolean  toController;
+
+    /**
      * Construct a new packet context.
      *
      * @param raw    A received raw packet.
@@ -167,12 +200,19 @@ public class PacketContext {
     /**
      * Construct a new packet context from the specified ethernet frame.
      *
+     * <p>
+     *   This constructor is used to transmit self-originated packet.
+     * </p>
+     *
      * @param ether     An ethernet frame.
      * @param out       Outgoing node connector.
      */
     PacketContext(Ethernet ether, NodeConnector out) {
         this(null, ether);
         outgoing = out;
+
+        // Flow filter must not affect self-originated packet.
+        filterDisabled = true;
     }
 
     /**
@@ -285,7 +325,7 @@ public class PacketContext {
         }
 
         NodeConnector nc = rawPacket.getIncomingNodeConnector();
-        return new PortVlan(nc, getVlan());
+        return new PortVlan(nc, etherFrame.getOriginalVlan());
     }
 
     /**
@@ -309,6 +349,15 @@ public class PacketContext {
     }
 
     /**
+     * Set VLAN ID used for packet matching.
+     *
+     * @param vid  A VLAN ID.
+     */
+    public void setVlan(short vid) {
+        etherFrame.setVlan(vid);
+    }
+
+    /**
      * Create a new ethernet frame which forwards the received packet.
      *
      * @param vlan  VLAN ID for a new frame.
@@ -328,13 +377,16 @@ public class PacketContext {
             // We don't strip VLAN tag with zero VLAN ID because PCP field
             // in the VLAN tag should affect even if the VLAN ID is zero.
             IEEE8021Q tag = new IEEE8021Q();
-            byte cfi, pcp;
+            byte pcp = etherFrame.getVlanPriority();
+            if (pcp < 0) {
+                pcp = (byte)0;
+            }
+
+            byte cfi;
             if (vlanTag != null) {
                 cfi = vlanTag.getCfi();
-                pcp = vlanTag.getPcp();
             } else {
                 cfi = (byte)0;
-                pcp = (byte)0;
             }
             tag.setCfi(cfi).setPcp(pcp).setVid(vlan).setEtherType(ethType);
             ether.setEtherType(EtherTypes.VLANTAGGED.shortValue());
@@ -387,7 +439,6 @@ public class PacketContext {
     public Set<ObjectPair<MacVlan, NodeConnector>> getObsoleteEntries() {
         return obsoleteHosts;
     }
-
 
     /**
      * Purge VTN flows relevant to obsolete layer 2 host entries.
@@ -551,20 +602,6 @@ public class PacketContext {
     }
 
     /**
-     * Determine whether the destination address of this packet is equal to
-     * the controller address or not.
-     *
-     * @param mgr   VTN Manager service.
-     * @return  {@code true} is returned if this packet is sent to the
-     *          controller. Otherwise {@code false} is returned.
-     */
-    public boolean isResponseToController(VTNManagerImpl mgr) {
-        byte[] ctlrMac = mgr.getSwitchManager().getControllerMAC();
-        byte[] dst = etherFrame.getDestinationAddress();
-        return Arrays.equals(ctlrMac, dst);
-    }
-
-    /**
      * Set a {@link MapReference} instance that determines the ingress virtual
      * node.
      *
@@ -572,6 +609,10 @@ public class PacketContext {
      */
     public void setMapReference(MapReference ref) {
         mapReference = ref;
+        MatchType mtype = ref.getMapType().getMatchType();
+        if (mtype != null) {
+            matchFields.add(mtype);
+        }
     }
 
     /**
@@ -586,7 +627,7 @@ public class PacketContext {
             int srcIp = ipv4.getSourceAddress();
             byte[] dst = etherFrame.getSourceAddress();
             byte[] tpa = NetUtils.intToByteArray4(srcIp);
-            short vlan = getVlan();
+            short vlan = etherFrame.getOriginalVlan();
             Ethernet ether = mgr.createArpRequest(dst, tpa, vlan);
             NodeConnector port = getIncomingNodeConnector();
 
@@ -609,12 +650,25 @@ public class PacketContext {
     }
 
     /**
-     * Add match field to be configured into a flow entry.
+     * Add a match field to be configured into a flow entry.
      *
      * @param type  A match type to be added.
      */
     public void addMatchField(MatchType type) {
-        matchFields.add(type);
+        if (!flooding) {
+            matchFields.add(type);
+        }
+    }
+
+    /**
+     * Add match fields to be configured into an unicast flow entry.
+     */
+    public void addUnicastMatchFields() {
+        if (!flooding) {
+            for (MatchType type: UNICAST_MATCHES) {
+                matchFields.add(type);
+            }
+        }
     }
 
     /**
@@ -624,6 +678,7 @@ public class PacketContext {
      * @return  A match object that matches the packet.
      */
     public Match createMatch(NodeConnector inPort) {
+        assert !flooding;
         Match match = new Match();
 
         // Incoming port field is mandatory.
@@ -759,7 +814,14 @@ public class PacketContext {
      */
     public int getFlowPriority(VTNManagerImpl mgr) {
         int pri = mgr.getVTNConfig().getL2FlowPriority();
-        return (pri + matchFields.size());
+        int nmatches = matchFields.size();
+        for (MatchType type: UNICAST_MATCHES) {
+            if (matchFields.contains(type)) {
+                nmatches--;
+            }
+        }
+
+        return (pri + nmatches);
     }
 
     /**
@@ -769,7 +831,16 @@ public class PacketContext {
      * @param fdb  VTN flow database.
      */
     public void installDropFlow(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
+        if (flooding) {
+            // Never install flow entry on packet flooding.
+            return;
+        }
+
         // Create a flow entry that discards the given packet.
+        if (isUnicast()) {
+            addUnicastMatchFields();
+        }
+
         NodeConnector incoming = getIncomingNodeConnector();
         Match match = createMatch(incoming);
         int pri = getFlowPriority(mgr);
@@ -782,5 +853,157 @@ public class PacketContext {
 
         // Install a flow entry.
         fdb.install(mgr, vflow);
+    }
+
+    /**
+     * Append a SAL action to the flow filter action list.
+     *
+     * @param act  A SAL action.
+     */
+    public void addFilterAction(Action act) {
+        if (!flooding) {
+            if (filterActions == null) {
+                filterActions = new ArrayList<Action>();
+            }
+            filterActions.add(act);
+        }
+    }
+
+    /**
+     * Return a list of SAL actions created by flow filters.
+     *
+     * @return  A list of SAL actions.
+     *          {@code null} is returned if no SAL action was created by
+     *          flow filter.
+     */
+    public List<Action> getFilterActions() {
+        return filterActions;
+    }
+
+    /**
+     * Commit all modifications to the packet.
+     *
+     * @throws VTNException
+     *    Failed to copy the packet.
+     */
+    public void commit() throws VTNException {
+        etherFrame.commit(this);
+        CachedPacket l4 = l4Packet;
+        Inet4Packet inet4 = inet4Packet;
+        boolean l4Changed = (l4 != null) ? l4.commit(this) : false;
+        boolean inet4Changed = (inet4 != null) ? inet4.commit(this) : false;
+        if (l4Changed) {
+            Packet payload = l4.getPacket();
+            inet4.getPacket().setPayload(payload);
+            inet4Changed = true;
+        }
+        if (inet4Changed) {
+            IPv4 payload = inet4.getPacket();
+            etherFrame.setPayload(payload);
+        }
+    }
+
+    /**
+     * Determine whether the packet is going to be broadcasted in the vBridge
+     * or not.
+     *
+     * @return  {@code true} is returned only if the packet is going to be
+     *          broadcasted in the vBridge.
+     */
+    public boolean isFlooding() {
+        return flooding;
+    }
+
+    /**
+     * Set a boolean value which indicates whether the packet is going to
+     * be broadcasted in the vBridge.
+     *
+     * @param b  {@code true} means that the packet is going to be broadcasted
+     *           in the vBridge.
+     */
+    public void setFlooding(boolean b) {
+        flooding = b;
+    }
+
+    /**
+     * Determine whether this packet should be handled without flow filters
+     * or not.
+     *
+     * @return  {@code true} is returned only if flow filters should be
+     *          disabled.
+     */
+    public boolean isFilterDisabled() {
+        return filterDisabled;
+    }
+
+    /**
+     * Set a boolean value which indicates whether this packet should be
+     * handled without flow filters or not.
+     *
+     * @param b  {@code true} means that this packet should be handled without
+     *           flow filter.
+     *           {@code false} means that flow filters should be applied to
+     *           this packet.
+     */
+    public void setFilterDisabled(boolean b) {
+        filterDisabled = b;
+    }
+
+    /**
+     * Determine whether the destination address of this packet is equal to
+     * the controller address or not.
+     *
+     * @return  {@code true} is returned if this packet is sent to the
+     *          controller. Otherwise {@code false} is returned.
+     */
+    public boolean isToController() {
+        return toController;
+    }
+
+    /**
+     * Set a boolean value which indicates whether the packet is sent to the
+     * controller or not.
+     *
+     * @param b  {@code true} means that the packet is sent to the controller.
+     *           Pass {@code false} otherwise.
+     */
+    public void setToController(boolean b) {
+        toController = b;
+        if (b) {
+            // Disable flow filter.
+            filterDisabled = true;
+        }
+    }
+
+    /**
+     * Return a copy of this instance.
+     *
+     * @return  A copy of this instance.
+     */
+    @Override
+    public PacketContext clone() {
+        // Currently this method is expected to be called only if the packet
+        // is flooding in the vBridge.
+        assert flooding;
+
+        try {
+            PacketContext pctx = (PacketContext)super.clone();
+            pctx.etherFrame = pctx.etherFrame.clone();
+
+            Inet4Packet inet4 = pctx.inet4Packet;
+            if (inet4 != null) {
+                pctx.inet4Packet = inet4.clone();
+            }
+
+            CachedPacket l4 = pctx.l4Packet;
+            if (l4 != null) {
+                pctx.l4Packet = l4.clone();
+            }
+
+            return pctx;
+        } catch (CloneNotSupportedException e) {
+            // This should never happen.
+            throw new IllegalStateException("clone() failed", e);
+        }
     }
 }

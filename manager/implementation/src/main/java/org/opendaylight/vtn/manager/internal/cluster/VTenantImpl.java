@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -1546,6 +1547,12 @@ public final class VTenantImpl implements FlowFilterNode {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            // Determine whether the packet is sent to the controller or not.
+            boolean toCtlr = isToController(mgr, pctx);
+            if (toCtlr) {
+                pctx.setToController(toCtlr);
+            }
+
             // Evaluate path maps.
             RouteResolver rr = evalPathMap(mgr, pctx);
             pctx.setRouteResolver(rr);
@@ -2329,6 +2336,20 @@ public final class VTenantImpl implements FlowFilterNode {
 
         // Evaluate container path map list.
         return mgr.evalPathMap(pctx, tenantConfig);
+    }
+
+    /**
+     * Determine whether the given packet is sent to the controller or not.
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @return  {@code true} is returned if this packet is sent to the
+     *          controller. Otherwise {@code false} is returned.
+     */
+    private boolean isToController(VTNManagerImpl mgr, PacketContext pctx) {
+        byte[] ctlrMac = mgr.getSwitchManager().getControllerMAC();
+        byte[] dst = pctx.getDestinationAddress();
+        return Arrays.equals(ctlrMac, dst);
     }
 
     // FlowFilterNode
