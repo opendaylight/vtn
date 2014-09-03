@@ -71,6 +71,26 @@ struct build_stamp {
     return; \
   }
 
+#define PHY_DB_SB_CXN_LOCK() \
+  if (PhysicalLayer::phyFiniFlag == 1) { \
+    pfc_log_info("PhysicalLayer Fini is invoked already ..!!"); \
+    return; \
+  } \
+  ScopedReadWriteLock dbSbCxnLock(PhysicalLayer::get_phy_dbsbcxn_lock_(), \
+      PFC_TRUE); \
+  if (PhysicalLayer::phyFiniFlag == 1) { \
+    pfc_log_info("PhysicalLayer:: Fini is invoked already ..!!"); \
+    return; \
+  }
+
+#define PHY_TIMER_LOCK() \
+  ScopedReadWriteLock timerLock(PhysicalLayer::get_timer_lock_(), \
+        PFC_TRUE);
+
+#define PHY_SQLEXEC_LOCK() \
+  ScopedReadWriteLock sqlexecLock(PhysicalLayer::get_phy_sqlexec_lock_(), \
+        PFC_TRUE);
+
 #define OPEN_DB_CONNECTION_TC_REQUEST(conn_type) \
   UncRespCode db_ret = UNC_RC_SUCCESS; \
   /* Create a new odbcm connection */ \
@@ -95,10 +115,11 @@ struct build_stamp {
     physical_layer->get_odbc_manager()->\
                  FreeingConnections(false/*Unused conn free*/); \
     PhysicalCore* physical_core = physical_layer->get_physical_core();\
-    if (physical_core->system_transit_state_ == true) \
+    if (physical_core->system_transit_state_ == true) { \
       pfc_log_warn("odbc connection assignation is failed !!"); \
-    else \
+    } else { \
       pfc_log_error("odbc connection assignation is failed !!"); \
+    } \
   }
 
 #define OPEN_DB_CONNECTION(conn_type, db_ret) \
@@ -139,9 +160,19 @@ class PhysicalLayer : public pfc::core::Module {
   static ReadWriteLock* get_phy_fini_event_lock_() {
     return &phy_fini_event_lock_;
   }
+  static ReadWriteLock* get_phy_dbsbcxn_lock_() {
+    return &phy_dbsbcxn_lock_;
+  }
   static ReadWriteLock* get_events_done_lock_() {
     return &events_done_lock_;
   }
+  static ReadWriteLock* get_timer_lock_() {
+    return &timer_lock_;
+  }
+  static ReadWriteLock* get_phy_sqlexec_lock_() {
+    return &phy_sqlexec_lock_;
+  }
+
   static Mutex physical_layer_mutex_;
   static Mutex physical_core_mutex_;
   static Mutex ipc_client_config_hdlr_mutex_;
@@ -153,7 +184,10 @@ class PhysicalLayer : public pfc::core::Module {
   static ReadWriteLock phy_fini_db_lock_;
   static ReadWriteLock phy_fini_phycore_lock_;
   static ReadWriteLock phy_fini_event_lock_;
+  static ReadWriteLock phy_dbsbcxn_lock_;
   static ReadWriteLock events_done_lock_;
+  static ReadWriteLock timer_lock_;
+  static ReadWriteLock phy_sqlexec_lock_;
   static uint8_t phyFiniFlag;
 
   private:

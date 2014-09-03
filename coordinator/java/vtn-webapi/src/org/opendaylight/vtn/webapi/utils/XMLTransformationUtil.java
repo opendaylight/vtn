@@ -55,7 +55,7 @@ public class XMLTransformationUtil {
 			trans.setOutputProperty(OutputKeys.STANDALONE,
 					ApplicationConstants.XML_STANDALONE);
 		} catch (TransformerConfigurationException e) {
-			LOG.error("Error ocurred while compilation of XSLT sheet : " + e);
+			LOG.error(e, "Error ocurred while compilation of XSLT sheet : " + e);
 		}
 	}
 
@@ -189,7 +189,7 @@ public class XMLTransformationUtil {
 							childElementName = ConfigurationManager
 									.getInstance().getConfProperty(jsonKey);
 						} catch (final VtnServiceWebAPIException e) {
-							LOG.error("Property not found for list element");
+							LOG.error(e, "Property not found for list element");
 							if (!(checkForJsonKey(jsonKey))) {
 								LOG.error("missing entry : " + jsonKey);
 								throw e;

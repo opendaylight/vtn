@@ -168,10 +168,12 @@ typedef enum {
 
 /* Controller type enum. */
 typedef enum {
-	UNC_CT_UNKNOWN = 0,
-	UNC_CT_PFC,
-	UNC_CT_VNP,
-	UNC_CT_ODC
+  UNC_CT_UNKNOWN = 0,
+  UNC_CT_PFC,
+  UNC_CT_VNP,
+  UNC_CT_POLC,
+  UNC_CT_VAN,
+  UNC_CT_ODC
 } unc_keytype_ctrtype_t;
 
 UNC_C_END_DECL

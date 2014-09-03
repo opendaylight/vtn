@@ -44,7 +44,7 @@ def create_vbrif(vtn_blockname,vbr_blockname,vbrif_blockname):
     vbrif_add['interface']['admin_status']=admin_status
     r = requests.post(url,data=json.dumps(vbrif_add),headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_CREATE_SUCCESS:
+    if r.status_code != resp_code.RESP_CREATE_SUCCESS and r.status_code != resp_code.RESP_CREATE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -61,7 +61,7 @@ def delete_vbrif(vtn_blockname,vbr_blockname,vbrif_blockname):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS and r.status_code != resp_code.RESP_DELETE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -150,7 +150,7 @@ def create_portmap(vtn_blockname,vbr_blockname,vbrif_blockname,vlan_tagged=1):
     print json.dumps(vbrif_add)
     r = requests.put(url,data=json.dumps(vbrif_add),headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_UPDATE_SUCCESS:
+    if r.status_code != resp_code.RESP_UPDATE_SUCCESS and r.status_code != resp_code.RESP_UPDATE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -166,7 +166,9 @@ def delete_portmap(vtn_blockname,vbr_blockname,vbrif_blockname):
 
     r = requests.delete(url,headers=def_header)
     print r.status_code
-    if r.status_code != resp_code.RESP_DELETE_SUCCESS:
+    print "delete portmap sucess"
+
+    if r.status_code != resp_code.RESP_DELETE_SUCCESS and r.status_code != resp_code.RESP_DELETE_SUCCESS_U14:
         return 1
     else:
         return 0
@@ -194,7 +196,7 @@ def validate_vbrif_portmap_at_controller(vtn_blockname, vbr_blockname, vbrif_blo
     if presence == "no":
         if r.status_code == resp_code.RESP_NOT_FOUND:
             return 0
-        if r.status_code == resp_code.RESP_DELETE_SUCCESS:
+        if r.status_code == resp_code.RESP_DELETE_SUCCESS or r.status_code == resp_code.RESP_DELETE_SUCCESS_U14:
             return 0
     if r.status_code != resp_code.RESP_GET_SUCCESS:
         return 1

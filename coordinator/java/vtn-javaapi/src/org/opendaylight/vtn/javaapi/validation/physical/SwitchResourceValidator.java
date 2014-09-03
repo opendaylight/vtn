@@ -61,18 +61,16 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 		setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
 		if (resource instanceof SwitchResource
 				&& ((SwitchResource) resource).getControllerId() != null
-				&& !((SwitchResource) resource).getControllerId().trim()
-						.isEmpty()) {
+				&& !((SwitchResource) resource).getControllerId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((SwitchResource) resource).getControllerId().trim(),
+					((SwitchResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.SWITCHID);
 				if (((SwitchResource) resource).getSwitchId() != null
-						&& !((SwitchResource) resource).getSwitchId().trim()
-								.isEmpty()) {
+						&& !((SwitchResource) resource).getSwitchId().isEmpty()) {
 					isValid = validator.isValidMaxLength(
-							((SwitchResource) resource).getSwitchId().trim(),
+							((SwitchResource) resource).getSwitchId(),
 							VtnServiceJsonConsts.LEN_255);
 				} else {
 					isValid = false;
@@ -81,10 +79,9 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof SwitchesResource
 				&& ((SwitchesResource) resource).getControllerId() != null
-				&& !((SwitchesResource) resource).getControllerId().trim()
-						.isEmpty()) {
+				&& !((SwitchesResource) resource).getControllerId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((SwitchesResource) resource).getControllerId().trim(),
+					((SwitchesResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		}
@@ -96,9 +93,8 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 	 * Validate get request json for Switch API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start SwitchResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of SwitchResourceValidator");
@@ -114,7 +110,7 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -150,10 +146,10 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = VtnServiceJsonConsts.STATE.equalsIgnoreCase(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-					.getAsString().trim());
+					.getAsString());
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.TARGETDB);
 			requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
@@ -166,10 +162,9 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 					&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 							.getAsString() != null
 					&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-							.getAsString().trim().isEmpty()) {
-				final String operation = requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim();
+							.getAsString().isEmpty()) {
+				final String operation = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.OP).getAsString();
 				isValid = operation
 						.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL);
 			} else {
@@ -197,10 +192,9 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.OP).getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-								.getAsString().trim().isEmpty()) {
-					final String operation = requestBody
-							.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-							.getAsString().trim();
+								.getAsString().isEmpty()) {
+					final String operation = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.OP).getAsString();
 					isValid = operation
 							.equalsIgnoreCase(VtnServiceJsonConsts.DETAIL)
 							|| operation
@@ -219,14 +213,10 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator
-							.isValidMaxLength(
-									requestBody
-											.getAsJsonPrimitive(
-													VtnServiceJsonConsts.INDEX)
-											.getAsString().trim(),
-									VtnServiceJsonConsts.LEN_255);
+								.getAsString().isEmpty()) {
+					isValid = validator.isValidMaxLength(requestBody
+							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
+							.getAsString(), VtnServiceJsonConsts.LEN_255);
 				}
 			}
 			if (isValid) {
@@ -239,7 +229,7 @@ public class SwitchResourceValidator extends VtnServiceValidator {
 				 * .getAsString() != null) { isValid =
 				 * validator.isValidMaxLengthNumber(requestBody
 				 * .getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()
-				 * .trim()); }
+				 * ); }
 				 */
 			}
 		}

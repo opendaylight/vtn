@@ -62,6 +62,7 @@ public class AcquireConfigModeResource extends AbstractResource {
 		LOG.trace("Starts AcquireConfigModeResource#post()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
+		boolean isForce = false;
 		try {
 			LOG.debug("Start Ipc framework call");
 			session = getConnPool().getSession(UncTCEnums.UNC_CHANNEL_NAME,
@@ -72,10 +73,17 @@ public class AcquireConfigModeResource extends AbstractResource {
 			if (requestBody != null
 					&& requestBody.has(VtnServiceJsonConsts.OP)
 					&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-							.getAsString().trim()
+							.getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.FORCE)) {
 				session.addOutput(IpcDataUnitWrapper
 						.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_CONFIG_ACQUIRE_FORCE
+								.ordinal()));
+				isForce = true;
+			} else if (requestBody != null
+					&& requestBody.has(VtnServiceJsonConsts.TIMEOUT)) {
+				session.setTimeout(null);
+				session.addOutput(IpcDataUnitWrapper
+						.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_CONFIG_ACQUIRE_TIMED
 								.ordinal()));
 			} else {
 				session.addOutput(IpcDataUnitWrapper
@@ -84,6 +92,13 @@ public class AcquireConfigModeResource extends AbstractResource {
 			}
 			session.addOutput(IpcDataUnitWrapper
 					.setIpcUint32Value(getSessionID()));
+			if (!isForce && requestBody != null
+					&& requestBody.has(VtnServiceJsonConsts.TIMEOUT)) {
+				String str = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.TIMEOUT).getAsString();
+				int timeout = Integer.parseInt(str);
+				session.addOutput(IpcDataUnitWrapper.setIpcInt32Value(timeout));
+			}
 			LOG.info("Request packet created successfully");
 			status = session.invoke();
 			LOG.info("Request packet processed with status:" + status);

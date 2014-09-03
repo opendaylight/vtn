@@ -58,13 +58,12 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.CONFIGID);
 		if (resource instanceof ReleaseConfigModeResource
 				&& ((ReleaseConfigModeResource) resource).getConfigId() != null
-				&& !((ReleaseConfigModeResource) resource).getConfigId().trim()
+				&& !((ReleaseConfigModeResource) resource).getConfigId()
 						.isEmpty()) {
-			isValid = validator
-					.isValidRange(((ReleaseConfigModeResource) resource)
-							.getConfigId().trim(),
-							VtnServiceJsonConsts.LONG_VAL_0,
-							VtnServiceJsonConsts.LONG_VAL_4294967295);
+			isValid = validator.isValidRange(
+					((ReleaseConfigModeResource) resource).getConfigId(),
+					VtnServiceJsonConsts.LONG_VAL_0,
+					VtnServiceJsonConsts.LONG_VAL_4294967295);
 		} else if (resource instanceof AcquireConfigModeResource) {
 			isValid = true;
 		}
@@ -76,9 +75,8 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Acquire Configuration Mode API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ConfigModeResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ConfigModeResourceValidator");
@@ -117,8 +115,27 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null) {
 			isValid = requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-					.getAsString().trim()
-					.equalsIgnoreCase(VtnServiceJsonConsts.FORCE);
+					.getAsString().equalsIgnoreCase(VtnServiceJsonConsts.FORCE);
+		}
+
+		if (isValid && requestBody.has(VtnServiceJsonConsts.TIMEOUT)) {
+			String timeout = requestBody.getAsJsonPrimitive(
+					VtnServiceJsonConsts.TIMEOUT).getAsString();
+			if (timeout != null && !timeout.isEmpty()) {
+				long min = Integer.MIN_VALUE;
+				long max = Integer.MAX_VALUE;
+				try {
+					isValid = validator.isValidRange(timeout, min, max);
+				} catch (Exception e) {
+					isValid = false;
+				}
+			} else {
+				isValid = false;
+			}
+			
+			if (!isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.TIMEOUT);
+			}
 		}
 		LOG.trace("Complete ConfigModeResourceValidator#validatePost()");
 		return isValid;

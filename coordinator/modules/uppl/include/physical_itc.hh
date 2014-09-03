@@ -26,6 +26,7 @@
 #include "itc_db_config.hh"
 #include "itc_audit_request.hh"
 #include "unc/keytype.h"
+#include "unc/usess_ipc.h"
 #include "itc_state_change.hh"
 #include "pfc/log.h"
 

@@ -88,6 +88,7 @@ ODBCM_RC_STATUS ODBCManager::ClearDatabase(unc_keytype_datatype_t db_name,
                            query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   status = query_processor->ExecuteTransaction(
               CLEARDATABASE, cleardb_query, clear_stmt);
   if (status == ODBCM_RC_SUCCESS) {
@@ -158,6 +159,7 @@ ODBCM_RC_STATUS ODBCManager::CopyDatabase(
                            query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   status = query_processor->ExecuteTransaction(
     COPYDATABASE, p_copydb_query, copy_stmt);
   if (status == ODBCM_RC_SUCCESS) {
@@ -219,12 +221,14 @@ ODBCM_RC_STATUS ODBCManager::IsCandidateDirty(
                            query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   /** Execute the query statements as a single transaction */
   status = query_processor->ExecuteTransaction(
             ISCANDIDATEDIRTY, query, isdirty_stmt);
   if (status == ODBCM_RC_CONNECTION_ERROR) {
     err_connx_list_.push_back(conn_obj->get_using_session_id());
   }
+  ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
   if ((status == ODBCM_RC_STMT_ERROR) ||
       (status == ODBCM_RC_DATA_ERROR)) {
     pfc_log_error("ODBCM::ODBCManager::IsCandidateDirty: "
@@ -288,6 +292,7 @@ ODBCM_RC_STATUS ODBCManager::CommitAllConfiguration(
   ODBCM_STATEMENT_CREATE(rw_conn_handle, commit_stmt, odbc_rc);
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
+  PHY_SQLEXEC_LOCK(); 
   /** Fptr for queryfactory to construct COMMITALLCONFIG query */
   for (query_type = 0; query_type < COMMIT_END; query_type++) {
     if (query_type != COPY_CANDIDATE_TO_RUNNING) {
@@ -396,7 +401,8 @@ ODBCM_RC_STATUS ODBCManager::ClearOneInstance(
                            query_processor);
     return status;
   }
-
+  
+  PHY_SQLEXEC_LOCK(); 
   status = query_processor->ExecuteTransaction(
       CLEARONEINSTANCE, QUERY, stmt);
   if (status == ODBCM_RC_SUCCESS) {

@@ -191,10 +191,6 @@ class VtunnelMoMgr : public VnodeMoMgr {
    **/
   bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
 
-  upll_rc_t PopulateDriverDeleteCkv(ConfigKeyVal *&vnpCkv,
-                                    DalDmlIntf *dmi,
-                                    upll_keytype_datatype_t dt_type);
-
   /* Pure virtual from VnodeMoMgrImpl */
   upll_rc_t GetControllerDomainId(ConfigKeyVal *ikey,
                                  controller_domain_t *ctrlr_dom);

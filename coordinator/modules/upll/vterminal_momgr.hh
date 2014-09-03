@@ -53,6 +53,7 @@ class VterminalMoMgr : public VnodeMoMgr {
    * @param[in/out] ctrlr_id      Controller ID                    
    * @param[in]     conflict_ckv  key and value structure 
    * @param[in]     dal           Pointer to the DalDmlIntf(DB Interface)
+   * @param[in]     import_type   specifies the import_type.
    * 
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
@@ -64,7 +65,8 @@ class VterminalMoMgr : public VnodeMoMgr {
   upll_rc_t MergeValidate(unc_key_type_t keytype,
       const char *ctrlr_id,
       ConfigKeyVal *conflict_ckv,
-      DalDmlIntf *dmi);
+      DalDmlIntf *dmi,
+      upll_import_type import_type);
   /**
    * @Brief  Validates the syntax for KT_VTERMINAL Keytype key structure.
    *
@@ -463,6 +465,22 @@ class VterminalMoMgr : public VnodeMoMgr {
    *
    */
   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
+
+
+  /** @brief     This function validates the vTerminal name
+   *             Exists on ru_vbr_if_tbl as vexternal during
+   *             partial import
+   * @param[out] ikey      Which vTerminal violates the condidition 
+   * 
+   * @retval  UPLL_RC_SUCCESS             No Record exists.
+   * @retval  UPLL_RC_ERR_MERGE_CONFLICT  vTermianl exists in running vbr_if_tbl.
+   *
+   */
+  upll_rc_t PartialMergeValidate(unc_key_type_t keytype,
+                                 const char *ctrlr_id,
+                                 ConfigKeyVal *ikey,
+                                 DalDmlIntf *dmi); 
+
 };
 }
 }

@@ -45,9 +45,8 @@ public class AutoSaveResourceValidator extends VtnServiceValidator {
 	 * Auto-save Status API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("AutoSaveResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of AutoSaveResourceValidator");
@@ -91,9 +90,8 @@ public class AutoSaveResourceValidator extends VtnServiceValidator {
 					&& autoSave.getAsJsonPrimitive(
 							VtnServiceJsonConsts.AUTOSAVESTATUS).getAsString() != null) {
 				// checking whether auto_save_status is enable or disable
-				final String status = autoSave
-						.getAsJsonPrimitive(VtnServiceJsonConsts.AUTOSAVESTATUS)
-						.getAsString().trim();
+				final String status = autoSave.getAsJsonPrimitive(
+						VtnServiceJsonConsts.AUTOSAVESTATUS).getAsString();
 				isValid = status.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)
 						|| status
 								.equalsIgnoreCase(VtnServiceJsonConsts.DISABLE);

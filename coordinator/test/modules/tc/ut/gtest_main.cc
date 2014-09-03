@@ -10,10 +10,11 @@
 #ifndef _UNC_TCLOCK_GTEST_MAIN_HH_
 #define _UNC_TCLOCK_GTEST_MAIN_HH_
 
+#include <iostream>
 #include <gtest/gtest.h>
-#include <pfc/log.h>
 #include <tc_module_data.hh>
 #include <tc_lock.hh>
+#include <pfc/log.h>
 
 using namespace std;
 using namespace unc;
@@ -21,6 +22,11 @@ using namespace tc;
 
 namespace unc {
 namespace tc {
+
+extern "C" {
+  extern void libpfc_init();
+  extern void libpfc_fini();
+}
 
 TcLock lock_obj;
 TcLockRet  ret;
@@ -36,773 +42,677 @@ void *thread_function_4(void *arg) {
   TcState state;
   lock_obj.TcUpdateUncState(TC_ACT);
   state =lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_ACT, state);
-
-  cout << "Executing Thread 4"<<  endl;
-
-  ret = lock_obj.GetLock(23, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                         TC_WRITE_NONE);
+  EXPECT_EQ(TC_ACT,state);
+  
+  cout<<"Executing Thread 4"<<endl; 
+  
+  ret = lock_obj.GetLock(23, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  cout << " Thread 4 Got Read Lock "<<  endl;
-
+  cout<<" Thread 4 Got Read Lock "<<endl;  
+  
   sleep(13);
-  ret = lock_obj.ReleaseLock(23, config_id,
-                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(23, config_id,TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-
+  
   sleep(3);
   // audit driver
-  ret = lock_obj.GetLock(23, TC_ACQUIRE_WRITE_SESSION,
-                         TC_AUDIT_DRIVER);
+  ret = lock_obj.GetLock(23, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  cout <<  "thread 4  Got Write Lock "<<  endl;
-
+  cout<<"thread 4  Got Write Lock "<<endl;
   sleep(10);
-  ret = lock_obj.ReleaseLock(23, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_DRIVER);
+  ret = lock_obj.ReleaseLock(23, config_id,TC_RELEASE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  cout << " Thread 4 Done "<<  endl;
-
+  cout<<" Thread 4 Done "<<endl; 
+  
+  
   lock_obj.TcUpdateUncState(TC_STOP);
-  ret = lock_obj.GetLock(24, TC_ACQUIRE_WRITE_SESSION,
-                         TC_AUDIT_DRIVER);
+  ret = lock_obj.GetLock(24, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_INVALID_UNC_STATE, ret);
+  
   return 0;
 }
 
 void *thread_function_3(void *arg) {
+  
   sleep(3);
   TcLockRet  ret;
   TcState state;
   lock_obj.TcUpdateUncState(TC_ACT);
   state =lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_ACT, state);
-  sleep(8);
-  cout<< "Executing Thread 3"<< endl;
-  ret = lock_obj.GetLock(33, TC_ACQUIRE_WRITE_SESSION, TC_AUDIT_DRIVER);
+  EXPECT_EQ(TC_ACT,state);
+  sleep(8); 
+  cout<<"Executing Thread 3"<<endl; 
+  
+  ret = lock_obj.GetLock(33, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-
-  cout<< " thread 3 Got Write Lock "<< endl;
-  ret = lock_obj.ReleaseLock(33, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_DRIVER);
+  
+  cout<<" thread 3 Got Write Lock "<<endl;  
+  ret = lock_obj.ReleaseLock(33, config_id,TC_RELEASE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-
-  sleep(20);
-  ret = lock_obj.GetLock(33, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                         TC_WRITE_NONE);
+  
+  
+  sleep(6);
+  ret = lock_obj.GetLock(33, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
+  //   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   EXPECT_EQ(TC_LOCK_INVALID_UNC_STATE, ret);
-  cout<< "Thread 3 Got read Lock "<< endl;
+  cout<<"Thread 3 Got read Lock "<<endl;
 
-  ret = lock_obj.ReleaseLock(33, config_id,
-                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(33, config_id,TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
+  //EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
-
-  cout<< " Thread 3 Done"<< endl;
-  // current state is STOP then we cant update state
+  
+  cout<<" Thread 3 Done"<<endl; 
+  // current state is STOP then we cant update state 
   state = lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_STOP, state);
+  EXPECT_EQ(TC_STOP,state);
   lock_obj.TcUpdateUncState(TC_ACT);
   state = lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_STOP, state);
+  EXPECT_EQ(TC_STOP,state);
+
   return 0;
 }
 
 void *thread_function_1(void *arg) {
-  cout<< "Executing Thread 1"<< endl;
+  cout<<"Executing Thread 1"<<endl; 
   state =lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_INIT, state);
-
+  EXPECT_EQ(TC_INIT,state);
+  
   lock_obj.TcUpdateUncState(TC_INIT);
-  uint32_t sess_id, conf_id;
+  uint32_t sess_id,conf_id;
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_UNC_STATE, ret);
-  ret = lock_obj.GetConfigIdSessionId(&sess_id, &conf_id);
+  ret = lock_obj.GetConfigIdSessionId(&sess_id,&conf_id);
   EXPECT_EQ(TC_LOCK_INVALID_UNC_STATE, ret);
 
-  ret = lock_obj.GetLock(11, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(11, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.ReleaseLock(11, config_id,
-                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(11, config_id,TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(12, TC_ACQUIRE_WRITE_SESSION, TC_AUDIT_DRIVER);
+  ret = lock_obj.GetLock(12, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_INVALID_UNC_STATE, ret);
 
 
   lock_obj.TcUpdateUncState(TC_ACT);
   state = lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_ACT, state);
+  EXPECT_EQ(TC_ACT,state);
 
-  ret = lock_obj.GetLock(session_id, TC_OPERATION_NONE, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_OPERATION_NONE,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_OPERATION, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_OPERATION_NONE,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_OPERATION_NONE,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_OPERATION, ret);
 
-  ret = lock_obj.GetLock(11, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(11, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_OPERATION_NOT_ALLOWED, ret);
-  ret = lock_obj.ReleaseLock(11, config_id,
-                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(11, config_id,TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, 99, TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,99,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_INVALID_SESSION_ID, ret);
 
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(111, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(111,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_INVALID_CONFIG_ID, ret);
   /* both session and confi ID is invalid */
-  ret = lock_obj.NotifyConfigIdSessionIdDone(111, 99, TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(111,99,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_INVALID_SESSION_ID, ret);
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, 55, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id, 55,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_CONFIG_ID, ret);
 
-  ret = lock_obj.ReleaseLock(55, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(55, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_SESSION_ID, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* Notify pending */
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id,TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
-  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id,TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Notify release config and session id*/
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  // EXPECT_EQ(lock_obj.GetMarkedSessionId(), 0);
+  //EXPECT_EQ(lock_obj.GetMarkedSessionId(), 0);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
   // TC_LOCK_BUSY
 
   session_id =100;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id,TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
-  ret = lock_obj.GetLock(session_id+1, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id+1,TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(session_id+2, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id+2,TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* commit flag is set */
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetLock(session_id+3, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id+3,TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
   /* config commit force acquire */
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id,TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  /* Config notify pending */
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  /* Config notify pending */ 
+  ret = lock_obj.GetLock(session_id,TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(session_id,TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* commint in progress for force acquire config  */
-  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetLock(session_id+1, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id+1, TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  /* commit in progrss for release config */
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  /* commit in progrss for release config */ 
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_COMMIT);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id, config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /*  max config id */
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(1, TC_ACQUIRE_READ_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(1, TC_ACQUIRE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.GetLock(1, TC_ACQUIRE_READ_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(1, TC_ACQUIRE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_ALREADY_ACQUIRED, ret);
 
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_READ_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* Write lock acquire commit */
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Write lock acquire audit user */
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION, TC_AUDIT_USER);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Write lock acquire save startup config */
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION, TC_SAVE_STARTUP_CONFIG);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,TC_SAVE_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Write lock acquire clear startup config */
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,
-                         TC_CLEAR_STARTUP_CONFIG);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,TC_CLEAR_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Write lock acquire  abort candidate config */
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
   /* Release read lock */
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(99999, config_id, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(99999, config_id,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
 
-  ret = lock_obj.ReleaseLock(1, config_id, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(1, config_id,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(51, config_id, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(51, config_id,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(1, config_id, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(1, config_id,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
 
-  ret = lock_obj.GetLock(555, TC_ACQUIRE_WRITE_SESSION, TC_AUDIT_USER);
+  ret = lock_obj.GetLock(555, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.GetLock(51, TC_ACQUIRE_READ_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(51, TC_ACQUIRE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.ReleaseLock(555, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_USER);
+  ret = lock_obj.ReleaseLock(555, config_id,TC_RELEASE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(666, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(666, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   lock_obj.TcMarkSessionId(session_id);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   ret =lock_obj.TcMarkSessionId(session_id);
   EXPECT_EQ(TC_LOCK_FAILURE, ret);
   sess_id = lock_obj.GetMarkedSessionId();
-  EXPECT_EQ(sess_id, session_id);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  EXPECT_EQ(sess_id,session_id);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_OPERATION_NOT_ALLOWED, ret);
-
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  // cout<< "Thread 1 Done"<< endl;
+  cout<<"Thread 1 Done"<<endl; 
   return 0;
 }
 
-void *thread_function_2(void *arg) {
+void *thread_function_2(void *arg)
+{
   sleep(2);
-  cout<< "Executing  Thread 2"<< endl;
+  cout<<"Executing  Thread 2"<<endl; 
   lock_obj.TcUpdateUncState(TC_ACT);
   state =lock_obj.GetUncCurrentState();
-  EXPECT_EQ(TC_ACT, state);
+  EXPECT_EQ(TC_ACT,state);
 
   op = lock_obj.GetSessionOperation(0);
-  EXPECT_EQ(TC_NO_OPERATION_PROGRESS, op);
+  EXPECT_EQ(TC_NO_OPERATION_PROGRESS,op);
 
-  session_id = 10000;
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_DRIVER);
+  session_id = 10000; 
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
 
   /* commit/abort candidate  before config acquire */
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* commit/abort candidate  before config notify */
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Notify done */
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* commit/candidate config  for session id not match with config session id*/
-  ret = lock_obj.GetLock(session_id+1, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(session_id+1, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
-  ret = lock_obj.GetLock(session_id+1, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetLock(session_id+1, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
   /* Write lock acquire commit */
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* session ID other than config session id*/
-  ret = lock_obj.ReleaseLock(777, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_COMMIT);
+  ret = lock_obj.ReleaseLock(777,config_id,TC_RELEASE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
   /* Release write for other operation */
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_DRIVER);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_COMMIT);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-
+ 
   /* Notify done - is success or failure */
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   /* Write lock acquire  abort candidate config */
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_COMMIT);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_OPERATION, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* Release config lock */
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   /* Write lock acquire audit user */
   session_id =999;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_AUDIT_USER);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_USER);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* Write lock acquire save startup config */
   session_id = 777;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_SAVE_STARTUP_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_SAVE_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  // session_id = write_lock.session_id;
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_SAVE_STARTUP_CONFIG);
+  //session_id = write_lock.session_id;
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_SAVE_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   /* Write lock acquire clear startup config */
   session_id = 888;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_CLEAR_STARTUP_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_CLEAR_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_CLEAR_STARTUP_CONFIG);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_CLEAR_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   // auto save
-  ret = lock_obj.GetLock(session_id, TC_AUTO_SAVE_ENABLE, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_AUTO_SAVE_ENABLE,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetLock(session_id, TC_AUTO_SAVE_ENABLE, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_AUTO_SAVE_ENABLE,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_AUTO_SAVE_DISABLE,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id,config_id, TC_AUTO_SAVE_DISABLE,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_AUTO_SAVE_DISABLE,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id,config_id, TC_AUTO_SAVE_DISABLE,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_FAILURE, ret);
 
 
   /* state transition read progrss before move to SBY */
-  bol_ret = lock_obj.IsStateTransitionInProgress();
-  EXPECT_EQ(PFC_FALSE, bol_ret);
+  bol_ret=lock_obj.IsStateTransitionInProgress();  
+  EXPECT_EQ(PFC_FALSE,bol_ret);
 
-  ret = lock_obj.ReleaseLock(23, config_id,
-                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                             TC_WRITE_NONE);
+
+  ret = lock_obj.ReleaseLock(23, config_id,TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
 
-  ret = lock_obj.GetLock(23, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(23, TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   lock_obj.ResetTcGlobalDataOnStateTransition();
 
-  ret = lock_obj.GetLock(16, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(16, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_OPERATION_NOT_ALLOWED, ret);
 
-  ret = lock_obj.GetLock(16, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(16, TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_OPERATION_NOT_ALLOWED, ret);
 
-  ret = lock_obj.ReleaseLock(23, config_id,
-                             TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(23, config_id,TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   lock_obj.TcUpdateUncState(TC_SBY);
-  ret = lock_obj.GetLock(6, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(6, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_UNC_STATE, ret);
 
-  ret = lock_obj.ReleaseLock(1, config_id, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(1, config_id,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_NOT_ACQUIRED, ret);
 
-  ret = lock_obj.GetLock(2, TC_ACQUIRE_READ_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(2, TC_ACQUIRE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(2, config_id, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(2, config_id,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   lock_obj.TcUpdateUncState(TC_ACT);
 
   session_id =100;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_AUDIT_DRIVER);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, 999, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_DRIVER);
+  ret = lock_obj.ReleaseLock(session_id,999,TC_RELEASE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
-  ret = lock_obj.GetConfigIdSessionId(NULL, NULL);
-  EXPECT_EQ(TC_LOCK_INVALID_PARAMS, ret);
+  ret = lock_obj.GetConfigIdSessionId(NULL,NULL);
+  EXPECT_EQ(TC_LOCK_INVALID_PARAMS,ret);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  EXPECT_EQ(TC_LOCK_SUCCESS, ret);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  EXPECT_EQ(TC_LOCK_SUCCESS,ret);
 
   /* config notify pending */
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_NONE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_NONE);
   EXPECT_EQ(TC_LOCK_INVALID_OPERATION, ret);
 
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  EXPECT_EQ(TC_LOCK_NO_CONFIG_SESSION_EXIST, ret);
-  EXPECT_EQ(0U, session_id);
-  EXPECT_EQ(0U, config_id);
-  config_id = session_id = 100;
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  EXPECT_EQ(TC_LOCK_NO_CONFIG_SESSION_EXIST,ret);
+  EXPECT_EQ(0,(int32_t)session_id);
+  EXPECT_EQ(0,(int32_t)config_id);
+  config_id=session_id =100;
 
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_AUDIT_USER);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_WRITE_AUDIT_USER_PROGRESS, op);
-  ret = lock_obj.ReleaseLock(session_id, 999, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_USER);
+  EXPECT_EQ(TC_WRITE_AUDIT_USER_PROGRESS,op);
+  ret = lock_obj.ReleaseLock(session_id,999,TC_RELEASE_WRITE_SESSION,TC_AUDIT_USER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   session_id =1091;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_AUDIT_DRIVER);
+  lock_obj.setup_complete_done_ = PFC_TRUE; 
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_WRITE_AUDIT_DRIVER_PROGRESS, op);
-  ret = lock_obj.ReleaseLock(session_id, 999, TC_RELEASE_WRITE_SESSION,
-                             TC_AUDIT_DRIVER);
+  EXPECT_EQ(TC_WRITE_AUDIT_DRIVER_PROGRESS,op);
+  ret = lock_obj.ReleaseLock(session_id,999,TC_RELEASE_WRITE_SESSION,TC_AUDIT_DRIVER);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   session_id =100021;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_CLEAR_STARTUP_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_CLEAR_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_WRITE_CLEAR_STARTUP_CONFIG_PROGRESS, op);
-  ret = lock_obj.ReleaseLock(session_id, 999, TC_RELEASE_WRITE_SESSION,
-                             TC_CLEAR_STARTUP_CONFIG);
+  EXPECT_EQ(TC_WRITE_CLEAR_STARTUP_CONFIG_PROGRESS,op);
+  ret = lock_obj.ReleaseLock(session_id,999,TC_RELEASE_WRITE_SESSION,TC_CLEAR_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   session_id =100091;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_SAVE_STARTUP_CONFIG);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_SAVE_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_WRITE_SAVE_STARTUP_CONFIG_PROGRESS, op);
-  ret = lock_obj.ReleaseLock(session_id, 999, TC_RELEASE_WRITE_SESSION,
-                             TC_SAVE_STARTUP_CONFIG);
+  EXPECT_EQ(TC_WRITE_SAVE_STARTUP_CONFIG_PROGRESS,op);
+  ret = lock_obj.ReleaseLock(session_id,999,TC_RELEASE_WRITE_SESSION,TC_SAVE_STARTUP_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   session_id = 1111;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION, TC_COMMIT);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
   EXPECT_EQ(TC_LOCK_BUSY, ret);
   /* Acquire config session */
   session_id =100092;
-  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,
-                         TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_FORCE_ACQUIRE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_CONFIG_NOTIFY_ACQUIRE_PROGRESS, op);
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_ACQUIRE);
+  EXPECT_EQ(TC_CONFIG_NOTIFY_ACQUIRE_PROGRESS,op);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_ACQUIRE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_COMMIT);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_COMMIT);
+  EXPECT_EQ(TC_LOCK_SUCCESS, ret);
+
+
+  op = lock_obj.GetSessionOperation(session_id);
+  EXPECT_EQ(TC_CONFIG_COMMIT_PROGRESS,op);
+
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_COMMIT);
+  EXPECT_EQ(TC_LOCK_SUCCESS, ret);
+
+
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_CONFIG_COMMIT_PROGRESS, op);
-
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_COMMIT);
+  EXPECT_EQ(TC_WRITE_ABORT_CANDIDATE_CONFIG_PROGRESS,op);
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_WRITE_SESSION,TC_ABORT_CANDIDATE_CONFIG);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
+  ret = lock_obj.GetConfigIdSessionId(&session_id,&config_id);
+  op = lock_obj.GetSessionOperation(session_id);
+  EXPECT_EQ(TC_CONFIG_NO_NOTIFY_PROGRESS,op);
 
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_WRITE_SESSION,
-                         TC_ABORT_CANDIDATE_CONFIG);
+  ret = lock_obj.ReleaseLock(session_id,config_id,TC_RELEASE_CONFIG_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_WRITE_ABORT_CANDIDATE_CONFIG_PROGRESS, op);
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_WRITE_SESSION,
-                             TC_ABORT_CANDIDATE_CONFIG);
-  EXPECT_EQ(TC_LOCK_SUCCESS, ret);
+  EXPECT_EQ(TC_CONFIG_NOTIFY_RELEASE_PROGRESS,op);
 
-  ret = lock_obj.GetConfigIdSessionId(&session_id, &config_id);
-  op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_CONFIG_NO_NOTIFY_PROGRESS, op);
-
-  ret = lock_obj.ReleaseLock(session_id, config_id, TC_RELEASE_CONFIG_SESSION,
-                             TC_WRITE_NONE);
-  EXPECT_EQ(TC_LOCK_SUCCESS, ret);
-
-  op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_CONFIG_NOTIFY_RELEASE_PROGRESS, op);
-
-  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id, session_id,
-                                             TC_NOTIFY_RELEASE);
+  ret = lock_obj.NotifyConfigIdSessionIdDone(config_id,session_id,TC_NOTIFY_RELEASE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_NO_OPERATION_PROGRESS, op);
+  EXPECT_EQ(TC_NO_OPERATION_PROGRESS,op);
 
   session_id =999;
-  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_READ_SESSION, TC_WRITE_NONE);
+  ret = lock_obj.GetLock(session_id, TC_ACQUIRE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
   op = lock_obj.GetSessionOperation(session_id);
-  EXPECT_EQ(TC_READ_PROGRESS, op);
-  ret = lock_obj.ReleaseLock(session_id, 0, TC_RELEASE_READ_SESSION,
-                             TC_WRITE_NONE);
+  EXPECT_EQ(TC_READ_PROGRESS,op);
+  ret = lock_obj.ReleaseLock(session_id, 0,TC_RELEASE_READ_SESSION,TC_WRITE_NONE);
   EXPECT_EQ(TC_LOCK_SUCCESS, ret);
 
-  cout<< " Thread 2 Done"<< endl;
+  cout<<" Thread 2 Done"<<endl; 
   return 0;
 }
 
-TEST(Test_TcLock, tc_lock_class) {
-  pthread_t mythread_1, mythread_2, mythread_3, mythread_4;
+/*
+TEST (Test_TcLock, tc_lock_class)
+{
+  pthread_t mythread_1,mythread_2,mythread_3,mythread_4;
 
-  if (pthread_create(&mythread_1, NULL, thread_function_1, NULL)) {
-     cout<< "error creating thread 1";
-  }
-
-  if (pthread_create(&mythread_2, NULL, thread_function_2, NULL)) {
-     cout<< "error creating thread  2";
-  }
-  if (pthread_create(&mythread_3, NULL, thread_function_3, NULL)) {
-     cout<< "error creating thread  3";
-  }
-  if (pthread_create(&mythread_4, NULL, thread_function_4, NULL)) {
-    cout<< "error creating thread  4";
+  if ( pthread_create( &mythread_1, NULL, thread_function_1, NULL) ) {
+    cout<<"error creating thread 1";
   }
 
-  if (pthread_join(mythread_1, NULL )) {
-    cout << "error joining thread ";
+  if ( pthread_create( &mythread_2, NULL, thread_function_2, NULL) ) {
+    cout<<"error creating thread  2";
+  }
+  if ( pthread_create( &mythread_3, NULL, thread_function_3, NULL) ) {
+    cout<<"error creating thread  3";
+  }
+  if ( pthread_create( &mythread_4, NULL, thread_function_4, NULL) ) {
+    cout<<"error creating thread  4";
   }
 
-  if (pthread_join(mythread_2, NULL )) {
-    cout << "error joining thread ";
+  if ( pthread_join ( mythread_1, NULL ) ) {
+    cout <<"error joining thread ";
   }
-  if (pthread_join(mythread_3, NULL )) {
-    cout << "error joining thread ";
+
+  if ( pthread_join ( mythread_2, NULL ) ) {
+    cout <<"error joining thread ";
   }
-  if (pthread_join(mythread_4, NULL )) {
-    cout << "error joining thread ";
+  if ( pthread_join ( mythread_3, NULL ) ) {
+    cout <<"error joining thread ";
+  }
+  if ( pthread_join ( mythread_4, NULL ) ) {
+    cout <<"error joining thread ";
   }
 }
-}  // namespace tc
-}  // namespace unc
+*/
+} //   tc
+} //   unc
 
 class TestEnvironment : public ::testing::Environment {
  protected:
   virtual void SetUp() {
     pfc_log_init("gtest", stdout, PFC_LOGLVL_VERBOSE, NULL);
+    libpfc_init();
   }
   virtual void TearDown() {
     pfc_log_fini();
+    libpfc_fini();
   }
 };
 
 int main(int argc, char **argv) {
-  std::cout <<  "Running main() from gtest_main.cc\n";
+  std::cout << "Running main() from gtest_main.cc\n";
   testing::InitGoogleTest(&argc, argv);
   AddGlobalTestEnvironment(new TestEnvironment());
   return RUN_ALL_TESTS();
 }
-#endif  // _UNC_TCLOCK_GTEST_MAIN_HH_
+
+
+#endif //_UNC_TCLOCK_GTEST_MAIN_HH_

@@ -59,21 +59,26 @@ public class DestinationControllerResourceValidator extends VtnServiceValidator 
 		LOG.info("Start DestinationControllerResourceValidator#validate()");
 		boolean isValid = true;
 		try {
-			if (requestBody != null && VtnServiceConsts.PUT.equals(method)) {
-				isValid = validatePut(requestBody);
-			} else if (requestBody != null
-					&& VtnServiceConsts.GET.equals(method)) {
-				isValid = true;
+			if (requestBody != null) {
+				if (VtnServiceConsts.PUT.equals(method)) {
+					isValid = validatePut(requestBody);
+				} else if (VtnServiceConsts.GET.equals(method)) {
+					isValid = true;
+				} else {
+					setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
+							.getMessage());
+					isValid = false;
+				}
 			} else {
-				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_METHOD_NOT_ALLOWED
-						.getMessage());
 				isValid = false;
+				setInvalidParameter(UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
+						.getMessage());
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Invalid value : " + e.getMessage());
+			LOG.error(e, "Invalid value : " + e.getMessage());
 			isValid = false;
 		} catch (final ClassCastException e) {
-			LOG.error("Invalid type : " + e.getMessage());
+			LOG.error(e, "Invalid type : " + e.getMessage());
 			isValid = false;
 		}
 

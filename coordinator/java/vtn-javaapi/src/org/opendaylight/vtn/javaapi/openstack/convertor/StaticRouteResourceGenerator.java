@@ -19,8 +19,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 
 /**
- * Provides Request-Response Conversion methods for Route requests
- * Requests
+ * Provides Request-Response Conversion methods for Route requests Requests
  */
 public class StaticRouteResourceGenerator {
 
@@ -40,9 +39,11 @@ public class StaticRouteResourceGenerator {
 				.get(VtnServiceOpenStackConsts.DESTNATION).getAsString()
 				.split(VtnServiceConsts.SLASH);
 
-		staticRoute.addProperty(VtnServiceJsonConsts.IPADDR, destination[0]);
+		staticRoute.addProperty(VtnServiceJsonConsts.IPADDR,
+				destination[VtnServiceJsonConsts.VAL_0]);
 
-		staticRoute.addProperty(VtnServiceJsonConsts.PREFIX, destination[1]);
+		staticRoute.addProperty(VtnServiceJsonConsts.PREFIX,
+				destination[VtnServiceJsonConsts.VAL_1]);
 
 		staticRoute.addProperty(VtnServiceJsonConsts.NEXTHOPADDR,
 				openStackResourceBody.get(VtnServiceOpenStackConsts.NEXTHOP)

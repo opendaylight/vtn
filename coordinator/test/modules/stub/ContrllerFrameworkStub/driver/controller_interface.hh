@@ -52,6 +52,14 @@ class controller {
     return PFC_TRUE;
   }
 
+   pfc_bool_t get_audit_result () {
+    return audit_result_;
+  }
+
+   void set_audit_result (pfc_bool_t result){
+    audit_result_=result;
+   }
+
   /**
    * @brief  - Method to get the  user name
    * @retval - string - username configured

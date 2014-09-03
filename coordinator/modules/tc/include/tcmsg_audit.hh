@@ -16,6 +16,9 @@
 
 namespace unc {
 namespace tc {
+
+#define COMMIT_INFO_START_POS 3
+
 /*Base class for audit operation*/
 class  TcMsgAudit : public TcMsg {
  public:
@@ -41,8 +44,19 @@ class AuditTransaction : public TcMsgAudit {
   AuditTransaction(uint32_t sess_id, unc::tclib::TcMsgOperType oper);
   TcOperRet Execute();
   void SetReconnect(pfc_bool_t force_reconnect);
+  void IsUserAudit(pfc_bool_t user_audit);
+  void SetSimplifiedAudit(pfc_bool_t simplified_audit);
+
+  void SetCommitInfo(uint64_t commit_number,
+                     uint64_t commit_date,
+                     std::string commit_application);
 
   pfc_bool_t reconnect_controller_;
+  pfc_bool_t simplified_audit_;
+  uint64_t commit_number_;
+  uint64_t commit_date_;
+  std::string commit_application_;
+  pfc_bool_t user_audit_;
 
  protected:
   TcOperRet SendRequest(std::string channel_name);

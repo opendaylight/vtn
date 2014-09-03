@@ -8,54 +8,21 @@
  */
 
 /*
- * table_deletion.cc
- *   Prints Table Deletion commands
- *   ./upll_delete_table.exe > upll_delete_table.sql
- *   prints sql commands for deleting all tables of UPLL
+ *   table_deletion.cc
+ *   Generates sql commands for deleting all tables of UPLL
  */
 
 #include <stdio.h>
 #include <stdint.h>
 #include <string>
+#include <iostream>
+#include <fstream>
 #include "dal/dal_schema.hh"
+#include "table_defines.hh"
 
-#define uudal unc::upll::dal
-#define uudschema unc::upll::dal::schema
-#define uudstbl unc::upll::dal::schema::table
+using namespace std;
 
-/*
- * Default Values:
- * varchar 		' '
- * bytea 		'\000'
- * smallint		0
- * integer 		0
- * bigint  		0
- * operstatus 		DOWN (need to check with MoMgr enum for value, use 0 for now)
- * adminstatus		DOWN (need to check with MoMgr enum for value, use 0 for now)
- * cs_attr		APPLIED(1) (for im_ and au_ tables)
- * cs_rowstatus		APPLIED(1) (for im_ and au_ tables)
- * cs_attr		NOT_APPLIED(3) (for su_, ca_ and ru_ tables)
- * cs_rowstatus		NOT_APPLIED(3) (for su_, ca_ and ru_ tables)
- * valid_attr		INVALID(0)
- */
-// Config Types
-enum UpllDbCfgId {
-  kCfgIdStartUp = 0,
-  kCfgIdCandidate,
-  kCfgIdRunning,
-  kCfgIdImport,
-  kCfgIdAudit,
-  kUpllDbNumCfgId
-};
-const std::string cfg_str[kUpllDbNumCfgId] =
-  { "su_", "ca_", "ru_", "im_", "au_" };
-
-std::string get_cfg_str(UpllDbCfgId cfg_idx) {
-  if (cfg_idx >= kUpllDbNumCfgId) {
-    return "";
-  }
-  return (cfg_str[cfg_idx]);
-}
+ofstream upll_delete_file;
 
 void build_delete_table_script() {
   uint16_t cfg_idx;
@@ -63,48 +30,38 @@ void build_delete_table_script() {
   std::string line;
 
   // Print Copyright
-  line.clear();
-  line += "/*\n"
-      " * Copyright (c) 2012-2014 NEC Corporation\n"
-      " * All rights reserved.\n"
-      " *\n"
-      " * This program and the accompanying materials are made available "
-      "under the\n"
-      " * terms of the Eclipse Public License v1.0 which accompanies this\n"
-      " * distribution, and is available at "
-      "http://www.eclipse.org/legal/epl-v10.html\n"
-      " */\n";
-  printf("%s", line.c_str());
+  upll_delete_file << copyrights_header.c_str();
 
   // Print File Header
-  line.clear();
-  line += "/**\n"
-          " * upll_delete_table.sql\n"
-          " *   Contains SQL commands to delete all the tables created by UPLL\n"
-          " */\n"; 
-  printf("\n%s", line.c_str());
+  upll_delete_file << 
+    "\n"
+    "/**\n"
+    " *  upll_delete_table.sql\n"
+    " *  Contains SQL commands to delete all the tables created by UPLL\n"
+    " */\n"; 
 
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
-  for (uint16_t tbl_iter = uudstbl::kDalNumTables; tbl_iter > 0; tbl_iter--) {
-    tbl_idx = tbl_iter - 1;
-    // Controller Table appears only in Candidate
-    if (tbl_idx == uudstbl::kDbiCtrlrTbl && cfg_idx != kCfgIdCandidate) {
-      continue;
-    }
+    for (uint16_t tbl_iter = uudstbl::kDalNumTables; tbl_iter > 0; tbl_iter--) {
+      tbl_idx = tbl_iter - 1;
+      // Controller Table appears only in Candidate
+      if (tbl_idx == uudstbl::kDbiCtrlrTbl && cfg_idx != kCfgIdCandidate) {
+        continue;
+      }
 
-    // Delete Table
-    line.clear();
-    line += "DROP TABLE ";
-    line += get_cfg_str(static_cast<UpllDbCfgId>(cfg_idx));
-    line += uudschema::TableName(tbl_idx);
-    line += ";";
-    printf("\n%s", line.c_str());
-  }
+      // Delete Table
+      line.clear();
+      line += "DROP TABLE ";
+      line += get_cfg_str(static_cast<UpllDbCfgId>(cfg_idx));
+      line += uudschema::TableName(tbl_idx);
+      line += ";";
+      upll_delete_file << endl << line.c_str();
+    }
   }
 }
 
-
 int main() {
+  upll_delete_file.open("delete_script.sql");
   build_delete_table_script();
+  upll_delete_file.close();
   return 0;
 }

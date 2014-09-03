@@ -55,18 +55,17 @@ public class IpRouteResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof IpRouteResource
 				&& ((IpRouteResource) resource).getVtnName() != null
-				&& !((IpRouteResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((IpRouteResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((IpRouteResource) resource).getVtnName().trim(),
+					((IpRouteResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VROUTERNAME);
 				if (((IpRouteResource) resource).getVrtName() != null
-						&& !((IpRouteResource) resource).getVrtName().trim()
-								.isEmpty()) {
+						&& !((IpRouteResource) resource).getVrtName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((IpRouteResource) resource).getVrtName().trim(),
+							((IpRouteResource) resource).getVrtName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -82,9 +81,8 @@ public class IpRouteResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get method of IpRoute API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start IpRouteResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of IpRouteResourceValidator");

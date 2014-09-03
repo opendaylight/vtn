@@ -209,7 +209,7 @@ UncRespCode Kt_Boundary::Update(OdbcmConnectionHandler *db_conn,
                      data_type);
       }
     } else {
-      pfc_log_debug("Nothing to be updated, so return");
+      pfc_log_info("Nothing to be updated, so return");
     }
   }
   // Populate the response to be sent in ServerSession
@@ -272,7 +272,7 @@ UncRespCode Kt_Boundary::Delete(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_BOUNDARY);
     err |= sess.addOutput(*key_obj);
     if (err != 0) {
-      pfc_log_debug(
+      pfc_log_info(
           "Server session addOutput failed, so return IPC_WRITE_ERROR");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
@@ -345,7 +345,7 @@ UncRespCode Kt_Boundary::Delete(OdbcmConnectionHandler *db_conn,
   err |= sess.addOutput((uint32_t)UNC_KT_BOUNDARY);
   err |= sess.addOutput(*key_obj);
   if (err != 0) {
-    pfc_log_debug("Server session addOutput failed, so return IPC_WRITE_ERROR");
+    pfc_log_info("Server session addOutput failed, so return IPC_WRITE_ERROR");
     return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
   }
   return UNC_RC_SUCCESS;
@@ -367,9 +367,12 @@ UncRespCode Kt_Boundary::ReadInternal(OdbcmConnectionHandler *db_conn,
                                          vector<void *> &boundary_val,
                                          uint32_t data_type,
                                          uint32_t operation_type) {
+  if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
+      operation_type != UNC_OP_READ_SIBLING_BEGIN) {
+    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+  }
   pfc_log_debug("Processing Kt_Boundary::ReadInternal");
-  vector<key_boundary_t> vect_boundary_id;
-  vector<val_boundary_st_t> vect_val_boundary_st;
   uint32_t max_rep_ct = 1;
   if (operation_type != UNC_OP_READ) {
     // Get read response from database
@@ -378,36 +381,60 @@ UncRespCode Kt_Boundary::ReadInternal(OdbcmConnectionHandler *db_conn,
   void *key_struct = boundary_key[0];
   void *val_struct = NULL;
   val_boundary_st_t st_boundary_val;
-  if (!boundary_val.empty()) {
-    st_boundary_val =
-        *(reinterpret_cast<val_boundary_st_t *> (boundary_val[0]));
+  memset(&st_boundary_val, '\0', sizeof(val_boundary_st_t));
+  if ((!boundary_val.empty()) && (boundary_val[0] != NULL)) {
+    memcpy(&st_boundary_val,
+           (reinterpret_cast<val_boundary_st_t *> (boundary_val[0])),
+           sizeof(val_boundary_st_t));
     val_struct = reinterpret_cast<void *>(&st_boundary_val.boundary);
   }
-
   // Get read response from database
-  UncRespCode read_status = ReadBoundaryValFromDB(db_conn,
-                                                     key_struct,
-                                                     val_struct,
-                                                     data_type,
-                                                     operation_type,
-                                                     max_rep_ct,
-                                                     vect_boundary_id,
-                                                     vect_val_boundary_st);
-  boundary_key.clear();
-  boundary_val.clear();
-  pfc_log_debug("ReadBoundaryValFromDB returned %d with response size %"
-                PFC_PFMT_SIZE_T, read_status, vect_val_boundary_st.size());
-  if (read_status == UNC_RC_SUCCESS) {
-    for (unsigned int iIndex = 0 ; iIndex < vect_boundary_id.size();
-        ++iIndex) {
-      key_boundary_t *key_boundary =
-          new key_boundary_t(vect_boundary_id[iIndex]);
-      boundary_key.push_back(reinterpret_cast<void *>(key_boundary));
-      val_boundary_st_t *val_boundary =
-          new val_boundary_st_t(vect_val_boundary_st[iIndex]);
-      boundary_val.push_back(reinterpret_cast<void *>(val_boundary));
+  UncRespCode read_status = UNC_RC_SUCCESS;
+  bool firsttime = true;
+  do {
+    vector<key_boundary_t> vect_boundary_id;
+    vector<val_boundary_st_t> vect_val_boundary_st;
+    read_status = ReadBoundaryValFromDB(db_conn,
+                                        key_struct,
+                                        val_struct,
+                                        data_type,
+                                        operation_type,
+                                        max_rep_ct,
+                                        vect_boundary_id,
+                                        vect_val_boundary_st);
+    if (firsttime) {
+      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      boundary_key.clear();
+      boundary_val.clear();
+      firsttime = false;
     }
-  }
+    pfc_log_debug("ReadBoundaryValFromDB returned %d with response size %"
+                PFC_PFMT_SIZE_T, read_status, vect_val_boundary_st.size());
+    if (read_status == UNC_RC_SUCCESS) {
+      for (unsigned int iIndex = 0 ; iIndex < vect_boundary_id.size();
+           ++iIndex) {
+        key_boundary_t *key_boundary =
+            new key_boundary_t(vect_boundary_id[iIndex]);
+        boundary_key.push_back(reinterpret_cast<void *>(key_boundary));
+        val_boundary_st_t *val_boundary =
+            new val_boundary_st_t(vect_val_boundary_st[iIndex]);
+        boundary_val.push_back(reinterpret_cast<void *>(val_boundary));
+      }
+    } else if ((read_status == UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE &&
+               boundary_val.size() != 0)) {
+      read_status = UNC_RC_SUCCESS;
+    }
+    if ((vect_val_boundary_st.size() == UPPL_MAX_REP_CT) &&
+                     (operation_type != UNC_OP_READ)) {
+      pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
+                    operation_type,boundary_key.size());
+      key_struct = reinterpret_cast<void *>(boundary_key[boundary_key.size() - 1]);
+      operation_type = UNC_OP_READ_SIBLING;
+      continue;
+    } else {
+      break;
+    }
+  } while(true);
   return read_status;
 }
 
@@ -432,7 +459,6 @@ UncRespCode Kt_Boundary::ReadBulk(OdbcmConnectionHandler *db_conn,
                                      pfc_bool_t parent_call,
                                      pfc_bool_t is_read_next,
                                      ReadRequest *read_req) {
-  pfc_log_info("Processing ReadBulk of Kt_Boundary");
   UncRespCode read_status = UNC_RC_SUCCESS;
   if (data_type != UNC_DT_CANDIDATE && data_type != UNC_DT_RUNNING &&
       data_type != UNC_DT_STATE && data_type != UNC_DT_STARTUP) {
@@ -543,7 +569,7 @@ UncRespCode Kt_Boundary::ReadBulkInternal(
     uint32_t max_rep_ct,
     vector<key_boundary_t> &vect_key_boundary,
     vector<val_boundary_st_t> &vect_val_boundary) {
-  pfc_log_debug("Inside ReadBulkInternal of Kt-Boundary");
+  pfc_log_debug("ReadBulkInternal:Kt-Boundary");
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   UncRespCode read_status = UNC_RC_SUCCESS;
   ODBCM_RC_STATUS read_db_status = ODBCM_RC_SUCCESS;
@@ -600,7 +626,6 @@ UncRespCode Kt_Boundary::PerformSyntaxValidation(
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  pfc_log_info("Performing Syntax Validation of KT_BOUNDARY");
 
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_ipcresp_t mandatory = PFC_TRUE;
@@ -745,7 +770,7 @@ UncRespCode Kt_Boundary::PerformSemanticValidation(
     uint32_t operation,
     uint32_t data_type) {
   UncRespCode status = UNC_RC_SUCCESS;
-  pfc_log_debug("Inside PerformSemanticValidation of KT_BOUNDARY");
+  pfc_log_debug("PerformSemanticValidation:KT_BOUNDARY");
   key_boundary_t *obj_key_boundary
   = reinterpret_cast<key_boundary_t*>(key_struct);
   string boundary_id = (const char*)obj_key_boundary->boundary_id;
@@ -776,7 +801,7 @@ UncRespCode Kt_Boundary::PerformSemanticValidation(
       pfc_log_error("Hence update/delete/read operation not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
-      pfc_log_info("key instance exist update/del/read operation allowed");
+      pfc_log_debug("key instance exist update/del/read operation allowed");
     }
   }
   if (status != UNC_RC_SUCCESS) {
@@ -944,7 +969,7 @@ void Kt_Boundary::PopulateDBSchemaForKtTable(
     CsRowStatus row_status,
     pfc_bool_t is_filtering,
     pfc_bool_t is_state) {
-  pfc_log_debug("Inside Populate Kt_boundary");
+  pfc_log_debug("Populate Kt_boundary");
   // Construct Primary key list
   vector<string> vect_prim_keys;
 
@@ -959,7 +984,6 @@ void Kt_Boundary::PopulateDBSchemaForKtTable(
       reinterpret_cast<val_boundary_t*>(val_struct);
 
   stringstream valid;
-  pfc_log_info("operation: %d", operation_type);
   uint16_t valid_val = 0, prev_db_val = 0;
 
   string boundary_id = "";
@@ -1288,7 +1312,7 @@ void Kt_Boundary::FillBoundaryValueStructure(
           break;
 
         default:
-          pfc_log_info("Ignoring Boundary attribute %d", attr_name);
+          pfc_log_debug("Ignoring Boundary attribute %d", attr_name);
           break;
       }
     }
@@ -1328,7 +1352,7 @@ UncRespCode Kt_Boundary::PerformRead(OdbcmConnectionHandler *db_conn,
                                         uint32_t option1,
                                         uint32_t option2,
                                         uint32_t max_rep_ct) {
-  pfc_log_info("Inside PerformRead operation_type=%d data_type=%d",
+  pfc_log_debug("PerformRead oper=%d dt=%d",
                operation_type, data_type);
   key_boundary_t *obj_boundary = reinterpret_cast<key_boundary_t*>(key_struct);
   UncRespCode read_status = UNC_RC_SUCCESS;
@@ -1347,7 +1371,7 @@ UncRespCode Kt_Boundary::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_BOUNDARY);
     err |= sess.addOutput(*obj_boundary);
     if (err != 0) {
-      pfc_log_debug("addOutput failed for physical_response_header");
+      pfc_log_info("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
     return UNC_RC_SUCCESS;
@@ -1442,7 +1466,7 @@ UncRespCode Kt_Boundary::PerformRead(OdbcmConnectionHandler *db_conn,
     err |= sess.addOutput((uint32_t)UNC_KT_BOUNDARY);
     err |= sess.addOutput(*obj_boundary);
     if (err != 0) {
-      pfc_log_debug("addOutput failure for physical_reponse_header");
+      pfc_log_info("addOutput failure for physical_reponse_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
   }
@@ -1802,7 +1826,7 @@ UpplBoundaryOperStatus Kt_Boundary::getBoundaryInputOperStatus(
   if (read_oper_status != UNC_RC_SUCCESS) {
     read_status = controller.GetOperStatus(
         db_conn, ctrl_data_type, key_type_struct, ctr_oper_status);
-    pfc_log_info("Controller's oper_status %d", ctr_oper_status);
+    pfc_log_debug("Controller's oper_status %d", ctr_oper_status);
     ADD_CTRL_OPER_STATUS(controller_name, ctr_oper_status, ref_oper_status);
   }
 
@@ -1811,12 +1835,12 @@ UpplBoundaryOperStatus Kt_Boundary::getBoundaryInputOperStatus(
     // Boundary oper status does not depends on domain
     if (domain_name.empty()) {
       boundary_oper_status = UPPL_BOUNDARY_OPER_UP;
-      pfc_log_info("Returning boundary_oper_status %d", boundary_oper_status);
+      pfc_log_debug("Returning boundary_oper_status %d", boundary_oper_status);
       return boundary_oper_status;
     }
     if (logical_port_id.empty()) {
       boundary_oper_status = UPPL_BOUNDARY_OPER_UP;
-      pfc_log_info("Returning boundary_oper_status %d", boundary_oper_status);
+      pfc_log_debug("Returning boundary_oper_status %d", boundary_oper_status);
       return boundary_oper_status;
     }
     unc_keytype_ctrtype_t ctrl_type = UNC_CT_UNKNOWN;
@@ -1865,22 +1889,22 @@ UpplBoundaryOperStatus Kt_Boundary::getBoundaryInputOperStatus(
           read_status = logical_port.GetOperStatus(db_conn, UNC_DT_RUNNING,
                                                    key_type_struct,
                                                    logical_port_oper_status);
-          pfc_log_info("Logical_Port's oper_status %d",
+          pfc_log_debug("Logical_Port's oper_status %d",
                        logical_port_oper_status);
         }
         if (read_status != UNC_RC_SUCCESS) {
-          pfc_log_info("Returning boundary_oper_status %d",
+          pfc_log_debug("Returning boundary_oper_status %d",
                        boundary_oper_status);
           return boundary_oper_status;
         } else {
-          pfc_log_info("Logical_Port's oper_status %d",
+          pfc_log_debug("Logical_Port's oper_status %d",
                        logical_port_oper_status);
           ADD_LP_PORT_OPER_STATUS(logical_port_key,
                                   logical_port_oper_status,
                                   ref_oper_status);
         }
       } else {
-        pfc_log_info("Logical_Port's oper_status %d", logical_port_oper_status);
+        pfc_log_debug("Logical_Port's oper_status %d", logical_port_oper_status);
         ADD_LP_PORT_OPER_STATUS(logical_port_key,
                                 logical_port_oper_status,
                                 ref_oper_status);
@@ -1948,8 +1972,7 @@ UncRespCode Kt_Boundary::HandleOperStatus(
                                                     domain_name, port_id,
                                                     ref_oper_status);
 
-  if (boundary_oper_status == UPPL_BOUNDARY_OPER_DOWN ||
-      boundary_oper_status == UPPL_BOUNDARY_OPER_UNKNOWN) {
+  if (boundary_oper_status == UPPL_BOUNDARY_OPER_UNKNOWN) {
     pfc_log_info("Set Boundary oper status as down/unknown");
     // Update oper_status in boundary table
     return_code = SetOperStatus(db_conn, UNC_DT_STATE, NULL, value_struct,
@@ -1957,7 +1980,8 @@ UncRespCode Kt_Boundary::HandleOperStatus(
     pfc_log_info("Set Boundary oper status status %d", return_code);
     return return_code;
   }
-  pfc_log_debug("Check the secondary controller/domain/lp set");
+  UpplBoundaryOperStatus first_oper_status = boundary_oper_status;
+  pfc_log_debug("Bdry first_oper_status = %d", boundary_oper_status);
 
   vector<key_boundary_t> vect_key_boundary;
   vector<val_boundary_st_t> vect_val_boundary_st;
@@ -1979,14 +2003,10 @@ UncRespCode Kt_Boundary::HandleOperStatus(
   for (unsigned int index = 0;
       index < vect_key_boundary.size();
       ++index) {
-    if (vect_val_boundary_st[index].oper_status ==
-        UPPL_BOUNDARY_OPER_UP) {
-      continue;
-    }
     if (ctr1_valid == true) {
       controller_name = (const char*) vect_val_boundary_st[index].\
           boundary.controller_name2;
-      pfc_log_info(
+      pfc_log_debug(
           "Kt_Boundary::HandleOperStatus() controller2 name: %s",
           controller_name.c_str());
       domain_name = (const char*) vect_val_boundary_st[index].\
@@ -1996,7 +2016,7 @@ UncRespCode Kt_Boundary::HandleOperStatus(
     } else {
       controller_name = (const char*) vect_val_boundary_st[index].\
           boundary.controller_name1;
-      pfc_log_info(
+      pfc_log_debug(
           "Kt_Boundary::HandleOperStatus() controller1 name: %s",
           controller_name.c_str());
       domain_name = (const char*) vect_val_boundary_st[index].\
@@ -2008,12 +2028,23 @@ UncRespCode Kt_Boundary::HandleOperStatus(
         getBoundaryInputOperStatus(db_conn, data_type, controller_name,
                                    domain_name, port_id,
                                    ref_oper_status);
-    pfc_log_info("oper status for set2 %d", second_oper_status);
+    pfc_log_debug("oper status for set2 %d", second_oper_status);
+    UpplBoundaryOperStatus final_oper_status = UPPL_BOUNDARY_OPER_UNKNOWN;
+    if (second_oper_status == UPPL_BOUNDARY_OPER_UNKNOWN) {
+      final_oper_status = second_oper_status;
+    } else {
+      if (first_oper_status == UPPL_BOUNDARY_OPER_UP) {
+        final_oper_status = second_oper_status;
+      } else {
+        final_oper_status = first_oper_status;
+      }
+    }
+    pfc_log_debug("oper status for final %d", final_oper_status);
     SetOperStatus(db_conn, UNC_DT_STATE,
                   reinterpret_cast<void*>(&vect_key_boundary[index]),
                   reinterpret_cast<void*>
     (&vect_val_boundary_st[index].boundary),
-    second_oper_status);
+    final_oper_status);
   }
   return return_code;
 }
@@ -2506,31 +2537,62 @@ UncRespCode Kt_Boundary::SendOperStatusNotification(
   memset(&new_val_bdry, 0, sizeof(val_boundary_st_t));
   old_val_bdry.oper_status = old_oper_st;
   old_val_bdry.valid[kIdxBoundaryStOperStatus] = UNC_VF_VALID;
-  new_val_bdry.oper_status = new_oper_st;
-  new_val_bdry.valid[kIdxBoundaryStOperStatus] = UNC_VF_VALID;
-  ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_EVENTS_KT_BOUNDARY, err);
-  northbound_event_header rsh = {static_cast<uint32_t>(UNC_OP_UPDATE),
-      static_cast<uint32_t>(UNC_DT_STATE),
-      static_cast<uint32_t>(UNC_KT_BOUNDARY)};
-  err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
-  err |= ser_evt.addOutput(bdry_key);
-  err |= ser_evt.addOutput(new_val_bdry);
-  err |= ser_evt.addOutput(old_val_bdry);
-  if (err != 0) {
-    pfc_log_error(
-        "Server Event addOutput failed, return IPC_WRITE_ERROR");
-    status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+  // Getting the val structre from the database
+  vector<void *> vect_key_boundary;
+  vect_key_boundary.push_back(&bdry_key);
+  vector<void *> vect_val_boundary;
+  UncRespCode db_ret = UNC_RC_SUCCESS;
+  OPEN_DB_CONNECTION(unc::uppl::kOdbcmConnReadOnly, db_ret);
+  if (db_ret != UNC_RC_SUCCESS) {
+    pfc_log_error("Error in opening DB connection");
+    return db_ret;
+  }
+  UncRespCode return_code = ReadInternal(&db_conn,
+                                         vect_key_boundary,
+                                         vect_val_boundary,
+                                         UNC_DT_RUNNING,
+                                         UNC_OP_READ);
+  if (return_code == UNC_RC_SUCCESS) {
+    val_boundary_st_t *val_boundary_new_valid_st =
+        reinterpret_cast<val_boundary_st_t*>(vect_val_boundary[0]);
+    if (val_boundary_new_valid_st != NULL) {
+      new_val_bdry = *val_boundary_new_valid_st;
+      delete val_boundary_new_valid_st;
+      val_boundary_new_valid_st = NULL;
+      key_boundary_t *boundary_key = reinterpret_cast<key_boundary_t*>
+      (vect_key_boundary[0]);
+      if (boundary_key != NULL) {
+        delete boundary_key;
+        boundary_key = NULL;
+      }
+      new_val_bdry.oper_status = new_oper_st;
+      new_val_bdry.valid[kIdxBoundaryStOperStatus] = UNC_VF_VALID;
+      ServerEvent ser_evt((pfc_ipcevtype_t)UPPL_EVENTS_KT_BOUNDARY, err);
+      northbound_event_header rsh = {static_cast<uint32_t>(UNC_OP_UPDATE),
+          static_cast<uint32_t>(UNC_DT_STATE),
+          static_cast<uint32_t>(UNC_KT_BOUNDARY)};
+      err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
+      err |= ser_evt.addOutput(bdry_key);
+      err |= ser_evt.addOutput(new_val_bdry);
+      err |= ser_evt.addOutput(old_val_bdry);
+      if (err != 0) {
+        pfc_log_error(
+            "Server Event addOutput failed, return IPC_WRITE_ERROR");
+        status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+      } else {
+        pfc_log_debug("%s", (IpctUtil::get_string(bdry_key)).c_str());
+        pfc_log_debug("%s", (IpctUtil::get_string(new_val_bdry)).c_str());
+        pfc_log_debug("%s", (IpctUtil::get_string(old_val_bdry)).c_str());
+        // Call IPC server to post the event
+        status = (UncRespCode) physical_layer
+            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+      }
+    }
   } else {
-    pfc_log_debug("%s", (IpctUtil::get_string(bdry_key)).c_str());
-    pfc_log_debug("%s", (IpctUtil::get_string(new_val_bdry)).c_str());
-    pfc_log_debug("%s", (IpctUtil::get_string(old_val_bdry)).c_str());
-    // Call IPC server to post the event
-    status = (UncRespCode) physical_layer
-        ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+    pfc_log_error("DB Error while getting Boundary details");
   }
   return status;
 }
-
 /** GetAllBoundaryOperStatus
  * @Description : This function reads the oper_status value all the boundaries
  *  provided in the request

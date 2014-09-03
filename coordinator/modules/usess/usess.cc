@@ -307,6 +307,9 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
 
   L_FUNCTION_START();
 
+  // set IPC time out.
+  ipcsess.setTimeout(NULL);
+
   // receive ipc client send data.
   ipc_rtn = ipcsess.getArgument(0, receive_data);
   GOTO_CODESET_DETAIL_IF((ipc_rtn != 0), proc_end, err_code, USESS_E_NG,
@@ -324,20 +327,26 @@ usess_ipc_err_e Usess::UsessSessAddHandler(
   GOTO_IF((err_code != USESS_E_OK), unlock_end,
       "Failed get user information. user=%s err=%d", uname.c_str(), err_code);
 
+  // database disconnect.
+  DISCONNECT(unlock_end, err_code);
+
+  // unlock.
+  USESS_UNLOCK();
+
   // check user password authenticate.
   strncpy(passwd, (char*)receive_data.sess_passwd, sizeof(passwd) - 1);
   err_code = user.Authenticate(kAuthenticateSessAdd,
             static_cast<usess_type_e>(receive_data.sess_type), passwd);
-  GOTO_IF((err_code != USESS_E_OK), unlock_end,
+  GOTO_IF((err_code != USESS_E_OK), proc_end,
       "Failed check user password authenticate. err=%d", err_code);
+
+  // write lock.
+  USESS_WLOCK(proc_end, err_code);
 
   // add session.
   err_code = sessions_.Add(receive_data, user, send_data);
   GOTO_IF((err_code != USESS_E_OK), unlock_end,
       "Failed add session. err=%d", err_code);
-
-  // database disconnect.
-  DISCONNECT(unlock_end, err_code);
 
   // send ipc data.
   ipc_rtn = ipcsess.addOutput(send_data);

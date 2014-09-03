@@ -412,8 +412,9 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      */
 
     upll_rc_t MergeValidate(unc_key_type_t keytype,
-                         const char *ctrlr_id,
-                         ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            const char *ctrlr_id,
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
 
     /**
      * @brief  Method used for Rename Operation.
@@ -601,52 +602,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
     bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
 
     /**
-     * @brief  Method for TxUpdateController for updating the controller .
-     *
-     * @param[in]  keytype             Contains respective keytype of Api.
-     * @param[in]  session_id          Describes session information id .
-     * @param[in]  config_id           Describes the configuartion id .
-     * @param[in]  phase               Describes the phase of controller.
-     * @param[in]  affected_ctrlr_set  Describes the resp controller list.
-     * @param[in]  dmi                 Describes Pointer to DalDmlIntf class.
-     *
-     * @retval  UPLL_RT_SUCCESS      Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Failure.
-     */
-
-    upll_rc_t TxUpdateController(unc_key_type_t keytype,
-                                          uint32_t session_id,
-                                          uint32_t config_id,
-                                          uuc::UpdateCtrlrPhase phase,
-                                          set<string> *affected_ctrlr_set,
-                                          DalDmlIntf *dmi,
-                                          ConfigKeyVal **err_ckv);
-
-    /**
-     * @brief  Method TxUpdateProcess .
-     *
-     * @param[out]  ck_main   Contains the Pointer to ConfigkeyVal Class
-     *                         and contains the Pfc Name.
-     * @param[in]   ipc_req   Describes Pointer variable for IpcRequest Class.
-     * @param[in]   ipc_resp  Describes Pointer variable for IpcResponse Class.
-     * @param[in]   op        Decribes the resp operation .
-     * @param[in]   dmi       Describes Pointer to DalDmlIntf Class.
-     * @param[in]   ctrlr_id  Describes Controller name
-     *
-     * @retval  UPLL_RT_SUCCESS      Successfull completion.
-     * @retval  UPLL_RC_ERR_GENERIC  Failure.
-     */
-
-    upll_rc_t TxUpdateProcess(ConfigKeyVal *ck_main,
-                             IpcResponse *ipc_resp,
-                             unc_keytype_operation_t op,
-                             DalDmlIntf *dmi,
-                             controller_domain *ctrlr_dom,
-                             set<string> *affected_ctrlr_set,
-                             bool *driver_resp);
-
-    /**
-     * @brief  Method GetControllerSpan.
+     * @brief  Method GetControllerDomainSpan.
      *
      * @param[out]  ikey     Contains the Pointer to ConfigkeyVal Class
      * @param[in]   dt_type  Describes Datatype.
@@ -656,7 +612,7 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_ERR_GENERIC  Failure.
      */
 
-    upll_rc_t GetControllerSpan(ConfigKeyVal *ikey,
+    upll_rc_t GetControllerDomainSpan(ConfigKeyVal *ikey,
                          upll_keytype_datatype_t dt_type, DalDmlIntf *dmi);
 
     /**
@@ -889,6 +845,19 @@ class PolicingProfileEntryMoMgr: public MoMgrImpl {
 
     bool IsAllAttrInvalid(
         val_policingprofile_entry_t *val);
+
+    upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
+                           unc_keytype_operation_t &op);
+
+    upll_rc_t ChkProfileNameInRenameTbl(ConfigKeyVal *ctrlr_key,
+      upll_keytype_datatype_t dt_type, DalDmlIntf *dmi, const char *ctrlr_id);
+
+    upll_rc_t GetDomainsForController(
+        ConfigKeyVal *ckv_drvr,
+        ConfigKeyVal *&ctrlr_ckv,
+        DalDmlIntf *dmi);
+
+    bool IsAttributeUpdated(void *val1, void *val2);
 };
 
 typedef struct val_policingprofile_entry_ctrl {

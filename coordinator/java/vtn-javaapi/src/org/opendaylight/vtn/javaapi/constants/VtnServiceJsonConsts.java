@@ -108,6 +108,7 @@ public final class VtnServiceJsonConsts {
 	public static final String VBRIDGENAME = "vbr_name";
 	public static final String VINTERFACES = "interfaces";
 	public static final String VIFNAME = "if_name";
+	public static final String VNODEIFNAME = "vnode_if_name";
 
 	public static final String VROUTERS = "vrouters";
 	public static final String VROUTERNAME = "vrt_name";
@@ -150,25 +151,32 @@ public final class VtnServiceJsonConsts {
 	public static final String IPV6ICMPCODENUM = "ipv6icmpcodenum";
 
 	// Policing Profile
-	public static final String POLICING = "policing";
+
+	public static final String POLICINGMAP = "policingmap";
 	public static final String PROFILE = "profile";
 	public static final String PROFILES = "profiles";
-	public static final String PRFNAME = "prf_name";
-	public static final String PROFILEENTRIES = "profileentries";
+	public static final String PROFILE_NAME = "profile_name";
+	public static final String POLICINGPROFILEENTRIES = "policingprofileentries";
 
 	public static final String FLNAME = "fl_name";
-	public static final String GREENACTION = "green_action";
+	public static final String GREENACTION = "greenaction";
+	public static final String GREEN_ACTION = "green_action";
 	public static final String GAPRIORITY = "ga_priority";
 	public static final String GADSCP = "ga_dscp";
 	public static final String GADROPPRECEDENCE = "ga_drop_precedence";
 	public static final String YELLOWACTION = "yellowaction";
+	public static final String YELLOW_ACTION = "yellow_action";
 	public static final String YAPRIORITY = "ya_priority";
 	public static final String YADSCP = "ya_dscp";
 	public static final String YADROPPRECEDENCE = "ya_drop_precedence";
 	public static final String REDACTION = "redaction";
+	public static final String RED_ACTION = "red_action";
 	public static final String RAPRIORITY = "ra_priority";
 	public static final String RADSCP = "ra_dscp";
 	public static final String RADROPPRECEDENCE = "ra_drop_precedence";
+
+	// Policing Profile Entry
+	public static final String KBPS = "kbps";
 
 	// VTN Station
 	public static final String VTNSTATIONS = "vtnstations";
@@ -225,7 +233,7 @@ public final class VtnServiceJsonConsts {
 	public static final String PASS = "pass";
 	public static final String DROP = "drop";
 	public static final String REDIRECT = "redirect";
-
+	public static final String PENALTY = "penalty";
 	// Policing Map
 	public static final String OFSES = "ofses";
 	public static final String DPID = "dp_id";
@@ -512,7 +520,7 @@ public final class VtnServiceJsonConsts {
 	public static final String MACSRCADDR = "macsrcaddr";
 	public static final String MACETHERTYPE = "macethertype";
 	public static final String MACVLANTAG = "macvlantag";
-	public static final String POLICERID = "policerid";
+	public static final String POLICERID = "policer_id";
 
 	// Unknown Unicast Flooding
 	public static final String FLOODING = "flooding";
@@ -541,7 +549,7 @@ public final class VtnServiceJsonConsts {
 	public static final String ACTIONNAME = "action_name";
 	public static final String STRIPMACVLAN = "stripmacvlan";
 	public static final String FLOWENTRYACTIONS = "flowentryactions";
-	public static final String PROFILEENTRY = "profileentry";
+	public static final String POLCINGPROFILEENTRY = "policingprofileentry";
 
 	// VTerminal
 	public static final String VTERMINALNAME = "vterminal_name";
@@ -651,6 +659,7 @@ public final class VtnServiceJsonConsts {
 	public static final int VAL_5 = 5;
 	public static final int VAL_7 = 7;
 	public static final int VAL_15 = 15;
+	public static final int VAL_16 = 16;
 	public static final int VAL_32 = 32;
 	public static final int VAL_30 = 30;
 	public static final int VAL_63 = 63;
@@ -658,11 +667,14 @@ public final class VtnServiceJsonConsts {
 	public static final int VAL_255 = 255;
 
 	public static final int VAL_4095 = 4095;
+	public static final int VAL_32766 = 32766;
 	public static final int VAL_65535 = 65535;
 	public static final BigInteger BIG_VAL0 = new BigInteger("0");
 	public static final BigInteger BIG_VAL1 = new BigInteger("1");
 	public static final BigInteger BIG_VAL_4294967040 = new BigInteger(
 			"4294967040");
+	public static final BigInteger BIG_VAL_4294967295 = new BigInteger(
+			"4294967295");
 	public static final BigInteger BIG_VAL_18446744073709551999 = new BigInteger(
 			"18446744073709551999");
 	public static final BigInteger BIG_VAL_9999999999999999999 = new BigInteger(
@@ -716,6 +728,8 @@ public final class VtnServiceJsonConsts {
 	public static final int VAL_3 = 3;
 	public static final int VAL_4 = 4;
 	public static final int VAL_6 = 6;
+	public static final int VAL_8 = 8;
+	public static final int VAL_12 = 12;
 	public static final int LEN_20 = 20;
 
 	public static final String WAITING_AUDIT = "waiting_audit";
@@ -933,5 +947,27 @@ public final class VtnServiceJsonConsts {
 	public static final String EMPTY = "";
 	public static final String STRIPVLAN = "stripvlan";
 	public static final String AUDIT = "audit";
+	public static final String GREEN_YELLOW = "green_yellow";
+	public static final String RED = "red";
+	public static final String UNIT = "unit";
+	public static final String DROPPRECEDENCE = "drop_precedence";
+
+	// Path policy
+	public static final String POLICYID = "policy_id";
+	public static final String PATHPOLICY = "pathpolicy";
+	public static final String PATHPOLICIES = "pathpolicies";
+	public static final String LINK_WEIGHTS = "link_weights";
+	public static final String DISABLE_SWITCHES = "disable_switches";
+	public static final String PATHMAPENTRIES = "pathmapentries";
+	public static final String PATHMAPENTRY = "pathmapentry";
+	public static final String ENTRYID = "entry_id";
+	public static final String PATHPOLICYENTRY = "pathpolicyentry";
+	public static final String PATHPOLICYENTRIES = "pathpolicyentries";
+	public static final String AGEOUTTIME = "ageout_time";
+	public static final String POLICYTYPE = "policy_type";
+	public static final String POLICINGPROFILE = "policingprofile";
+	public static final String POLICINGPROFILES = "policingprofiles";
+	public static final String POLICINGPROFILEENTRY = "policingprofileentry";
+	public static final String VNODETYPE = "vnode_type";
 
 }

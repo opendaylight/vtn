@@ -16,6 +16,7 @@ namespace tc {
  *@brief   Reset the TC global data structure .
  */
 void TcLock::ResetTcGlobalDataOnStateTransition(void)  {
+  pfc_log_info("%s (Re)Initializing attributes", __FUNCTION__);
   pfc::core::ScopedMutex m(getGlobalLock());
 
   /* Initialize config lock  information */
@@ -28,13 +29,22 @@ void TcLock::ResetTcGlobalDataOnStateTransition(void)  {
   tc_config_lock_.is_taken = PFC_FALSE;
   /* Initialize read lock information */
   std::set<uint32_t> &sessions(tc_read_lock_.read_sessions);
-  PFC_VERIFY(tc_rwlock_.rw_owner == sessions.size() + 1);
+  //if (tc_state_lock_.current_state != TC_STOP) {
+  //  PFC_VERIFY(tc_rwlock_.rw_owner == sessions.size() + 1);
+  //}
   sessions.clear();
   tc_rwlock_.rw_owner = 1;
+  tc_rwlock_.r_owner = 1;
+  tc_rwlock_.w_owner = 0;
+  tc_rwlock_.r_db_mgmt_session = PFC_FALSE;
+  tc_rwlock_.r_launcher_session = PFC_FALSE;
   /* Initialize write lock information */
   tc_rwlock_.clearWriter();
   /* Initialize auto save data */
   tc_auto_save_.is_enable = PFC_FALSE;
+
+  /* Initialize setup_complete_done_ flag */
+  setup_complete_done_ = PFC_FALSE;
 }
 
 /**
@@ -171,7 +181,7 @@ TcLockRet TcLock::ForceAcquireConfigLock(uint32_t session_id) {
  */
 TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
   // Acquire read lock.
-  if (!tc_rwlock_.tryLock()) {
+  if (!tc_rwlock_.tryLock(session_id)) {
     return TC_LOCK_BUSY;
   }
 
@@ -180,7 +190,7 @@ TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
   std::pair<std::set<uint32_t>::iterator, bool>
     result(sessions.insert(session_id));
   if (!result.second) {
-    tc_rwlock_.unlock();
+    tc_rwlock_.unlock(session_id);
     return TC_LOCK_ALREADY_ACQUIRED;
   }
 
@@ -192,10 +202,10 @@ TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
  *@return     TC_LOCK_SUCCESS    Will be able to acquire read session.
  *@return     TC_LOCK_INVALID_UNC_STATE The lock can not be held in this state.
  */
-TcLockRet TcLock::TcAcquireReadLockForStateTransition() {
+TcLockRet TcLock::TcAcquireReadLockForStateTransition(uint32_t session_id) {
   PFC_VERIFY(tc_state_lock_.current_state != TC_STOP);
 
-  while (!tc_rwlock_.canReadLock() ||
+  while (!tc_rwlock_.canReadLock(session_id) ||
          tc_state_lock_.state_transition_in_progress) {
     tc_rwlock_.waitForRead();
 
@@ -207,7 +217,7 @@ TcLockRet TcLock::TcAcquireReadLockForStateTransition() {
   }
 
   tc_state_lock_.state_transition_in_progress = PFC_TRUE;
-  tc_rwlock_.setReader();
+  tc_rwlock_.setReader(session_id);
   return TC_LOCK_SUCCESS;
 }
 
@@ -216,10 +226,10 @@ TcLockRet TcLock::TcAcquireReadLockForStateTransition() {
  *@return     TC_LOCK_SUCCESS    Will be able to release read lock.
  *@return     TC_LOCK_NOT_ACQUIRED     When state transition no in progress .
  */
-TcLockRet TcLock::TcReleaseReadLockForStateTransition() {
+TcLockRet TcLock::TcReleaseReadLockForStateTransition(uint32_t session_id) {
   if (tc_state_lock_.state_transition_in_progress == PFC_TRUE) {
     tc_state_lock_.state_transition_in_progress = PFC_FALSE;
-    tc_rwlock_.unlock();
+    tc_rwlock_.unlock(session_id);
     return TC_LOCK_SUCCESS;
   }
   return TC_LOCK_NOT_ACQUIRED;
@@ -239,7 +249,7 @@ TcLockRet TcLock::ReleaseReadLock(uint32_t session_id) {
     return TC_LOCK_NOT_ACQUIRED;
   }
 
-  tc_rwlock_.unlock();
+  tc_rwlock_.unlock(session_id);
   return TC_LOCK_SUCCESS;
 }
 
@@ -250,6 +260,11 @@ TcLockRet TcLock::ReleaseReadLock(uint32_t session_id) {
  *@return     TC_LOCK_INVALID_UNC_STATE The lock can not be held in this state.
  */
 TcLockRet TcLock::AcquireWriteLockForAuditDriver(uint32_t session_id) {
+  while (!TcIsSetupCompleteDone()) {
+    pfc_log_info("%s Waiting for SETUP_COMPLETE to finish", __FUNCTION__);
+    usleep(5000);
+  }
+  pfc_log_info("SETUP_COMPLETE done; check for audit lock acquire");
   while (!tc_rwlock_.canWriteLock()) {
     tc_rwlock_.waitForWrite();
 
@@ -536,9 +551,27 @@ TcLock::GetLock(uint32_t session_id, TcOperation tc_operation,
     break;
   case TC_AUTO_SAVE_ENABLE:
     ret = AutoSaveEnable();
+    if (ret == TC_LOCK_SUCCESS) {
+      ret = AcquireWriteLock(session_id, TC_CLEAR_STARTUP_CONFIG);
+      if (ret != TC_LOCK_SUCCESS) {
+        AutoSaveDisable();
+      }
+    }
+    break;
+  case TC_AUTO_SAVE_DISABLE:
+    ret = AutoSaveEnable();
+    if (ret == TC_LOCK_SUCCESS) {
+      ret = AcquireWriteLock(session_id, TC_SAVE_STARTUP_CONFIG);
+      if (ret != TC_LOCK_SUCCESS) {
+        AutoSaveDisable();
+      }
+    }
+    break;
+  case TC_AUTO_SAVE_GET:
+    ret = AutoSaveEnable();
     break;
   case TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION:
-    ret = TcAcquireReadLockForStateTransition();
+    ret = TcAcquireReadLockForStateTransition(session_id);
     break;
   default:
     ret = TC_LOCK_INVALID_OPERATION;
@@ -630,11 +663,29 @@ TcLock::ReleaseLock(uint32_t session_id, uint32_t config_id,
   case TC_RELEASE_WRITE_SESSION:
     ret= ReleaseWriteLock(session_id, write_operation);
     break;
+  case TC_AUTO_SAVE_ENABLE:
+    ret= AutoSaveDisable();
+    if (ret == TC_LOCK_SUCCESS) {
+      ret = ReleaseWriteLock(session_id, TC_CLEAR_STARTUP_CONFIG);
+      if (ret != TC_LOCK_SUCCESS) {
+        AutoSaveEnable();
+      }
+    }
+    break; 
   case TC_AUTO_SAVE_DISABLE:
+    ret= AutoSaveDisable();
+    if (ret == TC_LOCK_SUCCESS) {
+      ret = ReleaseWriteLock(session_id, TC_SAVE_STARTUP_CONFIG);
+      if (ret != TC_LOCK_SUCCESS) {
+        AutoSaveEnable();
+      }
+    }
+    break;
+  case TC_AUTO_SAVE_GET:
     ret= AutoSaveDisable();
     break;
   case TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION:
-    ret = TcReleaseReadLockForStateTransition();
+    ret = TcReleaseReadLockForStateTransition(session_id);
     break;
   default:
     ret = TC_LOCK_INVALID_OPERATION;
@@ -727,5 +778,42 @@ TcSessionOperationProgress TcLock::GetSessionOperation(uint32_t session_id) {
   }
   return TC_NO_OPERATION_PROGRESS;
 }
+
+/**
+ *@brief      Set whether simultaneous read and write lock allowed or not
+ *            Option read from tc.conf simultaneous_read_write_allowed param.
+ *@param[in]  pfc_bool_t whether allowed or not
+ *@return     None
+ */
+void TcLock::TcInitWRLock(pfc_bool_t simultaneous_read_write_allowed) {
+
+  // Set session ids of DB_Mgmt and Launcher modules
+  // For these session_ids READ and WRITE are mutex
+  // Set whether simultaneous Read/Write lock allowed
+  tc_rwlock_.init(USESS_ID_DB_MGMT,
+                  USESS_ID_LAUNCHER,
+                  simultaneous_read_write_allowed); 
+}
+
+/**
+ *@brief      Set whether SETUP_COMPLETE is completed
+ *@param[in]  pfc_bool_t whether completed or not
+ *@return     None
+ */
+void TcLock::TcSetSetupComplete(pfc_bool_t is_done) {
+  pfc::core::ScopedMutex m(setup_complete_flag_lock_);
+  setup_complete_done_ = is_done;
+}
+
+/**
+ *@brief      Return whether SETUP_COMPLETE is completed
+ *@param[in]  
+ *@return     pfc_bool_t whether completed or not
+ */
+pfc_bool_t TcLock::TcIsSetupCompleteDone() {
+  pfc::core::ScopedMutex m(setup_complete_flag_lock_);
+  return setup_complete_done_;
+}
+
 }   // namespace tc
 }   // namespace unc

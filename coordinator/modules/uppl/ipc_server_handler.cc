@@ -53,7 +53,7 @@ pfc_ipcresp_t IPCServerHandler::IpcService(ServerSession &session,
     uint32_t err = physical_layer->get_physical_core()->
         get_internal_transaction_coordinator()->
         ProcessReq(session, service_id);
-    pfc_log_info("Returning from IpcService of IPCServerHandler with %d", err);
+    pfc_log_debug("Returning from IpcService of IPCServerHandler with %d", err);
     return err;
   }
 }
@@ -69,8 +69,17 @@ pfc_ipcresp_t IPCServerHandler::IpcService(ServerSession &session,
  **/
 
 uint32_t IPCServerHandler::SendEvent(ServerEvent *serv_event) {
-  uint32_t resp = serv_event->post();
-  pfc_log_info("Post Event");
+  pfc_timespec_t time_out;
+  time_out.tv_sec = 300;
+  time_out.tv_nsec = 0;
+  uint32_t resp = serv_event->setTimeout(&time_out);
+  if( resp != 0) {
+    pfc_log_info("setTimeout failed in SendEvent");
+  }
+
+  resp = serv_event->post();
+  if (resp != 0)
+    pfc_log_error("PostEvent failed with resp:%d", resp);
   return resp;
 }
 

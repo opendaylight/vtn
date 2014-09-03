@@ -24,7 +24,10 @@ namespace tc {
 TcModule::TcModule(const pfc_modattr_t *mattr)
                    : pfc::core::Module(mattr) ,
                      read_q_(NULL),
-                     audit_q_(NULL) {}
+                     audit_q_(NULL) {
+  max_failover_instance_ = 0;
+  simultaneous_read_write_allowed_ = PFC_TRUE;
+}
 
 /**
  * @brief      TcModule destructor
@@ -44,6 +47,10 @@ void TcModule::collect_db_params() {
 
   max_failover_instance_ = tc_db_block.getUint32(max_failover_instance_param,
                                                 max_failover_instance_value);
+
+  simultaneous_read_write_allowed_ = tc_db_block.getBool(
+                                         simultaneous_read_write_allowed_param,
+                                         simultaneous_read_write_allowed_value);
 }
 
 /**
@@ -61,7 +68,7 @@ pfc_bool_t TcModule::validate_tc_db(TcDbHandler* tc_db_) {
  * @brief Module Init
  */
 pfc_bool_t TcModule::init() {
-  /*Initialize Audit failure alarm*/
+  /*Initialize alarm*/
   pfc::alarm::alarm_return_code_t alarm_retval = pfc::alarm::ALM_OK;
   alarm_retval = pfc::alarm::pfc_alarm_initialize(&alarm_id);
   if (alarm_retval != pfc::alarm::ALM_OK) {
@@ -72,13 +79,13 @@ pfc_bool_t TcModule::init() {
   }
 
   // Assign Memory to task queues
-  read_q_ = new TcTaskqUtil(TC_READ_CONCURRENCY, 0);
+  read_q_ = new TcTaskqUtil(TC_READ_CONCURRENCY);
   if (PFC_EXPECT_FALSE(read_q_ == NULL)) {
     pfc_log_error("ReadQ Creation Failed");
     return PFC_FALSE;
   }
 
-  audit_q_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY, alarm_id);
+  audit_q_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY);
   if (PFC_EXPECT_FALSE(audit_q_ == NULL)) {
     pfc_log_error("AuditQ Creation Failed");
     return PFC_FALSE;
@@ -110,6 +117,9 @@ pfc_bool_t TcModule::init() {
   if (validate_tc_db(&tc_db_hdlr_) == PFC_FALSE) {
     return PFC_FALSE;
   }
+
+  tc_lock_.TcInitWRLock(simultaneous_read_write_allowed_);
+
   return PFC_TRUE;
 }
 
@@ -143,25 +153,10 @@ pfc_bool_t TcModule::HandleStart() {
  * @brief Handle Stop notification from UNC Core
  */
 pfc_bool_t TcModule::HandleStop() {
-  TcLockRet ret=
-    tc_lock_.GetLock(0,
-                    TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION,
-                    TC_WRITE_NONE);
-  if (PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS)) {
-    pfc_log_fatal("stop:Unable to Acquire State Transition Lock");
-    return PFC_FALSE;
-  }
-  tc_lock_.ResetTcGlobalDataOnStateTransition();
+  pfc_log_info("%s Stop TC", __FUNCTION__);
   tc_lock_.TcUpdateUncState(TC_STOP);
-  ret=
-      tc_lock_.ReleaseLock(0,
-                           0,
-                           TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
-                           TC_WRITE_NONE);
-  if ( PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS) ) {
-      pfc_log_fatal("stop: Unable to release Lock");
-      return PFC_FALSE;
-  }
+  tc_lock_.ResetTcGlobalDataOnStateTransition();
+  pfc_log_info("%s TC Stop completed", __FUNCTION__);
   return PFC_TRUE;
 }
 
@@ -241,6 +236,10 @@ pfc_bool_t TcModule::HandleAct(pfc_bool_t is_switch) {
     }
     return PFC_FALSE;
   }
+
+  // Set back the state to ACT
+  TcConfigOperations::SetStateChangedToSby(PFC_FALSE);
+
   ret = tc_lock_.ReleaseLock(0,
                              0,
                              TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION,
@@ -307,6 +306,14 @@ TcOperStatus TcModule::HandleAutoSaveRequests(pfc::core::ipc::ServerSession*
   if (tc_db_hdlr_ == NULL) {
     pfc_log_fatal("allocating DB handler failed");
     return TC_OPER_FAILURE;
+  }
+
+  // During Autosave operations (enable / disable), configuration
+  // changes are saved to/from startup-config.
+  // Setting timout as Infinite
+  if (oper_sess->setTimeout(NULL) != TC_OPER_SUCCESS) {
+    pfc_log_warn("HandleAutoSaveRequests:: Cannot set Infinite timeout."
+                 "Opertation may timeout");
   }
 
   TcAutoSaveOperations tc_as_oper(&tc_lock_,

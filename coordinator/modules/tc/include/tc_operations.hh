@@ -20,6 +20,7 @@
 #include <string>
 #include <list>
 #include <functional>
+#include <deque>
 
 typedef unc::tclib::TcMsgOperType  TcMsgOperType;
 
@@ -110,17 +111,22 @@ class TcOperations {
 
 
 /*
- * @brief TcConfigOperations 
+ * @brief TcConfigOperations
  *        Provides Methods to handle
- *        Config Request from User 
+ *        Config Request from User
  */
 class TcConfigOperations: public TcOperations {
  public:
   uint32_t config_id_;
+  int32_t timeout_;
+  pthread_cond_t * cond_var_;
+  pthread_mutex_t mutex_var_;
   TcConfigOperations(TcLock* tclock,
                      pfc::core::ipc::ServerSession* sess,
                      TcDbHandler* tc_db_,
                      TcChannelNameMap& unc_map_);
+  ~TcConfigOperations();
+  void operator() ();
   uint32_t TcGetMinArgCount();
   TcOperStatus TcCheckOperArgCount(uint32_t sess_arg_count);
   TcOperStatus TcValidateOperType();
@@ -132,6 +138,27 @@ class TcConfigOperations: public TcOperations {
   TcOperStatus SendAdditionalResponse(TcOperStatus);
   TcOperStatus  HandleLockRet(TcLockRet LockRet);
   TcOperStatus  SetConfigId();
+  pfc_bool_t IsConfigModeAvailable();
+
+  void SetConfigModeAvailability(pfc_bool_t status);
+  pfc_bool_t IsConfigReqQueueEmpty();
+  pfc_bool_t IsConfigAcquireAllowed();
+  void InsertConfigRequest();
+  TcConfigOperations * RetrieveConfigRequest();
+  void RemoveConfigRequest(uint32_t sess_id);
+  void HandleConfigRelease();
+  static pfc_bool_t IsStateChangedToSby();
+  static void SetStateChangedToSby(pfc_bool_t state);
+  static void   ClearConfigAcquisitionQueue();
+  TcOperStatus Dispatch();
+  TcOperStatus HandleTimedConfigAcquisition();
+ private:
+  static pfc_bool_t config_mode_available_;
+  static pfc::core::Mutex config_mode_available_lock_;
+  static std::deque<TcConfigOperations*> config_req_queue_;
+  static pfc::core::Mutex config_req_queue_lock_;
+  static pfc_bool_t state_changed_to_sby_;
+  static pfc::core::Mutex state_changed_lock_;
 };
 
 /*
@@ -188,6 +215,7 @@ class TcDbOperations: public TcOperations {
   TcOperStatus SendAdditionalResponse(TcOperStatus);
   TcOperStatus  HandleLockRet(TcLockRet LockRet);
   TcOperStatus HandleMsgRet(TcOperRet ret);
+  TcOperStatus Dispatch();
 };
 
 class TcTaskqUtil;
@@ -322,7 +350,6 @@ class TcAuditOperations: public TcOperations {
   TcOperStatus GetSessionId();
   TcOperStatus SetAuditOperationStatus();
   TcOperStatus Execute();
-  TcOperStatus SendAuditStatusNotification(int32_t alarm_id);
   pfc_bool_t  AuditTransStart();
   pfc_bool_t  AuditTransEnd();
   pfc_bool_t  AuditVote();
@@ -338,11 +365,10 @@ class TcAuditOperations: public TcOperations {
  */
 class TcTaskqUtil {
  public:
-  explicit TcTaskqUtil(uint32_t concurrency, int32_t alarm_id);
+  explicit TcTaskqUtil(uint32_t concurrency);
   ~TcTaskqUtil();
   pfc::core::TaskQueue* taskq_;
   pfc::core::Timer* timed_;
-  int32_t auditq_alarm_;
   int PostReadTimer(uint32_t session_id,
                     uint32_t timeout,
                     TcLock* tclock,
@@ -383,14 +409,13 @@ class  AuditParams : public std::unary_function < void, void > {
   TcLock* tclock_;
   TcChannelNameMap& unc_channel_map_;
   unc_keytype_ctrtype_t driver_id_;
-  int32_t alarm_id_;
 
   AuditParams(std::string controller_id,
               TcDbHandler* db_handler,
               TcLock* tclock,
               TcChannelNameMap& unc_map,
-              unc_keytype_ctrtype_t driver_id,
-              int32_t alarm_id);
+              unc_keytype_ctrtype_t driver_id);
+
   void operator() ()  {
     HandleDriverAudit();
   }

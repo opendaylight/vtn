@@ -64,9 +64,8 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 	 * Validate request JSON for Clear Alarms API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start AlarmResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of AlarmResourceValidator");
@@ -81,7 +80,7 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -114,12 +113,11 @@ public class AlarmResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = validator.isValidBigIntegerRangeString(new BigInteger(
 					requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.ALARMNO)
-							.getAsString().trim()),
-					VtnServiceJsonConsts.BIG_VAL0,
+							.getAsString()), VtnServiceJsonConsts.BIG_VAL0,
 					VtnServiceJsonConsts.BIG_VAL_9999999999999999999);
 		} else {
 			isValid = false;

@@ -172,7 +172,8 @@ rest_resp_code_t HttpClient::set_operation_type(const HttpMethod operation) {
 rest_resp_code_t HttpClient::set_request_body(const char* request_body) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(handle_ != NULL);
-  pfc_log_debug("requestbody : %s", request_body);
+  pfc_log_info("requestbody : %s", request_body);
+
 
   CURLcode curl_ret_code = curl_easy_setopt(handle_, CURLOPT_POSTFIELDS,
                                           request_body);

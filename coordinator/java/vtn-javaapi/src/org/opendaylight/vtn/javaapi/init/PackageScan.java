@@ -79,11 +79,11 @@ ses.
 				getFromJARFile(jar, VtnServiceConsts.RESOURCES);
 		} catch (FileNotFoundException e) {
 			String msg = "Java API JAR file not found: " + jar;
-			log.error(msg + ": " + e);
+			log.error(e, msg + ": " + e);
 			throw new IllegalStateException(msg, e);
 		} catch (IOException e) {
 			String msg = "Failed to load Java API JAR file: " + jar;
-			log.error(msg + ": " + e);
+			log.error(e, msg + ": " + e);
 			throw new IllegalStateException(msg, e);
 		}
 
@@ -94,7 +94,8 @@ ses.
 			try {
 				cls = Class.forName(className);
 			} catch (ClassNotFoundException e) {
-				log.warning("Failed to load resource class: " +
+				log.warning(e,
+					    "Failed to load resource class: " +
 					    className + ": " + e);
 				continue;
 			}

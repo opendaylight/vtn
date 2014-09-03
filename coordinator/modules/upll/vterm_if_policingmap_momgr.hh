@@ -102,7 +102,7 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_GENERIC          Generic Errors.
    */
   upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                              DalDmlIntf *dmi, bool restore_flag);
+                              DalDmlIntf *dmi);
 
   /**
    * @Brief This API is used to delete the record (VbrIf name with
@@ -289,7 +289,8 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_MERGE_CONFLICT  Record already avilable
    */
   upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                          ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                          ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                          upll_import_type import_type);
 
   /**
    * @Brief This API is used to get the unc key name

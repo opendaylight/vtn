@@ -62,7 +62,7 @@ UncRespCode IPCClientLogicalHandler::CheckInUseInLogical(
     pfc_log_error("Session creation to logical failed");
     err = pfc_ipcclnt_altclose(connp);
     if (err != 0) {
-      pfc_log_error("Unable to close ipc connection");
+      pfc_log_info("Unable to close ipc connection");
     }
     return UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
   }
@@ -117,9 +117,9 @@ UncRespCode IPCClientLogicalHandler::CheckInUseInLogical(
   int err1 = sess.getResponse(resp_index++, oper_type);
   int err2 = sess.getResponse(resp_index++, result_code);
   int err3 = sess.getResponse(resp_index, in_use);
-  pfc_log_debug("err1: %d, err2: %d, err3 %d, result_code %d",
-                err1, err2, err3, result_code);
   if (err1 != 0 || err2 != 0 || err3 != 0) {
+    pfc_log_info("err1: %d, err2: %d, err3 %d, result_code %d",
+                err1, err2, err3, result_code);
     pfc_log_error(
         "getResponse failed while receiving response from logical");
     return_code = UNC_UPPL_RC_ERR_LOGICAL_COMMUNICATION_FAILURE;
@@ -136,7 +136,8 @@ UncRespCode IPCClientLogicalHandler::CheckInUseInLogical(
   if (err != 0) {
     pfc_log_error("Unable to close ipc connection");
   }
-  pfc_log_debug("in_use value : %d", in_use);
+  pfc_log_info("in_use value:%d, result_code=%d, return_code=%d"
+      , in_use, result_code, return_code);
   if (return_code == UNC_RC_SUCCESS && in_use == 1)
     return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
   return return_code;

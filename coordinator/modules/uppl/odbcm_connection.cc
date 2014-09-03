@@ -59,18 +59,6 @@ ODBCManager::ODBCManager()
  **/
 ODBCManager::~ODBCManager() {
   pfc_log_info("ODBCM::~ODBCManager: Destructor to free resources");
-  /** Clear all the vector inside the map */
-  ((get_db_table_list_map_().find(UNC_DT_STARTUP))->second).clear();
-  ((get_db_table_list_map_().find(UNC_DT_CANDIDATE))->second).clear();
-  ((get_db_table_list_map_().find(UNC_DT_RUNNING))->second).clear();
-  ((get_db_table_list_map_().find(UNC_DT_IMPORT))->second).clear();
-  ((get_db_table_list_map_().find(UNC_DT_STATE))->second).clear();
-  /** Finally, clear the db_table_list_map */
-  if (!db_table_list_map_.empty())
-    db_table_list_map_.clear();
-  /**to clear the OdbcmSQLStateMap elements*/
-  ODBCMUtils::ClearOdbcmSQLStateMap();
-
   FreeingConnections(true);
   ODBCMUtils::del_semvalue();
 
@@ -83,6 +71,18 @@ ODBCManager::~ODBCManager() {
     pfc_log_info("ODBCM::ODBCManager:: Disconnect phy_conn_env_");
     phy_conn_env_ = NULL;
   }
+  /** Clear all the vector inside the map */
+  ((get_db_table_list_map_().find(UNC_DT_STARTUP))->second).clear();
+  ((get_db_table_list_map_().find(UNC_DT_CANDIDATE))->second).clear();
+  ((get_db_table_list_map_().find(UNC_DT_RUNNING))->second).clear();
+  ((get_db_table_list_map_().find(UNC_DT_IMPORT))->second).clear();
+  ((get_db_table_list_map_().find(UNC_DT_STATE))->second).clear();
+  /** Finally, clear the db_table_list_map */
+  if (!db_table_list_map_.empty())
+    db_table_list_map_.clear();
+  /**to clear the OdbcmSQLStateMap elements*/
+  ODBCMUtils::ClearOdbcmSQLStateMap();
+  pfc_log_info("ODBCM::~ODBCManager: Destructor work is completed");
 }
 /**
  * @Description : This function will return the ODBC read-write,
@@ -295,7 +295,7 @@ ODBCM_RC_STATUS ODBCManager::initialize_db_table_list_map_(void) {
 ODBCM_RC_STATUS ODBCManager::ParseConfigFile() {
   std::string conf_file_path = "";
   conf_file_path.append(UNC_MODULEDIR);
-  conf_file_path.append(ODBCM_CONF_FILE_PATH);
+  conf_file_path.append(CONF_FILE_PATH_SEP);
   conf_file_path.append(ODBCM_CONF_FILE);
   pfc::core::ConfHandle conf_handle(conf_file_path, &odbcm_cfdef);
   int32_t err = conf_handle.getError();
@@ -407,7 +407,7 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
       ODBCM_DBC_HANDLE_CHECK(conn_handle, odbc_rc);
       if (odbc_rc != ODBCM_RC_SUCCESS &&
           odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
-        pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+        pfc_log_info("ODBCM::ODBCManager::OpenDBConnection: "
             "Error in SQLSetConnectAttr");
         return ODBCM_RC_CONNECTION_ERROR;
       }
@@ -423,7 +423,7 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
   odbc_rc = SQLSetEnvAttr(phy_conn_env_, SQL_ATTR_CP_MATCH,
                           (SQLPOINTER)SQL_CP_RELAXED_MATCH, SQL_IS_INTEGER);
   if (odbc_rc != ODBCM_RC_SUCCESS && odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
-    pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+    pfc_log_info("ODBCM::ODBCManager::OpenDBConnection: "
         "Error in SQLSetEnvAttr during connec. pooling activation");
     return ODBCM_RC_CONNECTION_ERROR;
   }
@@ -449,6 +449,8 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
     pfc_log_error("ODBCM::ODBCManager::OpenDBConnection:"
         "Could not establish connection type = %d !!",
         conn_obj->get_conn_type());
+    conn_handle = NULL;
+    conn_obj->set_conn_handle(conn_handle);
     return ODBCM_RC_CONNECTION_ERROR;
   }
   /**  setting connection attributes */
@@ -484,8 +486,10 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
   ODBCM_DBC_HANDLE_CHECK(conn_handle, odbc_rc);
   if (odbc_rc != ODBCM_RC_SUCCESS &&
       odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
-    pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+    pfc_log_info("ODBCM::ODBCManager::OpenDBConnection: "
         "Error in SQLSetConnectAttr");
+    conn_handle = NULL;
+    conn_obj->set_conn_handle(conn_handle);
     return ODBCM_RC_CONNECTION_ERROR;
   }
 
@@ -494,8 +498,10 @@ ODBCM_RC_STATUS ODBCManager::OpenDBConnection(
   ODBCM_DBC_HANDLE_CHECK(conn_handle, odbc_rc);
   if (odbc_rc != ODBCM_RC_SUCCESS &&
       odbc_rc != ODBCM_RC_SUCCESS_WITH_INFO) {
-    pfc_log_debug("ODBCM::ODBCManager::OpenDBConnection: "
+    pfc_log_info("ODBCM::ODBCManager::OpenDBConnection: "
         "Error in SQLSetConnectAttr");
+    conn_handle = NULL;
+    conn_obj->set_conn_handle(conn_handle);
     return ODBCM_RC_CONNECTION_ERROR;
   }
 
@@ -553,6 +559,7 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
         db_conn = rw_nb_conn_obj_;
       } else {
         pfc_log_error("RW connection assignation failed!! conn. not available");
+        physical_layer->db_conpool_mutex_.unlock();
         return ODBCM_RC_CONNECTION_ERROR;
       }
       pfc_log_trace("RW conn is allocated and assigned for READ operation");
@@ -560,17 +567,36 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
     physical_layer->db_conpool_mutex_.unlock();
     return ODBCM_RC_SUCCESS;
   }
+
+  pfc::core::Thread *th_self = pfc::core::Thread::self();
+  uint32_t th_id = th_self->getId();
+  delete th_self;
+  th_self = NULL;
+  // finding conn with same session id exists  - debug purpose.
+  std::map<uint64_t, OdbcmConnectionHandler*>::iterator cpool_iter =
+                               conpool_inuse_map_.begin();
+  uint64_t use_session_id_ = session_id;
+  use_session_id_ = (use_session_id_ << 32) + th_id;
+  pfc_log_debug("CXN - use_session_id_ (session_id + thread_id) = %"
+                       PFC_PFMT_u64, use_session_id_);
+
+  cpool_iter = conpool_inuse_map_.find(use_session_id_);
+  if (cpool_iter != conpool_inuse_map_.end()) {
+    pfc_log_error("conn. for session_id %d th_id %d,"
+        "is already exists SHOULDNOT", session_id, th_id);
+  }
+
   //  if config id < 0 - READ operation
   if (!conpool_free_list_.empty()) {
     //  take connection from list assign to request.
     db_conn = conpool_free_list_.front();
     pfc_log_trace("Free %" PFC_PFMT_SIZE_T " RO conn(s) available in conn pool "
              "and 1 is assigned for READ operation", conpool_free_list_.size());
-    db_conn->set_using_session_id(session_id);
-    conpool_inuse_map_[session_id] = db_conn;
+    db_conn->set_using_session_id(session_id, th_id);
+    conpool_inuse_map_[db_conn->get_using_session_id()] = db_conn;
     conpool_free_list_.pop_front();  // free pool is poped
-    pfc_log_trace("Existing RO conn is assgined for request sess_id = %d",
-                  session_id);
+    pfc_log_trace("Existing RO conn is assgn. for req sess_id.thread_id = %"
+                  PFC_PFMT_u64, db_conn->get_using_session_id());
   } else {
     pfc_log_trace("Free RO conn is NOT available in conn pool");
     //  create new connection if no.of conn does not reach conn_max_limit
@@ -586,10 +612,10 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
         physical_layer->db_conpool_mutex_.unlock();
         return ODBCM_RC_CONNECTION_ERROR;
       }
-
-      conpool_inuse_map_[session_id] = db_conn;
-      pfc_log_trace("RO conn is created and assgined for request sess_id = %d",
-                    session_id);
+      db_conn->set_using_session_id(session_id, th_id);
+      conpool_inuse_map_[db_conn->get_using_session_id()] = db_conn;
+      pfc_log_trace("RO conn is created and assgined for request sess_id = %"
+                    PFC_PFMT_u64, db_conn->get_using_session_id());
     } else {
       /*put request on WAIT state using semaphore. WAIT state shall be 
       * release !SEM_UP() after any one of the read connection is freed */
@@ -607,7 +633,7 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
                 " session_id = %d, config_id = %d", session_id, config_id);
         physical_layer->db_conpool_mutex_.unlock();
         if (!ODBCMUtils::SEM_DOWN()) {
-          pfc_log_debug("entering critical section failed!");
+          pfc_log_info("entering critical section failed!");
           return ODBCM_RC_FAILED;
         }
         pfc_log_trace("SEM UP is done!! DB Connection will be assigned... ");
@@ -621,10 +647,11 @@ ODBCM_RC_STATUS ODBCManager::AssignDBConnection(
       pfc_log_trace("Free %" PFC_PFMT_SIZE_T " RO conn(s) available"
                     " in conn pool and 1 is assigned for READ operation",
                     conpool_free_list_.size());
-      conpool_inuse_map_[session_id] = db_conn;
+      db_conn->set_using_session_id(session_id, th_id);
+      conpool_inuse_map_[db_conn->get_using_session_id()] = db_conn;
       conpool_free_list_.pop_front();  // free pool is poped
-      pfc_log_trace("Freed RO conn is assgined for request sess_id = %d",
-                    session_id);
+      pfc_log_trace("Freed RO conn is assgined for request sess_id = %" PFC_PFMT_u64,
+                    db_conn->get_using_session_id());
     }
   }
   physical_layer->db_conpool_mutex_.unlock();
@@ -664,14 +691,15 @@ ODBCM_RC_STATUS ODBCManager::PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
     pfc_log_debug("Erroneous %" PFC_PFMT_SIZE_T
                   " RO Connection is present and about to free",
                   err_connx_list_.size());
-    std::list<uint32_t>::iterator err_iter;
+    std::list<uint64_t>::iterator err_iter;
     err_iter = err_connx_list_.begin();
-    std::map<uint32_t, OdbcmConnectionHandler*>::iterator cpool_iter =
+    std::map<uint64_t, OdbcmConnectionHandler*>::iterator cpool_iter =
                            conpool_inuse_map_.begin();
     for ( ; err_iter != err_connx_list_.end(); err_iter++) {
       if (!conpool_inuse_map_.empty()) {
         cpool_iter = conpool_inuse_map_.find(*err_iter);
-        pfc_log_info("error conn found in pool map is %d", session_id);
+        pfc_log_info("error conn found in pool map is %" PFC_PFMT_u64,
+             (*err_iter));
         if (cpool_iter != conpool_inuse_map_.end()) {
           SQLHDBC conn_handle = conn_obj->get_conn_handle();
           ODBCM_ROLLBACK_TRANSACTION(conn_handle);
@@ -693,13 +721,14 @@ ODBCM_RC_STATUS ODBCManager::PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
   }
   physical_layer->db_conpool_mutex_.lock();
 
-  std::map<uint32_t, OdbcmConnectionHandler*>::iterator cpool_iter =
+  std::map<uint64_t, OdbcmConnectionHandler*>::iterator cpool_iter =
                            conpool_inuse_map_.begin();
   bool process_waiting = false;
 
   if (!conpool_inuse_map_.empty()) {
-    cpool_iter = conpool_inuse_map_.find(session_id);
-    pfc_log_info("session id to find conn in pool map is %d", session_id);
+    cpool_iter = conpool_inuse_map_.find(conn_obj->get_using_session_id());
+    pfc_log_debug("session id to find conn in pool map is %" PFC_PFMT_u64,
+        conn_obj->get_using_session_id());
   } else {
     pfc_log_error("conpool_inuse_map_ is empty !!");
     cpool_iter = conpool_inuse_map_.end();
@@ -760,7 +789,9 @@ ODBCM_RC_STATUS ODBCManager::FreeingConnections(bool IsAllOrUnused) {
     std::list<OdbcmConnectionHandler*>::iterator cpoolfree_iter;
     cpoolfree_iter = conpool_free_list_.begin();
     for ( ; cpoolfree_iter != conpool_free_list_.end(); cpoolfree_iter++) {
-      delete *cpoolfree_iter;  // destructor intern calls the closeDBconnection
+      OdbcmConnectionHandler *db_conn = *cpoolfree_iter;
+      delete db_conn;  // destructor intern calls the closeDBconnection
+      db_conn = NULL;
       pfc_log_debug("Unused RO Connection is freed");
     }
     conpool_free_list_.clear();
@@ -768,15 +799,17 @@ ODBCM_RC_STATUS ODBCManager::FreeingConnections(bool IsAllOrUnused) {
 
   if (IsAllOrUnused != false) { /*All conn. freed including used one */
   pfc_log_trace("Freeing used Connections ... ");
-  std::map<uint32_t, OdbcmConnectionHandler*>::iterator cpoolinuse_iter;
+  std::map<uint64_t, OdbcmConnectionHandler*>::iterator cpoolinuse_iter;
   if (!conpool_inuse_map_.empty()) {
     pfc_log_debug("used %"PFC_PFMT_SIZE_T
                   " RO Connection is present and about to free",
                   conpool_inuse_map_.size());
     cpoolinuse_iter = conpool_inuse_map_.begin();
     for ( ; cpoolinuse_iter != conpool_inuse_map_.end(); cpoolinuse_iter++) {
-      delete (*cpoolinuse_iter).second;  // destructor intern calls
+      OdbcmConnectionHandler *db_conn = (*cpoolinuse_iter).second;
                                          // the closeDBconnection
+      delete db_conn;
+      db_conn = NULL;
       pfc_log_debug("used RO Connection is freed");
     }
     conpool_inuse_map_.clear();
@@ -836,6 +869,7 @@ ODBCM_RC_STATUS ODBCManager::CloseDBConnection(
  *                is not close it set to failure.
  **/
 ODBCM_RC_STATUS ODBCManager::CloseRwConnection() {
+  ODBCM_RC_STATUS ret_status = ODBCM_RC_SUCCESS;
   if (rw_nb_conn_obj_ != NULL) {
     SQLHDBC conn_handle = rw_nb_conn_obj_->get_conn_handle();
     /*  disconnect nb conn handle*/
@@ -845,14 +879,14 @@ ODBCM_RC_STATUS ODBCManager::CloseRwConnection() {
       odbc_rc = SQLFreeHandle(SQL_HANDLE_DBC, conn_handle);
       conn_handle = NULL;
       rw_nb_conn_obj_->set_conn_handle(NULL);
-      delete rw_nb_conn_obj_;
-      rw_nb_conn_obj_ = NULL;
       if (odbc_rc != ODBCM_RC_SUCCESS) {
         pfc_log_error("ODBCM::ODBCManager::CloseRwConnection: "
             "Error on Disconnect rw_nb_conn_handle");
-        return (ODBCM_RC_STATUS) odbc_rc;
+        ret_status = (ODBCM_RC_STATUS) odbc_rc;
       }
     }
+    delete rw_nb_conn_obj_;
+    rw_nb_conn_obj_ = NULL;
   }
   if (rw_sb_conn_obj_ != NULL) {
     SQLHDBC conn_handle = rw_sb_conn_obj_->get_conn_handle();
@@ -863,18 +897,19 @@ ODBCM_RC_STATUS ODBCManager::CloseRwConnection() {
       odbc_rc = SQLFreeHandle(SQL_HANDLE_DBC, conn_handle);
       conn_handle = NULL;
       rw_sb_conn_obj_->set_conn_handle(NULL);
-      delete rw_sb_conn_obj_;
-      rw_sb_conn_obj_ = NULL;
       if (odbc_rc != ODBCM_RC_SUCCESS) {
         pfc_log_error("ODBCM::ODBCManager::CloseRwConnection: "
             "Error on Disconnect rw_sb_conn_handle");
-        return (ODBCM_RC_STATUS) odbc_rc;
+        ret_status = (ODBCM_RC_STATUS) odbc_rc;
       }
     }
+    delete rw_sb_conn_obj_;
+    rw_sb_conn_obj_ = NULL;
   }
-  pfc_log_debug("ODBCM::ODBCManager::CloseRwConnection: "
+  if (ret_status == ODBCM_RC_SUCCESS)
+    pfc_log_debug("ODBCM::ODBCManager::CloseRwConnection: "
       "Now, the rw connections are disconnected...");
-  return ODBCM_RC_SUCCESS;
+  return ret_status;
 }
 
 /**
@@ -982,6 +1017,10 @@ ODBCM_RC_STATUS ODBCManager::initialize_odbcm_tables_column_map_(void) {
       {CTR_VALID, std::string(CTR_VALID_STR)},
       {CTR_CS_ROW_STATUS, std::string(CTR_CS_ROW_STATUS_STR)},
       {CTR_CS_ATTR, std::string(CTR_CS_ATTR_STR)},
+      {CTR_COMMIT_NUMBER, std::string(CTR_COMMIT_NUMBER_STR)},
+      {CTR_COMMIT_DATE, std::string(CTR_COMMIT_DATE_STR)},
+      {CTR_COMMIT_APPLICATION, std::string(CTR_COMMIT_APPLICATION_STR)},
+      {CTR_VALID_COMMIT_VERSION, std::string(CTR_VALID_COMMIT_VERSION_STR)},
       {DOMAIN_NAME, std::string(DOMAIN_NAME_STR)},
       {DOMAIN_TYPE, std::string(DOMAIN_TYPE_STR)},
       {DOMAIN_DESCRIPTION, std::string(DOMAIN_DESCRIPTION_STR)},

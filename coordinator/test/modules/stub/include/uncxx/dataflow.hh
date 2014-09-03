@@ -100,6 +100,8 @@ class DataflowDetail {
   int sessReadDataflow(ClientSession& sess, uint32_t& getres_pos) {
     return 1;
   }
+  bool is_flow_drop;
+  bool is_flow_redirect;
   val_df_data_flow_cmn_t *df_common;
   val_vtn_dataflow_cmn_t *vtn_df_common;
   map<UncDataflowFlowMatchType, void *> matches;
@@ -129,7 +131,13 @@ class DataflowCmn {
 
   std::string ToStr() {
     return "aa";
+
   }
+  UncDataflowReason deleteflow(DataflowCmn* nextCtrlrFlow) {
+      return UNC_DF_RES_SUCCESS;
+    }
+
+
   // Write the DataflowCmn details into session as mentioned in FD API doc
   int sessOutDataflow(ServerSession& sess, int& putresp_pos) {
     return 1;

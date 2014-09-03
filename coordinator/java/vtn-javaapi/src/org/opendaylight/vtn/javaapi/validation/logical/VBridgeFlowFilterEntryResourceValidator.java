@@ -63,20 +63,19 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 		if (resource instanceof VBridgeFlowFilterEntryResource
 				&& ((VBridgeFlowFilterEntryResource) resource).getVtnName() != null
 				&& !((VBridgeFlowFilterEntryResource) resource).getVtnName()
-						.trim().isEmpty()) {
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VBridgeFlowFilterEntryResource) resource).getVtnName()
-							.trim(), VtnServiceJsonConsts.LEN_31);
+					((VBridgeFlowFilterEntryResource) resource).getVtnName(),
+					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VBridgeFlowFilterEntryResource) resource).getVbrName() != null
 						&& !((VBridgeFlowFilterEntryResource) resource)
-								.getVbrName().trim().isEmpty()) {
+								.getVbrName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
 							((VBridgeFlowFilterEntryResource) resource)
-									.getVbrName().trim(),
-							VtnServiceJsonConsts.LEN_31);
+									.getVbrName(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -86,13 +85,13 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 						+ VtnServiceJsonConsts.FFTYPE);
 				if (((VBridgeFlowFilterEntryResource) resource).getFfType() != null
 						&& !((VBridgeFlowFilterEntryResource) resource)
-								.getFfType().trim().isEmpty()) {
+								.getFfType().isEmpty()) {
 					isValid = ((VBridgeFlowFilterEntryResource) resource)
-							.getFfType().trim()
-							.equalsIgnoreCase(VtnServiceJsonConsts.IN)
+							.getFfType().equalsIgnoreCase(
+									VtnServiceJsonConsts.IN)
 							|| ((VBridgeFlowFilterEntryResource) resource)
-									.getFfType().trim()
-									.equalsIgnoreCase(VtnServiceJsonConsts.OUT);
+									.getFfType().equalsIgnoreCase(
+											VtnServiceJsonConsts.OUT);
 				} else {
 					isValid = false;
 				}
@@ -102,11 +101,10 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 						+ VtnServiceJsonConsts.SEQNUM);
 				if (((VBridgeFlowFilterEntryResource) resource).getSeqnum() != null
 						&& !((VBridgeFlowFilterEntryResource) resource)
-								.getSeqnum().trim().isEmpty()) {
+								.getSeqnum().isEmpty()) {
 					isValid = validator.isValidRange(
 							((VBridgeFlowFilterEntryResource) resource)
-									.getSeqnum().trim(),
-							VtnServiceJsonConsts.VAL_1,
+									.getSeqnum(), VtnServiceJsonConsts.VAL_1,
 							VtnServiceJsonConsts.VAL_65535);
 				} else {
 					isValid = false;
@@ -117,22 +115,22 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				&& ((VBridgeInterfaceFlowFilterEntryResource) resource)
 						.getVtnName() != null
 				&& !((VBridgeInterfaceFlowFilterEntryResource) resource)
-						.getVtnName().trim().isEmpty()) {
+						.getVtnName().isEmpty()) {
 			// For VBridgeInterfaceFlowFilterEntryResource instance
 			isValid = validator.isValidMaxLengthAlphaNum(
 					((VBridgeInterfaceFlowFilterEntryResource) resource)
-							.getVtnName().trim(), VtnServiceJsonConsts.LEN_31);
+							.getVtnName(), VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VBRNAME);
 				if (((VBridgeInterfaceFlowFilterEntryResource) resource)
 						.getVbrName() != null
 						&& !((VBridgeInterfaceFlowFilterEntryResource) resource)
-								.getVbrName().trim().isEmpty()) {
+								.getVbrName().isEmpty()) {
 					isValid = validator
 							.isValidMaxLengthAlphaNum(
 									((VBridgeInterfaceFlowFilterEntryResource) resource)
-											.getVbrName().trim(),
+											.getVbrName(),
 									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -144,11 +142,11 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				if (((VBridgeInterfaceFlowFilterEntryResource) resource)
 						.getIfName() != null
 						&& !((VBridgeInterfaceFlowFilterEntryResource) resource)
-								.getIfName().trim().isEmpty()) {
+								.getIfName().isEmpty()) {
 					isValid = validator
 							.isValidMaxLengthAlphaNum(
 									((VBridgeInterfaceFlowFilterEntryResource) resource)
-											.getIfName().trim(),
+											.getIfName(),
 									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -160,13 +158,13 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				if (((VBridgeInterfaceFlowFilterEntryResource) resource)
 						.getFfType() != null
 						&& !((VBridgeInterfaceFlowFilterEntryResource) resource)
-								.getFfType().trim().isEmpty()) {
+								.getFfType().isEmpty()) {
 					isValid = ((VBridgeInterfaceFlowFilterEntryResource) resource)
-							.getFfType().trim()
-							.equalsIgnoreCase(VtnServiceJsonConsts.IN)
+							.getFfType().equalsIgnoreCase(
+									VtnServiceJsonConsts.IN)
 							|| ((VBridgeInterfaceFlowFilterEntryResource) resource)
-									.getFfType().trim()
-									.equalsIgnoreCase(VtnServiceJsonConsts.OUT);
+									.getFfType().equalsIgnoreCase(
+											VtnServiceJsonConsts.OUT);
 				} else {
 					isValid = false;
 				}
@@ -177,11 +175,11 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				if (((VBridgeInterfaceFlowFilterEntryResource) resource)
 						.getSeqnum() != null
 						&& !((VBridgeInterfaceFlowFilterEntryResource) resource)
-								.getSeqnum().trim().isEmpty()) {
+								.getSeqnum().isEmpty()) {
 					isValid = validator
 							.isValidRange(
 									((VBridgeInterfaceFlowFilterEntryResource) resource)
-											.getSeqnum().trim(),
+											.getSeqnum(),
 									VtnServiceJsonConsts.VAL_1,
 									VtnServiceJsonConsts.VAL_65535);
 				} else {
@@ -193,22 +191,22 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				&& ((VRouterInterfaceFlowFilterEntryResource) resource)
 						.getVtnName() != null
 				&& !((VRouterInterfaceFlowFilterEntryResource) resource)
-						.getVtnName().trim().isEmpty()) {
+						.getVtnName().isEmpty()) {
 			// For VRouterInterfaceFlowFilterEntryResource instance
 			isValid = validator.isValidMaxLengthAlphaNum(
 					((VRouterInterfaceFlowFilterEntryResource) resource)
-							.getVtnName().trim(), VtnServiceJsonConsts.LEN_31);
+							.getVtnName(), VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VRTNAME);
 				if (((VRouterInterfaceFlowFilterEntryResource) resource)
 						.getVrtName() != null
 						&& !((VRouterInterfaceFlowFilterEntryResource) resource)
-								.getVrtName().trim().isEmpty()) {
+								.getVrtName().isEmpty()) {
 					isValid = validator
 							.isValidMaxLengthAlphaNum(
 									((VRouterInterfaceFlowFilterEntryResource) resource)
-											.getVrtName().trim(),
+											.getVrtName(),
 									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -220,11 +218,11 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				if (((VRouterInterfaceFlowFilterEntryResource) resource)
 						.getIfName() != null
 						&& !((VRouterInterfaceFlowFilterEntryResource) resource)
-								.getIfName().trim().isEmpty()) {
+								.getIfName().isEmpty()) {
 					isValid = validator
 							.isValidMaxLengthAlphaNum(
 									((VRouterInterfaceFlowFilterEntryResource) resource)
-											.getIfName().trim(),
+											.getIfName(),
 									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -236,13 +234,13 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				if (((VRouterInterfaceFlowFilterEntryResource) resource)
 						.getFfType() != null
 						&& !((VRouterInterfaceFlowFilterEntryResource) resource)
-								.getFfType().trim().isEmpty()) {
+								.getFfType().isEmpty()) {
 					isValid = ((VRouterInterfaceFlowFilterEntryResource) resource)
-							.getFfType().trim()
-							.equalsIgnoreCase(VtnServiceJsonConsts.IN)
+							.getFfType().equalsIgnoreCase(
+									VtnServiceJsonConsts.IN)
 							|| ((VRouterInterfaceFlowFilterEntryResource) resource)
-									.getFfType().trim()
-									.equalsIgnoreCase(VtnServiceJsonConsts.OUT);
+									.getFfType().equalsIgnoreCase(
+											VtnServiceJsonConsts.OUT);
 				} else {
 					isValid = false;
 				}
@@ -253,11 +251,11 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 				if (((VRouterInterfaceFlowFilterEntryResource) resource)
 						.getSeqnum() != null
 						&& !((VRouterInterfaceFlowFilterEntryResource) resource)
-								.getSeqnum().trim().isEmpty()) {
+								.getSeqnum().isEmpty()) {
 					isValid = validator
 							.isValidRange(
 									((VRouterInterfaceFlowFilterEntryResource) resource)
-											.getSeqnum().trim(),
+											.getSeqnum(),
 									VtnServiceJsonConsts.VAL_1,
 									VtnServiceJsonConsts.VAL_65535);
 				} else {
@@ -267,82 +265,82 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 			setListOpFlag(false);
 		}
 		// For VTerminalInterfaceFlowFilterEntryResource instance
-				else if (resource instanceof VTerminalInterfaceFlowFilterEntryResource
-						&& ((VTerminalInterfaceFlowFilterEntryResource) resource)
+		else if (resource instanceof VTerminalInterfaceFlowFilterEntryResource
+				&& ((VTerminalInterfaceFlowFilterEntryResource) resource)
 						.getVtnName() != null
+				&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
+						.getVtnName().isEmpty()) {
+			isValid = validator.isValidMaxLengthAlphaNum(
+					((VTerminalInterfaceFlowFilterEntryResource) resource)
+							.getVtnName(), VtnServiceJsonConsts.LEN_31);
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.VTERMINALNAME);
+				if (((VTerminalInterfaceFlowFilterEntryResource) resource)
+						.getVterminalName() != null
 						&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
-						.getVtnName().trim().isEmpty()) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							((VTerminalInterfaceFlowFilterEntryResource) resource)
-							.getVtnName().trim(), VtnServiceJsonConsts.LEN_31);
-					if (isValid) {
-						setInvalidParameter(VtnServiceJsonConsts.URI
-								+ VtnServiceJsonConsts.VTERMINALNAME);
-						if (((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getVterminalName() != null
-								&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getVterminalName().trim().isEmpty()) {
-							isValid = validator
-									.isValidMaxLengthAlphaNum(
-											((VTerminalInterfaceFlowFilterEntryResource) resource)
-											.getVterminalName().trim(),
-											VtnServiceJsonConsts.LEN_31);
-						} else {
-							isValid = false;
-						}
-					}
-					if (isValid) {
-						setInvalidParameter(VtnServiceJsonConsts.URI
-								+ VtnServiceJsonConsts.IFNAME);
-						if (((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getIfName() != null
-								&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getIfName().trim().isEmpty()) {
-							isValid = validator
-									.isValidMaxLengthAlphaNum(
-											((VTerminalInterfaceFlowFilterEntryResource) resource)
-											.getIfName().trim(),
-											VtnServiceJsonConsts.LEN_31);
-						} else {
-							isValid = false;
-						}
-					}
-					if (isValid) {
-						setInvalidParameter(VtnServiceJsonConsts.URI
-								+ VtnServiceJsonConsts.FFTYPE);
-						if (((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getFfType() != null
-								&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getFfType().trim().isEmpty()) {
-							isValid = ((VTerminalInterfaceFlowFilterEntryResource) resource)
-									.getFfType().trim()
-									.equalsIgnoreCase(VtnServiceJsonConsts.IN)
-									|| ((VTerminalInterfaceFlowFilterEntryResource) resource)
-									.getFfType().trim()
-									.equalsIgnoreCase(VtnServiceJsonConsts.OUT);
-						} else {
-							isValid = false;
-						}
-					}
-					if (isValid) {
-						setInvalidParameter(VtnServiceJsonConsts.URI
-								+ VtnServiceJsonConsts.SEQNUM);
-						if (((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getSeqnum() != null
-								&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
-								.getSeqnum().trim().isEmpty()) {
-							isValid = validator
-									.isValidRange(
-											((VTerminalInterfaceFlowFilterEntryResource) resource)
-													.getSeqnum().trim(),
-													VtnServiceJsonConsts.VAL_1,
-													VtnServiceJsonConsts.VAL_65535);
-						} else {
-							isValid = false;
-						}
-					}
-					setListOpFlag(false);
+								.getVterminalName().isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									((VTerminalInterfaceFlowFilterEntryResource) resource)
+											.getVterminalName(),
+									VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
 				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.IFNAME);
+				if (((VTerminalInterfaceFlowFilterEntryResource) resource)
+						.getIfName() != null
+						&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
+								.getIfName().isEmpty()) {
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									((VTerminalInterfaceFlowFilterEntryResource) resource)
+											.getIfName(),
+									VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.FFTYPE);
+				if (((VTerminalInterfaceFlowFilterEntryResource) resource)
+						.getFfType() != null
+						&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
+								.getFfType().isEmpty()) {
+					isValid = ((VTerminalInterfaceFlowFilterEntryResource) resource)
+							.getFfType().equalsIgnoreCase(
+									VtnServiceJsonConsts.IN)
+							|| ((VTerminalInterfaceFlowFilterEntryResource) resource)
+									.getFfType().equalsIgnoreCase(
+											VtnServiceJsonConsts.OUT);
+				} else {
+					isValid = false;
+				}
+			}
+			if (isValid) {
+				setInvalidParameter(VtnServiceJsonConsts.URI
+						+ VtnServiceJsonConsts.SEQNUM);
+				if (((VTerminalInterfaceFlowFilterEntryResource) resource)
+						.getSeqnum() != null
+						&& !((VTerminalInterfaceFlowFilterEntryResource) resource)
+								.getSeqnum().isEmpty()) {
+					isValid = validator
+							.isValidRange(
+									((VTerminalInterfaceFlowFilterEntryResource) resource)
+											.getSeqnum(),
+									VtnServiceJsonConsts.VAL_1,
+									VtnServiceJsonConsts.VAL_65535);
+				} else {
+					isValid = false;
+				}
+			}
+			setListOpFlag(false);
+		}
 		LOG.trace("Complete VBridgeFlowFilterEntryResourceValidator#validateUri()");
 		return isValid;
 	}
@@ -353,9 +351,8 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 	 * VrouterInterfaceFlowFilterEntry API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VBridgeFlowFilterEntryResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VBridgeFlowFilterEntryResourceValidator");
@@ -380,13 +377,13 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 			if (method.equals(VtnServiceConsts.PUT)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.PUT)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -419,7 +416,7 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 		// VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
 		// isValid = validator.isValidMaxLengthAlphaNum(requestBody
 		// .getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-		// .getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+		// .getAsString(), VtnServiceJsonConsts.LEN_31);
 		// }
 
 		// validation for key: targetdb(optional)
@@ -435,7 +432,7 @@ public class VBridgeFlowFilterEntryResourceValidator extends
 					&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 							.getAsString() != null
 					&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString()

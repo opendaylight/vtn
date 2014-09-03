@@ -120,7 +120,7 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
   std::list < std::vector <TableAttrSchema> >::iterator iter_list;
   /** Check the requested row already exists in database */
   status = IsRowExists(db_name, db_table_schema, conn_obj);
-  pfc_log_info("ODBCM::ODBCManager::CreateOneRow: IsRowExists "
+  pfc_log_debug("ODBCM::ODBCManager::CreateOneRow: IsRowExists "
     "returns: %s", ODBCMUtils::get_RC_Details(status).c_str());
   if (status != ODBCM_RC_ROW_EXISTS &&
       status != ODBCM_RC_ROW_NOT_EXISTS &&
@@ -166,7 +166,7 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
         status = ODBCM_RC_PKEY_VIOLATION;
         break;
       case DELETED:
-        pfc_log_debug("ODBCM::ODBCManager::CreateOneRow: "
+        pfc_log_info("ODBCM::ODBCManager::CreateOneRow: "
                       "create row which is already exists but deleted in"
                       "previous transaction, clear will be called and "
                       "row creation will be allowed ");
@@ -273,6 +273,7 @@ ODBCM_RC_STATUS ODBCManager::CreateOneRow(unc_keytype_datatype_t db_name,
                          query_processor);
       return status;
     }
+    PHY_SQLEXEC_LOCK();
     status = query_processor->ExecuteEditDBQuery(
               CREATEONEROW, create_stmt);
     if (status == ODBCM_RC_SUCCESS) {
@@ -446,6 +447,7 @@ ODBCM_RC_STATUS ODBCManager::DeleteOneRow(unc_keytype_datatype_t db_name,
                              query_processor);
       return status;
     }
+    PHY_SQLEXEC_LOCK();
     /** Execute the prepared statement to done the delete one row */
     status = query_processor->ExecuteEditDBQuery(
               DELETEONEROW, delete_stmt);
@@ -526,17 +528,17 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
 
   std::list < std::vector <TableAttrSchema> >& rlist =
       db_table_schema.get_row_list();
-  pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: "
+  pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
       "IsRowExists returns: %s",
       ODBCMUtils::get_RC_Details(status).c_str());
   if (status == ODBCM_RC_ROW_EXISTS && db_name == UNC_DT_CANDIDATE) {
     CsRowStatus rs_value = (CsRowStatus)db_table_schema.db_return_status_;
-    if (rs_value == DELETED) {
+    if (rs_value == DELETED && IsInternal == false) {
       pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: Row exists with"
         "DELETED state so ClearOneRow will be called");
       ODBCM_RC_STATUS status = ClearOneRow(db_name, db_table_schema, conn_obj);
       if (status != ODBCM_RC_SUCCESS) {
-        pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: "
+        pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: "
            "ClearOneRow is not succeeded, update not continued");
         status = ODBCM_RC_INVALID_DB_OPERATION;
         /** Clearonerow is failed - createonerow is not continued */
@@ -616,7 +618,7 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
       iter_vector++;
     }
     if ((*iter).size() < pkey_size) {
-      pfc_log_debug("ODBCM::ODBCManager::UpdateOneRow: primary keys"
+      pfc_log_info("ODBCM::ODBCManager::UpdateOneRow: primary keys"
                    "may not be in attributes_vector");
       status = ODBCM_RC_ERROR_IN_FRAMEQUERY;
       /* Freeing all allocated memory */
@@ -674,12 +676,12 @@ ODBCM_RC_STATUS ODBCManager::UpdateOneRow(unc_keytype_datatype_t db_name,
                              query_processor);
       return status;
     }
+    PHY_SQLEXEC_LOCK();
     status = query_processor->ExecuteEditDBQuery(
-              CREATEONEROW, update_stmt);
+              UPDATEONEROW, update_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
       ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
-      pfc_log_info("ODBCM::ODBCManager::UpdateOneRow:row is updated");
     } else {
       /** Rollback all active transactions on this connection*/
       ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
@@ -729,6 +731,15 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
       db_table_schema.get_row_list();
   /** iterate all rows in vector */
 
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::GetOneRow: modify to RUNNING");
+    }
+  }
   /** Create query_factory and query processor objects */
   QueryFactory    *query_factory    = NULL;
   ODBCM_CREATE_OBJECT(query_factory, QueryFactory);
@@ -831,8 +842,10 @@ ODBCM_RC_STATUS ODBCManager::GetOneRow(
                              query_processor);
       return status;
     }
+    PHY_SQLEXEC_LOCK();
     /** Execute the ReadDBQuery with the above statement */
     status = query_processor->ExecuteReadDBQuery(GETONEROW, read_stmt);
+    ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
     if (status == ODBCM_RC_CONNECTION_ERROR) {
       err_connx_list_.push_back(conn_obj->get_using_session_id());
     }
@@ -994,12 +1007,13 @@ ODBCM_RC_STATUS ODBCManager::ClearOneRow(unc_keytype_datatype_t db_name,
                              query_processor);
       return status;
     }
+    PHY_SQLEXEC_LOCK();
     status = query_processor->ExecuteEditDBQuery(
             CLEARONEROW, clearone_stmt);
     if (status == ODBCM_RC_SUCCESS) {
       /** Commit all active transactions on this connection*/
       ODBCM_END_TRANSACTION(rw_conn_handle, SQL_COMMIT, status);
-      pfc_log_info("ODBCM::ODBCManager::ClearOneRow:row is cleared");
+      pfc_log_debug("ODBCM::ODBCManager::ClearOneRow:row is cleared");
     } else {
       /** Rollback all active transactions on this connection*/
       ODBCM_END_TRANSACTION(rw_conn_handle, SQL_ROLLBACK, status);
@@ -1052,6 +1066,16 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
   DBVarbind       *db_varbind       = NULL;
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
+
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::IsRowExist:modify db name to RUNNING");
+    }
+  }
 
   /** func. ptr for ISROWEXISTS to construct query in queyfactory */
   query_factory->SetOperation(ISROWEXISTS);
@@ -1156,11 +1180,12 @@ ODBCM_RC_STATUS ODBCManager::IsRowExists(
                        query_processor);
     return status;
   }
-
+  PHY_SQLEXEC_LOCK(); 
   /** Execute the prepared statement using query
    * string from queryfactory */
   status  = query_processor->ExecuteGroupOperationQuery(ISROWEXISTS,
-                                                        rowexists_stmt); 
+                                                        rowexists_stmt);
+  ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
   if (status == ODBCM_RC_CONNECTION_ERROR) {
     err_connx_list_.push_back(conn_obj->get_using_session_id());
   }
@@ -1259,6 +1284,15 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
   pfc_log_debug("ODBCM::ODBCManager: GetBulkRows: "
     "Request with max_repetition_count: %d, op_type: %d",
     max_repetition_count, op_type);
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::GetBulkRow:modify db name to RUNNING");
+    }
+  }
 
   /** Invoke query factory method to generate the query */
   getbulk_query = (query_factory->*query_factory->GetBulkRowQuery)
@@ -1348,8 +1382,10 @@ ODBCM_RC_STATUS ODBCManager::GetBulkRows(
                        query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   /** Execute the ReadDBQuery with the above statement */
   status = query_processor->ExecuteReadDBQuery(GETBULKROWS, read_stmt);
+  ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
   if (status == ODBCM_RC_CONNECTION_ERROR) {
     err_connx_list_.push_back(conn_obj->get_using_session_id());
   }
@@ -1516,6 +1552,15 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
 
   query_factory->SetOperation(GETSIBLINGCOUNT);
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::GetSibCnt: modify db name to RUNNING");
+    }
+  }
   /** Construct query in query factory and return here */
   QUERY = (query_factory->*query_factory->GetQuery)(db_name, db_table_schema);
   if (QUERY.empty()) {
@@ -1587,8 +1632,10 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
       return status;
     }
 
+    PHY_SQLEXEC_LOCK(); 
     status = query_processor->ExecuteReadDBQuery(
               GETSIBLINGCOUNT, stmt);
+    ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
     if (status != ODBCM_RC_SUCCESS) {
       pfc_log_debug("ODBCM::ODBCManager::GetSiblingCount: "
         "ExecuteReadDBQuery: status %s",
@@ -1663,6 +1710,16 @@ ODBCM_RC_STATUS ODBCManager::GetRowCount(
   ODBCM_CREATE_OBJECT(query_processor, QueryProcessor);
 
   query_factory->SetOperation(GETROWCOUNT);
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::GetRowCount:"
+                   " modify db name to RUNNING");
+    }
+  }
   /** Construct query in query factory and return here */
   query = (query_factory->*query_factory->GetCountQuery)
                     (db_name, table_name);
@@ -1675,9 +1732,11 @@ ODBCM_RC_STATUS ODBCManager::GetRowCount(
                            query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   /** Execute the query */
   status = query_processor->ExecuteQueryDirect(
             GETROWCOUNT, query, stmt);
+  ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
   if (status != ODBCM_RC_SUCCESS) {
     pfc_log_debug("ODBCM::ODBCManager::GetRowCount: "
       "ExecuteQueryDirect: status %s",
@@ -1830,8 +1889,10 @@ ODBCM_RC_STATUS ODBCManager::GetModifiedRows(
                        query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   status = query_processor->ExecuteReadDBQuery(
                                                GETMODIFIEDROWS, get_stmt);
+  ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
   if (status != ODBCM_RC_SUCCESS) {
     if (status != ODBCM_RC_RECORD_NOT_FOUND)
       pfc_log_error("ODBCM::ODBCManager::GetModifiedRows: "
@@ -1998,6 +2059,16 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
   /**set function ptr for GETSIBLINGCOUNT operation*/
   query_factory->SetOperation(GETSIBLINGCOUNT_FILTER);
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::GetSiblingCount filter:"
+                    "modify db name to RUNNING");
+    }
+  }
   /** Construct query in query factory and return here */
   QUERY = (query_factory->*query_factory->GetFilterCountQuery)
             (db_name, db_table_schema, filter_operators);
@@ -2070,8 +2141,10 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingCount(
                              query_processor);
       return status;
     }
+    PHY_SQLEXEC_LOCK(); 
     status = query_processor->ExecuteReadDBQuery(
               GETSIBLINGCOUNT_FILTER, stmt);
+    ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
     if (status == ODBCM_RC_CONNECTION_ERROR) {
       err_connx_list_.push_back(conn_obj->get_using_session_id());
     }
@@ -2176,6 +2249,15 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
   ODBCM_CREATE_OBJECT(db_varbind, DBVarbind);
 
   query_factory->SetOperation(GETSIBLINGROWS);
+  if (db_name == UNC_DT_STARTUP) {
+    // check startup validity , if not valid, read from running
+    PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+    PhysicalCore* physical_core = physical_layer->get_physical_core();
+    if (!physical_core->getStartupValidStatus()) {
+      db_name = UNC_DT_RUNNING;
+      pfc_log_debug("ODBCM::ODBCManager::GetSiblingRows: modify db to RUNNING");
+    }
+  }
   /** construct query in query factory and return here */
   QUERY = (query_factory->*query_factory->GetSiblingFilterQuery)
     (db_name, db_table_schema, max_repetition_count, filter_operators, op_type);
@@ -2275,9 +2357,11 @@ ODBCM_RC_STATUS ODBCManager::GetSiblingRows(
                        query_processor);
     return status;
   }
+  PHY_SQLEXEC_LOCK(); 
   /** Execute the ReadDBQuery with the above statement */
   status = query_processor->ExecuteReadDBQuery(
                                                GETSIBLINGROWS, get_stmt);
+  ODBCM_ROLLBACK_TRANSACTION(ro_conn_handle);
   if (status == ODBCM_RC_CONNECTION_ERROR) {
     err_connx_list_.push_back(conn_obj->get_using_session_id());
   }

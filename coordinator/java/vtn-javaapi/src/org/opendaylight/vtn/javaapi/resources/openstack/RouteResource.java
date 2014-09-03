@@ -19,7 +19,6 @@ import org.opendaylight.vtn.javaapi.RestResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -95,7 +94,7 @@ public class RouteResource extends AbstractResource {
 	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#delete()
 	 */
 	@Override
-	public int delete() throws VtnServiceException {
+	public int delete() {
 		LOG.trace("Start RoutesResource#delete()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -174,7 +173,7 @@ public class RouteResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
 		} finally {
@@ -183,7 +182,7 @@ public class RouteResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -233,7 +232,7 @@ public class RouteResource extends AbstractResource {
 	private String convertRouteId(String osRouteId) {
 		final String[] routeId = osRouteId.split(VtnServiceConsts.HYPHEN);
 		String staticIpRouteId = null;
-		if (routeId.equals(VtnServiceConsts.DEFAULT_IP)) {
+		if (routeId[2].equals(VtnServiceConsts.DEFAULT_IP)) {
 			staticIpRouteId = routeId[0] + VtnServiceConsts.HYPHEN + routeId[1]
 					+ VtnServiceConsts.HYPHEN + VtnServiceConsts.ZERO;
 		} else {
@@ -260,7 +259,7 @@ public class RouteResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
@@ -274,7 +273,7 @@ public class RouteResource extends AbstractResource {
 				staticRouteBean.setRouteName(getRouteId());
 				if (new StaticRouteDao().isStaticRouteFound(connection,
 						staticRouteBean)) {
-					notFoundStatus = true;
+					resourceFound = true;
 				} else {
 					createErrorInfo(
 							UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -298,6 +297,6 @@ public class RouteResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 }

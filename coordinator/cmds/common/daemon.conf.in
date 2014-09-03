@@ -123,6 +123,53 @@ rlimit
 #
 ipc_event
 {
+	# How long, in milliseconds, an IPC event listener task thread
+	# should wait for a new task.
+	#
+	# When an IPC event listener thread becomes idle, it will wait for
+	# a new event at most this value.
+	#
+	# Default is 1000 milliseconds.
+%IPCEVENT_IDLE_TIMEOUT_COMM%	idle_timeout	= %IPCEVENT_IDLE_TIMEOUT%;
+
+	# Maximum number of event listener task threads.
+	#
+	# Default value is 32.
+%IPCEVENT_MAXTHREADS_COMM%	maxthreads	= %IPCEVENT_MAXTHREADS%;
+
+	# Interval, in milliseconds, between attempts to reconnect to the
+	# IPC server.
+	#
+	# The IPC client library tries to establish the connection to the
+	# IPC server asynchronously when an IPC event handler is registered.
+	# If it fails to connect, it will try again periodically until the
+	# connection is established.
+	#
+	# Default value is 60000 milliseconds.
+%IPCEVENT_CONN_INTERVAL_COMM%	conn_interval	= %IPCEVENT_CONN_INTERVAL%;
+
+	# Interval, in milliseconds, between keep-alive probes on remote
+	# session.
+	#
+	# The IPC client library sends keep-alive probe to the remote IPC
+	# event listener session periodically, in order to detect the server
+	# down.
+	#
+	# Default value is 30000 milliseconds.
+%IPCEVENT_KEEP_INTERVAL_COMM%	keep_interval	= %IPCEVENT_KEEP_INTERVAL%;
+
+	# How long, in milliseconds, the IPC client will wait for the response
+	# of a keep-alive probe.
+	#
+	# Default value is 10000 milliseconds.
+%IPCEVENT_KEEP_TIMEOUT_COMM%	keep_timeout	= %IPCEVENT_KEEP_TIMEOUT%;
+
+	# How long, in milliseconds, the IPC client will wait for the
+	# completion of one I/O transaction.
+	#
+	# Default value is 10000 milliseconds.
+%IPCEVENT_TIMEOUT_COMM%	timeout		= %IPCEVENT_TIMEOUT%;
+
 	# Determine whether cancellable client sessions should be canceled
 	# on IPC channel down event or not.
 	auto_cancel	= true;

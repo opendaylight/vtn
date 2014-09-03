@@ -56,14 +56,14 @@ public class SessionResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.SESSIONID);
 		if (resource instanceof SessionResource
 				&& ((SessionResource) resource).getSessionId() != null
-				&& !((SessionResource) resource).getSessionId().trim()
-						.isEmpty()) {
+				&& !((SessionResource) resource).getSessionId().isEmpty()) {
 			/*
-			 * if (Long.parseLong(((SessionResource) resource).getSessionId()
-			 * .trim()) >= 0) { isValid = true; }
+			 * if (Long.parseLong(((SessionResource) resource).getSessionId() )
+			 * >= 0) { isValid = true; }
 			 */
-			isValid = validator.isValidRange(((SessionResource) resource)
-					.getSessionId().trim(), VtnServiceJsonConsts.LONG_VAL_1,
+			isValid = validator.isValidRange(
+					((SessionResource) resource).getSessionId(),
+					VtnServiceJsonConsts.LONG_VAL_1,
 					VtnServiceJsonConsts.LONG_VAL_4294967295);
 			setListOpFlag(false);
 		} else if (resource instanceof SessionsResource) {
@@ -78,9 +78,8 @@ public class SessionResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Create Session API and List Sessions API.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start SessionResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of SessionResourceValidator");
@@ -125,7 +124,7 @@ public class SessionResourceValidator extends VtnServiceValidator {
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
 						.getAsString() != null
 				&& !requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = validator.isValidOperation(requestBody);
 		}
 		LOG.trace("Complete SessionResourceValidator#validateGet()");
@@ -155,10 +154,10 @@ public class SessionResourceValidator extends VtnServiceValidator {
 							.getAsString() != null
 					&& !session
 							.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(session
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_72);
+						.getAsString(), VtnServiceJsonConsts.LEN_72);
 			}
 			// validation for mandatory key: ipaddr
 			if (isValid) {
@@ -168,10 +167,9 @@ public class SessionResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.IPADDR).getAsString() != null
 						&& !session
 								.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidIpV4(session
-							.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-							.getAsString().trim());
+								.getAsString().isEmpty()) {
+					isValid = validator.isValidIpV4(session.getAsJsonPrimitive(
+							VtnServiceJsonConsts.IPADDR).getAsString());
 				} else {
 					isValid = false;
 				}
@@ -185,12 +183,13 @@ public class SessionResourceValidator extends VtnServiceValidator {
 						&& !session
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.LOGIN_NAME)
-								.getAsString().trim().isEmpty()) {
-					isValid = validator.isValidMaxLength(
-							session.getAsJsonPrimitive(
-									VtnServiceJsonConsts.LOGIN_NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_32);
+								.getAsString().isEmpty()) {
+					isValid = validator
+							.isValidMaxLength(
+									session.getAsJsonPrimitive(
+											VtnServiceJsonConsts.LOGIN_NAME)
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_32);
 				}
 			}
 			// validation for key: username
@@ -202,10 +201,10 @@ public class SessionResourceValidator extends VtnServiceValidator {
 						&& !session
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.USERNAME)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(session
 							.getAsJsonPrimitive(VtnServiceJsonConsts.USERNAME)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_32);
+							.getAsString(), VtnServiceJsonConsts.LEN_32);
 				} else {
 					requestBody.getAsJsonObject(VtnServiceJsonConsts.SESSION)
 							.remove(VtnServiceJsonConsts.USERNAME);
@@ -223,16 +222,16 @@ public class SessionResourceValidator extends VtnServiceValidator {
 								.getAsString() != null
 						&& !session
 								.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = session
 							.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-							.getAsString().trim()
+							.getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.WEBAPI)
 							|| session
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.TYPE)
 									.getAsString()
-									.trim()
+
 									.equalsIgnoreCase(
 											VtnServiceJsonConsts.WEBUI);
 				} else {
@@ -252,10 +251,10 @@ public class SessionResourceValidator extends VtnServiceValidator {
 								.getAsString() != null
 						&& !session
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INFO)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLength(session
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INFO)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_63);
+							.getAsString(), VtnServiceJsonConsts.LEN_63);
 				}
 			}
 		}

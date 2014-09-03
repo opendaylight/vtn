@@ -32,6 +32,7 @@ class SystemStateChangeRequest:public ITCReq  {
 
   private:
   UncRespCode SendCandidateInfoToLogical(OdbcmConnectionHandler *db_conn);
+  void ClearVector(vector<void *> vect_ctr_key, vector<void *> vect_ctr_val);
 };
 }  // namespace uppl
 }  // namespace unc

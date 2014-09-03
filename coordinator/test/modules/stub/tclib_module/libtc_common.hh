@@ -75,6 +75,11 @@ class TcServerSessionUtils {
       uint32_t index,
       uint32_t* data);
 
+   static TcUtilRet get_uint64(
+          pfc::core::ipc::ServerSession* ssess,
+          uint32_t index,
+          uint64_t* data);
+
   static TcUtilRet get_uint8(
       pfc::core::ipc::ServerSession* ssess,
       uint32_t index,
@@ -94,6 +99,10 @@ class TcServerSessionUtils {
   static TcUtilRet set_uint32(
       pfc::core::ipc::ServerSession* ssess,
       uint32_t data);
+
+  static TcUtilRet set_uint64(
+          pfc::core::ipc::ServerSession* ssess,
+          uint64_t data);
 
   static TcUtilRet set_uint8(
       pfc::core::ipc::ServerSession* ssess,
@@ -164,6 +173,11 @@ class TcClientSessionUtils {
       pfc::core::ipc::ClientSession* csess,
       uint32_t index,
       uint32_t* data);
+
+  static TcUtilRet get_uint64(
+          pfc::core::ipc::ClientSession* csess,
+          uint32_t index,
+          uint64_t* data);
 
   static TcUtilRet get_uint8(
       pfc::core::ipc::ClientSession* csess,

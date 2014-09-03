@@ -56,6 +56,7 @@ class IPCConnectionManager {
   void addControllerToAuditList(string);
   UncRespCode removeControllerFromAuditList(string);
   pfc_bool_t IsControllerInAudit(string controller_name);
+  UncRespCode GetDriverPresence(uint32_t ctr_type);
   uint32_t StartNotificationTimer(OdbcmConnectionHandler *db_conn,
                                   string controller_name);
   void setTimeOutId(string controller_name, uint32_t notfn_timer_id) {

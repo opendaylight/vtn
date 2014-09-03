@@ -110,6 +110,8 @@ class TcModule : public pfc::core::Module, public UncStateHandler {
   std::string dsn_name;
   /*Max Failover instance*/
   uint32_t max_failover_instance_;
+  /* Simultaneous read and write lock allowed? */
+  pfc_bool_t simultaneous_read_write_allowed_;
 };
 }  //  namespace tc
 }  //  namespace unc

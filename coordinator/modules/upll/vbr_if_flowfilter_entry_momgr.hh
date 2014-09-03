@@ -9,6 +9,7 @@
 
 #ifndef MODULES_UPLL_VBR_IF_FLOWFILTER_ENTRY_MOMGR_HH_
 #define MODULES_UPLL_VBR_IF_FLOWFILTER_ENTRY_MOMGR_HH_
+
 #include <string>
 #include <set>
 #include "momgr_impl.hh"
@@ -98,7 +99,7 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
     * @retval  UPLL_RC_ERR_INSTANCE_EXISTS Instance does Not exist
     */
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
-                                DalDmlIntf *dmi, bool restore_flag = false);
+                                DalDmlIntf *dmi);
     /**
     * @brief  Method used for DeleteMo  Operation.
 
@@ -241,7 +242,8 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
     */
 
     upll_rc_t MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
-                            ConfigKeyVal *ikey, DalDmlIntf *dmi);
+                            ConfigKeyVal *ikey, DalDmlIntf *dmi,
+                            upll_import_type import_type);
     /**
     * @brief  Allocates Memory for the Incoming Pointer to the Class.
 
@@ -446,11 +448,6 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
                         ConfigKeyVal *key,
                         DalDmlIntf *dmi,
                         const char *ctrlr_id);
-#if 0
-    upll_rc_t TxVote(unc_key_type_t keytype,
-                     DalDmlIntf *dmi,
-                     ConfigKeyVal **err_ckv);
-#endif
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
                                         uint32_t session_id,
                                         uint32_t config_id,
@@ -520,8 +517,38 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
     upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
           DalDmlIntf *dmi,
           IpcReqRespHeader *req);
+  /**
+   * @brief     Perform validation on Redirection and NetworkMonitor attributes
+   *            during commit operation
+   *
+   * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  op                       Operation name.
+   * @param[in]  dt_type                  Specifies the configuration
+   *                                      CANDIDATE/RUNNING
+   * @param[in]  keytype                  Specifies the keytype
+   * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
+   * @param[out] not_send_to_drv          Decides whether the configuration needs
+   *                                      to be sent to controller or not
+   * @param[in]  audit_update_phase       Specifies whether the phase is commit
+   *                                      or audit,
+   *                                      true - audit / false - commit
+   *
+   * @retval  UPLL_RC_SUCCESS             Completed successfully.
+   * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
+   * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
+   * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
+   *
+   */
+   upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+      ConfigKeyVal *ck_old,
+      unc_keytype_operation_t op,
+      upll_keytype_datatype_t dt_type,
+      unc_key_type_t keytype,
+      DalDmlIntf *dmi,
+      bool *not_send_to_drv,
+      bool audit_update_phase);
 
- public:
     VbrIfFlowFilterEntryMoMgr();
     ~VbrIfFlowFilterEntryMoMgr() {
       for (int i = 0; i < ntable; i++) {
@@ -531,6 +558,38 @@ class VbrIfFlowFilterEntryMoMgr : public MoMgrImpl {
       }
       delete[] table;
     }
+#if 0
+  upll_rc_t SendInterfaceRequestToDriver(ConfigKeyVal *ck_main,
+    ConfigKeyVal *nreq, unc_keytype_operation_t op, controller_domain_t ctrlr_dom,
+    upll_keytype_datatype_t vext_datatype, DalDmlIntf *dmi,
+    uint32_t session_id, uint32_t config_id,
+    uint8_t db_flag, set<string> *affected_ctrlr_set, bool &ipc_result);
+#endif
+  upll_rc_t SendInterfaceRequestToDriver(
+      ConfigKeyVal *ckv_cand, ConfigKeyVal *ckv_running,
+      unc_keytype_operation_t op, upll_keytype_datatype_t vext_datatype,
+      controller_domain_t ctrlr_dom, DalDmlIntf *dmi,
+      uint32_t session_id, uint32_t config_id,
+      uint8_t db_flag, set<string> *affected_ctrlr_set, bool &ipc_result);
+
+#if 0
+  upll_rc_t SendInterfaceAuditRequestToDriver(
+    ConfigKeyVal *ckv_driver_req, ConfigKeyVal *ckv_audit_db,
+    DalDmlIntf *dmi, upll_keytype_datatype_t vext_datatype,
+    controller_domain_t ctrlr_dom, IpcResponse &ipc_response,
+    uint32_t session_id, uint32_t config_id, uint8_t db_flag,
+    bool &ipc_result, unc_keytype_operation_t op);
+#endif
+  upll_rc_t SendInterfaceAuditRequestToDriver(
+      ConfigKeyVal *ckv_running, ConfigKeyVal *ckv_audit,
+      unc_keytype_operation_t op, upll_keytype_datatype_t vext_datatype,
+      controller_domain_t ctrlr_dom, DalDmlIntf *dmi,
+      uint32_t session_id, uint32_t config_id,
+      uint8_t db_flag, IpcResponse &ipc_response);
+
+  upll_rc_t HandleAuditDriverIpcError(uuc::UpdateCtrlrPhase phase,
+    IpcResponse ipc_response, DalDmlIntf *dmi,
+    ConfigKeyVal *ckv_running_db, ConfigKeyVal **err_ckv);
 };
 }  // namespace kt_momgr
 }  // namespace upll

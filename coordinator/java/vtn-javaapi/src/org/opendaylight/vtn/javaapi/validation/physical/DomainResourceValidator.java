@@ -55,19 +55,17 @@ public class DomainResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.CONTROLLERID);
 		if (resource instanceof DomainResource
 				&& ((DomainResource) resource).getcontrollerId() != null
-				&& !((DomainResource) resource).getcontrollerId().trim()
-						.isEmpty()) {
+				&& !((DomainResource) resource).getcontrollerId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((DomainResource) resource).getcontrollerId().trim(),
+					((DomainResource) resource).getcontrollerId(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.DOMAINID);
 				if (((DomainResource) resource).getdomainId() != null
-						&& !((DomainResource) resource).getdomainId().trim()
-								.isEmpty()) {
+						&& !((DomainResource) resource).getdomainId().isEmpty()) {
 					isValid = validator.isValidDomainId(
-							((DomainResource) resource).getdomainId().trim(),
+							((DomainResource) resource).getdomainId(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -76,10 +74,9 @@ public class DomainResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof DomainsResource
 				&& ((DomainsResource) resource).getControllerId() != null
-				&& !((DomainsResource) resource).getControllerId().trim()
-						.isEmpty()) {
+				&& !((DomainsResource) resource).getControllerId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((DomainsResource) resource).getControllerId().trim(),
+					((DomainsResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		}
@@ -91,9 +88,8 @@ public class DomainResourceValidator extends VtnServiceValidator {
 	 * Validate request json for Domain API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start DomainResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of DomainResourceValidator");
@@ -102,7 +98,6 @@ public class DomainResourceValidator extends VtnServiceValidator {
 		if (isValid && requestBody != null
 				&& VtnServiceConsts.GET.equals(method)) {
 			isValid = validateGet(requestBody, isListOpFlag());
-			setInvalidParameter(validator.getInvalidParameter());
 			updateOpParameterForList(requestBody);
 		} else if (isValid && requestBody != null
 				&& VtnServiceConsts.POST.equalsIgnoreCase(method)) {
@@ -152,7 +147,7 @@ public class DomainResourceValidator extends VtnServiceValidator {
 						.isValidDomainId(
 								domain.getAsJsonPrimitive(
 										VtnServiceJsonConsts.DOMAINID)
-										.getAsString().trim(),
+										.getAsString(),
 								VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for mandatory key: type
@@ -161,9 +156,8 @@ public class DomainResourceValidator extends VtnServiceValidator {
 				if (domain.has(VtnServiceJsonConsts.TYPE)
 						&& domain.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
 								.getAsString() != null) {
-					final String type = domain
-							.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-							.getAsString().trim();
+					final String type = domain.getAsJsonPrimitive(
+							VtnServiceJsonConsts.TYPE).getAsString();
 					isValid = type
 							.equalsIgnoreCase(VtnServiceJsonConsts.NORMAL);
 				} else {
@@ -192,13 +186,10 @@ public class DomainResourceValidator extends VtnServiceValidator {
 				&& domain.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
 						.getAsString() != null
 				&& !domain.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
-						.getAsString().trim().isEmpty()) {
-			isValid = validator
-					.isValidMaxLength(
-							domain.getAsJsonPrimitive(
-									VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_127);
+						.getAsString().isEmpty()) {
+			isValid = validator.isValidMaxLength(
+					domain.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
+							.getAsString(), VtnServiceJsonConsts.LEN_127);
 		}
 		return isValid;
 	}
@@ -228,9 +219,8 @@ public class DomainResourceValidator extends VtnServiceValidator {
 			 * (domain.has(VtnServiceJsonConsts.TYPE) &&
 			 * domain.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
 			 * .getAsString() != null) { final String type = domain
-			 * .getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-			 * .getAsString().trim(); isValid = type
-			 * .equalsIgnoreCase(VtnServiceJsonConsts.NORMAL) ||
+			 * .getAsJsonPrimitive(VtnServiceJsonConsts.TYPE) .getAsString();
+			 * isValid = type .equalsIgnoreCase(VtnServiceJsonConsts.NORMAL) ||
 			 * type.equalsIgnoreCase(VtnServiceJsonConsts.DEFAULT); } }
 			 */
 
@@ -291,7 +281,7 @@ public class DomainResourceValidator extends VtnServiceValidator {
 								.getAsString().isEmpty()) {
 					isValid = validator.isValidDomainId(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: max_repitition

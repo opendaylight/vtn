@@ -18,11 +18,8 @@ json_object* JsonBuildParse::create_json_obj() {
   return json_object_new_object();
 }
 
-// Converts Json Obj to Json String
-const char* JsonBuildParse::get_string(json_object* jobj) {
-  ODC_FUNC_TRACE;
+const char* JsonBuildParse::get_json_string(json_object* jobj) {
   if (json_object_is_type(jobj, json_type_null)) {
-    pfc_log_error("json object is NULL");
     return NULL;
   }
   return json_object_to_json_string(jobj);
@@ -59,5 +56,19 @@ int JsonBuildParse::get_array_length(json_object* jobj,
   pfc_log_debug("%d array length", arr_length);
   return arr_length;
 }
+
+// Gets array length of json object
+int JsonBuildParse::get_array_length(json_object* jobj) {
+  // If the json object is not of type array return ZERO as longth
+  if (!(json_object_is_type(jobj, json_type_array))) {
+    pfc_log_error("json object is not of type array");
+    return ZERO_ARRAY_LENGTH;
+  }
+  int arr_length = json_object_array_length(jobj);
+  pfc_log_debug("%d array length", arr_length);
+  return arr_length;
+}
+
+
 }  // namespace restjson
 }  // namespace unc

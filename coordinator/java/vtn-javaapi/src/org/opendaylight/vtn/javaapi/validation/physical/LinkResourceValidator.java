@@ -61,8 +61,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.CONTROLLERID);
 		if (resource instanceof LinksResource
 				&& ((LinksResource) resource).getControllerId() != null
-				&& !((LinksResource) resource).getControllerId().trim()
-						.isEmpty()) {
+				&& !((LinksResource) resource).getControllerId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
 					((LinksResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
@@ -118,9 +117,8 @@ public class LinkResourceValidator extends VtnServiceValidator {
 	 *             , vtnexcpetion is thrown.
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start LinkResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of LinkResourceValidator");
@@ -136,7 +134,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -172,10 +170,10 @@ public class LinkResourceValidator extends VtnServiceValidator {
 						.getAsString() != null
 				&& !requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-						.getAsString().trim().isEmpty()) {
+						.getAsString().isEmpty()) {
 			isValid = VtnServiceJsonConsts.STATE.equalsIgnoreCase(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.TARGETDB)
-					.getAsString().trim());
+					.getAsString());
 		} else {
 			requestBody.remove(VtnServiceJsonConsts.TARGETDB);
 			requestBody.addProperty(VtnServiceJsonConsts.TARGETDB,
@@ -209,9 +207,8 @@ public class LinkResourceValidator extends VtnServiceValidator {
 				if (requestBody.has(VtnServiceJsonConsts.INDEX)
 						&& requestBody.getAsJsonPrimitive(
 								VtnServiceJsonConsts.INDEX).getAsString() != null) {
-					isValid = linkNameValidator(requestBody
-							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim());
+					isValid = linkNameValidator(requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.INDEX).getAsString());
 				}
 			}
 			// validation for key: max_repitition
@@ -224,7 +221,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 				 * .getAsString() != null) { isValid =
 				 * validator.isValidMaxLengthNumber(requestBody
 				 * .getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()
-				 * .trim()); }
+				 * ); }
 				 */
 			}
 		}
@@ -239,7 +236,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SWITCH1ID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_255);
+						.getAsString(), VtnServiceJsonConsts.LEN_255);
 			}
 		}
 
@@ -253,7 +250,7 @@ public class LinkResourceValidator extends VtnServiceValidator {
 							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.SWITCH2ID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_255);
+						.getAsString(), VtnServiceJsonConsts.LEN_255);
 			}
 		}
 		// validation for key: Link Name
@@ -262,9 +259,8 @@ public class LinkResourceValidator extends VtnServiceValidator {
 			if (requestBody.has(VtnServiceJsonConsts.LINKNAME)
 					&& requestBody.getAsJsonPrimitive(
 							VtnServiceJsonConsts.LINKNAME).getAsString() != null) {
-				isValid = linkNameValidator(requestBody
-						.getAsJsonPrimitive(VtnServiceJsonConsts.LINKNAME)
-						.getAsString().trim());
+				isValid = linkNameValidator(requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.LINKNAME).getAsString());
 			}
 		}
 

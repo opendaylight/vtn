@@ -141,7 +141,7 @@ DalCursor::GetNextRecordFromStmt(const SQLHANDLE stmt_handle,
       dal_rc = kDalRcRecordNoMore;
       UPLL_LOG_TRACE("Err - %d. No more result", dal_rc);
     } else {
-      UPLL_LOG_DEBUG("Err - %d. Failed to Fetch result", dal_rc);
+      UPLL_LOG_INFO("Err - %d. Failed to Fetch result", dal_rc);
     }
     return dal_rc;
   }

@@ -24,16 +24,16 @@ using unc::uppl::ODBCMTableColumns;
 /*
  * Set UINT8 value to the specified TableAttrSchema.
  */
-#define TABLE_ATTR_SCHEMA_UINT8_SET(schema, len, str, bufsize)  \
- do {                                                           \
-   ColumnAttrValue <unsigned char[(bufsize)]> *__v=             \
-         new ColumnAttrValue <unsigned char[(bufsize)]>;        \
-   memset(__v->value, 0, bufsize);                              \
-   strncpy(reinterpret_cast<char *>(__v->value), (str).c_str(), \
-                                      (len)+1);                 \
-   (schema).p_table_attribute_value = __v;                      \
-   (schema).table_attribute_length = (len);                     \
- } while (0)
+#define TABLE_ATTR_SCHEMA_UINT8_SET(schema, len, str, bufsize)   \
+  do {                                                           \
+    ColumnAttrValue <unsigned char[(bufsize)]> *__v=             \
+          new ColumnAttrValue <unsigned char[(bufsize)]>;        \
+    memset(__v->value, 0, bufsize);                              \
+    strncpy(reinterpret_cast<char *>(__v->value), (str).c_str(), \
+                                      (len)+1);                  \
+    (schema).p_table_attribute_value = __v;                      \
+    (schema).table_attribute_length = (len);                     \
+  } while (0)
 
 /**getRespHeaderFromReqHeader
  * @Description : This function is for giving response to logical using
@@ -92,15 +92,16 @@ int PhyUtil::sessOutRespHeader(ServerSession& sess,
  * */
 void PhyUtil::printReqHeader(const physical_request_header& rqh) {
   stringstream ss;
-  ss  << "Request to UPPL  : " << endl
-      << "    session_id   : " << rqh.client_sess_id << endl
-      << "    config_id    : " << rqh.config_id << endl
-      << "    operation    : " << rqh.operation << endl
-      << "    max_rep_count: " << rqh.max_rep_count << endl
-      << "    option1      : " << rqh.option1 << endl
-      << "    option2      : " << rqh.option2 << endl
-      << "    data_type    : " << rqh.data_type << endl
-      << "    key_type     : " << rqh.key_type << endl;
+  ss  << "Request to UPPL:["
+      << "sess_id:" << rqh.client_sess_id
+      << ",conf_id:" << rqh.config_id
+      << ",oper:" << rqh.operation
+      << ",max_rp_cnt:" << rqh.max_rep_count
+      << ",opt1:" << rqh.option1
+      << ",opt2:" << rqh.option2
+      << ",dt:" << rqh.data_type
+      << ",kt: " << rqh.key_type
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
@@ -112,15 +113,16 @@ void PhyUtil::printReqHeader(const physical_request_header& rqh) {
  * */
 void PhyUtil::printRespHeader(const physical_response_header& rsh) {
   stringstream ss;
-  ss << "Response from UPPL: "<< endl
-      << "    session_id   : " << rsh.client_sess_id << endl
-      << "    config_id    : " << rsh.config_id << endl
-      << "    operation    : " << rsh.operation << endl
-      << "    max_rep_count: " << rsh.max_rep_count << endl
-      << "    option1      : " << rsh.option1 << endl
-      << "    option2      : " << rsh.option2 << endl
-      << "    data_type    : " << rsh.data_type << endl
-      << "    result_code  : " << rsh.result_code << endl;
+  ss << "Resp from UPPL:["
+      << "sess_id:" << rsh.client_sess_id
+      << ",conf_id: " << rsh.config_id
+      << ",oper:" << rsh.operation
+      << ",max_rp_ct:" << rsh.max_rep_count
+      << ",opt1:" << rsh.option1
+      << ",opt2:" << rsh.option2
+      << ",dt:" << rsh.data_type
+      << ",rc:" << rsh.result_code
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
@@ -219,17 +221,18 @@ int PhyUtil::sessGetRespHeader(ClientSession& cli_sess,
  * */
 void PhyUtil::printDriverReqHeader(const driver_request_header& rqh) {
   stringstream ss;
-  ss  << "Request to Driver : " << endl
-      << "    client_sess_id: " << rqh.client_sess_id << endl
-      << "    config_id     : " << rqh.config_id << endl
-      << "    controller_id : " << rqh.controller_id << endl
-      << "    domain_id     : " << rqh.domain_id << endl
-      << "    operation     : " << rqh.operation << endl
-      << "    max_rep_count : " << rqh.max_rep_count << endl
-      << "    option1       : " << rqh.option1 << endl
-      << "    option2       : " << rqh.option2 << endl
-      << "    data_type     : " << rqh.data_type << endl
-      << "    key_type      : " << rqh.key_type << endl;
+  ss  << "Request to Driver["
+      << "sess_id:" << rqh.client_sess_id
+      << ",conf_id:" << rqh.config_id
+      << ",ctr_id: " << rqh.controller_id
+      << ",dom_id: " << rqh.domain_id
+      << ",oper: " << rqh.operation
+      << ",max_rp_cnt: " << rqh.max_rep_count
+      << ",opt1: " << rqh.option1
+      << ",opt2: " << rqh.option2
+      << ",dt: " << rqh.data_type
+      << ",kt: " << rqh.key_type
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
@@ -241,17 +244,18 @@ void PhyUtil::printDriverReqHeader(const driver_request_header& rqh) {
  * */
 void PhyUtil::printDriverRespHeader(const driver_response_header& rsh) {
   stringstream ss;
-  ss  << "Response from Driver: "<< endl
-      << "    client_sess_id: " << rsh.client_sess_id << endl
-      << "    config_id     : " << rsh.config_id << endl
-      << "    controller_id : " << rsh.controller_id << endl
-      << "    domain_id     : " << rsh.domain_id << endl
-      << "    operation     : " << rsh.operation << endl
-      << "    max_rep_count : " << rsh.max_rep_count << endl
-      << "    option1       : " << rsh.option1 << endl
-      << "    option2       : " << rsh.option2 << endl
-      << "    data_type     : " << rsh.data_type << endl
-      << "    result_code   : " << rsh.result_code << endl;
+  ss  << "Resp from Driver["
+      << "sess_id:" << rsh.client_sess_id
+      << ",conf_id:" << rsh.config_id
+      << ",ctr_id:" << rsh.controller_id
+      << ",dom_id:" << rsh.domain_id
+      << ",oper:" << rsh.operation
+      << ",max_rp_cnt:" << rsh.max_rep_count
+      << ",opt1:" << rsh.option1
+      << ",opt2:" << rsh.option2
+      << ",dt:" << rsh.data_type
+      << ",rc:" << rsh.result_code
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
 }
 
@@ -370,12 +374,13 @@ int PhyUtil::sessGetDriverEventHeader(ClientSession& cli_sess,
     return err;
   }
   stringstream ss;
-  ss  << "Event to UPPL    :" << endl
-      << "    controller_id: " << rsh.controller_id << endl
-      << "    domain_id    : " << rsh.domain_id << endl
-      << "    operation    : " << rsh.operation << endl
-      << "    data_type    : " << rsh.data_type << endl
-      << "    key_type     : " << rsh.key_type;
+  ss  << "Event to UPPL["
+      << "ctr:" << rsh.controller_id
+      << ",dom_id:" << rsh.domain_id
+      << ",oper:" << rsh.operation
+      << ",dt:" << rsh.data_type
+      << ",kt:" << rsh.key_type
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
@@ -425,13 +430,14 @@ int PhyUtil::sessGetDriverAlarmHeader(ClientSession& cli_sess,
     return err;
   }
   stringstream ss;
-  ss  << "Alarm to UPPL    :" << endl
-      << "    controller_id: " << rsh.controller_id << endl
-      << "    domain_id    : " << rsh.domain_id << endl
-      << "    operation    : " << rsh.operation << endl
-      << "    data_type    : " << rsh.data_type << endl
-      << "    key_type     : " << rsh.key_type << endl
-      << "    alarm_type   : " << rsh.alarm_type;
+  ss  << "Alarm to UPPL["
+      << "ctr:" << rsh.controller_id
+      << ",dom_id:" << rsh.domain_id
+      << ",oper:" << rsh.operation
+      << ",dt:" << rsh.data_type
+      << ",kt:" << rsh.key_type
+      << ",alarm_tp:" << rsh.alarm_type
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
@@ -453,10 +459,11 @@ int PhyUtil::sessOutNBEventHeader(ServerEvent& cli_sess,
   if (err != UNC_RC_SUCCESS) return err;
   err = cli_sess.addOutput(rqh.key_type);
   stringstream ss;
-  ss  << "Event from UPPL    :" << endl
-      << "    operation    : " << rqh.operation << endl
-      << "    data_type    : " << rqh.data_type << endl
-      << "    key_type     : " << rqh.key_type;
+  ss  << "Event from UPPL["
+      << "oper:" << rqh.operation
+      << ",dt:" << rqh.data_type
+      << ",kt:" << rqh.key_type
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
@@ -480,11 +487,12 @@ int PhyUtil::sessOutNBAlarmHeader(ServerEvent& cli_sess,
   if (err != UNC_RC_SUCCESS) return err;
   err = cli_sess.addOutput(rqh.alarm_type);
   stringstream ss;
-  ss  << "Alarm from UPPL    :" << endl
-      << "    operation    : " << rqh.operation << endl
-      << "    data_type    : " << rqh.data_type << endl
-      << "    key_type     : " << rqh.key_type << endl
-      << "    alarm_type   : " << rqh.alarm_type;
+  ss  << "Alarm from UPPL[" 
+      << "oper:" << rqh.operation
+      << ",dt:" << rqh.data_type
+      << ",kt:" << rqh.key_type
+      << ",alarm_tp: " << rqh.alarm_type
+      << "]";
   pfc_log_info((const char*)(ss.str().c_str()));
   return err;
 }
@@ -521,7 +529,7 @@ string PhyUtil::uint16tostr(const uint16_t& c) {
  * */
 string PhyUtil::uint32tostr(const uint32_t& c) {
   char str[20];
-  snprintf(str, sizeof(str), "%d", c);
+  snprintf(str, sizeof(str), "%u", c);
   string str1 = str;
   return str1;
 }
@@ -703,10 +711,6 @@ void PhyUtil::FillDbSchema(ODBCMTableColumns attr_name, uint8_t* attr_value,
     case DATATYPE_UINT8_ARRAY_6: {
       ColumnAttrValue <unsigned char[6+1]> *value=
           new ColumnAttrValue <unsigned char[6+1]>;
-      pfc_log_info("Fill mac_address %02x:%02x:%02x:%02x:%02x:%02x ",
-                   attr_value[0], attr_value[1],
-                   attr_value[2], attr_value[3],
-                   attr_value[4], attr_value[5]);
       memset(&value->value, '\0', sizeof(value->value));
       memcpy(value->value,
              attr_value, attr_length+1);

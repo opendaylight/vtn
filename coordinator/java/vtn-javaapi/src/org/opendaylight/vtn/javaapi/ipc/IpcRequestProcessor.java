@@ -297,18 +297,15 @@ public class IpcRequestProcessor {
 
 		LOG.trace("Start IpcRequestProcessor#setMaxRepCount()");
 		// check id "max_repetition" parameter is received
-		if (requestBody.has(VtnServiceJsonConsts.MAX)) {
+		if (requestBody.has(VtnServiceJsonConsts.MAX) &&
+			 requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsLong() <
+			 VtnServiceConsts.MAX_REP_COUNT) {
 			// set the value of "max_repetition" parameter to IPC request
 			// parameter
 			requestPacket.setMaxRepCount(new IpcUint32(requestBody
 					.getAsJsonPrimitive(VtnServiceJsonConsts.MAX).getAsString()));
 		} else {
-			// if not available, then get the default value and set to IPC
-			// request packet
-			final VtnServiceConfiguration configuration = VtnServiceInitManager
-					.getConfigurationMap();
-			requestPacket.setMaxRepCount(new IpcUint32(configuration
-					.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT)));
+			requestPacket.setMaxRepCount(new IpcUint32(VtnServiceConsts.MAX_REP_COUNT));
 		}
 		LOG.trace("Complete IpcRequestProcessor#setMaxRepCount()");
 	}

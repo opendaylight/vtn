@@ -161,6 +161,17 @@ UncRespCode Kt_State_Base::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
     pfc_log_info("Create of a kt %d in data_type %d is success", key_type,
                  data_type);
   }
+  // Checking CREATE operation of LOGICAL_PORT if port_type is UPPL_LP_SWITCH
+  if (key_type == UNC_KT_LOGICAL_PORT) {
+      Kt_LogicalPort logical_port;
+      UncRespCode status = UNC_RC_SUCCESS;
+      status = logical_port.UpdateDomainNameForTP(db_conn, key_struct,
+                                     val_struct, data_type, key_type);
+      if (status != UNC_RC_SUCCESS) {  //  to avoid inconsistency in DB
+        pfc_log_error("update domain for TP is FAILED, INVESTIGATE");
+        return  status;
+      }
+  }
   return create_status;
 }
 
@@ -482,12 +493,28 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
       // Raise validation failure alarm
       UncRespCode alarm_status = physical_layer->get_physical_core()->
           RaiseEventHandlingAlarm(controller_name);
+
       if (alarm_status == UNC_RC_SUCCESS) {
+        // Checking the presence of the controller in running database
+        Kt_Controller kt_ctr;
+        vector<string> vect_ctr_key_value;
+        vect_ctr_key_value.push_back(controller_name);
+        UncRespCode key_exist_running = kt_ctr.IsKeyExists(
+               db_conn, UNC_DT_RUNNING,
+               vect_ctr_key_value);
+
+        if (key_exist_running == UNC_RC_SUCCESS) {
+        // Sending event handling failure alarm
         alarm_status = physical_layer->get_physical_core()->
             SendEventHandlingFailureAlarm(controller_name,
                                           event_details);
-        pfc_log_info("Event Handling Validation Failure alarm sent - status %d",
+        pfc_log_debug("Event Handling Validation Failure alarm sent - status %d",
                      alarm_status);
+        } else {
+        pfc_log_info(
+            "Event Handling Validation Failure alarm not sent - status %d",
+            key_exist_running);
+        }
       }
     }
     return status;
@@ -523,11 +550,23 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
     UncRespCode alarm_status = physical_layer->get_physical_core()->
         RaiseEventHandlingAlarm(controller_name);
     if (alarm_status == UNC_RC_SUCCESS) {
-      alarm_status = physical_layer->get_physical_core()->
+      // Checking the presence of the controller in running database
+      Kt_Controller kt_ctr;
+      vector<string> vect_ctr_key_value;
+      vect_ctr_key_value.push_back(controller_name);
+      UncRespCode key_exist_running = kt_ctr.IsKeyExists(
+             db_conn, UNC_DT_RUNNING,
+             vect_ctr_key_value);
+      if (key_exist_running == UNC_RC_SUCCESS) {
+        alarm_status = physical_layer->get_physical_core()->
           SendEventHandlingFailureAlarm(controller_name,
                                         event_details);
-      pfc_log_info("Failure alarm sent to node manager - status %d",
+        pfc_log_debug("Failure alarm sent to node manager - status %d",
                    alarm_status);
+      } else {
+        pfc_log_info("Failure alarm not sent to node manager - status %d",
+                   key_exist_running);
+      }
     }
   } else {
     UncRespCode alarm_status = physical_layer->get_physical_core()->
@@ -536,8 +575,6 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
       alarm_status = physical_layer->get_physical_core()->
           SendEventHandlingSuccessAlarm(controller_name,
                                         event_details);
-      pfc_log_info("Success alarm sent to node manager - status %d",
-                   alarm_status);
     }
     if (data_type != UNC_DT_IMPORT) {
       pfc_ipcevtype_t event_type = GetEventType(key_type);
@@ -628,7 +665,8 @@ UncRespCode Kt_State_Base::HandleOperStatus(OdbcmConnectionHandler *db_conn,
            port_id.c_str(),
            port_id.length()+1);
     vector<OperStatusHolder> ref_oper_status;
-    GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
+    GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status,
+                             data_type, db_conn);
     Kt_LogicalPort logical_port;
     oper_return = logical_port.HandleOperStatus(
         db_conn,
@@ -648,7 +686,8 @@ UncRespCode Kt_State_Base::HandleOperStatus(OdbcmConnectionHandler *db_conn,
     if (valid_val == UNC_VF_VALID) {
       key_port_t port_key = *(reinterpret_cast<key_port_t*>(key_struct));
       vector<OperStatusHolder> ref_oper_status;
-      GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
+      GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status,
+                              data_type, db_conn);
       // Get Switch oper status
       key_switch_t switch_key;
       Kt_Switch kt_switch;
@@ -690,7 +729,8 @@ UncRespCode Kt_State_Base::HandleOperStatus(OdbcmConnectionHandler *db_conn,
       key_switch_t switch_key =
           *(reinterpret_cast<key_switch_t*>(key_struct));
       vector<OperStatusHolder> ref_oper_status;
-      GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status);
+      GET_ADD_CTRL_OPER_STATUS(controller_name, ref_oper_status,
+                              data_type, db_conn);
       // Get Switch oper status
       uint8_t switch_oper_status = 0;
       read_status = kt_switch.GetOperStatus(

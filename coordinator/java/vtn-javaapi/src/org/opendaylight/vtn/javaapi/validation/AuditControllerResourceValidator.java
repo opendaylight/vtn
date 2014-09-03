@@ -49,9 +49,9 @@ public class AuditControllerResourceValidator extends VtnServiceValidator {
 		if (resource instanceof AuditControllerResource
 				&& ((AuditControllerResource) resource).getControllerId() != null
 				&& !((AuditControllerResource) resource).getControllerId()
-						.trim().isEmpty()) {
+						.isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((AuditControllerResource) resource).getControllerId().trim(),
+					((AuditControllerResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
 		}
 		LOG.trace("Complete AuditControllerResourceValidator#validateUri()");
@@ -78,7 +78,7 @@ public class AuditControllerResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -106,8 +106,7 @@ public class AuditControllerResourceValidator extends VtnServiceValidator {
 		boolean isValid = false;
 		setInvalidParameter(VtnServiceJsonConsts.AUDIT);
 		if (requestBody.has(VtnServiceJsonConsts.AUDIT)
-				&& requestBody.get(VtnServiceJsonConsts.AUDIT)
-						.isJsonObject()) {
+				&& requestBody.get(VtnServiceJsonConsts.AUDIT).isJsonObject()) {
 			isValid = true;
 			final JsonObject audit = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.AUDIT);
@@ -115,9 +114,8 @@ public class AuditControllerResourceValidator extends VtnServiceValidator {
 			if (audit.has(VtnServiceJsonConsts.FORCE)
 					&& audit.getAsJsonPrimitive(VtnServiceJsonConsts.FORCE)
 							.getAsString() != null) {
-				String force = audit
-						.getAsJsonPrimitive(VtnServiceJsonConsts.FORCE)
-						.getAsString().trim();
+				String force = audit.getAsJsonPrimitive(
+						VtnServiceJsonConsts.FORCE).getAsString();
 				isValid = force.equalsIgnoreCase(VtnServiceJsonConsts.TRUE)
 						|| force.equalsIgnoreCase(VtnServiceJsonConsts.FALSE);
 			}

@@ -54,9 +54,9 @@ public class VtnResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VtnResource
 				&& ((VtnResource) resource).getVtnName() != null
-				&& !((VtnResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VtnResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VtnResource) resource).getVtnName().trim(),
+					((VtnResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(false);
 		} else if (resource instanceof VtnsResource) {
@@ -71,9 +71,8 @@ public class VtnResourceValidator extends VtnServiceValidator {
 	 * Validate request Json object for get, put and post method of Vtn API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VtnResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of VtnResourceValidator");
@@ -99,13 +98,13 @@ public class VtnResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -142,7 +141,7 @@ public class VtnResourceValidator extends VtnServiceValidator {
 							.getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(vtn
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VTNNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			if (isValid) {
 				isValid = validatePut(requestBody);
@@ -178,11 +177,11 @@ public class VtnResourceValidator extends VtnServiceValidator {
 							.getAsJsonObject(VtnServiceJsonConsts.VTN)
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLength(requestBody
 						.getAsJsonObject(VtnServiceJsonConsts.VTN)
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_127);
+						.getAsString(), VtnServiceJsonConsts.LEN_127);
 			}
 		} else {
 			isValid = false;

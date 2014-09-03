@@ -15,7 +15,6 @@ import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.RestResource;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -53,7 +52,7 @@ public class TenantsResource extends AbstractResource {
 	 *      .google.gson.JsonObject)
 	 */
 	@Override
-	public int post(JsonObject requestBody) throws VtnServiceException {
+	public int post(JsonObject requestBody) {
 		LOG.trace("Start TenantsResource#post()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -81,7 +80,7 @@ public class TenantsResource extends AbstractResource {
 				freeCounterBean
 						.setVtnName(VtnServiceOpenStackConsts.DEFAULT_VTN);
 
-				counter = resourceIdManager.getResourceId(connection,
+				counter = resourceIdManager.getResourceCounter(connection,
 						freeCounterBean);
 
 				if (counter != -1) {
@@ -167,7 +166,7 @@ public class TenantsResource extends AbstractResource {
 			}
 
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			if (exception.getSQLState().equalsIgnoreCase(
 					VtnServiceOpenStackConsts.CONFLICT_SQL_STATE)) {
@@ -188,7 +187,7 @@ public class TenantsResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(

@@ -687,7 +687,8 @@ controller_operation::controller_operation(ControllerFramework *fw_ptr,
           ctr_= NULL;
           break;
         } else if ((write_count != 0) ||
-                   (ctr_->access_.get_controller_marked_for_update() == PFC_TRUE)) {
+                   (ctr_->access_.get_controller_marked_for_update() ==
+                    PFC_TRUE)) {
           ctr_->access_.increment_write_wait_count();
           ctr_->access_.wait_for_write(ctl_fw_->controller_list_rwlock_);
           pfc_log_debug("Write cond Wait");

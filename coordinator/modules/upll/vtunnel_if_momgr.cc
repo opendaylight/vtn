@@ -649,91 +649,79 @@ bool VtunnelIfMoMgr::CompareValidValue(void *&val1, void *val2,
   val_vtunnel_if_t *val_vtunnelif1 = reinterpret_cast<val_vtunnel_if_t *>(val1);
   val_vtunnel_if_t *val_vtunnelif2 = reinterpret_cast<val_vtunnel_if_t *>(val2);
   for (unsigned int loop = 0;
-      loop < sizeof(val_vtunnelif1->valid)/sizeof(uint8_t); ++loop ) {
+       loop < sizeof(val_vtunnelif1->valid)/sizeof(uint8_t); ++loop ) {
     if (UNC_VF_INVALID == val_vtunnelif1->valid[loop]
         && UNC_VF_VALID == val_vtunnelif2->valid[loop])
       val_vtunnelif1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (UNC_VF_VALID == val_vtunnelif1->valid[UPLL_IDX_DESC_VTNL_IF]
-      && UNC_VF_VALID == val_vtunnelif2->valid[UPLL_IDX_DESC_VTNL_IF]) {
-    if (!strcmp(reinterpret_cast<char*>(val_vtunnelif1->description),
-          reinterpret_cast<char*>(val_vtunnelif2->description)))
-      val_vtunnelif1->valid[UPLL_IDX_DESC_VTNL_IF] = UNC_VF_INVALID;
-  }
-  if (UNC_VF_INVALID != val_vtunnelif1->valid[UPLL_IDX_ADMIN_ST_VTNL_IF]
-       && UNC_VF_INVALID != val_vtunnelif2->valid[UPLL_IDX_ADMIN_ST_VTNL_IF]) {
-    if (val_vtunnelif1->admin_status == val_vtunnelif2->admin_status)
-      val_vtunnelif1->valid[UPLL_IDX_ADMIN_ST_VTNL_IF] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-  }
   for (unsigned int loop = 0;
-      loop < sizeof(val_vtunnelif1->portmap.valid)/sizeof(uint8_t); ++loop ) {
+       loop < sizeof(val_vtunnelif1->portmap.valid)/sizeof(uint8_t); ++loop ) {
     if (UNC_VF_INVALID == val_vtunnelif1->portmap.valid[loop]
         && UNC_VF_VALID == val_vtunnelif2->portmap.valid[loop])
       val_vtunnelif1->portmap.valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
-  if (val_vtunnelif1->valid[UPLL_IDX_PORT_MAP_VTNL_IF] == UNC_VF_VALID
-      && val_vtunnelif2->valid[UPLL_IDX_PORT_MAP_VTNL_IF] == UNC_VF_VALID) {
-    if (memcmp(&(val_vtunnelif1->portmap), &(val_vtunnelif2->portmap),
-          sizeof(val_port_map_t))) {
-      if (val_vtunnelif1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] ==
-          UNC_VF_VALID
-          && val_vtunnelif2->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]
-          == UNC_VF_VALID) {
-        if (!strcmp(reinterpret_cast<char *>
-              (val_vtunnelif1->portmap.logical_port_id),
-              reinterpret_cast<char *>
-              (val_vtunnelif2->portmap.logical_port_id)))
-          val_vtunnelif1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
+  if (val_vtunnelif1->admin_status == val_vtunnelif2->admin_status)
+    val_vtunnelif1->valid[UPLL_IDX_ADMIN_ST_VTNL_IF] = UNC_VF_INVALID;
+  if (copy_to_running) {
+    if (UNC_VF_VALID == val_vtunnelif1->valid[UPLL_IDX_DESC_VTNL_IF]
+        && UNC_VF_VALID == val_vtunnelif2->valid[UPLL_IDX_DESC_VTNL_IF]) {
+      if (!strcmp(reinterpret_cast<char*>(val_vtunnelif1->description),
+                  reinterpret_cast<char*>(val_vtunnelif2->description)))
+        val_vtunnelif1->valid[UPLL_IDX_DESC_VTNL_IF] = UNC_VF_INVALID;
+    }
+    if (UNC_VF_INVALID != val_vtunnelif1->valid[UPLL_IDX_ADMIN_ST_VTNL_IF]
+        && UNC_VF_INVALID != val_vtunnelif2->valid[UPLL_IDX_ADMIN_ST_VTNL_IF]) {
+      if (val_vtunnelif1->admin_status == val_vtunnelif2->admin_status)
+        val_vtunnelif1->valid[UPLL_IDX_ADMIN_ST_VTNL_IF] = UNC_VF_INVALID;
+    }
+    if (val_vtunnelif1->valid[UPLL_IDX_PORT_MAP_VTNL_IF] == UNC_VF_VALID
+        && val_vtunnelif2->valid[UPLL_IDX_PORT_MAP_VTNL_IF] == UNC_VF_VALID) {
+      if (memcmp(&(val_vtunnelif1->portmap), &(val_vtunnelif2->portmap),
+                 sizeof(val_port_map_t))) {
+        if (val_vtunnelif1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] ==
+            UNC_VF_VALID
+            && val_vtunnelif2->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]
+            == UNC_VF_VALID) {
+          if (!strcmp(reinterpret_cast<char *>
+                      (val_vtunnelif1->portmap.logical_port_id),
+                      reinterpret_cast<char *>
+                      (val_vtunnelif2->portmap.logical_port_id)))
+            val_vtunnelif1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_INVALID;
+        }
+        if (val_vtunnelif1->portmap.valid[UPLL_IDX_VLAN_ID_PM] !=
+            UNC_VF_INVALID
+            && val_vtunnelif2->portmap.valid[UPLL_IDX_VLAN_ID_PM] !=
+            UNC_VF_INVALID) {
+          if (val_vtunnelif1->portmap.vlan_id == val_vtunnelif2->portmap.vlan_id)
+            val_vtunnelif1->portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_INVALID;
+        }
+        if (val_vtunnelif1->portmap.valid[UPLL_IDX_TAGGED_PM] !=
+            UNC_VF_INVALID
+            && val_vtunnelif2->portmap.valid[UPLL_IDX_TAGGED_PM] ==
+            UNC_VF_INVALID) {
+          if (val_vtunnelif1->portmap.tagged == val_vtunnelif2->portmap.tagged)
+            val_vtunnelif1->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_INVALID;
+        }
+      } else {
+        val_vtunnelif1->valid[UPLL_IDX_PORT_MAP_VTNL_IF] = UNC_VF_INVALID;
+        val_vtunnelif1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_INVALID;
+        val_vtunnelif1->portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_INVALID;
+        val_vtunnelif1->portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_INVALID;
       }
-      if (val_vtunnelif1->portmap.valid[UPLL_IDX_VLAN_ID_PM] !=
-          UNC_VF_INVALID
-          && val_vtunnelif2->portmap.valid[UPLL_IDX_VLAN_ID_PM] !=
-          UNC_VF_INVALID) {
-        if (val_vtunnelif1->portmap.vlan_id == val_vtunnelif2->portmap.vlan_id)
-          val_vtunnelif1->portmap.valid[UPLL_IDX_VLAN_ID_PM] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-      }
-      if (val_vtunnelif1->portmap.valid[UPLL_IDX_TAGGED_PM] !=
-          UNC_VF_INVALID
-          && val_vtunnelif2->portmap.valid[UPLL_IDX_TAGGED_PM] ==
-          UNC_VF_INVALID) {
-        if (val_vtunnelif1->portmap.tagged == val_vtunnelif2->portmap.tagged)
-          val_vtunnelif1->portmap.valid[UPLL_IDX_TAGGED_PM] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-      }
-    } else {
-      val_vtunnelif1->valid[UPLL_IDX_PORT_MAP_VTNL_IF] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-      val_vtunnelif1->portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-      val_vtunnelif1->portmap.valid[UPLL_IDX_VLAN_ID_PM] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
-      val_vtunnelif1->portmap.valid[UPLL_IDX_TAGGED_PM] =
-                                           (copy_to_running)?UNC_VF_INVALID:
-                                            UNC_VF_VALUE_NOT_MODIFIED;
     }
   }
   if (!copy_to_running)
     val_vtunnelif1->valid[UPLL_IDX_DESC_VTNL_IF] = UNC_VF_INVALID;
   for (unsigned int loop = 0;
-      loop < sizeof(val_vtunnelif1->valid) / sizeof(uint8_t); ++loop) {
+       loop < sizeof(val_vtunnelif1->valid) / sizeof(uint8_t); ++loop) {
     if ((UNC_VF_VALID == (uint8_t) val_vtunnelif1->valid[loop]) ||
         (UNC_VF_VALID_NO_VALUE == (uint8_t) val_vtunnelif1->valid[loop])) {
       if (loop == UPLL_IDX_PORT_MAP_VTNL_IF) {
         for (unsigned int i = 0;
-          i < sizeof(val_vtunnelif1->portmap.valid) / sizeof(uint8_t); ++i) {
+             i < sizeof(val_vtunnelif1->portmap.valid) / sizeof(uint8_t); ++i) {
           if ((UNC_VF_VALID == (uint8_t) val_vtunnelif1->portmap.valid[i]) ||
-            (UNC_VF_VALID_NO_VALUE ==
-                            (uint8_t) val_vtunnelif1->portmap.valid[i])) {
+              (UNC_VF_VALID_NO_VALUE ==
+               (uint8_t) val_vtunnelif1->portmap.valid[i])) {
             invalid_attr = false;
             break;
           }
@@ -788,7 +776,10 @@ upll_rc_t VtunnelIfMoMgr::UpdateConfigStatus(ConfigKeyVal *vtunnelif_keyval,
         UPLL_LOG_DEBUG("Returning error\n");
         return UPLL_RC_ERR_GENERIC;
       }
-      vnif_st->oper_status = UPLL_OPER_STATUS_UP;
+      vnif_st->oper_status =
+                   (driver_result == UPLL_RC_ERR_CTR_DISCONNECTED)?
+                    UPLL_OPER_STATUS_UNKNOWN:
+                    UPLL_OPER_STATUS_UP;
       vnif_st->valid[UPLL_IDX_IF_OPER_STATUS_VTEPIS] = UNC_VF_VALID;
 #endif
     vtunnel_db_valst->down_count = 0;
@@ -1367,64 +1358,13 @@ upll_rc_t VtunnelIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
     uint8_t vlink_flag = 0;
     GET_USER_DATA_FLAGS(okey, vlink_flag);
     if (vlink_flag & VIF_TYPE) {
-      delete tmp;
-      return UPLL_RC_ERR_CFG_SEMANTIC;
+      result_code = UPLL_RC_ERR_CFG_SEMANTIC;
+      break;
     }
     okey = okey->get_next_cfg_key_val();
   }
-  if (tmp) delete tmp;
+  DELETE_IF_NOT_NULL(tmp);
   return result_code;
-}
-
-upll_rc_t VtunnelIfMoMgr::PopulateDriverDeleteCkv(ConfigKeyVal *&vnpCkv,
-                                        DalDmlIntf *dmi,
-                                        upll_keytype_datatype_t dt_type) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result = UPLL_RC_SUCCESS;
-  ConfigKeyVal *vtunnelCkv = NULL;
-  if (!vnpCkv) {
-    return UPLL_RC_ERR_GENERIC;
-  }
-  VtunnelMoMgr *vtunnelObj = reinterpret_cast<VtunnelMoMgr*>
-    (const_cast<MoManager *>(GetMoManager(UNC_KT_VTUNNEL)));
-  if (NULL == vtunnelObj) { 
-    UPLL_LOG_DEBUG("Unable to get UNC_KT_VTUNNEL object");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  val_vtunnel_if *vtunnelif_val = static_cast<val_vtunnel_if *>(GetVal(vnpCkv));
-  if (!vtunnelif_val) {
-    UPLL_LOG_TRACE("Value Strucure is NULL");
-    return UPLL_RC_ERR_GENERIC;
-  }
-  // Retrieving attribute label from Vtunnel
-  result = GetParentConfigKey(vtunnelCkv, vnpCkv);
-  if (result != UPLL_RC_SUCCESS) {
-    UPLL_LOG_TRACE("GetParentConfigKey returned %d", result);
-    DELETE_IF_NOT_NULL(vtunnelCkv);
-    return UPLL_RC_ERR_GENERIC;
-  }
-  DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutFlag };
-  result = vtunnelObj->ReadConfigDB(vtunnelCkv, dt_type, UNC_OP_READ,
-                                    dbop, dmi, MAINTBL);
-  if ((result != UPLL_RC_SUCCESS) || (!vtunnelCkv)
-                                  || (!(vtunnelCkv->get_cfg_val()))) {
-    UPLL_LOG_TRACE("Could not retrieve Vtunnel data. DB returned %d", result);
-    DELETE_IF_NOT_NULL(vtunnelCkv);
-    return result;
-  }
-  vnpdrv_val_vtunnel_if *vnp_vtunnel_if = static_cast<vnpdrv_val_vtunnel_if *>
-               (ConfigKeyVal::Malloc(sizeof(vnpdrv_val_vtunnel_if)));
-  val_vtunnel *vtunnel_val = static_cast<val_vtunnel *>(GetVal(vtunnelCkv));
-  vnp_vtunnel_if->label = vtunnel_val->label;
-  vnp_vtunnel_if->valid[VNPDRV_IDX_LABEL_VTNL_IF] = UNC_VF_VALID;
-  vnp_vtunnel_if->vlan_id = vtunnelif_val->portmap.vlan_id;
-  vnp_vtunnel_if->valid[VNPDRV_IDX_VLAN_ID_VTNL_IF] = UNC_VF_VALID;
-
-  ConfigVal *ck_val = new ConfigVal(IpctSt::kIpcStVnpdrvValVtunnelIf,
-                                    vnp_vtunnel_if);
-  vnpCkv->SetCfgVal(ck_val);
-  DELETE_IF_NOT_NULL(vtunnelCkv);
-  return result;
 }
 
 }  // namesapce vtn

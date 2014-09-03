@@ -57,10 +57,8 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
   }
   if (driver_msg == true && ctrlr_name == NULL) {
     UPLL_LOG_DEBUG("NULL controller argument");
-    if (resp != NULL) {
-      resp->header.result_code = UPLL_RC_ERR_GENERIC;
-      resp->return_code = 0;
-    }
+    resp->header.result_code = UPLL_RC_ERR_GENERIC;
+    resp->return_code = 0;
     return false;
   }
 
@@ -131,9 +129,14 @@ bool IpcClientHandler::SendReqToServer(const char *channel_name,
   if (err != 0) {
     resp->header.result_code = UPLL_RC_ERR_GENERIC;
     if (err == ETIMEDOUT) {
-      UPLL_LOG_DEBUG("IPC Session to %s:%s:%d has timed out",
-                     channel_name, service_name, service_id);
+      UPLL_LOG_INFO("IPC Session to %s:%s:%d has timed out",
+                    channel_name, service_name, service_id);
       resp->return_code = PFC_IPCRESP_FATAL;
+    } else if ((err == ECONNREFUSED) && (driver_msg)) {
+      UPLL_LOG_INFO("Connection to IPC Session %s:%s:%d is refused",
+                    channel_name, service_name, service_id);
+      resp->return_code = PFC_IPCRESP_FATAL;
+      resp->header.result_code = UPLL_RC_ERR_DRIVER_NOT_PRESENT;
     } else {
       UPLL_LOG_FATAL("Failed to send IPC request to %s:%s:%d. Err=%d",
                      channel_name, service_name, service_id, err);

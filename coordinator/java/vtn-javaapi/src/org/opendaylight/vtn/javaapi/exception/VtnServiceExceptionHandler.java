@@ -83,10 +83,10 @@ public class VtnServiceExceptionHandler {
 		} catch (final VtnServiceException e) {
 			// If exception is throw by raise method, i.e. for exceptions except
 			// VtnServiceException
-			LOG.error("Error Occurred : \n" + e.toString());
+			LOG.error(e, "Error Occurred : \n" + e.toString());
 			return;
 		}
-		LOG.error("Error Occurred : \n" + exception.toString());
+		LOG.error(exception, "Error Occurred : \n" + exception.toString());
 	}
 
 }

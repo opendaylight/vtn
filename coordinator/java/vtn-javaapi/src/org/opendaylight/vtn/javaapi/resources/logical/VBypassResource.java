@@ -95,6 +95,11 @@ public class VBypassResource extends AbstractResource {
 			LOG.debug("Session created successfully");
 			requestProcessor = new IpcRequestProcessor(session, getSessionID(),
 					getConfigID(), getExceptionHandler());
+			//removal of unused parameter in request body.
+			JsonObject vBypass = requestBody.getAsJsonObject(VtnServiceJsonConsts.VBYPASS);
+			if (vBypass.has(VtnServiceJsonConsts.DOMAINID)) {
+				vBypass.remove(VtnServiceJsonConsts.DOMAINID);
+			}
 			requestProcessor.createIpcRequestPacket(
 					IpcRequestPacketEnum.KT_VUNKNOWN_UPDATE, requestBody,
 					getUriParameters());

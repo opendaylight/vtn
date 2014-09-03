@@ -20,7 +20,9 @@ import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeInterfaceBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VRouterBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VRouterInterfaceBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VtnBean;
+import org.opendaylight.vtn.javaapi.openstack.beans.FlowListBean;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
+import org.opendaylight.vtn.javaapi.openstack.dao.FlowListDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.FreeCounterDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.StaticRouteDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VBridgeDao;
@@ -31,7 +33,7 @@ import org.opendaylight.vtn.javaapi.openstack.dao.VtnDao;
 
 /**
  * ResourceId Manager class that contains interface for management of
- * auto-generated resource ids in the system
+ * auto-generated resource counters in the system
  */
 public class ResourceIdManager {
 
@@ -39,8 +41,8 @@ public class ResourceIdManager {
 			.getName());
 
 	/**
-	 * Generated resource id for specified resource First check the available
-	 * counter, otherwise increment counter and return
+	 * Generated resource counter for specified resource First check the
+	 * available counter, otherwise increment counter and return
 	 * 
 	 * @param connection
 	 *            - DB Connection instance
@@ -49,7 +51,7 @@ public class ResourceIdManager {
 	 * @return - generated resource-id, -1 is error occurred
 	 * @throws SQLException
 	 */
-	public int getResourceId(Connection connection,
+	public int getResourceCounter(Connection connection,
 			FreeCounterBean freeCounterBean) throws SQLException {
 		LOG.trace("Start ResourceIdManager#getResourceId()");
 		int resourceCounter = -1;
@@ -101,6 +103,11 @@ public class ResourceIdManager {
 						connection, freeCounterBean.getVtnName());
 				resourceCounter = portResourceCounter
 						+ interfaceResourceCounter - 1;
+			} else if (freeCounterBean.getResourceId().equalsIgnoreCase(
+					VtnServiceOpenStackConsts.FILTER_RES_ID)) {
+				final FlowListDao flowListDao = new FlowListDao();
+				int flowFilterCounter = flowListDao.getNextId(connection);
+				resourceCounter = flowFilterCounter;
 			}
 		}
 		LOG.info("Resource counter that will be used : " + resourceCounter);
@@ -136,8 +143,8 @@ public class ResourceIdManager {
 		} else if (resourceBean instanceof VBridgeBean) {
 			final VBridgeInterfaceDao vrtInterfaceDao = new VBridgeInterfaceDao();
 			VBridgeInterfaceBean vInterfaceBean = new VBridgeInterfaceBean();
-			vInterfaceBean.setVbrName(((VBridgeBean) resourceBean)
-					.getVbrName());
+			vInterfaceBean
+					.setVbrName(((VBridgeBean) resourceBean).getVbrName());
 			ifIds = vrtInterfaceDao.getVbrIfIds(connection, vInterfaceBean);
 			final VBridgeDao vBridgeDao = new VBridgeDao();
 			deletionStatus = vBridgeDao.delete(connection,
@@ -164,9 +171,20 @@ public class ResourceIdManager {
 			final StaticRouteDao staticRouteDao = new StaticRouteDao();
 			deletionStatus = staticRouteDao.delete(connection,
 					(StaticRouteBean) resourceBean);
+		} else if (resourceBean instanceof FlowListBean) {
+			final FlowListDao flowListDao = new FlowListDao();
+			final FlowListBean flowListBean = (FlowListBean) resourceBean;
+			boolean isAuto = flowListDao.isAutoFlowListName(connection,
+					flowListBean.getFlName());
+			deletionStatus = flowListDao.delete(connection, flowListBean);
+			if (!(true == isAuto && !flowListDao.isFlowListIdFound(connection,
+					freeCounterBean.getResourceCounter()))) {
+				freeCounterBean.setResourceCounter(0);
+
+			}
 		}
 
-		if (deletionStatus == 1) {
+		if (deletionStatus == VtnServiceOpenStackConsts.SUCCESS) {
 			result = manageCounter(connection, freeCounterBean, resourceBean,
 					ifIds);
 		}

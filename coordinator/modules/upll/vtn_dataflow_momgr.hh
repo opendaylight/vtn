@@ -146,12 +146,15 @@ class VtnDataflowMoMgr : public MoMgrImpl {
 
     upll_rc_t UpdatePathInfoInterfaces(DataflowCmn *df_cmn,
                                        const uint8_t  *vtn_name,
-                                       bool *dynamic,
                                        DalDmlIntf *dmi);
     upll_rc_t MapVexternalToVbridge(const ConfigKeyVal *ckv_df,
                                         DataflowCmn *df_cmn,
                                         bool *is_vnode_match,
                                         DalDmlIntf *dmi);
+    upll_rc_t RenamePathinfoNodes(uint8_t *node_name,
+                                              const  uint8_t *vtn_name,
+                                                uint8_t *ctrlr_id,
+                                                DalDmlIntf *dmi);
    upll_rc_t FillCtrlrDomCountMap(uint8_t *vtn_name,
                                        uint32_t  &ctrlr_dom_count,
                                        DalDmlIntf *dmi);
@@ -179,6 +182,12 @@ class VtnDataflowMoMgr : public MoMgrImpl {
     upll_rc_t PopulateVnpOrVbypassBoundaryInfo(ConfigKeyVal *&ckv_inif,
                                                ConfigKeyVal *&ckv_remif,
                                                DalDmlIntf *dmi);
+
+    upll_rc_t MapCtrlrNameToUncName(
+                                   const uint8_t *vtn_name,
+                                   val_vtn_dataflow_path_info *path_info,
+                                   uint8_t *ctrlr_id,
+                                   DalDmlIntf *dmi);
 
     upll_rc_t MapCtrlrNameToUncName(const uint8_t *vtn_name,
                                    DataflowCmn *df_cmn,
@@ -249,6 +258,9 @@ class VtnDataflowMoMgr : public MoMgrImpl {
 
   uint32_t max_dataflow_traverse_count_;
   std::set<std::string> bypass_dom_set;
+  //std::map<std::pair<std::string, std::string>, ConfigKeyVal* > vext_info_map;
+  std::map<std::string, ConfigKeyVal* > vext_info_map;
+  std::map<uint8_t *,uint8_t *> vnode_rename_map;
 };
 
 

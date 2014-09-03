@@ -183,22 +183,6 @@ class VtunnelIfMoMgr : public VnodeChildMoMgr {
                                         IpcReqRespHeader *req);
 #endif
 
-  /* @brief         Populate val_vtn_neighbor for the READ/READ_SIBLING operations  
-   *              
-   * @param[in/out] key   Pointer to the ConfigKeyVal Structure                    
-   * @param[in]     dmi    Pointer to the DalDmlIntf(DB Interface)
-   * 
-   * @retval  UPLL_RC_SUCCESS                    Completed successfully.
-   * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
-   * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
-   * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
-   *
-   **/
-  upll_rc_t PopulateDriverDeleteCkv(ConfigKeyVal *&vnpCkv,
-                                    DalDmlIntf *dmi,
-                                    upll_keytype_datatype_t dt_type);
-
   /**
      * @brief  Update config status for commit result and vote result.
      *

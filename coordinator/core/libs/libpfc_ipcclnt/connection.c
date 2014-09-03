@@ -1316,6 +1316,7 @@ void PFC_ATTR_HIDDEN
 pfc_ipcclnt_conn_iterate(ipc_conniter_t iter, pfc_ptr_t arg)
 {
 	pfc_rbnode_t	*node = NULL;
+	pfc_list_t	*elem;
 
 	if (ipcconn_default.icn_id != PFC_IPCCONN_INVALID) {
 		PFC_ASSERT(IPC_CONN_DEFAULT_IS_VALID(&ipcconn_default));
@@ -1324,6 +1325,11 @@ pfc_ipcclnt_conn_iterate(ipc_conniter_t iter, pfc_ptr_t arg)
 
 	while ((node = pfc_rbtree_next(&ipcconn_alttree, node)) != NULL) {
 		(*iter)(IPC_CONN_NODE2PTR(node), arg);
+	}
+
+	/* Iterate dead alternative connections. */
+	PFC_LIST_FOREACH(&ipc_conn_dead, elem) {
+		(*iter)(IPC_CONN_LIST2PTR(elem), arg);
 	}
 }
 

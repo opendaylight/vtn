@@ -116,7 +116,6 @@ public class ArpEntryResource extends AbstractResource {
 									.ordinal())));
 			if (requestBody.has(VtnServiceJsonConsts.TYPE)
 					&& requestBody.get(VtnServiceJsonConsts.TYPE).getAsString()
-							.trim()
 							.equalsIgnoreCase(VtnServiceJsonConsts.STATIC)) {
 				requestProcessor
 						.getRequestPacket()
@@ -126,7 +125,6 @@ public class ArpEntryResource extends AbstractResource {
 												.ordinal()));
 			} else if (requestBody.has(VtnServiceJsonConsts.TYPE)
 					&& requestBody.get(VtnServiceJsonConsts.TYPE).getAsString()
-							.trim()
 							.equalsIgnoreCase(VtnServiceJsonConsts.DYNAMIC)) {
 				requestProcessor
 						.getRequestPacket()

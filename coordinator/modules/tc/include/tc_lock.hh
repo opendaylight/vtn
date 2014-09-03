@@ -14,6 +14,9 @@
 #include <pfcxx/synch.hh>
 #include <tc_module_data.hh>
 #include <algorithm>
+#include <unc/usess_ipc.h>
+#include <unistd.h>
+
 namespace unc {
 namespace tc {
 
@@ -41,7 +44,7 @@ typedef enum {
 
 class TcLock {
   public:
-  TcLock() {}
+  TcLock() {setup_complete_done_ = PFC_FALSE;}
   void ResetTcGlobalDataOnStateTransition(void);
   TcLockRet GetLock(uint32_t session_id, TcOperation operation,
                     TcWriteOperation write_operation);
@@ -54,13 +57,17 @@ class TcLock {
   TcLockRet NotifyConfigIdSessionIdDone(uint32_t config_id,
             uint32_t session_id, TcNotifyOperation config_notify_operation);
   TcSessionOperationProgress  GetSessionOperation(uint32_t session_id);
-  TcLockRet  TcAcquireReadLockForStateTransition(void);
-  TcLockRet  TcReleaseReadLockForStateTransition(void);
-  void TcUpdateUncState(TcState state);
-  TcState  GetUncCurrentState(void);
+  TcLockRet  TcAcquireReadLockForStateTransition(uint32_t session_id);
+  TcLockRet  TcReleaseReadLockForStateTransition(uint32_t session_id);
+  void       TcUpdateUncState(TcState state);
+  TcState    GetUncCurrentState(void);
   pfc_bool_t IsStateTransitionInProgress(void);
-  TcLockRet TcMarkSessionId(uint32_t session_id);
-  uint32_t  GetMarkedSessionId();
+  TcLockRet  TcMarkSessionId(uint32_t session_id);
+  uint32_t   GetMarkedSessionId();
+  void       TcInitWRLock(pfc_bool_t is_simultaneous_read_write_allowed);
+
+  void       TcSetSetupComplete(pfc_bool_t is_done);
+  pfc_bool_t TcIsSetupCompleteDone();
 
   private:
   // Prohibit copy constuction and copy assignment.
@@ -81,6 +88,9 @@ class TcLock {
   getGlobalLock(void)  {
     return tc_rwlock_.rw_mutex;
   }
+
+  pfc_bool_t setup_complete_done_;
+  pfc::core::Mutex setup_complete_flag_lock_;
 
   /* Config lock methods */
   TcLockRet AcquireConfigLock(uint32_t session_id);

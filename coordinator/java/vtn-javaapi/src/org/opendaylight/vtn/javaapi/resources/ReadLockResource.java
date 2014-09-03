@@ -83,7 +83,7 @@ public class ReadLockResource extends AbstractResource {
 								.getAsJsonObject(VtnServiceJsonConsts.READLOCK)
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.TIMEOUT)
-								.getAsString().trim()));
+								.getAsString()));
 			} else {
 				session.addOutput(IpcDataUnitWrapper
 						.setIpcUint32Value(VtnServiceJsonConsts.VAL_0));

@@ -2143,7 +2143,7 @@ TEST_F(VlanMapTest, OpCreate_DtCandidate) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2175,7 +2175,7 @@ TEST_F(VlanMapTest, OpCreate_DtCandidate_attrcheckfail) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 0;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2222,7 +2222,7 @@ TEST_F(VlanMapTest, OpUpdate_DtCandidate) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2253,7 +2253,7 @@ TEST_F(VlanMapTest, OpUpdate_DtCandidate_attrcheckfail) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 0;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2303,7 +2303,7 @@ TEST_F(VlanMapTest, OpRead_DtCandidate) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2336,7 +2336,7 @@ TEST_F(VlanMapTest, OpRead_DtCandidate_Opt1_invalid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2369,7 +2369,7 @@ TEST_F(VlanMapTest, OpRead_DtCandidate_Opt2_Invalid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2403,7 +2403,7 @@ TEST_F(VlanMapTest, OpReadSibling_dtStartup_opts_valid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2437,7 +2437,7 @@ TEST_F(VlanMapTest, OpReadSiblingbegin_Dtstate_Opts_Valid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2471,7 +2471,7 @@ TEST_F(VlanMapTest, Opreadsiblingcount_dtRunning_opts_Valid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 0;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2505,7 +2505,7 @@ TEST_F(VlanMapTest, OPRead_DtImport_opts_valid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();
@@ -2538,7 +2538,7 @@ TEST_F(VlanMapTest, OpRename_Dtcandidate_Opts_valid) {
   attrs[unc::capa::vlan_map::kCapVlanId] = 1;
   const char* cntrlr_name("cntrlr_name");
   const char* version("version");
-  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version);
+  CtrlrMgr::Ctrlr ctrl(cntrlr_name, UNC_CT_PFC, version, 0);
   CtrlrMgr::Ctrlr* ctrl1( new CtrlrMgr::Ctrlr(ctrl, UPLL_DT_RUNNING));
   CtrlrMgr::GetInstance()->ctrlrs_.push_back(ctrl1);
   CapaModuleStub::stub_loadCapaModule();

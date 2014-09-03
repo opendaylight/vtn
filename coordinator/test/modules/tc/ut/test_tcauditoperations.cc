@@ -202,7 +202,7 @@ TEST(TcAuditOperations, TcValidateOperParams_Unknown) {
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcValidateOperParams());
   DEL_AUDIT_PARAMS();
 }
-
+/*
 TEST(TcAuditOperations, TcGetExclusion) {
   TestTcLock* tc_lock_ = new TestTcLock();
   pfc_ipcsrv_t *srv = NULL;
@@ -210,8 +210,8 @@ TEST(TcAuditOperations, TcGetExclusion) {
   std::string dsn_name = "UNC_DB_DSN";
   TcDbHandler* db_handler = new TcDbHandler(dsn_name);
   TcChannelNameMap  unc_map_;
-  int32_t alarm_id = 1;
-  TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY,  alarm_id);
+  //int32_t alarm_id = 1;
+  TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY);
 
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
@@ -234,7 +234,7 @@ TEST(TcAuditOperations, TcGetExclusion) {
   EXPECT_EQ(TC_OPER_SUCCESS, tc_auditoperations.TcGetExclusion());
   DEL_AUDIT_PARAMS();
 }
-
+*/
 TEST(TcAuditOperations, TcReleaseExclusion) {
   TestTcLock*  tc_lock_ = new TestTcLock();
   pfc_ipcsrv_t *srv = NULL;
@@ -242,8 +242,8 @@ TEST(TcAuditOperations, TcReleaseExclusion) {
   std::string dsn_name = "UNC_DB_DSN";
   TcDbHandler* db_handler = new TcDbHandler(dsn_name);
   TcChannelNameMap  unc_map_;
-  int32_t alarm_id = 1;
-  TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY,  alarm_id);
+  // int32_t alarm_id = 1;
+  TcTaskqUtil* audit_ = new TcTaskqUtil(TC_AUDIT_CONCURRENCY);
 
   TestTcAuditOperations tc_auditoperations(tc_lock_,
                                            &sess_,
@@ -415,7 +415,7 @@ TEST(TcAuditOperations, SetAuditOperationStatus) {
             tc_auditoperations.SetAuditOperationStatus());
   DEL_AUDIT_PARAMS();
 }
-
+/*
 TEST(TcAuditOperations, SendAuditStatusNotification) {
     SET_AUDIT_OPER_PARAMS();
   TcChannelNameMap daemon_names = GetTcChannelNameMap(1);
@@ -430,6 +430,7 @@ TEST(TcAuditOperations, SendAuditStatusNotification) {
             tc_auditoperations.SendAuditStatusNotification(alarm_id));
   DEL_AUDIT_PARAMS();
 }
+*/
 
 TEST(TcAuditOperations, GetDriverType) {
   SET_AUDIT_OPER_PARAMS();

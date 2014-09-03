@@ -1,11 +1,12 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 #ifndef _INCLUDE_LIB_TC_COMMON_HH_
 #define _INCLUDE_LIB_TC_COMMON_HH_
 
@@ -28,10 +29,20 @@ typedef enum {
 class TcServerSessionUtils {
  public:
   /*method to set timeout for server session*/
-  static TcUtilRet 
+  static TcUtilRet
       set_srv_timeout(pfc::core::ipc::ServerSession* ssess,
                       const pfc_timespec_t *timeout);
   /*methods to retrieve data*/
+  static TcUtilRet get_int32(
+               pfc::core::ipc::ServerSession* ssess,
+               uint32_t index,
+               int32_t * data);
+
+  static TcUtilRet get_uint64(
+               pfc::core::ipc::ServerSession* ssess,
+               uint32_t index,
+               uint64_t* data);
+
   static TcUtilRet get_uint32(
                pfc::core::ipc::ServerSession* ssess,
                uint32_t index,
@@ -53,6 +64,10 @@ class TcServerSessionUtils {
                const pfc_ipcstdef_t &def,
                void* data);
   /*methods to set data*/
+  static TcUtilRet set_uint64(
+               pfc::core::ipc::ServerSession* ssess,
+               uint64_t data);
+
   static TcUtilRet set_uint32(
                pfc::core::ipc::ServerSession* ssess,
                uint32_t data);
@@ -86,6 +101,12 @@ class TcClientSessionUtils {
   static TcUtilRet tc_session_close(pfc::core::ipc::ClientSession** csess,
                                     pfc_ipcconn_t conn);
   /*methods to retrieve data*/
+
+  static TcUtilRet get_uint64(
+               pfc::core::ipc::ClientSession* csess,
+               uint32_t index,
+               uint64_t* data);
+
   static TcUtilRet get_uint32(
                pfc::core::ipc::ClientSession* csess,
                uint32_t index,
@@ -101,6 +122,10 @@ class TcClientSessionUtils {
                uint32_t index,
                std::string& data);
   /*methods to set data*/
+  static TcUtilRet set_uint64(
+               pfc::core::ipc::ClientSession* csess,
+               uint64_t data);
+
   static TcUtilRet set_uint32(
                pfc::core::ipc::ClientSession* csess,
                uint32_t data);

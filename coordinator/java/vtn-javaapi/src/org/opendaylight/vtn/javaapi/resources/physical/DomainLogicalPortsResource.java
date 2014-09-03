@@ -21,6 +21,7 @@ import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
+import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceConfiguration;
@@ -130,8 +131,24 @@ public class DomainLogicalPortsResource extends AbstractResource {
 									.getErrorMessage());
 				}
 				resp = requestProcessor.getIpcResponsePacket();
-				final JsonObject root = responseGenerator
+				JsonObject root = responseGenerator
 						.getDomainLogicalPortResponse(resp, queryString);
+				if (root.get(VtnServiceJsonConsts.LOGICALPORTS).isJsonArray()) {
+					JsonArray domainLogicalPortArray = null;
+					domainLogicalPortArray = root.getAsJsonArray(VtnServiceJsonConsts.LOGICALPORTS);
+					
+					root = getResponseJsonArrayPhysical(
+							queryString,
+							requestProcessor,
+							responseGenerator,
+							domainLogicalPortArray,
+							VtnServiceJsonConsts.LOGICALPORTS,
+							VtnServiceJsonConsts.LOGICAL_PORT_ID,
+							IpcRequestPacketEnum.KT_LOGICAL_PORT_GET,
+							getUriParameters(queryString),
+							VtnServiceIpcConsts.GET_DOMAIN_LOGICAL_PORT_RESPONSE);
+				}
+				
 				String opType = VtnServiceJsonConsts.NORMAL;
 				if (queryString.has(VtnServiceJsonConsts.OP)) {
 					opType = queryString.get(VtnServiceJsonConsts.OP)
@@ -183,14 +200,9 @@ public class DomainLogicalPortsResource extends AbstractResource {
 						memberArray = responseGenerator
 								.getDomainLogicalPortMemberResponse(resp);
 						int memberIndex = 0;
-						final VtnServiceConfiguration configuration = VtnServiceInitManager
-								.getConfigurationMap();
-						final int max_rep_count = Integer
-								.parseInt(configuration
-										.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 						memberIndex = memberArray.size();
-						if (memberArray.size() >= max_rep_count) {
-							while (memberIndex >= max_rep_count) {
+						if (memberArray.size() > 0) {
+							while (memberIndex > 0) {
 								memberIndex = memberArray.size();
 								memberLastIndex = (JsonObject) memberArray
 										.get(memberIndex - 1);
@@ -232,7 +244,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 								} else {
 									break;
 								}
-								memberIndex++;
+								memberIndex = memberArrayNew.size();
 							}
 						}
 						logicalPortsJson.add(VtnServiceJsonConsts.MEMBERPORTS,
@@ -311,13 +323,11 @@ public class DomainLogicalPortsResource extends AbstractResource {
 							.getDomainLogicalPortMemberResponse(requestProcessor
 									.getIpcResponsePacket());
 					int memberIndex = 0;
-					final VtnServiceConfiguration configuration = VtnServiceInitManager
-							.getConfigurationMap();
-					final int max_rep_count = Integer.parseInt(configuration
-							.getConfigValue(VtnServiceConsts.MAX_REP_DEFAULT));
 					memberIndex = memberArray.size();
-					if (memberArray.size() >= max_rep_count) {
-						while (memberIndex >= max_rep_count) {
+					JsonObject logicalPort = (JsonObject)root.getAsJsonArray(
+								VtnServiceJsonConsts.LOGICALPORTS).get(0);
+					if (memberArray.size() > 0) {
+						while (memberIndex > 0) {
 							memberIndex = memberArray.size();
 							memberLastIndex = (JsonObject) memberArray
 									.get(memberIndex - 1);
@@ -326,7 +336,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 											IpcRequestPacketEnum.KT_LOGICAL_PORT_MEMBER_GET,
 											queryString,
 											getUriParametersMemberGreaterThanDefault(
-													root, memberLastIndex));
+													logicalPort, memberLastIndex));
 							requestProcessor
 									.getRequestPacket()
 									.setOperation(
@@ -357,7 +367,7 @@ public class DomainLogicalPortsResource extends AbstractResource {
 							} else {
 								break;
 							}
-							memberIndex++;
+							memberIndex = memberArrayNew.size();
 						}
 					}
 					if (null != memberArray) {

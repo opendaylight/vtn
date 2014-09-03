@@ -9,6 +9,7 @@
 
 #include <vtn_drv_module.hh>
 #include <request_template.hh>
+#include <read_handler.hh>
 
 namespace unc {
 namespace driver {
@@ -66,7 +67,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
   initialize_map();
 
   create_handler<key_root_t, val_root_t>(UNC_KT_ROOT);
-  create_handler<key_ctr_t, val_ctr_t>(UNC_KT_CONTROLLER);
+  create_handler<key_ctr_t, val_ctr_commit_ver_t>(UNC_KT_CONTROLLER);
   create_handler<key_vtn_t, val_vtn_t>(UNC_KT_VTN);
   create_handler<key_vbr_t, val_vbr_t>(UNC_KT_VBRIDGE);
   create_handler<key_vbr_if_t, pfcdrv_val_vbr_if_t>
@@ -107,6 +108,7 @@ pfc_bool_t VtnDrvIntf::init(void) {
 
   tclib_obj->TcLibRegisterHandler(new DriverTxnInterface(ctrl_inst_,
                                                           map_kt_));
+
   return PFC_TRUE;
 }
 
@@ -156,26 +158,44 @@ pfc_ipcresp_t VtnDrvIntf::ipcService(pfc::core::ipc::ServerSession &sess,
     return PFC_IPCRESP_FATAL;
   }
 
-  if (map_kt_.empty()) {
-    pfc_log_debug("map_kt empty");
-    return PFC_IPCRESP_FATAL;
-  }
+  if ((request_hdr.header.operation == UNC_OP_READ) &&
+      (request_hdr.key_type != UNC_KT_ROOT) &&
+      (request_hdr.key_type != UNC_KT_CONTROLLER)) {
+    // Read Request support
+    //
+    pfc_log_info("Read Request");
+    KtHandler *read_handler = new unc::driver::KtReadRequestHandler();
+
+    resp_code = read_handler->handle_request(sess, request_hdr, ctrl_inst_);
+    if (resp_code != UNC_RC_SUCCESS) {
+      pfc_log_debug("handle_request fail for key:%d", request_hdr.key_type);
+      return PFC_IPCRESP_FATAL;
+    }
+
+  } else {
+    // Not Read request
+
+    if (map_kt_.empty()) {
+      pfc_log_debug("map_kt empty");
+      return PFC_IPCRESP_FATAL;
+    }
     KtHandler *hnd_ptr = get_kt_handler(request_hdr.key_type);
 
-  if (NULL == hnd_ptr) {
-    pfc_log_debug("Key Type Not Supported %d", request_hdr.key_type);
-    return PFC_IPCRESP_FATAL;
-  }
+    if (NULL == hnd_ptr) {
+      pfc_log_debug("Key Type Not Supported %d", request_hdr.key_type);
+      return PFC_IPCRESP_FATAL;
+    }
 
-  // Set Timeout as infinite for audit operation
-  if (request_hdr.key_type == UNC_KT_ROOT) {
-    sess.setTimeout(NULL);
-  }
+    // Set Timeout as infinite for audit operation
+    if (request_hdr.key_type == UNC_KT_ROOT) {
+      sess.setTimeout(NULL);
+    }
 
-  resp_code = hnd_ptr->handle_request(sess, request_hdr, ctrl_inst_);
-  if (resp_code != UNC_RC_SUCCESS) {
-    pfc_log_debug("handle_request fail for key:%d", request_hdr.key_type);
-    return PFC_IPCRESP_FATAL;
+    resp_code = hnd_ptr->handle_request(sess, request_hdr, ctrl_inst_);
+    if (resp_code != UNC_RC_SUCCESS) {
+      pfc_log_debug("handle_request fail for key:%d", request_hdr.key_type);
+      return PFC_IPCRESP_FATAL;
+    }
   }
   return UNC_RC_SUCCESS;
 }
@@ -293,6 +313,23 @@ KtHandler* VtnDrvIntf::get_kt_handler(unc_key_type_t kt) {
   }
   return NULL;
 }
+
+/**
+ * @brief     : This Function  returns the  kt_handler for
+ *              the appropriate key types
+ * @param[in] : key type
+ * @retval    : KtHandler*
+ */
+KtHandler* VtnDrvIntf::get_read_kt_handler(unc_key_type_t kt) {
+  std::map <unc_key_type_t, unc::driver::KtHandler*>:: iterator
+      iter = read_map_kt_.begin();
+  iter =  read_map_kt_.find(kt);
+  if (iter != read_map_kt_.end()) {
+    return iter->second;
+  }
+  return NULL;
+}
+
 
 /**
  * @brief     : This Function is called to register the driver handler
@@ -745,18 +782,23 @@ void VtnDrvIntf::create_handler(unc_key_type_t keytype)  {
   map_kt_.insert(std::pair<unc_key_type_t, unc::driver::KtHandler*>(
           keytype,
           handler_));
+  }
 }
-}
+
 /**
-* @Description :Method to fill the map pfc_ipcstdef_t pointer against keytype
-* @param[in]   :NONE
-* @return      :NONE
-**/
+ * @Description :Method to fill the map pfc_ipcstdef_t pointer against keytype
+ * @param[in]   :NONE
+ * @return      :NONE
+ **/
 void  VtnDrvIntf::initialize_map() {
   ODC_FUNC_TRACE;
   POPULATE_STDEF(key_vtn, val_vtn, UNC_KT_VTN, stdefk_vtn, stdefv_vtn);
   POPULATE_STDEF(key_vbr, val_vbr, UNC_KT_VBRIDGE, stdefk_vbr, stdefv_vbr);
+#if 0
   POPULATE_STDEF(key_vbr_if, val_vbr_if, UNC_KT_VBR_IF, stdefk_vbrif,
+                 stdefv_vbrif);
+#endif
+  POPULATE_STDEF(key_vbr_if, pfcdrv_val_vbr_if, UNC_KT_VBR_IF, stdefk_vbrif,
                  stdefv_vbrif);
   POPULATE_STDEF(key_vlan_map, val_vlan_map, UNC_KT_VBR_VLANMAP, stdefk_vlan,
                  stdefv_vlan);

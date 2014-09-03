@@ -51,7 +51,10 @@ Mutex PhysicalLayer::db_conpool_mutex_;
 ReadWriteLock PhysicalLayer::phy_fini_db_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_phycore_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_event_lock_;
+ReadWriteLock PhysicalLayer::phy_dbsbcxn_lock_;
 ReadWriteLock PhysicalLayer::events_done_lock_;
+ReadWriteLock PhysicalLayer::timer_lock_;
+ReadWriteLock PhysicalLayer::phy_sqlexec_lock_;
 
 uint8_t PhysicalLayer::phyFiniFlag = 0;
 
@@ -216,6 +219,7 @@ UncRespCode PhysicalLayer::FinalizePhysicalSubModules() {
                                    PFC_TRUE);
     if (NULL != (odbc_manager_ = ODBCManager::get_ODBCManager())) {
       delete odbc_manager_;
+      odbc_manager_ = NULL;
     } else {
       pfc_log_error("odbc_manager_ is already freed or NULL");
     }
@@ -245,7 +249,7 @@ UncRespCode PhysicalLayer::FinalizePhysicalSubModules() {
  **/
 pfc_ipcresp_t PhysicalLayer::ipcService(ServerSession &session,
                                         pfc_ipcid_t service_id) {
-  pfc_log_info("PhysicalLayer::ipcService is called with service id %d",
+  pfc_log_debug("PhysicalLayer::ipcService is called with service id %d",
                service_id);
   PHY_FINI_IPC_LOCK(UNC_UPPL_RC_ERR_SHUTTING_DOWN);
   return ipc_connection_manager_->get_ipc_server_handler()->

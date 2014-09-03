@@ -12,16 +12,11 @@
 
 #include <unc/keytype.h>
 
-#define AUDIT_KT_SIZE 3
+#define AUDIT_KT_SIZE 6
 
 struct audit_key_type {
   unc_key_type_t key_type;
   unc_key_type_t parent_key_type;
 };
 
-audit_key_type audit_key[AUDIT_KT_SIZE] = {
-  {UNC_KT_VTN, UNC_KT_ROOT},
-  {UNC_KT_VBRIDGE, UNC_KT_VTN},
-  {UNC_KT_VBR_IF, UNC_KT_VBRIDGE}
-};
 #endif

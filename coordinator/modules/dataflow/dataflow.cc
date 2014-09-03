@@ -117,7 +117,7 @@ string uint16tostr(const uint16_t& c) {
 }
 string uint64tostr(const uint64_t& c) {
   char str[25];
-  snprintf(str, sizeof(str), "%"PFC_PFMT_u64, c);
+  snprintf(str, sizeof(str), "%" PFC_PFMT_u64, c);
   string str1(str);
   return str1;
 }
@@ -159,13 +159,14 @@ AddlData::~AddlData() {
 DataflowDetail::DataflowDetail(IpctStructNum df_type,
                                unc_keytype_ctrtype_t ctr_type)
     : df_common(NULL), vtn_df_common(NULL), ckv_egress(NULL), 
-      st_num_(df_type) {
+      flow_traversed(0), is_flow_redirect(false), is_flow_drop(false), st_num_(df_type) {
   if (st_num_ == kidx_val_df_data_flow_cmn) {
     df_common = new val_df_data_flow_cmn_t;
     memset(df_common, 0, sizeof(val_df_data_flow_cmn_t));
     df_common->controller_type = ctr_type;
     
-    if (df_common->controller_type == UNC_CT_VNP) {
+    if (df_common->controller_type == UNC_CT_VNP ||
+        df_common->controller_type == UNC_CT_POLC) {
       df_common->valid[kidxDfDataFlowControllerName] = 1;
       df_common->valid[kidxDfDataFlowControllerType] = 1;
       df_common->valid[kidxDfDataFlowIngressSwitchId] = 1;
@@ -184,11 +185,12 @@ DataflowDetail::DataflowDetail(IpctStructNum df_type,
     
   } else {
     // LOGICAL
-    flow_traversed = false;
+    flow_traversed = 0;
     vtn_df_common = new val_vtn_dataflow_cmn_t;
     memset(vtn_df_common, 0, sizeof(val_vtn_dataflow_cmn_t));
     vtn_df_common->controller_type = ctr_type;
     if ((vtn_df_common->controller_type == UNC_CT_VNP) ||
+	  (vtn_df_common->controller_type == UNC_CT_POLC) ||
 	  (vtn_df_common->controller_type == UNC_CT_UNKNOWN)) {
       if (vtn_df_common->controller_type != UNC_CT_UNKNOWN)
        vtn_df_common->valid[UPLL_IDX_CONTROLLER_ID_VVDC]     = 1;  // Controller Name
@@ -215,7 +217,8 @@ DataflowCmn::DataflowCmn(bool isHead, DataflowDetail *df_segm)
       head(NULL),
       total_flow_count(0),
       is_vlan_src_mac_changed_(false),
-      parent_node(NULL) {
+      parent_node(NULL),
+      action_applied(false) {
   addl_data = new AddlData();
 }
 
@@ -533,7 +536,9 @@ int DataflowDetail::sessReadDataflow(ClientSession& sess,
       path_infos.push_back(val_flow_path_obj);
     }
   } else {
-    for (uint32_t i = 0; i < vtn_df_common->path_info_count; i++) {
+    uint32_t orig_path_count = vtn_df_common->path_info_count;
+    pfc_log_debug("original vtn path count from pfc is %d", orig_path_count);
+    for (uint32_t i = 0; i < orig_path_count; i++) {
       val_vtn_dataflow_path_info_t *val_flow_path_obj
         = new val_vtn_dataflow_path_info_t;
       memset(val_flow_path_obj, 0, sizeof(val_vtn_dataflow_path_info_t));
@@ -542,11 +547,49 @@ int DataflowDetail::sessReadDataflow(ClientSession& sess,
         return err;
       pfc_log_debug("%d.%s", i,
         DataflowCmn::get_string(*val_flow_path_obj).c_str());
-      vtn_path_infos.push_back(val_flow_path_obj);
+     if (val_flow_path_obj->vlink_flag ==  UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS_)
+        is_flow_redirect  =  true;
+     if (val_flow_path_obj->status ==  UPLL_DATAFLOW_PATH_STATUS_DROP)
+        is_flow_drop  =  true;
+     int error = RedirectCheck(val_flow_path_obj);
+     if (error != 0) {
+      vtn_df_common->path_info_count--;
+      pfc_log_debug(" vtn path count after skipping is %d", vtn_df_common->path_info_count);
+      continue;
+     }
+     vtn_path_infos.push_back(val_flow_path_obj);
     }
   }
   pfc_log_debug("Returned value is %d", err);
   return err;
+}
+
+int DataflowDetail::RedirectCheck(val_vtn_dataflow_path_info_t *path_info) {
+  int err = -1;
+  if (vtn_path_infos.size()) {
+    val_vtn_dataflow_path_info_t *path_info_prev = vtn_path_infos.back();
+    if ((path_info->valid[UPLL_IDX_VLINK_FLAG_VVDPI] == UNC_VF_VALID) &&
+           (path_info->vlink_flag == UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS_)) {
+      if ((path_info->valid[UPLL_IDX_IN_VNODE_VVDPI] ==  UNC_VF_INVALID) ||
+            (path_info->valid[UPLL_IDX_IN_VIF_VVDPI] == UNC_VF_INVALID) ||
+            (path_info_prev->valid[UPLL_IDX_IN_VNODE_VVDPI] ==  UNC_VF_INVALID) ||
+            (path_info_prev->valid[UPLL_IDX_IN_VIF_VVDPI] == UNC_VF_INVALID)) {
+            return err;
+      }
+      pfc_log_debug("previous path info %s", DataflowCmn::get_string(*path_info_prev).c_str());
+      if(!(strncmp((const char *)path_info->in_vnode, (const char *)path_info_prev->out_vnode, sizeof(path_info->in_vnode) + 1)) &&
+          !(strncmp((const char *)path_info->in_vif, (const char *)path_info_prev->out_vif, sizeof(path_info->in_vif) + 1)) &&
+           (path_info_prev->vlink_flag == UPLL_DATAFLOW_PATH_VLINK_EXISTS)) {
+           pfc_log_debug("skipping path info %s", DataflowCmn::get_string(*path_info).c_str());
+           strncpy((char *)path_info_prev->out_vnode, (const char *)path_info->out_vnode, sizeof(path_info->out_vnode)); 
+           strncpy((char *)path_info_prev->out_vif, (const char *)path_info->out_vif, sizeof(path_info->out_vif)); 
+           delete path_info;
+           path_info_prev->vlink_flag = UPLL_DATAFLOW_PATH_VLINK_NOT_EXISTS_; 
+           return err;
+      }
+    }
+  }
+  return 0;
 }
 
 /**  CompareDataflow
@@ -597,6 +640,10 @@ bool DataflowCmn::CompareVtnDataflow(DataflowCmn *otherflow) {
     || (strcmp((const char*)otherflow->df_segment->vtn_df_common->
                                                             egress_switch_id
           , (const char*)this->df_segment->vtn_df_common->egress_switch_id)
+                                                            != 0)
+    || (strcmp((const char*)otherflow->df_segment->vtn_df_common->
+                                                            egress_vinterface
+          , (const char*)this->df_segment->vtn_df_common->egress_vinterface)
                                                             != 0)
     || (strcmp((const char*)otherflow->df_segment->vtn_df_common->
                                                             egress_port_id
@@ -1243,6 +1290,9 @@ bool DataflowCmn::check_match_condition(map<UncDataflowFlowMatchType,
  * * @return      : None 
  **/
 void DataflowCmn::apply_action() {
+  if (action_applied == true)
+    return;
+  action_applied = true;
   // DEEP COPY matches to output_matches;
   deep_copy();
   if(df_segment->actions.size() > 0) {
@@ -1461,6 +1511,19 @@ void DataflowCmn::apply_action() {
   pfc_log_trace("Exiting the for loop in apply_action");
 }
 
+UncDataflowReason DataflowCmn::deleteflow(DataflowCmn* nextCtrlrFlow) {
+  pfc_log_debug("before is_head=%d next.size()=%" PFC_PFMT_SIZE_T
+                " head->total_flow_count=%d", is_head, next.size(),
+                head->total_flow_count); 
+  if (next.size() > 0 && (head->total_flow_count > 1)) {
+    head->total_flow_count--;
+  }
+  next.pop_back();
+  pfc_log_debug("after is_head=%d next.size()=%" PFC_PFMT_SIZE_T
+                " head->total_flow_count=%d", is_head, next.size(),
+                head->total_flow_count);
+  return UNC_DF_RES_SUCCESS;
+}
 
 UncDataflowReason DataflowCmn::appendFlow(DataflowCmn* nextCtrlrFlow, map<string, uint32_t>& ctrlr_dom_count_map) {
   pfc_log_debug("ctrlr_dom_count_map.size=%" PFC_PFMT_SIZE_T " is_head=%d",
@@ -1493,7 +1556,7 @@ UncDataflowReason DataflowCmn::appendFlow(DataflowCmn* nextCtrlrFlow, map<string
     addl_data->max_dom_traversal_count = ctrlr_dom_count_map["nvtnctrlrdom"] * 2;
   } 
   if (addl_data->current_traversal_count+1 > addl_data->max_dom_traversal_count) {
-    pfc_log_debug("current_traversal_count %d is exceeding max_dom_traversal_count %d", addl_data->current_traversal_count+1, head->addl_data->max_dom_traversal_count);
+    pfc_log_debug("current_traversal_count %d is exceeding max_dom_traversal_count %d", addl_data->current_traversal_count+1, addl_data->max_dom_traversal_count);
     addl_data->reason = UNC_DF_RES_EXCEEDS_HOP_LIMIT;
     return UNC_DF_RES_EXCEEDS_HOP_LIMIT;
   } else {
@@ -1595,18 +1658,6 @@ uint32_t DataflowUtil::get_total_flow_count() {
     return tot_flow_count;
 }
 
-uint32_t DataflowUtil::storeFlowDetails(key_dataflow_t fk, vector<DataflowDetail*> flowDetails) {
-  pfc_log_debug("Inside storeFlowDetails of DataflowUtil");
-  pfc_flows.insert(std::pair<key_dataflow_t, vector<DataflowDetail*> >( fk, flowDetails));
-  vector<DataflowDetail*>::iterator it = flowDetails.begin();
-  while(it != flowDetails.end()) {
-    DataflowDetail *df_segm = (DataflowDetail*)*it;
-    DataflowCmn* firstCtrlrFlow = new DataflowCmn(true, df_segm);
-    appendFlow(firstCtrlrFlow);
-    it++;
-  }
-  return 0;
-}
 
 uint32_t DataflowUtil::appendFlow(DataflowCmn* firstCtrlrFlow) {
   pfc_log_debug("Inside appendFlow of DataflowUtil");
@@ -1655,7 +1706,7 @@ int DataflowUtil::sessOutDataflowsFromDriver(ServerSession& sess) {
     ++iter_1st_ctrlr_flow;
     DataflowDetail *df_seg = aFlow->df_segment;
     delete aFlow;
-    pfc_log_info("sessOutDataflowsFromDriver befor df_segment delete");
+    pfc_log_debug("sessOutDataflowsFromDriver befor df_segment delete");
     delete df_seg;
   }
   firstCtrlrFlows.clear();

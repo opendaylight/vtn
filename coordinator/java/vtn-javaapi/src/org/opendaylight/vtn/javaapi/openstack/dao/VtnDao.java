@@ -101,8 +101,7 @@ public class VtnDao {
 		PreparedStatement statement = null;
 		try {
 			statement = connection.prepareStatement(sql);
-			statement.setInt(1, vtnBean.getVtnId());
-			statement.setString(2, vtnBean.getVtnName());
+			statement.setString(1, vtnBean.getVtnName());
 			status = statement.executeUpdate();
 		} finally {
 			if (statement != null) {

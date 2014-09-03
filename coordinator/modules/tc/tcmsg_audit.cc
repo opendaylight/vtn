@@ -163,6 +163,8 @@ TcMsgAudit::SendAuditTransEndRequest(AbortOnFailVector abort_on_fail_,
         tc::TcClientSessionUtils::create_tc_client_session(channel_name,
                                   tclib::TCLIB_AUDIT_TRANSACTION, conn);
     if (NULL == end_sess) {
+      pfc_log_error("IPC invoke failed for channel %s",
+                    channel_name.c_str());
       return TCOPER_RET_FATAL;
     }
     /*append data to channel */
@@ -292,9 +294,20 @@ unc_keytype_ctrtype_t GetDriverId::GetResult() {
  *@param sess_id - session identifier.
  *@param oper - operation type
  **/
-AuditTransaction::AuditTransaction(uint32_t sess_id,
-                                   tclib::TcMsgOperType oper)
-:TcMsgAudit(sess_id , oper), reconnect_controller_(PFC_FALSE) {}
+AuditTransaction::AuditTransaction(uint32_t sess_id, tclib::TcMsgOperType oper)
+    :TcMsgAudit(sess_id , oper), reconnect_controller_(PFC_FALSE) {
+  simplified_audit_   = PFC_FALSE;
+  user_audit_         = PFC_FALSE;
+  commit_number_      = 0;
+  commit_date_        = 0;
+  commit_application_ = "";
+}
+
+/*!\brief method to set user audit
+ * @param[in] user_audit - option to set user audit type*/ 
+void AuditTransaction::IsUserAudit(pfc_bool_t user_audit) {
+  user_audit_ = user_audit;
+}
 
 /*!\brief method to set reconnect option
  * @param[in] force_reconnect - option to perforn audit after reconnecting with
@@ -303,6 +316,26 @@ void AuditTransaction::SetReconnect(pfc_bool_t force_reconnect) {
   reconnect_controller_ = force_reconnect;
 }
 
+/*!\brief method to set PFC commit version,commit date and commit_application
+ * @param[in] commit_number - latest commit version of PFC 
+ * @param[in] commit_date - latest commit date of PFC 
+ * @param[in] commit_application - Application that performed commit operation
+ **/ 
+
+void AuditTransaction::SetCommitInfo(uint64_t commit_number,
+                                     uint64_t commit_date,
+                                     std::string commit_application) {
+  commit_number_ = commit_number;
+  commit_date_ = commit_date;
+  commit_application_ = commit_application;
+}
+/*!\brief method to set simplified audit option
+ * @param[in] simplified_audit - option to perform simplified audit
+ *                               for PFC driver inovked Audit process
+ * */
+void AuditTransaction::SetSimplifiedAudit(pfc_bool_t simplified_audit) {
+  simplified_audit_ = simplified_audit;
+}
 
 /*!\brief this method sends send Audit/Transaction START/END
  *request to recipient modules.
@@ -330,49 +363,133 @@ AuditTransaction::SendRequest(std::string channel_name) {
   /*append data to channel */
   util_resp = tc::TcClientSessionUtils::set_uint8(sess_, opertype_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting opertype_ failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = tc::TcClientSessionUtils::set_uint32(sess_, session_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting session_id_ failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = tc::TcClientSessionUtils::set_uint8(sess_, driver_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting driver_id_ failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = tc::TcClientSessionUtils::set_string(sess_, controller_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting controller_id_ failed");
     return ReturnUtilResp(util_resp);
   }
   if (opertype_ == tclib::MSG_AUDIT_START) {
     util_resp = tc::TcClientSessionUtils::
         set_uint8(sess_, (uint8_t)reconnect_controller_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting reconnect_controller_ failed");
+      return ReturnUtilResp(util_resp);
+    }
+    util_resp = tc::TcClientSessionUtils::
+        set_uint8(sess_, (uint8_t)simplified_audit_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting simplified_audit_ failed");
+      return ReturnUtilResp(util_resp);
+    }
+    /* Updates controller commit details */
+    util_resp = tc::TcClientSessionUtils::set_uint64(sess_, commit_number_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting commit_number_ failed");
+      return ReturnUtilResp(util_resp);
+    }
+    util_resp = tc::TcClientSessionUtils::set_uint64(sess_, commit_date_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting commit_date failed");
+      return ReturnUtilResp(util_resp);
+    }
+    util_resp = tc::TcClientSessionUtils::set_string(sess_,
+                                                     commit_application_);
+    if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting commit_application failed");
       return ReturnUtilResp(util_resp);
     }
   }
   if (opertype_ == tclib::MSG_AUDIT_TRANS_END) {
     util_resp = tc::TcClientSessionUtils::set_uint8(sess_, trans_result_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting trans_result_ failed");
       return ReturnUtilResp(util_resp);
     }
   }
   if (opertype_ == tclib::MSG_AUDIT_END) {
     util_resp = tc::TcClientSessionUtils::set_uint8(sess_, audit_result_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequest: Setting audit_result_ failed");
       return ReturnUtilResp(util_resp);
     }
   }
   /*invoke session*/
   util_resp = tc::TcClientSessionUtils::tc_session_invoke(sess_, resp);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Session invoke failed");
     return ReturnUtilResp(util_resp);
   }
 
+  if (PFC_EXPECT_TRUE((resp == tclib::TC_SIMPLIFIED_AUDIT) ||
+                      (resp == tclib::TC_SUCCESS)) && 
+      PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_START)) {
+
+    uint32_t respcount = 0;
+    uint64_t commit_number = 0;
+    uint64_t commit_date = 0;
+    std::string commit_application;
+
+    respcount = sess_->getResponseCount();
+    
+    if (respcount < 6) {
+      pfc_log_info("SendRequest: No Commit Info Received ");
+    } else {
+      util_resp = unc::tc::TcClientSessionUtils::get_uint64(sess_,
+                                                    COMMIT_INFO_START_POS,
+                                                    &commit_number);
+      if (util_resp != TCUTIL_RET_SUCCESS) {
+        pfc_log_error("SendRequest: Getting commit_number failed");
+        return ReturnUtilResp(util_resp);
+      }
+     
+      util_resp = unc::tc::TcClientSessionUtils::get_uint64(sess_,
+                                                    COMMIT_INFO_START_POS + 1,
+                                                    &commit_date);
+      if (util_resp != TCUTIL_RET_SUCCESS) {
+        pfc_log_error("SendRequest: Getting commit_version failed");
+        return ReturnUtilResp(util_resp);
+      }
+     
+      util_resp = unc::tc::TcClientSessionUtils::get_string(sess_,
+                                                    COMMIT_INFO_START_POS + 2,
+                                                    commit_application);
+      if (util_resp != TCUTIL_RET_SUCCESS) {
+        pfc_log_error("SendRequest: Getting commit_application failed");
+        return ReturnUtilResp(util_resp);
+      }
+     
+      SetCommitInfo(commit_number, commit_date, commit_application);
+    }
+  }
   /*handle server response*/
   if (PFC_EXPECT_TRUE(resp == tclib::TC_SUCCESS)) {
     pfc_log_info("Success response from %s", channel_name.c_str());
     ret_val = TCOPER_RET_SUCCESS;
+  } else if (PFC_EXPECT_TRUE(resp == tclib::TC_SIMPLIFIED_AUDIT) &&
+             PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_START)) {
+    pfc_log_info("Simplified Audit response from %s", channel_name.c_str());
+    if (user_audit_ != PFC_TRUE) {
+      pfc_log_info("Audit from Driver,Simplified Audit takes place");
+      SetSimplifiedAudit(PFC_TRUE);
+      ret_val = TCOPER_RET_SUCCESS;
+    }
+    else {
+      pfc_log_info("Audit from User, No Simplified Audit takes place");
+      ret_val = TCOPER_RET_SUCCESS;
+    }
   } else if (PFC_EXPECT_TRUE(resp == tclib::TC_FAILURE) &&
             PFC_EXPECT_TRUE(opertype_ == tclib::MSG_AUDIT_START)) {
     pfc_log_info("Failure response from %s", channel_name.c_str());
@@ -418,7 +535,8 @@ AuditTransaction::SendRequest(std::string channel_name) {
   }
   /*session is not closed in case of failure as its contents
    * are forwarded to VTN*/
-  if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS)) {
+  if (PFC_EXPECT_TRUE((ret_val == TCOPER_RET_SUCCESS) ||
+                     (ret_val == TCOPER_RET_SIMPLIFIED_AUDIT))) {
     TcClientSessionUtils::tc_session_close(&sess_, conn_);
   }
   pfc_log_debug("AuditTransaction::SendRequest() exit");
@@ -453,8 +571,8 @@ TcOperRet AuditTransaction::Execute() {
       tc_driverid = MapTcDriverId(driver_id_);
 
       notifyorder_.push_back(tc_driverid);
-      notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
+      notifyorder_.push_back(TC_UPLL);
       break;
     }
     case tclib::MSG_AUDIT_END: {
@@ -470,6 +588,7 @@ TcOperRet AuditTransaction::Execute() {
       pfc_log_info("*** AUDIT TxSTART ***");
       notifyorder_.push_back(TC_DRV_ODL);
       //notifyorder_.push_back(TC_DRV_OVERLAY);
+      notifyorder_.push_back(TC_DRV_POLC);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
@@ -480,6 +599,9 @@ TcOperRet AuditTransaction::Execute() {
       notifyorder_.push_back(TC_UPPL);
       notifyorder_.push_back(TC_UPLL);
       // notifyorder_.push_back(TC_DRV_LEGACY);
+      notifyorder_.push_back(TC_DRV_POLC);
+      notifyorder_.push_back(TC_DRV_OVERLAY);
+      notifyorder_.push_back(TC_DRV_OPENFLOW);
       notifyorder_.push_back(TC_DRV_ODL);
       break;
     }
@@ -491,16 +613,27 @@ TcOperRet AuditTransaction::Execute() {
 
   for (NotifyList::iterator list_iter = notifyorder_.begin();
       list_iter != notifyorder_.end(); list_iter++) {
+    pfc_log_debug("GetChannelName for %u", *list_iter);
     channel_name = GetChannelName(*list_iter);
-    if (channel_name.empty()) {
-      /*channel names of drivers may be empty - ignore*/
+    if (opertype_ == tclib::MSG_AUDIT_START && channel_name.empty()) {
+      // Add-on driver: If driver not present, return error
+      pfc_log_error("Driver not present. Return TCOPER_RET_NO_DRIVER");
+      ret_val = TCOPER_RET_NO_DRIVER;
+      break;
+    } else if (channel_name.empty()) {
+      // For TxStart or TxEnd msgs sent to all drivers.
+      // If a driver is not present, skip
+      pfc_log_info("Channel for %u not available. Skipping", *list_iter);
       continue;
     }
 
     ret_val = SendRequest(channel_name);
     if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
       return ret_val;
-    } else if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS)) {
+    } else if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS )) {
+      if (simplified_audit_ == PFC_TRUE) {
+        ret_val = TCOPER_RET_SIMPLIFIED_AUDIT;
+      }
       /*append channel info to handle failure scenario*/
       abort_on_fail_.push_back(*list_iter);
     }
@@ -552,21 +685,25 @@ TwoPhaseAudit::SetSessionToForwardDriverResult(pfc::core::ipc::ClientSession*
   /*append data to channel */
   util_resp = TcClientSessionUtils::set_uint8(tmpsess, oper);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SetSessionToForwardDriverResult: Setting oper failed");
     return ReturnUtilResp(util_resp);
   }
   /*validate session_id_ and config_id_*/
   util_resp = TcClientSessionUtils::set_uint32(tmpsess, session_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SetSessionToForwardDriverResult: Setting sess_id failed");
     return ReturnUtilResp(util_resp);
   }
 
   PFC_ASSERT(TCOPER_RET_SUCCESS == controller_id_.empty());
   util_resp = TcClientSessionUtils::set_string(tmpsess, controller_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SetSessionToForwardDriverResult: Setting ctrl_id failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = TcClientSessionUtils::set_uint8(tmpsess, phase);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SetSessionToForwardDriverResult: Setting phase failed");
     return ReturnUtilResp(util_resp);
   }
   pfc_log_debug("TwoPhaseAudit::SetSessionToForwardDriverResult exit");
@@ -638,6 +775,7 @@ TwoPhaseAudit::HandleDriverResultResponse(pfc::core::ipc::ClientSession*
                                                          respcount-1,
                                                          &audit_ret);
     if (util_resp != TCUTIL_RET_SUCCESS) {
+      pfc_log_error("HandleDriverResultResponse: Error getting audit_ret");
       return ReturnUtilResp(util_resp);
     }
     audit_result_ = (tclib::TcAuditResult)(audit_result_ && audit_ret);
@@ -688,6 +826,7 @@ TwoPhaseAudit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
 
   util_resp = tc::TcClientSessionUtils::get_uint8(sess_, idx, &driver_count);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("GetControllerInfo: Getting driver_count failed");
     return ReturnUtilResp(util_resp);
   }
   pfc_log_debug("driver_count:%d", driver_count);
@@ -696,6 +835,7 @@ TwoPhaseAudit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
     idx++;
     util_resp = tc::TcClientSessionUtils::get_uint8(sess_, idx, &driver_id);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("GetControllerInfo: Getting driver_id failed");
       return ReturnUtilResp(util_resp);
     }
     driver_type = (unc_keytype_ctrtype_t)driver_id;
@@ -707,6 +847,7 @@ TwoPhaseAudit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
     util_resp = tc::TcClientSessionUtils::get_uint8(sess_, idx,
                                                     &controller_count);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("GetControllerInfo: Getting ctrl_count failed");
       return ReturnUtilResp(util_resp);
     }
     pfc_log_info("driver_id:%d controller_count:%d",
@@ -716,6 +857,7 @@ TwoPhaseAudit::GetControllerInfo(pfc::core::ipc::ClientSession* sess_) {
       util_resp = tc::TcClientSessionUtils::get_string(sess_, idx,
                                                        controller_id);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("GetControllerInfo: Getting ctrl_id failed");
         return ReturnUtilResp(util_resp);
       }
       controllers.push_back(controller_id);
@@ -794,7 +936,7 @@ TwoPhaseAudit::SendRequestToDriver() {
       pfc_log_debug("tc_driverid:%d channel_name:%s",
                    tc_driverid, channel_name.c_str());
     } else {
-      pfc_log_fatal("Driver daemon %d does not exist", (*it).first);
+      pfc_log_error("Driver daemon %d does not exist", (*it).first);
       return TCOPER_RET_FATAL;
     }
     PFC_ASSERT(TCOPER_RET_SUCCESS == channel_name.empty());
@@ -809,14 +951,17 @@ TwoPhaseAudit::SendRequestToDriver() {
     /*append data to channel */
     util_resp = tc::TcClientSessionUtils::set_uint8(sess_, oper);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Setting oper failed");
       return ReturnUtilResp(util_resp);
     }
     util_resp = tc::TcClientSessionUtils::set_uint32(sess_, session_id_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Setting sess_id failed");
       return ReturnUtilResp(util_resp);
     }
     util_resp = tc::TcClientSessionUtils::set_string(sess_, controller_id_);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Setting driver_id failed");
       return ReturnUtilResp(util_resp);
     }
     /*add controller info*/
@@ -824,12 +969,14 @@ TwoPhaseAudit::SendRequestToDriver() {
     uint8_t controller_count = clist.size();
     util_resp = tc::TcClientSessionUtils::set_uint8(sess_, controller_count);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Setting ctrl_count failed");
       return ReturnUtilResp(util_resp);
     }
 
     for (cntrl_it = clist.begin(); cntrl_it != clist.end(); cntrl_it++) {
       util_resp = tc::TcClientSessionUtils::set_string(sess_, *cntrl_it);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("SendRequestToDriver: Setting ctrl_id failed");
         return ReturnUtilResp(util_resp);
       }
     }
@@ -838,6 +985,7 @@ TwoPhaseAudit::SendRequestToDriver() {
     /*Invoke the session */
     util_resp = tc::TcClientSessionUtils::tc_session_invoke(sess_, resp);
     if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+      pfc_log_error("SendRequestToDriver: Session invoke failed");
       return ReturnUtilResp(util_resp);
     }
 
@@ -848,19 +996,36 @@ TwoPhaseAudit::SendRequestToDriver() {
       /*validate the driver_id saved from UPLL controllerinfo*/
       if (PFC_EXPECT_TRUE(dmndrvinfo.find((*it).first) != dmndrvinfo.end())) {
         pfc_log_debug("forward response to UPLL session");
-        if (TCOPER_RET_SUCCESS != upll_sess_->forward(*sess_, 0, UINT32_MAX)) {
-          pfc_log_fatal("forward failed");
+        int32_t ipc_ret = upll_sess_->forward(*sess_, 0, UINT32_MAX);
+        if (ipc_ret == ESHUTDOWN ||
+            ipc_ret == ECANCELED ||
+            ipc_ret == ECONNABORTED) {
+          pfc_log_error("%s forward to upll failed; ipc_ret = %d",
+                        __FUNCTION__, ipc_ret);
+          return TCOPER_RET_FATAL;
+        } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+          pfc_log_fatal("%s forward to upll failed; ipc_ret = %d",
+                        __FUNCTION__, ipc_ret);
           return TCOPER_RET_FATAL;
         }
       }
       dmndrvinfo.clear();
-
-      dmndrvinfo = driverset_map_[TC_UPPL];
+      /*Controller list of UPLL is considered since
+       *controller list of UPPL is always empty during VOTE/COMMIT phase*/
+      dmndrvinfo = driverset_map_[TC_UPLL];
       /*validate the driver_id saved from UPPL controllerinfo*/
       if (PFC_EXPECT_TRUE(dmndrvinfo.find((*it).first) != dmndrvinfo.end())) {
         pfc_log_debug("forward response to UPPL session");
-        if (TCOPER_RET_SUCCESS != uppl_sess_->forward(*sess_, 0, UINT32_MAX)) {
-          pfc_log_fatal("forward failed");
+        int32_t ipc_ret = uppl_sess_->forward(*sess_, 0, UINT32_MAX);
+        if (ipc_ret == ESHUTDOWN ||
+            ipc_ret == ECANCELED ||
+            ipc_ret == ECONNABORTED) {
+          pfc_log_error("%s forward to uppl failed; ipc_ret = %d",
+                        __FUNCTION__, ipc_ret);
+          return TCOPER_RET_FATAL;
+        } else if (ipc_ret != TCOPER_RET_SUCCESS) {
+          pfc_log_fatal("%s forward to uppl failed; ipc_ret = %d",
+                        __FUNCTION__, ipc_ret);
           return TCOPER_RET_FATAL;
         }
       }
@@ -937,18 +1102,22 @@ TwoPhaseAudit::SendRequest(std::string channel_name) {
   /*append data to channel */
   util_resp = tc::TcClientSessionUtils::set_uint8(sess_, opertype_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting opertype failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = tc::TcClientSessionUtils::set_uint32(sess_, session_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting sess_id failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = tc::TcClientSessionUtils::set_uint8(sess_, driver_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting drv_id failed");
     return ReturnUtilResp(util_resp);
   }
   util_resp = tc::TcClientSessionUtils::set_string(sess_, controller_id_);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Setting ctrl_id failed");
     return ReturnUtilResp(util_resp);
   }
   pfc_log_info("notify %s - cntrl_id:%s",
@@ -956,6 +1125,7 @@ TwoPhaseAudit::SendRequest(std::string channel_name) {
   /*Invoke the session */
   util_resp = tc::TcClientSessionUtils::tc_session_invoke(sess_, resp);
   if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+    pfc_log_error("SendRequest: Session invoke failed");
     return ReturnUtilResp(util_resp);
   }
 

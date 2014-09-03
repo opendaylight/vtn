@@ -61,18 +61,17 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 				+ VtnServiceJsonConsts.VTNNAME);
 		if (resource instanceof VLinkResource
 				&& ((VLinkResource) resource).getVtnName() != null
-				&& !((VLinkResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VLinkResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VLinkResource) resource).getVtnName().trim(),
+					((VLinkResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			if (isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.URI
 						+ VtnServiceJsonConsts.VLKNAME);
 				if (((VLinkResource) resource).getVlkName() != null
-						&& !((VLinkResource) resource).getVlkName().trim()
-								.isEmpty()) {
+						&& !((VLinkResource) resource).getVlkName().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(
-							((VLinkResource) resource).getVlkName().trim(),
+							((VLinkResource) resource).getVlkName(),
 							VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
@@ -81,9 +80,9 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 			setListOpFlag(false);
 		} else if (resource instanceof VLinksResource
 				&& ((VLinksResource) resource).getVtnName() != null
-				&& !((VLinksResource) resource).getVtnName().trim().isEmpty()) {
+				&& !((VLinksResource) resource).getVtnName().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((VLinksResource) resource).getVtnName().trim(),
+					((VLinksResource) resource).getVtnName(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(true);
 		}
@@ -103,9 +102,8 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 	 *             , for vtn exception
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start VLinkResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of FlowListResourceValidator");
@@ -131,13 +129,13 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		} catch (final ClassCastException e) {
 			if (method.equals(VtnServiceConsts.GET)) {
 				setInvalidParameter(validator.getInvalidParameter());
 			}
-			LOG.error("Inside catch:ClassCastException");
+			LOG.error(e, "Inside catch:ClassCastException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -171,11 +169,11 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VNODE1NAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VNODE1NAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VNODE1NAME)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
 		if (isValid) {
@@ -185,11 +183,11 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VNODE2NAME).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(requestBody
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VNODE2NAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31)
+						.getAsString(), VtnServiceJsonConsts.LEN_31)
 						|| requestBody
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VNODE2NAME)
-								.getAsString().trim().isEmpty();
+								.getAsString().isEmpty();
 			}
 		}
 		return isValid;
@@ -220,10 +218,10 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VLKNAME).getAsString() != null
 					&& !vlinkResourceEntry
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VLKNAME)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidMaxLengthAlphaNum(vlinkResourceEntry
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VLKNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			// validation for key: vnode1_name(mandatory)
 			if (isValid) {
@@ -231,12 +229,12 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 				if (vlinkResourceEntry.has(VtnServiceJsonConsts.VNODE1NAME)
 						&& vlinkResourceEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.VNODE1NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vlinkResourceEntry.getAsJsonPrimitive(
 											VtnServiceJsonConsts.VNODE1NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -247,12 +245,12 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 				if (vlinkResourceEntry.has(VtnServiceJsonConsts.IF1NAME)
 						&& vlinkResourceEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IF1NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vlinkResourceEntry.getAsJsonPrimitive(
 											VtnServiceJsonConsts.IF1NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -263,12 +261,12 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 				if (vlinkResourceEntry.has(VtnServiceJsonConsts.VNODE2NAME)
 						&& vlinkResourceEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.VNODE2NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vlinkResourceEntry.getAsJsonPrimitive(
 											VtnServiceJsonConsts.VNODE2NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -279,17 +277,17 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 				if (vlinkResourceEntry.has(VtnServiceJsonConsts.IF2NAME)
 						&& vlinkResourceEntry.getAsJsonPrimitive(
 								VtnServiceJsonConsts.IF2NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
+					isValid = validator
+							.isValidMaxLengthAlphaNum(
+									vlinkResourceEntry.getAsJsonPrimitive(
 											VtnServiceJsonConsts.IF2NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31);
+											.getAsString(),
+									VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
 				if (isValid) {
-					isValid = commonValidation(vlinkResourceEntry);
+					isValid = commonValidation(vlinkResourceEntry, true);
 				}
 			}
 		} else {
@@ -315,84 +313,9 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 		setInvalidParameter(VtnServiceJsonConsts.VLINK);
 		if (requestBody.has(VtnServiceJsonConsts.VLINK)
 				&& requestBody.get(VtnServiceJsonConsts.VLINK).isJsonObject()) {
-			isValid = true;
 			final JsonObject vlinkResourceEntry = requestBody
 					.getAsJsonObject(VtnServiceJsonConsts.VLINK);
-			// validation for key: vnode1_name(optional)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.VNODE1NAME);
-				if (vlinkResourceEntry.has(VtnServiceJsonConsts.VNODE1NAME)
-						&& vlinkResourceEntry.getAsJsonPrimitive(
-								VtnServiceJsonConsts.VNODE1NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.VNODE1NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31)
-							|| vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.VNODE1NAME)
-									.getAsString().trim().isEmpty();
-				}
-			}
-			// validation for key: if1_name(optional)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.IF1NAME);
-				if (vlinkResourceEntry.has(VtnServiceJsonConsts.IF1NAME)
-						&& vlinkResourceEntry.getAsJsonPrimitive(
-								VtnServiceJsonConsts.IF1NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.IF1NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31)
-							|| vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.IF1NAME)
-									.getAsString().trim().isEmpty();
-				}
-			}
-			// validation for key: vnode2_name(optional)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.VNODE2NAME);
-				if (vlinkResourceEntry.has(VtnServiceJsonConsts.VNODE2NAME)
-						&& vlinkResourceEntry.getAsJsonPrimitive(
-								VtnServiceJsonConsts.VNODE2NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.VNODE2NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31)
-							|| vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.VNODE2NAME)
-									.getAsString().trim().isEmpty();
-				}
-			}
-			// validation for key: if2_name(optional)
-			if (isValid) {
-				setInvalidParameter(VtnServiceJsonConsts.IF2NAME);
-				if (vlinkResourceEntry.has(VtnServiceJsonConsts.IF2NAME)
-						&& vlinkResourceEntry.getAsJsonPrimitive(
-								VtnServiceJsonConsts.IF2NAME).getAsString() != null) {
-					isValid = validator.isValidMaxLengthAlphaNum(
-							vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.IF2NAME)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_31)
-							|| vlinkResourceEntry
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.IF2NAME)
-									.getAsString().trim().isEmpty();
-				}
-			}
-			if (isValid) {
-				isValid = commonValidation(vlinkResourceEntry);
-			}
+			isValid = commonValidation(vlinkResourceEntry, false);
 		} else {
 			isValid = false;
 		}
@@ -408,9 +331,10 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 	 *            the vlink resource entry
 	 * @return true, if successful
 	 */
-	private boolean commonValidation(final JsonObject vlinkResourceEntry) {
+	private boolean commonValidation(final JsonObject vlinkResourceEntry, boolean isPost) {
 		LOG.trace("Start VLinkResourceValidator#commonValidation()");
 		boolean isValid = true;
+		boolean isBoundaryValid = false;
 		// validation for key: description(optional)
 		setInvalidParameter(VtnServiceJsonConsts.DESCRIPTION);
 		if (vlinkResourceEntry.has(VtnServiceJsonConsts.DESCRIPTION)
@@ -418,11 +342,11 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.DESCRIPTION).getAsString() != null) {
 			isValid = validator.isValidMaxLength(vlinkResourceEntry
 					.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
-					.getAsString().trim(), VtnServiceJsonConsts.LEN_127)
+					.getAsString(), VtnServiceJsonConsts.LEN_127)
 					|| vlinkResourceEntry
 							.getAsJsonPrimitive(
 									VtnServiceJsonConsts.DESCRIPTION)
-							.getAsString().trim().isEmpty();
+							.getAsString().isEmpty();
 		}
 		// validation for key: adminstatus(optional)
 		if (isValid) {
@@ -432,7 +356,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.ADMINSTATUS).getAsString() != null) {
 				final String adminstatus = vlinkResourceEntry
 						.getAsJsonPrimitive(VtnServiceJsonConsts.ADMINSTATUS)
-						.getAsString().trim();
+						.getAsString();
 				isValid = adminstatus
 						.equalsIgnoreCase(VtnServiceJsonConsts.ENABLE)
 						|| adminstatus
@@ -446,6 +370,29 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 							.isJsonObject()) {
 				final JsonObject boundary = vlinkResourceEntry
 						.getAsJsonObject(VtnServiceJsonConsts.BOUNDARYMAP);
+
+				//check the boundary_id
+				setInvalidParameter(VtnServiceJsonConsts.BOUNDARYID);
+				if (boundary.has(VtnServiceJsonConsts.BOUNDARYID)
+						&& boundary.getAsJsonPrimitive(
+								VtnServiceJsonConsts.BOUNDARYID)
+								.getAsString() != null) {
+					if (!boundary.getAsJsonPrimitive(
+									VtnServiceJsonConsts.BOUNDARYID)
+							.getAsString().isEmpty()) {
+						if (!validator.isValidMaxLengthAlphaNum(
+								boundary.getAsJsonPrimitive(
+								VtnServiceJsonConsts.BOUNDARYID)
+								.getAsString(), VtnServiceJsonConsts.LEN_31)) {
+							//if boundary_id is invalid in post or put, no need to check the vlan_id or no_vlan_id
+							LOG.trace("Complete VLinkResourceValidator#commonValidation() 2 ");
+							return false;
+						} else {
+							isBoundaryValid = true;	
+						}
+					} 
+				}
+
 				// either vlan_id or no_vlan_id should be there
 				setInvalidParameter(VtnServiceJsonConsts.VLANID
 						+ VtnServiceJsonConsts.SLASH
@@ -465,7 +412,7 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 						isValid = validator.isValidRange(
 								boundary.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VLANID)
-										.getAsString().trim(),
+										.getAsString(),
 								VtnServiceJsonConsts.VAL_1,
 								VtnServiceJsonConsts.VAL_4095);
 					} else {
@@ -478,31 +425,18 @@ public class VLinkResourceValidator extends VtnServiceValidator {
 							&& !boundary
 									.getAsJsonPrimitive(
 											VtnServiceJsonConsts.NO_VLAN_ID)
-									.getAsString().trim().isEmpty()) {
+									.getAsString().isEmpty()) {
 						isValid = boundary
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.NO_VLAN_ID)
-								.getAsString().trim()
+								.getAsString()
 								.equalsIgnoreCase(VtnServiceJsonConsts.TRUE);
 					} else {
 						isValid = false;
 					}
-				}
-				if (isValid) {
-					setInvalidParameter(VtnServiceJsonConsts.BOUNDARYID);
-					if (boundary.has(VtnServiceJsonConsts.BOUNDARYID)
-							&& boundary.getAsJsonPrimitive(
-									VtnServiceJsonConsts.BOUNDARYID)
-									.getAsString() != null) {
-						isValid = validator.isValidMaxLengthAlphaNum(
-								boundary.getAsJsonPrimitive(
-										VtnServiceJsonConsts.BOUNDARYID)
-										.getAsString().trim(),
-								VtnServiceJsonConsts.LEN_31)
-								|| boundary
-										.getAsJsonPrimitive(
-												VtnServiceJsonConsts.BOUNDARYID)
-										.getAsString().trim().isEmpty();
+				} else {
+					if (isPost && isBoundaryValid) {
+						isValid = false;
 					}
 				}
 			}

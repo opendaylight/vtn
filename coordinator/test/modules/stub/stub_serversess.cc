@@ -98,6 +98,13 @@ TcServerSessionUtils::update_key_list_handler(uint32_t index,
   return TCUTIL_RET_SUCCESS;
 }
 
+TcUtilRet TcServerSessionUtils::get_uint64(
+        pfc::core::ipc::ServerSession* ssess,
+        uint32_t index,
+        uint64_t* data) {
+return TCUTIL_RET_SUCCESS;
+}
+
 TcUtilRet TcServerSessionUtils::get_uint32(
     pfc::core::ipc::ServerSession* ssess,
     uint32_t index,
@@ -453,6 +460,24 @@ TcUtilRet TcServerSessionUtils::set_uint32(
 
   return TCUTIL_RET_SUCCESS;
 }
+
+TcUtilRet TcServerSessionUtils::set_uint64(
+    pfc::core::ipc::ServerSession* ssess,
+    uint64_t data) {
+
+  if ((return_type_ == RETURN_FAILURE_1) && (data == 0))
+    return TCUTIL_RET_FAILURE;
+
+  if ((return_type_ == RETURN_FAILURE_1) && (data == 1))
+    return TCUTIL_RET_FAILURE;
+
+  if ((return_type_ == RETURN_FAILURE_1) && (data == TC_OP_DRIVER_AUDIT))
+    return TCUTIL_RET_FAILURE;
+
+  return TCUTIL_RET_SUCCESS;
+}
+
+
 
 TcUtilRet TcServerSessionUtils::set_struct(
     pfc::core::ipc::ServerSession* ssess,

@@ -33,6 +33,8 @@ namespace unc {
 namespace upll {
 namespace dal {
 
+std::map<std::string, DalTableIndex> DalOdbcMgr::tbl_name_to_idx_map_;
+
 // Constructor
 DalOdbcMgr::DalOdbcMgr() {
   dal_env_handle_ = SQL_NULL_HANDLE;
@@ -63,7 +65,7 @@ DalOdbcMgr::Init() {
                                      SQL_NULL_HANDLE,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_TRACE("Err - %d. Failed to Enable Connection Pooling", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to enable connection Pooling", dal_rc);
   }
 
   UPLL_LOG_TRACE("Connection Pooling enabled");
@@ -80,13 +82,13 @@ DalOdbcMgr::Init() {
                                      sql_rc, &dal_rc);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to allocate Environment handle", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to allocate environment handle", dal_rc);
     return dal_rc;
   }
 
   // PFC_ASSERT(dal_env_handle_);
   if (dal_env_handle_ == SQL_NULL_HANDLE) {
-    UPLL_LOG_DEBUG("NULL Environment handle");
+    UPLL_LOG_INFO("NULL Environment handle");
     return kDalRcGeneralError;
   }
 
@@ -101,7 +103,7 @@ DalOdbcMgr::Init() {
                                      dal_env_handle_,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to register DB with ODBC V3", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to register DB with ODBC V3", dal_rc);
     FreeHandle(SQL_HANDLE_ENV, dal_env_handle_);
     return dal_rc;
   }
@@ -116,14 +118,14 @@ DalOdbcMgr::Init() {
                                      dal_env_handle_,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to allocate Connection handle", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to allocate connection handle", dal_rc);
     FreeHandle(SQL_HANDLE_ENV, dal_env_handle_);
     return dal_rc;
   }
 
   // PFC_ASSERT(dal_conn_handle_);
   if (dal_conn_handle_ == SQL_NULL_HANDLE) {
-    UPLL_LOG_DEBUG("NULL Connection handle");
+    UPLL_LOG_INFO("NULL Connection handle");
     FreeHandle(SQL_HANDLE_ENV, dal_env_handle_);
     return kDalRcGeneralError;
   }
@@ -131,6 +133,22 @@ DalOdbcMgr::Init() {
   UPLL_LOG_TRACE("Allocated Connection handle(%p)", dal_conn_handle_);
   return kDalRcSuccess;
 }  // DalOdbcMgr::Init
+
+bool DalOdbcMgr::FillTableName2IndexMap() {
+  using namespace schema;
+  for (uint16_t table_index = 0; (table_index < table::kDalNumTables);
+       table_index++) {
+     if (((int)strlen(table::table_schema[table_index].table_name))
+         > table::cfg_tbl_dirty::max_cfg_tbl_name_len) {
+       UPLL_LOG_INFO("DAL Schema is bad. Table: %s",
+                      table::table_schema[table_index].table_name);
+       return false;
+     }
+     tbl_name_to_idx_map_[table::table_schema[table_index].table_name] =
+         table_index;
+  }
+  return true;
+}
 
 // Connects to the Datasource with the conf file data
 DalResultCode
@@ -140,14 +158,14 @@ DalOdbcMgr::ConnectToDb(const DalConnType conn_type) const {
   conn_type_ = conn_type;
 
   if (dal_conn_handle_ == NULL) {
-    UPLL_LOG_DEBUG("NULL Connection Handle");
+    UPLL_LOG_INFO("NULL Connection handle");
     return kDalRcGeneralError;
   }
 
   // Set Connection Attributes
   dal_rc = SetConnAttributes(dal_conn_handle_, conn_type);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_TRACE("Err - %d. Some or All Connection Attributes not set", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Some/all connection attributes not set", dal_rc);
     return dal_rc;
   }
 
@@ -156,7 +174,7 @@ DalOdbcMgr::ConnectToDb(const DalConnType conn_type) const {
   dal_conn_str.clear();
   dal_conn_str = GetConnString(conn_type);
   if (dal_conn_str.empty()) {
-    UPLL_LOG_DEBUG("Error building connection string");
+    UPLL_LOG_INFO("Error building connection string");
     return kDalRcGeneralError;
   }
   sql_rc = SQLDriverConnect(dal_conn_handle_, NULL,
@@ -167,7 +185,7 @@ DalOdbcMgr::ConnectToDb(const DalConnType conn_type) const {
                                      dal_conn_handle_,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to connect Datatbase with conn string(%s)",
+    UPLL_LOG_DEBUG("Err - %d. Failed to connect datatbase with conn string(%s)",
                    dal_rc, dal_conn_str.c_str());
     return dal_rc;
   }
@@ -186,7 +204,7 @@ DalOdbcMgr::DisconnectFromDb() const {
 
   // PFC_ASSERT(dal_conn_handle_);
   if (dal_conn_handle_ == NULL) {
-    UPLL_LOG_DEBUG("NULL Connection Handle");
+    UPLL_LOG_INFO("NULL Connection handle");
     return kDalRcGeneralError;
   }
 
@@ -195,7 +213,7 @@ DalOdbcMgr::DisconnectFromDb() const {
                                      dal_conn_handle_,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to Disconnect Database for the conenction "
+    UPLL_LOG_INFO("Err - %d. Failed to disconnect database for the connection "
                   "handle(%p)",  dal_rc, dal_conn_handle_);
     return dal_rc;
   }
@@ -212,7 +230,7 @@ DalOdbcMgr::CommitTransaction(void) const {
   DalResultCode dal_rc;
 
   if (dal_conn_handle_ == NULL) {
-    UPLL_LOG_DEBUG("NULL Connection Handle");
+    UPLL_LOG_INFO("NULL Connection handle");
     return kDalRcGeneralError;
   }
 
@@ -222,7 +240,7 @@ DalOdbcMgr::CommitTransaction(void) const {
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to commit transaction for the "
+    UPLL_LOG_INFO("Err - %d. Failed to commit transaction for the "
                   "handle(%p)",  dal_rc, dal_conn_handle_);
     return dal_rc;
   }
@@ -241,7 +259,7 @@ DalOdbcMgr::RollbackTransaction(void) const {
 
   // PFC_ASSERT(dal_conn_handle_);
   if (dal_conn_handle_ == NULL) {
-    UPLL_LOG_DEBUG("NULL Connection Handle");
+    UPLL_LOG_INFO("NULL Connection handle");
     return kDalRcGeneralError;
   }
 
@@ -251,7 +269,7 @@ DalOdbcMgr::RollbackTransaction(void) const {
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to rollback transaction for the "
+    UPLL_LOG_INFO("Err - %d. Failed to rollback transaction for the "
                   "handle(%p)",  dal_rc, dal_conn_handle_);
     return dal_rc;
   }
@@ -274,37 +292,37 @@ DalOdbcMgr::GetSingleRecord(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_INFO("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_INFO("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
   // PFC_ASSERT(bind_info)
   if (bind_info == NULL) {
-    UPLL_LOG_DEBUG("NULL Bind Info for Table(%s)",
-                   schema::TableName(table_index));
+    UPLL_LOG_INFO("NULL bind info for table(%s)",
+                  schema::TableName(table_index));
     return kDalRcGeneralError;
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
-                   "Query - %s; Bind - %s",
-                   schema::TableName(table_index),
-                   schema::TableName(bind_info->get_table_index()));
+    UPLL_LOG_INFO("Table index mismatch with bind info "
+                  "Query - %s; Bind - %s",
+                  schema::TableName(table_index),
+                  schema::TableName(bind_info->get_table_index()));
     return kDalRcGeneralError;
   }
 
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetSingleRecQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_INFO("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -313,12 +331,12 @@ DalOdbcMgr::GetSingleRecord(const UpllCfgType cfg_type,
                         bind_info);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_INFO("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s", query_stmt.c_str());
+  UPLL_LOG_TRACE("Completed executing query stmt - %s", query_stmt.c_str());
 
   // Fetching results from the resultset
   sql_rc = SQLFetch(dal_stmt_handle);
@@ -327,14 +345,20 @@ DalOdbcMgr::GetSingleRecord(const UpllCfgType cfg_type,
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("%d - Failed to Fetch result", dal_rc);
+    if (dal_rc != kDalRcRecordNotFound) {
+      UPLL_LOG_INFO("%d - Failed to Fetch result, query stmt - %s",
+                    dal_rc, query_stmt.c_str());
+    } else {
+      UPLL_LOG_TRACE("%d - Failed to Fetch result, query stmt - %s",
+                     dal_rc, query_stmt.c_str());
+    }
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
   UPLL_LOG_TRACE("Result fetched from DB");
 
   if (const_cast<DalBindInfo*>(bind_info)->CopyResultToApp() != true) {
-    UPLL_LOG_DEBUG("Failed to Copy result to the DAL User Buffer");
+    UPLL_LOG_INFO("Failed to Copy result to the DAL User Buffer");
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return kDalRcGeneralError;
   }
@@ -360,24 +384,24 @@ DalOdbcMgr::GetMultipleRecords(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_INFO("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_INFO("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
   // PFC_ASSERT(bind_info)
   if (bind_info == NULL) {
-    UPLL_LOG_DEBUG("NULL Bind Info for Table(%s)",
+    UPLL_LOG_INFO("NULL Bind Info for Table(%s)",
                    schema::TableName(table_index));
     return kDalRcGeneralError;
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_INFO("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -387,10 +411,10 @@ DalOdbcMgr::GetMultipleRecords(const UpllCfgType cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetMultiRecQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_INFO("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -400,12 +424,12 @@ DalOdbcMgr::GetMultipleRecords(const UpllCfgType cfg_type,
                         max_record_count);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
   *cursor = new DalCursor(dal_stmt_handle,
@@ -439,7 +463,7 @@ DalOdbcMgr::GetNextRecord(const DalCursor *cursor) const {
       UPLL_LOG_TRACE("Err - %d. No More Records in Cursor handle (%p)",
                      dal_rc, cursor);
     } else {
-      UPLL_LOG_DEBUG("Err - %d. Error Fetching Next Record from Cursor"
+      UPLL_LOG_INFO("Err - %d. Error Fetching Next Record from Cursor"
                      " handle(%p)", dal_rc, cursor);
     }
     return dal_rc;
@@ -488,12 +512,12 @@ DalOdbcMgr::RecordExists(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -501,7 +525,7 @@ DalOdbcMgr::RecordExists(const UpllCfgType cfg_type,
   // No need to validate bind_info
   if (bind_info != NULL) {
     if (table_index != bind_info->get_table_index()) {
-      UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+      UPLL_LOG_DEBUG("Table index mismatch with bind info "
                      "Query - %s; Bind - %s",
                      schema::TableName(table_index),
                      schema::TableName(bind_info->get_table_index()));
@@ -512,10 +536,10 @@ DalOdbcMgr::RecordExists(const UpllCfgType cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalRecExistsQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -523,12 +547,12 @@ DalOdbcMgr::RecordExists(const UpllCfgType cfg_type,
                         &query_stmt,
                         bind_info);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. XXXXX - Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. XXXXX - Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
   // Fetching results from the resultset
@@ -546,7 +570,7 @@ DalOdbcMgr::RecordExists(const UpllCfgType cfg_type,
   }
 
   *existence = (row_count > 0) ? true : false;
-  UPLL_LOG_TRACE("Completed Executing RecordExists and result of"
+  UPLL_LOG_TRACE("Completed executing RecordExists and result of"
                 " existence is %d",  *existence);
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   return kDalRcSuccess;
@@ -566,12 +590,12 @@ DalOdbcMgr::GetSiblingBegin(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -583,7 +607,7 @@ DalOdbcMgr::GetSiblingBegin(const UpllCfgType cfg_type,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -593,10 +617,10 @@ DalOdbcMgr::GetSiblingBegin(const UpllCfgType cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetSibBegQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -605,7 +629,7 @@ DalOdbcMgr::GetSiblingBegin(const UpllCfgType cfg_type,
                         bind_info,
                         max_record_count);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
@@ -636,12 +660,12 @@ DalOdbcMgr::GetSiblingRecords(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -653,7 +677,7 @@ DalOdbcMgr::GetSiblingRecords(const UpllCfgType cfg_type,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -663,10 +687,10 @@ DalOdbcMgr::GetSiblingRecords(const UpllCfgType cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetSibRecQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -675,7 +699,7 @@ DalOdbcMgr::GetSiblingRecords(const UpllCfgType cfg_type,
                         bind_info,
                         max_record_count);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
@@ -705,12 +729,12 @@ DalOdbcMgr::GetSiblingCount(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -722,7 +746,7 @@ DalOdbcMgr::GetSiblingCount(const UpllCfgType cfg_type,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -732,10 +756,10 @@ DalOdbcMgr::GetSiblingCount(const UpllCfgType cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetSibCountQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -743,12 +767,12 @@ DalOdbcMgr::GetSiblingCount(const UpllCfgType cfg_type,
                         &query_stmt,
                         bind_info);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
   // Binding for count variable
@@ -769,7 +793,8 @@ DalOdbcMgr::GetSiblingCount(const UpllCfgType cfg_type,
                                      dal_stmt_handle,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to fetch result from DB", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to fetch result from DB, query stmt - %s",
+                  dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
@@ -793,12 +818,12 @@ DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -806,7 +831,7 @@ DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
   // No need to validate bind_info
   if (bind_info != NULL) {
     if (table_index != bind_info->get_table_index()) {
-      UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+      UPLL_LOG_DEBUG("Table index mismatch with bind info "
                      "Query - %s; Bind - %s",
                      schema::TableName(table_index),
                      schema::TableName(bind_info->get_table_index()));
@@ -817,10 +842,10 @@ DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetRecCountQT, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -828,12 +853,12 @@ DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
                         &query_stmt,
                         bind_info);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
   // Binding for count variable
@@ -855,7 +880,8 @@ DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to fetch result from DB", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to fetch result from DB, query stmt - %s",
+                  dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
@@ -869,20 +895,21 @@ DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
 DalResultCode
 DalOdbcMgr::DeleteRecords(const UpllCfgType cfg_type,
                           const DalTableIndex table_index,
-                          const DalBindInfo *bind_info) const {
-  SQLHANDLE     dal_stmt_handle;
+                          const DalBindInfo *bind_info,
+                          const bool truncate) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   DalResultCode dal_rc;
   DalQueryBuilder  qbldr;
   std::string query_stmt;
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -890,7 +917,7 @@ DalOdbcMgr::DeleteRecords(const UpllCfgType cfg_type,
   // No need to validate bind_info
   if (bind_info != NULL) {
     if (table_index != bind_info->get_table_index()) {
-      UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+      UPLL_LOG_DEBUG("Table index mismatch with bind info "
                      "Query - %s; Bind - %s",
                      schema::TableName(table_index),
                      schema::TableName(bind_info->get_table_index()));
@@ -898,13 +925,22 @@ DalOdbcMgr::DeleteRecords(const UpllCfgType cfg_type,
     }
   }
 
+  DalApiNum query_template;
+
+  if (truncate == true) {
+    query_template = kDalTruncTableQT;
+    // Note: TRUNCATE query does has WHERE clause, so bind_info is not used.
+  } else {
+    query_template = kDalDelRecQT;
+  }
+
   // Build Query Statement
-  if (qbldr.get_sql_statement(kDalDelRecQT, bind_info, query_stmt,
-                        table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+  if (qbldr.get_sql_statement(query_template, bind_info, query_stmt,
+                              table_index, cfg_type) != true) {
+    UPLL_LOG_ERROR("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -913,7 +949,7 @@ DalOdbcMgr::DeleteRecords(const UpllCfgType cfg_type,
                         bind_info);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     if (dal_rc == kDalRcParentNotFound) {
@@ -922,13 +958,17 @@ DalOdbcMgr::DeleteRecords(const UpllCfgType cfg_type,
     }
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
 
   // Storing dirty table list for skip unmodified tables during commit
   if (cfg_type == UPLL_DT_CANDIDATE) {
-    delete_dirty.insert(table_index);
+    if ((dal_rc = SetTableDirty(cfg_type, table_index, UNC_OP_DELETE))
+        != kDalRcSuccess) {
+      UPLL_LOG_ERROR("SetTableDirty failed with rc=%d", dal_rc);
+      return kDalRcGeneralError;
+    }
   }
   write_count_++;
   return kDalRcSuccess;
@@ -1010,11 +1050,6 @@ DalOdbcMgr::CheckInstance(const UpllCfgType cfg_type,
   DalBindList bind_list = bind_info->get_bind_list();
   for (DalBindList::iterator iter = bind_list.begin();
        iter != bind_list.end(); ++iter) {
-    // Break for loop when all Foreign Keys bound
-    if (ci_binfo.get_input_bind_count() ==
-        schema::TableNumPkCols(table_index)) {
-      break;
-    }
 
     DalBindColumnInfo *col_info = NULL;
     col_info = reinterpret_cast<DalBindColumnInfo *>(*iter);
@@ -1024,9 +1059,13 @@ DalOdbcMgr::CheckInstance(const UpllCfgType cfg_type,
     }
 
     // Bind only for Input and Foreign Key indices
-    if ((col_info->get_io_type() != kDalIoInputOnly &&
-         col_info->get_io_type() != kDalIoInputAndMatch) ||
-        col_info->get_column_index() >= schema::TableNumPkCols(table_index)) {
+    if (col_info->get_io_type() != kDalIoInputOnly &&
+        col_info->get_io_type() != kDalIoInputAndMatch) {
+      continue;
+    }
+    if (col_info->get_column_index() >= schema::TableNumPkCols(table_index) &&
+        !schema::AddtlBindForInstanceExistsCheck(
+            table_index, col_info->get_column_index())) {
       continue;
     }
 
@@ -1056,19 +1095,19 @@ DalResultCode
 DalOdbcMgr::CreateRecord(const UpllCfgType cfg_type,
                          const DalTableIndex table_index,
                          const DalBindInfo *bind_info) const {
-  SQLHANDLE     dal_stmt_handle;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   DalResultCode dal_rc;
   DalQueryBuilder  qbldr;
   std::string query_stmt;
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1079,7 +1118,7 @@ DalOdbcMgr::CreateRecord(const UpllCfgType cfg_type,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1098,22 +1137,43 @@ DalOdbcMgr::CreateRecord(const UpllCfgType cfg_type,
     }
   }
 
+  DalApiNum query_template;
+  // Perf: Build query with c_flag/u_flag when cfg_type is candidate
+  if (cfg_type == UPLL_DT_CANDIDATE) {
+    // By default, create record in CAND with c_flag=1
+    dal_rc = kDalRcRecordNotFound;
+    // Perf: Incase of delete and create:- If delete dirty is 
+    // set for table_index then check whether entry exists in RUNNING 
+    if (delete_dirty.find(table_index) != delete_dirty.end())
+        dal_rc = CheckInstance(UPLL_DT_RUNNING, table_index, bind_info);
+    // If entry exists, create record in CAND with u_flag=1
+    if (dal_rc == kDalRcRecordAlreadyExists)
+      query_template = kDalCreateCandRecUpdateQT;
+    else if (dal_rc == kDalRcRecordNotFound)
+      query_template = kDalCreateCandRecQT;
+    else
+      return dal_rc;
+  } else {
+    query_template = kDalCreateRecQT;
+  }
+
   // Build Query Statement
-  if (qbldr.get_sql_statement(kDalCreateRecQT, bind_info, query_stmt,
+  if (qbldr.get_sql_statement(query_template, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
   dal_rc = ExecuteQuery(&dal_stmt_handle,
                         &query_stmt,
                         bind_info);
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   // Diagnose GeneralError for ParentCheck and InstanceCheck
   if (dal_rc == kDalRcGeneralError) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     dal_rc = CheckInstance(cfg_type, table_index, bind_info);
     if (dal_rc == kDalRcRecordAlreadyExists) {
@@ -1135,20 +1195,23 @@ DalOdbcMgr::CreateRecord(const UpllCfgType cfg_type,
     }
   }
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
-    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
-  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
 
   // Storing dirty table list for skip unmodified tables during commit
-  if (cfg_type == UPLL_DT_CANDIDATE || cfg_type == UPLL_DT_IMPORT) {
+  if (cfg_type == UPLL_DT_CANDIDATE) {
     UPLL_LOG_TRACE("Insert for table %d", table_index);
-    create_dirty.insert(table_index);
+    if ((dal_rc = SetTableDirty(cfg_type, table_index, UNC_OP_CREATE))
+         != kDalRcSuccess) {
+      UPLL_LOG_ERROR("SetTableDirty failed with rc=%d", dal_rc);
+      return kDalRcGeneralError;
+    }  
   }
+  
   write_count_++;
   return kDalRcSuccess;
 }   // DalOdbcMgr::CreateRecord
@@ -1158,19 +1221,19 @@ DalResultCode
 DalOdbcMgr::UpdateRecords(const UpllCfgType cfg_type,
                           const DalTableIndex table_index,
                           const DalBindInfo *bind_info) const {
-  SQLHANDLE     dal_stmt_handle;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   DalResultCode dal_rc;
   DalQueryBuilder  qbldr;
   std::string query_stmt;
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1182,20 +1245,28 @@ DalOdbcMgr::UpdateRecords(const UpllCfgType cfg_type,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
     return kDalRcGeneralError;
   }
 
+  DalApiNum query_template;
+  /* Perf: Build query with u_flag when cfg_type is candidate */
+  if (cfg_type == UPLL_DT_CANDIDATE) {
+    query_template = kDalUpdateCandRecQT; 
+  } else {
+    query_template = kDalUpdateRecQT;
+  }
+
   // Build Query Statement
-  if (qbldr.get_sql_statement(kDalUpdateRecQT, bind_info, query_stmt,
+  if (qbldr.get_sql_statement(query_template, bind_info, query_stmt,
                         table_index, cfg_type) != true) {
-    UPLL_LOG_DEBUG("Failed Building Query Stmt");
+    UPLL_LOG_DEBUG("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_TRACE("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1204,7 +1275,7 @@ DalOdbcMgr::UpdateRecords(const UpllCfgType cfg_type,
                         bind_info);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     if (dal_rc == kDalRcParentNotFound) {
       UPLL_LOG_DEBUG("Foreign Key Violation error. Returning kDalRcGeneralError");
@@ -1213,36 +1284,41 @@ DalOdbcMgr::UpdateRecords(const UpllCfgType cfg_type,
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
 
   // Storing dirty table list for skip unmodified tables during commit
   if (cfg_type == UPLL_DT_CANDIDATE) {
-    update_dirty.insert(table_index);
+    if ((dal_rc = SetTableDirty(cfg_type, table_index, UNC_OP_UPDATE))
+        != kDalRcSuccess) {
+      UPLL_LOG_ERROR("SetTableDirty failed with rc=%d", dal_rc);
+      return kDalRcGeneralError;
+    }
   }
   write_count_++;
   return kDalRcSuccess;
 }   // DalOdbcMgr::UpdateRecords
 
-// Executes the User given queries to update a record.
+// Executes the user given query 
 DalResultCode
-DalOdbcMgr::UpdateRecords(std::string query_stmt,
-                          const UpllCfgType cfg_type,
-                          const DalTableIndex table_index,
-                          const DalBindInfo *bind_info) const {
-  SQLHANDLE     dal_stmt_handle;
+DalOdbcMgr::ExecuteAppQuery(std::string query_stmt,
+                            const UpllCfgType cfg_type,
+                            const DalTableIndex table_index,
+                            const DalBindInfo *bind_info,
+                            const unc_keytype_operation_t dirty_op) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   DalResultCode dal_rc = kDalRcGeneralError;
   DalQueryBuilder  qbldr;
 
   // Validating Inputs
   if (cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d", cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1253,7 +1329,7 @@ DalOdbcMgr::UpdateRecords(std::string query_stmt,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1269,7 +1345,7 @@ DalOdbcMgr::UpdateRecords(std::string query_stmt,
                         bind_info);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     if (dal_rc == kDalRcParentNotFound) {
       UPLL_LOG_DEBUG("Foreign Key Violation error. Returning kDalRcGeneralError");
@@ -1278,18 +1354,21 @@ DalOdbcMgr::UpdateRecords(std::string query_stmt,
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
 
   // Storing dirty table list for skip unmodified tables during commit
   if (cfg_type == UPLL_DT_CANDIDATE) {
-    update_dirty.insert(table_index);
+    if ((dal_rc = SetTableDirty(cfg_type, table_index, dirty_op))
+        != kDalRcSuccess) {
+      UPLL_LOG_ERROR("SetTableDirty failed with rc=%d", dal_rc);
+      return kDalRcGeneralError;
+    }
   }
   write_count_++;
   return kDalRcSuccess;
-}   // DalOdbcMgr::UpdateRecords
-
+}   // DalOdbcMgr::ExecuteAppQuery
 
 
 // Gets the records deleted in cfg_type_1
@@ -1300,7 +1379,7 @@ DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
                               const size_t max_record_count,
                               const DalBindInfo *bind_info,
                               DalCursor **cursor) const {
-  SQLHANDLE     dal_stmt_handle;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   DalResultCode dal_rc;
   DalQueryBuilder  qbldr;
   std::string query_stmt;
@@ -1308,17 +1387,17 @@ DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
 
   // Validating Inputs
   if (cfg_type_1 == UPLL_DT_INVALID || cfg_type_2 == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Invalid config type - %d %d", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (cfg_type_1 == cfg_type_2) {
-    UPLL_LOG_DEBUG("Same Config Type - %d %d", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Same config type - %d %d", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1340,7 +1419,7 @@ DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1350,10 +1429,10 @@ DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalGetDelRecQT, bind_info, query_stmt,
                         table_index, cfg_type_1, cfg_type_2) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1363,12 +1442,12 @@ DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
                         max_record_count);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
   *cursor = new DalCursor(dal_stmt_handle,
@@ -1382,6 +1461,60 @@ DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
   return kDalRcSuccess;
 }  // DalOdbcMgr::GetDeletedRecords
 
+DalResultCode
+DalOdbcMgr::ClearCreateUpdateFlags(const DalTableIndex table_index,
+                                    const UpllCfgType cfg_type) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  DalResultCode dal_rc;
+  DalQueryBuilder  qbldr;
+  std::string query_stmt;
+
+  if (cfg_type == UPLL_DT_INVALID) {
+    UPLL_LOG_DEBUG("Invalid config type - %d", cfg_type);
+    return kDalRcGeneralError;
+  }
+
+  if (table_index >= schema::table::kDalNumTables) {
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
+    return kDalRcGeneralError;
+  }
+
+  // Skip if table is not dirty
+  if (cfg_type == UPLL_DT_CANDIDATE) {
+    if (create_dirty.find(table_index) == create_dirty.end() &&
+       update_dirty.find(table_index) == update_dirty.end()) {
+      UPLL_LOG_DEBUG("Skipping ClearCreateUpdateFlags for %s",
+          schema::TableName(table_index));
+      return kDalRcRecordNotFound;
+    }
+  }
+
+  // Build Query Statement
+  if (qbldr.get_sql_statement(kDalClearCandFlagsQT, NULL, query_stmt,
+                        table_index, cfg_type) != true) {
+    UPLL_LOG_TRACE("Failed building query stmt");
+    return kDalRcGeneralError;
+  } else {
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
+  }
+
+  // Allocate Stmt Handle, Bind and Execute the Query Statement
+  dal_rc = ExecuteQuery(&dal_stmt_handle,
+                        &query_stmt,
+                        NULL);
+
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+  if (dal_rc != kDalRcSuccess) {
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    return dal_rc;
+  }
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
+                query_stmt.c_str());
+
+  return kDalRcSuccess;
+} // DalOdbcMgr::ClearCreateUpdateFlags
+
 // Gets the records created in cfg_type_1
 DalResultCode
 DalOdbcMgr::GetCreatedRecords(const UpllCfgType cfg_type_1,
@@ -1390,24 +1523,24 @@ DalOdbcMgr::GetCreatedRecords(const UpllCfgType cfg_type_1,
                               const size_t max_record_count,
                               const DalBindInfo *bind_info,
                               DalCursor **cursor) const {
-  SQLHANDLE     dal_stmt_handle;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   DalResultCode dal_rc;
   DalQueryBuilder  qbldr;
   std::string query_stmt;
 
   // Validating Inputs
   if (cfg_type_1 == UPLL_DT_INVALID || cfg_type_2 == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Invalid config type - %d %d", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (cfg_type_1 == cfg_type_2) {
-    UPLL_LOG_DEBUG("Same Config Type - %d %d", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Same config type - %d %d", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1429,20 +1562,26 @@ DalOdbcMgr::GetCreatedRecords(const UpllCfgType cfg_type_1,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
     return kDalRcGeneralError;
   }
 
+  DalApiNum query_template;
+  if (cfg_type_1 == UPLL_DT_CANDIDATE && cfg_type_2 == UPLL_DT_RUNNING)
+    query_template = kDalGetCreatedRecInCandQT;
+  else
+    query_template = kDalGetCreatedRecQT;
+
   // Build Query Statement
-  if (qbldr.get_sql_statement(kDalGetCreatedRecQT, bind_info, query_stmt,
+  if (qbldr.get_sql_statement(query_template, bind_info, query_stmt,
                         table_index, cfg_type_1, cfg_type_2) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1452,12 +1591,12 @@ DalOdbcMgr::GetCreatedRecords(const UpllCfgType cfg_type_1,
                         max_record_count);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
   *cursor = new DalCursor(dal_stmt_handle,
                            bind_info);
@@ -1488,17 +1627,17 @@ DalOdbcMgr::GetUpdatedRecords(const UpllCfgType cfg_type_1,
 
   // Validating Inputs
   if (cfg_type_1 == UPLL_DT_INVALID || cfg_type_2 == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - (%d, %d)", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Invalid config type - (%d, %d)", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (cfg_type_1 == cfg_type_2) {
-    UPLL_LOG_DEBUG("Same Config Type - (%d, %d)", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Same config type - (%d, %d)", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1521,7 +1660,7 @@ DalOdbcMgr::GetUpdatedRecords(const UpllCfgType cfg_type_1,
 
   if (table_index != cfg_1_bind_info->get_table_index() ||
       table_index != cfg_2_bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind1 - %s; Bind2 - %s",
                    schema::TableName(table_index),
                    schema::TableName(cfg_1_bind_info->get_table_index()),
@@ -1529,18 +1668,25 @@ DalOdbcMgr::GetUpdatedRecords(const UpllCfgType cfg_type_1,
     return kDalRcGeneralError;
   }
 
+  DalApiNum query_template;
+
+  if (cfg_type_1 == UPLL_DT_CANDIDATE && cfg_type_2 == UPLL_DT_RUNNING)
+    query_template = kDalGetModRecConfig1QT;
+  else
+    query_template = kDalGetModRecQT;
+
   // To Fetch the updated records from cfg_type_1
   // Build Query Statement
-  if (qbldr.get_sql_statement(kDalGetModRecQT,
+  if (qbldr.get_sql_statement(query_template,
                               cfg_1_bind_info,
                               query_stmt,
                               table_index,
                               cfg_type_1,
                               cfg_type_2) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1550,26 +1696,32 @@ DalOdbcMgr::GetUpdatedRecords(const UpllCfgType cfg_type_1,
                         max_record_count);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, cfg_1_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
+
+  if (cfg_type_1 == UPLL_DT_CANDIDATE && cfg_type_2 == UPLL_DT_RUNNING)
+    query_template = kDalGetModRecConfig2QT;
+  else
+    query_template = kDalGetModRecQT;
 
   // To Fetch the updated records from cfg_type_2
   // Build Query Statement
-  if (qbldr.get_sql_statement(kDalGetModRecQT,
+  if (qbldr.get_sql_statement(query_template,
                               cfg_2_bind_info,
                               query_stmt,
                               table_index,
-                              cfg_type_2,
-                              cfg_type_1) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    ((query_template == kDalGetModRecQT) ? cfg_type_2 : cfg_type_1),
+    ((query_template == kDalGetModRecQT) ? cfg_type_1 : cfg_type_2)
+                              ) != true) {
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1579,8 +1731,11 @@ DalOdbcMgr::GetUpdatedRecords(const UpllCfgType cfg_type_1,
                         max_record_count);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
+    if (cfg_1_stmt_handle != SQL_NULL_HANDLE) {
+      FreeHandle(SQL_HANDLE_STMT, cfg_1_stmt_handle);
+    }
     if (cfg_2_stmt_handle != SQL_NULL_HANDLE) {
       FreeHandle(SQL_HANDLE_STMT, cfg_2_stmt_handle);
     }
@@ -1616,24 +1771,24 @@ DalOdbcMgr::CopyEntireRecords(const UpllCfgType dest_cfg_type,
 
   // Validating Inputs
   if (dest_cfg_type == UPLL_DT_INVALID || src_cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d %d", dest_cfg_type, src_cfg_type);
     return kDalRcGeneralError;
   }
 
   if (dest_cfg_type == src_cfg_type) {
-    UPLL_LOG_DEBUG("Same Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    UPLL_LOG_DEBUG("Same config type - %d %d", dest_cfg_type, src_cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
   // No need to validate bindinfo
   // BindInput - NA; BindOuput - O; BindMatch - NA;
   if (bind_info != NULL  && table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1644,10 +1799,10 @@ DalOdbcMgr::CopyEntireRecords(const UpllCfgType dest_cfg_type,
   // copy records from src to dest cfg_type
   if (qbldr.get_sql_statement(kDalCopyEntireRecQT, bind_info, query_stmt,
                         table_index, dest_cfg_type, src_cfg_type) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1659,20 +1814,22 @@ DalOdbcMgr::CopyEntireRecords(const UpllCfgType dest_cfg_type,
     dal_rc = kDalRcGeneralError;
   }
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   if (dest_cfg_type == UPLL_DT_CANDIDATE) {
     // Note: Precondition for CopyEntireRecords is DeleteRecords(all rows)
     // So, it needs to be treated that new entries are created and old
     // entries are updated or deleted.
+//TODO(rev): Should we write to DB also?
     create_dirty.insert(table_index);
     update_dirty.insert(table_index);
+//TODO(rev): DeleteRecords() would set delete_dirty. Why is it done again?
     delete_dirty.insert(table_index);
   }
   return kDalRcSuccess;
@@ -1692,24 +1849,24 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
 
   // Validating Inputs
   if (dest_cfg_type == UPLL_DT_INVALID || src_cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d %d", dest_cfg_type, src_cfg_type);
     return kDalRcGeneralError;
   }
 
   if (dest_cfg_type == src_cfg_type) {
-    UPLL_LOG_DEBUG("Same Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    UPLL_LOG_DEBUG("Same config type - %d %d", dest_cfg_type, src_cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
   // No need to validate bindinfo
   // BindInput - NA; BindOuput - O; BindMatch - O;
   if (bind_info != NULL && table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1722,10 +1879,15 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
         src_cfg_type == UPLL_DT_RUNNING &&
         (create_dirty.find(table_index) == create_dirty.end())) {
        UPLL_LOG_DEBUG("No entries modified for the operation %d in table %d",
-                      op, table_index); 
+                      op, table_index);
        return kDalRcRecordNotFound;
     }
-    query_template = kDalCopyModRecDelQT;
+    if (dest_cfg_type == UPLL_DT_CANDIDATE &&
+        src_cfg_type == UPLL_DT_IMPORT) {
+      query_template = kDalCopyModRecDelImportQT;
+    } else {
+      query_template = kDalCopyModRecDelQT;
+    }
   } else if (op == UNC_OP_CREATE) {
     if (dest_cfg_type == UPLL_DT_CANDIDATE &&
         src_cfg_type == UPLL_DT_RUNNING &&
@@ -1734,7 +1896,12 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
                       op, table_index); 
        return kDalRcRecordNotFound;
     }
-    query_template = kDalCopyModRecCreateQT;
+    if (dest_cfg_type == UPLL_DT_CANDIDATE &&
+        src_cfg_type == UPLL_DT_IMPORT) {
+      query_template = kDalCopyModRecCreateImportQT;
+    } else {
+      query_template = kDalCopyModRecCreateQT;
+    }
   } else if (op == UNC_OP_UPDATE) {
     if (dest_cfg_type == UPLL_DT_CANDIDATE &&
         src_cfg_type == UPLL_DT_RUNNING &&
@@ -1743,7 +1910,17 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
                       op, table_index); 
        return kDalRcRecordNotFound;
     }
-    query_template = kDalCopyModRecUpdateQT;
+    if (dest_cfg_type == UPLL_DT_CANDIDATE &&
+        src_cfg_type == UPLL_DT_RUNNING) {
+      // Copy RUNNING to CANDIDATE during abort
+      query_template = kDalCopyModRecUpdateAbortQT;
+    } else if (dest_cfg_type == UPLL_DT_CANDIDATE &&
+                src_cfg_type == UPLL_DT_IMPORT){
+      // Copy IMPORT to CANDIDATE during merge
+      query_template = kDalCopyModRecUpdateImportQT;
+    } else {
+      query_template = kDalCopyModRecUpdateQT;
+    }
   } else {
     UPLL_LOG_DEBUG("Invalid operation %d", op);
     return kDalRcGeneralError;
@@ -1752,10 +1929,10 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(query_template, bind_info, query_stmt,
                         table_index, dest_cfg_type, src_cfg_type) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1767,27 +1944,25 @@ DalOdbcMgr::CopyModifiedRecords(const UpllCfgType dest_cfg_type,
     dal_rc = kDalRcGeneralError;
   }
   if (dal_rc != kDalRcSuccess && dal_rc != kDalRcRecordNotFound) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
 
   if (dal_rc == kDalRcSuccess && dest_cfg_type == UPLL_DT_CANDIDATE) {
-    if (op == UNC_OP_DELETE) {
-      delete_dirty.insert(table_index);
-    } else if (op == UNC_OP_CREATE) {
-      create_dirty.insert(table_index);
-    } else if (op == UNC_OP_UPDATE) {
-      update_dirty.insert(table_index);
+    if ((dal_rc = SetTableDirty(dest_cfg_type, table_index, op))
+        != kDalRcSuccess) {
+      UPLL_LOG_ERROR("SetTableDirty failed with rc=%d", dal_rc);
+      dal_rc = kDalRcGeneralError;
     }
   }
 
   FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
-  return kDalRcSuccess;
+  return dal_rc;
 }  // DalOdbcMgr::CopyModifiedRecords
 
 // Copies the matching records from src to dest cfg_type
@@ -1803,17 +1978,17 @@ DalOdbcMgr::CopyMatchingRecords(const UpllCfgType dest_cfg_type,
 
   // Validating Inputs
   if (dest_cfg_type == UPLL_DT_INVALID || src_cfg_type == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    UPLL_LOG_DEBUG("Invalid config type - %d %d", dest_cfg_type, src_cfg_type);
     return kDalRcGeneralError;
   }
 
   if (dest_cfg_type == src_cfg_type) {
-    UPLL_LOG_DEBUG("Same Config Type - %d %d", dest_cfg_type, src_cfg_type);
+    UPLL_LOG_DEBUG("Same config type - %d %d", dest_cfg_type, src_cfg_type);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
@@ -1825,7 +2000,7 @@ DalOdbcMgr::CopyMatchingRecords(const UpllCfgType dest_cfg_type,
   }
 
   if (table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1836,10 +2011,10 @@ DalOdbcMgr::CopyMatchingRecords(const UpllCfgType dest_cfg_type,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalCopyMatchingRecQT, bind_info, query_stmt,
                         table_index, dest_cfg_type, src_cfg_type) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1851,22 +2026,27 @@ DalOdbcMgr::CopyMatchingRecords(const UpllCfgType dest_cfg_type,
     UPLL_LOG_DEBUG("Foreign Key Violation error. Returning kDalRcGeneralError");
     dal_rc = kDalRcGeneralError;
   }
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
-    FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
 
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
   if (dest_cfg_type == UPLL_DT_CANDIDATE) {
-    create_dirty.insert(table_index);
     // additionally treat that table is updated and deleted, just in case
-    update_dirty.insert(table_index);
-    delete_dirty.insert(table_index);
+    if (((dal_rc == SetTableDirty(dest_cfg_type, table_index, UNC_OP_CREATE))
+         == kDalRcSuccess) &&
+        ((dal_rc == SetTableDirty(dest_cfg_type, table_index, UNC_OP_UPDATE))
+         == kDalRcSuccess)) { 
+    } else {
+        UPLL_LOG_ERROR("SetTableDirty failed with rc=%d", dal_rc);
+        dal_rc = kDalRcGeneralError;
+    }
   }
-  return kDalRcSuccess;
+  return dal_rc;
 }  // DalOdbcMgr::CopyMatchingRecords
 
 // Checks the matching records are identical in both the cfg_types
@@ -1876,7 +2056,8 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
                                   const DalTableIndex table_index,
                                   const DalBindInfo *bind_info,
                                   bool *identical) const {
-  SQLHANDLE     dal_stmt_handle;
+  UPLL_FUNC_TRACE;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
   SQLRETURN     sql_rc;
   DalResultCode dal_rc;
   DalQueryBuilder  qbldr;
@@ -1885,24 +2066,24 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
 
   // Validating Inputs
   if (cfg_type_1 == UPLL_DT_INVALID || cfg_type_2 == UPLL_DT_INVALID) {
-    UPLL_LOG_DEBUG("Invalid Config Type - %d %d", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Invalid config type - %d %d", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (cfg_type_1 == cfg_type_2) {
-    UPLL_LOG_DEBUG("Same Config Type - %d %d", cfg_type_1, cfg_type_2);
+    UPLL_LOG_DEBUG("Same config type - %d %d", cfg_type_1, cfg_type_2);
     return kDalRcGeneralError;
   }
 
   if (table_index >= schema::table::kDalNumTables) {
-    UPLL_LOG_DEBUG("Invalid Table Index - %d", table_index);
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
     return kDalRcGeneralError;
   }
 
   // No need to validate bindinfo
   // BindInput - NA; BindOuput - NA; BindMatch - O;
   if (bind_info != NULL && table_index != bind_info->get_table_index()) {
-    UPLL_LOG_DEBUG("Table Index Mismatch with bind info "
+    UPLL_LOG_DEBUG("Table index mismatch with bind info "
                    "Query - %s; Bind - %s",
                    schema::TableName(table_index),
                    schema::TableName(bind_info->get_table_index()));
@@ -1912,10 +2093,10 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
   // Build Query Statement
   if (qbldr.get_sql_statement(kDalCheckRecIdenticalQT, bind_info, query_stmt,
                         table_index, cfg_type_1, cfg_type_2) != true) {
-    UPLL_LOG_TRACE("Failed Building Query Stmt");
+    UPLL_LOG_TRACE("Failed building query stmt");
     return kDalRcGeneralError;
   } else {
-    UPLL_LOG_DEBUG("Query Stmt - %s", query_stmt.c_str());
+    UPLL_LOG_DEBUG("Query stmt - %s", query_stmt.c_str());
   }
 
   // Allocate Stmt Handle, Bind and Execute the Query Statement
@@ -1924,7 +2105,7 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
                         bind_info);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
@@ -1937,11 +2118,11 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
                                      dal_stmt_handle,
                                      sql_rc, &dal_rc);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Binding count for Query Stmt", dal_rc);
+    UPLL_LOG_DEBUG("Err - %d. Failed Binding count for query stmt", dal_rc);
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_DEBUG("Count variable bound for Query Stmt");
+  UPLL_LOG_DEBUG("Count variable bound for query stmt");
 
   // Fetching results from the resultset
   sql_rc = SQLFetch(dal_stmt_handle);
@@ -1950,7 +2131,8 @@ DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to fetch result from DB", dal_rc);
+    UPLL_LOG_INFO("Err - %d. Failed to fetch result from DB, query stmt - %s",
+                  dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
@@ -1979,7 +2161,7 @@ DalOdbcMgr::ExecuteAppQuerySingleRecord(
 
   // Validating Inputs
   if (query_stmt.size() == 0) {
-    UPLL_LOG_DEBUG("Empty Query Stmt string");
+    UPLL_LOG_DEBUG("Empty query stmt string");
     return kDalRcGeneralError;
   }
 
@@ -1992,12 +2174,12 @@ DalOdbcMgr::ExecuteAppQuerySingleRecord(
   // Allocate Stmt Handle, Bind and Execute the Query Statement
   dal_rc = ExecuteQuery(&dal_stmt_handle, &query_stmt, bind_info);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s", query_stmt.c_str());
+  UPLL_LOG_TRACE("Completed executing query stmt - %s", query_stmt.c_str());
 
   // Fetching results from the resultset
   sql_rc = SQLFetch(dal_stmt_handle);
@@ -2006,7 +2188,13 @@ DalOdbcMgr::ExecuteAppQuerySingleRecord(
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("%d - Failed to Fetch result", dal_rc);
+    if (dal_rc != kDalRcRecordNoMore) {
+      UPLL_LOG_INFO("%d - Failed to Fetch result, query stmt - %s",
+                    dal_rc, query_stmt.c_str());
+    } else {
+      UPLL_LOG_DEBUG("%d - Failed to Fetch result, query stmt - %s",
+                     dal_rc, query_stmt.c_str());
+    }
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
@@ -2037,7 +2225,7 @@ DalOdbcMgr::ExecuteAppQueryMultipleRecords(
 
   // Validating Inputs
   if (query_stmt.size() == 0) {
-    UPLL_LOG_DEBUG("Empty Query Stmt string");
+    UPLL_LOG_DEBUG("Empty query stmt string");
     return kDalRcGeneralError;
   }
 
@@ -2054,12 +2242,12 @@ DalOdbcMgr::ExecuteAppQueryMultipleRecords(
                         max_record_count);
 
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed Executing Query Stmt - %s",
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
                    dal_rc, query_stmt.c_str());
     FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
     return dal_rc;
   }
-  UPLL_LOG_TRACE("Completed Executing Query Stmt - %s",
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
                 query_stmt.c_str());
 
   *cursor = new DalCursor(dal_stmt_handle,
@@ -2537,12 +2725,12 @@ DalOdbcMgr::ExecuteQuery(SQLHANDLE *dal_stmt_handle,
   // PFC_ASSERT(*stmt_handle);
   // PFC_ASSERT(query_stmt)
   if (dal_stmt_handle == SQL_NULL_HANDLE) {
-    UPLL_LOG_DEBUG("NULL Statement Handle Reference");
+    UPLL_LOG_ERROR("NULL Statement Handle Reference");
     return kDalRcGeneralError;
   }
 
   if (query_stmt == NULL) {
-    UPLL_LOG_DEBUG("NULL Query Stmt");
+    UPLL_LOG_ERROR("NULL Query stmt");
     return kDalRcGeneralError;
   }
 
@@ -2560,7 +2748,7 @@ DalOdbcMgr::ExecuteQuery(SQLHANDLE *dal_stmt_handle,
     return dal_rc;
   }
   if (*dal_stmt_handle == SQL_NULL_HANDLE) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to Allocate Statement handle",
+    UPLL_LOG_ERROR("Err - %d. Failed to Allocate Statement handle",
                    dal_rc);
     return kDalRcGeneralError;
   } else {
@@ -2578,9 +2766,7 @@ DalOdbcMgr::ExecuteQuery(SQLHANDLE *dal_stmt_handle,
     dal_rc = BindToQuery(dal_stmt_handle, bind_info);
     SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
     if (dal_rc != kDalRcSuccess) {
-      UPLL_LOG_DEBUG("Err - %d. Failed to Bind parameters to Query",
-                     dal_rc);
-      FreeHandle(SQL_HANDLE_STMT, *dal_stmt_handle);
+      UPLL_LOG_INFO("Err - %d. Failed to Bind parameters to Query", dal_rc);
       return dal_rc;
     }
     UPLL_LOG_VERBOSE("Success Binding parameters to Query");
@@ -2595,9 +2781,14 @@ DalOdbcMgr::ExecuteQuery(SQLHANDLE *dal_stmt_handle,
                                      sql_rc, &dal_rc);
   SET_DB_STATE_DISCONNECT(dal_rc, conn_state_);
   if (dal_rc != kDalRcSuccess) {
-    UPLL_LOG_DEBUG("Err - %d. Failed to Execute Query %s",
-                   dal_rc, query_stmt->c_str());
-    FreeHandle(SQL_HANDLE_STMT, *dal_stmt_handle);
+    if (dal_rc != kDalRcRecordNotFound &&
+        dal_rc != kDalRcRecordAlreadyExists) {
+      UPLL_LOG_INFO("Err - %d. Failed to Execute Query %s",
+                    dal_rc, query_stmt->c_str());
+    } else {
+      UPLL_LOG_DEBUG("Err - %d. Failed to Execute Query %s",
+                     dal_rc, query_stmt->c_str());
+    }
     return dal_rc;
   }
 
@@ -2665,6 +2856,350 @@ DalOdbcMgr::GetConnString(const DalConnType conn_type) const {
 
   return dal_conn_str;
 }  // DalOdbcMgr::GetConnString
+
+
+// Creates a record with the given data
+DalResultCode
+DalOdbcMgr::ExecuteAppQueryModifyRecord(
+                         const UpllCfgType cfg_type,
+                         const DalTableIndex table_index,
+                         const std::string query_stmt,
+                         const DalBindInfo *bind_info,
+                         const unc_keytype_operation_t op) const {
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  DalResultCode dal_rc;
+
+  // Validating Inputs
+  if (bind_info == NULL) {
+    UPLL_LOG_DEBUG("NULL Bind Info for Table(%s)",
+                   schema::TableName(table_index));
+    if (op == UNC_OP_CREATE || op == UNC_OP_UPDATE) {
+      return kDalRcGeneralError;
+    }
+  }
+
+  // Parent Existence Check for Import Datatype
+  if (cfg_type == UPLL_DT_IMPORT && op == UNC_OP_CREATE &&
+      schema::TableNumFkCols(table_index) > 0) {
+    dal_rc = CheckParentInstance(cfg_type, table_index, bind_info);
+    if (dal_rc == kDalRcRecordNotFound) {
+       UPLL_LOG_DEBUG("Parent Does not Exist");
+       return kDalRcParentNotFound;
+    } else if (dal_rc != kDalRcRecordAlreadyExists) {
+       UPLL_LOG_DEBUG("Error during Parent Existence Check");
+       return dal_rc;
+    }
+  }
+
+  // Allocate Stmt Handle, Bind and Execute the Query Statement
+  dal_rc = ExecuteQuery(&dal_stmt_handle, &query_stmt, bind_info);
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+
+  // Diagnose GeneralError for ParentCheck and InstanceCheck
+  if (dal_rc == kDalRcGeneralError &&
+      cfg_type == UPLL_DT_CANDIDATE &&
+      op == UNC_OP_CREATE) {
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    dal_rc = CheckInstance(cfg_type, table_index, bind_info);
+    if (dal_rc == kDalRcRecordAlreadyExists) {
+      UPLL_LOG_DEBUG("Instance Already Exists");
+      return kDalRcRecordAlreadyExists;
+    } else if (dal_rc != kDalRcRecordNotFound) {
+      UPLL_LOG_DEBUG("Error during Instance Check");
+      return dal_rc;
+    }
+    if (schema::TableNumFkCols(table_index) > 0) {
+      dal_rc = CheckParentInstance(cfg_type, table_index, bind_info);
+      if (dal_rc == kDalRcRecordNotFound) {
+        UPLL_LOG_DEBUG("Parent Does not Exist");
+        return kDalRcParentNotFound;
+      } else if (dal_rc != kDalRcRecordAlreadyExists) {
+        UPLL_LOG_DEBUG("Error during Parent Check");
+        return dal_rc;
+      }
+    }
+  }
+
+  if (dal_rc != kDalRcSuccess) {
+    UPLL_LOG_DEBUG("Err - %d. Failed executing query stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    return dal_rc;
+  }
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
+                query_stmt.c_str());
+
+  // Storing dirty table list for skip unmodified tables during commit
+  if (cfg_type == UPLL_DT_CANDIDATE) {
+    UPLL_LOG_TRACE("Insert for table %d operation %d", table_index, op);
+    if ((dal_rc = SetTableDirty(cfg_type, table_index, op)) != kDalRcSuccess) {
+      return dal_rc;
+    }
+  }
+  write_count_++;
+  return kDalRcSuccess;
+}  // DalOdbcMgr::ExecuteAppQueryModifyRecord
+
+DalResultCode
+DalOdbcMgr::SetTableDirty(const UpllCfgType cfg_type,
+                          const DalTableIndex table_index,
+                          const unc_keytype_operation_t op) const {
+  DalResultCode dal_rc;
+  if (op == UNC_OP_DELETE) {
+    if (delete_dirty.end() == delete_dirty.find(table_index)) {
+      if ((dal_rc = SetCfgTblDirtyInDB(cfg_type, op, table_index))
+          != kDalRcSuccess) {
+        UPLL_LOG_ERROR("SetCfgTblDirtyInDB failed with rc=%d", dal_rc);
+        return kDalRcGeneralError;
+      }
+    }
+    delete_dirty.insert(table_index);
+  } else if (op == UNC_OP_CREATE) {
+    if (create_dirty.end() == create_dirty.find(table_index)) {
+      if ((dal_rc = SetCfgTblDirtyInDB(cfg_type, op, table_index))
+          != kDalRcSuccess) {
+        UPLL_LOG_ERROR("SetCfgTblDirtyInDB failed with rc=%d", dal_rc);
+        return kDalRcGeneralError;
+      }
+    }
+    create_dirty.insert(table_index);
+    // In case of restore operation, update dirty should be set
+    if (delete_dirty.find(table_index) != delete_dirty.end()) {
+      if (update_dirty.end() == update_dirty.find(table_index)) {
+        if ((dal_rc = SetCfgTblDirtyInDB(cfg_type, op, table_index))
+            != kDalRcSuccess) {
+          UPLL_LOG_ERROR("SetCfgTblDirtyInDB failed with rc=%d", dal_rc);
+          return kDalRcGeneralError;
+        }
+      }
+      update_dirty.insert(table_index);
+    }
+  } else if (op == UNC_OP_UPDATE) {
+    if (update_dirty.end() == update_dirty.find(table_index)) {
+      if ((dal_rc = SetCfgTblDirtyInDB(cfg_type, op, table_index))
+          != kDalRcSuccess) {
+        UPLL_LOG_ERROR("SetCfgTblDirtyInDB failed with rc=%d", dal_rc);
+        return kDalRcGeneralError;
+      }
+      update_dirty.insert(table_index);
+    }
+  } else {
+    // Not an issue
+  }
+  return kDalRcSuccess;
+}
+
+// update the dirty flag for given table name for create operation.
+DalResultCode
+DalOdbcMgr::SetCfgTblDirtyInDB(const UpllCfgType cfg_type,
+                               const unc_keytype_operation_t op,
+                               const DalTableIndex table_index) const {
+  UPLL_FUNC_TRACE;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  DalResultCode dal_rc;
+
+  DalQueryBuilder  qbldr;
+  std::string query_stmt;
+
+  // Validating Inputs
+  if (cfg_type != UPLL_DT_CANDIDATE) {
+    UPLL_LOG_ERROR("Invalid config type - %d", cfg_type);
+    return kDalRcGeneralError;
+  }
+
+  if (table_index >= schema::table::kDalNumTables) {
+    UPLL_LOG_DEBUG("Invalid table index - %d", table_index);
+    return kDalRcGeneralError;
+  }
+
+  std::string tbl_name = schema::TableName(table_index);
+  using namespace unc::upll::dal::schema;
+
+  DalBindInfo bind_info(table::kDbiCfgTblDirtyTbl);
+  bind_info.BindMatch(table::cfg_tbl_dirty::kDbiTblName, kDalChar, 32, 
+                      tbl_name.c_str());
+  uint8_t op8 = op;  // bind 1 byte int
+  bind_info.BindMatch(table::cfg_tbl_dirty::kDbiOperation, kDalUint8, 1, &op8);
+
+  // Build Query Statement
+  if (qbldr.get_sql_statement(kDalDirtyTblUpdateRecQT, &bind_info, query_stmt,
+                              table::kDbiCfgTblDirtyTbl, cfg_type) != true) {
+    UPLL_LOG_ERROR("Failed building query stmt");
+    return kDalRcGeneralError;
+  } else {
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
+  }
+
+  // Allocate Stmt Handle, Bind and Execute the Query Statement
+  dal_rc = ExecuteQuery(&dal_stmt_handle, &query_stmt, &bind_info);
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+  if (dal_rc != kDalRcSuccess) {
+    UPLL_LOG_ERROR("Err - %d. Failed executing query stmt - %s",
+                   dal_rc, query_stmt.c_str());
+    // Overwrite the error code to kDalRcGeneralError as it is DAL level error
+    return kDalRcGeneralError;
+  }
+
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
+                query_stmt.c_str());
+  return kDalRcSuccess;
+}  // DalOdbcMgr::SetCfgTblDirtyInDB
+
+// Get all the dirty tables info
+DalResultCode
+DalOdbcMgr::UpdateDirtyTblCacheFromDB() const {
+  UPLL_FUNC_TRACE;
+
+  DalResultCode dal_rc;
+  uint8_t dirty = 1;
+  uint8_t op;
+
+  // Remove current cache entries
+  ClearDirtyTblCache();
+
+  // Bind type, tbl_name, flag for output 
+  using namespace unc::upll::dal::schema;
+  //char tbl_name[table::cfg_tbl_dirty::max_cfg_tbl_name_len];
+  char tbl_name[32];
+  memset(tbl_name, 0, sizeof(tbl_name));
+  DalBindInfo bind_info(table::kDbiCfgTblDirtyTbl);
+  bind_info.BindOutput(table::cfg_tbl_dirty::kDbiTblName, kDalChar, 32,
+                       tbl_name);
+  bind_info.BindOutput(table::cfg_tbl_dirty::kDbiOperation, kDalUint8, 1, &op);
+  bind_info.BindMatch(table::cfg_tbl_dirty::kDbiDirty, kDalUint8, 1, &dirty );
+
+  // Get all the tables being dirty
+  DalCursor *cursor = NULL;
+  dal_rc = GetMultipleRecords(UPLL_DT_CANDIDATE, table::kDbiCfgTblDirtyTbl,
+                              0, &bind_info, &cursor);  
+  if (kDalRcSuccess != dal_rc) {
+    if (kDalRcRecordNotFound == dal_rc) {
+      UPLL_LOG_TRACE("No dirty records found in DB for op=%d", op);
+      if (cursor != NULL) {
+        delete cursor;
+      }
+      return kDalRcSuccess;
+    } else {
+      UPLL_LOG_ERROR("GetMultipleRecords failed with rc=%d", dal_rc);
+      if (cursor != NULL) {
+        delete cursor;
+      }
+      return dal_rc;
+    }
+  }
+  
+  // Traverse through each record and get type, tbl_name, op.
+  while (dal_rc == kDalRcSuccess) {
+    dal_rc = GetNextRecord(cursor);
+    if (kDalRcSuccess != dal_rc) {
+      if (kDalRcRecordNoMore == dal_rc) {
+        dal_rc = kDalRcSuccess;
+      } else {
+        UPLL_LOG_ERROR("Reading DB failed with rc=%d", dal_rc);
+      } 
+      break;
+    }
+    UPLL_LOG_TRACE("Dirty table - tbl_name:%s, op:%d", tbl_name, op);
+    dal_rc = UpdateDirtyTblCache(UPLL_DT_CANDIDATE, tbl_name,
+                                 static_cast<unc_keytype_operation_t>(op));
+    if (kDalRcSuccess != dal_rc) {
+      break;
+    }
+  }
+  if (cursor != NULL) {
+    delete cursor;
+  }
+  return dal_rc;
+}  // DalOdbcMgr::UpdateDirtyTblCacheFromDB
+ 
+DalResultCode
+DalOdbcMgr::UpdateDirtyTblCache(const UpllCfgType cfg_type,
+                                const char *tbl_name,
+                                const unc_keytype_operation_t op) const {
+  UPLL_FUNC_TRACE;
+
+  DalTableIndex tbl_idx;
+  if (kDalRcSuccess != GetTableIndex(tbl_name, &tbl_idx)) {
+    UPLL_LOG_ERROR("Unknown table %s", tbl_name);
+    return kDalRcGeneralError;
+  }
+  if (cfg_type == UPLL_DT_CANDIDATE) {
+    switch (op) {
+      case UNC_OP_DELETE :
+        delete_dirty.insert(tbl_idx);
+        break;
+      case UNC_OP_CREATE :
+        create_dirty.insert(tbl_idx);
+        break;
+      case UNC_OP_UPDATE :
+        update_dirty.insert(tbl_idx);
+        break;
+      default:
+        UPLL_LOG_ERROR("Unexpected Operation  %d", op);
+      return kDalRcGeneralError;
+    }
+  }
+  return kDalRcSuccess;
+}  // DalOdbcMgr::UpdateDirtyTblCache
+
+// Caller should provide valid pointer for tbl_idx
+DalResultCode
+DalOdbcMgr::GetTableIndex(const char* tbl_name, DalTableIndex *tbl_idx) const {
+  UPLL_FUNC_TRACE;
+  std::map<std::string, DalTableIndex>::iterator it =
+    tbl_name_to_idx_map_.find(tbl_name);
+  if (tbl_name_to_idx_map_.end() == it) {
+    UPLL_LOG_ERROR("Table %s does not exist", tbl_name);
+    return kDalRcGeneralError;
+  }
+  *tbl_idx = it->second;
+  UPLL_LOG_TRACE("table_name: %s, table_idex: %d", tbl_name, *tbl_idx);
+  return kDalRcSuccess;
+}  // DalOdbcMgr::GetTableIndex
+
+DalResultCode
+DalOdbcMgr::ClearAllDirtyTblInDB(UpllCfgType cfg_type) const {
+  UPLL_FUNC_TRACE;
+  SQLHANDLE     dal_stmt_handle = SQL_NULL_HANDLE;
+  DalResultCode dal_rc;
+
+  DalQueryBuilder  qbldr;
+  std::string query_stmt;
+
+  if (cfg_type != UPLL_DT_CANDIDATE) {
+    return kDalRcGeneralError;
+  }
+
+  // Build Query Statement
+  if (qbldr.get_sql_statement(kDalDirtyTblClearAllQT, NULL, query_stmt,
+                              schema::table::kDbiCfgTblDirtyTbl,
+                              cfg_type) != true) {
+    UPLL_LOG_DEBUG("Failed building query stmt");
+    return kDalRcGeneralError;
+  } else {
+    UPLL_LOG_TRACE("Query stmt - %s", query_stmt.c_str());
+  }
+
+  // Allocate Stmt Handle, Bind and Execute the Query Statement
+  dal_rc = ExecuteQuery(&dal_stmt_handle, &query_stmt, NULL);
+
+  FreeHandle(SQL_HANDLE_STMT, dal_stmt_handle);
+
+  if (dal_rc != kDalRcSuccess) {
+    if (dal_rc == kDalRcRecordNotFound) {
+      UPLL_LOG_DEBUG("Record not found");
+      dal_rc = kDalRcSuccess;
+    } else {
+      UPLL_LOG_ERROR("Err - %d. Failed executing query stmt - %s",
+                     dal_rc, query_stmt.c_str());
+      return dal_rc;
+    }
+  }
+  UPLL_LOG_TRACE("Completed executing query stmt - %s",
+                 query_stmt.c_str());
+  return kDalRcSuccess;
+}  // DalOdbcMgr::ClearAllDirtyTblInDB
+
 }  // namespace dal
 }  // namespace upll
 }  // namespace unc

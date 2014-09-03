@@ -117,9 +117,30 @@ public enum UncStructEnum {
 	KeyVtermIfFlowfilterEntry("key_vterm_if_flowfilter_entry"),
 	KeyDataFlow("key_dataflow"),
 	KeyCtrDataFlow("key_ctr_dataflow"),
+	KeyPolicingProfileEntry("key_policingprofile_entry"),
+	ValPolicingProfileEntry("val_policingprofile_entry"),
 	// VTN Mapping
 	KeyVtnController("key_vtn_controller"),
-	ValVtnMappingControllerSt("val_vtn_mapping_controller_st");
+	ValVtnMappingControllerSt("val_vtn_mapping_controller_st"),
+	// Policing profile
+	KeyPolicingProfile("key_policingprofile"),
+	ValPolicingProfile("val_policingprofile"),
+	// Policing Map
+	ValPolicingmap("val_policingmap"),
+	KeyVtnPolicingMapController("key_vtn_policingmap_controller"), 
+	ValPolicingMapController("val_policingmap_controller"), 
+	KeyVbrPolicingmapEntry("key_vbr_policingmap_entry"),
+	// Path Policy
+	KeyCtrPathPolicy("key_ctr_path_policy"),
+	KeyCtrPpolicyLinkWeight("key_ctr_ppolicy_link_weight"),
+	KeyCtrPpolicyDisableSwitch("key_ctr_ppolicy_disable_switch"),
+	ValCtrPpolicyLinkWeight("val_ctr_ppolicy_link_weight"),
+	// Path Map Entry
+	KeyVtnPathMapEntry("key_vtn_pathmap_entry"),
+	ValVtnPathMapEntry("val_vtn_pathmap_entry"),
+	// Path Policy Entry
+	KeyVtnPathmapPpolicyEntry("key_vtn_pathmap_ppolicy_entry"),
+	ValVtnPathmapPpolicyEntry("val_vtn_pathmap_ppolicy_entry");
 	private String value;
 
 	private UncStructEnum(final String value) {

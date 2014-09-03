@@ -82,6 +82,15 @@ DBVarbind::DBVarbind()
   if (p_speed_len == NULL )
     pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_speed_len");
   *p_speed_len = 0;
+  p_commit_number_len = new SQLLEN;
+  if (p_commit_number_len == NULL)
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_commit_number_len");
+  *p_commit_number_len = 0;
+  p_commit_date_len = new SQLLEN;
+  if (p_commit_date_len == NULL)
+    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_commit_date_len");
+  *p_commit_date_len = 0;
+
 }
 
 /**
@@ -122,6 +131,14 @@ DBVarbind::~DBVarbind() {
   if (NULL != p_speed_len) {
     delete p_speed_len;
     p_speed_len = NULL;
+  }
+  if (NULL != p_commit_number_len) {
+    delete p_commit_number_len;
+    p_commit_number_len = NULL;
+  }
+  if (NULL != p_commit_date_len) {
+    delete p_commit_date_len;
+    p_commit_date_len = NULL;
   }
 }
 
@@ -231,6 +248,8 @@ void DBVarbind::BindingInput(int table_id) {
           break;
         }
       }
+      *p_commit_number_len = sizeof(SQLLEN);
+      *p_commit_date_len = sizeof(SQLLEN);
       BindINParameter = &DBVarbind::bind_controller_table_input;
       break;
     case CTR_DOMAIN_TABLE:
@@ -389,6 +408,8 @@ void DBVarbind::BindingOutput(int table_id) {
           break;
         }
       }
+      *p_commit_number_len = sizeof(SQLLEN);
+      *p_commit_date_len = sizeof(SQLLEN);
       ODBCM_MEMSET(p_ctr_table, 0, sizeof(controller_table_t));
       BindOUTParameter = &DBVarbind::bind_controller_table_output;
       break;

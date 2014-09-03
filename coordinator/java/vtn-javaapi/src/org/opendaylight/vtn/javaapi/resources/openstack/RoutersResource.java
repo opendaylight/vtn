@@ -18,7 +18,6 @@ import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
@@ -69,7 +68,7 @@ public class RoutersResource extends AbstractResource {
 	 *      .google.gson.JsonObject)
 	 */
 	@Override
-	public int post(JsonObject requestBody) throws VtnServiceException {
+	public int post(JsonObject requestBody) {
 
 		LOG.trace("Start RoutersResource#post()");
 
@@ -130,11 +129,13 @@ public class RoutersResource extends AbstractResource {
 								.getValue()) {
 							LOG.info("vRouter creation is successful at UNC.");
 							isCommitRequired = true;
-							if (generatedVrtName.equals(VtnServiceOpenStackConsts.VRT_PREFIX)) {
+							if (generatedVrtName
+									.equals(VtnServiceOpenStackConsts.VRT_PREFIX)) {
 								final JsonObject response = new JsonObject();
-								response.addProperty(VtnServiceOpenStackConsts.ID,
+								response.addProperty(
+										VtnServiceOpenStackConsts.ID,
 										generatedVrtName);
-								setInfo(response);								
+								setInfo(response);
 							}
 						} else {
 							LOG.error("vRouter creation is failed at UNC.");
@@ -174,7 +175,7 @@ public class RoutersResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			if (exception.getSQLState().equalsIgnoreCase(
 					VtnServiceOpenStackConsts.CONFLICT_SQL_STATE)) {
@@ -201,7 +202,7 @@ public class RoutersResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -290,11 +291,11 @@ public class RoutersResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
-			notFoundStatus = true;
+			resourceFound = true;
 		} else {
 			createErrorInfo(
 					UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -302,6 +303,6 @@ public class RoutersResource extends AbstractResource {
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
 							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 }

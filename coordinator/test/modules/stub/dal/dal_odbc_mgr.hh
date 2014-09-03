@@ -27,8 +27,9 @@
 #include <list>
 #include <unc/upll_errno.h>
 
-using namespace std;
 
+#include <set>
+using namespace std;
 namespace unc {
 namespace upll {
 namespace dal {
@@ -37,8 +38,10 @@ namespace dal {
 //class DalCursor;
 //typedef upll_keytype_datatype_t UpllCfgType;
 class DalOdbcMgr :public DalConnIntf, public DalDmlIntf {
-public:
-  enum Method {
+ public:
+
+  enum Method
+  {
     INIT,
     CONNECT,
     DISCONNECT,
@@ -65,42 +68,43 @@ public:
     COPY_MATCHING,
     CHECK_IDENTICAL,
     EXECUTE_APPQUERY_MULTIPLE,
+    EXECUTE_APPQUERY_MODIFY,
+    EXECUTE_APPQUERY_SINGLE,
     EXECUTE_QUERY,
   };
-
   DalOdbcMgr(void);
+
   ~DalOdbcMgr(void);
-  DalOdbcMgr *GetAlarmRwConn();
 
   DalResultCode Init(void);
-  DalResultCode ConnectToDb(const DalConnType conn_type) const;
-  DalResultCode DisconnectFromDb() const;
-  DalResultCode CommitTransaction() const;
-  DalResultCode RollbackTransaction() const;
+  DalResultCode ConnectToDb(const DalConnType conn_type) ;
+  DalResultCode DisconnectFromDb();
 
-  upll_rc_t DalTxClose(DalOdbcMgr *dom, bool commit);
-  void ReleaseRwConn(DalOdbcMgr *dom);
+  DalResultCode CommitTransaction();
 
+  DalResultCode RollbackTransaction();
+
+  DalConnType get_conn_type();
+  inline DalConnState get_conn_state() { return kDalDbDisconnected; }
   inline uint32_t get_write_count() { return write_count_; }
   inline void reset_write_count() { write_count_ = 0; }
 
-  DalConnType get_conn_type();
-  inline void ClearDirty() const { }
-
-  inline DalConnState get_conn_state() { return conn_state_; }
 
   DalResultCode GetSingleRecord(
-    const UpllCfgType cfg_type, const DalTableIndex table_index,
-    const DalBindInfo *ouput_and_matching_attr_info) ;
+      const UpllCfgType cfg_type,
+      const DalTableIndex table_index,
+      const DalBindInfo *ouput_and_matching_attr_info) ;
 
   DalResultCode GetMultipleRecords(
-    const UpllCfgType cfg_type, const DalTableIndex table_index,
-    const size_t max_record_count,
-    const DalBindInfo *ouput_and_matching_attr_info, DalCursor **cursor);
+      const UpllCfgType cfg_type,
+      const DalTableIndex table_index,
+      const size_t max_record_count,
+      const DalBindInfo *ouput_and_matching_attr_info,
+      DalCursor **cursor);
 
   DalResultCode GetNextRecord(const DalCursor *cursor);
 
-  DalResultCode CloseCursor(DalCursor *cursor, bool delete_bind = false);
+  DalResultCode CloseCursor(DalCursor *cursor,bool);
 
   DalResultCode RecordExists(const UpllCfgType cfg_type,
                              const DalTableIndex table_index,
@@ -108,161 +112,201 @@ public:
                              bool *existence);
 
   DalResultCode GetSiblingBegin(
-    const UpllCfgType cfg_type, const DalTableIndex table_index,
-    const size_t max_record_count,
-    const DalBindInfo *ouput_and_matching_attr_info, DalCursor **cursor);
-
-  DalResultCode GetSiblingRecords(
-    const UpllCfgType cfg_type, const DalTableIndex table_index,
-    const size_t max_record_count,
-    const DalBindInfo *ouput_and_matching_attr_info, DalCursor **cursor);
-
-  DalResultCode GetSiblingCount(const UpllCfgType cfg_type,
-                                const DalTableIndex table_index,
-                                const DalBindInfo *matching_attr_info,
-                                uint32_t *count);
-
-  DalResultCode GetRecordCount(const UpllCfgType cfg_type,
-                               const DalTableIndex table_index,
-                               const DalBindInfo *matching_attr_info,
-                               uint32_t *count);
-
-  DalResultCode DeleteRecords(const UpllCfgType cfg_type,
-                              const DalTableIndex table_index,
-                              const DalBindInfo *matching_attr_info);
-
-  DalResultCode CreateRecord(const UpllCfgType cfg_type,
-                             const DalTableIndex table_index,
-                             const DalBindInfo *input_attr_info);
-
-  DalResultCode UpdateRecords(
-      string query_statement,
       const UpllCfgType cfg_type,
       const DalTableIndex table_index,
-      const DalBindInfo *input_and_matching_attr_info);
+                    const size_t max_record_count,
+                    const DalBindInfo *ouput_and_matching_attr_info,
+                    DalCursor **cursor);
 
+    DalResultCode GetSiblingRecords(
+                    const UpllCfgType cfg_type,
+                    const DalTableIndex table_index,
+                    const size_t max_record_count,
+                    const DalBindInfo *ouput_and_matching_attr_info,
+                    DalCursor **cursor);
 
-  DalResultCode UpdateRecords(const UpllCfgType cfg_type,
-                              const DalTableIndex table_index,
-                              const DalBindInfo *input_and_matching_attr_info);
-
-  DalResultCode GetDeletedRecords(const UpllCfgType cfg_type_1,
-                                  const UpllCfgType cfg_type_2,
+    DalResultCode GetSiblingCount(const UpllCfgType cfg_type,
                                   const DalTableIndex table_index,
-                                  const size_t max_record_count,
-                                  const DalBindInfo *output_attr_info,
-                                  DalCursor **cursor);
+                                  const DalBindInfo *matching_attr_info,
+                                  uint32_t *count);
 
-  DalResultCode GetCreatedRecords(const UpllCfgType cfg_type_1,
-                                  const UpllCfgType cfg_type_2,
-                                  const DalTableIndex table_index,
-                                  const size_t max_record_count,
-                                  const DalBindInfo *output_attr_info,
-                                  DalCursor **cursor);
+    DalResultCode GetRecordCount(const UpllCfgType cfg_type,
+                                 const DalTableIndex table_index,
+                                 const DalBindInfo *matching_attr_info,
+                                 uint32_t *count);
 
-  DalResultCode GetUpdatedRecords(
-    const UpllCfgType cfg_type_1, const UpllCfgType cfg_type_2,
-    const DalTableIndex table_index, const size_t max_record_count,
-    const DalBindInfo *cfg_1_output_and_match_attr_info,
-    const DalBindInfo *cfg_2_output_and_match_attr_info, DalCursor **cursor);
+    DalResultCode DeleteRecords(const UpllCfgType cfg_type,
+                                const DalTableIndex table_index,
+                                const DalBindInfo *matching_attr_info,
+                                const bool truncate);
 
-  DalResultCode CopyEntireRecords(const UpllCfgType dest_cfg_type,
-                                  const UpllCfgType src_cfg_type,
-                                  const DalTableIndex table_index,
-                                  const DalBindInfo *output_attr_info);
+    DalResultCode CreateRecord(const UpllCfgType cfg_type,
+                               const DalTableIndex table_index,
+                               const DalBindInfo *input_attr_info);
 
-  DalResultCode CopyModifiedRecords(const UpllCfgType dest_cfg_type,
+    DalResultCode UpdateRecords(
+                    string query_statement,
+                    const UpllCfgType cfg_type,
+                    const DalTableIndex table_index,
+                    const DalBindInfo *input_and_matching_attr_info);
+
+    DalResultCode UpdateRecords(
+                        const UpllCfgType cfg_type,
+                        const DalTableIndex table_index,
+                        const DalBindInfo *input_and_matching_attr_info);
+
+
+    DalResultCode GetDeletedRecords(const UpllCfgType cfg_type_1,
+                                    const UpllCfgType cfg_type_2,
+                                    const DalTableIndex table_index,
+                                    const size_t max_record_count,
+                                    const DalBindInfo *output_attr_info,
+                                    DalCursor **cursor);
+
+
+    DalResultCode GetCreatedRecords(const UpllCfgType cfg_type_1,
+                                    const UpllCfgType cfg_type_2,
+                                    const DalTableIndex table_index,
+                                    const size_t max_record_count,
+                                    const DalBindInfo *output_attr_info,
+                                    DalCursor **cursor);
+    DalResultCode GetUpdatedRecords(
+                    const UpllCfgType cfg_type_1,
+                    const UpllCfgType cfg_type_2,
+                    const DalTableIndex table_index,
+                    const size_t max_record_count,
+                    const DalBindInfo *cfg_1_output_and_match_attr_info,
+                    const DalBindInfo *cfg_2_output_and_match_attr_info,
+                    DalCursor **cursor);
+    DalResultCode ClearCreateUpdateFlags(const DalTableIndex table_index,
+                                    const UpllCfgType cfg_type) const;
+
+    DalResultCode CopyEntireRecords(const UpllCfgType dest_cfg_type,
                                     const UpllCfgType src_cfg_type,
                                     const DalTableIndex table_index,
-                                    const DalBindInfo *bind_info,
-                                    const unc_keytype_operation_t op) const ;
+                                    const DalBindInfo *output_attr_info);
 
-  DalResultCode CopyModifiedInsertRecords(
-    const UpllCfgType dest_cfg_type, const UpllCfgType src_cfg_type,
-    const DalTableIndex table_index,
-    const DalBindInfo *output_and_match_attr_info);
+    DalResultCode CopyModifiedRecords(
+                    const UpllCfgType dest_cfg_type,
+                    const UpllCfgType src_cfg_type,
+                    const DalTableIndex table_index,
+                    const DalBindInfo *output_and_match_attr_info,
+                    const unc_keytype_operation_t op);
 
-  DalResultCode CopyMatchingRecords(
-    const UpllCfgType dest_cfg_type, const UpllCfgType src_cfg_type,
-    const DalTableIndex table_index,
-    const DalBindInfo *output_and_match_attr_info);
-
-  DalResultCode CheckRecordsIdentical(const UpllCfgType cfg_type_1,
-                                      const UpllCfgType cfg_type_2,
-                                      const DalTableIndex table_index,
-                                      const DalBindInfo *matching_attr_info,
-                                      bool *identical);
-
-  DalResultCode ExecuteAppQueryMultipleRecords(
-    const std::string query_stmt, const size_t max_record_count,
-    const DalBindInfo *bind_info, DalCursor **cursor) ;
-
-  DalResultCode ExecuteQuery(SQLHANDLE *dal_stmt_handle,
-                             const std::string *query_stmt,
-                             const DalBindInfo *bind_info,
-                             const uint32_t max_count);
-
-  static void stub_setResultcode(DalOdbcMgr::Method methodType,
-                                 DalResultCode res_code) {
-    method_resultcode_map.insert(std::make_pair(methodType,res_code));
-  }
-
-  static void stub_setSingleRecordExists(bool exists) {
-    exists_ = exists;
-  }
-
-  static void stub_setSiblingCount(uint32_t sibling_count1) {
-    sibling_count_ = sibling_count1;
-  }
-  void MakeAllDirty() const { }
+    DalResultCode CopyModifiedInsertRecords(
+                    const UpllCfgType dest_cfg_type,
+                    const UpllCfgType src_cfg_type,
+                    const DalTableIndex table_index,
+                    const DalBindInfo *output_and_match_attr_info);
 
 
-  static void clearStubData() {
-    method_resultcode_map.clear();
-    count = 0;
-    resultcodes.clear();
-    exists_ = false;
-    sibling_count_ = 0;
-  }
+    DalResultCode CopyMatchingRecords(
+                    const UpllCfgType dest_cfg_type,
+                    const UpllCfgType src_cfg_type,
+                    const DalTableIndex table_index,
+                    const DalBindInfo *output_and_match_attr_info);
 
-  static void stub_setNextRecordResultCodes(
-    const std::map<uint8_t,DalResultCode>&  amap) {
-    resultcodes=amap;
-  }
+    DalResultCode CheckRecordsIdentical(const UpllCfgType cfg_type_1,
+                                        const UpllCfgType cfg_type_2,
+                                        const DalTableIndex table_index,
+                                        const DalBindInfo *matching_attr_info,
+                                        bool *identical);
 
-private:
-  DalResultCode stub_getMappedResultCode(Method) const;
-  mutable uint32_t write_count_;
+    DalResultCode ExecuteAppQuery(std::string query_stmt,
+                            const UpllCfgType cfg_type,
+                            const DalTableIndex table_index,
+                            const DalBindInfo *bind_info,
+                            const unc_keytype_operation_t dirty_op);
 
+    DalResultCode ExecuteAppQueryMultipleRecords(
+                         const std::string query_stmt,
+                         const size_t max_record_count,
+                         const DalBindInfo *bind_info,
+                         DalCursor **cursor) ;
 
-  inline DalResultCode
-  initCursor(DalCursor **cursor, const DalBindInfo *info, Method type) const
-  {
-    DalResultCode ret(stub_getMappedResultCode(type));
-    if (ret == kDalRcSuccess) {
-      *cursor = new DalCursor(info);
+        inline void ClearDirty() const {
+                delete_dirty.clear();
+                          create_dirty.clear();
+                                    update_dirty.clear();
+                                            }
+    inline void MakeAllDirty() const {
+                delete_dirty.clear();
+                          create_dirty.clear();
+                                    update_dirty.clear();
+                                              for (uint16_t tbl_idx = schema::table::kDbiVtnTbl;
+                                                                  tbl_idx < schema::table::kDalNumTables; tbl_idx++) {
+                                                            delete_dirty.insert(tbl_idx);
+                                                                        create_dirty.insert(tbl_idx);
+                                                                                    update_dirty.insert(tbl_idx);
+                                                                                              }
     }
-    return ret;
-  }
+                                              
+    DalResultCode ExecuteQuery(SQLHANDLE *dal_stmt_handle,
+                         const std::string *query_stmt,
+                         const DalBindInfo *bind_info,
+                         const uint32_t max_count);
 
-  inline DalResultCode
-  initCursor(DalCursor **cursor, const DalBindInfo *info1,
-             const DalBindInfo *info2, Method type) const
-  {
-    DalResultCode ret(stub_getMappedResultCode(type));
-    if (ret == kDalRcSuccess) {
-      *cursor = new DalCursor(info1, info2);
+    static void stub_setResultcode(DalOdbcMgr::Method methodType ,DalResultCode res_code) {
+    	method_resultcode_map.insert(std::make_pair(methodType,res_code));
     }
-    return ret;
-  }
 
-  static std::map<DalOdbcMgr::Method,DalResultCode> method_resultcode_map;
-  static  bool exists_;
-  static uint32_t sibling_count_;
-  mutable DalConnType conn_type_;
-  mutable DalConnState conn_state_;
-  static map<uint8_t,DalResultCode> resultcodes;
-  static uint32_t count;
+    static void stub_setSingleRecordExists(bool exists) {
+        exists_=exists;
+    } 
+    inline void ClearDirtyTblCache() const {
+      delete_dirty.clear();
+      create_dirty.clear();
+      update_dirty.clear();
+    }
+
+    inline bool IsAnyTableDirtyShallow() const {
+      return ((delete_dirty.size() > 0) ||
+              (create_dirty.size() > 0) ||
+              (update_dirty.size() > 0));
+    }
+    inline bool IsTableDirtyShallow(const DalTableIndex table_index) const {
+      return !((delete_dirty.end() == delete_dirty.find(table_index)) &&
+               (create_dirty.end() == create_dirty.find(table_index)) &&
+               (update_dirty.end() == update_dirty.find(table_index)));
+    }
+
+    inline bool IsTableDirtyShallowForOp(const DalTableIndex table_index,
+                                         const unc_keytype_operation_t op) const {
+      if (UNC_OP_DELETE == op) {
+        return !(delete_dirty.end() == delete_dirty.find(table_index));
+      } else if (op == UNC_OP_CREATE) {
+        return !(create_dirty.end() == create_dirty.find(table_index));
+      } else if (op == UNC_OP_UPDATE) {
+        return !(update_dirty.end() == update_dirty.find(table_index));
+      }
+      return false;
+    }
+
+    static void clearStubData() {
+        	method_resultcode_map.clear();
+        }
+    DalResultCode  ExecuteAppQueryModifyRecord(
+        const UpllCfgType cfg_type,
+        const DalTableIndex table_index,
+        const std::string query_stmt,
+        const DalBindInfo *bind_info,
+        const unc_keytype_operation_t op);
+
+    DalResultCode ExecuteAppQuerySingleRecord(
+        const std::string query_stmt,
+        const DalBindInfo *bind_info);
+    DalResultCode UpdateDirtyTblCacheFromDB() const; 
+   DalResultCode ClearAllDirtyTblInDB(UpllCfgType cfg_type) const;
+
+  private:
+    DalResultCode stub_getMappedResultCode(Method);
+    static std::map<DalOdbcMgr::Method,DalResultCode> method_resultcode_map;
+    static  bool exists_;
+    mutable DalConnType conn_type_;
+    mutable set<uint32_t> create_dirty;
+    mutable set<uint32_t> delete_dirty;
+    mutable set<uint32_t> update_dirty;
+    mutable uint32_t write_count_;
 };  // class DalOdbcMgr
 
 }  // namespace dal

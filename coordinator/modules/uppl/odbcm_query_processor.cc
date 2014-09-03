@@ -99,7 +99,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteEditDBQuery(
         ODBCMUtils::ODBCMUtils::get_RC_Details(odbc_rc).c_str());
     return (ODBCM_RC_STATUS)odbc_rc;
   }
-  pfc_log_info("ODBCM::QueryProcessor::ExecuteEditDBQuery: "
+  pfc_log_trace("ODBCM::QueryProcessor::ExecuteEditDBQuery: "
       "No. of rows inserted/affected: %d", (uint32_t)row_count);
   return ODBCM_RC_SUCCESS;
 }
@@ -138,7 +138,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteReadDBQuery(
     return (ODBCM_RC_STATUS)odbc_rc;
   }
   /** If no record found for the read query */
-  pfc_log_info("ODBCM::QueryProcessor::ExecuteReadDBQuery: "
+  pfc_log_trace("ODBCM::QueryProcessor::ExecuteReadDBQuery: "
     "Row count = %" UNC_PFMT_SQLLEN, row_count);
   if (row_count <= 0) {
     return ODBCM_RC_RECORD_NOT_FOUND;
@@ -189,7 +189,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteGroupOperationQuery(
     return (ODBCM_RC_STATUS)odbc_rc;
   }
   /** If no record found for the query */
-  pfc_log_info("ODBCM::QueryProcessor::ExecuteGroupOperationQuery: "
+  pfc_log_trace("ODBCM::QueryProcessor::ExecuteGroupOperationQuery: "
       "No of rows in last executed query: %" UNC_PFMT_SQLLEN, row_count);
   if (row_count <= 0) {
     pfc_log_debug("ODBCM::QueryProcessor::ExecuteGroupOperationQuery: "
@@ -330,7 +330,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteTransaction(
       /** Confirm there is no cs_row_status(!APPLIED) in candidate db */
       if (is_exists_false == ODBCM_MAX_UPPL_TABLES) {
         status = ODBCM_RC_SUCCESS;  // ODBCM_RC_CANDIDATE_NO_DIRTY
-        pfc_log_info("ODBCM::QueryProcessor::ExecuteTransaction:"
+        pfc_log_debug("ODBCM::QueryProcessor::ExecuteTransaction:"
             " ODBCM_RC_SUCCESS (ODBCM_RC_CANDIDATE_NO_DIRTY)");
       }
       break;
@@ -342,7 +342,7 @@ ODBCM_RC_STATUS QueryProcessor::ExecuteTransaction(
       /** Execute the query until end_of_query */
       while (strcmp(query[loop].c_str(), "end_of_query") != 0) {
         if (NULL == query[loop].c_str()) {
-          pfc_log_info("ODBCM::QueryProcessor::ExecuteTransaction: "
+          pfc_log_debug("ODBCM::QueryProcessor::ExecuteTransaction: "
                        "operation_type:%d, Query:%d string is empty",
                        operation_type, loop);
           return ODBCM_RC_ERROR_IN_FRAMEQUERY;

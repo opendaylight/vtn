@@ -209,14 +209,30 @@ UncRespCode InternalTransactionCoordinator::ProcessReq(
     switch (obj_req_hdr.operation) {
       case UNC_OP_CREATE:
       case UNC_OP_DELETE:
-      case UNC_OP_UPDATE:
+      case UNC_OP_UPDATE: {
         if (service_id != 0) {
           pfc_log_error(
               "Config Operation is provided with ServiceId other than 0");
           return UNC_UPPL_RC_ERR_BAD_REQUEST;
         }
+        //  checking unc_mode and session id, if session_id is not valid
+        //  with respect to uncmode, return UNC_UPPL_RC_ERR_INVALID_SESSIONID
+        UncMode unc_mode = PhysicalLayer::get_instance()->\
+                          get_physical_core()->getunc_mode();
+        if (unc_mode == UNC_COEXISTS_MODE &&
+            rsh.client_sess_id != USESS_ID_STARTUPPROXY) {
+          pfc_log_error("unc_mode is UNC_COEXISTS_MODE but session id is"
+              " NOT USESS_ID_STARTUPPROXY");
+          return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
+        } else if (unc_mode == UNC_SEPARATE_MODE &&
+                   rsh.client_sess_id == USESS_ID_STARTUPPROXY) {
+          pfc_log_error("unc_mode is UNC_SEPARATE_MODE but session id is"
+              " USESS_ID_STARTUPPROXY");
+          return UNC_UPPL_RC_ERR_INVALID_SESSIONID;
+        }
         resp_code = ProcessConfigRequest(session, obj_req_hdr, rsh);
         break;
+       }
       case UNC_OP_CONTROL:
         pfc_log_info("Inside control request request - NOT_SUPPORTED");
         rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
@@ -253,7 +269,7 @@ UncRespCode InternalTransactionCoordinator::ProcessReq(
     if (err != 0) {
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    pfc_log_debug("Received operation %d in service_id %d",
+    pfc_log_info("Received operation %d in service_id %d",
                   operation, service_id);
     switch (operation) {
       case UNC_OP_IS_CANDIDATE_DIRTY:

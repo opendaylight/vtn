@@ -341,7 +341,7 @@ TEST(TcReadOperations, HandleLockRet) {
 
   ret  =  TC_LOCK_INVALID_SESSION_ID;
   // CHange  to define
-  EXPECT_EQ(104, tc_readoperations.HandleLockRet(ret));
+  EXPECT_EQ(105, tc_readoperations.HandleLockRet(ret));
 
   ret  =  TC_LOCK_ALREADY_ACQUIRED;
   EXPECT_EQ(TC_SESSION_ALREADY_ACTIVE, tc_readoperations.HandleLockRet(ret));

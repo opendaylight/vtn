@@ -10,6 +10,10 @@ package org.opendaylight.vtn.javaapi.resources.openstack;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -20,10 +24,11 @@ import org.opendaylight.vtn.javaapi.annotation.UNCField;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
-import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
+import org.opendaylight.vtn.javaapi.openstack.beans.FlowFilterVbrBean;
+import org.opendaylight.vtn.javaapi.openstack.beans.FlowListBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.FreeCounterBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeInterfaceBean;
@@ -32,6 +37,8 @@ import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConst
 import org.opendaylight.vtn.javaapi.openstack.convertor.MapResourceGenerator;
 import org.opendaylight.vtn.javaapi.openstack.convertor.VbrResourcesGenerator;
 import org.opendaylight.vtn.javaapi.openstack.dao.DestinationControllerDao;
+import org.opendaylight.vtn.javaapi.openstack.dao.FlowFilterDao;
+import org.opendaylight.vtn.javaapi.openstack.dao.FlowListDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VBridgeDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VBridgeInterfaceDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VtnDao;
@@ -91,7 +98,7 @@ public class PortsResource extends AbstractResource {
 	 *      .google.gson.JsonObject)
 	 */
 	@Override
-	public int post(JsonObject requestBody) throws VtnServiceException {
+	public int post(JsonObject requestBody) {
 		LOG.trace("Start NetworksResource#post()");
 
 		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
@@ -111,23 +118,25 @@ public class PortsResource extends AbstractResource {
 			 * 404 error
 			 */
 			if (checkForNotFoundResources(connection)) {
-				final ResourceIdManager resourceIdManager = new ResourceIdManager();
+				final ResourceIdManager resourceIdManager = 
+						new ResourceIdManager();
 				/*
 				 * generate "id" is it is not present in request body
 				 */
 				if (!requestBody.has(VtnServiceOpenStackConsts.ID)) {
 					LOG.info("Resource id auto-generation is required.");
 
-					final FreeCounterBean freeCounterBean = new FreeCounterBean();
-					freeCounterBean
-							.setResourceId(VtnServiceOpenStackConsts.PORT_RES_ID);
+					final FreeCounterBean freeCounterBean = 
+							new FreeCounterBean();
+					freeCounterBean.setResourceId(VtnServiceOpenStackConsts
+							.PORT_RES_ID);
 					freeCounterBean.setVtnName(getTenantId());
 
-					counter = resourceIdManager.getResourceId(connection,
+					counter = resourceIdManager.getResourceCounter(connection,
 							freeCounterBean);
 					if (counter != -1) {
-						LOG.debug("Resource id auto-generation is successfull : "
-								+ counter);
+						LOG.debug("Resource id auto-generation is " +
+								"successfull : " + counter);
 						// if id is generated successfully
 						generatedVbrIfName = VtnServiceOpenStackConsts.IF_PREFIX
 								+ counter;
@@ -152,7 +161,8 @@ public class PortsResource extends AbstractResource {
 					 * continue to execute operations at UNC. Otherwise return
 					 * HTTP 409
 					 */
-					final VBridgeInterfaceBean vInterfaceBean = new VBridgeInterfaceBean();
+					final VBridgeInterfaceBean vInterfaceBean = 
+							new VBridgeInterfaceBean();
 
 					vInterfaceBean.setVbrIfId(counter);
 					vInterfaceBean.setVtnName(getTenantId());
@@ -165,12 +175,14 @@ public class PortsResource extends AbstractResource {
 					vInterfaceBean.setMapType(VtnServiceJsonConsts.PORTMAP);
 					vInterfaceBean.setLogicalPortId(VtnServiceJsonConsts.NONE);
 
-					final VBridgeInterfaceDao vInterfaceDao = new VBridgeInterfaceDao();
+					final VBridgeInterfaceDao vInterfaceDao = 
+							new VBridgeInterfaceDao();
 					int status = vInterfaceDao.insert(connection,
 							vInterfaceBean);
 
 					if (status == 1) {
-						LOG.info("Resource insertion successful at database operation.");
+						LOG.info("Resource insertion successful at " +
+								"database operation.");
 
 						final RestResource restResource = new RestResource();
 
@@ -187,12 +199,13 @@ public class PortsResource extends AbstractResource {
 							errorCode = performVlanMapOperations(requestBody,
 									restResource);
 
-							if (errorCode == UncCommonEnum.UncResultCode.UNC_SUCCESS
-									.getValue()) {
-								LOG.info("vlan-map Creation at UNC is successful.");
+							if (errorCode == UncCommonEnum.UncResultCode
+									.UNC_SUCCESS.getValue()) {
+								LOG.info("vlan-map Creation at UNC is " +
+										"successful.");
 
-								vInterfaceBean
-										.setMapType(VtnServiceJsonConsts.VLANMAP);
+								vInterfaceBean.setMapType(VtnServiceJsonConsts
+										.VLANMAP);
 								vInterfaceBean.setLogicalPortId(logicalPortId);
 
 								/**
@@ -204,53 +217,100 @@ public class PortsResource extends AbstractResource {
 										vInterfaceBean) == 1) {
 									isCommitRequired = true;
 									if (counter != 0) {
-										final JsonObject response = new JsonObject();
+										final JsonObject response = 
+												new JsonObject();
 										response.addProperty(
 												VtnServiceOpenStackConsts.ID,
 												String.valueOf(counter));
 										setInfo(response);
 									}
-									LOG.info("map_type and logical_port_id successfully updated in database.");
+									LOG.info("map_type and logical_port_id " +
+											"successfully updated in " +
+											"database.");
 								} else {
 									errorCode = UncResultCode.UNC_SERVER_ERROR
 											.getValue();
-									LOG.error("map_type and logical_port_id update failed in database.");
+									LOG.error("map_type and logical_port_id " +
+											"update failed in database.");
 								}
 							} else {
-								LOG.error("vlan-map Creation at UNC is failed.");
+								LOG.error("vlan-map Creation at UNC is " +
+										"failed.");
 							}
 						} else {
 							/*
 							 * if port is not specified as NULL then port-map
 							 * operations are required to be performed
 							 */
-							if (setControllerId(connection, requestBody) == Boolean.TRUE) {
+							if (setControllerId(connection, requestBody) 
+									== Boolean.TRUE) {
 								errorCode = performPortMapOperations(
 										requestBody, restResource);
+								/*
+								 * Filter operations.
+								 */
+								if (errorCode == UncCommonEnum.UncResultCode
+										.UNC_SUCCESS.getValue()) {
+									LOG.info("port-map Creation at UNC is "
+											+ "successful.");
+									/*
+									 * if filters is specified as no empty, then
+									 * filter operations are required to
+									 * performed.
+									 */
+									if (requestBody
+											.has(VtnServiceOpenStackConsts
+													.FILTERS)
+											&& requestBody
+												.get(VtnServiceOpenStackConsts
+														.FILTERS)
+															.getAsJsonArray()
+																.size() > 0) {
+										errorCode = performFilterOperations(
+												requestBody, restResource,
+												connection);
+										if (errorCode == 
+												UncCommonEnum.UncResultCode
+													.UNC_SUCCESS
+														.getValue()) {
+											LOG.info("Filter Creation at "
+													+ "UNC is successful.");
+										} else {
+											errorCode = UncResultCode
+													.UNC_SERVER_ERROR
+														.getValue();
+											LOG.error("Filter Creation at "
+													+ "UNC is failed.");
+										}
+									}
+								} else {
+									errorCode = UncResultCode.UNC_SERVER_ERROR
+											.getValue();
+									LOG.error("port-map Creation at UNC is " +
+											"failed.");
+								}
 
-								if (errorCode == UncCommonEnum.UncResultCode.UNC_SUCCESS
-										.getValue()) {
+								if (errorCode == UncCommonEnum.UncResultCode
+										.UNC_SUCCESS.getValue()) {
 									isCommitRequired = true;
 									if (counter != 0) {
-										final JsonObject response = new JsonObject();
+										final JsonObject response = 
+												new JsonObject();
 										response.addProperty(
 												VtnServiceOpenStackConsts.ID,
 												String.valueOf(counter));
 										setInfo(response);
 									}
-									LOG.info("port-map Creation at UNC is successful.");
-								} else {
-									errorCode = UncResultCode.UNC_SERVER_ERROR
-											.getValue();
-									LOG.error("port-map Creation at UNC is failed.");
 								}
 							} else {
-								LOG.error("Error ocurred while setting controller_id");
+								LOG.error("Error ocurred while setting " +
+										"controller_id");
 							}
 						}
 						checkForSpecificErrors(restResource.getInfo());
 					} else {
-						LOG.error("Resource insertion failed at database operation.");
+						LOG.error("Resource insertion failed at " +
+								"database operation.");
 					}
 				} else {
 					LOG.error("Error occurred while generation of id.");
@@ -283,7 +343,7 @@ public class PortsResource extends AbstractResource {
 				}
 			}
 		} catch (final SQLException exception) {
-			LOG.error("Internal server error : " + exception);
+			LOG.error(exception, "Internal server error : " + exception);
 			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
 			if (exception.getSQLState().equalsIgnoreCase(
 					VtnServiceOpenStackConsts.CONFLICT_SQL_STATE)) {
@@ -307,7 +367,7 @@ public class PortsResource extends AbstractResource {
 					connection.rollback();
 					LOG.info("roll-back successful.");
 				} catch (final SQLException e) {
-					LOG.error("Rollback error : " + e);
+					LOG.error(e, "Rollback error : " + e);
 				}
 				LOG.info("Free connection...");
 				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
@@ -329,7 +389,7 @@ public class PortsResource extends AbstractResource {
 	 */
 	private boolean checkForNotFoundResources(Connection connection)
 			throws SQLException {
-		boolean notFoundStatus = false;
+		boolean resourceFound = false;
 		VtnBean vtnBean = new VtnBean();
 		vtnBean.setVtnName(getTenantId());
 		if (new VtnDao().isVtnFound(connection, vtnBean)) {
@@ -337,7 +397,7 @@ public class PortsResource extends AbstractResource {
 			vBridgeBean.setVtnName(getTenantId());
 			vBridgeBean.setVbrName(getNetId());
 			if (new VBridgeDao().isVbrFound(connection, vBridgeBean)) {
-				notFoundStatus = true;
+				resourceFound = true;
 			} else {
 				createErrorInfo(
 						UncResultCode.UNC_NOT_FOUND.getValue(),
@@ -350,9 +410,10 @@ public class PortsResource extends AbstractResource {
 					UncResultCode.UNC_NOT_FOUND.getValue(),
 					getCutomErrorMessage(
 							UncResultCode.UNC_NOT_FOUND.getMessage(),
-							VtnServiceOpenStackConsts.TENANT_ID, getTenantId()));
+							VtnServiceOpenStackConsts.TENANT_ID,
+							getTenantId()));
 		}
-		return notFoundStatus;
+		return resourceFound;
 	}
 
 	/**
@@ -459,7 +520,8 @@ public class PortsResource extends AbstractResource {
 	private boolean setControllerId(Connection connection,
 			JsonObject requestBody) throws SQLException {
 		boolean status = true;
-		final DestinationControllerDao destControllerDao = new DestinationControllerDao();
+		final DestinationControllerDao destControllerDao = 
+				new DestinationControllerDao();
 		final String controllerId = destControllerDao
 				.getDestinationController(connection);
 
@@ -492,7 +554,8 @@ public class PortsResource extends AbstractResource {
 	private String getSwitchId(String datapathId) {
 		datapathId = datapathId.substring(2, datapathId.length());
 		final StringBuilder sb = new StringBuilder();
-		for (int toPrepend = 16 - datapathId.length(); toPrepend > 0; toPrepend--) {
+		for (int toPrepend = 16 - datapathId.length(); 
+				toPrepend > 0; toPrepend--) {
 			sb.append('0');
 		}
 		datapathId = sb.append(datapathId).toString();
@@ -656,5 +719,222 @@ public class PortsResource extends AbstractResource {
 		restResource.setConfigID(getConfigID());
 
 		return restResource.put(vlanmapRequestBody);
+	}
+	
+	/**
+	 * Perform Filter related operations at UNC
+	 * 
+	 * @param requestBody
+	 *            - OpenStack request body
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param connection
+	 *            - Database Connection instance
+	 * @return - erorrCode, 200 for Success
+	 * @throws SQLException 
+	 */
+	private int performFilterOperations(JsonObject requestBody,
+			RestResource restResource,
+			Connection connection) throws SQLException {
+		int errorCode = UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue();
+
+		/*
+		 * Delete duplicate flow filter.
+		 */
+		Set<String> filterSet = new HashSet<String>();
+		JsonArray filters = requestBody
+				.getAsJsonArray(VtnServiceOpenStackConsts.FILTERS);
+		Iterator<JsonElement> iterator = filters.iterator();
+		while (iterator.hasNext()) {
+			JsonElement element = iterator.next();
+			filterSet.add(element.getAsString());
+			
+			// check filter id if exist.
+			if (!hasFilterId(connection, element.getAsString())) {
+				LOG.error("Resource not found error.");
+				return UncResultCode.UNC_NOT_FOUND.getValue();
+			}
+			
+			LOG.debug("filter_id: %s", element.getAsString());
+		}
+
+		/*
+		 * Create request body for type of filter creation
+		 */
+		JsonObject flowFilterInRequestBody = new JsonObject();
+		flowFilterInRequestBody.add(VtnServiceJsonConsts.FLOWFILTER,
+									new JsonObject());
+		flowFilterInRequestBody
+				.get(VtnServiceJsonConsts.FLOWFILTER)
+				.getAsJsonObject()
+				.addProperty(VtnServiceJsonConsts.FFTYPE,
+						VtnServiceJsonConsts.IN);
+
+		// send request.
+		errorCode = createFlowFilterIn(requestBody, restResource,
+				flowFilterInRequestBody);
+		
+		if (UncResultCode.UNC_SUCCESS.getValue() == errorCode) {
+			LOG.info("filter in Creation at UNC is successful.");
+			ArrayList<FlowFilterVbrBean> vbridgeList = 
+					new ArrayList<FlowFilterVbrBean>();
+			for (String filterID : filterSet) {
+				FlowFilterVbrBean vbrBean = new FlowFilterVbrBean();
+				vbrBean.setVtnName(getTenantId());
+				vbrBean.setVbrName(getNetId());
+				vbrBean.setVbrIfName(requestBody
+						.get(VtnServiceOpenStackConsts.ID).getAsString());
+				vbrBean.setFlName(filterID);
+				vbridgeList.add(vbrBean);
+			}
+
+			// Insert db for flow filter.
+			final FlowFilterDao flowFilterDao = new FlowFilterDao();
+			int status = flowFilterDao
+					.insertVbridgeFilterInfo(connection, vbridgeList);
+			if (1 == status) {
+				LOG.info("Resource insertion successful at database " +
+						 "operation.");
+				for(String filterID : filterSet) {
+					/*
+					 * Create request body for flow filter creation
+					 */
+					String action = VtnServiceOpenStackConsts.S_PASS;
+					if (VtnServiceOpenStackConsts.X_DROP == filterID
+							.charAt(4)) {
+						action = VtnServiceOpenStackConsts.S_DROP;
+					}
+
+					String priority = filterID.substring(5, 9);
+
+					JsonObject flowFilterRequestBody = new JsonObject();
+					flowFilterRequestBody.
+						add(VtnServiceJsonConsts.FLOWFILTERENTRY,
+							new JsonObject());
+					JsonObject flowfilter = flowFilterRequestBody
+							.getAsJsonObject(
+									VtnServiceJsonConsts.FLOWFILTERENTRY);
+					flowfilter.addProperty(VtnServiceJsonConsts.SEQNUM,
+										   String.valueOf((Integer
+												   .parseInt(priority, 16))));
+					flowfilter.addProperty(VtnServiceJsonConsts.FLNAME,
+										   filterID);
+					flowfilter.addProperty(VtnServiceJsonConsts.ACTIONTYPE,
+										   action);
+					flowfilter.add(VtnServiceJsonConsts.REDIRECTDST,
+								   new JsonObject());
+
+					// send request.
+					errorCode = createFlowFilter(requestBody, restResource,
+							flowFilterRequestBody);
+					if (UncResultCode.UNC_SUCCESS.getValue() != errorCode) {
+						LOG.error("Failed to create flow filter entry(%s) " +
+								"at UNC.", filterID);
+						break;
+					}
+				}
+			} else {
+				LOG.error("Failed to insert Resource(filter for interface " +
+						"of vbridge) at database operation.");
+				errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+			}
+		} else {
+			LOG.error("Failed to create type(in) of flow filter at UNC.");
+		}
+
+		return errorCode;
+	}
+	
+	/**
+	 * Create type of flow filter at UNC
+	 * 
+	 * @param requestBody
+	 *            - OpenStack request body
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param flowFilterInRequestBody
+	 *            - Basic request body
+	 * @return - erorrCode, 200 for Success
+	 */
+	private int createFlowFilterIn(JsonObject requestBody,
+			RestResource restResource, JsonObject flowFilterInRequestBody) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getTenantId());
+		sb.append(VtnServiceOpenStackConsts.VBRIDGE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getNetId());
+		sb.append(VtnServiceOpenStackConsts.INTERFACE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(requestBody.get(VtnServiceOpenStackConsts.ID).getAsString());
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_PATH);
+
+		restResource.setPath(sb.toString());
+		restResource.setSessionID(getSessionID());
+		restResource.setConfigID(getConfigID());
+		return restResource.post(flowFilterInRequestBody);
+	}
+	
+	/**
+	 * Create flow filter at UNC
+	 * 
+	 * @param requestBody
+	 *            - OpenStack request body
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param flowfilterEntryRequest
+	 *            - Basic request body
+	 * @return - erorrCode, 200 for Success
+	 */
+	private int createFlowFilter(JsonObject requestBody,
+			RestResource restResource, JsonObject flowfilterEntryRequest) {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getTenantId());
+		sb.append(VtnServiceOpenStackConsts.VBRIDGE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getNetId());
+		sb.append(VtnServiceOpenStackConsts.INTERFACE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(requestBody.get(VtnServiceOpenStackConsts.ID).getAsString());
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_PATH);
+		sb.append(VtnServiceOpenStackConsts.IN_PATH);
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_ENTRY_PATH);
+
+		restResource.setPath(sb.toString());
+		restResource.setSessionID(getSessionID());
+		restResource.setConfigID(getConfigID());
+		return restResource.post(flowfilterEntryRequest);
+	}
+	
+	/**
+	 * Checks that specified instances in URI exists in system or not. If they
+	 * are not exists then prepare error JSON for 404 Not Found
+	 * 
+	 * @param connection
+	 *            - Database Connection instance
+	 * @param filterId
+	 *            - Flow filter id
+	 * @return - true, only if all instances exist
+	 * @throws SQLException
+	 */
+	private boolean hasFilterId(Connection connection, String filterId)
+			throws SQLException {
+		boolean resourceFound = false;
+		FlowListBean filterBean = new FlowListBean();
+		filterBean.setFlName(filterId);
+		if (new FlowListDao().isFlowListFound(connection, filterBean)) {
+			resourceFound = true;
+		} else {
+			createErrorInfo(
+					UncResultCode.UNC_NOT_FOUND.getValue(),
+					getCutomErrorMessage(
+							UncResultCode.UNC_NOT_FOUND.getMessage(),
+							VtnServiceOpenStackConsts.FILTER_RES_ID, filterId));
+		}
+		return resourceFound;
 	}
 }

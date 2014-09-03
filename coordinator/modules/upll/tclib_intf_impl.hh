@@ -88,7 +88,9 @@ class TcLibIntfImpl : public unc::tclib::TcLibInterface {
   /* audit related interfaces */
   virtual TcCommonRet HandleAuditStart(
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
-      std::string controller_id);
+      std::string controller_id, pfc_bool_t simplified_audit,
+      uint64_t commit_number, uint64_t commit_date,
+      std::string commit_application);
 
   virtual TcCommonRet HandleAuditStart(
       uint32_t session_id, unc_keytype_ctrtype_t ctr_type,

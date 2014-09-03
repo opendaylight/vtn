@@ -21,6 +21,7 @@ import org.opendaylight.vtn.core.util.UnsignedInteger;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceIpcConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
+import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncPhysicalStructIndexEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncStructIndexEnum;
@@ -835,8 +836,24 @@ public class IpcPhysicalResponseFactory {
 									.getValue())) {
 				setValueToJsonObject(validBit, controller,
 						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.VNP);
+			} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
+					valControllerStruct, VtnServiceIpcConsts.TYPE)
+					.equalsIgnoreCase(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
+									.getValue())) {
+				setValueToJsonObject(validBit, controller,
+						VtnServiceJsonConsts.TYPE, VtnServiceJsonConsts.ODC);
+			} else if (IpcDataUnitWrapper.getIpcStructUint8Value(
+					valControllerStruct, VtnServiceIpcConsts.TYPE)
+					.equalsIgnoreCase(
+							UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_POLC
+									.getValue())) {
+				String polc = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_POLC);
+				setValueToJsonObject(validBit, controller,
+						VtnServiceJsonConsts.TYPE, polc);
 			} else {
-				LOG.debug("Type : invalid");
+				LOG.info("Type : invalid");
 			}
 			LOG.debug("Type :"
 					+ IpcDataUnitWrapper.getIpcStructUint8Value(
@@ -922,6 +939,19 @@ public class IpcPhysicalResponseFactory {
 	 * @return
 	 */
 	public JsonObject getSwitchPortResponse(final IpcDataUnit[] responsePacket,
+			final JsonObject requestBody,
+			final String getType) {
+		return getSwitchPortResponse(responsePacket, requestBody);
+	}
+
+	/**
+	 * This method will return the port details from response packet
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @return
+	 */
+	public JsonObject getSwitchPortResponse(final IpcDataUnit[] responsePacket,
 			final JsonObject requestBody) {
 		LOG.trace("Start getSwitchPortResponse");
 		/*
@@ -951,7 +981,7 @@ public class IpcPhysicalResponseFactory {
 					count = responsePacket.length;
 				}
 			}
-			switchPort.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			switchPort.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, switchPort);
 		} else {
 			IpcStruct valPortStruct = null;
@@ -1608,6 +1638,20 @@ public class IpcPhysicalResponseFactory {
 	 * @return the link response
 	 */
 	public JsonObject getLinkResponse(final IpcDataUnit[] responsePacket,
+			final JsonObject requestBody, final String getType) {
+		return getLinkResponse(responsePacket, requestBody);
+	}
+
+	/**
+	 * Gets the link response.
+	 * 
+	 * @param responsePacket
+	 *            the response packet
+	 * @param requestBody
+	 *            the request body
+	 * @return the link response
+	 */
+	public JsonObject getLinkResponse(final IpcDataUnit[] responsePacket,
 			final JsonObject requestBody) {
 		LOG.trace("Start getLinkResponse");
 		final JsonObject root = new JsonObject();
@@ -1637,7 +1681,7 @@ public class IpcPhysicalResponseFactory {
 					count = responsePacket.length;
 				}
 			}
-			links.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			links.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, links);
 
 		} else {
@@ -2231,6 +2275,21 @@ public class IpcPhysicalResponseFactory {
 	 * @return the domain logical port response
 	 */
 	public JsonObject getDomainLogicalPortResponse(
+			final IpcDataUnit[] responsePacket, final JsonObject requestBody,
+			final String getType) {
+		return getDomainLogicalPortResponse(responsePacket, requestBody);
+	}
+	
+	/**
+	 * Gets the domain logical port response.
+	 * 
+	 * @param responsePacket
+	 *            the response packet
+	 * @param requestBody
+	 *            the request body
+	 * @return the domain logical port response
+	 */
+	public JsonObject getDomainLogicalPortResponse(
 			final IpcDataUnit[] responsePacket, final JsonObject requestBody) {
 		LOG.trace("Start getDomainLogicalPortResponse");
 		/*
@@ -2263,7 +2322,7 @@ public class IpcPhysicalResponseFactory {
 					count = responsePacket.length;
 				}
 			}
-			logicalPort.addProperty(VtnServiceJsonConsts.COUNT, String.valueOf(count));
+			logicalPort.addProperty(VtnServiceJsonConsts.COUNT, count);
 			root.add(rootJsonName, logicalPort);
 
 		} else {
@@ -2839,6 +2898,20 @@ public class IpcPhysicalResponseFactory {
 				setValueToJsonObject(validBit, controlerFlow,
 						VtnServiceJsonConsts.CONTROLER_TYPE,
 						VtnServiceJsonConsts.PFC);
+			} else if (controllerType == UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_ODC
+					.ordinal()) {
+				setValueToJsonObject(validBit, controlerFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						VtnServiceJsonConsts.ODC);
+			} else if (controllerType == UncPhysicalStructIndexEnum.UpplTypeIndex.UNC_CT_POLC
+					.ordinal()) {
+				String polc = VtnServiceInitManager.getConfigurationMap()
+						.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_POLC);
+				setValueToJsonObject(validBit, controlerFlow,
+						VtnServiceJsonConsts.CONTROLER_TYPE,
+						polc);
+			} else {
+				LOG.info("Controller Type invalid");
 			}
 		}
 		LOG.debug("set valid Bit for Controller type :" + validBit);
@@ -3329,13 +3402,14 @@ public class IpcPhysicalResponseFactory {
 				if (null == setVlanIdJsonArray) {
 					setVlanIdJsonArray = new JsonArray();
 				}
-				if(element.getAsString().equals(VtnServiceJsonConsts.VLAN_ID_65535)){
+				if (element.getAsString().equals(
+						VtnServiceJsonConsts.VLAN_ID_65535)) {
 					element = new JsonPrimitive(VtnServiceJsonConsts.EMPTY);
 					setVlanIdJsonArray.add(element);
-				}else{
+				} else {
 					setVlanIdJsonArray.add(element);
 				}
-				
+
 				LOG.debug("set vlan_id ");
 
 			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_VLAN_PCP
@@ -3357,7 +3431,7 @@ public class IpcPhysicalResponseFactory {
 				if (null == setStripVlanJsonArray) {
 					setStripVlanJsonArray = new JsonArray();
 				}
-				setStripVlanJsonArray.add(element);			
+				setStripVlanJsonArray.add(element);
 				index.getAndIncrement();
 
 			} else if (actionType == UncStructIndexEnum.UncDataflowFlowActionType.UNC_ACTION_SET_IPV4_SRC
@@ -3390,13 +3464,11 @@ public class IpcPhysicalResponseFactory {
 					.ordinal()) {
 				final IpcStruct valDfFlowActionSetIpTos = (IpcStruct) responsePacket[index
 						.getAndIncrement()];
-			    final String hexString =
-                        UnsignedInteger.toHexString(Long
-                                .valueOf(IpcDataUnitWrapper
-                                        .getIpcStructUint8Value(
-                                                valDfFlowActionSetIpTos,
-                                                VtnServiceIpcConsts.IP_TOS)));
-                element = new JsonPrimitive("0x" + hexString);
+				final String hexString = UnsignedInteger.toHexString(Long
+						.valueOf(IpcDataUnitWrapper.getIpcStructUint8Value(
+								valDfFlowActionSetIpTos,
+								VtnServiceIpcConsts.IP_TOS)));
+				element = new JsonPrimitive("0x" + hexString);
 				if (null == setIpTosJsonArray) {
 					setIpTosJsonArray = new JsonArray();
 				}
@@ -3489,8 +3561,8 @@ public class IpcPhysicalResponseFactory {
 						setVlanPriorityJsonArray);
 			}
 			if (setStripVlanJsonArray != null) {
-				action.add(VtnServiceJsonConsts.STRIPVLAN, 
-				        setStripVlanJsonArray);
+				action.add(VtnServiceJsonConsts.STRIPVLAN,
+						setStripVlanJsonArray);
 			}
 			if (setIpSrcAddrJsonArray != null) {
 				action.add(VtnServiceJsonConsts.SETIPSRCADDR,
@@ -3646,9 +3718,9 @@ public class IpcPhysicalResponseFactory {
 					.ordinal()) {
 				final IpcStruct valDfFlowMatchDlType = (IpcStruct) responsePacket[index
 						.getAndIncrement()];
-				element=new JsonPrimitive(IpcDataUnitWrapper.getIpcStructUint16HexaValue(
-						valDfFlowMatchDlType, VtnServiceIpcConsts.DL_TYPE)
-						.toString());
+				element = new JsonPrimitive(IpcDataUnitWrapper
+						.getIpcStructUint16HexaValue(valDfFlowMatchDlType,
+								VtnServiceIpcConsts.DL_TYPE).toString());
 				if (null == macEtherTypeJsonArray) {
 					macEtherTypeJsonArray = new JsonArray();
 				}
@@ -3666,13 +3738,13 @@ public class IpcPhysicalResponseFactory {
 				if (null == vlanIdJsonArray) {
 					vlanIdJsonArray = new JsonArray();
 				}
-				if(element.getAsString().equals(VtnServiceJsonConsts.VLAN_ID_65535)){
+				if (element.getAsString().equals(
+						VtnServiceJsonConsts.VLAN_ID_65535)) {
 					element = new JsonPrimitive(VtnServiceJsonConsts.EMPTY);
 					vlanIdJsonArray.add(element);
-				}else{
+				} else {
 					vlanIdJsonArray.add(element);
 				}
-				
 
 				LOG.debug("set validbit for vlan_id  :" + validBit);
 
@@ -3696,13 +3768,11 @@ public class IpcPhysicalResponseFactory {
 				final IpcStruct valDfFlowMatchIpTos = (IpcStruct) responsePacket[index
 						.getAndIncrement()];
 
-			    final String hexString =
-                        UnsignedInteger.toHexString(Long
-                                .valueOf(IpcDataUnitWrapper
-                                        .getIpcStructUint8Value(
-                                                valDfFlowMatchIpTos,
-                                                VtnServiceIpcConsts.IP_TOS)));
-                element = new JsonPrimitive("0x" + hexString);
+				final String hexString = UnsignedInteger.toHexString(Long
+						.valueOf(IpcDataUnitWrapper
+								.getIpcStructUint8Value(valDfFlowMatchIpTos,
+										VtnServiceIpcConsts.IP_TOS)));
+				element = new JsonPrimitive("0x" + hexString);
 				if (null == ipTosJsonArray) {
 					ipTosJsonArray = new JsonArray();
 				}
@@ -3985,6 +4055,172 @@ public class IpcPhysicalResponseFactory {
 		LOG.debug("match Json :" + match);
 		LOG.trace("getDataFlowMatchInfo completed");
 		return match;
+	}
+
+	/**
+	 * Create response for the controller path policy
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param list
+	 * @return
+	 */
+	public JsonObject getCtrPathPolicyResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+
+		LOG.info("Start getCtrPathPolicyResponse");
+		final JsonObject root = new JsonObject();
+		JsonArray pathPolicies = null;
+		JsonObject pathPolicyObj = new JsonObject();
+		LOG.debug("getType: " + getType);
+		/*
+		 * operation type will be required to resolve the response type
+		 */
+		String opType = VtnServiceJsonConsts.NORMAL;
+		if (requestBody.has(VtnServiceJsonConsts.OP)) {
+			opType = requestBody.get(VtnServiceJsonConsts.OP).getAsString();
+		}
+		String rootJsonName;
+		/*
+		 * get type (show or list) will be required to resolve root json name
+		 * here it will be vtn for show and vtns for list
+		 */
+		if (getType.equals(VtnServiceJsonConsts.SHOW)) {
+			rootJsonName = VtnServiceJsonConsts.PATHPOLICY;
+		} else {
+			rootJsonName = VtnServiceJsonConsts.PATHPOLICIES;
+			// json array will be required for list type of cases
+			pathPolicies = new JsonArray();
+		}
+		LOG.debug("Json Name :" + rootJsonName);
+
+		if (opType.equalsIgnoreCase(VtnServiceJsonConsts.COUNT)) {
+			// for count case
+			pathPolicyObj
+					.addProperty(
+							VtnServiceJsonConsts.COUNT,
+							IpcDataUnitWrapper
+									.getIpcDataUnitValue(responsePacket[VtnServiceConsts.IPC_COUNT_INDEX]));
+			root.add(rootJsonName, pathPolicyObj);
+		} else {
+			for (int index = 0; index < responsePacket.length; index++) {
+
+				// There is no use of key type
+				LOG.debug("Skip key type: no use");
+				index++;
+
+				final IpcStruct keyCtrlPpolicyStruct = (IpcStruct) responsePacket[index++];
+				pathPolicyObj.addProperty(VtnServiceJsonConsts.POLICYID,
+						IpcDataUnitWrapper.getIpcStructUint16Value(
+								keyCtrlPpolicyStruct,
+								VtnServiceIpcConsts.POLICYID));
+
+				// If pathPolicies is initialized, add object to array
+				if (null != pathPolicies) {
+					pathPolicies.add(pathPolicyObj);
+				}
+			}
+			/*
+			 * finally add either array or single object to root JSON object and
+			 * return the same.
+			 */
+			if (null != pathPolicies) {
+				root.add(rootJsonName, pathPolicies);
+			} else {
+				root.add(rootJsonName, pathPolicyObj);
+			}
+		}
+		LOG.debug("Response Json: " + root.toString());
+		LOG.trace("Complete getCtrPathPolicyResponse");
+		return root;
+	}
+
+	/**
+	 * Create response for the controller path policy Link weight
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param list
+	 * @return
+	 */
+	public JsonArray getCtrPathPolicyLinkResponse(IpcDataUnit[] responsePacket,
+			JsonObject requestBody, String getType) {
+		LOG.trace("Start getCtrPathPolicyLinkResponse");
+		JsonArray linkWeights = new JsonArray();
+		for (int index = 0; index < responsePacket.length; index++) {
+			JsonObject linkWeightObj = new JsonObject();
+			// There is no use of key type
+			LOG.debug("Skip key type: no use");
+			index++;
+
+			final IpcStruct keyCtrlPpolicyLinkStruct = (IpcStruct) responsePacket[index++];
+			linkWeightObj.addProperty(VtnServiceJsonConsts.SWITCH_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							keyCtrlPpolicyLinkStruct,
+							VtnServiceIpcConsts.SWITCHID));
+			linkWeightObj.addProperty(VtnServiceJsonConsts.PORTNAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							keyCtrlPpolicyLinkStruct,
+							VtnServiceIpcConsts.PORT_ID));
+
+			IpcStruct valLinkWeightStruct = (IpcStruct) responsePacket[index++];
+			byte validBit = valLinkWeightStruct
+					.getByte(
+							VtnServiceIpcConsts.VALID,
+							UncPhysicalStructIndexEnum.UpplValCtrPpolicyLinkWeightIndex.kIdxLinkWeight
+									.ordinal());
+			if (validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_INVALID
+					.ordinal()
+					&& validBit != (byte) UncStructIndexEnum.Valid.UNC_VF_NOT_SUPPORTED
+							.ordinal()) {
+				setValueToJsonObject(validBit, linkWeightObj,
+						VtnServiceJsonConsts.WEIGHT,
+						IpcDataUnitWrapper
+								.getIpcStructUint32Value(valLinkWeightStruct,
+										VtnServiceIpcConsts.WEIGHT));
+			}
+			// Adding JSON element to the array
+			linkWeights.add(linkWeightObj);
+		}
+		LOG.debug("Response Json: " + linkWeights.toString());
+		LOG.trace("Complete getCtrPathPolicyLinkResponse");
+		return linkWeights;
+	}
+
+	/**
+	 * Create response for the controller path policy disable switches
+	 * 
+	 * @param responsePacket
+	 * @param requestBody
+	 * @param list
+	 * @return
+	 */
+	public JsonArray getCtrPathPolicyDisableResponse(
+			IpcDataUnit[] responsePacket, JsonObject requestBody, String list) {
+		LOG.info("Start getCtrPathPolicyDisableResponse");
+		JsonArray disableSwitches = new JsonArray();
+		for (int index = 0; index < responsePacket.length; index++) {
+			JsonObject disableSwitch = new JsonObject();
+			// There is no use of key type
+			LOG.debug("Skip key type: no use");
+			index++;
+
+			final IpcStruct keyCtrlPpolicyDisableStruct = (IpcStruct) responsePacket[index++];
+			disableSwitch.addProperty(VtnServiceJsonConsts.SWITCH_ID,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							keyCtrlPpolicyDisableStruct,
+							VtnServiceIpcConsts.SWITCHID));
+			disableSwitch.addProperty(VtnServiceJsonConsts.PORTNAME,
+					IpcDataUnitWrapper.getIpcStructUint8ArrayValue(
+							keyCtrlPpolicyDisableStruct,
+							VtnServiceIpcConsts.PORT_ID));
+
+			// Adding JSON element to the array
+			disableSwitches.add(disableSwitch);
+		}
+		LOG.debug("Response Json: " + disableSwitches.toString());
+		LOG.trace("Complete getCtrPathPolicyDisableResponse");
+		return disableSwitches;
 	}
 
 }

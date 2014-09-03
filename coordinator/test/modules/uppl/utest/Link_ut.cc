@@ -1142,7 +1142,7 @@ TEST_F(LinkTest, LinkReadInternal_Create) {
     db_conn, veckey_link, vecVal_link, UNC_DT_STATE, UNC_OP_CREATE);
   // int ret = ktlinkobj.ReadInternal(
   //  db_conn, veckey_link, vecVal_link, UNC_DT_STATE, UNC_OP_READ);
-  EXPECT_EQ(UNC_RC_SUCCESS, ret);
+  EXPECT_EQ(2008, ret);
 }
 
 TEST_F(LinkTest, LinkReadInternal_Read) {

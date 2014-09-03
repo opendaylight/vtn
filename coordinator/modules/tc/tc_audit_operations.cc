@@ -51,26 +51,35 @@ uint32_t TcAuditOperations::TcGetMinArgCount() {
  * @brief Handle Return from TcLock Class
  */
 TcOperStatus TcAuditOperations::HandleLockRet(TcLockRet lock_ret) {
+  TcOperStatus oper_status = TC_OPER_FAILURE;
   switch ( lock_ret ) {
-    case     TC_LOCK_INVALID_UNC_STATE:
+    case TC_LOCK_INVALID_UNC_STATE:
     case TC_LOCK_OPERATION_NOT_ALLOWED:
-      return TC_INVALID_STATE;
+      oper_status = TC_INVALID_STATE;
+      break;
     case TC_LOCK_BUSY:
-      return TC_SYSTEM_BUSY;
+      oper_status = TC_SYSTEM_BUSY;
+      break;
     case TC_LOCK_NO_CONFIG_SESSION_EXIST:
-      return TC_CONFIG_NOT_PRESENT;
+      oper_status = TC_CONFIG_NOT_PRESENT;
+      break;
     default:
-      return TC_OPER_FAILURE;
+      oper_status = TC_OPER_FAILURE;
   }
-  return TC_OPER_FAILURE;
+  pfc_log_info("HandleLockRet: Received(%u), return(%u)",
+               lock_ret, oper_status);
+  return oper_status;
 }
 
 /*
  * @brief Check No of Arguments
  */
 TcOperStatus TcAuditOperations::TcCheckOperArgCount(uint32_t avail_count) {
-  if ( avail_count != UNC_AUDIT_OPS_ARG_COUNT )
+  if ( avail_count != UNC_AUDIT_OPS_ARG_COUNT ) {
+    pfc_log_error("TcCheckOperArgCount avail_count(%u) != %u",
+                  avail_count, UNC_AUDIT_OPS_ARG_COUNT);
     return TC_OPER_INVALID_INPUT;
+  }
   return TC_OPER_SUCCESS;
 }
 
@@ -85,12 +94,16 @@ TcOperStatus TcAuditOperations::GetSessionId() {
                                        TC_REQ_SESSION_ID_INDEX,
                                        &session_id_);
   if ( ret == TCUTIL_RET_FAILURE ) {
+    pfc_log_error("GetSessionId: get_uint32 return TCUTIL_RET_FAILURE");
     return TC_OPER_INVALID_INPUT;
   } else if ( ret == TCUTIL_RET_FATAL ) {
+    pfc_log_error("GetSessionId: get_uint32 return TCUTIL_RET_FATAL");
     return TC_OPER_FAILURE;
   }
-  if ( session_id_ == 0 )
+  if ( session_id_ == 0 ) {
+    pfc_log_error("GetSessionId: Received session_id is 0");
     return TC_OPER_INVALID_INPUT;
+  }
 
   return TC_OPER_SUCCESS;
 }
@@ -101,12 +114,15 @@ TcOperStatus TcAuditOperations::GetSessionId() {
 TcOperStatus TcAuditOperations::TcValidateOperType() {
   if ((tc_oper_ != TC_OP_USER_AUDIT ) &&
       (tc_oper_ != TC_OP_DRIVER_AUDIT)) {
+    pfc_log_error("TcValidateOperType opertype(%u) is not either of "
+                  "TC_OP_USER_AUDIT or TC_OP_DRIVER_AUDIT", tc_oper_);
     return TC_INVALID_OPERATION_TYPE;
   }
   /*set IPC timeout to infinity for audit operations*/
   if (tc_oper_ == TC_OP_USER_AUDIT) {
     TcUtilRet ret = TcServerSessionUtils::set_srv_timeout(ssess_, NULL);
     if (ret == TCUTIL_RET_FAILURE) {
+      pfc_log_error("TcValidateOperType set_srv_timeout to Infinite failed");
       return TC_OPER_FAILURE;
     }
   }
@@ -132,12 +148,15 @@ TcOperStatus TcAuditOperations::TcValidateOperParams() {
                                           controller_id_);
   }
   if (ret == TCUTIL_RET_FAILURE || ret1 == TCUTIL_RET_FAILURE) {
+    pfc_log_error("TcValidateOperParams: Fail reading session data");
     return TC_OPER_INVALID_INPUT;
   } else if (ret == TCUTIL_RET_FATAL || ret1 == TCUTIL_RET_FATAL) {
+    pfc_log_error("TcValidateOperParams: Fatal reading session data");
     return TC_OPER_FAILURE;
   }
 
   if ( controller_id_.length() == 0 ) {
+    pfc_log_error("Zero length controller-id");
     return TC_OPER_INVALID_INPUT;
   }
   /*force-reconnect option*/
@@ -151,8 +170,10 @@ TcOperStatus TcAuditOperations::TcValidateOperParams() {
                                                    TC_REQ_ARG_INDEX,
                                                    &read_drv_id);
     if ( ret == TCUTIL_RET_FAILURE ) {
+      pfc_log_error("TcValidateOperParams Failure reading read_drv_id");
       return TC_OPER_INVALID_INPUT;
     } else if ( ret == TCUTIL_RET_FATAL ) {
+      pfc_log_error("TcValidateOperParams Fatal reading read_drv_id");
       return TC_OPER_FAILURE;
     }
 
@@ -169,6 +190,7 @@ TcOperStatus TcAuditOperations::TcValidateOperParams() {
                                                   tclock_,
                                                   unc_oper_channel_map_,
                                                   driver_id_) != 0) {
+      pfc_log_error("TcValidateOperParams:DispatchAuditDriverRequest failed");
       return TC_OPER_FAILURE;
     }
   }
@@ -276,10 +298,14 @@ pfc_bool_t TcAuditOperations::AuditStart() {
   PFC_ASSERT(tc_audit_start_msg != NULL);
   FillTcMsgData(tc_audit_start_msg, unc::tclib::MSG_AUDIT_START);
   TcOperRet oper_ret(tc_audit_start_msg->Execute());
-  if ( oper_ret != TCOPER_RET_SUCCESS ) {
+  if ( oper_ret != TCOPER_RET_SUCCESS &&
+       oper_ret != TCOPER_RET_SIMPLIFIED_AUDIT ) {
     user_response_ = HandleMsgRet(oper_ret);
     resp_tc_msg_ = tc_audit_start_msg;
     return PFC_FALSE;
+  }
+  if ( oper_ret == TCOPER_RET_SIMPLIFIED_AUDIT ) {
+    user_response_ = TC_OPER_SIMPLIFIED_AUDIT;
   }
   delete tc_audit_start_msg;
   return PFC_TRUE;
@@ -430,6 +456,8 @@ TcOperStatus TcAuditOperations::FillTcMsgData(TcMsg* tc_msg,
   }
   if (oper_type == unc::tclib::MSG_AUDIT_START) {
     tc_msg->SetReconnect(force_reconnect_);
+    if(tc_oper_ == TC_OP_USER_AUDIT)
+      tc_msg->IsUserAudit(PFC_TRUE);
   }
   if (oper_type == unc::tclib::MSG_AUDIT_TRANS_END) {
     tc_msg->SetTransResult(trans_result_);
@@ -458,17 +486,24 @@ TcOperStatus TcAuditOperations::Execute() {
   if ( AuditStart() == PFC_FALSE ) {
     return user_response_;
   }
-  if ( AuditTransStart() == PFC_FALSE ) {
-    return user_response_;
+  if ( tc_oper_ == TC_OP_USER_AUDIT ||
+       user_response_ != TC_OPER_SIMPLIFIED_AUDIT ) {
+    if ( AuditTransStart() == PFC_FALSE ) {
+      return user_response_;
+    }
+    if ( AuditVote() == PFC_FALSE ) {
+      return user_response_;
+    }
+    if ( AuditGlobalCommit() == PFC_FALSE ) {
+      return user_response_;
+    }
+    if ( AuditTransEnd() == PFC_FALSE ) {
+      return user_response_;
+    }
   }
-  if ( AuditVote() == PFC_FALSE ) {
-    return user_response_;
-  }
-  if ( AuditGlobalCommit() == PFC_FALSE ) {
-    return user_response_;
-  }
-  if ( AuditTransEnd() == PFC_FALSE ) {
-    return user_response_;
+  if ( user_response_ == TC_OPER_SIMPLIFIED_AUDIT &&
+       tc_oper_ == TC_OP_DRIVER_AUDIT ) {
+    audit_result_ =  unc::tclib::TC_SIMPLIFIED_AUDIT_SUCCESS;
   }
   if ( AuditEnd() == PFC_FALSE ) {
     return user_response_;
@@ -491,6 +526,7 @@ TcAuditOperations::SetAuditOperationStatus() {
       TcServerSessionUtils::set_uint32(ssess_,
                                        audit_result_);
   if ( ret != TCUTIL_RET_SUCCESS ) {
+    pfc_log_error("SetAuditOperationStatus: setting audit_result failed");
     return TC_OPER_FAILURE;
   }
   return TC_OPER_SUCCESS;
@@ -506,62 +542,18 @@ TcAuditOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
   }
   /*Append the status of Audit operation*/
   if (SetAuditOperationStatus() != TC_OPER_SUCCESS) {
-        return TC_OPER_FAILURE;
+    pfc_log_error("SendAdditionalResponse Setting Audit opstat failed");
+    return TC_OPER_FAILURE;
   }
   if (tc_oper_ == TC_OP_USER_AUDIT &&
      resp_tc_msg_ != NULL) {
     TcOperRet ret = resp_tc_msg_->ForwardResponseToVTN(*ssess_);
     if (ret != TCOPER_RET_SUCCESS) {
+      pfc_log_error("SendAdditionalResponse Forwarding resp to VTN failed");
       return TC_SYSTEM_FAILURE;
     }
   }
   return oper_stat;
-}
-
-/*
- *  * @brief Send Alarm notification for driver audit failure
- *  */
-TcOperStatus
-TcAuditOperations::SendAuditStatusNotification(int32_t alarm_id) {
-  std::string alm_msg;
-  std::string alm_msg_summary;
-  std::string vtn_name = "";
-  pfc::alarm::alarm_info_with_key_t* data =
-      new pfc::alarm::alarm_info_with_key_t;
-
-  if (audit_result_ == unc::tclib::TC_AUDIT_SUCCESS) {
-    alm_msg = "Controller audit success.Controller Id - " +\
-                                  controller_id_;
-    alm_msg_summary = "Controller audit success";
-    data->alarm_class = pfc::alarm::ALM_NOTICE;
-    data->alarm_kind = 0;
-  } else {
-    alm_msg = "Controller audit failure.Controller Id - " +\
-                                  controller_id_;
-    alm_msg_summary = "Controller audit failure";
-    data->alarm_class = pfc::alarm::ALM_WARNING;
-    data->alarm_kind = 1;
-  }
-  data->apl_No = UNCCID_TC;
-  data->alarm_category = 2;
-  data->alarm_key_size = controller_id_.length();
-  data->alarm_key = new uint8_t[controller_id_.length()+1];
-  memcpy(data->alarm_key,
-         controller_id_.c_str(),
-         controller_id_.length()+1);
-  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
-      vtn_name,
-      alm_msg,
-      alm_msg_summary,
-      data, alarm_id);
-  if (ret != pfc::alarm::ALM_OK) {
-    delete []data->alarm_key;
-    delete data;
-    return TC_OPER_FAILURE;
-  }
-  delete []data->alarm_key;
-  delete data;
-  return TC_OPER_SUCCESS;
 }
 
 }  // namespace  tc

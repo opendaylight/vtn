@@ -46,13 +46,10 @@ public final class ApplicationConstants {
 	public static final String TYPE_JSON = ".json";
 
 	/** The Constant ACCESS_PROPERTY_PATH. */
-	public static final String ACCESS_PROPERTY_PATH = "/access.properties";
-
-	/** The Constant PWD_PROPERTY_PATH. */
-	public static final String PWD_PROPERTY_PATH = "/pwd.properties";
+	public static final String ACCESS_PROPERTY_PATH = "access.properties";
 
 	/** The Constant WEBAPI_CONF_PROPERTY_PATH. */
-	public static final String WEBAPI_CONF_PROPERTY_PATH = "/webapiconf.properties";
+	public static final String WEBAPI_CONF_PROPERTY_PATH = "webapiconf.properties";
 
 	/** The Constant BLANK_STR. */
 	public static final String BLANK_STR = "";
@@ -138,6 +135,9 @@ public final class ApplicationConstants {
 
 	/** The Constant OP. */
 	public static final String OP = "op";
+	
+	/** The Constant CFG_MODE_TIMEOUT. */
+	public static final String CFG_MODE_TIMEOUT = "cfg_mode_timeout";
 
 	/** The Constant COUNT. */
 	public static final String COUNT = "/count";
@@ -156,7 +156,7 @@ public final class ApplicationConstants {
 	public static final String ROUTERS = "/routers";
 	
 	public static final String TENANTS = "/tenants";
-
+	
 	public static final CharSequence CONTROLLERSTR = "/controllers";
 
 	public static final CharSequence DOMAINSTR = "/domains";
@@ -287,4 +287,12 @@ public final class ApplicationConstants {
 
 	public static final String OS_RESOURCE_PKG = "org.opendaylight.vtn.javaapi.resources.openstack.";
 	public static final String SEMI_COLON = ";";
+	
+	/** The Constant CFG_TIMEOUT_DEFAULT. */
+	public static final String CFG_TIMEOUT_DEFAULT = "20500";
+	
+	/** The Space  */
+	public static final String SPACE_STRING = " ";
+	/** The quotation marks */
+	public static final String QUOTATION_MARK_STRING = "\"";
 }

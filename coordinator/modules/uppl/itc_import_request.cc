@@ -52,14 +52,14 @@ UncRespCode ImportRequest::ProcessRequest(OdbcmConnectionHandler *db_conn,
     case UNC_OP_IMPORT_CONTROLLER_CONFIG:
       result_code = StartImport(db_conn, obj_key_ctr);
       if (result_code != UNC_RC_SUCCESS) {
-        pfc_log_info("Import Request:Candidate is dirty");
+        pfc_log_info("Import Request Failed");
       }
       break;
     case UNC_OP_MERGE_CONTROLLER_CONFIG:
-      result_code = MergeConfiguration(obj_key_ctr);
+      result_code = MergeConfiguration();
       break;
     case UNC_OP_CLEAR_IMPORT_CONFIG:
-      result_code = ClearImportConfig(obj_key_ctr);
+      result_code = ClearImportConfig();
       break;
     default:
       result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
@@ -107,7 +107,13 @@ UncRespCode ImportRequest::StartImport(OdbcmConnectionHandler *db_conn,
   if (itc_trans->trans_state() != TRANS_END ||
       db_status == ODBCM_RC_CANDIDATE_DIRTY) {
     pfc_log_info("Start Import Unsuccessful - Candidate is dirty");
-    result_code = UNC_UPPL_RC_ERR_CANDIDATE_IS_DIRTY;
+    return UNC_UPPL_RC_ERR_CANDIDATE_IS_DIRTY;
+  }
+  uint8_t audit_flag = UPPL_AUTO_AUDIT_DISABLED;
+  result_code = KtObj.CheckAuditFlag(db_conn, obj_key_ctr, audit_flag);
+  if (result_code == UNC_RC_SUCCESS && audit_flag == UPPL_AUTO_AUDIT_ENABLED) {
+     pfc_log_info("Audit is enable,Import not allowed");
+     return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   }
   return result_code;
 }
@@ -118,7 +124,7 @@ UncRespCode ImportRequest::StartImport(OdbcmConnectionHandler *db_conn,
  * @param[in]   : key_struct - specifies key instance of KT_Controller
  * @Return      : UNC_RC_SUCCESS if the merge is successful
  * */
-UncRespCode ImportRequest::MergeConfiguration(key_ctr_t obj_key_ctr) {
+UncRespCode ImportRequest::MergeConfiguration() {
   UncRespCode result_code = UNC_RC_SUCCESS;
   pfc_log_info("Returning Success for MergeConfiguration");
   return result_code;
@@ -131,7 +137,7 @@ UncRespCode ImportRequest::MergeConfiguration(key_ctr_t obj_key_ctr) {
  * @Return         : UNC_RC_SUCCESS if the clear import configuration is
  *                   successful
  * */
-UncRespCode ImportRequest::ClearImportConfig(key_ctr_t obj_key_ctr) {
+UncRespCode ImportRequest::ClearImportConfig() {
   UncRespCode result_code = UNC_RC_SUCCESS;
   pfc_log_info("Returning Success for ClearImportConfig");
   return result_code;

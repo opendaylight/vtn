@@ -50,10 +50,9 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 		setInvalidParameter(VtnServiceJsonConsts.CONTROLLERID);
 		if (resource instanceof ControllerResource
 				&& ((ControllerResource) resource).getControllerId() != null
-				&& !((ControllerResource) resource).getControllerId().trim()
-						.isEmpty()) {
+				&& !((ControllerResource) resource).getControllerId().isEmpty()) {
 			isValid = validator.isValidMaxLengthAlphaNum(
-					((ControllerResource) resource).getControllerId().trim(),
+					((ControllerResource) resource).getControllerId(),
 					VtnServiceJsonConsts.LEN_31);
 			setListOpFlag(false);
 		} else if (resource instanceof ControllersResource) {
@@ -68,9 +67,8 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 	 * Validate request json for put, post and get method of controller API
 	 */
 	@Override
-	public final void
-			validate(final String method, final JsonObject requestBody)
-					throws VtnServiceException {
+	public final void validate(final String method, final JsonObject requestBody)
+			throws VtnServiceException {
 		LOG.trace("Start ControlleResourceValidator#validate()");
 		LOG.info("Validating request for " + method
 				+ " of ControllerResourceValidator");
@@ -92,7 +90,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 				isValid = false;
 			}
 		} catch (final NumberFormatException e) {
-			LOG.error("Inside catch:NumberFormatException");
+			LOG.error(e, "Inside catch:NumberFormatException");
 			isValid = false;
 		}
 		// Throws exception if validation fails
@@ -154,10 +152,10 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.INDEX).getAsString() != null
 						&& !requestBody
 								.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-								.getAsString().trim().isEmpty()) {
+								.getAsString().isEmpty()) {
 					isValid = validator.isValidMaxLengthAlphaNum(requestBody
 							.getAsJsonPrimitive(VtnServiceJsonConsts.INDEX)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_20);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				}
 			}
 			// validation for key: max_repitition
@@ -196,7 +194,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.CONTROLLERID).getAsString() != null) {
 				isValid = validator.isValidMaxLengthAlphaNum(controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.CONTROLLERID)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			if (isValid) {
 				// validation for key: type(mandatory)
@@ -206,7 +204,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.TYPE).getAsString() != null) {
 					isValid = validator.isValidType(controller
 							.getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-							.getAsString().trim());
+							.getAsString());
 				} else {
 					isValid = false;
 				}
@@ -219,7 +217,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 								VtnServiceJsonConsts.VERSION).getAsString() != null) {
 					isValid = validator.isValidVersion(controller
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VERSION)
-							.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+							.getAsString(), VtnServiceJsonConsts.LEN_31);
 				} else {
 					isValid = false;
 				}
@@ -250,14 +248,11 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.DESCRIPTION).getAsString() != null
 				&& !controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.DESCRIPTION)
-						.getAsString().trim().isEmpty()) {
-			isValid = validator
-					.isValidMaxLength(
-							controller
-									.getAsJsonPrimitive(
-											VtnServiceJsonConsts.DESCRIPTION)
-									.getAsString().trim(),
-							VtnServiceJsonConsts.LEN_127);
+						.getAsString().isEmpty()) {
+			isValid = validator.isValidMaxLength(
+					controller.getAsJsonPrimitive(
+							VtnServiceJsonConsts.DESCRIPTION).getAsString(),
+					VtnServiceJsonConsts.LEN_127);
 		}
 		if (isValid) {
 			// validation for key: ipaddr
@@ -265,9 +260,8 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 			if (controller.has(VtnServiceJsonConsts.IPADDR)
 					&& controller.getAsJsonPrimitive(
 							VtnServiceJsonConsts.IPADDR).getAsString() != null) {
-				isValid = validator.isValidIpV4(controller
-						.getAsJsonPrimitive(VtnServiceJsonConsts.IPADDR)
-						.getAsString().trim());
+				isValid = validator.isValidIpV4(controller.getAsJsonPrimitive(
+						VtnServiceJsonConsts.IPADDR).getAsString());
 			}
 		}
 		if (isValid) {
@@ -278,7 +272,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.AUDITSTATUS).getAsString() != null) {
 				isValid = validator.isValidAuditStatus(controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.AUDITSTATUS)
-						.getAsString().trim());
+						.getAsString());
 			}
 		}
 		if (isValid) {
@@ -289,7 +283,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.USERNAME).getAsString() != null) {
 				isValid = validator.isValidMaxLength(controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.USERNAME)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 		}
 		if (isValid) {
@@ -300,7 +294,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.PASSWORD).getAsString() != null) {
 				isValid = validator.isValidMaxLength(controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_256);
+						.getAsString(), VtnServiceJsonConsts.LEN_256);
 			}
 		}
 		return isValid;
@@ -331,8 +325,7 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 			 * controller.getAsJsonPrimitive(
 			 * VtnServiceJsonConsts.TYPE).getAsString() != null) { isValid =
 			 * validator.isValidType(controller
-			 * .getAsJsonPrimitive(VtnServiceJsonConsts.TYPE)
-			 * .getAsString().trim()); }
+			 * .getAsJsonPrimitive(VtnServiceJsonConsts.TYPE) .getAsString()); }
 			 */
 
 			// Remove type if present in request JSON
@@ -347,10 +340,10 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 							VtnServiceJsonConsts.VERSION).getAsString() != null
 					&& !controller
 							.getAsJsonPrimitive(VtnServiceJsonConsts.VERSION)
-							.getAsString().trim().isEmpty()) {
+							.getAsString().isEmpty()) {
 				isValid = validator.isValidVersion(controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.VERSION)
-						.getAsString().trim(), VtnServiceJsonConsts.LEN_31);
+						.getAsString(), VtnServiceJsonConsts.LEN_31);
 			}
 			if (isValid) {
 				isValid = validateField(isValid, controller);

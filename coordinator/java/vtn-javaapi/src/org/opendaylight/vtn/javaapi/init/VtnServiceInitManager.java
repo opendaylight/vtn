@@ -109,7 +109,7 @@ public final class VtnServiceInitManager {
 			// add api names with READ as List support
 			setReadAsList();
 		} catch (final VtnServiceException e) {
-			LOG.error("VtnService Initialization Failed : " + e);
+			LOG.error(e, "VtnService Initialization Failed : " + e);
 			throw new VtnServiceInitFailException(
 					UncJavaAPIErrorCode.INIT_ERROR.getErrorCode()
 							+ VtnServiceConsts.COLON

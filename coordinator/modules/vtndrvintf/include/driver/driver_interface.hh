@@ -68,6 +68,8 @@ class driver {
    * @retval    - driver_command* - command pointer of Keytype
    */
   virtual driver_command* create_driver_command(unc_key_type_t key_type)=0;
+  virtual vtn_driver_read_command* create_driver_read_command(
+                                             unc_key_type_t key_type)=0;
 
   /**
    * @brief     - Method to handle vote request of transaction
