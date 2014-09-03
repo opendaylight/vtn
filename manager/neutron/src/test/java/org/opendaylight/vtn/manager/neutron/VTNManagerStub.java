@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.manager.neutron;
 
 import java.net.InetAddress;
-
 import java.util.List;
 import java.util.Set;
 
@@ -19,7 +18,6 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
@@ -45,11 +43,12 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VTerminal;
 import org.opendaylight.vtn.manager.VTerminalConfig;
-import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
+import org.opendaylight.vtn.manager.flow.DataFlow.Mode;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
@@ -77,8 +76,8 @@ public class VTNManagerStub implements IVTNManager {
 
     // Following methods are used in UnitTest.
     @Override
-    public List<VTenant> getTenants() throws VTNException {
-        return null;
+    public boolean isActive() {
+        return true;
     }
 
     @Override
@@ -110,22 +109,6 @@ public class VTNManagerStub implements IVTNManager {
         }
 
         return new Status(StatusCode.SUCCESS);
-    }
-
-    @Override
-    public Status modifyTenant(VTenantPath path, VTenantConfig tconf,
-                               boolean all) {
-        return null;
-    }
-
-    @Override
-    public Status removeTenant(VTenantPath path) {
-        return null;
-    }
-
-    @Override
-    public List<VBridge> getBridges(VTenantPath path) throws VTNException {
-        return null;
     }
 
     @Override
@@ -165,52 +148,12 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Status modifyBridge(VBridgePath path, VBridgeConfig bconf,
-                               boolean all) {
-        // @Todo Check paramters, and change the return value.
+    public Status modifyBridge(VBridgePath path, VBridgeConfig bconf, boolean all) {
         return new Status(StatusCode.SUCCESS);
     }
 
     @Override
-    public Status removeBridge(VBridgePath path) {
-        return null;
-    }
-
-    @Override
-    public List<VTerminal> getTerminals(VTenantPath path) {
-        return null;
-    }
-
-    @Override
-    public VTerminal getTerminal(VTerminalPath path) {
-        return null;
-    }
-
-    @Override
-    public Status addTerminal(VTerminalPath path, VTerminalConfig vtconf) {
-        return null;
-    }
-
-    @Override
-    public Status modifyTerminal(VTerminalPath path, VTerminalConfig vtconf,
-                                 boolean all) {
-        return null;
-    }
-
-    @Override
-    public Status removeTerminal(VTerminalPath path) {
-        return null;
-    }
-
-    @Override
-    public List<VInterface> getInterfaces(VBridgePath path)
-        throws VTNException {
-        return null;
-    }
-
-    @Override
-    public VInterface getInterface(VBridgeIfPath path)
-        throws VTNException {
+    public VInterface getInterface(VBridgeIfPath path) throws VTNException {
         if (path == null) {
             Status status = new Status(StatusCode.BADREQUEST);
             throw new VTNException(status);
@@ -247,10 +190,64 @@ public class VTNManagerStub implements IVTNManager {
         return new Status(StatusCode.SUCCESS);
     }
 
+    // Following methods are Unused in UnitTest.
     @Override
-    public Status modifyInterface(VBridgeIfPath path,
-                                        VInterfaceConfig iconf,
-                                        boolean all) {
+    public List<VTenant> getTenants() throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status modifyTenant(VTenantPath path, VTenantConfig tconf, boolean all) {
+        return null;
+    }
+
+    @Override
+    public Status removeTenant(VTenantPath path) {
+        return null;
+    }
+
+    @Override
+    public List<VBridge> getBridges(VTenantPath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status removeBridge(VBridgePath path) {
+        return null;
+    }
+
+    @Override
+    public List<VTerminal> getTerminals(VTenantPath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public VTerminal getTerminal(VTerminalPath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status addTerminal(VTerminalPath path, VTerminalConfig vtconf) {
+        return null;
+    }
+
+    @Override
+    public Status modifyTerminal(VTerminalPath path, VTerminalConfig vtconf, boolean all) {
+        return null;
+    }
+
+    @Override
+    public Status removeTerminal(VTerminalPath path) {
+        return null;
+    }
+
+    @Override
+    public List<VInterface> getInterfaces(VBridgePath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status modifyInterface(VBridgeIfPath path, VInterfaceConfig iconf, boolean all) {
         return null;
     }
 
@@ -260,12 +257,12 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public List<VInterface> getInterfaces(VTerminalPath path) {
+    public List<VInterface> getInterfaces(VTerminalPath path) throws VTNException {
         return null;
     }
 
     @Override
-    public VInterface getInterface(VTerminalIfPath path) {
+    public VInterface getInterface(VTerminalIfPath path) throws VTNException {
         return null;
     }
 
@@ -275,8 +272,7 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Status modifyInterface(VTerminalIfPath path, VInterfaceConfig iconf,
-                                  boolean all) {
+    public Status modifyInterface(VTerminalIfPath path, VInterfaceConfig iconf, boolean all) {
         return null;
     }
 
@@ -291,20 +287,17 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public VlanMap getVlanMap(VBridgePath path, String mapId)
-        throws VTNException {
+    public VlanMap getVlanMap(VBridgePath path, String mapId) throws VTNException {
         return null;
     }
 
     @Override
-    public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf)
-        throws VTNException {
+    public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf) throws VTNException {
         return null;
     }
 
     @Override
-    public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf)
-        throws VTNException {
+    public VlanMap addVlanMap(VBridgePath path, VlanMapConfig vlconf) throws VTNException {
         return null;
     }
 
@@ -314,18 +307,17 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
-        return new Status(StatusCode.CREATED, "desc");
-    }
-
-    // Following methods are Unused in UnitTest.
-    @Override
     public PortMap getPortMap(VBridgeIfPath path) throws VTNException {
         return null;
     }
 
     @Override
-    public PortMap getPortMap(VTerminalIfPath path) {
+    public PortMap getPortMap(VTerminalIfPath path) throws VTNException {
+        return null;
+    }
+
+    @Override
+    public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
         return null;
     }
 
@@ -340,36 +332,28 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
-                                             MacMapAclType aclType)
-        throws VTNException {
+    public Set<DataLinkHost> getMacMapConfig(VBridgePath path, MacMapAclType aclType) throws VTNException {
         return null;
     }
 
     @Override
-    public List<MacAddressEntry> getMacMappedHosts(VBridgePath path)
-        throws VTNException {
+    public List<MacAddressEntry> getMacMappedHosts(VBridgePath path) throws VTNException {
         return null;
     }
 
     @Override
-    public MacAddressEntry getMacMappedHost(VBridgePath path,
-                                            DataLinkAddress addr)
-        throws VTNException {
+    public MacAddressEntry getMacMappedHost(VBridgePath path, DataLinkAddress addr) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
-                                MacMapConfig mcconf) throws VTNException {
+    public UpdateType setMacMap(VBridgePath path, UpdateOperation op, MacMapConfig mcconf) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
-                                MacMapAclType aclType,
-                                Set<? extends DataLinkHost> dlhosts)
-        throws VTNException {
+    public UpdateType setMacMap(VBridgePath path, UpdateOperation op, MacMapAclType aclType,
+            Set<? extends DataLinkHost> dlhosts) throws VTNException {
         return null;
     }
 
@@ -379,25 +363,21 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public boolean probeHost(HostNodeConnector host) {
-        return true;
+        return false;
     }
 
     @Override
-    public List<MacAddressEntry> getMacEntries(VBridgePath path)
-        throws VTNException {
+    public List<MacAddressEntry> getMacEntries(VBridgePath path) throws VTNException {
         return null;
     }
 
     @Override
-    public MacAddressEntry getMacEntry(VBridgePath path, DataLinkAddress addr)
-        throws VTNException {
+    public MacAddressEntry getMacEntry(VBridgePath path, DataLinkAddress addr) throws VTNException {
         return null;
     }
 
     @Override
-    public MacAddressEntry removeMacEntry(VBridgePath path,
-        DataLinkAddress addr)
-        throws VTNException {
+    public MacAddressEntry removeMacEntry(VBridgePath path, DataLinkAddress addr) throws VTNException {
         return null;
     }
 
@@ -407,39 +387,34 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
-                                       DataFlowFilter filter) {
+    public List<DataFlow> getDataFlows(VTenantPath path, Mode mode,
+            DataFlowFilter filter) throws VTNException {
         return null;
     }
 
     @Override
-    public DataFlow getDataFlow(VTenantPath path, long flowId,
-                                DataFlow.Mode mode) {
+    public DataFlow getDataFlow(VTenantPath path, long flowId, Mode mode)
+        throws VTNException {
         return null;
     }
 
     @Override
-    public int getDataFlowCount(VTenantPath path) {
+    public int getDataFlowCount(VTenantPath path) throws VTNException {
         return 0;
     }
 
     @Override
-    public boolean isActive() {
-        return true;
-    }
-
-    @Override
-    public List<FlowCondition> getFlowConditions() {
+    public List<FlowCondition> getFlowConditions() throws VTNException {
         return null;
     }
 
     @Override
-    public FlowCondition getFlowCondition(String name) {
+    public FlowCondition getFlowCondition(String name) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setFlowCondition(String name, FlowCondition fcond) {
+    public UpdateType setFlowCondition(String name, FlowCondition fcond) throws VTNException {
         return null;
     }
 
@@ -449,13 +424,13 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public FlowMatch getFlowConditionMatch(String name, int index) {
+    public FlowMatch getFlowConditionMatch(String name, int index)
+        throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setFlowConditionMatch(String name, int index,
-                                            FlowMatch match) {
+    public UpdateType setFlowConditionMatch(String name, int index, FlowMatch match) throws VTNException {
         return null;
     }
 
@@ -465,17 +440,17 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public List<Integer> getPathPolicyIds() {
+    public List<Integer> getPathPolicyIds() throws VTNException {
         return null;
     }
 
     @Override
-    public PathPolicy getPathPolicy(int id) {
+    public PathPolicy getPathPolicy(int id) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setPathPolicy(int id, PathPolicy policy) {
+    public UpdateType setPathPolicy(int id, PathPolicy policy) throws VTNException {
         return null;
     }
 
@@ -485,22 +460,25 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public long getPathPolicyDefaultCost(int id) {
+    public long getPathPolicyDefaultCost(int id) throws VTNException {
         return 0;
     }
 
     @Override
-    public boolean setPathPolicyDefaultCost(int id, long cost) {
+    public boolean setPathPolicyDefaultCost(int id, long cost)
+        throws VTNException {
         return false;
     }
 
     @Override
-    public long getPathPolicyCost(int id, PortLocation ploc) {
-        return 1;
+    public long getPathPolicyCost(int id, PortLocation ploc)
+        throws VTNException {
+        return 0;
     }
 
     @Override
-    public UpdateType setPathPolicyCost(int id, PortLocation ploc, long cost) {
+    public UpdateType setPathPolicyCost(int id,
+            PortLocation ploc, long cost) throws VTNException {
         return null;
     }
 
@@ -535,14 +513,12 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public PathMap getPathMap(VTenantPath path, int index)
-        throws VTNException {
+    public PathMap getPathMap(VTenantPath path, int index) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setPathMap(VTenantPath path, int index, PathMap pmap)
-        throws VTNException {
+    public UpdateType setPathMap(VTenantPath path, int index, PathMap pmap) throws VTNException {
         return null;
     }
 
@@ -552,18 +528,17 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public List<FlowFilter> getFlowFilters(FlowFilterId fid) {
+    public List<FlowFilter> getFlowFilters(FlowFilterId fid) throws VTNException {
         return null;
     }
 
     @Override
-    public FlowFilter getFlowFilter(FlowFilterId fid, int index) {
+    public FlowFilter getFlowFilter(FlowFilterId fid, int index) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setFlowFilter(FlowFilterId fid, int index,
-                                    FlowFilter filter) {
+    public UpdateType setFlowFilter(FlowFilterId fid, int index, FlowFilter filter) throws VTNException {
         return null;
     }
 
