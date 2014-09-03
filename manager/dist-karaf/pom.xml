@@ -66,6 +66,24 @@
       <artifactId>opendaylight-karaf-resources</artifactId>
     </dependency>
 
+    <!-- Controller feature -->
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>features-adsal-compatibility</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- OpenFlow Plugin feature -->
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin</groupId>
+      <artifactId>features-openflowplugin</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+      <scope>runtime</scope>
+    </dependency>
+
     <!-- VTN Manager feature -->
     <dependency>
       <artifactId>features-vtn-manager</artifactId>
@@ -168,6 +186,8 @@
           <!-- no startupFeatures -->
           <bootFeatures>
             <feature>standard</feature>
+            <feature>odl-adsal-compatibility-all</feature>
+            <feature>odl-openflowplugin-all</feature>
             <feature>odl-vtn-manager-all</feature>
           </bootFeatures>
           <!-- no installedFeatures -->

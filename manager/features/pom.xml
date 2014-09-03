@@ -152,16 +152,6 @@
       <type>xml</type>
     </dependency>
 
-    <!-- TODO: It seems that dependencies description of features-nsf
-         is wrong. so we need the following dependency now.
-         after the bug is fixed, the following lines should be removed.-->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>features-adsal</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-    </dependency>
-
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>features-ovsdb</artifactId>

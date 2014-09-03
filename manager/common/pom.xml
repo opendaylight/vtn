@@ -97,8 +97,9 @@
     <karaf.resources.version>1.4.2-SNAPSHOT</karaf.resources.version>
 
     <!-- Karaf features -->
-    <feature.adsal.version>0.8.1-SNAPSHOT</feature.adsal.version>
+    <feature.adsal-compatibility.version>1.4.2-SNAPSHOT</feature.adsal-compatibility.version>
     <feature.nsf.version>0.4.2-SNAPSHOT</feature.nsf.version>
+    <feature.openflowplugin.version>0.0.3-SNAPSHOT</feature.openflowplugin.version>
     <feature.ovsdb.version>1.0.0-SNAPSHOT</feature.ovsdb.version>
     <feature.test.version>0.6.2-SNAPSHOT</feature.test.version>
 
@@ -1440,8 +1441,8 @@
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
-        <artifactId>features-adsal</artifactId>
-        <version>${feature.adsal.version}</version>
+        <artifactId>features-adsal-compatibility</artifactId>
+        <version>${feature.adsal-compatibility.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>
@@ -1461,6 +1462,14 @@
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>opendaylight-karaf-resources</artifactId>
         <version>${karaf.resources.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin</groupId>
+        <artifactId>features-openflowplugin</artifactId>
+        <version>${feature.openflowplugin.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+        <scope>runtime</scope>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
