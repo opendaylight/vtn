@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_f7006237",
+        "filename": "manager/neutron/src/test/java/org/opendaylight/vtn/manager/neutron/OVSDBPluginEventHandlerTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 271,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-09-03T11:32:16Z",
+      "side": 1,
+      "message": "I think this javadoc comment does not describe this test because\nthis test never calls rowRemoved().",
+      "revId": "13a44b7e9047514c044c2760c6c7e8a1dbe9125f",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
