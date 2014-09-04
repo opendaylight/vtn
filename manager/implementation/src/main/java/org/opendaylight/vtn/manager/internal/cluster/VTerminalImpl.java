@@ -39,6 +39,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
  * Implementation of vTerminal.
@@ -378,10 +379,18 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      * @param name   The name of the virtual interface.
      * @param iconf  Interface configuration.
      * @return  An instance of virtual interface implementation.
+     * @throws VTNException  An error occurred.
      */
     @Override
     protected VTerminalIfImpl createInterface(String name,
-                                              VInterfaceConfig iconf) {
+                                              VInterfaceConfig iconf)
+        throws VTNException {
+        // Ensure that this vTerminal has no interface.
+        if (!getInterfaceMap().isEmpty()) {
+            String msg = "vTerminal can have only one interface";
+            throw new VTNException(StatusCode.CONFLICT, msg);
+        }
+
         return new VTerminalIfImpl(this, name, iconf);
     }
 

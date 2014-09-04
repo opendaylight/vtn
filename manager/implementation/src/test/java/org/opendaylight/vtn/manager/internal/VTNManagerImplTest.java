@@ -2868,8 +2868,6 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 }
                 assertEquals(vemsg, 0, list.size());
 
-                HashMap<String, VInterfaceConfig> confMap =
-                    new HashMap<String, VInterfaceConfig>();
                 for (String ifname: vifnames) {
                     VTerminalIfPath ipath =
                         new VTerminalIfPath(vtpath, ifname);
@@ -3047,24 +3045,22 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                                              Boolean.TRUE);
                     st = mgr.modifyInterface(ipath, ifconf, true);
                     assertEquals(StatusCode.SUCCESS, st.getCode());
-                    confMap.put(ifname, ifconf);
-                }
 
-                list = null;
-                try {
-                    list = mgr.getInterfaces(vtpath);
-                    for (VInterface vif: list) {
-                        String name = vif.getName();
-                        VInterfaceConfig ifconf = confMap.remove(name);
-                        assertNotNull(ifconf);
+                    try {
+                        list = mgr.getInterfaces(vtpath);
+                        assertEquals(1, list.size());
+                        VInterface vif = list.get(0);
                         assertEquals(ifconf.getDescription(),
                                      vif.getDescription());
                         assertEquals(ifconf.getEnabled(), vif.getEnabled());
+                    } catch (Exception e) {
+                        unexpected(e);
                     }
-                } catch (Exception e) {
-                    unexpected(e);
+
+                    st = mgr.removeInterface(ipath);
+                    assertEquals(st.toString(), StatusCode.SUCCESS,
+                                 st.getCode());
                 }
-                assertTrue(confMap.isEmpty());
             }
 
             st = mgr.removeTenant(tpath);
@@ -3186,10 +3182,10 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         st = mgr.addInterface(ipath, iconf);
         assertEquals(StatusCode.CONFLICT, st.getCode());
 
-        // Only one interface can be configured in vTerminal.
+        // Only one interface can be configured in a vTerminal.
         for (String name: new String[]{"if", "interface_2", "if_3"}) {
             badpath = new VTerminalIfPath(vtpath, name);
-            st = mgr.addInterface(ipath, iconf);
+            st = mgr.addInterface(badpath, iconf);
             assertEquals(StatusCode.CONFLICT, st.getCode());
         }
 
@@ -4018,15 +4014,15 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         VTerminalIfPath[] vipaths1 = {
             new VTerminalIfPath(tname1, "vterm1", "if_1"),
-            new VTerminalIfPath(tname1, "vterm1", "if_2"),
-            new VTerminalIfPath(tname1, "vterm2", "if_1"),
             new VTerminalIfPath(tname1, "vterm2", "if_2"),
+            new VTerminalIfPath(tname1, "vterm3", "if_1"),
+            new VTerminalIfPath(tname1, "vterm4", "if_2"),
         };
         VTerminalIfPath[] vipaths2 = {
             new VTerminalIfPath(tname2, "vterm1", "if_1"),
-            new VTerminalIfPath(tname2, "vterm1", "if_2"),
-            new VTerminalIfPath(tname2, "vterm2", "if_1"),
             new VTerminalIfPath(tname2, "vterm2", "if_2"),
+            new VTerminalIfPath(tname2, "vterm3", "if_1"),
+            new VTerminalIfPath(tname2, "vterm4", "if_2"),
         };
 
         for (VTerminalIfPath path: vipaths1) {
