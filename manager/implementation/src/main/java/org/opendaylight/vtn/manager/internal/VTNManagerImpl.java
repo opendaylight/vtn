@@ -78,6 +78,7 @@ import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
+
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapEvent;
@@ -3177,7 +3178,10 @@ public class VTNManagerImpl
     public void logException(Logger log, VTenantPath path, Exception e,
                              Object ... args) {
         StringBuilder builder = new StringBuilder(containerName);
-        builder.append(':').append(path).append(": Unexpected exception");
+        if (path != null) {
+            builder.append(':').append(path);
+        }
+        builder.append(": Unexpected exception");
 
         if (args != null) {
             String sep = ": ";
@@ -7741,6 +7745,8 @@ public class VTNManagerImpl
             Status status = e.getStatus();
             LOG.error("{}: Ignore packet: {}", containerName,
                       status.getDescription());
+        } catch (Exception e) {
+            logException(LOG, null, e, pctx.getDescription());
         } finally {
             unlock(rdlock);
         }

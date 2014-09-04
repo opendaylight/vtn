@@ -117,7 +117,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
         InetAddress ipaddr = null;
         MacTableEntry me;
         PortVlan pv;
-        String desc;
+        String desc = null;
         String msg = createErrorMessageString(src, dst, sender, target, vlan, nc);
 
         // createARPPacketContext create PacketContext
@@ -171,20 +171,23 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                                sender, target);
 
         // test createFrame()
-        Ethernet newether;
+        Ethernet newether = null;
         short ethType = EtherTypes.ARP.shortValue();
-        if (vlan <= 0) {
-            desc = convertForDescription(ether, ethType, nc, (short)0);
-            newether = pc.createFrame((short)0);
-        } else {
-            desc = convertForDescription(ether, ethType, nc, vlan);
-            newether = pc.createFrame(vlan);
+        try {
+            if (vlan <= 0) {
+                desc = convertForDescription(ether, ethType, nc, (short)0);
+                newether = pc.createFrame((short)0);
+            } else {
+                desc = convertForDescription(ether, ethType, nc, vlan);
+                newether = pc.createFrame(vlan);
+            }
+        } catch (Exception e) {
+            unexpected(e);
         }
         assertEquals(msg, desc, pc.getDescription(nc));
         assertNotNull(msg, newether);
         assertEquals(msg, ether, newether);
         assertNotSame(msg, ether, newether);
-
 
         // in case payload is null && RawPayload is null
         PacketContext pctxp = null;
@@ -199,7 +202,12 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             newvlan = vlan;
         }
         desc = convertForDescription(ether, ethType, nc, newvlan);
-        newether = pctxp.createFrame(newvlan);
+
+        try {
+            newether = pctxp.createFrame(newvlan);
+        } catch (Exception e) {
+            unexpected(e);
+        }
         assertEquals(msg, desc, pctxp.getDescription(nc));
         assertEquals(msg, newether, pctxp.getFrame());
         ARP arp = getPayload(newether, EtherTypes.ARP, (vlan > 0) ? vlan : -1, msg);
@@ -233,7 +241,11 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             newvlan = vlan;
         }
         desc = convertForDescription(ether, ethType, nc, newvlan);
-        newether = pctxp.createFrame(newvlan);
+        try {
+            newether = pctxp.createFrame(newvlan);
+        } catch (Exception e) {
+            unexpected(e);
+        }
         assertEquals(msg, desc, pctxp.getDescription(nc));
         arp = getPayload(newether, EtherTypes.ARP, (vlan > 0) ? vlan : -1, msg);
         assertNull(msg, arp);
@@ -256,7 +268,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
     private void testPacketContext(Ethernet ether, byte[] src, byte[] dst, byte[] sender, byte[] target, short vlan, NodeConnector nc) {
         InetAddress ipaddr = null;
         MacTableEntry me;
-        String desc;
+        String desc = null;
         String msg = createErrorMessageString(src, dst, sender, target, vlan, nc);
 
         PacketContext pctx = new PacketContext(ether, nc);
@@ -307,14 +319,18 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 ARP.REQUEST, src, dst, sender, target);
 
         // test createFrame()
-        Ethernet newether;
+        Ethernet newether = null;
         short ethType = EtherTypes.ARP.shortValue();
-        if (vlan < 0) {
-            desc = convertForDescription(ether, ethType, nc, (short)0);
-            newether = pctx.createFrame((short)0);
-        } else {
-            desc = convertForDescription(ether, ethType, nc, vlan);
-            newether = pctx.createFrame(vlan);
+        try {
+            if (vlan < 0) {
+                desc = convertForDescription(ether, ethType, nc, (short)0);
+                newether = pctx.createFrame((short)0);
+            } else {
+                desc = convertForDescription(ether, ethType, nc, vlan);
+                newether = pctx.createFrame(vlan);
+            }
+        } catch (Exception e) {
+            unexpected(e);
         }
         assertEquals(msg, desc, pctx.getDescription(nc));
         assertNotNull(msg, newether);
@@ -369,7 +385,11 @@ public class PacketContextTest extends TestUseVTNManagerBase {
             eth.setPayload(vlantag);
 
             pctx = new PacketContext(eth, nc);
-            newether = pctx.createFrame(vlan);
+            try {
+                newether = pctx.createFrame(vlan);
+            } catch (Exception e) {
+                unexpected(e);
+            }
 
             assertNotNull(msg, newether);
             assertEquals(msg, eth, newether);
@@ -586,7 +606,8 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 flow.clearVirtualRoute();
 
                 // Set destination node path.
-                pctx.setEgressVNodePath(vpath1);
+                pctx.setEgressVNodeRoute(
+                    new VNodeRoute(vpath1, Reason.FORWARDED));
                 pctx.fixUp(flow);
                 assertTrue(dependPaths.add(vpath1));
                 assertEquals(ipath1, flow.getIngressPath());

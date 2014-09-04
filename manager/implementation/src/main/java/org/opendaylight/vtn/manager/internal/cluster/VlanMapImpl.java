@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
@@ -53,7 +54,7 @@ public final class VlanMapImpl implements VBridgeNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2162170566149009094L;
+    private static final long serialVersionUID = 5510476699760360824L;
 
     /**
      * Logger instance.
@@ -278,9 +279,11 @@ public final class VlanMapImpl implements VBridgeNode {
      *               VLAN mapping.
      * @param sent   A set of {@link PortVlan} which indicates the network
      *               already processed.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     void transmit(VTNManagerImpl mgr, PacketContext pctx, VBridgeImpl vbr,
-                  Set<PortVlan> sent) {
+                  Set<PortVlan> sent) throws RedirectFlowException {
         // Determine edge ports of this VLAN mapping.
         IVTNResourceManager resMgr = mgr.getResourceManager();
         Node node = vlanMapConfig.getNode();
@@ -296,24 +299,22 @@ public final class VlanMapImpl implements VBridgeNode {
             return;
         }
 
-        // Apply outgoing flow filters.
         PacketContext pc;
+        Ethernet frame;
         try {
+            // Apply outgoing flow filters.
             pc = vbr.filterOutgoingPacket(mgr, pctx, vlan);
+
+            // Create a new Ethernet frame to be transmitted.
+            frame = pc.createFrame(vlan);
         } catch (DropFlowException e) {
             // Filtered out by DROP filter.
             return;
-        }
-
-        // Commit changes to the packet.
-        try {
-            pc.commit();
         } catch (Exception e) {
             mgr.logException(LOG, mapPath, e);
             return;
         }
 
-        Ethernet frame = pc.createFrame(vlan);
         for (NodeConnector nc: ports) {
             PortVlan pvlan = new PortVlan(nc, vlan);
             if (!sent.add(pvlan)) {
@@ -542,11 +543,13 @@ public final class VlanMapImpl implements VBridgeNode {
     /**
      * Evaluate flow filters for incoming packet mapped by this VLAN mapping.
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
+     * @param mgr   Never used.
+     * @param pctx  Never used.
+     * @param vid   Never used.
      */
     @Override
-    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx) {
+    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                             short vid) {
         // Nothing to do.
     }
 
@@ -556,17 +559,21 @@ public final class VlanMapImpl implements VBridgeNode {
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param vid     A VLAN ID for the outgoing packet.
+     * @param vid     A VLAN ID to be used for packet matching.
+     *                A VLAN ID configured in the given packet is used if a
+     *                negative value is specified.
      * @param bridge  A {@link PortBridge} instance associated with this
      *                virtual mapping.
      * @return  A {@link PacketContext} to be used for transmitting packet.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     @Override
     public PacketContext filterPacket(VTNManagerImpl mgr, PacketContext pctx,
                                       short vid, PortBridge<?> bridge)
-        throws DropFlowException {
+        throws DropFlowException, RedirectFlowException {
         return bridge.filterOutgoingPacket(mgr, pctx, vid);
     }
 }

@@ -62,13 +62,18 @@ public interface VirtualMapNode extends Serializable {
      * Evaluate flow filters for incoming packet mapped by this virtual
      * mapping.
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param vid   A VLAN ID to be used for packet matching.
+     *              A VLAN ID configured in the given packet is used if a
+     *              negative value is specified.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
-    void filterPacket(VTNManagerImpl mgr, PacketContext pctx)
-        throws DropFlowException;
+    void filterPacket(VTNManagerImpl mgr, PacketContext pctx, short vid)
+        throws DropFlowException, RedirectFlowException;
 
     /**
      * Evaluate flow filters for outgoing packet to be transmitted by this
@@ -76,14 +81,18 @@ public interface VirtualMapNode extends Serializable {
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param vid     A VLAN ID for the outgoing packet.
+     * @param vid     A VLAN ID to be used for packet matching.
+     *                A VLAN ID configured in the given packet is used if a
+     *                negative value is specified.
      * @param bridge  A {@link PortBridge} instance associated with this
      *                virtual mapping.
      * @return  A {@link PacketContext} to be used for transmitting packet.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     PacketContext filterPacket(VTNManagerImpl mgr, PacketContext pctx,
                                short vid, PortBridge<?> bridge)
-        throws DropFlowException;
+        throws DropFlowException, RedirectFlowException;
 }

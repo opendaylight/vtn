@@ -38,30 +38,29 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
+import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
-import org.opendaylight.vtn.manager.internal.ActionList;
+
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.NodeUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 
-import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.Path;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.packet.Ethernet;
+import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
@@ -81,7 +80,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6513589025699567661L;
+    private static final long serialVersionUID = 3947051458930048809L;
 
     /**
      * Logger instance.
@@ -149,8 +148,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         VBridgeConfig cf = resolve(bconf);
         checkConfig(cf);
         bridgeConfig = cf;
-        inFlowFilters = new FlowFilterMap(this, false);
-        outFlowFilters = new FlowFilterMap(this, true);
+        inFlowFilters = FlowFilterMap.createIncoming(this);
+        outFlowFilters = FlowFilterMap.createOutgoing(this);
     }
 
     /**
@@ -808,11 +807,13 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      *          should not be sent to this bridge.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     private MacTableEntry getDestination(VTNManagerImpl mgr,
                                          PacketContext pctx,
                                          MacAddressTable table)
-        throws DropFlowException {
+        throws DropFlowException, RedirectFlowException {
         byte[] dst = pctx.getDestinationAddress();
         if (!NetUtils.isUnicastMACAddr(dst)) {
             // Flood the non-unicast packet.
@@ -861,85 +862,13 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         }
 
         VBridgePath bpath = bnode.getPath();
-        pctx.setEgressVNodePath(bpath);
+        pctx.setEgressVNodeRoute(new VNodeRoute(bpath, Reason.FORWARDED));
 
         // Evaluate flow filters for outgoing packets.
         // Note that this should never clone a PacketContext.
         bnode.filterPacket(mgr, pctx, outVlan, this);
 
-        // Commit changes to the packet.
-        try {
-            pctx.commit();
-        } catch (Exception e) {
-            mgr.logException(LOG, bpath, e, bnode.getPath());
-            return null;
-        }
-
         return tent;
-    }
-
-    /**
-     * Install a VTN flow for the received packet.
-     *
-     * @param mgr   VTN Manager service.
-     * @param pctx  The context of the received packet.
-     * @param tent  The MAC address table entry associated with the destination
-     *              address of the received packet.
-     * @param path  Path to the destination address of the received packet.
-     */
-    private void installFlow(VTNManagerImpl mgr, PacketContext pctx,
-                             MacTableEntry tent, Path path) {
-        // Create flow entries.
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
-        if (fdb == null) {
-            // This should never happen.
-            LOG.warn("{}:{}: No flow database",
-                     getContainerName(), getNodePath());
-            return;
-        }
-
-        // Purge obsolete flows before installing new flow.
-        pctx.purgeObsoleteFlow(mgr, fdb);
-
-        // Prepare to install an unicast flow entry.
-        pctx.addUnicastMatchFields();
-
-        NodeConnector incoming = pctx.getIncomingNodeConnector();
-        short vlan = pctx.getEtherPacket().getOriginalVlan();
-        int pri = pctx.getFlowPriority(mgr);
-        VTNFlow vflow = fdb.create(mgr);
-        Match match;
-        if (path != null) {
-            // Create flow entries except for egress flow.
-            for (Edge edge: path.getEdges()) {
-                match = pctx.createMatch(incoming);
-                NodeConnector port = edge.getTailNodeConnector();
-                ActionList actions = new ActionList(port.getNode());
-                actions.addOutput(port);
-                vflow.addFlow(mgr, match, actions, pri);
-                incoming = edge.getHeadNodeConnector();
-            }
-        }
-
-        // Create egress flow entry.
-        NodeConnector outgoing = tent.getPort();
-        short outVlan = tent.getVlan();
-        Node dnode = outgoing.getNode();
-        assert incoming.getNode().equals(outgoing.getNode());
-        match = pctx.createMatch(incoming);
-
-        // Note that flow action that modifies the VLAN tag has to be set
-        // before other actions.
-        ActionList actions = new ActionList(dnode);
-        actions.addVlanId(outVlan).addAll(pctx.getFilterActions()).
-            addOutput(outgoing);
-        vflow.addFlow(mgr, match, actions, pri);
-
-        // Fix up the VTN flow.
-        pctx.fixUp(vflow);
-
-        // Install flow entries.
-        fdb.install(mgr, vflow);
     }
 
     /**
@@ -956,33 +885,45 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         // From here, REDIRECT flow filters are ignored.
         pctx.setFlooding(true);
 
-        // Don't send the packet to the incoming network.
-        HashSet<PortVlan> sent = new HashSet<PortVlan>();
-        PortVlan innw = pctx.getIncomingNetwork();
-        if (innw != null) {
-            sent.add(innw);
+        RedirectFlowException rex = pctx.getFirstRedirection();
+        VNodePath bpath = getNodePath();
+        if (rex != null) {
+            rex.flooded(mgr, pctx, bpath);
         }
 
-        // Forward packet to the network established by the port mapping.
-        for (VBridgeIfImpl vif: getInterfaceMap().values()) {
-            vif.transmit(mgr, pctx, sent);
-        }
+        try {
+            // Don't send the packet to the incoming network.
+            HashSet<PortVlan> sent = new HashSet<PortVlan>();
+            PortVlan innw = pctx.getIncomingNetwork();
+            if (innw != null) {
+                sent.add(innw);
+            }
 
-        // Forward packet to the network established by the MAC mapping.
-        MacMapImpl mmap = macMap;
-        if (mmap != null) {
-            mmap.transmit(mgr, pctx, this, sent);
-        }
+            // Forward packet to the network established by the port mapping.
+            for (VBridgeIfImpl vif: getInterfaceMap().values()) {
+                vif.transmit(mgr, pctx, sent);
+            }
 
-        // Forward packet to the network established by the VLAN mapping.
-        for (VlanMapImpl vmap: vlanMaps.values()) {
-            vmap.transmit(mgr, pctx, this, sent);
-        }
+            // Forward packet to the network established by the MAC mapping.
+            MacMapImpl mmap = macMap;
+            if (mmap != null) {
+                mmap.transmit(mgr, pctx, this, sent);
+            }
 
-        if (LOG.isDebugEnabled() && sent.size() == 1 && sent.contains(innw)) {
-            LOG.debug("{}:{}: No packet was broadcasted: {}",
-                      getContainerName(), getNodePath(),
-                      pctx.getDescription(innw.getNodeConnector()));
+            // Forward packet to the network established by the VLAN mapping.
+            for (VlanMapImpl vmap: vlanMaps.values()) {
+                vmap.transmit(mgr, pctx, this, sent);
+            }
+
+            if (LOG.isDebugEnabled() && sent.size() == 1 &&
+                sent.contains(innw)) {
+                LOG.debug("{}:{}: No packet was broadcasted: {}",
+                          getContainerName(), bpath,
+                          pctx.getDescription(innw.getNodeConnector()));
+            }
+        } catch (RedirectFlowException e) {
+            // This should never happen.
+            mgr.logException(LOG, bpath, e);
         }
     }
 
@@ -1324,17 +1265,21 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * Evaluate flow filters configured in this vBridge against the given
      * outgoing packet.
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
-     * @param vid     A VLAN ID for the outgoing packet.
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param vid   A VLAN ID to be used for packet matching.
+     *              A VLAN ID configured in the given packet is used if a
+     *              negative value is specified.
      * @return  A {@link PacketContext} to be used for transmitting packet.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     @Override
     PacketContext filterOutgoingPacket(VTNManagerImpl mgr, PacketContext pctx,
                                        short vid)
-        throws DropFlowException {
+        throws DropFlowException, RedirectFlowException {
         return outFlowFilters.evaluate(mgr, pctx, vid);
     }
 
@@ -1483,68 +1428,46 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
+     * @return  {@link PacketResult#KEEP_PROCESSING}.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
+     * @throws VTNException
+     *    An error occurred.
      */
     @Override
-    protected void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
-                                VirtualMapNode vnode)
-        throws DropFlowException {
-        // Learn the source MAC address if needed.
+    protected PacketResult handlePacket(VTNManagerImpl mgr, PacketContext pctx,
+                                        VirtualMapNode vnode)
+        throws DropFlowException, RedirectFlowException, VTNException {
         VBridgePath bpath = getPath();
         MacAddressTable table = mgr.getMacAddressTable(bpath);
-        table.add(pctx, (VBridgeNode)vnode);
 
-        if (pctx.isToController()) {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}: Ignore packet sent to controller: {}",
-                          getContainerName(), getNodePath(),
-                          pctx.getDescription());
+        if (pctx.getFirstRedirection() == null) {
+            // Learn the source MAC address if needed.
+            table.add(pctx, (VBridgeNode)vnode);
+
+            if (pctx.isToController()) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("{}:{}: Ignore packet sent to controller: {}",
+                              getContainerName(), getNodePath(),
+                              pctx.getDescription());
+                }
+                return PacketResult.KEEP_PROCESSING;
             }
-            return;
         }
 
         // Evaluate vBridge flow filters for incoming packets.
-        inFlowFilters.evaluate(mgr, pctx);
+        inFlowFilters.evaluate(mgr, pctx, FlowFilterMap.VLAN_UNSPEC);
 
         // Determine whether the destination address is known or not.
         MacTableEntry tent = getDestination(mgr, pctx, table);
-        if (tent == null) {
-            return;
+        if (tent != null) {
+            // Forward the packet.
+            forward(mgr, pctx, tent.getPort(), tent.getVlan());
         }
 
-        // Ensure that the destination host is reachable.
-        NodeConnector incoming = pctx.getIncomingNodeConnector();
-        NodeConnector outgoing = tent.getPort();
-        Node snode = incoming.getNode();
-        Node dnode = outgoing.getNode();
-        Path path;
-        if (!snode.equals(dnode)) {
-            RouteResolver rr = pctx.getRouteResolver();
-            path = rr.getRoute(snode, dnode);
-            if (path == null) {
-                if (addFaultedPath(mgr, snode, dnode)) {
-                    LOG.error("{}:{}: Path fault: {} -> {}",
-                              getContainerName(), bpath, snode, dnode);
-                }
-                return;
-            }
-        } else {
-            path = null;
-        }
-
-        // Forward the packet.
-        short outVlan = tent.getVlan();
-        Ethernet frame = pctx.createFrame(outVlan);
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("{}:{}: Forward packet to known host: {}",
-                      getContainerName(), bpath,
-                      pctx.getDescription(frame, outgoing, outVlan));
-        }
-        mgr.transmit(outgoing, frame);
-
-        // Install VTN flow.
-        installFlow(mgr, pctx, tent, path);
+        return PacketResult.KEEP_PROCESSING;
     }
 
     /**

@@ -13,23 +13,24 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.cluster.RedirectFlowException;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
@@ -116,8 +117,7 @@ public class PacketContext implements Cloneable {
     /**
      * A sequence of virtual packet routing.
      */
-    private Map<VNodePath, VNodeRoute>  virtualRoute =
-        new LinkedHashMap<VNodePath, VNodeRoute>();
+    private List<VNodeRoute>  virtualRoute = new ArrayList<VNodeRoute>();
 
     /**
      * A set of {@link MatchType} instances which represents match fields
@@ -127,9 +127,10 @@ public class PacketContext implements Cloneable {
         EnumSet.noneOf(MatchType.class);
 
     /**
-     * A path to the virtual node that established the egress flow.
+     * A {@link VNodeRoute} instance which represents the hop to the egress
+     * virtual node.
      */
-    private VNodePath  egressNodePath;
+    private VNodeRoute  egressNodeRoute;
 
     /**
      * An {@link Inet4Packet} instance which represents the IPv4 packet in the
@@ -168,6 +169,17 @@ public class PacketContext implements Cloneable {
      * A list of SAL actions created by flow filters.
      */
     private List<Action>  filterActions;
+
+    /**
+     * The number of virtual node hops caused by REDIRECT flow filter.
+     */
+    private int  virtualNodeHops;
+
+    /**
+     * A {@link RedirectFlowException} instance which represents the first
+     * packet redirection in a flow.
+     */
+    private RedirectFlowException  firstRedirection;
 
     /**
      * Set {@code true} if this packet is goint to be broadcasted in the
@@ -363,8 +375,13 @@ public class PacketContext implements Cloneable {
      * @param vlan  VLAN ID for a new frame.
      *              Zero means that the VLAN tag should not be added.
      * @return  A new ethernet frame.
+     * @throws VTNException
+     *    Failed to commit packet modification.
      */
-    public Ethernet createFrame(short vlan) {
+    public Ethernet createFrame(short vlan) throws VTNException {
+        // Commit changes made by flow filters to the packet.
+        commit();
+
         Ethernet ether = new Ethernet();
         ether.setSourceMACAddress(etherFrame.getSourceAddress()).
             setDestinationMACAddress(etherFrame.getDestinationAddress());
@@ -704,17 +721,41 @@ public class PacketContext implements Cloneable {
      *                routing to the virtual node.
      */
     public void addVNodeRoute(VNodeRoute vroute) {
-        virtualRoute.put(vroute.getPath(), vroute);
+        virtualRoute.add(vroute);
     }
 
     /**
-     * Set the location of the egress node.
+     * Set the virtual node hop to the egress node.
      *
-     * @param path    A {@link VNodePath} instance which represents the
-     *                location of the egress node.
+     * @param vroute  A {@link VNodeRoute} instance which represents the hop
+     *                to the egress node.
      */
-    public void setEgressVNodePath(VNodePath path) {
-        egressNodePath = path;
+    public void setEgressVNodeRoute(VNodeRoute vroute) {
+        VNodeRoute old = egressNodeRoute;
+        if (old != null) {
+            if (vroute.getReason() == Reason.FORWARDED &&
+                old.getPath().equals(vroute.getPath())) {
+                // No need to record the specified hop because the hop to the
+                // specified virtual node is already recorded.
+                return;
+            }
+
+            // Push the old hop into the virtual node route.
+            virtualRoute.add(old);
+        }
+
+        egressNodeRoute = vroute;
+    }
+
+    /**
+     * Return a {@link VNodeRoute} instance which represents the virtual node
+     * hop to the egress node.
+     *
+     * @return  A {@link VNodeRoute} instance.
+     *          {@code null} is returned if not configured.
+     */
+    public VNodeRoute getEgressVNodeRoute() {
+        return egressNodeRoute;
     }
 
     /**
@@ -745,8 +786,8 @@ public class PacketContext implements Cloneable {
         }
 
         // Set the virtual packet routing path.
-        vflow.addVirtualRoute(virtualRoute.values());
-        vflow.setEgressVNodePath(egressNodePath);
+        vflow.addVirtualRoute(virtualRoute);
+        vflow.setEgressVNodeRoute(egressNodeRoute);
 
         // Set additional dependencies.
         vflow.addDependency(virtualNodes);
@@ -827,20 +868,31 @@ public class PacketContext implements Cloneable {
     /**
      * Install a flow entry that discards the packet.
      *
-     * @param mgr  VTN Manager service.
-     * @param fdb  VTN flow database.
+     * @param mgr   VTN Manager service.
+     * @param path  The location of the VTN.
+     * @param lp    A {@link LogProvider} instance used for error logging.
      */
-    public void installDropFlow(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
+    public void installDropFlow(VTNManagerImpl mgr, VTenantPath path,
+                                LogProvider lp) {
         if (flooding) {
             // Never install flow entry on packet flooding.
             return;
         }
 
-        // Create a flow entry that discards the given packet.
         if (isUnicast()) {
+            // The source and destination MAC address must be specified in a
+            // drop flow entry if this packet is an unicast packet.
             addUnicastMatchFields();
         }
 
+        VTNFlowDatabase fdb = mgr.getTenantFlowDB(path.getTenantName());
+        if (fdb == null) {
+            lp.getLogger().error("{}: Flow database was not found",
+                                 lp.getLogPrefix());
+            return;
+        }
+
+        // Create a flow entry that discards the given packet.
         NodeConnector incoming = getIncomingNodeConnector();
         Match match = createMatch(incoming);
         int pri = getFlowPriority(mgr);
@@ -849,7 +901,9 @@ public class PacketContext implements Cloneable {
 
         // Set the virtual packet routing.
         fixUp(vflow);
-        vflow.setEgressVNodePath(null);
+        if (egressNodeRoute != null) {
+            vflow.setEgressVNodeRoute(null);
+        }
 
         // Install a flow entry.
         fdb.install(mgr, vflow);
@@ -973,6 +1027,59 @@ public class PacketContext implements Cloneable {
             // Disable flow filter.
             filterDisabled = true;
         }
+    }
+
+    /**
+     * Record the packet redirection.
+     *
+     * @param path  The location of the destination interface.
+     * @return  The number of virtual node hops.
+     */
+    public int redirect(VNodePath path) {
+        if (virtualRoute.isEmpty() && mapReference != null) {
+            // This can happen if the packet was redirected by the VTN flow
+            // filter. In this case we need to estimate ingress virtual node
+            // route from mapping reference.
+            virtualRoute.add(mapReference.getIngressRoute());
+        }
+
+        // Record the packet redirection as the hop to the egress node.
+        setEgressVNodeRoute(new VNodeRoute(path, Reason.REDIRECTED));
+
+        // Increment the virtual node hops.
+        int ret = virtualNodeHops + 1;
+        virtualNodeHops = ret;
+
+        return ret;
+    }
+
+    /**
+     * Set a {@link RedirectFlowException} which represents the first packet
+     * redirection in a flow.
+     *
+     * @param rex  A {@link RedirectFlowException} instance.
+     * @return  {@code true} is returned if the given instance represents the
+     *          first packet redirection in a flow.
+     *          Otherwise {@code false} is returned.
+     */
+    public boolean setFirstRedirection(RedirectFlowException rex) {
+        boolean first = (firstRedirection == null);
+        if (first) {
+            firstRedirection = rex;
+        }
+
+        return first;
+    }
+
+    /**
+     * Return a {@link RedirectFlowException} which represents the first packet
+     * redirection in a flow.
+     *
+     * @return  A {@link RedirectFlowException} instance.
+     *          {@code null} is returned if the packet was not redirected.
+     */
+    public RedirectFlowException getFirstRedirection() {
+        return firstRedirection;
     }
 
     /**

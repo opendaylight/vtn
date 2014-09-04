@@ -32,6 +32,7 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
+
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
@@ -73,7 +74,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7872635405280024017L;
+    private static final long serialVersionUID = -854824423184977244L;
 
     /**
      * Logger instance.
@@ -1033,9 +1034,11 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *               MAC mapping.
      * @param sent   A set of {@link PortVlan} which indicates the network
      *               already processed.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     void transmit(VTNManagerImpl mgr, PacketContext pctx, VBridgeImpl vbr,
-                  Set<PortVlan> sent) {
+                  Set<PortVlan> sent) throws RedirectFlowException {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         Set<PortVlan> networks = resMgr.getMacMappedNetworks(mgr, mapPath);
         if (networks == null) {
@@ -1049,26 +1052,24 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 continue;
             }
 
-            // Apply outgoing flow filters.
             short vlan = pvlan.getVlan();
             PacketContext pc;
+            Ethernet frame;
             try {
+                // Apply outgoing flow filters.
                 pc = vbr.filterOutgoingPacket(mgr, pctx, vlan);
+
+                // Create a new Ethernet frame to be transmitted.
+                frame = pc.createFrame(vlan);
             } catch (DropFlowException e) {
                 // Filtered out by DROP filter.
                 continue;
-            }
-
-            // Commit changes to the packet.
-            try {
-                pc.commit();
             } catch (Exception e) {
                 mgr.logException(LOG, mapPath, e);
                 continue;
             }
 
             NodeConnector port = pvlan.getNodeConnector();
-            Ethernet frame = pc.createFrame(vlan);
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}:{}: Transmit packet to MAC mapping: {}",
                           mgr.getContainerName(), mapPath,
@@ -1520,11 +1521,13 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Evaluate flow filters for incoming packet mapped by this MAC mapping.
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
+     * @param mgr   Never used.
+     * @param pctx  Never used.
+     * @param vid   Never used.
      */
     @Override
-    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx) {
+    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                             short vid) {
         // Nothing to do.
     }
 
@@ -1534,17 +1537,21 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param vid     A VLAN ID for the outgoing packet.
+     * @param vid     A VLAN ID to be used for packet matching.
+     *                A VLAN ID configured in the given packet is used if a
+     *                negative value is specified.
      * @param bridge  A {@link PortBridge} instance associated with this
      *                virtual mapping.
      * @return  A {@link PacketContext} to be used for transmitting packet.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     @Override
     public PacketContext filterPacket(VTNManagerImpl mgr, PacketContext pctx,
                                       short vid, PortBridge<?> bridge)
-        throws DropFlowException {
+        throws DropFlowException, RedirectFlowException {
         return bridge.filterOutgoingPacket(mgr, pctx, vid);
     }
 

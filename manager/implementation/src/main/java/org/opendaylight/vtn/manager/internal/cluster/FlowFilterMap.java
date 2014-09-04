@@ -45,11 +45,16 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  *   class.
  * </p>
  */
-public final class FlowFilterMap implements Serializable, Cloneable {
+public abstract class FlowFilterMap implements Serializable, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2909825600683228034L;
+    private static final long serialVersionUID = -8039322793324993017L;
+
+    /**
+     * A pseudo VLAN ID which represents the VLAN ID is not specified.
+     */
+    public static final short  VLAN_UNSPEC = -1;
 
     /**
      * Logger instance.
@@ -79,14 +84,6 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         new TreeMap<Integer, FlowFilterImpl>();
 
     /**
-     * Flow direction to be evaluated.
-     *
-     * {@code true} means that this flow filter should be applied to
-     * outgoing flow.
-     */
-    private final boolean  output;
-
-    /**
      * The virtual node that contains this flow filter map.
      *
      * <p>
@@ -94,6 +91,26 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      * </p>
      */
     private transient FlowFilterNode  parent;
+
+    /**
+     * Create a new flow filter map for incoming packets.
+     *
+     * @param fnode  Virtual node that contains this flow filter.
+     * @return  A {@link FlowFilterMap} instance.
+     */
+    public static FlowFilterMap createIncoming(FlowFilterNode fnode) {
+        return new Incoming(fnode);
+    }
+
+    /**
+     * Create a new flow filter map for outgoing packets.
+     *
+     * @param fnode  Virtual node that contains this flow filter.
+     * @return  A {@link FlowFilterMap} instance.
+     */
+    public static FlowFilterMap createOutgoing(FlowFilterNode fnode) {
+        return new Outgoing(fnode);
+    }
 
     /**
      * Invoked when a flow filter event is received from another controller.
@@ -108,14 +125,25 @@ public final class FlowFilterMap implements Serializable, Cloneable {
 
         String container = mgr.getContainerName();
         boolean out = ev.isOutput();
+        String direction = getFlowDirectionName(out);
         int index = ev.getIndex();
         if (index == INDEX_ALL) {
             assert ev.getUpdateType() == UpdateType.REMOVED;
-            logCleared(container, path, out);
+            logCleared(container, path, direction);
         } else {
             UpdateType type = ev.getUpdateType();
-            logUpdated(container, path, out, index, type, null);
+            logUpdated(container, path, direction, index, type, null);
         }
+    }
+
+    /**
+     * Return a string which describes the flow direction to be evaluated.
+     *
+     * @param out  A boolean value which specifies the flow direction.
+     * @return  A string which represents the flow direction.
+     */
+    public static String getFlowDirectionName(boolean out) {
+        return (out) ? DIRECTION_OUT : DIRECTION_IN;
     }
 
     /**
@@ -123,15 +151,14 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *
      * @param container  The name of the container.
      * @param path       Pat to the virtual node.
-     * @param out        A boolean value which specifies the flow direction.
+     * @param direction  A string which represents the flow direction.
      * @param index      Index of the flow filter.
      * @param type       Update type.
      * @param fi         A {@link FlowFilterImpl} for trace logging.
      */
     private static void logUpdated(String container, VTenantPath path,
-                                   boolean out, int index, UpdateType type,
-                                   FlowFilterImpl fi) {
-        String direction = getFlowDirectionName(out);
+                                   String direction, int index,
+                                   UpdateType type, FlowFilterImpl fi) {
         if (fi != null && LOG.isTraceEnabled()) {
             LOG.trace("{}:{}:{}.{}: Flow filter was {}: {}",
                       container, path, direction, index, type.getName(),
@@ -147,33 +174,20 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *
      * @param container  The name of the container.
      * @param path       Pat to the virtual node.
-     * @param out        A boolean value which specifies the flow direction.
+     * @param direction  A string which represents the flow direction.
      */
     private static void logCleared(String container, VTenantPath path,
-                                   boolean out) {
+                                   String direction) {
         LOG.info("{}:{}:{}: All flow filters were removed.",
-                 container, path, getFlowDirectionName(out));
-    }
-
-    /**
-     * Return a string which describes the flow direction to be evaluated.
-     *
-     * @param out  A boolean value which specifies the flow direction.
-     * @return  A string which represents the flow direction.
-     */
-    private static String getFlowDirectionName(boolean out) {
-        return (out) ? DIRECTION_OUT : DIRECTION_IN;
+                 container, path, direction);
     }
 
     /**
      * Construct a new instance.
      *
      * @param fnode  Virtual node that contains this flow filter.
-     * @param out    {@code true} means that this flow filter should be applied
-     *               to outgoing flows.
      */
-    public FlowFilterMap(FlowFilterNode fnode, boolean out) {
-        output = out;
+    private FlowFilterMap(FlowFilterNode fnode) {
         setParent(fnode);
     }
 
@@ -182,7 +196,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *
      * @return  A list of {@link FlowFilter} instances.
      */
-    public List<FlowFilter> getAll() {
+    public final List<FlowFilter> getAll() {
         List<FlowFilter> list = new ArrayList<FlowFilter>(flowFilters.size());
         for (FlowFilterImpl fi: flowFilters.values()) {
             list.add(fi.getFlowFilter());
@@ -199,7 +213,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      * @return  A {@link FlowFilter} instance if found.
      *          {@code null} if not found.
      */
-    public FlowFilter get(int index) {
+    public final FlowFilter get(int index) {
         FlowFilterImpl fi = flowFilters.get(index);
         return (fi == null) ? null : fi.getFlowFilter();
     }
@@ -216,9 +230,9 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *          was made.
      * @throws VTNException  An error occurred.
      */
-    public UpdateType set(VTNManagerImpl mgr, int index, FlowFilter filter)
-        throws VTNException {
-        FlowFilterImpl fi = FlowFilterImpl.create(index, filter);
+    public final UpdateType set(VTNManagerImpl mgr, int index,
+                                FlowFilter filter) throws VTNException {
+        FlowFilterImpl fi = FlowFilterImpl.create(parent, index, filter);
         Integer key = Integer.valueOf(index);
 
         UpdateType result;
@@ -238,8 +252,9 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         VTNFlowDatabase fdb = mgr.getTenantFlowDB(tname);
         VTNThreadData.removeFlows(mgr, fdb);
 
-        logUpdated(parent.getContainerName(), path, output, index, result, fi);
-        FlowFilterEvent.raise(mgr, path, output, index, result);
+        logUpdated(parent.getContainerName(), path, getFlowDirectionName(),
+                   index, result, fi);
+        FlowFilterEvent.raise(mgr, path, isOutput(), index, result);
         return result;
     }
 
@@ -252,7 +267,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *          operation. {@code null} is returned if the specified
      *          flow filter does not exist.
      */
-    public Status remove(VTNManagerImpl mgr, int index) {
+    public final Status remove(VTNManagerImpl mgr, int index) {
         Integer key = Integer.valueOf(index);
         FlowFilterImpl fi = flowFilters.remove(key);
         if (fi == null) {
@@ -266,8 +281,9 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         VTNThreadData.removeFlows(mgr, fdb);
 
         UpdateType type = UpdateType.REMOVED;
-        logUpdated(parent.getContainerName(), path, output, index, type, fi);
-        FlowFilterEvent.raise(mgr, path, output, index, type);
+        logUpdated(parent.getContainerName(), path, getFlowDirectionName(),
+                   index, type, fi);
+        FlowFilterEvent.raise(mgr, path, isOutput(), index, type);
         return new Status(StatusCode.SUCCESS, null);
     }
 
@@ -279,7 +295,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *          operation. {@code null} is returned if this instance contains
      *          no flow filter.
      */
-    public Status clear(VTNManagerImpl mgr) {
+    public final Status clear(VTNManagerImpl mgr) {
         if (flowFilters.isEmpty()) {
             return null;
         }
@@ -297,15 +313,17 @@ public final class FlowFilterMap implements Serializable, Cloneable {
 
         String container = parent.getContainerName();
         UpdateType type = UpdateType.REMOVED;
+        String direction = getFlowDirectionName();
         if (removed == null) {
-            logCleared(container, path, output);
+            logCleared(container, path, direction);
         } else {
             for (FlowFilterImpl fi: removed.values()) {
-                logUpdated(container, path, output, fi.getIndex(), type, fi);
+                logUpdated(container, path, direction, fi.getIndex(), type,
+                           fi);
             }
         }
 
-        FlowFilterEvent.raise(mgr, path, output, INDEX_ALL, type);
+        FlowFilterEvent.raise(mgr, path, isOutput(), INDEX_ALL, type);
         return new Status(StatusCode.SUCCESS, null);
     }
 
@@ -314,7 +332,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *
      * @return  {@code true} only if this flow filter map is empty.
      */
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return flowFilters.isEmpty();
     }
 
@@ -325,60 +343,60 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *   This method must be called with holding the lock for the parent node.
      * </p>
      *
-     * @param mgr    VTN Manager service.
-     * @param pctx   A packet context which contains the packet.
+     * @param mgr   VTN Manager service.
+     * @param pctx  A packet context which contains the packet.
+     * @param vid   A VLAN ID to be used for packet matching.
+     *              A VLAN ID configured in the given packet is used if a
+     *              negative value is specified.
+     * @return  A {@link PacketContext} to be used for succeeding packet
+     *          processing.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter configured in
      *    this instance.
-     */
-    public void evaluate(VTNManagerImpl mgr, PacketContext pctx)
-        throws DropFlowException {
-        if (pctx.isFilterDisabled()) {
-            logDisabled(mgr, pctx);
-        } else {
-            evaluateImpl(mgr, pctx);
-        }
-    }
-
-    /**
-     * Evaluate flow filters for outgoing packet.
-     *
-     * <p>
-     *   This method must be called with holding the lock for the parent node.
-     * </p>
-     *
-     * @param mgr     VTN Manager service.
-     * @param pctx    A packet context which contains the packet.
-     * @param vid     A VLAN ID for the outgoing packet.
-     * @return  A {@link PacketContext} to be used for transmitting packet.
-     * @throws DropFlowException
-     *    The given packet was discarded by a flow filter configured in
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter configured in
      *    this instance.
      */
-    public PacketContext evaluate(VTNManagerImpl mgr, PacketContext pctx,
-                                  short vid)
-        throws DropFlowException {
+    public final PacketContext evaluate(VTNManagerImpl mgr, PacketContext pctx,
+                                        short vid)
+        throws DropFlowException, RedirectFlowException {
         if (pctx.isFilterDisabled()) {
             logDisabled(mgr, pctx);
             return pctx;
         }
 
-        PacketContext pc = pctx;
-        if (!flowFilters.isEmpty()) {
-            if (pctx.isFlooding()) {
-                // We have to preserve the original incoming packet for
-                // succeeding transmission.
-                pc = pctx.clone();
-            }
-
-            // Use new VLAN ID for packet matching.
-            pc.setVlan(vid);
-
-            // Evaluate flow filters.
-            evaluateImpl(mgr, pc);
+        PacketContext pc;
+        if (flowFilters.isEmpty()) {
+            pc = pctx;
+        } else {
+            pc = getPacketContext(pctx);
+            evaluateImpl(mgr, pc, vid);
         }
 
         return pc;
+    }
+
+    /**
+     * Create a prefix string for a log record.
+     *
+     * @param index  Index of the flow filter.
+     * @return  A prefix for a log record.
+     */
+    final String getLogPrefix(int index) {
+        StringBuilder builder = new StringBuilder(parent.getContainerName());
+        return builder.append(':').append(parent.getPath()).
+            append(':').append(getFlowDirectionName()).
+            append('.').append(index).toString();
+    }
+
+    /**
+     * Return the virtual node that contains this flow filter map.
+     *
+     * @return  A {@link FlowFilterNode} instance that contains this
+     *          flow filter map.
+     */
+    final FlowFilterNode getParent() {
+        return parent;
     }
 
     /**
@@ -386,31 +404,66 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      *
      * @param fnode  Virtual node that contains this flow filter.
      */
-    void setParent(FlowFilterNode fnode) {
+    final void setParent(FlowFilterNode fnode) {
         parent = fnode;
     }
 
     /**
+     * Determine the flow direction to be evaluated.
+     *
+     * @return  {@code true} is returned if the flow filter is applied to
+     *          outgoing flow. Otherwise {@code false} is returned.
+     */
+    protected abstract boolean isOutput();
+
+    /**
+     * Return a string which describes the flow direction to be evaluated.
+     *
+     * @return  A string which represents the flow direction.
+     */
+    protected abstract String getFlowDirectionName();
+
+    /**
+     * Return a {@link PacketContext} instance to be used for filtering.
+     *
+     * @param pctx  A packet context which contains the packet.
+     * @return  A {@link PacketContext} instance.
+     */
+    protected abstract PacketContext getPacketContext(PacketContext pctx);
+
+    /**
      * Evaluate flow filters configured in this instance.
      *
-     * @param mgr    VTN Manager service.
-     * @param pctx   A packet context which contains the packet.
+     * @param mgr   VTN Manager service.
+     * @param pctx  A packet context which contains the packet.
+     * @param vid   A VLAN ID to be used for packet matching.
+     *              A VLAN ID configured in the given packet is used if a
+     *              negative value is specified.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter configured in
      *    this instance.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter configured in
+     *    this instance.
      */
-    private void evaluateImpl(VTNManagerImpl mgr, PacketContext pctx)
-        throws DropFlowException {
+    private void evaluateImpl(VTNManagerImpl mgr, PacketContext pctx,
+                              short vid)
+        throws DropFlowException, RedirectFlowException {
+        if (vid >= 0) {
+            // Use the given VLAN ID for packet matching.
+            pctx.setVlan(vid);
+        }
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("{}:{}:{}: Evaluating flow filter map: {}",
                       parent.getContainerName(), parent.getPath(),
-                      getFlowDirectionName(output), pctx.getDescription());
+                      getFlowDirectionName(), pctx.getDescription());
         }
 
         for (FlowFilterImpl fi: flowFilters.values()) {
             if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: Evaluating flow filter",
-                          getLogPrefix(fi.getIndex()));
+                LOG.trace("{}: Evaluating flow filter: {}",
+                          getLogPrefix(fi.getIndex()), fi);
             }
             if (fi.evaluate(mgr, pctx, this)) {
                 return;
@@ -420,7 +473,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         if (LOG.isDebugEnabled()) {
             LOG.debug("{}:{}:{}: No flow filter was matched",
                       parent.getContainerName(), parent.getPath(),
-                      getFlowDirectionName(output));
+                      getFlowDirectionName());
         }
     }
 
@@ -435,7 +488,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         if (LOG.isTraceEnabled()) {
             LOG.trace("{}:{}:{}: Flow filter is disabled: {}",
                       parent.getContainerName(), parent.getPath(),
-                      getFlowDirectionName(output), pctx.getDescription());
+                      getFlowDirectionName(), pctx.getDescription());
         }
     }
 
@@ -446,7 +499,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      * @return   {@code true} if identical. Otherwise {@code false}.
      */
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (o == this) {
             return true;
         }
@@ -455,32 +508,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         }
 
         FlowFilterMap fmap = (FlowFilterMap)o;
-        return (flowFilters.equals(fmap.flowFilters) && output == fmap.output);
-    }
-
-    /**
-     * Create a prefix string for a log record.
-     *
-     * @param index  Index of the flow filter.
-     * @return  A prefix for a log record.
-     */
-    String getLogPrefix(int index) {
-        StringBuilder builder = new StringBuilder(parent.getContainerName());
-        return builder.append(':').append(parent.getPath()).
-            append(':').append(getFlowDirectionName(output)).
-            append('.').append(index).toString();
-    }
-
-    /**
-     * Return a flow database instance.
-     *
-     * @param mgr  VTN Manager service.
-     * @return  A {@link VTNFlowDatabase} instance associated with the VTN.
-     *          {@code null} is returned if not found.
-     */
-    VTNFlowDatabase getTenantFlowDB(VTNManagerImpl mgr) {
-        VTenantPath path = parent.getPath();
-        return mgr.getTenantFlowDB(path.getTenantName());
+        return flowFilters.equals(fmap.flowFilters);
     }
 
     /**
@@ -489,13 +517,9 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      * @return  The hash code.
      */
     @Override
-    public int hashCode() {
-        int h = flowFilters.hashCode();
-        if (output) {
-            h += 37;
-        }
-
-        return h;
+    public final int hashCode() {
+        return getClass().getName().hashCode() +
+            (flowFilters.hashCode() * 37);
     }
 
     // Cloneable
@@ -506,7 +530,7 @@ public final class FlowFilterMap implements Serializable, Cloneable {
      * @return  A copy of this instance.
      */
     @Override
-    public FlowFilterMap clone() {
+    public final FlowFilterMap clone() {
         try {
             FlowFilterMap fmap = (FlowFilterMap)super.clone();
             fmap.flowFilters = (Map<Integer, FlowFilterImpl>)
@@ -516,6 +540,121 @@ public final class FlowFilterMap implements Serializable, Cloneable {
         } catch (CloneNotSupportedException e) {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
+        }
+    }
+
+    /**
+     * A map that keeps flow filters for incoming packets.
+     *
+     * <p>
+     *   Although this class is public to other packages, this class does not
+     *   provide any API. Applications other than VTN Manager must not use this
+     *   class.
+     * </p>
+     */
+    public static final class Incoming extends FlowFilterMap {
+        /**
+         * Version number for serialization.
+         */
+        private static final long serialVersionUID = -7266877348382534521L;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param fnode  Virtual node that contains this flow filter.
+         */
+        private Incoming(FlowFilterNode fnode) {
+            super(fnode);
+        }
+
+        /**
+         * Determine the flow direction to be evaluated.
+         *
+         * @return  {@code false}.
+         */
+        @Override
+        protected boolean isOutput() {
+            return false;
+        }
+
+        /**
+         * Return a string which describes the flow direction to be evaluated.
+         *
+         * @return  {@code "IN"}.
+         */
+        @Override
+        protected String getFlowDirectionName() {
+            return DIRECTION_IN;
+        }
+
+        /**
+         * Return a {@link PacketContext} instance to be used for filtering.
+         *
+         * @param pctx  A packet context which contains the packet.
+         * @return  The given {@link PacketContext} instance is always
+         *          returned.
+         */
+        @Override
+        protected PacketContext getPacketContext(PacketContext pctx) {
+            return pctx;
+        }
+    }
+
+    /**
+     * A map that keeps flow filters for outgoing packets.
+     *
+     * <p>
+     *   Although this class is public to other packages, this class does not
+     *   provide any API. Applications other than VTN Manager must not use this
+     *   class.
+     * </p>
+     */
+    public static final class Outgoing extends FlowFilterMap {
+        /**
+         * Version number for serialization.
+         */
+        private static final long serialVersionUID = 7451633827904306067L;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param fnode  Virtual node that contains this flow filter.
+         */
+        private Outgoing(FlowFilterNode fnode) {
+            super(fnode);
+        }
+
+        /**
+         * Determine the flow direction to be evaluated.
+         *
+         * @return  {@code true}.
+         */
+        @Override
+        protected boolean isOutput() {
+            return true;
+        }
+
+        /**
+         * Return a string which describes the flow direction to be evaluated.
+         *
+         * @return  {@code "OUT"}.
+         */
+        @Override
+        protected String getFlowDirectionName() {
+            return DIRECTION_OUT;
+        }
+
+        /**
+         * Return a {@link PacketContext} instance to be used for filtering.
+         *
+         * @param pctx  A packet context which contains the packet.
+         * @return  A {@link PacketContext} to be used for transmitting packet.
+         */
+        @Override
+        protected PacketContext getPacketContext(PacketContext pctx) {
+            // If the given packet is going to be broadcasted, we have to
+            // preserve the original packet for succeeding transmission.
+            return (pctx.isFlooding()) ? pctx.clone() : pctx;
         }
     }
 }

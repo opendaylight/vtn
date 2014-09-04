@@ -16,8 +16,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.filter.DropFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 
+import org.opendaylight.vtn.manager.internal.LogProvider;
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
@@ -33,7 +33,7 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4839160630229249797L;
+    private static final long serialVersionUID = 4242652818005185484L;
 
     /**
      * Logger instance.
@@ -97,19 +97,28 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
      */
     @Override
     protected void apply(VTNManagerImpl mgr, PacketContext pctx,
-                         FlowFilterMap ffmap) throws DropFlowException {
-        LOG.info("{}: Discard packet: cond={}, packet={}",
-                 ffmap.getLogPrefix(getIndex()), getFlowConditionName(),
-                 pctx.getDescription());
-
-        VTNFlowDatabase fdb = ffmap.getTenantFlowDB(mgr);
-        if (fdb == null) {
-            LOG.error("{}: Flow database was not found",
-                      ffmap.getLogPrefix(getIndex()));
-        } else {
-            // Install a flow entry that discards the given packet.
-            pctx.installDropFlow(mgr, fdb);
+                         final FlowFilterMap ffmap) throws DropFlowException {
+        if (!pctx.isFlooding()) {
+            LOG.info("{}: Discard packet: cond={}, packet={}",
+                     ffmap.getLogPrefix(getIndex()), getFlowConditionName(),
+                     pctx.getDescription());
         }
+
+        LogProvider lp = new LogProvider() {
+            @Override
+            public Logger getLogger() {
+                return LOG;
+            }
+
+            @Override
+            public String getLogPrefix() {
+                return ffmap.getLogPrefix(getIndex());
+            }
+        };
+
+        // Install a flow entry that discards the given packet.
+        FlowFilterNode fnode = ffmap.getParent();
+        pctx.installDropFlow(mgr, fnode.getPath(), lp);
 
         throw new DropFlowException();
     }
@@ -132,8 +141,7 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
 }
 
 /**
- * An exception which indicates an incoming packet was discarded by a
- * flow filter.
+ * An exception which indicates a packet was discarded by a DROP flow filter.
  */
 final class DropFlowException extends Exception {
     /**
@@ -144,7 +152,17 @@ final class DropFlowException extends Exception {
     /**
      * Construct a new instance.
      */
-    public DropFlowException() {
+    DropFlowException() {
         super();
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param cause  The {@link Throwable} object which indicates the cause
+     *               of error.
+     */
+    DropFlowException(Throwable cause) {
+        super(cause);
     }
 }

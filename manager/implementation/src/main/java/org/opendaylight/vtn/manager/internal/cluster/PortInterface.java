@@ -26,6 +26,7 @@ import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+
 import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MiscUtils;
@@ -59,7 +60,7 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7528273171488986531L;
+    private static final long serialVersionUID = 6565790001865942120L;
 
     /**
      * Port mapping configuration.
@@ -86,8 +87,8 @@ public abstract class PortInterface extends AbstractInterface
     protected PortInterface(AbstractBridge parent, String name,
                             VInterfaceConfig iconf) {
         super(parent, name, iconf);
-        inFlowFilters = new FlowFilterMap(this, false);
-        outFlowFilters = new FlowFilterMap(this, true);
+        inFlowFilters = FlowFilterMap.createIncoming(this);
+        outFlowFilters = FlowFilterMap.createOutgoing(this);
     }
 
     /**
@@ -334,9 +335,11 @@ public abstract class PortInterface extends AbstractInterface
      * @param pctx  The context of the packet.
      * @param sent  A set of {@link PortVlan} which indicates the network
      *              already processed.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     final void transmit(VTNManagerImpl mgr, PacketContext pctx,
-                        Set<PortVlan> sent) {
+                        Set<PortVlan> sent) throws RedirectFlowException {
         PortMapConfig pmconf = portMapConfig;
         if (pmconf == null) {
             return;
@@ -360,25 +363,23 @@ public abstract class PortInterface extends AbstractInterface
             return;
         }
 
-        // Apply outgoing flow filters.
         Logger logger = getLogger();
         PacketContext pc;
+        Ethernet frame;
         try {
+            // Apply outgoing flow filters.
             pc = outFlowFilters.evaluate(mgr, pctx, vlan);
+
+            // Create a new Ethernet frame to be transmitted.
+            frame = pc.createFrame(vlan);
         } catch (DropFlowException e) {
             // Filtered out by DROP filter.
             return;
-        }
-
-        // Commit changes to the packet.
-        try {
-            pc.commit();
         } catch (Exception e) {
             mgr.logException(logger, getPath(), e);
             return;
         }
 
-        Ethernet frame = pc.createFrame(vlan);
         if (logger.isTraceEnabled()) {
             VInterfacePath path = getInterfacePath();
             logger.trace("{}:{}: Transmit packet to {} interface: {}",
@@ -402,6 +403,77 @@ public abstract class PortInterface extends AbstractInterface
      */
     final FlowFilterMap getFlowFilterMap(boolean out) {
         return (out) ? outFlowFilters : inFlowFilters;
+    }
+
+    /**
+     * Flush cached network data associated with the network specified by
+     * a pair of switch port and VLAN ID.
+     *
+     * <p>
+     *   This method is used to flush network data cached by obsolete port
+     *   mapping.
+     * </p>
+     *
+     * @param mgr    VTN Manager service.
+     * @param port   A node connector associated with a switch port.
+     * @param vlan   A VLAN ID.
+     */
+    protected void flushCache(VTNManagerImpl mgr, NodeConnector port,
+                              short vlan) {
+        VNodePath npath = getPath();
+        if (port != null) {
+            // Remove flow entries relevant to obsolete port mapping.
+            VTNThreadData.removeFlows(mgr, npath.getTenantName(), port, vlan);
+        }
+
+        // Remove flow entries affected by this virtual node.
+        VTNThreadData.removeFlows(mgr, npath);
+    }
+
+    /**
+     * Redirect the packet to this virtual interface as outgoing packet.
+     *
+     * @param mgr     VTN Manager service.
+     * @param pctx    The context of the packet to be redirected.
+     * @param rex     An exception that keeps information about the packet
+     *                redirection.
+     * @param bridge  A {@link PortBridge} instance associated with this
+     *                virtual interface.
+     * @throws DropFlowException
+     *    The given packet was discarded by a DROP flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a REDIRECT flow filter.
+     * @throws VTNException  An error occurred.
+     */
+    protected void redirect(VTNManagerImpl mgr, PacketContext pctx,
+                            RedirectFlowException rex, PortBridge<?> bridge)
+        throws DropFlowException, RedirectFlowException, VTNException {
+        // Ensure that a physical switch port is mapped by port mapping.
+        PortMapConfig pmconf = portMapConfig;
+        NodeConnector mapped = getMappedPort(mgr);
+        if (pmconf == null || mapped == null) {
+            rex.notMapped(mgr, pctx);
+            throw new DropFlowException();
+        }
+
+        // Evaluate flow filters for outgoing packets.
+        // Note that this should never clone a PacketContext.
+        short vlan = pmconf.getVlan();
+        outFlowFilters.evaluate(mgr, pctx, vlan);
+
+        // Forward the packet.
+        bridge.forward(mgr, pctx, mapped, vlan);
+    }
+
+    /**
+     * Return a VLAN ID mapped to this virtual interface.
+     *
+     * @return  A VLAN ID mapped to this interface.
+     *          A negative value is returned if port mapping is not configured.
+     */
+    public short getVlan() {
+        PortMapConfig pmconf = portMapConfig;
+        return (pmconf == null) ? -1 : pmconf.getVlan();
     }
 
     /**
@@ -630,31 +702,6 @@ public abstract class PortInterface extends AbstractInterface
             PortMap pmap = new PortMap(portMapConfig, null);
             PortMapEvent.changed(mgr, path, pmap, false);
         }
-    }
-
-    /**
-     * Flush cached network data associated with the network specified by
-     * a pair of switch port and VLAN ID.
-     *
-     * <p>
-     *   This method is used to flush network data cached by obsolete port
-     *   mapping.
-     * </p>
-     *
-     * @param mgr    VTN Manager service.
-     * @param port   A node connector associated with a switch port.
-     * @param vlan   A VLAN ID.
-     */
-    protected void flushCache(VTNManagerImpl mgr, NodeConnector port,
-                              short vlan) {
-        VNodePath npath = getPath();
-        if (port != null) {
-            // Remove flow entries relevant to obsolete port mapping.
-            VTNThreadData.removeFlows(mgr, npath.getTenantName(), port, vlan);
-        }
-
-        // Remove flow entries affected by this virtual node.
-        VTNThreadData.removeFlows(mgr, npath);
     }
 
     /**
@@ -920,7 +967,7 @@ public abstract class PortInterface extends AbstractInterface
         int pri = mgr.getVTNConfig().getL2FlowPriority();
         vflow.addFlow(mgr, match, pri);
         vflow.addVirtualRoute(getIngressRoute());
-        vflow.setEgressVNodePath(null);
+        vflow.setEgressVNodeRoute(null);
         vflow.setTimeout(pctx.getIdleTimeout(), pctx.getHardTimeout());
         fdb.install(mgr, vflow);
     }
@@ -929,15 +976,22 @@ public abstract class PortInterface extends AbstractInterface
      * Evaluate flow filters for incoming packet configured in this virtual
      * interface.
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param vid   A VLAN ID to be used for packet matching.
+     *              A VLAN ID configured in the given packet is used if a
+     *              negative value is specified.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     @Override
-    public final void filterPacket(VTNManagerImpl mgr, PacketContext pctx)
-        throws DropFlowException {
-        inFlowFilters.evaluate(mgr, pctx);
+    public final void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                                   short vid)
+        throws DropFlowException, RedirectFlowException {
+        // Note that this call always returns `pctx'.
+        inFlowFilters.evaluate(mgr, pctx, vid);
     }
 
     /**
@@ -946,17 +1000,21 @@ public abstract class PortInterface extends AbstractInterface
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
+     * @param vid     A VLAN ID to be used for packet matching.
+     *                A VLAN ID configured in the given packet is used if a
+     *                negative value is specified.
      * @param bridge  Never used.
-     * @param vid     A VLAN ID for the outgoing packet.
      * @return  A {@link PacketContext} to be used for transmitting packet.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a flow filter.
      */
     @Override
     public final PacketContext filterPacket(VTNManagerImpl mgr,
                                             PacketContext pctx, short vid,
                                             PortBridge<?> bridge)
-        throws DropFlowException {
+        throws DropFlowException, RedirectFlowException {
         return outFlowFilters.evaluate(mgr, pctx, vid);
     }
 

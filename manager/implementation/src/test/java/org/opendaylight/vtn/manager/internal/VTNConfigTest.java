@@ -57,6 +57,11 @@ public class VTNConfigTest extends TestBase {
     private static final int  MIN_CACHE_TRANSACTION_TIMEOUT = 100;
     private static final int  MAX_CACHE_TRANSACTION_TIMEOUT = 600000;
 
+    // Default value, min value, max value of maxRedirections.
+    private static final int  DEFAULT_MAX_REDIRECTIONS = 100;
+    private static final int  MIN_MAX_REDIRECTIONS = 10;
+    private static final int  MAX_MAX_REDIRECTIONS = 100000;
+
     // Separaters between key and value.
     private static final String[] SEPARATORS = new String[] {"=", ":"};
 
@@ -68,6 +73,19 @@ public class VTNConfigTest extends TestBase {
 
     // The working directory used for test.
     private static final String WORK_DIR = "work";
+
+    /**
+     * Internal interface to fetch value from {@link VTNConfig}.
+     */
+    private interface Getter {
+        /**
+         * Return an integer parameter.
+         *
+         * @param config  A {@link VTNConfig} instance.
+         * @return  A value obtained from {@code config}.
+         */
+        int get(VTNConfig config);
+    }
 
     @AfterClass
     public static void afterclass() {
@@ -111,8 +129,14 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_NODE_EDGE_WAIT + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getNodeEdgeWait();
+            }
+        };
 
-        testVTNConfig("nodeEdgeWait", DEFAULT_NODE_EDGE_WAIT,
+        testVTNConfig("nodeEdgeWait", getter, DEFAULT_NODE_EDGE_WAIT,
                       MIN_NODE_EDGE_WAIT, MAX_NODE_EDGE_WAIT, values);
     }
 
@@ -133,8 +157,14 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_L2FLOW_PRIORITY + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getL2FlowPriority();
+            }
+        };
 
-        testVTNConfig("l2FlowPriority", DEFAULT_L2FLOW_PRIORITY,
+        testVTNConfig("l2FlowPriority", getter, DEFAULT_L2FLOW_PRIORITY,
                       MIN_L2FLOW_PRIORITY, MAX_L2FLOW_PRIORITY, values);
     }
 
@@ -155,8 +185,14 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_FLOWMOD_TIMEOUT + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getFlowModTimeout();
+            }
+        };
 
-        testVTNConfig("flowModTimeout", DEFAULT_FLOWMOD_TIMEOUT,
+        testVTNConfig("flowModTimeout", getter, DEFAULT_FLOWMOD_TIMEOUT,
                       MIN_FLOWMOD_TIMEOUT, MAX_FLOWMOD_TIMEOUT, values);
     }
 
@@ -177,8 +213,15 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_REMOTE_FLOWMOD_TIMEOUT + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getRemoteFlowModTimeout();
+            }
+        };
 
-        testVTNConfig("remoteFlowModTimeout", DEFAULT_REMOTE_FLOWMOD_TIMEOUT,
+        testVTNConfig("remoteFlowModTimeout", getter,
+                      DEFAULT_REMOTE_FLOWMOD_TIMEOUT,
                       MIN_REMOTE_FLOWMOD_TIMEOUT, MAX_REMOTE_FLOWMOD_TIMEOUT,
                       values);
     }
@@ -200,8 +243,14 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_REMOTE_BULK_FLOWMOD_TIMEOUT + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getRemoteBulkFlowModTimeout();
+            }
+        };
 
-        testVTNConfig("remoteBulkFlowModTimeout",
+        testVTNConfig("remoteBulkFlowModTimeout", getter,
                       DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT,
                       MIN_REMOTE_BULK_FLOWMOD_TIMEOUT,
                       MAX_REMOTE_BULK_FLOWMOD_TIMEOUT, values);
@@ -224,11 +273,15 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_CACHE_INIT_TIMEOUT + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getCacheInitTimeout();
+            }
+        };
 
-        testVTNConfig("cacheInitTimeout",
-                      DEFAULT_CACHE_INIT_TIMEOUT,
-                      MIN_CACHE_INIT_TIMEOUT,
-                      MAX_CACHE_INIT_TIMEOUT, values);
+        testVTNConfig("cacheInitTimeout", getter, DEFAULT_CACHE_INIT_TIMEOUT,
+                      MIN_CACHE_INIT_TIMEOUT, MAX_CACHE_INIT_TIMEOUT, values);
     }
 
     /**
@@ -248,24 +301,57 @@ public class VTNConfigTest extends TestBase {
             String.valueOf(MAX_CACHE_TRANSACTION_TIMEOUT + 1),
             "val"
         };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getCacheTransactionTimeout();
+            }
+        };
 
-        testVTNConfig("cacheTransactionTimeout",
+        testVTNConfig("cacheTransactionTimeout", getter,
                       DEFAULT_CACHE_TRANSACTION_TIMEOUT,
                       MIN_CACHE_TRANSACTION_TIMEOUT,
                       MAX_CACHE_TRANSACTION_TIMEOUT, values);
     }
 
     /**
+     * Test case for {@code maxRedirections} parameter.
+     */
+    @Test
+    public void testVTNConfigMaxRedirections() {
+        String[] values = {
+            null, "empty", "",
+            String.valueOf(MIN_MAX_REDIRECTIONS),
+            String.valueOf(MIN_MAX_REDIRECTIONS - 1),
+            String.valueOf(MAX_MAX_REDIRECTIONS),
+            String.valueOf(MAX_MAX_REDIRECTIONS + 1),
+            "val",
+        };
+        Getter getter = new Getter() {
+            @Override
+            public int get(VTNConfig config) {
+                return config.getMaxRedirections();
+            }
+        };
+
+        testVTNConfig("maxRedirections", getter, DEFAULT_MAX_REDIRECTIONS,
+                      MIN_MAX_REDIRECTIONS, MAX_MAX_REDIRECTIONS, values);
+    }
+
+    /**
      * Common routine for test cases of {@link VTNConfig}.
      *
      * @param parameterString   A key String of parameter.
+     * @param getter            A {@link Getter} instance to fetch value from
+     *                          {@link VTNConfig}.
      * @param defaultVal        A default value.
      * @param minValue          A minimum value.
      * @param maxValue          A maximum value.
      * @param values            Values which is tested as parameter.
      */
-    private void testVTNConfig(String parameterString, int defaultVal,
-                               int minValue, int maxValue, String[] values) {
+    private void testVTNConfig(String parameterString, Getter getter,
+                               int defaultVal, int minValue, int maxValue,
+                               String[] values) {
         cleanup(false);
 
         for (String separater : SEPARATORS) {
@@ -364,26 +450,7 @@ public class VTNConfigTest extends TestBase {
                         }
                     }
 
-                    int confValue = -100;
-                    if (parameterString.equals("nodeEdgeWait")) {
-                        confValue = conf.getNodeEdgeWait();
-                    } else if (parameterString.equals("l2FlowPriority")) {
-                        confValue = conf.getL2FlowPriority();
-                    } else if (parameterString.equals("flowModTimeout")) {
-                        confValue = conf.getFlowModTimeout();
-                    } else if (parameterString.equals("remoteFlowModTimeout")) {
-                        confValue = conf.getRemoteFlowModTimeout();
-                    } else if (parameterString.equals("remoteBulkFlowModTimeout")) {
-                        confValue = conf.getRemoteBulkFlowModTimeout();
-                    } else if (parameterString.equals("cacheInitTimeout")) {
-                        confValue = conf.getCacheInitTimeout();
-                    } else if (parameterString.
-                               equals("cacheTransactionTimeout")) {
-                        confValue = conf.getCacheTransactionTimeout();
-                    } else {
-                        fail("not supported test case.");
-                    }
-
+                    int confValue = getter.get(conf);
                     if (cv == null || cval.equals("empty")) {
                         assertEquals(emsg, realDefaultVal, confValue);
                     } else {

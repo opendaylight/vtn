@@ -21,10 +21,10 @@ import java.util.HashSet;
 import org.opendaylight.vtn.manager.NodeRoute;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
+
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.PortFilter;
@@ -65,7 +65,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6210984131359256401L;
+    private static final long serialVersionUID = 6914650561856231732L;
 
     /**
      * The identifier of the flow group.
@@ -368,19 +368,21 @@ public class VTNFlow implements Serializable {
     }
 
     /**
-     * Set the specified virtual node as the egress node of this VTN flow.
+     * Set the virtual node hop to the egress virtual node of this VTN flow.
      *
      * <p>
      *   This method must be called after virtual packet routing path is
      *   configured by {@link #addVirtualRoute(Collection)}.
      * </p>
      *
-     * @param path  A {@link VNodePath} instance which represents the location
-     *              of the egress node. Specifying {@code null} means that
-     *              this VTN flow always discards packets.
+     * @param vroute  A {@link VNodeRoute} instance which represents the hop
+     *                to the egress virtual node.
+     *                Specifying {@code null} or an empty route means that
+     *                this VTN flow always discards packets.
      */
-    public void setEgressVNodePath(VNodePath path) {
+    public void setEgressVNodeRoute(VNodeRoute vroute) {
         int lastIndex = virtualRoute.size() - 1;
+        VNodePath path = (vroute == null) ? null : vroute.getPath();
         if (path == null) {
             // Append an empty route which represents a negative flow.
             if (lastIndex < 0 ||
@@ -413,7 +415,7 @@ public class VTNFlow implements Serializable {
             }
         }
 
-        virtualRoute.add(new VNodeRoute(path, Reason.FORWARDED));
+        virtualRoute.add(vroute);
     }
 
     /**

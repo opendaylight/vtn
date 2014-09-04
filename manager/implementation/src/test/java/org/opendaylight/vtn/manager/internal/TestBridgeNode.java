@@ -128,11 +128,15 @@ public class TestBridgeNode implements VBridgeNode {
      * Evaluate flow filters for incoming packet mapped by this virtual
      * mapping.
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param vid   A VLAN ID to be used for packet matching.
+     *              A VLAN ID configured in the given packet is used if a
+     *              negative value is specified.
      */
     @Override
-    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx) {
+    public void filterPacket(VTNManagerImpl mgr, PacketContext pctx,
+                             short vid) {
     }
 
     /**
@@ -141,7 +145,9 @@ public class TestBridgeNode implements VBridgeNode {
      *
      * @param mgr     VTN Manager service.
      * @param pctx    The context of the received packet.
-     * @param vid     A VLAN ID for the outgoing packet.
+     * @param vid     A VLAN ID to be used for packet matching.
+     *                A VLAN ID configured in the given packet is used if a
+     *                negative value is specified.
      * @param bridge  A {@link PortBridge} instance associated with this
      *                virtual mapping.
      * @return  A {@link PacketContext} to be used for transmitting packet.

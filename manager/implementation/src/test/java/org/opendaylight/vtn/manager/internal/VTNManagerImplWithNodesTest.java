@@ -2758,7 +2758,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         result = mgr.receiveDataPacket(inPkt);
 
         // incoming packet form disabled NodeConnector is discarded.
-        assertEquals(PacketResult.KEEP_PROCESSING, result);
+        assertEquals(PacketResult.CONSUME, result);
         dataList = stub.getTransmittedDataPacket();
         assertEquals(0, dataList.size());
 

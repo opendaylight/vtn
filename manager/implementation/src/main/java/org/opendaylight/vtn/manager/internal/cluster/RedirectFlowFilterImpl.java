@@ -14,7 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.ErrorVNodePath;
 import org.opendaylight.vtn.manager.VInterfacePath;
+import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
@@ -39,7 +41,7 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5004273201378790703L;
+    private static final long serialVersionUID = -2751399201024680813L;
 
     /**
      * Logger instance.
@@ -48,7 +50,11 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
         LoggerFactory.getLogger(RedirectFlowFilterImpl.class);
 
     /**
-     * The location of destination virtual interface.
+     * The location of the destination virtual interface.
+     *
+     * <p>
+     *   Note that the VTN name is not configured in this instance.
+     * </p>
      */
     private final VInterfacePath  destination;
 
@@ -61,12 +67,14 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
     /**
      * Construct a new instance.
      *
+     * @param fnode   Virtual node that contains this flow filter.
      * @param idx     An index number to be assigned.
      * @param filter  A {@link FlowFilter} instance.
      * @throws VTNException
      *    {@code filter} contains invalid value.
      */
-    protected RedirectFlowFilterImpl(int idx, FlowFilter filter)
+    protected RedirectFlowFilterImpl(FlowFilterNode fnode, int idx,
+                                     FlowFilter filter)
         throws VTNException {
         super(idx, filter);
 
@@ -101,7 +109,43 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
             throw new VTNException(newst, e);
         }
 
+        // Reject self-redirection.
+        VTenantPath ppath = fnode.getPath();
+        String tenant = ppath.getTenantName();
+        VNodePath dst = (VNodePath)path.replaceTenantName(tenant);
+        if (ppath instanceof VInterfacePath && ppath.contains(dst)) {
+            StringBuilder builder =
+                new StringBuilder("RedirectFilter: Self-redirection: ");
+            builder.append(dst);
+            throw new VTNException(StatusCode.BADREQUEST, builder.toString());
+        }
+
         destination = path;
+    }
+
+    /**
+     * Return the location of the destination virtual interface.
+     *
+     * <p>
+     *   Note that the VTN name is not configured in the returned location.
+     * </p>
+     *
+     * @return  The location of the destination virtual interface.
+     */
+    public VInterfacePath getDestination() {
+        return destination;
+    }
+
+    /**
+     * Determine whether the direction of packet redirection.
+     *
+     * @return  {@code true} is returned if the redirected packet should be
+     *          treated as outgoing packet.
+     *          {@code false} is returned if the redirected packet should be
+     *          treated as incoming packet.
+     */
+    public boolean isOutput() {
+        return output;
     }
 
     /**
@@ -175,11 +219,25 @@ public final class RedirectFlowFilterImpl extends FlowFilterImpl {
      * @param pctx   A packet context which contains the packet.
      * @param ffmap  A {@link FlowFilterMap} instance that contains this
      *               flow filter.
+     * @throws RedirectFlowException  Always thrown.
      */
     @Override
     protected void apply(VTNManagerImpl mgr, PacketContext pctx,
-                         FlowFilterMap ffmap) {
-        // REVISIT: Not yet implemented.
+                         FlowFilterMap ffmap) throws RedirectFlowException {
+        RedirectFlowException e = new RedirectFlowException(ffmap, this);
+        String format =
+            "{}: Redirect packet: cond={}, to={}, direction={}, packet={}";
+        String cond = getFlowConditionName();
+        String direction = FlowFilterMap.getFlowDirectionName(output);
+        String desc = pctx.getDescription();
+        VInterfacePath dst = e.getDestination();
+        if (pctx.setFirstRedirection(e)) {
+            LOG.debug(format, e.getLogPrefix(), cond, dst, direction, desc);
+        } else if (LOG.isTraceEnabled()) {
+            LOG.trace(format, e.getLogPrefix(), cond, dst, direction, desc);
+        }
+
+        throw e;
     }
 
     /**

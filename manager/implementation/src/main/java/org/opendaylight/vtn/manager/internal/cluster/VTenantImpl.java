@@ -43,6 +43,7 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
@@ -174,7 +175,7 @@ public final class VTenantImpl implements FlowFilterNode {
         this.containerName = containerName;
         this.tenantName = tenantName;
         this.tenantConfig = cf;
-        flowFilters = new FlowFilterMap(this, false);
+        flowFilters = FlowFilterMap.createIncoming(this);
     }
 
     /**
@@ -1558,7 +1559,7 @@ public final class VTenantImpl implements FlowFilterNode {
             pctx.setRouteResolver(rr);
 
             // Evaluate VTN flow filters.
-            flowFilters.evaluate(mgr, pctx);
+            flowFilters.evaluate(mgr, pctx, FlowFilterMap.VLAN_UNSPEC);
 
             VNodePath path = ref.getPath();
             PortBridge bridge;
@@ -1574,9 +1575,15 @@ public final class VTenantImpl implements FlowFilterNode {
         } catch (DropFlowException e) {
             // The given packet was discarded by a flow filter.
             return PacketResult.CONSUME;
+        } catch (RedirectFlowException e) {
+            // The given packet was redirected by a flow filter.
+            return redirect(mgr, pctx, e);
         } finally {
-            pctx.purgeObsoleteFlow(mgr, tenantName);
-            rdlock.unlock();
+            try {
+                pctx.purgeObsoleteFlow(mgr, tenantName);
+            } finally {
+                rdlock.unlock();
+            }
         }
     }
 
@@ -2350,6 +2357,83 @@ public final class VTenantImpl implements FlowFilterNode {
         byte[] ctlrMac = mgr.getSwitchManager().getControllerMAC();
         byte[] dst = pctx.getDestinationAddress();
         return Arrays.equals(ctlrMac, dst);
+    }
+
+    /**
+     * Handle packet redirection caused by the REDIRECT flow filter.
+     *
+     * <p>
+     *   This method must be called with holding the tenant lock.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param rex   An exception that keeps information about the packet
+     *              redirection.
+     * @return  A {@code PacketResult} which indicates the result.
+     */
+    private PacketResult redirect(VTNManagerImpl mgr, PacketContext pctx,
+                                  RedirectFlowException rex) {
+        RedirectFlowException current = rex;
+        while (true) {
+            try {
+                return redirectImpl(mgr, pctx, current);
+            } catch (DropFlowException e) {
+                // The given packet was discarded by a flow filter.
+                RedirectFlowException first = pctx.getFirstRedirection();
+                Logger logger = first.getLogger();
+                logger.warn("{}: Packet was discarded: packet={}",
+                            first.getLogPrefix(), pctx.getDescription());
+
+                return PacketResult.CONSUME;
+            } catch (RedirectFlowException e) {
+                current = e;
+            }
+        }
+    }
+
+    /**
+     * Handle packet redirection caused by the REDIRECT flow filter.
+     *
+     * <p>
+     *   This is an internal method only for
+     *   {@link #redirect(VTNManagerImpl,PacketContext,RedirectFlowException)}.
+     * </p>
+     *
+     * @param mgr   VTN Manager service.
+     * @param pctx  The context of the received packet.
+     * @param rex   An exception that keeps information about the packet
+     *              redirection.
+     * @return  A {@code PacketResult} which indicates the result.
+     * @throws DropFlowException
+     *    The given packet was discarded by a DROP flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by a REDIRECT flow filter.
+     */
+    private PacketResult redirectImpl(VTNManagerImpl mgr, PacketContext pctx,
+                                      RedirectFlowException rex)
+        throws DropFlowException, RedirectFlowException {
+        // Determine the destination of the redirection.
+        VInterfacePath path = rex.getDestination();
+        PortBridge bridge;
+        try {
+            if (path instanceof VBridgeIfPath) {
+                bridge = getBridgeImpl((VBridgeIfPath)path);
+            } else if (path instanceof VTerminalIfPath) {
+                bridge = getTerminalImpl((VTerminalIfPath)path);
+            } else {
+                // This should never happen.
+                rex.destinationNotFound(mgr, pctx,
+                                        "Unexpected destination path");
+                throw new DropFlowException();
+            }
+        } catch (VTNException e) {
+            String emsg = e.getStatus().getDescription();
+            rex.destinationNotFound(mgr, pctx, emsg);
+            throw new DropFlowException(e);
+        }
+
+        return bridge.redirect(mgr, pctx, rex);
     }
 
     // FlowFilterNode

@@ -237,7 +237,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         }
 
         // Set node path associated with the egress flow.
-        vflow.setEgressVNodePath(dstpath);
+        vflow.setEgressVNodeRoute(new VNodeRoute(dstpath, Reason.FORWARDED));
         assertEquals(srcpath, vflow.getIngressPath());
         assertEquals(dstpath, vflow.getEgressPath());
         for (VTenantPath path: srcDstPaths) {
@@ -639,7 +639,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             List<VNodeRoute> vroute = new ArrayList<VNodeRoute>();
             vroute.add(new VNodeRoute(ipath, Reason.VLANMAPPED));
             vflowMul2.addVirtualRoute(vroute);
-            vflowMul2.setEgressVNodePath(epath);
+            vflowMul2.setEgressVNodeRoute(
+                new VNodeRoute(epath, Reason.FORWARDED));
             assertFalse(setMulti.add(vflowMul2));
         }
 

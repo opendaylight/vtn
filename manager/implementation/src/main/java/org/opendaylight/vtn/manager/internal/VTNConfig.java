@@ -32,9 +32,29 @@ public class VTNConfig {
     private static final int  DEFAULT_NODE_EDGE_WAIT = 3000;
 
     /**
+     * Minimum value for {@link #nodeEdgeWait}.
+     */
+    private static final int MIN_NODE_EDGE_WAIT = 0;
+
+    /**
+     * Maximum value for {@link #nodeEdgeWait}.
+     */
+    private static final int MAX_NODE_EDGE_WAIT = 600000;
+
+    /**
      * Default value of {@link #l2FlowPriority}.
      */
     private static final int  DEFAULT_L2FLOW_PRIORITY = 10;
+
+    /**
+     * Minimum value of {@link #l2FlowPriority}.
+     */
+    private static final int  MIN_L2FLOW_PRIORITY = 1;
+
+    /**
+     * Maximum value of {@link #l2FlowPriority}.
+     */
+    private static final int  MAX_L2FLOW_PRIORITY = 999;
 
     /**
      * Default value of {@link #flowModTimeout}.
@@ -42,9 +62,29 @@ public class VTNConfig {
     private static final int  DEFAULT_FLOWMOD_TIMEOUT = 3000;
 
     /**
+     * Minimum value of {@link #flowModTimeout}.
+     */
+    private static final int  MIN_FLOWMOD_TIMEOUT = 100;
+
+    /**
+     * Maximum value of {@link #flowModTimeout}.
+     */
+    private static final int  MAX_FLOWMOD_TIMEOUT = 60000;
+
+    /**
      * Default value of {@link #remoteFlowModTimeout}.
      */
     private static final int  DEFAULT_REMOTE_FLOWMOD_TIMEOUT = 5000;
+
+    /**
+     * Minimum value of {@link #remoteFlowModTimeout}.
+     */
+    private static final int  MIN_REMOTE_FLOWMOD_TIMEOUT = 1000;
+
+    /**
+     * Minimum value of {@link #remoteFlowModTimeout}.
+     */
+    private static final int  MAX_REMOTE_FLOWMOD_TIMEOUT = 60000;
 
     /**
      * Default value of {@link #remoteBulkFlowModTimeout}.
@@ -52,14 +92,59 @@ public class VTNConfig {
     private static final int  DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT = 15000;
 
     /**
+     * Minimum value of {@link #remoteBulkFlowModTimeout}.
+     */
+    private static final int  MIN_REMOTE_BULK_FLOWMOD_TIMEOUT = 3000;
+
+    /**
+     * Maximum value of {@link #remoteBulkFlowModTimeout}.
+     */
+    private static final int  MAX_REMOTE_BULK_FLOWMOD_TIMEOUT = 600000;
+
+    /**
      * Default value of {@link #cacheInitTimeout}.
      */
     private static final int  DEFAULT_CACHE_INIT_TIMEOUT = 3000;
 
     /**
+     * Minimum value of {@link #cacheInitTimeout}.
+     */
+    private static final int  MIN_CACHE_INIT_TIMEOUT = 100;
+
+    /**
+     * Maximum value of {@link #cacheInitTimeout}.
+     */
+    private static final int  MAX_CACHE_INIT_TIMEOUT = 600000;
+
+    /**
      * Default value of {@link #cacheTransactionTimeout}.
      */
     private static final int  DEFAULT_CACHE_TRANSACTION_TIMEOUT = 10000;
+
+    /**
+     * Minimum value of {@link #cacheTransactionTimeout}.
+     */
+    private static final int  MIN_CACHE_TRANSACTION_TIMEOUT = 100;
+
+    /**
+     * Maximum value of {@link #cacheTransactionTimeout}.
+     */
+    private static final int  MAX_CACHE_TRANSACTION_TIMEOUT = 600000;
+
+    /**
+     * Default value of {@link #maxRedirections}.
+     */
+    private static final int  DEFAULT_MAX_REDIRECTIONS = 100;
+
+    /**
+     * Minimum value of {@link #maxRedirections}.
+     */
+    private static final int  MIN_MAX_REDIRECTIONS = 10;
+
+    /**
+     * Maximum value of {@link #maxRedirections}.
+     */
+    private static final int  MAX_MAX_REDIRECTINOS = 100000;
 
     /**
      * Indicates a field keeps an integer value.
@@ -177,34 +262,36 @@ public class VTNConfig {
     /**
      * The number of milliseconds to wait for node edges to be detected.
      */
-    @IntConfig(min = 0, max = 600000)
+    @IntConfig(min = MIN_NODE_EDGE_WAIT, max = MAX_NODE_EDGE_WAIT)
     private int  nodeEdgeWait = DEFAULT_NODE_EDGE_WAIT;
 
     /**
      * Priority value of layer 2 flow entries.
      */
-    @IntConfig(min = 1, max = 999)
+    @IntConfig(min = MIN_L2FLOW_PRIORITY, max = MAX_L2FLOW_PRIORITY)
     private int  l2FlowPriority = DEFAULT_L2FLOW_PRIORITY;
 
     /**
      * The number of milliseconds to wait for completion of modification of
      * a single flow entry.
      */
-    @IntConfig(min = 100, max = 60000)
+    @IntConfig(min = MIN_FLOWMOD_TIMEOUT, max = 60000)
     private int  flowModTimeout = DEFAULT_FLOWMOD_TIMEOUT;
 
     /**
      * The number of milliseconds to wait for remote cluster nodes to finish
      * to modify flow entries in a VTN flow.
      */
-    @IntConfig(min = 1000, max = 60000)
+    @IntConfig(min = MIN_REMOTE_FLOWMOD_TIMEOUT,
+               max = MAX_REMOTE_FLOWMOD_TIMEOUT)
     private int  remoteFlowModTimeout = DEFAULT_REMOTE_FLOWMOD_TIMEOUT;
 
     /**
      * The number of milliseconds to wait for remote cluster nodes to finish
      * modifying bulk flow entries.
      */
-    @IntConfig(min = 3000, max = 600000)
+    @IntConfig(min = MIN_REMOTE_BULK_FLOWMOD_TIMEOUT,
+               max = MAX_REMOTE_BULK_FLOWMOD_TIMEOUT)
     private int  remoteBulkFlowModTimeout =
         DEFAULT_REMOTE_BULK_FLOWMOD_TIMEOUT;
 
@@ -212,15 +299,24 @@ public class VTNConfig {
      * The number of milliseconds to wait for completion of cluster cache
      * initialization by another controller in the cluster.
      */
-    @IntConfig(min = 100, max = 600000)
+    @IntConfig(min = MIN_CACHE_INIT_TIMEOUT, max = MAX_CACHE_INIT_TIMEOUT)
     private int  cacheInitTimeout  = DEFAULT_CACHE_INIT_TIMEOUT;
 
     /**
      * The number of milliseconds to wait for cluster cache transaction to
      * be established.
      */
-    @IntConfig(min = 100, max = 600000)
+    @IntConfig(min = MIN_CACHE_TRANSACTION_TIMEOUT,
+               max = MAX_CACHE_TRANSACTION_TIMEOUT)
     private int  cacheTransactionTimeout = DEFAULT_CACHE_TRANSACTION_TIMEOUT;
+
+    /**
+     * The maximum number of virtual node hops per a flow
+     * (the maximum number of packet redirections by REDIRECT flow filter
+     * per a flow).
+     */
+    @IntConfig(min = MIN_MAX_REDIRECTIONS, max = MAX_MAX_REDIRECTINOS)
+    private int  maxRedirections = DEFAULT_MAX_REDIRECTIONS;
 
     /**
      * Construct a new configuration object.
@@ -302,6 +398,15 @@ public class VTNConfig {
      */
     public int getCacheTransactionTimeout() {
         return cacheTransactionTimeout;
+    }
+
+    /**
+     * Return the maximum number of packet redirections per a flow.
+     *
+     * @return  The maximum number of packet redirections per a flow.
+     */
+    public int getMaxRedirections() {
+        return maxRedirections;
     }
 
     /**

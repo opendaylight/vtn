@@ -43,7 +43,7 @@ public abstract class FlowFilterImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2804474498924166254L;
+    private static final long serialVersionUID = 2005617223101631695L;
 
     /**
      * The minimum value of filter index.
@@ -88,13 +88,15 @@ public abstract class FlowFilterImpl implements Serializable {
     /**
      * Create a new flow filter implementation.
      *
+     * @param fnode   Virtual node that contains this flow filter.
      * @param idx     An index number to be assigned.
      * @param filter  A {@link FlowFilter} instance.
      * @return  A new {@link FlowFilterImpl} instance.
      * @throws VTNException
      *    {@code filter} contains invalid value.
      */
-    public static FlowFilterImpl create(int idx, FlowFilter filter)
+    public static FlowFilterImpl create(FlowFilterNode fnode, int idx,
+                                        FlowFilter filter)
         throws VTNException {
         if (filter == null) {
             Status st = MiscUtils.argumentIsNull("Flow filter");
@@ -114,7 +116,7 @@ public abstract class FlowFilterImpl implements Serializable {
             return new DropFlowFilterImpl(idx, filter);
         }
         if (type instanceof RedirectFilter) {
-            return new RedirectFlowFilterImpl(idx, filter);
+            return new RedirectFlowFilterImpl(fnode, idx, filter);
         }
 
         String msg = "Unexpected flow filter type: " + type;
@@ -151,9 +153,9 @@ public abstract class FlowFilterImpl implements Serializable {
     }
 
     /**
-     * Return a flow index assigned to this instance.
+     * Return a flow filter index assigned to this instance.
      *
-     * @return  A flow index.
+     * @return  A flow filter index.
      */
     public final int getIndex() {
         return index;
@@ -200,15 +202,18 @@ public abstract class FlowFilterImpl implements Serializable {
      *          the given packet. Otherwise {@code false} is returned.
      * @throws DropFlowException
      *    The given packet was discarded by this flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by this flow filter.
      */
     public final boolean evaluate(VTNManagerImpl mgr, PacketContext pctx,
                                   FlowFilterMap ffmap)
-        throws DropFlowException {
+        throws DropFlowException, RedirectFlowException {
         boolean ret = false;
         try {
             FlowCondImpl fc = getCondition(mgr, pctx);
             if (fc.match(mgr, pctx)) {
                 // Apply this flow filter.
+                Logger logger = getLogger();
                 if (needFlowAction()) {
                     applyFlowActions(pctx, ffmap);
                 }
@@ -303,10 +308,12 @@ public abstract class FlowFilterImpl implements Serializable {
      *               flow filter.
      * @throws DropFlowException
      *    A packet was discarded by this flow filter.
+     * @throws RedirectFlowException
+     *    The given packet was redirected by this flow filter.
      */
     protected abstract void apply(VTNManagerImpl mgr, PacketContext pctx,
                                   FlowFilterMap ffmap)
-        throws DropFlowException;
+        throws DropFlowException, RedirectFlowException;
 
     /**
      * Return a {@link FilterType} instance which represents the type of
@@ -331,17 +338,19 @@ public abstract class FlowFilterImpl implements Serializable {
      *               flow filter.
      */
     private void applyFlowActions(PacketContext pctx, FlowFilterMap ffmap) {
-        Logger logger = getLogger();
-        boolean doTrace = logger.isTraceEnabled();
-        for (FlowActionImpl ai: actions) {
-            if (ai.apply(pctx)) {
-                if (doTrace) {
-                    logger.trace("{}: Flow action was applied: {}",
+        if (actions != null) {
+            Logger logger = getLogger();
+            boolean doTrace = logger.isTraceEnabled();
+            for (FlowActionImpl ai: actions) {
+                if (ai.apply(pctx)) {
+                    if (doTrace) {
+                        logger.trace("{}: Flow action was applied: {}",
+                                     ffmap.getLogPrefix(index), ai);
+                    }
+                } else if (doTrace) {
+                    logger.trace("{}: Flow action was ignored: {}",
                                  ffmap.getLogPrefix(index), ai);
                 }
-            } else if (doTrace) {
-                logger.trace("{}: Flow action was ignored: {}",
-                             ffmap.getLogPrefix(index), ai);
             }
         }
     }

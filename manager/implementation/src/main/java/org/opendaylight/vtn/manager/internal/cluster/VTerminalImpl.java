@@ -21,15 +21,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.IVTNManagerAware;
+import org.opendaylight.vtn.manager.VInterfaceConfig;
+import org.opendaylight.vtn.manager.VInterfacePath;
+import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VNodeState;
+import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VTerminal;
 import org.opendaylight.vtn.manager.VTerminalConfig;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
-import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VInterfacePath;
-import org.opendaylight.vtn.manager.VNodeState;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantPath;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
@@ -37,6 +39,7 @@ import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -54,7 +57,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 518889407387134507L;
+    private static final long serialVersionUID = -1930350835055234980L;
 
     /**
      * Logger instance.
@@ -450,9 +453,9 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      *   This method does nothing because vTerminal can not have flow filters.
      * </p>
      *
-     * @param mgr     VTN Manager service.
-     * @param pctx    The context of the received packet.
-     * @param vid     A VLAN ID for the outgoing packet.
+     * @param mgr   Never used.
+     * @param pctx  The context of the received packet.
+     * @param vid   Never used.
      * @return  A value passed to {@code pctx} is always returned.
      */
     @Override
@@ -472,18 +475,30 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
+     * @return  {@link PacketResult#CONSUME}.
      */
     @Override
-    protected void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
-                                VirtualMapNode vnode) {
-        // Notify source host of the packet.
-        notifyHost(mgr, pctx);
+    protected PacketResult handlePacket(VTNManagerImpl mgr, PacketContext pctx,
+                                        VirtualMapNode vnode) {
+        RedirectFlowException rex = pctx.getFirstRedirection();
+        if (rex == null) {
+            // Notify source host of the packet.
+            notifyHost(mgr, pctx);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}:{}: Disable input from vTerminal interface.",
-                      getContainerName(), vnode.getPath());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}:{}: Disable input from vTerminal interface.",
+                          getContainerName(), vnode.getPath());
+            }
+
+            vnode.disableInput(mgr, pctx);
+        } else {
+            Logger logger = rex.getLogger();
+            VNodePath path = getNodePath();
+            logger.warn("{}: Packet was redirected to {}: packet={}",
+                        rex.getLogPrefix(), path, pctx.getDescription());
+            pctx.installDropFlow(mgr, path, rex);
         }
 
-        vnode.disableInput(mgr, pctx);
+        return PacketResult.CONSUME;
     }
 }

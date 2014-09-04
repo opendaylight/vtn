@@ -35,6 +35,7 @@ import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -71,7 +72,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.IVTNManager;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.VInterfacePath;
+import org.opendaylight.vtn.manager.VTerminalIfPath;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -4675,35 +4679,39 @@ public class VtnNorthboundIT extends TestBase {
             new HashMap<String, JSONObject>();
 
         String vtnFilterUri = createRelativeURI(tenantUri, RES_FLOWFILTERS);
-        filters.put(vtnFilterUri, testFlowFilterAPI(vtnFilterUri, 0));
+        filters.put(vtnFilterUri, testFlowFilterAPI(vtnFilterUri, 0, null));
 
         String vbrInFilterUri = createRelativeURI(bridgeUri, RES_FLOWFILTERS,
                                                   "in");
-        filters.put(vbrInFilterUri, testFlowFilterAPI(vbrInFilterUri, 100));
+        filters.put(vbrInFilterUri,
+                    testFlowFilterAPI(vbrInFilterUri, 100, null));
 
         String vbrOutFilterUri = createRelativeURI(bridgeUri, RES_FLOWFILTERS,
                                                    "out");
-        filters.put(vbrOutFilterUri, testFlowFilterAPI(vbrOutFilterUri, 200));
+        filters.put(vbrOutFilterUri,
+                    testFlowFilterAPI(vbrOutFilterUri, 200, null));
 
         String vbrIfInFilterUri = createRelativeURI(bridgeIfUri,
                                                     RES_FLOWFILTERS, "IN");
+        VBridgeIfPath bridgePath = new VBridgeIfPath(tname, bname, iname);
         filters.put(vbrIfInFilterUri,
-                    testFlowFilterAPI(vbrIfInFilterUri, 3333));
+                    testFlowFilterAPI(vbrIfInFilterUri, 3333, bridgePath));
 
         String vbrIfOutFilterUri = createRelativeURI(bridgeIfUri,
                                                      RES_FLOWFILTERS, "OUT");
         filters.put(vbrIfOutFilterUri,
-                    testFlowFilterAPI(vbrIfOutFilterUri, 456));
+                    testFlowFilterAPI(vbrIfOutFilterUri, 456, bridgePath));
 
         String vtmIfInFilterUri = createRelativeURI(vtermIfUri,
                                                     RES_FLOWFILTERS, "In");
+        VTerminalIfPath termPath = new VTerminalIfPath(tname, bname, iname);
         filters.put(vtmIfInFilterUri,
-                    testFlowFilterAPI(vtmIfInFilterUri, 77777));
+                    testFlowFilterAPI(vtmIfInFilterUri, 77777, termPath));
 
         String vtmIfOutFilterUri = createRelativeURI(vtermIfUri,
                                                      RES_FLOWFILTERS, "Out");
         filters.put(vtmIfOutFilterUri,
-                    testFlowFilterAPI(vtmIfOutFilterUri, 890));
+                    testFlowFilterAPI(vtmIfOutFilterUri, 890, termPath));
 
         // NOT_FOUND tests.
         String badContainer = createURI("container_1", RES_VTNS, tname);
@@ -4842,11 +4850,15 @@ public class VtnNorthboundIT extends TestBase {
      *
      * @param baseUri  Absolute URI for test.
      * @param cookie   An arbitrary integer to create test data.
+     * @param ifPath   The location of the virtual interface to configure
+     *                 flow filter. {@code null} means that the target virtual
+     *                 node is not a virtual interface.
      * @return  A {@link JSONObject} instance that contains all flow filters
      *          configured into the URI specified by {@code base}.
      * @throws JSONException  An error occurred.
      */
-    private JSONObject testFlowFilterAPI(String baseUri, int cookie)
+    private JSONObject testFlowFilterAPI(String baseUri, int cookie,
+                                         VInterfacePath ifPath)
         throws JSONException {
         LOG.info("Starting flow filter JAX-RS client: {}", baseUri);
 
@@ -5082,33 +5094,46 @@ public class VtnNorthboundIT extends TestBase {
         String badName = "_badname";
         String emptyName = "";
         String longName = "12345678901234567890123456789012";
-        JSONObject[] badDestinations = {
-            null,
-            empty,
+        List<JSONObject> badDestinations = new ArrayList<JSONObject>();
+        badDestinations.add(null);
+        badDestinations.add(empty);
 
-            // No interface name.
-            new JSONObject().put("bridge", "bridge_1"),
-            new JSONObject().put("terminal", "vterm_1"),
+        // No interface name.
+        badDestinations.add(new JSONObject().put("bridge", "bridge_1"));
+        badDestinations.add(new JSONObject().put("terminal", "vterm_1"));
 
-            // Invalid node name.
-            new JSONObject().put("bridge", badName).put("interface", "if_1"),
-            new JSONObject().put("bridge", emptyName).put("interface", "if_1"),
-            new JSONObject().put("terminal", longName).put("interface", "if_1"),
+        // Invalid node name.
+        badDestinations.add(new JSONObject().put("bridge", badName).
+                            put("interface", "if_1"));
+        badDestinations.add(new JSONObject().put("bridge", emptyName).
+                            put("interface", "if_1"));
+        badDestinations.add(new JSONObject().put("terminal", longName).
+                            put("interface", "if_1"));
 
-            // Invalid interface name.
-            new JSONObject().put("bridge", "bridge_1").
-                put("interface", badName),
-            new JSONObject().put("bridge", "bridge_1").
-                put("interface", emptyName),
-            new JSONObject().put("bridge", "bridge_1").
-                put("interface", longName),
-            new JSONObject().put("terminal", "vterm_1").
-                put("interface", badName),
-            new JSONObject().put("terminal", "vterm_1").
-                put("interface", emptyName),
-            new JSONObject().put("terminal", "vterm_1").
-                put("interface", longName),
-        };
+        // Invalid interface name.
+        badDestinations.add(new JSONObject().put("bridge", "bridge_1").
+                            put("interface", badName));
+        badDestinations.add(new JSONObject().put("bridge", "bridge_1").
+                            put("interface", emptyName));
+        badDestinations.add(new JSONObject().put("bridge", "bridge_1").
+                            put("interface", longName));
+        badDestinations.add(new JSONObject().put("terminal", "vterm_1").
+                            put("interface", badName));
+        badDestinations.add(new JSONObject().put("terminal", "vterm_1").
+                            put("interface", emptyName));
+        badDestinations.add(new JSONObject().put("terminal", "vterm_1").
+                            put("interface", longName));
+
+        if (ifPath != null) {
+            // Self redirection.
+            String name = ifPath.getTenantNodeName();
+            String ifName = ifPath.getInterfaceName();
+            String key = (ifPath instanceof VBridgeIfPath)
+                ? "bridge" : "terminal";
+            badDestinations.add(new JSONObject().put(key, name).
+                                put("interface", ifName));
+        }
+
         for (JSONObject dest: badDestinations) {
             JSONObject badType = createJSONObject("redirect",
                                                   "destination", dest,
