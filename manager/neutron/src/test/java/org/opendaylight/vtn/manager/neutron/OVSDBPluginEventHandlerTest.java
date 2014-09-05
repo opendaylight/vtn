@@ -98,7 +98,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OVSDBPluginEventHandler#rowRemoved(Node, String, String, Table, Object)}.
+     * {@link OVSDBPluginEventHandler#rowRemoved(Node, String, String, org.opendaylight.ovsdb.lib.notation.Row, Object)}.
      * Test rowRemoved Method in OVSDBPluginEventHandler.
      */
     @Test
@@ -143,7 +143,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OVSDBPluginEventHandler#rowUpdated(Node, String, String, Table, Table)}.
+     * {@link OVSDBPluginEventHandler#rowUpdated(Node, String, String, org.opendaylight.ovsdb.lib.notation.Row, org.opendaylight.ovsdb.lib.notation.Row)}.
      * Test rowUpdated Methods with Neutron Port in OVSDBPluginEventHandler.
      */
     @Test
@@ -232,7 +232,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OVSDBPluginEventHandler#rowAdded(Node, String, String, Row).
+     * {@link OVSDBPluginEventHandler#rowAdded(Node, String, String, org.opendaylight.ovsdb.lib.notation.Row)}.
      * Test rowAdded Method with OVSDBPluginEventHandler.
      */
     @Test

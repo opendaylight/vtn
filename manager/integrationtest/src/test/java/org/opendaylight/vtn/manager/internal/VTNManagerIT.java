@@ -416,13 +416,13 @@ public class VTNManagerIT extends TestBase {
 
    /**
      * Test method for
-     * {@link OvsdbInventoryListener#addNode(Node node},
-     * {@link OvsdbInventoryListener#nodeRemoved(Node node)},
-     * {@link OvsdbInventoryListener#rowAdded(Node node, String tableName, String uuid, Row row)},
-     * {@link OvsdbInventoryListener#rowUpdated(Node node, String tableName, String uuid, Row old, Row row)},
-     * {@link OvsdbInventoryListener#rowRemoved(Node node, String tableName, String uuid, Row row, Object obj)}
+     * {@link OvsdbInventoryListener#nodeAdded(Node)},
+     * {@link OvsdbInventoryListener#nodeRemoved(Node)},
+     * {@link OvsdbInventoryListener#rowAdded(Node, String, String, Row)},
+     * {@link OvsdbInventoryListener#rowUpdated(Node, String, String, Row, Row)},
+     * {@link OvsdbInventoryListener#rowRemoved(Node, String, String, Row, Object)}
      */
-    private  void testOvsdbNodes() {
+    private void testOvsdbNodes() {
         LOG.info("Running testOvsdbNodes()");
         // Get OvsdbServices from openflow stub
         OvsdbInventoryListener ovsdb = (OvsdbInventoryListener)ServiceHelper
@@ -5733,7 +5733,7 @@ public class VTNManagerIT extends TestBase {
      * Return a global stub OSGi service provided by this integration test
      * package.
      *
-     * @param T    Type of service.
+     * @param <T>  Type of service.
      * @param cls  The class of registered OSGi service.
      * @return     A OSGi service instance.
      */
@@ -5759,7 +5759,7 @@ public class VTNManagerIT extends TestBase {
      * Return a container-specific stub OSGi service provided by this
      * integration test package.
      *
-     * @param T          Type of service.
+     * @param <T>        Type of service.
      * @param cls        The class of registered OSGi service.
      * @param container  The name of the container.
      * @return     A OSGi service instance.

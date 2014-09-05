@@ -145,7 +145,7 @@ public abstract class TestBase extends Assert {
      * @param vlan      specify val ID. if vlan < 0, vlan tag is not added.
      * @param nc        A node connector
      * @param arptype   ARP.REQUEST or ARP.REPLY. (ARP Reply is not implemented yet )
-     * @return  A {@link org.opendaylight.vtn.manager.internal.PacketContext}.
+     * @return  A {@link RawPacket} instance.
      */
     protected RawPacket createARPRawPacket(byte[] src, byte[] dst,
                                            byte[] sender, byte [] target,
