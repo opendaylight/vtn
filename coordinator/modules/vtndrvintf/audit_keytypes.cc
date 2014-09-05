@@ -17,6 +17,8 @@ audit_key_type audit_key[AUDIT_KT_SIZE] = {
                                {UNC_KT_VBRIDGE, UNC_KT_VTN},
                                {UNC_KT_VBR_IF, UNC_KT_VBRIDGE},
                                {UNC_KT_VBR_VLANMAP, UNC_KT_VBRIDGE},
+                               {UNC_KT_VTERMINAL, UNC_KT_VTN},
+                               {UNC_KT_VTERM_IF, UNC_KT_VTERMINAL},
                              };
 }  // namespace driver
 }  //  namespace unc
