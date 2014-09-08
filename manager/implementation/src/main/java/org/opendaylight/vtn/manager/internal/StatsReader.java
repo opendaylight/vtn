@@ -18,7 +18,6 @@ import org.opendaylight.vtn.manager.flow.FlowStats;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.reader.FlowOnNode;
 import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 
@@ -43,7 +42,7 @@ public class StatsReader {
     /**
      * A map which caches statistics derived from statistics manager.
      */
-    private Map<Node, Map<Flow, FlowOnNode>> statsCache;
+    private Map<Node, Map<FlowEntry, FlowOnNode>> statsCache;
 
     /**
      * Construct a new instance.
@@ -61,7 +60,7 @@ public class StatsReader {
         statsManager = stMgr;
         doUpdate = update;
         if (cache) {
-            statsCache = new HashMap<Node, Map<Flow, FlowOnNode>>();
+            statsCache = new HashMap<Node, Map<FlowEntry, FlowOnNode>>();
         }
     }
 
@@ -100,18 +99,17 @@ public class StatsReader {
      */
     private FlowOnNode getStats(FlowEntry fent) {
         Node node = fent.getNode();
-        Flow flow = fent.getFlow();
 
         // Try to return from the cache.
-        Map<Flow, FlowOnNode> nodeMap;
+        Map<FlowEntry, FlowOnNode> nodeMap;
         if (statsCache != null) {
             nodeMap = statsCache.get(node);
             if (nodeMap != null) {
-                return nodeMap.get(flow);
+                return nodeMap.get(fent);
             }
 
             // Prepare map to cache statistics on a switch.
-            nodeMap = new HashMap<Flow, FlowOnNode>();
+            nodeMap = new HashMap<FlowEntry, FlowOnNode>();
             statsCache.put(node, nodeMap);
         } else {
             nodeMap = null;
@@ -125,8 +123,8 @@ public class StatsReader {
         for (FlowOnNode st: stats) {
             // Ignore flow tables other than table 0.
             if (st.getTableId() == 0) {
-                Flow f = st.getFlow();
-                if (flow.equals(f)) {
+                FlowEntry f = new FlowEntry(null, null, st.getFlow(), node);
+                if (fent.equals(f)) {
                     if (nodeMap == null) {
                         return st;
                     }

@@ -20,6 +20,7 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Drop;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.action.SetDlSrc;
 import org.opendaylight.controller.sal.action.SetNwDst;
@@ -29,6 +30,7 @@ import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.action.SetTpSrc;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.action.SetVlanPcp;
+import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 /**
@@ -64,6 +66,9 @@ public class FlowActionTest extends TestBase {
             IPProtocols.ICMP.intValue(),
             IPProtocols.IPV6.intValue(),
         };
+        EtherTypes[] vlanTags = {
+            EtherTypes.VLANTAGGED, EtherTypes.QINQ,
+        };
 
         for (int proto: protocols) {
             assertEquals(null, FlowAction.create(null, proto));
@@ -78,6 +83,11 @@ public class FlowActionTest extends TestBase {
                 assertEquals(new SetDlDstAction(mac), act);
                 act = FlowAction.create(new SetDlSrc(mac), proto);
                 assertEquals(new SetDlSrcAction(mac), act);
+            }
+
+            for (EtherTypes tag: vlanTags) {
+                act = FlowAction.create(new PushVlan(tag), proto);
+                assertEquals(new PushVlanAction(tag.intValue()), act);
             }
 
             for (short vlan: vlans) {
@@ -148,6 +158,7 @@ public class FlowActionTest extends TestBase {
         FlowAction[] actions = {
             new DropAction(),
             new PopVlanAction(),
+            new PushVlanAction(EtherTypes.VLANTAGGED),
             new SetDlDstAction((byte[])null),
             new SetDlSrcAction((byte[])null),
             new SetDscpAction((byte)0),

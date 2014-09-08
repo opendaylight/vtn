@@ -578,6 +578,16 @@ public class VTNFlow implements Serializable {
             }
         }
 
+        if (portMatched) {
+            // Determine VLAN ID by match field because this flow does not
+            // change VLAN ID.
+            Flow flow = flowEntries.get(0).getFlow();
+            Match match = flow.getMatch();
+            MatchField mf = match.getField(MatchType.DL_VLAN);
+            Short vid = (Short)mf.getValue();
+            return (vid.shortValue() == vlan);
+        }
+
         return false;
     }
 

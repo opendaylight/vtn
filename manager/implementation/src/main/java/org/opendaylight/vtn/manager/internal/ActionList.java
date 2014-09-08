@@ -15,9 +15,12 @@ import java.util.List;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
  * List of actions in a flow entry.
@@ -34,12 +37,21 @@ public class ActionList {
     private final Node  node;
 
     /**
+     * VLAN ID of the original Ethernet frame.
+     */
+    private final short originalVlan;
+
+    /**
      * Construct a new action list.
      *
      * @param node  A node associated with the target SDN switch.
+     * @param vlan  VLAN ID of the original Ethernet frame.
+     *              {@link MatchType#DL_VLAN_NONE} means that the original
+     *              Ethernet frame has no VLAN tag.
      */
-    public ActionList(Node node) {
+    public ActionList(Node node, short vlan) {
         this.node = node;
+        originalVlan = vlan;
     }
 
     /**
@@ -49,6 +61,17 @@ public class ActionList {
      */
     public Node getNode() {
         return node;
+    }
+
+    /**
+     * Return a VLAN ID of the original Ethernet frame.
+     *
+     * @return  A VLAN ID of the original Ethernet frame.
+     *          {@link MatchType#DL_VLAN_NONE} is returned if the original
+     *          Ethernet frame has no VLAN tag.
+     */
+    public short getOriginalVlan() {
+        return originalVlan;
     }
 
     /**
@@ -94,10 +117,17 @@ public class ActionList {
      * @return  This object is always returned.
      */
     public ActionList addVlanId(short vlan) {
-        if (vlan == 0) {
-            actionList.add(new PopVlan());
-        } else if (vlan > 0) {
-            actionList.add(new SetVlanId((int)vlan));
+        // Don't append action if not needed.
+        if (vlan != originalVlan) {
+            if (vlan == MatchType.DL_VLAN_NONE) {
+                actionList.add(new PopVlan());
+            } else {
+                if (originalVlan == MatchType.DL_VLAN_NONE) {
+                    // Add a new VLAN tag.
+                    actionList.add(new PushVlan(EtherTypes.VLANTAGGED));
+                }
+                actionList.add(new SetVlanId((int)vlan));
+            }
         }
         return this;
     }

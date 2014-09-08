@@ -15,9 +15,11 @@ import org.junit.Test;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 
 /**
@@ -30,36 +32,38 @@ public class ActionListTest extends TestBase {
      */
     @Test
     public void testActionList() {
-        short[] vlans = new short[] {-1, 0, 1, 100, 4095, 4096};
+        short[] vlans = new short[] {0, 1, 100, 4095};
 
         for (short vlan : vlans) {
+            short newVlan = (short)((vlan + 1) & 0xfff);
             for (Node node : createNodes(4)) {
-                ActionList actList = new ActionList(node);
+                ActionList actList = new ActionList(node, vlan);
                 List<Action> actions = new ArrayList<Action>();
                 String emsg = ((node == null) ? "(Node)null" : node.toString())
                               + "(vlan)" + vlan;
                 assertEquals(emsg, node, actList.getNode());
+                assertEquals(emsg, vlan, actList.getOriginalVlan());
                 assertEquals(emsg, actions, actList.get());
 
                 if (node == null) {
                     continue;
                 }
 
+                // This should never add any action.
                 actList.addVlanId(vlan);
-                int numOutput = 1;
+                assertEquals(emsg, actions, actList.get());
 
-                List<Action> regActs = actList.get();
-                regActs = actList.get();
-                if (vlan == 0) {
-                    assertTrue(emsg, regActs.contains(new PopVlan()));
-                } else if (vlan > 0) {
-                    assertTrue(emsg,
-                               regActs.contains(new SetVlanId((int)vlan)));
+                actList.addVlanId(newVlan);
+                List<Action> expected = new ArrayList<Action>();
+                if (newVlan == 0) {
+                    expected.add(new PopVlan());
                 } else {
-                    numOutput--;
+                    if (vlan == 0) {
+                        expected.add(new PushVlan(EtherTypes.VLANTAGGED));
+                    }
+                    expected.add(new SetVlanId((int)newVlan));
                 }
-                assertEquals(emsg, numOutput, regActs.size());
-
+                assertEquals(emsg, expected, actList.get());
 
                 for (short i = 0; i < 5; i++) {
                     Object connId = null;
@@ -68,16 +72,14 @@ public class ActionListTest extends TestBase {
                     } else {
                         connId = "Node Connector ID: " + i;
                     }
-                    NodeConnector port
-                        = NodeConnectorCreator.createNodeConnector(node.getType(),
-                                                                   connId, node);
+                    NodeConnector port = NodeConnectorCreator.
+                        createNodeConnector(node.getType(), connId, node);
                     actList.addOutput(port);
-                    numOutput++;
 
-                    emsg = "(NodeConnector)" + port.toString() + ",(vlan)" + vlan;
-                    regActs = actList.get();
-                    assertTrue(emsg, regActs.contains(new Output(port)));
-                    assertEquals(emsg, numOutput, regActs.size());
+                    emsg = "(NodeConnector)" + port.toString() + ",(vlan)" +
+                        vlan;
+                    expected.add(new Output(port));
+                    assertEquals(emsg, expected, actList.get());
                 }
             }
         }

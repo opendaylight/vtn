@@ -88,7 +88,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                                 match = setMatchField(match, mtype);
                             }
 
-                            ActionList actions = new ActionList(port.getNode());
+                            ActionList actions = new ActionList(port.getNode(),
+                                                                vlan);
                             if (vlan >= 0) {
                                 actions.addVlanId(vlan);
                             }
@@ -162,7 +163,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
             unexpected(e);
         }
         match.setField(MatchType.IN_PORT, port);
-        ActionList actions = new ActionList(specialNc.getNode());
+        ActionList actions = new ActionList(specialNc.getNode(), (short)0);
         actions.addOutput(specialNc);
         flow = new Flow(match, actions.get());
 
@@ -374,7 +375,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
                         // Test for VTN flow that has only one flow.
                         vflow = new VTNFlow(gid);
-                        ActionList actions = new ActionList(node);
+                        ActionList actions = new ActionList(node, svlan);
                         actions.addVlanId(dvlan).addOutput(dport);
                         vflow.addFlow(vtnMgr, match, actions, 10);
 
@@ -397,7 +398,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                                 List<Action> alist = new ArrayList<Action>();
                                 alist.add(new SetDlSrc(addrEE));
                                 alist.add(new SetDlDst(addrFF));
-                                actions = new ActionList(node);
+                                actions = new ActionList(node, svlan);
                                 actions.addVlanId(ivlan).addOutput(iport);
                                 alist.addAll(actions.get());
                                 f = new Flow(match, alist);
@@ -428,7 +429,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                                              new MacVlan(dst, svlan)));
 
                             // Add egress flow.
-                            actions = new ActionList(node);
+                            actions = new ActionList(node, svlan);
                             actions.addVlanId(dvlan).addOutput(dport);
                             vflow.addFlow(vtnMgr, match, actions, 10);
 
@@ -468,7 +469,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         assertEquals(dstHost, edges.getRight());
 
         // Test VTN flow that forwards packets without specifying MAC address.
-        ActionList aclist = new ActionList(node).addOutput(dport);
+        ActionList aclist = new ActionList(node, svlan).addOutput(dport);
         vflow = new VTNFlow(gid);
         vflow.addFlow(vtnMgr, match, aclist, 10);
         edges = vflow.getEdgeHosts();
@@ -481,7 +482,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         // MAC address.
         actions.clear();
         actions.add(new SetDlDst(dstAddrs[0]));
-        aclist = new ActionList(node).addOutput(dport);
+        aclist = new ActionList(node, svlan).addOutput(dport);
         actions.addAll(aclist.get());
         flow = new Flow(match, actions);
         vflow = new VTNFlow(gid);
@@ -497,7 +498,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         short dvlan = 0;
         actions.clear();
         actions.add(new SetDlDst(dstAddrs[0]));
-        aclist = new ActionList(node).addVlanId(dvlan).addOutput(dport);
+        aclist = new ActionList(node, svlan).addVlanId(dvlan).addOutput(dport);
         actions.addAll(aclist.get());
         flow = new Flow(match, actions);
         vflow = new VTNFlow(gid);
@@ -530,7 +531,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
         // Add OUTPUT action.
         actions.clear();
-        aclist = new ActionList(node).addOutput(dport);
+        aclist = new ActionList(node, svlan).addOutput(dport);
         actions.addAll(aclist.get());
         flow = new Flow(match, actions);
         vflow = new VTNFlow(gid);
@@ -544,7 +545,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         // Add DL_VLAN, OUTPUT actions.
         dvlan = 4095;
         actions.clear();
-        aclist = new ActionList(node).addVlanId(dvlan).addOutput(dport);
+        aclist = new ActionList(node, svlan).addVlanId(dvlan).addOutput(dport);
         actions.addAll(aclist.get());
         flow = new Flow(match, actions);
         vflow = new VTNFlow(gid);
@@ -560,7 +561,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
         actions.clear();
         actions.add(new SetDlSrc(srcAddrs[0]));
         actions.add(new SetDlDst(dstAddrs[0]));
-        aclist = new ActionList(node).addVlanId(dvlan).addOutput(dport);
+        aclist = new ActionList(node, svlan).addVlanId(dvlan).addOutput(dport);
         actions.addAll(aclist.get());
         flow = new Flow(match, actions);
         vflow = new VTNFlow(gid);
@@ -616,7 +617,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                                 match = setMatchField(match, mtype);
                             }
 
-                            ActionList actions = new ActionList(port.getNode());
+                            ActionList actions = new ActionList(port.getNode(),
+                                                                vlan);
                             if (vlan >= 0) {
                                 actions.addVlanId(vlan);
                             }
@@ -686,7 +688,8 @@ public class VTNFlowTest extends FlowModTaskTestBase {
                                 match = setMatchField(match, mtype);
                             }
 
-                            ActionList actions = new ActionList(port.getNode());
+                            ActionList actions = new ActionList(port.getNode(),
+                                                                vlan);
                             if (vlan >= 0) {
                                 actions.addVlanId(vlan);
                             }
@@ -774,7 +777,7 @@ public class VTNFlowTest extends FlowModTaskTestBase {
 
             Match match = new Match();
             match.setField(MatchType.IN_PORT, port);
-            ActionList actions = new ActionList(port.getNode());
+            ActionList actions = new ActionList(port.getNode(), (short)0);
             actions.addOutput(port);
 
             vflow.addFlow(vtnMgr, match, actions, priority);

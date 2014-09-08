@@ -368,7 +368,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(node);
+        ActionList actions = new ActionList(node, (short)1);
         actions.addOutput(outnc);
         flow.addFlow(vtnMgr, match, actions, 1);
 
@@ -5956,7 +5956,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
         match.setField(MatchType.DL_VLAN, (short)1);
-        ActionList actions = new ActionList(outnc.getNode());
+        ActionList actions = new ActionList(outnc.getNode(), (short)1);
         actions.addOutput(outnc);
         int pri = 1;
         flow.addFlow(vtnMgr, match, actions, pri);
@@ -6173,7 +6173,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(outnc.getNode());
+        ActionList actions = new ActionList(outnc.getNode(), (short)1);
         actions.addOutput(outnc);
         int pri = 1;
         flow.addFlow(vtnMgr, match, actions, pri);
@@ -6325,7 +6325,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             match.setField(MatchType.DL_VLAN, (short)1);
             match.setField(MatchType.DL_SRC, src);
             match.setField(MatchType.DL_DST, dst);
-            ActionList actions = new ActionList(outnc.getNode());
+            ActionList actions = new ActionList(outnc.getNode(), (short)1);
             actions.addOutput(outnc);
             int pri = 1;
             flow.addFlow(vtnMgr, match, actions, pri);
@@ -6384,7 +6384,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(outnc.getNode());
+        ActionList actions = new ActionList(outnc.getNode(), (short)1);
         actions.addOutput(outnc);
         int pri = 1;
         flow.addFlow(vtnMgr, match, actions, pri);
@@ -6604,7 +6604,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             match.setField(MatchType.DL_VLAN, (short)1);
             match.setField(MatchType.DL_SRC, src);
             match.setField(MatchType.DL_DST, dst);
-            ActionList actions = new ActionList(outnc.getNode());
+            ActionList actions = new ActionList(outnc.getNode(), (short)1);
             actions.addOutput(outnc);
             int pri = 1;
             flow.addFlow(vtnMgr, match, actions, pri);
@@ -6630,7 +6630,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Match match = new Match();
         match.setField(MatchType.IN_PORT, innc);
         match.setField(MatchType.DL_VLAN, (short)1);
-        ActionList acts = new ActionList(outnc.getNode());
+        ActionList acts = new ActionList(outnc.getNode(), (short)1);
         acts.addOutput(outnc);
 
         FlowEntry badEntry = new FlowEntry("", "", new Flow(match, acts.get()),
@@ -6715,7 +6715,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(outnc.getNode());
+        ActionList actions = new ActionList(outnc.getNode(), (short)1);
         actions.addOutput(outnc);
         int pri = 1;
         flow.addFlow(vtnMgr, match, actions, pri);

@@ -456,7 +456,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         match.setField(MatchType.DL_VLAN, (short)0);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(node);
+        ActionList actions = new ActionList(node, (short)0);
         actions.addOutput(outnc);
         flow.addFlow(vtnMgr, match, actions, 1);
 

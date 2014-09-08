@@ -155,7 +155,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         match.setField(MatchType.IN_PORT, innc);
         match.setField(MatchType.DL_SRC,
                        new byte[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        ActionList actions = new ActionList(innc.getNode());
+        ActionList actions = new ActionList(innc.getNode(), (short)0);
         actions.addOutput(outnc);
         conflictFlow.addFlow(vtnMgr, match, actions, pri);
 
@@ -630,7 +630,8 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
             edgePaths.add(vpath);
             flow.addVirtualRoute(vroute);
 
-            ActionList actions = new ActionList(innc.getNode());
+            short srcVlan = (short)((vlan + 1) & 0xfff);
+            ActionList actions = new ActionList(innc.getNode(), srcVlan);
             actions.addVlanId(vlan).addOutput(outnc);
             flow.addFlow(vtnMgr, match, actions, pri);
             assertTrue(flow.dependsOn(inhost));
@@ -1147,7 +1148,7 @@ public class VTNFlowDatabaseTest extends TestUseVTNManagerBase {
         assertFalse(match.isPresent(MatchType.DL_VLAN_PR));
         assertTrue(matchPcp.isPresent(MatchType.DL_VLAN_PR));
 
-        ActionList actions = new ActionList(node);
+        ActionList actions = new ActionList(node, (short)10);
         actions.addVlanId((short)100).addOutput(outPort);
 
         Flow flow = new Flow(match, actions.get());

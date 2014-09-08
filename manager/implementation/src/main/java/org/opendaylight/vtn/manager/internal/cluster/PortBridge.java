@@ -532,7 +532,7 @@ public abstract class PortBridge<T extends PortInterface>
             for (Edge edge: path.getEdges()) {
                 match = pctx.createMatch(incoming);
                 NodeConnector port = edge.getTailNodeConnector();
-                ActionList actions = new ActionList(port.getNode());
+                ActionList actions = new ActionList(port.getNode(), vlan);
                 actions.addOutput(port);
                 vflow.addFlow(mgr, match, actions, pri);
                 incoming = edge.getHeadNodeConnector();
@@ -546,7 +546,7 @@ public abstract class PortBridge<T extends PortInterface>
 
         // Note that flow action that modifies the VLAN tag has to be set
         // before other actions.
-        ActionList actions = new ActionList(dnode);
+        ActionList actions = new ActionList(dnode, vlan);
         actions.addVlanId(outVlan).addAll(pctx.getFilterActions()).
             addOutput(outgoing);
         vflow.addFlow(mgr, match, actions, pri);

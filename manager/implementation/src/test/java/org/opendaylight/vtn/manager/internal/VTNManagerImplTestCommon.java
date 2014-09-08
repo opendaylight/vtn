@@ -47,12 +47,14 @@ import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.SetVlanId;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
+import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -340,6 +342,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
         NodeConnector learnedNc = learnedPv.getNodeConnector();
         Node learnedNode = learnedNc.getNode();
         Node inNode = inPortVlan.getNodeConnector().getNode();
+        short inVlan = inPortVlan.getVlan();
 
         NodeConnector edgePort = NodeConnectorCreator.
             createOFNodeConnector(Short.valueOf((short)15), inNode);
@@ -349,6 +352,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
             }
 
             // check Actions.
+            int pushed = 0;
             if (ent.getFlowName().endsWith("-0")) {
                 assertEquals(inNode, ent.getNode());
                 for (Action act : ent.getFlow().getActions()) {
@@ -362,19 +366,35 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                         }
                         break;
                     case SET_VLAN_ID:
+                        if (inVlan == 0) {
+                            // Require a PUSH_VLAN action.
+                            assertEquals(1, pushed);
+                        } else {
+                            assertEquals(0, pushed);
+                        }
                         if (learnedNode.equals(inNode)) {
                             SetVlanId setVlan = (SetVlanId)act;
-                            assertEquals(setVlan.getVlanId(), learnedPv.getVlan());
+                            short vlan = (short)setVlan.getVlanId();
+                            assertEquals(vlan, learnedPv.getVlan());
+                            assertTrue(vlan != inVlan);
                         } else {
                             fail("in this case SET_VLAN_ID is not set.");
                         }
                         break;
                     case POP_VLAN:
+                        assertTrue(inVlan != 0);
                         if (learnedNode.equals(inNode)) {
                             assertTrue(learnedPv.getVlan() <= 0);
                         } else {
                             fail("in this case POP_VLAN is not set.");
                         }
+                        break;
+                    case PUSH_VLAN:
+                        assertEquals(0, inVlan);
+                        PushVlan pushVlan = (PushVlan)act;
+                        assertEquals(EtherTypes.VLANTAGGED.intValue(),
+                                     pushVlan.getTag());
+                        pushed++;
                         break;
                     default :
                         fail("unexpected action type." + act.toString());
@@ -390,11 +410,26 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                         assertEquals(learnedNc, out.getPort());
                         break;
                     case SET_VLAN_ID:
+                        if (inVlan == 0) {
+                            // Require a PUSH_VLAN action.
+                            assertEquals(1, pushed);
+                        } else {
+                            assertEquals(0, pushed);
+                        }
                         SetVlanId setVlan = (SetVlanId)act;
-                        assertEquals(setVlan.getVlanId(), learnedPv.getVlan());
+                        short vlan = (short)setVlan.getVlanId();
+                        assertEquals(vlan, learnedPv.getVlan());
+                        assertTrue(vlan != inVlan);
                         break;
                     case POP_VLAN:
                         assertTrue(learnedPv.getVlan() <= 0);
+                        break;
+                    case PUSH_VLAN:
+                        assertEquals(0, inVlan);
+                        PushVlan pushVlan = (PushVlan)act;
+                        assertEquals(EtherTypes.VLANTAGGED.intValue(),
+                                     pushVlan.getTag());
+                        pushed++;
                         break;
                     default :
                         fail("unexpected action type." + act.toString());
@@ -420,8 +455,7 @@ public class VTNManagerImplTestCommon extends TestUseVTNManagerBase {
                     assertArrayEquals(dst, (byte[])field.getValue());
                     break;
                 case DL_VLAN:
-                    assertEquals(inPortVlan.getVlan(),
-                                 field.getValue());
+                    assertEquals(inVlan, field.getValue());
                     break;
                 case IN_PORT:
                     if (ent.getFlowName().endsWith("-0")) {

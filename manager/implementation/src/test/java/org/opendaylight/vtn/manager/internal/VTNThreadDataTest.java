@@ -104,7 +104,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
             match.setField(MatchType.DL_SRC, src);
             match.setField(MatchType.DL_DST, dst);
             match.setField(MatchType.DL_VLAN, vlan);
-            ActionList actions = new ActionList(innc.getNode());
+            ActionList actions = new ActionList(innc.getNode(), vlan);
             actions.addOutput(outnc);
             flow.addFlow(vtnMgr, match, actions, pri);
 
@@ -383,7 +383,7 @@ public class VTNThreadDataTest extends TestUseVTNManagerBase {
         match.setField(MatchType.DL_DST, daddr);
         match.setField(MatchType.DL_VLAN, src.getVlan());
 
-        ActionList actions = new ActionList(out.getNode());
+        ActionList actions = new ActionList(out.getNode(), src.getVlan());
         actions.addVlanId(dst.getVlan()).addOutput(out);
         vflow.addFlow(vtnMgr, match, actions, 10);
 

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Drop;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.action.SetDlSrc;
 import org.opendaylight.controller.sal.action.SetNwDst;
@@ -48,6 +49,7 @@ import org.opendaylight.controller.sal.utils.IPProtocols;
 @XmlSeeAlso({
     DropAction.class,
     PopVlanAction.class,
+    PushVlanAction.class,
     SetDlDstAction.class,
     SetDlSrcAction.class,
     SetDscpAction.class,
@@ -85,6 +87,7 @@ public abstract class FlowAction implements Serializable {
         CTORS = new HashMap<Class<?>, Constructor<?>>();
         setConstructor(CTORS, DropAction.class, Drop.class);
         setConstructor(CTORS, PopVlanAction.class, PopVlan.class);
+        setConstructor(CTORS, PushVlanAction.class, PushVlan.class);
         setConstructor(CTORS, SetDlDstAction.class, SetDlDst.class);
         setConstructor(CTORS, SetDlSrcAction.class, SetDlSrc.class);
         setConstructor(CTORS, SetDscpAction.class, SetNwTos.class);

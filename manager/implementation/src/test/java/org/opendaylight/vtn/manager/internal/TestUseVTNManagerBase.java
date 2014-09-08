@@ -1155,7 +1155,7 @@ public class TestUseVTNManagerBase extends TestBase {
         match.setField(MatchType.DL_VLAN, inVlan);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(outPort.getNode());
+        ActionList actions = new ActionList(outPort.getNode(), inVlan);
         actions.addOutput(outPort);
         flow.addFlow(mgr, match, actions, priority);
 

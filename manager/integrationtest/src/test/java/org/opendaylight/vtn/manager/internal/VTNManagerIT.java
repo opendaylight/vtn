@@ -109,6 +109,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.action.SetVlanId;
 import org.opendaylight.controller.sal.core.ConstructionException;
 import org.opendaylight.controller.sal.core.Edge;
@@ -134,6 +135,7 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
 import org.opendaylight.controller.sal.routing.IRouting;
+import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
@@ -5036,7 +5038,8 @@ public class VTNManagerIT extends TestBase {
                 // create Flow to check later.
                 Node flowNode = listNode.get(0);
                 Match match = createMatch(dst, src, mappedVlan, replyNc);
-                List<Action> actList = createActionList(reqNc, (mappedVlan));
+                List<Action> actList = createActionList(reqNc, (short)0,
+                                                        mappedVlan);
                 Flow flow = new Flow(match, actList);
                 flow.setPriority(vtnFlowPriorityDefault);
                 flow.setIdleTimeout(vtnFlowIdleTimeoutDefault);
@@ -5134,7 +5137,8 @@ public class VTNManagerIT extends TestBase {
                 Node flowNode = replyNc.getNode();
                 Match match = createMatch(dst, src, mappedVlan, replyNc);
                 List<Action> actList =
-                    createActionList(edge.getHeadNodeConnector(), (short)-1);
+                    createActionList(edge.getHeadNodeConnector(), (short)0,
+                                     (short)0);
 
                 Flow flow = new Flow(match, actList);
                 flow.setPriority(vtnFlowPriorityDefault);
@@ -5151,7 +5155,7 @@ public class VTNManagerIT extends TestBase {
                 flowNode = reqNc.getNode();
                 match = createMatch(dst, src, mappedVlan,
                                     edge.getTailNodeConnector());
-                actList = createActionList(reqNc, mappedVlan);
+                actList = createActionList(reqNc, (short)0, mappedVlan);
 
                 flow = new Flow(match, actList);
                 flow.setPriority(vtnFlowPriorityDefault);
@@ -5235,19 +5239,20 @@ public class VTNManagerIT extends TestBase {
         return match;
     }
 
-    private List<Action> createActionList(NodeConnector outport, short vlan) {
+    private List<Action> createActionList(NodeConnector outport, short inVlan,
+                                          short outVlan) {
         List<Action> actList = new ArrayList<Action>();
-
-        if (vlan == 0) {
-            PopVlan pvlan = new PopVlan();
-            actList.add(pvlan);
-        } else if (vlan > 0) {
-            SetVlanId setvlan = new SetVlanId(vlan);
-            actList.add(setvlan);
+        if (inVlan != outVlan) {
+            if (outVlan == 0) {
+                actList.add(new PopVlan());
+            } else {
+                if (inVlan == 0) {
+                    actList.add(new PushVlan(EtherTypes.VLANTAGGED));
+                }
+                actList.add(new SetVlanId(outVlan));
+            }
         }
-
-        Output out = new Output(outport);
-        actList.add(out);
+        actList.add(new Output(outport));
 
         return actList;
     }

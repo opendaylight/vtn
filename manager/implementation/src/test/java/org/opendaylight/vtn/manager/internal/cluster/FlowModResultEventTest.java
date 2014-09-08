@@ -110,7 +110,7 @@ public class FlowModResultEventTest extends FlowModTaskTestBase {
         match.setField(MatchType.DL_VLAN, (short)1);
         match.setField(MatchType.DL_SRC, src);
         match.setField(MatchType.DL_DST, dst);
-        ActionList actions = new ActionList(outnc.getNode());
+        ActionList actions = new ActionList(outnc.getNode(), (short)1);
         actions.addOutput(outnc);
         int pri = 1;
         flow.addFlow(vtnMgr, match, actions, pri);

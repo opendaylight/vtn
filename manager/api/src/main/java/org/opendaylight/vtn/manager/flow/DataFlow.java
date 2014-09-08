@@ -33,6 +33,7 @@ import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.flow.action.DropAction;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.PopVlanAction;
+import org.opendaylight.vtn.manager.flow.action.PushVlanAction;
 import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
 import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
@@ -351,6 +352,11 @@ public final class DataFlow implements Serializable {
      *         Ethernet frame.
      *         The type of this element must be {@link PopVlanAction}.
      *
+     *       <dt>pushvlan
+     *       <dd style="margin-left: 1.5em;">
+     *         Specifies the action that adds a VLAN tag to Ethernet frame.
+     *         The type of this element must be {@link PushVlanAction}.
+     *
      *       <dt>vlanid
      *       <dd style="margin-left: 1.5em;">
      *         Specifies the action that sets the VLAN ID in Ethernet header.
@@ -415,6 +421,7 @@ public final class DataFlow implements Serializable {
         @XmlElement(name = "dlsrc", type = SetDlSrcAction.class),
         @XmlElement(name = "dldst", type = SetDlDstAction.class),
         @XmlElement(name = "popvlan", type = PopVlanAction.class),
+        @XmlElement(name = "pushvlan", type = PushVlanAction.class),
         @XmlElement(name = "vlanid", type = SetVlanIdAction.class),
         @XmlElement(name = "vlanpcp", type = SetVlanPcpAction.class),
         @XmlElement(name = "inet4src", type = SetInet4SrcAction.class),
