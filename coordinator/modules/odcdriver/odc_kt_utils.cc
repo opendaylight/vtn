@@ -496,6 +496,110 @@ class vbr_read_request : public odl_http_rest_intf {
 };
 
 
+class vterm_read_request : public odl_http_rest_intf {
+ public:
+  std::set<std::string> *vbrnames_;
+  std::string vtn_name_;
+
+  vterm_read_request(std::set<std::string> *vbrs, std::string vtn_name):
+      vbrnames_(vbrs), vtn_name_(vtn_name) {}
+  pfc_bool_t is_multiple_requests(unc::odcdriver::OdcDriverOps Op) {
+    ODC_FUNC_TRACE;
+    return PFC_FALSE;
+  }
+
+
+  UncRespCode get_multi_request_indicator(unc::odcdriver::OdcDriverOps Op,
+                                           std::set<std::string> *arg_list) {
+    ODC_FUNC_TRACE;
+    return UNC_RC_SUCCESS;
+  }
+
+
+  UncRespCode construct_url(unc::odcdriver::OdcDriverOps Op,
+                            std::string &request_indicator,
+                            std::string &url) {
+    ODC_FUNC_TRACE;
+
+    if ( vtn_name_ == "" )
+      return UNC_DRV_RC_ERR_GENERIC;
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    url.append(vtn_name_);
+    url.append("/vterminals");
+    return UNC_RC_SUCCESS;
+  }
+
+
+  UncRespCode construct_request_body(unc::odcdriver::OdcDriverOps Op,
+                                     std::string &request_indicator,
+                                     json_object *object) {
+    ODC_FUNC_TRACE;
+    return UNC_RC_SUCCESS;
+  }
+
+  restjson::HttpMethod get_http_method(
+      unc::odcdriver::OdcDriverOps Op,
+      std::string &request_indicator) {
+    ODC_FUNC_TRACE;
+    return restjson::HTTP_METHOD_GET;
+  }
+
+  UncRespCode validate_response_code(unc::odcdriver::OdcDriverOps Op,
+                                     std::string &request_indicator,
+                                     int resp_code) {
+    ODC_FUNC_TRACE;
+    if ( resp_code == HTTP_200_RESP_OK )
+      return UNC_RC_SUCCESS;
+
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+
+  UncRespCode handle_response(unc::odcdriver::OdcDriverOps Op,
+                              std::string &request_indicator,
+                              char* data) {
+    ODC_FUNC_TRACE;
+    json_object* vtn_data_json(NULL);
+    json_object* vtn_array_json(NULL);
+    std::string vtn_content("vterminal");
+    pfc_log_info("Data VBR received %s", data);
+    int ret(unc::restjson::json_object_parse_util::extract_json_object
+             (data,
+              &vtn_data_json));
+
+    if ( ret != unc::restjson::REST_OP_SUCCESS )
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    if ( vtn_data_json == NULL )
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    int vtn_ret(unc::restjson::json_object_parse_util::extract_json_object
+                 (vtn_data_json,
+                  vtn_content,
+                  &vtn_array_json));
+
+    if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
+      get_array_length(vtn_array_json));
+
+      if ( arr_length == 0 ) {
+      pfc_log_info("No Data in array");
+      return UNC_DRV_RC_ERR_GENERIC;
+      } */
+
+    vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
+    int vtn_collect_ret(vtn_collect.extract_values());
+    if ( vtn_collect_ret != unc::restjson::REST_OP_SUCCESS )
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    pfc_log_info("VTERM Collection Completed");
+    return UNC_RC_SUCCESS;
+  }
+};
 
 
 UncRespCode port_info_parser::get_vlan_id(json_object* instance,
@@ -584,6 +688,21 @@ UncRespCode odlutils::get_vbridge_names(
     std::set <std::string> *vbridges) {
   ODC_FUNC_TRACE;
   vbr_read_request vbr_read(vbridges, vtn_name);
+  odl_http_request vbr_req;
+  return vbr_req.handle_request(ctr_ptr,
+                                CONFIG_READ,
+                                &vbr_read,
+                                conf_values);
+}
+
+
+UncRespCode odlutils::get_vterm_names (
+    unc::driver::controller *ctr_ptr,
+    unc::restjson::ConfFileValues_t conf_values,
+    std::string vtn_name,
+    std::set <std::string> *vbridges) {
+  ODC_FUNC_TRACE;
+  vterm_read_request vbr_read(vbridges, vtn_name);
   odl_http_request vbr_req;
   return vbr_req.handle_request(ctr_ptr,
                                 CONFIG_READ,

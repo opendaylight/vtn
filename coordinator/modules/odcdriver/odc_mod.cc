@@ -147,6 +147,66 @@ unc::driver::driver_command* ODCModule::create_driver_command(
       break;
     }
 
+    case UNC_KT_FLOWLIST: {
+      pfc_log_debug("UNC_KT_FLOWLIST key type received");
+      driver_cmd_ptr = new OdcFlowListCommand(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_FLOWLIST_ENTRY: {
+      pfc_log_debug("UNC_KT_FLOWLIST_ENTRY key type received");
+      driver_cmd_ptr = new OdcFlowListEntryCommand(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTN_FLOWFILTER: {
+      pfc_log_debug("UNC_VTN_FLOWFILTER key type received");
+      driver_cmd_ptr = new OdcVtnFlowFilterCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTN_FLOWFILTER_ENTRY: {
+      pfc_log_debug("UNC_VTN_FLOW_FILTER_ENTRY key type received");
+      driver_cmd_ptr = new OdcVtnFlowFilterEntryCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VBR_FLOWFILTER : {
+      pfc_log_debug("UNC_VBR_FLOW_FILTER key type received");
+      driver_cmd_ptr = new OdcVbrFlowFilterCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VBR_FLOWFILTER_ENTRY : {
+      pfc_log_debug("UNC_VBR_FLOW_FILTER_ENTRY key type received");
+      driver_cmd_ptr = new OdcVbrFlowFilterEntryCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VBRIF_FLOWFILTER: {
+      pfc_log_debug("UNC_VBRIF_FLOW_FILTER key type received");
+      driver_cmd_ptr = new OdcVbrIfFlowFilterCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VBRIF_FLOWFILTER_ENTRY: {
+      pfc_log_debug("UNC_VBRIF_FLOW_FILTER_ENTRY key type received");
+      driver_cmd_ptr = new OdcVbrIfFlowFilterEntryCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTERMIF_FLOWFILTER: {
+      pfc_log_debug("UNC_VTERMIF_FLOW_FILTER key type received");
+      driver_cmd_ptr = new OdcVTermIfFlowFilterCmd(conf_file_values_);
+      break;
+    }
+
+    case UNC_KT_VTERMIF_FLOWFILTER_ENTRY: {
+      pfc_log_debug("UNC_VTERMIF_FLOW_FILTER_ENTRY key type received");
+      driver_cmd_ptr = new OdcVTermIfFlowFilterEntryCmd(conf_file_values_);
+      break;
+    }
+
     default:
       pfc_log_debug("Unknown keytype received : %d", key_type);
       break;

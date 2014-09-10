@@ -26,6 +26,8 @@ class JsonBuildParse {
    * @param[out] json_object* - json_object pointer
    */
   static json_object* create_json_obj();
+  static json_object* create_json_array_obj();
+  static void add_to_array ( json_object*, json_object *);
 
   /**
    * @brief                    - Template method which build the json request
@@ -103,7 +105,7 @@ int JsonBuildParse::build(const std::string &key,
     jobj = jsonutil_obj.get_json_data();
     if (json_object_is_type(jobj, json_type_null)) {
       pfc_log_error("json object for value is NULL");
-      return REST_OP_FAILURE;
+      //return REST_OP_FAILURE;
     }
     // Adds the data to the json object with key
     json_object_object_add(jparent, key.c_str(), jobj);
@@ -112,6 +114,8 @@ int JsonBuildParse::build(const std::string &key,
   pfc_log_error("jparent is not of the type json_object");
   return REST_OP_FAILURE;
 }
+
+
 
 // Parse the json object with the given key and gets the value and assign it to
 // template val instance
