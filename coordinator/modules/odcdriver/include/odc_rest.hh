@@ -25,9 +25,9 @@ namespace odcdriver {
 
 typedef enum {
   CONFIG_CREATE = 0,
-  CONFIG_UPDATE = 0,
-  CONFIG_DELETE = 0,
-  CONFIG_READ = 0,
+  CONFIG_UPDATE = 1,
+  CONFIG_DELETE = 2,
+  CONFIG_READ = 3
 }OdcDriverOps;
 
 // Interface Class for ODC REST requests

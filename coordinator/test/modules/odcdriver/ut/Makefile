@@ -65,7 +65,9 @@ ODCDRIVER_SOURCES += odc_dataflow_util.cc
 ODCDRIVER_SOURCES += odc_dataflow.cc
 ODCDRIVER_SOURCES += odc_vterminal.cc
 ODCDRIVER_SOURCES += odc_vterminal_if.cc
-
+ODCDRIVER_SOURCES += odc_flowlist.cc
+ODCDRIVER_SOURCES += odc_flow_conditions.cc
+ODCDRIVER_SOURCES += odc_flow_filter.cc
 #ODCDRIVER_SOURCES += odc_ctl_dataflow.cc
 
 VTNCACHEUTIL_SOURCES = keytree.cc

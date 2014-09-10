@@ -33,7 +33,7 @@ UncRespCode odl_http_request::handle_request_internal(
   if ( resp_url != UNC_RC_SUCCESS )
     return resp_url;
 
-  json_object* jobj_req_body(NULL);
+  json_object* jobj_req_body(unc::restjson::JsonBuildParse::create_json_obj());
   UncRespCode resp_reqbody((handler->construct_request_body(Op,
                                                             request_indicator,
                                                             jobj_req_body)));

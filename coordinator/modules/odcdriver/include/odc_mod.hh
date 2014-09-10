@@ -21,7 +21,12 @@
 #include <odc_vtnstation.hh>
 #include <odc_vterminal.hh>
 #include <odc_vterminal_if.hh>
+#include <odc_flowlist.hh>
 #include <odc_driver_common_defs.hh>
+#include <odc_vtn_flow_filter.hh>
+#include <odc_vbr_flow_filter.hh>
+#include <odc_vbrif_flow_filter.hh>
+#include <odc_vtermif_flow_filter.hh>
 #include <unc/keytype.h>
 #include <rest_util.hh>
 #include <arpa/inet.h>
