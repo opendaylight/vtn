@@ -1135,7 +1135,9 @@ upll_rc_t UpllConfigMgr::ValidateImport(uint32_t sess_id, uint32_t config_id,
                   import_operation, ctrlr_id);
     return UPLL_RC_ERR_NO_SUCH_INSTANCE;
   }
-  if (ctrlr_type != UNC_CT_PFC) {
+  if (ctrlr_type != UNC_CT_PFC && 
+      ctrlr_type != UNC_CT_ODC) {
+      
     UPLL_LOG_INFO("Import is not allowed for controller type %d."
                   " Cannot do %s for %s ",
                   ctrlr_type, import_operation, ctrlr_id);

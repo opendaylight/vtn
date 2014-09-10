@@ -246,8 +246,9 @@ UncRespCode Kt_Dataflow::PerformSemanticValidation(
   pfc_log_debug("oper_status_db=%d", oper_status_db);
   pfc_log_debug("config version=%s", version.c_str());
 
-  if (controller_type != UNC_CT_PFC) {
-    pfc_log_error("Read operation is provided on only PFC controller");
+  if (controller_type != UNC_CT_PFC &&
+      controller_type != UNC_CT_ODC ) {
+    pfc_log_error("Read operation is provided on only PFC/ODC controllers");
     ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (oper_status_db != UPPL_CONTROLLER_OPER_UP) {
     pfc_log_error("Read operation is provided only on"
@@ -531,8 +532,28 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
     ClientSession *cli_session = NULL;
     int err1 = 0;
     UncRespCode driver_response = UNC_RC_SUCCESS;
-    IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, driver_response);
-    cli_session = pfc_drv_handler.ResetAndGetSession();
+
+    unc_keytype_ctrtype_t ctr_type (UNC_CT_UNKNOWN);
+    UncRespCode ret_code (PhyUtil::get_controller_type(
+                             db_conn, controller_name,ctr_type,
+                            (unc_keytype_datatype_t)UNC_DT_RUNNING));
+    if (ret_code != UNC_RC_SUCCESS) {
+      pfc_log_error("error in getting the controller type: %d", ret_code);
+      if (ret_code == UNC_UPLL_RC_ERR_DB_ACCESS) {
+         pfc_log_debug("Returning as there is error in DB access");
+         return ret_code;
+      } else {
+        ret_code = UNC_RC_SUCCESS;
+      }
+    }
+
+    IPCClientDriverHandler *common_drv_handler(NULL);
+    if (ctr_type == UNC_CT_PFC) {
+      common_drv_handler=new IPCClientDriverHandler(UNC_CT_PFC, driver_response);
+    } else if ( ctr_type == UNC_CT_ODC) {
+      common_drv_handler=new IPCClientDriverHandler(UNC_CT_ODC, driver_response);
+    }
+    cli_session = common_drv_handler->ResetAndGetSession();
     if (driver_response != UNC_RC_SUCCESS) {
       return driver_response;
     }
@@ -559,7 +580,7 @@ reinterpret_cast<val_df_flow_match_dl_addr_t *>((*output_matches_iter).second);
     pfc_log_trace("Extending the timeout to 3600 seconds");
     // Send the request to driver
     driver_response_header rsp;
-    driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
+    driver_response = common_drv_handler->SendReqAndGetResp(rsp);
     if (driver_response != UNC_RC_SUCCESS) {
       if (is_head_node) {
         pfc_log_error("Read request to Driver failed for controller %s"
@@ -807,7 +828,8 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
   UncRespCode ret_code = UNC_RC_SUCCESS;
   boundary_val obj_bdry_val;
   memset(&obj_bdry_val, '\0', sizeof(boundary_val));
-  if ((source_node->df_segment->df_common->controller_type == UNC_CT_PFC) &&
+  if (((source_node->df_segment->df_common->controller_type == UNC_CT_PFC) ||
+      (source_node->df_segment->df_common->controller_type == UNC_CT_ODC)) &&
      ((source_node->df_segment->df_common->
              valid[kidxDfDataFlowEgressSwitchId] == 0) ||
       (source_node->df_segment->df_common->valid[kidxDfDataFlowOutPort] == 0) ||
@@ -878,7 +900,8 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
   if ((read_status != UNC_RC_SUCCESS) || (list_ctr_nbrs.size() == 0)) {
     pfc_log_trace("Read of neighbours failed");
     // for VNP and BYPASS add this error, PFC ignore.
-    if (obj_bdry_val.controller_type == UNC_CT_PFC) {
+    if (obj_bdry_val.controller_type == UNC_CT_PFC ||
+        obj_bdry_val.controller_type == UNC_CT_ODC ) {
       source_node->addl_data->reason = UNC_DF_RES_SUCCESS;
     } else {
       source_node->addl_data->reason = UNC_DF_RES_DST_NOT_REACHED;
@@ -891,7 +914,8 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
     pfc_log_debug("current_boundary_id:%s", current_bdry_id.c_str());
     pfc_log_debug("ingress_bdry_id:%s", ingress_bdry_id.c_str());
     boundary_val obj_bval = *nbrs_ctr_iter;
-  if ((*nbrs_ctr_iter).controller_type == UNC_CT_PFC) {
+  if ((*nbrs_ctr_iter).controller_type == UNC_CT_PFC || 
+      (*nbrs_ctr_iter).controller_type == UNC_CT_ODC) {
     key_dataflow_t obj_key_df;
     memcpy(obj_key_df.controller_name, obj_bval.controller_name,
              sizeof(obj_bval.controller_name));
@@ -1076,7 +1100,8 @@ UncRespCode Kt_Dataflow::checkBoundaryAndTraverse(
         memcpy(obj_key_df_tgt.src_mac_address,
                obj_key_dataflow->src_mac_address,
              sizeof(obj_key_df_tgt.src_mac_address));
-        if ((*vals_iter).controller_type == UNC_CT_PFC) {
+        if ((*vals_iter).controller_type == UNC_CT_PFC ||
+            (*vals_iter).controller_type == UNC_CT_ODC ) {
           ret_code = traversePFC(db_conn, session_id, configuration_id,
                             &obj_key_df_tgt, sess, false, df_cmn, lastPfcNode,
                             current_bdry_id);

@@ -1870,6 +1870,7 @@ upll_rc_t VbrIfMoMgr::UpdatePortMap( ConfigKeyVal *okey,
   val_drv_vbr_if *val_drv_vbr = reinterpret_cast<val_drv_vbr_if *>(GetVal(ikey));
   bool port_map_status = (val_drv_vbr->vbr_if_val.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID)?
                                     true:false;
+   unc_keytype_ctrtype_t  ctrlrtype =  UNC_CT_UNKNOWN;
   if (port_map_status) {
 
     val_drv_vbr_if *vbr_val_db = reinterpret_cast<val_drv_vbr_if *>(GetVal(okey));
@@ -1879,11 +1880,20 @@ upll_rc_t VbrIfMoMgr::UpdatePortMap( ConfigKeyVal *okey,
     }
     if (vbr_val_db->vbr_if_val.valid[UPLL_IDX_PM_VBRI] == UNC_VF_INVALID) {
       /* portmap getting created for the first time */
-      result_code = ConverttoDriverPortMap(ikey, dmi);
-      if (UPLL_RC_SUCCESS != result_code) {
-        UPLL_LOG_DEBUG("ConvertToDriverPortMap Failure %d", result_code);
-        return result_code;
-      }
+       controller_domain ctrlr_dom;
+       uuc::CtrlrMgr *ctrlr_mgr = uuc::CtrlrMgr::GetInstance(); 
+       GET_USER_DATA_CTRLR(ikey, ctrlr_dom.ctrlr); 
+       UPLL_LOG_DEBUG("ctrlr_dom.ctrlr in port map is %s",ctrlr_dom.ctrlr);  
+       if (!ctrlr_mgr->GetCtrlrType(reinterpret_cast<char*>(ctrlr_dom.ctrlr),
+                                     UPLL_DT_CANDIDATE, &ctrlrtype)) { 
+           UPLL_LOG_INFO("GetCtrlrType failed"); 
+           return UPLL_RC_ERR_GENERIC; 
+       }
+       result_code = ConverttoDriverPortMap(ikey, dmi); 
+       if (UPLL_RC_SUCCESS != result_code) { 
+         UPLL_LOG_DEBUG("ConvertToDriverPortMap Failure %d", result_code);
+         return result_code; 
+       }
       // Set the PortMapNotificationVal Enum status to Portmap Created
       // Which will be used to Notify the POM
       PortMapNotificationVal = kPortMapCreated;
@@ -1928,36 +1938,38 @@ upll_rc_t VbrIfMoMgr::UpdatePortMap( ConfigKeyVal *okey,
   /* Info to POM */
   }
   // Notify POM only when PortMap is created or Deleted
-  if (PortMapNotificationVal == kPortMapCreated) {
-    UPLL_LOG_DEBUG("Portmapstatus-true");
-    result_code = mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kPortMapConfigured,
-                                                    UNC_OP_CREATE);
-    if (result_code != UPLL_RC_SUCCESS) {
-       UPLL_LOG_DEBUG("SetVlinkPortMapConfiguration Failure %d", result_code);
-       return result_code;
-    }
-      result_code = pm_mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kPortMapConfigured,
+  if ( ctrlrtype != UNC_CT_ODC) {
+    if (PortMapNotificationVal == kPortMapCreated) {
+      UPLL_LOG_DEBUG("Portmapstatus-true");
+      result_code = mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kPortMapConfigured,
                                                       UNC_OP_CREATE);
       if (result_code != UPLL_RC_SUCCESS) {
          UPLL_LOG_DEBUG("SetVlinkPortMapConfiguration Failure %d", result_code);
          return result_code;
       }
-  } else if (PortMapNotificationVal == kPortMapDeleted) {
-    UPLL_LOG_DEBUG("Portmapstatus-false");
-    result_code = mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kVlinkPortMapNotConfigured,
-                                                    UNC_OP_DELETE);
-    if (UPLL_RC_SUCCESS != result_code
-        && UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-      UPLL_LOG_DEBUG("SetVlinkPortMapConfiguration Failure %d", result_code);
-      return result_code;
-     }
-     result_code = pm_mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kVlinkPortMapNotConfigured,
+        result_code = pm_mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kPortMapConfigured,
+                                                        UNC_OP_CREATE);
+        if (result_code != UPLL_RC_SUCCESS) {
+           UPLL_LOG_DEBUG("SetVlinkPortMapConfiguration Failure %d", result_code);
+           return result_code;
+        }
+    } else if (PortMapNotificationVal == kPortMapDeleted) {
+      UPLL_LOG_DEBUG("Portmapstatus-false");
+      result_code = mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kVlinkPortMapNotConfigured,
                                                       UNC_OP_DELETE);
-     if (UPLL_RC_SUCCESS != result_code
+      if (UPLL_RC_SUCCESS != result_code
           && UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
         UPLL_LOG_DEBUG("SetVlinkPortMapConfiguration Failure %d", result_code);
         return result_code;
-     }
+       }
+       result_code = pm_mgr->SetVlinkPortmapConfiguration(okey, datatype, dmi,  kVlinkPortMapNotConfigured,
+                                                        UNC_OP_DELETE);
+       if (UPLL_RC_SUCCESS != result_code
+            && UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+          UPLL_LOG_DEBUG("SetVlinkPortMapConfiguration Failure %d", result_code);
+          return result_code;
+       }
+    }
   }
   result_code = (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)?UPLL_RC_SUCCESS:result_code;
   return result_code;
