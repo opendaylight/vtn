@@ -18,6 +18,17 @@ json_object* JsonBuildParse::create_json_obj() {
   return json_object_new_object();
 }
 
+json_object* JsonBuildParse::create_json_array_obj() {
+  ODC_FUNC_TRACE;
+  return json_object_new_array();
+}
+
+void JsonBuildParse::add_to_array (json_object *array,
+                                   json_object* value) {
+  ODC_FUNC_TRACE;
+  json_object_array_add (array,value);
+}
+
 const char* JsonBuildParse::get_json_string(json_object* jobj) {
   if (json_object_is_type(jobj, json_type_null)) {
     return NULL;

@@ -78,7 +78,7 @@ void OdcUtil::calculate_broadcast(std::string ip_address,
   pfc_log_debug("Broadcast    %s\n", my_ntoa(broadcast));
 }
 
-std::string macaddress_to_string(unsigned char macIn1[6]) {
+std::string OdcUtil::macaddress_to_string(unsigned char macIn1[6]) {
   char mac[32] = { 0 };
   sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",
           macIn1[0],
