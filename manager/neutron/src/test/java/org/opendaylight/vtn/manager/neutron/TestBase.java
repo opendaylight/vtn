@@ -86,19 +86,23 @@ public abstract class TestBase extends Assert {
     protected static final int ROW_REMOVED = 5;
 
     /**
+     * Integer Declaration for identifying the Calling method of isUpdateOfInterest.
+     */
+    protected static final int IS_UPDATE_OF_INTEREST = 6;
+    /**
      * Integer Declaration for identifying the Called method.
      */
     protected static int currentCalledMethod = DEFAULT_NO_METHOD;
 
     /**
-     * String Declaration for identifying the Bridge with below UUID.
+     * String Declaration for identifying the Bridge with below NodeID.
      */
-    protected static final String BRIDGE_UUID_1 = "44b72e5b15cfcddafccbc9c6f04db4a";
+    protected static final String NODE_ID_1 = "D30D27770881";
 
     /**
-     * String Declaration for identifying the Bridge with below UUID.
+     * String Declaration for identifying the Bridge with below NodeID.
      */
-    protected static final String BRIDGE_UUID_2 = "44b72e5b15cfcddafccbc9c6f04db4b";
+    protected static final String NODE_ID_2 = "D30D27770885";
 
     /**
      * String Declaration for identifying the Interface with below Parent_UUID.
@@ -109,6 +113,46 @@ public abstract class TestBase extends Assert {
      * String Declaration for identifying the Port with below Parent_UUID.
      */
     protected static final String PORT_PARENT_UUID = "9b2b6560-f21e-11e3-a6a2-0002a5d5c51e";
+
+    /*
+     * String declaration for identifying the conflicted NetworkUUID
+     */
+    public static final String CONFLICTED_NETWORK_UUID = "5e7e0900f2151e3aa760002a5d5c51c";
+
+    /**
+     * String Declaration for setting the OFPortArray to NULL.
+     */
+    protected static final String OF_PORT_ARRAY_IS_NULL = "OF_PORT_ARRAY_IS_NULL";
+
+    /**
+     * String Declaration for setting the OFPortArray to Empty array.
+     */
+    protected static final String OF_PORT_ARRAY_IS_EMPTY = "OF_PORT_ARRAY_IS_EMPTY";
+
+    /**
+     * String Declaration for setting the Port Object to NULL.
+     */
+    protected static final String SET_PORT_OBJECT_TO_NULL = "SET_PORT_OBJECT_TO_NULL";
+
+    /**
+     * String Declaration for setting the Port Object to Empty Set.
+     */
+    protected static final String SET_PORT_OBJECT_TO_EMPTY_SET = "SET_PORT_OBJECT_TO_EMPTY_SET";
+
+    /**
+     * String Declaration for setting the Port Object with wrong UUID.
+     */
+    protected static final String SET_PORT_OBJECT_WITH_WRONG_UUID = "SET_PORT_OBJECT_WITH_WRONG_UUID";
+
+    /**
+     * String Declaration for setting the Bridge object's DatapathIdColumn to NULL.
+     */
+    protected static final String SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_NULL = "SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_NULL";
+
+    /**
+     * String Declaration for setting the Bridge object's DatapathIdColumn to Empty Set.
+     */
+    protected static final String SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_EMPTY_SET = "SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_EMPTY_SET";
 
     /**
      * UUID node field starting byte length.
@@ -126,7 +170,7 @@ public abstract class TestBase extends Assert {
     protected static final int HEX_RADIX = 16;
 
     /*
-     *Magic numbers for Array index - ROW_UPDATE_INPUT_ARRAY
+     *Magic numbers for Array index - ROW_UPDATE_INPUT_ARRAY and IS_UPDATE_OF_INTEREST_INPUT_ARRAY
      */
     // NodeType index
     public static final int ROW_UPDATE_NODE_TYPE = 0;
@@ -152,14 +196,17 @@ public abstract class TestBase extends Assert {
     // NewRow index
     public static final int ROW_UPDATE_NEW_ROW = 7;
 
+    // Option index
+    public static final int ROW_UPDATE_OPTION = 8;
+
     // Exception index
-    public static final int ROW_UPDATE_EXCEPTION = 8;
+    public static final int ROW_UPDATE_EXCEPTION = 9;
 
     // InterfaceName index
-    public static final int ROW_UPDATE_INTERFACE_NAME = 9;
+    public static final int ROW_UPDATE_INTERFACE_NAME = 10;
 
     // InterfacePortId index
-    public static final int ROW_UPDATE_INTERFACE_PORT_ID = 10;
+    public static final int ROW_UPDATE_INTERFACE_PORT_ID = 11;
 
     /*
      *Magic numbers for Array index - CREATE_NETWORK_ARRAY
@@ -226,54 +273,103 @@ public abstract class TestBase extends Assert {
     protected static final String[][] ROW_UPDATE_INPUT_ARRAY = {
         // Inputs to the function -
         // NodeType, NeutronObjectType, NeutronObjectName, ActualTableName, UUID(Set by testing method),
-        // ParentUUID, OldRow,
-        // NewRow, Exception, InterfaceName, InterfacePortId
+        // ParentUUID, OldRow, NewRow,
+        // Option, Exception, InterfaceName, InterfacePortId
 
         // Fail case - as Bridge
         {"PE", "bridge", "br-int", "Bridge", "",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null",
-         "not_null", "ex_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         "", "ex_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
 
         // Fail case for Neutron Port is Null by setting wrong InterfacePortId
         {"PE", "bridge-int", "br-int", "Interface", "",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null",
-         "not_null", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770881"},
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         "", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770881"},
 
         // Fail case for No switch is associated with interface, Node or interface Uuid is Null by setting UUID to null
         {"PE", "bridge-int", "br-int", "Interface", "",
-         null, "null",
-         "null", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+         null, "null", "null",
+         "", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case for Port is Null in the method-getSwitchIdFromInterface(), by setting Port to NULL
+        {"PE", "bridge-int", "br-int", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "null", "null",
+         SET_PORT_OBJECT_TO_NULL, "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case for Exception {} while getting switch identifier in the method-getSwitchIdFromInterface(), by setting InterfaceColumn Set to Empty
+        {"PE", "bridge-int", "br-int", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "null", "null",
+         SET_PORT_OBJECT_TO_EMPTY_SET, "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case for Failed to get switch Id related to the interface in the method-getSwitchIdFromInterface(), by setting wrong UUID in Port Set
+        {"PE", "bridge-int", "br-int", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "null", "null",
+         SET_PORT_OBJECT_WITH_WRONG_UUID, "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case for data pathid is empty for bridge in the method-getDataPathIdFromBridge(), by setting DatapathIdColumn Set to NULL
+        {"PE", "bridge-int", "br-int", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "null", "null",
+         SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_NULL, "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case for data pathid is empty for bridge in the method-getDataPathIdFromBridge(), by setting DatapathIdColumn Set to Empty
+        {"PE", "bridge-int", "br-int", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "null", "null",
+         SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_EMPTY_SET, "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case - Method getOfPortFormInterface() by setting NULL to OpenFlowPort
+        {"PE", "intf", "interface1", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         OF_PORT_ARRAY_IS_NULL, "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
+
+        // Fail case - Method getOfPortFormInterface() by setting Empty to OpenFlowPort
+        {"PE", "intf", "interface1", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         OF_PORT_ARRAY_IS_EMPTY, "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
 
         // Fail case for Set Port mapping failed for interface
         {"PE", "intf", "interface1", "Interface", "",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null",
-         "not_null", "no_ex_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         "", "no_ex_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+        // Fail case for Failed to create PortMap in the method-setPortMapForInterface()
+        {"PE", "intf", "interface1", "Interface", "",
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78474"},
 
         // Success case
         {"PE", "intf", "interface1", "Interface", "",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null",
-         "not_null", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"}};
 
-         // Test case for the method - OVSDBPluginEventHandler.isUpdateOfInterest(Node, Row, Row)
-         // OldRow - Null
+    /**
+     * An array of elements to isUpdateOfInterest.
+     */
+    protected static final String[][] IS_UPDATE_OF_INTEREST_INPUT_ARRAY = {
+        // Inputs to the function -
+        // NodeType, NeutronObjectType, NeutronObjectName, ActualTableName, UUID(Set by testing method),
+        // ParentUUID, OldRow, NewRow,
+        // Option, Exception, InterfaceName, InterfacePortId
+
+        // Test case for the method - OVSDBPluginEventHandler.isUpdateOfInterest(Node, Row, Row)
+        // OldRow - Null
         {"PE", "intf-neutron", "interface1", "Interface", "",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51c", "null",
-         "not_null", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51c", "null", "not_null",
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
 
-         // Interface - Not working
+        // Interface
         {"PE", "intf-neutron", "interface1", "Interface", "",
-         INTERFACE_PARENT_UUID, "not_null",
-         "not_null", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
+         INTERFACE_PARENT_UUID, "not_null", "not_null",
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
 
-         // Port - Not working
+        // Port
         {"PE", "intf-neutron", "interface1", "Port", "",
-         PORT_PARENT_UUID, "not_null",
-         "not_null", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
+         PORT_PARENT_UUID, "not_null", "not_null",
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
 
-         // OpenVSwitch - Not Possible case
+        // OpenVSwitch
         {"PE", "intf-neutron", "interface1", "OpenVSwitch", "",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51f", "not_null",
-         "not_null", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"}};
+         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51f", "not_null", "not_null",
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"}};
 
     /**
      * Exception message to be checked.
@@ -360,31 +456,51 @@ public abstract class TestBase extends Assert {
     protected static final String[][] CREATE_NETWORK_ARRAY = {
         // NodeType, NodeID, 1-UnsetOVSDB and 0-SetOVSDB, NULL Exception handler
         // Null exception case at getInternalBridgeUUID method when OVSDBConfigService is NULL
-        {"OF", "11111110", "1", "null" },
+        {"OF", "D30D27770880", "1", "null" },
         // Update case in Node added method
-        {"OF", "11111111", "0", "" },
+        {"OF", NODE_ID_1, "0", "" },
         // New NODE added case - Successful
-        {"OF", BRIDGE_UUID_1, "0", "" },
+        {"OF", "D30D27770882", "0", "" },
+        // Exception Handler case
+        {"PK", "D30D27770883", "0", "" },
         // returns Null beacuse in getInternalBridgeUUID method bridge is NULL when calling OVSDBConfigService.getRows
-        {"PK", "11111113", "0", "" },
-        // returns Null beacuse in getInternalBridgeUUID method bridge is NULL when calling OVSDBConfigService.getRows
-        {"PR", "11111114", "0", "" },
+        {"PR", "D30D27770883", "0", "" },
         // Update case in Node added method
-        {"PE", BRIDGE_UUID_2, "0", "" },
+        {"PE", NODE_ID_2, "0", "" },
         // New NODE added case - Successful
-        {"PE", "11111116", "0", "" }
+        {"PE", "D30D27770883", "0", "" }
     };
 
     /**
      * An array of elements to remove row.
+     * Also Method-getNeutronPortFormInterface(Interface) has been covered
      */
     protected static final String[][] ROW_REMOVE_ARRAY = {
-        //   NodeId, TableName, NodeID, 0-Set ExternalIDS/1-UnSetExternalIds/2-SetExternalIdsAndUnsetPortId/3-NotAnInterface
+        //   NodeId, TableName, UUID, Status
+        // Fail case(Not an Interface) - Not an Interface
         {"22222220", "Not an Interface", "C387EB44-7832-49F4-B9F0-D30D27770883", "0"},
-        {"22222221", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "3"},
-        {"22222222", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "1"},
-        {"22222223", "Interface",        "C387EB44-7832-49F4-B9F0-D30D27770883", "2"},
-        {"22222224", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "0"},
+        // Fail case(Interface is NULL) - by setting Status to 2 to get NotAnInterface(returning NULL)
+        {"22222221", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "2"},
+        // Fail case(External ID for Interface in NULL) - by setting Status to 3 and SET ExternalId to NULL
+        {"22222222", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "3"},
+        // Fail case(Neutron Port ID is NULL) - by setting Status to 1 and SET ExternalIdsAndUnsetPortId
+        {"22222223", "Interface",        "C387EB44-7832-49F4-B9F0-D30D27770883", "1"},
+        // Fail case(Neutron Port is NULL) - by setting Status to 0 and SET ExternalId and wrong UUID to get NeutronPort to NULL
+        {"22222224", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78483", "0"},
+        // Fail case(processRowUpdated getVTNIdentifiers failed) - by setting NodeID and return HTTP_BAD_REQUEST in Method-deletePortMapForInterface()
+        {"22222225", "Interface",        "C387EB44-7832-49F4-B9F0-D30D27770883", "0"},
+        // Fail case(neutron identifiers not specified) - by setting invalid NodeID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        {"22222226", "Interface",        "C387EB44-7832-49F4-B9F0-D30D27770883", "0"},
+        // Fail case(Invalid tenant identifier) - by setting invalid TennantID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        {"22222227", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78475", "0"},
+        // Fail case(Invalid bridge identifier) - by setting invalid NetworkID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        {"22222228", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78476", "0"},
+        // Fail case(Invalid port identifier) - by setting invalid PorttID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        {"22222229", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78477", "0"},
+        // Fail case(Failed to delete PortMap) - by setting NodeID and return status to CONFLICTED in Method-deletePortMapForInterface()
+        {"22222230", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78474", "0"},
+        // Success case
+        {"22222231", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "0"},
     };
 
     /**

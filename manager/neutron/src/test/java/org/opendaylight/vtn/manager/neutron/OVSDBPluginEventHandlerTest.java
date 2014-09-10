@@ -13,6 +13,8 @@ import org.junit.Test;
 import java.util.UUID;
 
 import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
+import org.opendaylight.ovsdb.schema.openvswitch.Port;
+import org.opendaylight.ovsdb.schema.openvswitch.OpenVSwitch;
 import org.opendaylight.ovsdb.schema.openvswitch.Interface;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.vtn.manager.IVTNManager;
@@ -45,12 +47,11 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OVSDBPluginEventHandler#createInternalNetworkForNeutron(Node)}.
-     * nodeAdded
-     * Test createInternalNetworkForNeutron Method.
+     * {@link OVSDBPluginEventHandler#nodeAdded(Node)}.
+     * Test nodeAdded Method.
      */
     @Test
-    public void testCreateInternalNetworkForNeutron() {
+    public void testNodeAdded() {
         currentCalledMethod = NODE_ADDED;
         for (String[] createNetwork : CREATE_NETWORK_ARRAY) {
             try {
@@ -70,13 +71,13 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
                     //            String strObj = String.valueOf(Long.parseLong(CREATE_NETWORK[NODE_ADD_NODE_ID]));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], Long.parseLong(createNetwork[NODE_ADD_NODE_ID]));
                     //            ovsdb.prepareInternalNetwork(nodeObj);
-                    ovsdb.createInternalNetworkForNeutron(nodeObj);
+                    ovsdb.nodeAdded(nodeObj);
 
                 } else if ((ONEPK.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) ||
                         (PRODUCTION.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE]))) {
                     //            String strNode = String.valueOf(Long.parseLong(CREATE_NETWORK[NODE_ADD_NODE_ID], 16));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], createNetwork[NODE_ADD_NODE_ID]);
-                    ovsdb.createInternalNetworkForNeutron(nodeObj);
+                    ovsdb.nodeAdded(nodeObj);
                 } else if (PCEP.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) {
                     UUID idOne = new UUID(new Long(0), new Long(createNetwork[NODE_ADD_NODE_ID]));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], idOne);
@@ -89,7 +90,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
             } catch (Exception ex) {
                 if ((createNetwork[NODE_ADD_SET_OR_UNSET_OVSDB].equalsIgnoreCase("1"))
                         && (createNetwork[NODE_ADD_NULL_EXCEPTION_HANDLER].equalsIgnoreCase("null"))) {
-                    assertEquals(createNetwork[NODE_ADD_NODE_ID], null, ex.getMessage());
+                    assertEquals(ex.getMessage(), createNetwork[NODE_ADD_NULL_EXCEPTION_HANDLER], "null");
                 }
             }
         }
@@ -147,7 +148,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
      * Test rowUpdated Methods with Neutron Port in OVSDBPluginEventHandler.
      */
     @Test
-    public void testNodeUpdatedNeutronPort() {
+    public void testRowUpdatedNeutronPort() {
         currentCalledMethod = ROW_UPDATED;
 
         for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
@@ -196,22 +197,6 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
                     intfOld.setName(rowUpdate[ROW_UPDATE_NODE_OBJECT_NAME]);
                     Interface intfNew = new InterfaceStub();
                     ovsdb.rowUpdated(nodeObj, rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME], rowUpdate[ROW_UPDATE_PARENT_UUID], null, intfNew.getRow());
-                } else {
-                    if (rowUpdate[ROW_UPDATE_OLD_ROW].equalsIgnoreCase("null")) {
-                        Interface interfaceBridge = new InterfaceStub();
-                        interfaceBridge.setName(rowUpdate[ROW_UPDATE_NODE_OBJECT_NAME]);
-                        ovsdb.rowUpdated(nodeObj, rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME], rowUpdate[ROW_UPDATE_PARENT_UUID], null, interfaceBridge.getRow());
-                    } else if (rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("Interface")) {
-                        Interface newInterfaceBridge = new InterfaceStub();
-                        newInterfaceBridge.setName(rowUpdate[ROW_UPDATE_NODE_OBJECT_NAME]);
-
-                        Interface oldInterfaceBridge = new InterfaceStub();
-                        oldInterfaceBridge.setName(rowUpdate[ROW_UPDATE_NODE_OBJECT_NAME]);
-
-                        ovsdb.rowUpdated(nodeObj, rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME], rowUpdate[ROW_UPDATE_PARENT_UUID], oldInterfaceBridge.getRow(), newInterfaceBridge.getRow());
-                    } else if (rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("Port")) {
-                    } else if (rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("OpenVSwitch")) {
-                    }
                 }
 
                 ovsdb.unsetOVSDBConfigService(ovsdbConfig);
@@ -232,12 +217,88 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
+     * {@link OVSDBPluginEventHandler#isUpdateOfInterest(Node, oldRow, newRow)}.
+     * Test isUpdateOfInterest Methods with Neutron Port in OVSDBPluginEventHandler.
+     */
+    @Test
+    public void testIsUpdateOfInterest() {
+        currentCalledMethod = IS_UPDATE_OF_INTEREST;
+
+        for (String [] isUpdateOfInterest : IS_UPDATE_OF_INTEREST_INPUT_ARRAY) {
+            try {
+                String pcep = isUpdateOfInterest[ROW_UPDATE_NODE_TYPE];
+                UUID idOne = UUID.randomUUID();
+                Node nodeObj = new Node(pcep, idOne);
+
+                for (int index = 0; index < IS_UPDATE_OF_INTEREST_INPUT_ARRAY.length; index++) {
+                    String [] tempIsUpdateOfInterest = IS_UPDATE_OF_INTEREST_INPUT_ARRAY[index];
+                    if (isUpdateOfInterest == tempIsUpdateOfInterest) {
+                        IS_UPDATE_OF_INTEREST_INPUT_ARRAY[index][ROW_UPDATE_UUID] = idOne.toString();
+                    }
+                }
+
+                OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
+                OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
+                ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
+                NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
+                VTNManagerStub vtnManagerStub = new VTNManagerStub();
+
+                ovsdb.setOVSDBConfigService(ovsdbConfig);
+                ovsdb.setConnectionService(connectionService);
+                ovsdb.setNeutronPortCRUD(neutron);
+                ovsdb.setVTNManager(vtnManagerStub);
+
+                if (isUpdateOfInterest[ROW_UPDATE_OLD_ROW].equalsIgnoreCase("null")) {
+                    Interface interfaceBridge = new InterfaceStub();
+                    interfaceBridge.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+                    ovsdb.rowUpdated(nodeObj, isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME], isUpdateOfInterest[ROW_UPDATE_PARENT_UUID], null, interfaceBridge.getRow());
+                } else if (isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("Interface")) {
+                    Interface newInterfaceBridge = new InterfaceStub();
+                    newInterfaceBridge.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+
+                    Interface oldInterfaceBridge = new InterfaceStub();
+                    oldInterfaceBridge.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+
+                    ovsdb.rowUpdated(nodeObj, isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME], isUpdateOfInterest[ROW_UPDATE_PARENT_UUID], oldInterfaceBridge.getRow(), newInterfaceBridge.getRow());
+                } else if (isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("Port")) {
+                    Port newPort = new PortStub();
+                    newPort.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+
+                    Port oldPort = new PortStub();
+                    oldPort.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+
+                    ovsdb.rowUpdated(nodeObj, isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME], isUpdateOfInterest[ROW_UPDATE_PARENT_UUID], oldPort.getRow(), newPort.getRow());
+                } else if (isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("OpenVSwitch")) {
+                    OpenVSwitch newOpenVSwitch = new OpenVSwitchStub();
+                    OpenVSwitch oldOpenVSwitch = new OpenVSwitchStub();
+
+                    ovsdb.rowUpdated(nodeObj, isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME], isUpdateOfInterest[ROW_UPDATE_PARENT_UUID], oldOpenVSwitch.getRow(), newOpenVSwitch.getRow());
+                }
+
+                ovsdb.unsetOVSDBConfigService(ovsdbConfig);
+                ovsdb.unsetConnectionService(connectionService);
+                ovsdb.unsetNeutronPortCRUD(neutron);
+            } catch (Exception ex) {
+                if (isUpdateOfInterest[ROW_UPDATE_INTERFACE_NAME].equalsIgnoreCase("ex_msg")) {
+                    // assertEquals(EXCEPTION_MSG, ex.getMessage());
+                }
+
+                if (isUpdateOfInterest[ROW_UPDATE_INTERFACE_NAME].equalsIgnoreCase("null_msg")) {
+                    assertEquals(null, ex.getMessage());
+                }
+            }
+        }
+        currentCalledMethod = DEFAULT_NO_METHOD;
+    }
+
+    /**
+     * Test method for
      * {@link OVSDBPluginEventHandler#rowAdded(Node, String, String, org.opendaylight.ovsdb.lib.notation.Row)}.
      * Test rowAdded Method with OVSDBPluginEventHandler.
      */
     @Test
     public void testRowAdded() {
-
+        currentCalledMethod = ROW_ADDED;
         try {
             OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
             OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
@@ -262,6 +323,43 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
         } catch (Exception ex) {
             assertEquals(1, 1);
         }
+        currentCalledMethod = DEFAULT_NO_METHOD;
+    }
+
+    /**
+     * Test method for
+     * {@link OVSDBPluginEventHandler#nodeRemoved(Node)}.
+     * Test nodeRemoved Method with OVSDBPluginEventHandler.
+     */
+    @Test
+    public void testNodeRemoved() {
+        currentCalledMethod = NODE_REMOVED;
+        try {
+            OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
+            OVSDBManagerStub ovsdbConfig = new OVSDBManagerStub();
+            ConnectionServiceInternalStub connectionService = new ConnectionServiceInternalStub();
+            NeutronPortCRUDStub neutron = new NeutronPortCRUDStub();
+
+            ovsdb.unsetOVSDBConfigService(ovsdbConfig);
+            ovsdb.unsetConnectionService(connectionService);
+            ovsdb.unsetNeutronPortCRUD(neutron);
+
+            ovsdb.setOVSDBConfigService(ovsdbConfig);
+            ovsdb.setConnectionService(connectionService);
+            ovsdb.setNeutronPortCRUD(neutron);
+
+            UUID idOne = UUID.randomUUID();
+            Node nodeObj = new Node(PCEP, idOne);
+
+            ovsdb.nodeRemoved(nodeObj);
+
+            ovsdb.unsetOVSDBConfigService(ovsdbConfig);
+            ovsdb.unsetConnectionService(connectionService);
+            ovsdb.unsetNeutronPortCRUD(neutron);
+        } catch (Exception ex) {
+            assertEquals(1, 1);
+        }
+        currentCalledMethod = DEFAULT_NO_METHOD;
     }
 
     /**

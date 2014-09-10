@@ -72,14 +72,26 @@ public class InterfaceStub implements Interface {
     public Column<GenericTableSchema, Map<String, String>> getExternalIdsColumn() {
         Column<GenericTableSchema, Map<String, String>> column = null;
         if (externalIds != null) {
-            column = new Column(null, this.externalIds);
+            if (externalIds.size() == 0) {
+                column = new Column(null, null);
+            } else {
+                column = new Column(null, this.externalIds);
+            }
         }
         return column;
     }
 
     @Override
     public Column<GenericTableSchema, Set<Long>> getOpenFlowPortColumn() {
-        return new Column<GenericTableSchema, Set<Long>>(null, openFlowPort);
+        if (this.openFlowPort != null) {
+            if (this.openFlowPort.contains(new Long("0"))) {
+                return new Column<GenericTableSchema, Set<Long>>(null, null);
+            } else {
+                return new Column<GenericTableSchema, Set<Long>>(null, openFlowPort);
+            }
+        }
+
+        return null;
     }
 
     @Override

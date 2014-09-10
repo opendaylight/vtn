@@ -135,6 +135,10 @@ public class OVSDBManagerStub extends TestBase implements OvsdbConfigService {
             bridge.setName("br-int");
             rows.put("1", bridge.getRow());
             return rows;
+        } else if (ONEPK == node.getType()) {
+            Bridge bridge = new BridgeStub();
+            bridge.setName("br-int");
+            return rows;
         } else if (OPENFLOW == node.getType()) {
             if (!(nodeIdTest1.equals(Long.valueOf(obj.toString()))) &&
                     !(nodeIdTest2.equals(Long.valueOf(obj.toString())))) {
@@ -210,93 +214,196 @@ public class OVSDBManagerStub extends TestBase implements OvsdbConfigService {
     @Override
     public <T extends TypedBaseTable<?>> T getTypedRow(Node node, Class<T> typedClass, Row row) {
         if (currentCalledMethod == ROW_REMOVED) {
-            for (String [] rowRemove : ROW_REMOVE_ARRAY) {
-                if (rowRemove[ROW_REMOVE_NODE_ID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+            return validateRowRemovedAndReturnTypedRow(node, typedClass, row);
+        } else if (currentCalledMethod == NODE_ADDED) {
+            return validateNodeAddedAndReturnTypedRow(node, typedClass, row);
+        } else if (currentCalledMethod == ROW_UPDATED) {
+            return validateRowUpdateAndReturnTypedRow(node, typedClass, row);
+        } else if (currentCalledMethod == IS_UPDATE_OF_INTEREST) {
+            return validateIsUpdateOfInterestAndReturnTypedRow(node, typedClass, row);
+        }
+        return null;
+    }
+
+    private <T extends TypedBaseTable<?>> T validateRowRemovedAndReturnTypedRow(Node node, Class<T> typedClass, Row row) {
+        for (String [] rowRemove : ROW_REMOVE_ARRAY) {
+            if (rowRemove[ROW_REMOVE_NODE_ID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+                Interface intfStubRow = new InterfaceStub();
+                intfStubRow.setName(rowRemove[ROW_REMOVE_TABLE_NAME]);
+                OvsdbMap<String, String> mapOvsdb = new OvsdbMap<String, String>();
+                mapOvsdb.delegate().put("iface-id", rowRemove[ROW_REMOVE_NODE_UUID]);
+
+                if (rowRemove[ROW_REMOVE_SET_PROPERTIES].equalsIgnoreCase("1")) {
+                    mapOvsdb = new OvsdbMap<String, String>();
+                    mapOvsdb.delegate().put("not an iface-id", rowRemove[ROW_REMOVE_NODE_UUID]);
+                }
+
+                if (rowRemove[ROW_REMOVE_SET_PROPERTIES].equalsIgnoreCase("3")) {
+                    mapOvsdb = new OvsdbMap<String, String>();
+                }
+
+                intfStubRow.setExternalIds(mapOvsdb.delegate());
+
+                if (!rowRemove[ROW_REMOVE_SET_PROPERTIES].equalsIgnoreCase("2")) {
+                    return (T)intfStubRow;
+                }
+            }
+        }
+        return null;
+    }
+
+    private <T extends TypedBaseTable<?>> T validateNodeAddedAndReturnTypedRow(Node node, Class<T> typedClass, Row row) {
+        Bridge bridge = new BridgeStub();
+        bridge.setName("invalid Bridge name");
+
+        boolean isValidPeNodeIdOf5 = false;
+        if ((String.valueOf(node.getID()).length() == UUID_LEN)
+                && (NODE_ID_2.equalsIgnoreCase(String.valueOf(Long.parseLong(String.valueOf(node.getID()).substring(UUID_POSITION_IN_NODE), HEX_RADIX))))) {
+            isValidPeNodeIdOf5 = true;
+        }
+        if ((NODE_ID_1.equalsIgnoreCase(String.valueOf(node.getID())))
+                || (isValidPeNodeIdOf5)) {
+            bridge.setName("br-int");
+        }
+
+        return (T)bridge;
+    }
+
+    private <T extends TypedBaseTable<?>> T validateRowUpdateAndReturnTypedRow(Node node, Class<T> typedClass, Row row) {
+        if (typedClass.getSimpleName().equalsIgnoreCase("Interface")) {
+            for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
+                if (rowUpdate[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
                     Interface intfStubRow = new InterfaceStub();
-                    intfStubRow.setName(rowRemove[ROW_REMOVE_TABLE_NAME]);
+
+                    intfStubRow.setName(getTableName(node, typedClass));
                     OvsdbMap<String, String> mapOvsdb = new OvsdbMap<String, String>();
 
-                    if (!rowRemove[ROW_REMOVE_SET_PROPERTIES].equalsIgnoreCase("2")) {
-                        mapOvsdb.delegate().put("iface-id", rowRemove[ROW_REMOVE_NODE_UUID]);
-                    }
+                    mapOvsdb.delegate().put(rowUpdate[ROW_UPDATE_INTERFACE_NAME], rowUpdate[ROW_UPDATE_INTERFACE_PORT_ID]);
+                    intfStubRow.setExternalIds(mapOvsdb.delegate());
+                    OvsdbSet<Long> ofPortColumn = new OvsdbSet<>();
 
-                    if (!rowRemove[ROW_REMOVE_SET_PROPERTIES].equalsIgnoreCase("1")) {
-                        intfStubRow.setExternalIds(mapOvsdb.delegate());
+                    if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(OF_PORT_ARRAY_IS_NULL)) {
+                        // Added Dumy port and in InterfaceStub, for this Dumyport OFPort will be returned as NULL
+                        ofPortColumn.delegate().add(new Long("0"));
+                    } else if (!rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(OF_PORT_ARRAY_IS_EMPTY)) {
+                        ofPortColumn.delegate().add(new Long("1"));
                     }
+                    intfStubRow.setOpenFlowPort(ofPortColumn.delegate());
 
-                    if (!rowRemove[ROW_REMOVE_SET_PROPERTIES].equalsIgnoreCase("3")) {
-                        return (T)intfStubRow;
-                    }
+                    return (T)intfStubRow;
                 }
             }
-        } else if (currentCalledMethod == NODE_ADDED) {
+        } else if (typedClass.getSimpleName().equalsIgnoreCase("Bridge")) {
             Bridge bridge = new BridgeStub();
 
-            boolean isValidPeNodeIdOf5 = false;
-            if ((String.valueOf(node.getID()).length() == UUID_LEN)
-                    && (BRIDGE_UUID_2.equalsIgnoreCase(String.valueOf(Long.parseLong(String.valueOf(node.getID()).substring(UUID_POSITION_IN_NODE), HEX_RADIX))))) {
-                isValidPeNodeIdOf5 = true;
+            OvsdbSet<UUID> ovsdbset = new OvsdbSet<UUID>();
+            UUID uu = new UUID("12345678");
+            ovsdbset.delegate().add(uu);
+            bridge.setPorts(ovsdbset.delegate());
+
+            OvsdbSet<String> ovsdbdatapath = new OvsdbSet<String>();
+            ovsdbdatapath.delegate().add("1");
+            bridge.setDatapathId(ovsdbdatapath.delegate());
+
+            for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
+                if (rowUpdate[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+                    if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_NULL)) {
+                        // NULL to Bridge's DatapathId
+                        bridge.setDatapathId(null);
+                    } else if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(SET_BRIDGES_DATA_PATH_ID_COLUMN_TO_EMPTY_SET)) {
+                        // Empty to Bridge's DatapathId
+                        bridge.setDatapathId(new OvsdbSet<String>());
+                    }
+                }
             }
-            if ((!BRIDGE_UUID_1.equalsIgnoreCase(String.valueOf(node.getID())))
-                    && (!isValidPeNodeIdOf5)) {
-                bridge.setName("br-int");
-            }
+            bridge.setName("br-int");
 
             return (T)bridge;
-        } else if (currentCalledMethod == ROW_UPDATED) {
-            if (typedClass.getSimpleName().equalsIgnoreCase("Interface")) {
-                for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
-                    if (rowUpdate[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
-                        Interface intfStubRow = new InterfaceStub();
+        } else if (typedClass.getSimpleName().equalsIgnoreCase("Port")) {
+            OvsdbSet<UUID> ovsdbset = new OvsdbSet<UUID>();
+            UUID uu = null;
 
-                        if (!rowUpdate[ROW_UPDATE_PARENT_UUID].equalsIgnoreCase(INTERFACE_PARENT_UUID)) {
-                            intfStubRow.setName(getTableName(node, typedClass));
-                            OvsdbMap<String, String> mapOvsdb = new OvsdbMap<String, String>();
-
-                            mapOvsdb.delegate().put(rowUpdate[ROW_UPDATE_INTERFACE_NAME], rowUpdate[ROW_UPDATE_INTERFACE_PORT_ID]);
-                            intfStubRow.setExternalIds(mapOvsdb.delegate());
-
-                            OvsdbSet<Long> ofPortColumn = new OvsdbSet<>();
-                            ofPortColumn.delegate().add(new Long("1"));
-                            intfStubRow.setOpenFlowPort(ofPortColumn.delegate());
-                        }
-                        return (T)intfStubRow;
-                    }
-                }
-            } else if (typedClass.getSimpleName().equalsIgnoreCase("Bridge")) {
-                Bridge bridge = new BridgeStub();
-
-                OvsdbSet<UUID> ovsdbset = new OvsdbSet<UUID>();
-                UUID uu = new UUID("12345678");
-                ovsdbset.delegate().add(uu);
-                bridge.setPorts(ovsdbset.delegate());
-
-                OvsdbSet<String> ovsdbdatapath = new OvsdbSet<String>();
-                ovsdbdatapath.delegate().add("1");
-                bridge.setDatapathId(ovsdbdatapath.delegate());
-
-                bridge.setName("br-int");
-
-                return (T)bridge;
-            } else if (typedClass.getSimpleName().equalsIgnoreCase("Port")) {
-                OvsdbSet<UUID> ovsdbset = new OvsdbSet<UUID>();
-                UUID uu = null;
-                for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
-                    if (rowUpdate[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+            for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
+                if (rowUpdate[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+                    if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(SET_PORT_OBJECT_TO_NULL)) {
+                        return null;
+                    } else if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(SET_PORT_OBJECT_TO_EMPTY_SET)) {
+                        // Set NULL to ovsdbset
+                        ovsdbset = null;
+                    } else if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(SET_PORT_OBJECT_WITH_WRONG_UUID)) {
+                        // Dumy-Wrong one
+                        uu = new UUID("E6E005D3A24542FCB03897730A5150E2");
+                        ovsdbset.delegate().add(uu);
+                    } else {
                         uu = new UUID(rowUpdate[ROW_UPDATE_PARENT_UUID]);
+                        ovsdbset.delegate().add(uu);
                     }
                 }
-                ovsdbset.delegate().add(uu);
-                PortStub port = new PortStub();
-                for (String [] rowUpdate : ROW_UPDATE_INPUT_ARRAY) {
-                    if (rowUpdate[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
-                        if (!rowUpdate[ROW_UPDATE_PARENT_UUID].equalsIgnoreCase(PORT_PARENT_UUID)) {
-                            port.setInterfaces(ovsdbset.delegate());
-                        }
-                    }
-                }
-                return (T)port;
             }
+
+            PortStub port = new PortStub();
+            port.setInterfaces(ovsdbset.delegate());
+            return (T)port;
+        }
+        return null;
+    }
+
+    private <T extends TypedBaseTable<?>> T validateIsUpdateOfInterestAndReturnTypedRow(Node node, Class<T> typedClass, Row row) {
+        if (typedClass.getSimpleName().equalsIgnoreCase("Interface")) {
+            for (String [] isUpdateOfInterest : IS_UPDATE_OF_INTEREST_INPUT_ARRAY) {
+                if (isUpdateOfInterest[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+                    Interface intfStubRow = new InterfaceStub();
+
+                    if (!isUpdateOfInterest[ROW_UPDATE_PARENT_UUID].equalsIgnoreCase(INTERFACE_PARENT_UUID)) {
+                        intfStubRow.setName(getTableName(node, typedClass));
+                        OvsdbMap<String, String> mapOvsdb = new OvsdbMap<String, String>();
+
+                        mapOvsdb.delegate().put(isUpdateOfInterest[ROW_UPDATE_INTERFACE_NAME], isUpdateOfInterest[ROW_UPDATE_INTERFACE_PORT_ID]);
+                        intfStubRow.setExternalIds(mapOvsdb.delegate());
+
+                        OvsdbSet<Long> ofPortColumn = new OvsdbSet<>();
+                        ofPortColumn.delegate().add(new Long("1"));
+                        intfStubRow.setOpenFlowPort(ofPortColumn.delegate());
+                    }
+                    return (T)intfStubRow;
+                }
+            }
+        } else if (typedClass.getSimpleName().equalsIgnoreCase("Bridge")) {
+            Bridge bridge = new BridgeStub();
+
+            OvsdbSet<UUID> ovsdbset = new OvsdbSet<UUID>();
+            UUID uu = new UUID("12345678");
+            ovsdbset.delegate().add(uu);
+            bridge.setPorts(ovsdbset.delegate());
+
+            OvsdbSet<String> ovsdbdatapath = new OvsdbSet<String>();
+            ovsdbdatapath.delegate().add("1");
+            bridge.setDatapathId(ovsdbdatapath.delegate());
+
+            bridge.setName("br-int");
+
+            return (T)bridge;
+        } else if (typedClass.getSimpleName().equalsIgnoreCase("Port")) {
+            OvsdbSet<UUID> ovsdbset = new OvsdbSet<UUID>();
+            UUID uu = null;
+            for (String [] isUpdateOfInterest : IS_UPDATE_OF_INTEREST_INPUT_ARRAY) {
+                if (isUpdateOfInterest[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+                    uu = new UUID(isUpdateOfInterest[ROW_UPDATE_PARENT_UUID]);
+                }
+            }
+            ovsdbset.delegate().add(uu);
+            PortStub port = new PortStub();
+            for (String [] isUpdateOfInterest : IS_UPDATE_OF_INTEREST_INPUT_ARRAY) {
+                if (isUpdateOfInterest[ROW_UPDATE_UUID].equalsIgnoreCase(String.valueOf(node.getID()))) {
+                    if (!isUpdateOfInterest[ROW_UPDATE_PARENT_UUID].equalsIgnoreCase(PORT_PARENT_UUID)) {
+                        port.setInterfaces(ovsdbset.delegate());
+                    }
+                }
+            }
+            return (T)port;
+        } else if (typedClass.getSimpleName().equalsIgnoreCase("OpenVSwitch")) {
+            OpenVSwitchStub openVSwitch = new OpenVSwitchStub();
+            return (T)openVSwitch;
         }
         return null;
     }
