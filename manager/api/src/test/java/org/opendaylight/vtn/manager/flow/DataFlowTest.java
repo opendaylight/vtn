@@ -21,7 +21,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
-
 public class DataFlowTest extends TestBase {
     protected static int ids = 123;
     protected static long created = 14374808;
@@ -29,8 +28,8 @@ public class DataFlowTest extends TestBase {
     protected static short hard = 0;
 
     /**
-    * Test case for getter methods.
-    */
+     * Test case for getter methods.
+     */
     @Test
     public void testGetter() {
         List<DataFlow> list = new ArrayList<DataFlow>();
@@ -65,9 +64,9 @@ public class DataFlowTest extends TestBase {
         assertEquals(idle, dataFlowobj.getIdleTimeout());
         assertEquals(null, dataFlowobj.getEnressPort());
     }
+
     /**
-     * Test case for {@link FlowStatslist#equals(Object)}
-     *
+     * Test case for {@link DataFlow#equals(Object)}
      */
     @Test
     public void testEquals() {
