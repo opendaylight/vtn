@@ -12,7 +12,7 @@
 
 #include <unc/keytype.h>
 
-#define AUDIT_KT_SIZE 6
+#define AUDIT_KT_SIZE 11
 
 struct audit_key_type {
   unc_key_type_t key_type;
