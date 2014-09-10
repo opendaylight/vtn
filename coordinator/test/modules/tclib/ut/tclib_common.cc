@@ -377,8 +377,8 @@ TEST(test_31, test_fini) {
   TcLibModule tclib_obj(&mattr);
   tclib_obj.init();
 
-  EXPECT_EQ(NULL, tclib_obj.pTcLibInterface_);
-  EXPECT_EQ(NULL, tclib_obj.sess_);
+  //EXPECT_EQ(NULL, tclib_obj.pTcLibInterface_);
+  //EXPECT_EQ(NULL, tclib_obj.sess_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.session_id_);
   EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.config_id_);
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);

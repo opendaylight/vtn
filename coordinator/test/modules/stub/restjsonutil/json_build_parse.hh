@@ -26,8 +26,17 @@ class JsonBuildParse {
    * @param[out] json_object* - json_object pointer
    */
   static json_object* create_json_obj() {
-    return json_object_new_object();;
+    return json_object_new_object();
   }
+
+  static json_object* create_json_array_obj() {
+    return json_object_new_array();
+  }
+
+  static void add_to_array (json_object *array,
+                                       json_object* value) {
+      json_object_array_add (array,value);
+    }
 
   /**
    * @brief                    - Template method which build the json request
