@@ -171,8 +171,8 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             PacketContext ncpctx = createARPPacketContext(src, dst, sender, target,
                                           (short)-1, connectors.get(1), ARP.REQUEST);
 
-            InetAddress ia = getInetAddressFromAddress(sender);
-            InetAddress ia2 = getInetAddressFromAddress(sender2);
+            InetAddress ia = createInetAddress(sender);
+            InetAddress ia2 = createInetAddress(sender2);
             Set<InetAddress> ipSet = new HashSet<InetAddress>();
 
             // get from empty table.
@@ -321,7 +321,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             ARP.REQUEST);
         bnode.setPath(ipath1);
         tbl.add(pctx, bnode);
-        InetAddress ipaddr = getInetAddressFromAddress(sender);
+        InetAddress ipaddr = createInetAddress(sender);
 
         long key = 1000L;
         tent = new MacTableEntry(path1, key, connectors.get(0), (short)0,
@@ -439,7 +439,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
                                   (byte)0x00, (byte)0x00, (byte)0x01};
         byte [] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
         byte [] sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)1};
-        InetAddress ia = getInetAddressFromAddress(sender);
+        InetAddress ia = createInetAddress(sender);
         Set<InetAddress> ipSet = new HashSet<InetAddress>();
 
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
@@ -476,7 +476,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
 
         // change IP Address
         sender = new byte[] {(byte)192, (byte)168, (byte)0, (byte)2};
-        ia = getInetAddressFromAddress(sender);
+        ia = createInetAddress(sender);
         pctx = createARPPacketContext(src, dst, sender, target,
                 vlan, nc, ARP.REQUEST);
         tbl.add(pctx, bnode);
@@ -584,12 +584,10 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
             tbl1, tbl2, tbl3, tbl4, tbl5, tbl6, tbl7,
         };
 
-        InetAddress contIpAddr1 =
-            getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                  (byte)100, (byte)254});
-        InetAddress contIpAddr2 =
-            getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                  (byte)100, (byte)253});
+        InetAddress contIpAddr1 = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)100, (byte)254});
+        InetAddress contIpAddr2 = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)100, (byte)253});
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
         short vlan = 0;
@@ -617,7 +615,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
                 tblArray[i].add(pctx, bnode);
             }
 
-            InetAddress ipaddr = getInetAddressFromAddress(sender);
+            InetAddress ipaddr = createInetAddress(sender);
             MacTableEntryId mentid = new MacTableEntryId(
                 ((id % 2) == 0) ? contIpAddr1 : contIpAddr2,
                 (long)id, path7, NetUtils.byteArray6ToLong(src));
@@ -742,7 +740,7 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
         VlanMapPath vpath = new VlanMapPath(path, ifName);
         MacAddressTable tbl = new MacAddressTable(mgr, path, 600);
 
-        InetAddress contIpAddr = getInetAddressFromAddress(
+        InetAddress contIpAddr = createInetAddress(
             new byte[] {(byte)192, (byte)168, (byte)100, (byte)254});
 
         List<NodeConnector> connectors = createNodeConnectors(3, false);
@@ -756,11 +754,11 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
                                         (byte)100, (byte)iphost};
 
             long key = NetUtils.byteArray6ToLong(src);
-            InetAddress ipaddr = getInetAddressFromAddress(sender);
+            InetAddress ipaddr = createInetAddress(sender);
             MacTableEntry tent = new MacTableEntry(
                 ipath, key, connectors.get(iphost % 3),
                 (short)(((vlan / 3) > 0) ? (vlan / 3) : -1), ipaddr);
-            InetAddress ipaddr2 = getInetAddressFromAddress(sender);
+            InetAddress ipaddr2 = createInetAddress(sender);
             MacTableEntry tent2 = new MacTableEntry(
                 ipath, key, connectors.get(iphost % 3),
                 (short)(((vlan / 3) > 0) ? (vlan / 3) : -1), ipaddr2);
@@ -877,11 +875,9 @@ public class MacAddressTableTest extends TestUseVTNManagerBase {
 
         // create MacTableEntry added by remote node.
         short vlanRemote = 0;
-        InetAddress ipRemoteNode
-            = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
-        InetAddress ipRemoteEnt
-            = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                    (byte)100, (byte)1});
+        InetAddress ipRemoteNode = createInetAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipRemoteEnt = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)100, (byte)1});
         long macKey = 99L;
         MacTableEntryId evidRemote = new MacTableEntryId(ipRemoteNode, 0L,
                                                          path, macKey);

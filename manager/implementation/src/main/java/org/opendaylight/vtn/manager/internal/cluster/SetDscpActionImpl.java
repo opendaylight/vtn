@@ -17,6 +17,7 @@ import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
 
+import org.opendaylight.controller.sal.action.SetNwTos;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -118,6 +119,8 @@ public final class SetDscpActionImpl extends FlowActionImpl {
         Inet4Packet ipv4 = pctx.getInet4Packet();
         if (ipv4 != null) {
             ipv4.setDscp(dscp);
+            int tos = (int)SetDscpAction.dscpToTos(dscp);
+            pctx.addFilterAction(new SetNwTos(tos));
             return true;
         }
 

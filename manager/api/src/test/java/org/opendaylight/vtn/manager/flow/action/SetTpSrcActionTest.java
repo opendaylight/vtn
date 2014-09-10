@@ -32,7 +32,7 @@ public class SetTpSrcActionTest extends TestBase {
             assertEquals(port, act.getPort());
         }
 
-        int[] valid = {1, 2, 100, 1000, 9999, 20000, 30000, 65534, 65535};
+        int[] valid = {0, 1, 2, 100, 1000, 9999, 20000, 30000, 65534, 65535};
         for (int port: valid) {
             SetTpSrc sact = new SetTpSrc(port);
             SetTpSrcAction act = new SetTpSrcAction(sact);

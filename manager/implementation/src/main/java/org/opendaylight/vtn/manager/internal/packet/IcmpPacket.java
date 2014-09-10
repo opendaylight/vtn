@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
@@ -25,7 +26,7 @@ import org.opendaylight.controller.sal.utils.NetUtils;
 /**
  * {@code IcmpPacket} class implements a cache for an {@link ICMP} instance.
  */
-public final class IcmpPacket implements CachedPacket {
+public final class IcmpPacket implements L4Packet {
     /**
      * A pseudo short value which indicates the byte value is not specified.
      */
@@ -95,9 +96,11 @@ public final class IcmpPacket implements CachedPacket {
          * Set the ICMP type.
          *
          * @param value  A byte integer value which indicates the ICMP type.
+         * @return  A short value which represents the given ICMP type.
          */
-        private void setType(byte value) {
+        private short setType(byte value) {
             type = (short)NetUtils.getUnsignedByte(value);
+            return type;
         }
 
         /**
@@ -124,9 +127,11 @@ public final class IcmpPacket implements CachedPacket {
          * Set the ICMP code.
          *
          * @param value  A byte integer value which indicates the ICMP code.
+         * @return  A short value which represents the given ICMP code.
          */
-        private void setCode(byte value) {
+        private short setCode(byte value) {
             code = (short)NetUtils.getUnsignedByte(value);
+            return code;
         }
 
         /**
@@ -139,10 +144,10 @@ public final class IcmpPacket implements CachedPacket {
          * @param icmp  An {@link ICMP} instance.
          */
         private void fill(ICMP icmp) {
-            if (type != VALUE_NONE) {
+            if (type == VALUE_NONE) {
                 setType(icmp.getType());
             }
-            if (code != VALUE_NONE) {
+            if (code == VALUE_NONE) {
                 setCode(icmp.getCode());
             }
         }
@@ -182,7 +187,7 @@ public final class IcmpPacket implements CachedPacket {
         short type = v.getType();
         if (type == VALUE_NONE) {
             byte b = packet.getType();
-            v.setType(b);
+            type = v.setType(b);
         }
 
         return type;
@@ -208,7 +213,7 @@ public final class IcmpPacket implements CachedPacket {
         short code = v.getCode();
         if (code == VALUE_NONE) {
             byte b = packet.getCode();
-            v.setCode(b);
+            code = v.setCode(b);
         }
 
         return code;
@@ -259,16 +264,7 @@ public final class IcmpPacket implements CachedPacket {
     private ICMP getPacketForWrite() throws VTNException {
         if (cloned) {
             // Create a copy of the original packet.
-            try {
-                byte[] raw = packet.serialize();
-                int nbits = raw.length * NetUtils.NumBitsInAByte;
-                packet = new ICMP();
-                packet.deserialize(raw, 0, nbits);
-            } catch (Exception e) {
-                // This should never happen.
-                throw new VTNException("Failed to copy the packet.", e);
-            }
-
+            packet = MiscUtils.copy(packet, new ICMP());
             cloned = false;
         }
 
@@ -330,31 +326,37 @@ public final class IcmpPacket implements CachedPacket {
         boolean mod = false;
         ICMP icmp = null;
         if (modifiedValues != null) {
+            // At least one flow action that modifies ICMP header is
+            // configured.
+            pctx.addMatchField(MatchType.DL_TYPE);
+            pctx.addMatchField(MatchType.NW_PROTO);
+
             short type = modifiedValues.getType();
             if (values.getType() != type) {
                 // ICMP type was modified.
-                pctx.addFilterAction(new SetTpSrc((int)type));
                 icmp = getPacketForWrite();
                 icmp.setType((byte)type);
                 mod = true;
+            } else if (pctx.hasMatchField(MatchType.TP_SRC)) {
+                // ICMP type in the original packet is unchanged and it will be
+                // specified in flow match. So we don't need to configure
+                // SET_TP_SRC action.
+                pctx.removeFilterAction(SetTpSrc.class);
             }
 
             short code = modifiedValues.getCode();
             if (values.getCode() != code) {
                 // ICMP code was modifled.
-                pctx.addFilterAction(new SetTpDst((int)code));
                 if (icmp == null) {
                     icmp = getPacketForWrite();
                 }
                 icmp.setCode((byte)code);
                 mod = true;
-            }
-
-            if (mod) {
-                // Note that this action must be applied to only ICMPv4
-                // packets.
-                pctx.addMatchField(MatchType.DL_TYPE);
-                pctx.addMatchField(MatchType.NW_PROTO);
+            } else if (pctx.hasMatchField(MatchType.TP_DST)) {
+                // ICMP code in the original packet is unchanged and it will be
+                // specified in flow match. So we don't need to configure
+                // SET_TP_DST action.
+                pctx.removeFilterAction(SetTpDst.class);
             }
         }
 
@@ -382,5 +384,23 @@ public final class IcmpPacket implements CachedPacket {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
         }
+    }
+
+    // L4Packet
+
+    /**
+     * Calculate the checksum of the packet.
+     *
+     * <p>
+     *   This method does nothing because the ICMP checksum is computed by
+     *   {@link ICMP} class.
+     * </p>
+     *
+     * @param ipv4  Never used.
+     * @return  {@code false}.
+     */
+    @Override
+    public boolean updateChecksum(Inet4Packet ipv4) {
+        return false;
     }
 }

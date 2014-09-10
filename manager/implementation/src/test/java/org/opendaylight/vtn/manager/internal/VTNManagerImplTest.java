@@ -332,7 +332,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             getCache(VTNManagerImpl.CACHE_EVENT);
 
         FlowGroupId gid = new FlowGroupId("test_tenant");
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         FlowGroupId gidRemote = new FlowGroupId(ipaddr, 0L, "test_tenant2");
 
         VTNFlow flow = new VTNFlow(gid);
@@ -391,7 +391,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         assertEquals(1, vtnMgr.getFlowDB().size());
 
         // in case MAC Address Table cache remain.
-        ipaddr = getInetAddressFromAddress(new byte[] {10, 0, 0, 1});
+        ipaddr = createInetAddress(new byte[] {10, 0, 0, 1});
         MacTableEntry tent = new MacTableEntry(bpath, 1L, innc, (short)0,
                                                ipaddr);
         vtnMgr.putMacTableEntry(tent);
@@ -5881,7 +5881,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
 
         RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
 
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evidLocal = new ClusterEventId();
 
@@ -5972,7 +5972,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         FlowRemoveEvent removeEvent = new FlowRemoveEvent(flow.getFlowEntries());
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evIdRemote = new ClusterEventId(ipaddr, 0);
         evIdSet.add(evIdRemote);
 
@@ -6203,7 +6203,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         }
 
         InetAddress ipaddr
-            = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+            = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evidLocal = new ClusterEventId();
 
@@ -6292,7 +6292,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         VTNFlowDatabase fdb = vtnMgr.getTenantFlowDB(path.getTenantName());
 
         // create FlowGroupId.
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         FlowGroupId evIdRemote = new FlowGroupId(ipaddr, 0L, "tenant");
         FlowGroupId evIdLocal = new FlowGroupId(InetAddress.getLoopbackAddress(),
                                                 0L, "tenant");
@@ -6443,7 +6443,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
         Node node = NodeCreator.createOFNode(Long.valueOf(0L));
         NodeConnector nc = NodeConnectorCreator
                 .createOFNodeConnector(Short.valueOf("1"), node);
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
 
         MacTableEntryId evidRemote = new MacTableEntryId(ipaddr, 0L, bpath, mac);
         MacTableEntryId evidLocal = new MacTableEntryId(bpath, mac);

@@ -4885,6 +4885,8 @@ public class VtnNorthboundIT extends TestBase {
                                  HexEncode.bytesToHexStringFormat(macAddr2))).
             put(createJSONObject("vlanpcp", "priority",
                                  cookie & MASK_VLAN_PCP)).
+            put(createJSONObject("inet4src", "address", "192.168.20.254")).
+            put(createJSONObject("inet4dst", "address", "10.20.30.40")).
             put(createJSONObject("dscp", "dscp", cookie & MASK_IP_DSCP)).
             put(createJSONObject("icmptype", "type", cookie & MASK_ICMP)).
             put(createJSONObject("icmpcode", "code", ~cookie & MASK_ICMP));
@@ -5068,18 +5070,22 @@ public class VtnNorthboundIT extends TestBase {
             createJSONObject("dldst", "address", "ff:ff:ff:ff:ff:ff"),
             createJSONObject("vlanpcp", "priority", 8),
             createJSONObject("vlanpcp", "priority", -1),
+            createJSONObject("inet4src", "address", "bad_ip_address"),
+            createJSONObject("inet4src", "address", "100.200.300.400"),
+            createJSONObject("inet4src", "address", "::1"),
+            createJSONObject("inet4dst", "address", "bad_ip_address"),
+            createJSONObject("inet4dst", "address", "100.200.1.256"),
+            createJSONObject("inet4dst", "address", "2400:683c:af13:801::2034"),
             createJSONObject("dscp", "dscp", 64),
             createJSONObject("dscp", "dscp", -1),
+            createJSONObject("tpsrc", "port", -1),
+            createJSONObject("tpsrc", "port", 65536),
+            createJSONObject("tpdst", "port", -1),
+            createJSONObject("tpdst", "port", 65536),
             createJSONObject("icmptype", "type", -1),
             createJSONObject("icmptype", "type", 256),
             createJSONObject("icmpcode", "code", -1),
             createJSONObject("icmpcode", "code", 256),
-
-            // Unsupported action.
-            createJSONObject("inet4src", "address", "10.0.0.1"),
-            createJSONObject("inet4dst", "address", "10.0.0.1"),
-            createJSONObject("tpsrc", "port", 10),
-            createJSONObject("tpdst", "port", 10),
         };
 
         bad.put("filterType", new JSONObject().put("pass", empty));

@@ -88,8 +88,8 @@ public class MacTableEntryTest extends TestBase {
 
                             checkMacTableEntry(me, ips, mac, nc, vlan);
 
-                            InetAddress ia
-                                = getInetAddressFromAddress(new byte[] {10, 1, 1, 100});
+                            InetAddress ia =
+                                createInetAddress(new byte[] {10, 1, 1, 100});
                             me = new MacTableEntry(path, mac, copy(nc),
                                                    vlan, ia);
                             me.setInetAddresses(ips);

@@ -234,10 +234,10 @@ public final class EtherPacket implements CachedPacket {
          * @param tag    An {@link IEEE8021Q} instance.
          */
         private void fill(Ethernet ether, IEEE8021Q tag) {
-            if (sourceMac == MAC_NONE) {
+            if (sourceAddress == null) {
                 setSourceAddress(ether.getSourceMACAddress());
             }
-            if (destinationMac == MAC_NONE) {
+            if (destinationAddress == null) {
                 setDestinationAddress(ether.getDestinationMACAddress());
             }
             if (vlanPriority == VLANPRI_NONE && tag != null) {
@@ -283,7 +283,7 @@ public final class EtherPacket implements CachedPacket {
         } else {
             ethType = ether.getEtherType();
             vlanTag = null;
-            vid = 0;
+            vid = MatchType.DL_VLAN_NONE;
         }
 
         values = new Values(vid);
@@ -350,7 +350,7 @@ public final class EtherPacket implements CachedPacket {
     public long getSourceMacAddress() {
         Values v = getValues();
         long mac = v.getSourceMacAddress();
-        if (mac == MAC_NONE) {
+        if (v.getSourceAddress() == null) {
             byte[] addr = packet.getSourceMACAddress();
             v.setSourceAddress(addr);
             mac = v.getSourceMacAddress();
@@ -367,7 +367,7 @@ public final class EtherPacket implements CachedPacket {
     public long getDestinationMacAddress() {
         Values v = getValues();
         long mac = v.getDestinationMacAddress();
-        if (mac == MAC_NONE) {
+        if (v.getDestinationAddress() == null) {
             byte[] addr = packet.getDestinationMACAddress();
             v.setDestinationAddress(addr);
             mac = v.getDestinationMacAddress();
@@ -587,35 +587,47 @@ public final class EtherPacket implements CachedPacket {
      */
     @Override
     public boolean commit(PacketContext pctx) {
-        // We don't need to create a copy of original packet and action to
-        // configure VLAN ID.
-        //   - PacketContext creates Ethernet header and VLAN tag from scratch.
-        //   - Flow action to configure VLAN ID is controller by VBridgeImpl.
+        // We don't need to set modified values to Ethernet and IEEE8021Q
+        // instances because PacketContext always creates Ethernet header and
+        // VLAN tag from scratch.
         boolean mod = false;
         if (modifiedValues != null) {
             if (values.getSourceMacAddress() !=
                 modifiedValues.getSourceMacAddress()) {
                 // Source MAC address was modified.
-                byte[] addr = modifiedValues.getSourceAddress();
-                pctx.addFilterAction(new SetDlSrc(addr));
                 mod = true;
+            } else if (pctx.hasMatchField(MatchType.DL_SRC)) {
+                // Source MAC address is not modified, and it will be specified
+                // in flow match. So we don't need to configure SET_DL_SRC
+                // action.
+                pctx.removeFilterAction(SetDlSrc.class);
             }
 
             if (values.getDestinationMacAddress() !=
                 modifiedValues.getDestinationMacAddress()) {
                 // Destination MAC address was modified.
-                byte[] addr = modifiedValues.getDestinationAddress();
-                pctx.addFilterAction(new SetDlDst(addr));
                 mod = true;
+            } else if (pctx.hasMatchField(MatchType.DL_DST)) {
+                // Destination MAC address is not modified, and it will be
+                // specified in flow match. So we don't need to configure
+                // SET_DL_DST action.
+                pctx.removeFilterAction(SetDlDst.class);
             }
 
             short vlan = modifiedValues.getVlan();
-            if (vlan != 0) {
+            if (vlan == MatchType.DL_VLAN_NONE) {
+                // SET_VLAN_PCP should never be applied to untagged frame.
+                pctx.removeFilterAction(SetVlanPcp.class);
+            } else {
                 byte pri = modifiedValues.getVlanPriority();
                 if (values.getVlanPriority() != pri) {
                     // VLAN priority was modified.
-                    pctx.addFilterAction(new SetVlanPcp((int)pri));
                     mod = true;
+                } else if (pctx.hasMatchField(MatchType.DL_VLAN_PR)) {
+                    // VLAN priority is not modified, and it will be specified
+                    // in flow match. So we don't need to configure
+                    // SET_VLAN_PCP action.
+                    pctx.removeFilterAction(SetVlanPcp.class);
                 }
             }
         }

@@ -9,8 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.net.InetAddress;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
+
+import org.opendaylight.controller.sal.action.SetNwSrc;
 
 /**
  * Implementation of flow action that modifies source IP address in IPv4
@@ -26,7 +33,7 @@ public final class SetInet4SrcActionImpl extends InetAddressActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2930155952373937514L;
+    private static final long serialVersionUID = 2335727194215172858L;
 
     /**
      * Construct a new instance.
@@ -47,5 +54,21 @@ public final class SetInet4SrcActionImpl extends InetAddressActionImpl {
     @Override
     public SetInet4SrcAction getFlowAction() {
         return new SetInet4SrcAction(getAddress());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        Inet4Packet ipv4 = pctx.getInet4Packet();
+        if (ipv4 != null) {
+            InetAddress iaddr = getAddress();
+            ipv4.setSourceAddress(iaddr);
+            pctx.addFilterAction(new SetNwSrc(iaddr));
+            return true;
+        }
+
+        return false;
     }
 }

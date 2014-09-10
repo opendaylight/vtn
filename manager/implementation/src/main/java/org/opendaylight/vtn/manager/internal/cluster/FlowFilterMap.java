@@ -360,17 +360,15 @@ public abstract class FlowFilterMap implements Serializable, Cloneable {
     public final PacketContext evaluate(VTNManagerImpl mgr, PacketContext pctx,
                                         short vid)
         throws DropFlowException, RedirectFlowException {
-        if (pctx.isFilterDisabled()) {
-            logDisabled(mgr, pctx);
-            return pctx;
-        }
-
-        PacketContext pc;
-        if (flowFilters.isEmpty()) {
-            pc = pctx;
-        } else {
-            pc = getPacketContext(pctx);
-            evaluateImpl(mgr, pc, vid);
+        PacketContext pc = pctx;
+        if (!flowFilters.isEmpty()) {
+            pctx.setFiltered(true);
+            if (pctx.isFilterDisabled()) {
+                logDisabled(mgr, pctx);
+            } else {
+                pc = getPacketContext(pctx);
+                evaluateImpl(mgr, pc, vid);
+            }
         }
 
         return pc;

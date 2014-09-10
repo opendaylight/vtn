@@ -15,9 +15,10 @@ import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.packet.L4Packet;
 
+import org.opendaylight.controller.sal.action.SetTpSrc;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -115,10 +116,11 @@ public final class SetIcmpTypeActionImpl extends FlowActionImpl {
      */
     @Override
     public boolean apply(PacketContext pctx) {
-        CachedPacket packet = pctx.getL4Packet();
+        L4Packet packet = pctx.getL4Packet();
         if (packet instanceof IcmpPacket) {
             IcmpPacket icmp = (IcmpPacket)packet;
             icmp.setType(type);
+            pctx.addFilterAction(new SetTpSrc((int)type));
             return true;
         }
 

@@ -15,7 +15,6 @@ import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -47,10 +46,12 @@ import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.IPv4;
+import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
@@ -275,6 +276,28 @@ public abstract class TestBase extends Assert {
         }
 
         return ref;
+    }
+
+    /**
+     * Create a deep copy of the specified {@link Packet} instance.
+     *
+     * @param src  The source {@link Packet} instance.
+     * @param dst  The destination {@link Packet} instance.
+     * @param <T>  Type of the packet.
+     * @return  {@code dst}.
+     */
+    protected static <T extends Packet> T copy(T src, T dst) {
+        if (src != null) {
+            try {
+                byte[] raw = src.serialize();
+                int nbits = raw.length * NetUtils.NumBitsInAByte;
+                dst.deserialize(raw, 0, nbits);
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        return dst;
     }
 
     /**
@@ -745,6 +768,45 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a list of IPv4 addresses and {@code null}.
+     *
+     * @return  A list of {@link InetAddress} instances.
+     */
+    protected static List<InetAddress> createInet4Addresses() {
+        return createInet4Addresses(true);
+    }
+
+    /**
+     * Create a list of IPv4 addresses.
+     *
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link InetAddress} instances.
+     */
+    protected static List<InetAddress> createInet4Addresses(boolean setNull) {
+        List<InetAddress> list = new ArrayList<InetAddress>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        String[] addrs = {
+            "0.0.0.0",
+            "255.255.255.255",
+            "127.0.0.1",
+            "10.20.30.40",
+            "192.168.100.200",
+        };
+        for (String addr: addrs) {
+            try {
+                list.add(InetAddress.getByName(addr));
+            } catch (Exception e) {
+                unexpected(e);
+            }
+        }
+
+        return list;
+    }
+
+    /**
      * Create a {@link InetAddress} instance which represents the specified
      * IP address.
      *
@@ -848,6 +910,173 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create an Ethernet frame.
+     *
+     * @param src      Source MAC address.
+     * @param dst      Destination MAC address.
+     * @param type     Ethernet type.
+     * @param vid      A VLAN ID.
+     * @param pcp      VLAN priority.
+     * @param payload  A {@link Packet} instance to be set as payload.
+     * @return  An {@link Ethernet} instance.
+     */
+    protected static Ethernet createEthernet(byte[] src, byte[] dst, int type,
+                                             short vid, byte pcp,
+                                             Packet payload) {
+        Ethernet pkt = new Ethernet();
+        pkt.setSourceMACAddress(src).setDestinationMACAddress(dst);
+        if (vid == MatchType.DL_VLAN_NONE) {
+            pkt.setEtherType((short)type).setPayload(payload);
+        } else {
+            IEEE8021Q tag = new IEEE8021Q();
+            tag.setCfi((byte)0).setPcp(pcp).setVid(vid).
+                setEtherType((short)type).setPayload(payload);
+            pkt.setEtherType(EtherTypes.VLANTAGGED.shortValue()).
+                setPayload(tag);
+        }
+
+        return pkt;
+    }
+
+    /**
+     * Create an Ethernet frame.
+     *
+     * @param src   Source MAC address.
+     * @param dst   Destination MAC address.
+     * @param type  Ethernet type.
+     * @param vid   A VLAN ID.
+     * @param pcp   VLAN priority
+     * @param raw   A byte array to be set as payload.
+     * @return  An {@link Ethernet} instance.
+     */
+    protected static Ethernet createEthernet(byte[] src, byte[] dst, int type,
+                                             short vid, byte pcp, byte[] raw) {
+        Ethernet pkt = new Ethernet();
+        pkt.setSourceMACAddress(src).setDestinationMACAddress(dst);
+        if (vid == MatchType.DL_VLAN_NONE) {
+            pkt.setEtherType((short)type).setRawPayload(raw);
+        } else {
+            IEEE8021Q tag = new IEEE8021Q();
+            tag.setCfi((byte)0).setPcp(pcp).setVid(vid).
+                setEtherType((short)type).setRawPayload(raw);
+            pkt.setEtherType(EtherTypes.VLANTAGGED.shortValue()).
+                setPayload(tag);
+        }
+
+        return pkt;
+    }
+
+    /**
+     * Create an untagged Ethernet frame that contains the given IPv4 packet.
+     *
+     * <p>
+     *   Fixed values are used for the source and destination MAC address.
+     * </p>
+     *
+     * @param ipv4  An {@link IPv4} to be configured as payload.
+     * @return  An {@link Ethernet} instance.
+     */
+    protected static Ethernet createEthernet(IPv4 ipv4) {
+        byte[] src = {
+            (byte)0x00, (byte)0x11, (byte)0x22,
+            (byte)0x33, (byte)0x44, (byte)0x55,
+        };
+        byte[] dst = {
+            (byte)0xa0, (byte)0xb0, (byte)0xc0,
+            (byte)0xdd, (byte)0xee, (byte)0xff,
+        };
+
+        return createEthernet(src, dst, EtherTypes.IPv4.intValue(),
+                              MatchType.DL_VLAN_NONE, (byte)0, ipv4);
+    }
+
+    /**
+     * Create an {@link IPv4} instance.
+     *
+     * @param src    Source IP address.
+     * @param dst    Destination IP address.
+     * @param proto  IP protocol number.
+     * @param dscp   DSCP field value.
+     * @return  An {@link IPv4} instance.
+     */
+    protected static IPv4 createIPv4(InetAddress src, InetAddress dst,
+                                     short proto, byte dscp) {
+        IPv4 pkt = new IPv4();
+        return pkt.setSourceAddress(src).setDestinationAddress(dst).
+            setProtocol((byte)proto).setDiffServ(dscp).
+            setTtl((byte)64);
+    }
+
+    /**
+     * Create an {@link IPv4} instance.
+     *
+     * @param src    A byte array which represents the source IP address.
+     * @param dst    A byte array which represents the destination IP address.
+     * @param proto  IP protocol number.
+     * @param dscp   DSCP field value.
+     * @return  An {@link IPv4} instance.
+     */
+    protected static IPv4 createIPv4(byte[] src, byte[] dst, short proto,
+                                     byte dscp) {
+        InetAddress srcInet = createInetAddress(src);
+        InetAddress dstInet = createInetAddress(dst);
+        return createIPv4(srcInet, dstInet, proto, dscp);
+    }
+
+    /**
+     * Create an {@link IPv4} instance.
+     *
+     * @param src    An integer value which represents the source IP address.
+     * @param dst    An integer value which represents the destination IP
+     *               address.
+     * @param proto  IP protocol number.
+     * @param dscp   DSCP field value.
+     * @return  An {@link IPv4} instance.
+     */
+    protected static IPv4 createIPv4(int src, int dst, short proto,
+                                     byte dscp) {
+        byte[] srcAddr = NetUtils.intToByteArray4(src);
+        byte[] dstAddr = NetUtils.intToByteArray4(dst);
+        return createIPv4(srcAddr, dstAddr, proto, dscp);
+    }
+
+    /**
+     * Create an {@link IPv4} instance.
+     *
+     * @param src      A byte array which represents the source IP address.
+     * @param dst      A byte array which represents the destination IP address.
+     * @param proto    IP protocol number.
+     * @param dscp     DSCP field value.
+     * @param payload  A {@link Packet} instance to be configured as payload.
+     * @return  An {@link IPv4} instance.
+     */
+    protected static IPv4 createIPv4(byte[] src, byte[] dst, short proto,
+                                     byte dscp, Packet payload) {
+        IPv4 pkt = createIPv4(src, dst, proto, dscp);
+        pkt.setPayload(payload);
+
+        return pkt;
+    }
+
+    /**
+     * Create an {@link IPv4} instance.
+     *
+     * <p>
+     *   Fixed values are used for the source and destination IP address,
+     *   and DSCP field.
+     * </p>
+     *
+     * @param proto    IP protocol number.
+     * @param payload  A {@link Packet} instance to be configured as payload.
+     * @return  An {@link IPv4} instance.
+     */
+    protected static IPv4 createIPv4(short proto, Packet payload) {
+        byte[] src = {(byte)10, (byte)1, (byte)2, (byte)30};
+        byte[] dst = {(byte)127, (byte)0, (byte)0, (byte)1};
+        return createIPv4(src, dst, proto, (byte)0, payload);
+    }
+
+    /**
      * create a {@link RawPacket} object.
      *
      * @param eth   A {@link Ethernet} object.
@@ -889,8 +1118,8 @@ public abstract class TestBase extends Assert {
             setFragmentOffset((short)0).
             setTtl((byte)64);
 
-        ip.setDestinationAddress(getInetAddressFromAddress(target));
-        ip.setSourceAddress(getInetAddressFromAddress(sender));
+        ip.setDestinationAddress(createInetAddress(target));
+        ip.setSourceAddress(createInetAddress(sender));
 
         Ethernet eth = new Ethernet();
         eth.setSourceMACAddress(src).setDestinationMACAddress(dst);
@@ -1083,22 +1312,6 @@ public abstract class TestBase extends Assert {
         }
 
         return list;
-    }
-
-    /**
-     * get {@link InetAddress} object from byte arrays.
-     *
-     * @param ipaddr    byte arrays of IP Address.
-     * @return  A InetAddress object.
-     */
-    protected InetAddress getInetAddressFromAddress(byte[] ipaddr) {
-        InetAddress inet = null;
-        try {
-            inet = InetAddress.getByAddress(ipaddr);
-        } catch (UnknownHostException e) {
-            unexpected(e);
-        }
-        return inet;
     }
 
     /**

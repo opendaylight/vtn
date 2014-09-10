@@ -235,9 +235,6 @@ public final class FlowFilter implements Serializable {
      *         The type of this element must be {@link SetInet4SrcAction}.
      *       </li>
      *       <li>This element does not affect packets without IPv4 header.</li>
-     *       <li>
-     *         <strong>This element is not yet supported.</strong>
-     *       </li>
      *     </ul>
      *
      *   <dt>inet4dst
@@ -249,9 +246,6 @@ public final class FlowFilter implements Serializable {
      *         The type of this element must be {@link SetInet4DstAction}.
      *       </li>
      *       <li>This element does not affect packets without IPv4 header.</li>
-     *       <li>
-     *         <strong>This element is not yet supported.</strong>
-     *       </li>
      *     </ul>
      *
      *   <dt>dscp
@@ -276,9 +270,6 @@ public final class FlowFilter implements Serializable {
      *       <li>
      *         This element does not affect packets without TCP or UDP header.
      *       </li>
-     *       <li>
-     *         <strong>This element is not yet supported.</strong>
-     *       </li>
      *     </ul>
      *
      *   <dt>tpdst
@@ -291,9 +282,6 @@ public final class FlowFilter implements Serializable {
      *       </li>
      *       <li>
      *         This element does not affect packets without TCP or UDP header.
-     *       </li>
-     *       <li>
-     *         <strong>This element is not yet supported.</strong>
      *       </li>
      *     </ul>
      *

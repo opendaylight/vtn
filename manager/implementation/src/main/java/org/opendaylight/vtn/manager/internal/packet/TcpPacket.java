@@ -9,16 +9,25 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
+import org.opendaylight.vtn.manager.VTNException;
+
+import org.opendaylight.vtn.manager.internal.MiscUtils;
+
 import org.opendaylight.controller.sal.packet.TCP;
 
 /**
  * {@code TcpPacket} class implements a cache for a {@link TCP} instance.
  */
-public final class TcpPacket extends PortProtoPacket {
+public final class TcpPacket extends PortProtoPacket<TCP> {
+    /**
+     * Byte offset to the checksum field in TCP header.
+     */
+    private static final int  TCP_OFF_CHECKSUM = 16;
+
     /**
      * A {@link TCP} packet.
      */
-    private final TCP  packet;
+    private TCP  packet;
 
     /**
      * Construct a new instance.
@@ -29,13 +38,15 @@ public final class TcpPacket extends PortProtoPacket {
         packet = tcp;
     }
 
+    // PortProtoPacket
+
     /**
      * Derive the source port number from the packet.
      *
      * @return  A short integer value which represents the source port number.
      */
     @Override
-    public short getRawSourcePort() {
+    protected short getRawSourcePort() {
         return packet.getSourcePort();
     }
 
@@ -46,8 +57,73 @@ public final class TcpPacket extends PortProtoPacket {
      *          number.
      */
     @Override
-    public short getRawDestinationPort() {
+    protected short getRawDestinationPort() {
         return packet.getDestinationPort();
+    }
+
+    /**
+     * Set the source port number to the given packet.
+     *
+     * @param pkt   A {@link TCP} instance.
+     * @param port  A short integer value which indicates the source port.
+     */
+    @Override
+    protected void setRawSourcePort(TCP pkt, short port) {
+        pkt.setSourcePort(port);
+    }
+
+    /**
+     * Set the destination port number to the given packet.
+     *
+     * @param pkt   A {@link TCP} instance.
+     * @param port  A short integer value which indicates the destination port.
+     */
+    @Override
+    protected void setRawDestinationPort(TCP pkt, short port) {
+        pkt.setDestinationPort(port);
+    }
+
+    /**
+     * Return a {@link TCP} instance to set modified values.
+     *
+     * @param doCopy {@code true} is passed if the packet configured in this
+     *               instance needs to be copied.
+     * @return  A {@link TCP} instance.
+     * @throws VTNException
+     *    Failed to copy the packet.
+     */
+    @Override
+    protected TCP getPacketForWrite(boolean doCopy) throws VTNException {
+        TCP pkt;
+        if (doCopy) {
+            pkt = MiscUtils.copy(packet, new TCP());
+            packet = pkt;
+        } else {
+            pkt = packet;
+        }
+
+        return pkt;
+    }
+
+    // L4Packet
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean updateChecksum(Inet4Packet ipv4) throws VTNException {
+        short sum = packet.getChecksum();
+        TCP pkt = getPacketForWrite();
+        short newSum = computeChecksum(ipv4, pkt, TCP_OFF_CHECKSUM);
+        boolean mod;
+        if (sum != newSum) {
+            pkt.setChecksum(newSum);
+            mod = true;
+        } else {
+            mod = false;
+        }
+
+        return mod;
     }
 
     // CachedPacket

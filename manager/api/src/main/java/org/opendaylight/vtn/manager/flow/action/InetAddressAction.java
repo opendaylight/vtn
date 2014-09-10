@@ -147,6 +147,15 @@ public abstract class InetAddressAction extends FlowAction {
     @SuppressWarnings("unused")
     private void setInetAddress(String addr) {
         if (addr != null) {
+            if (addr.length() == 0) {
+                StringBuilder builder =
+                    new StringBuilder(getClass().getSimpleName());
+                builder.append(": Address is empty.");
+                validationStatus =
+                    new Status(StatusCode.BADREQUEST, builder.toString());
+                return;
+            }
+
             try {
                 InetAddress iaddr = InetAddress.getByName(addr);
                 Class<?> cls = getAddressClass();

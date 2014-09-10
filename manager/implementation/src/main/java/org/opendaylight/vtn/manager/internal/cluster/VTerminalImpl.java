@@ -32,6 +32,7 @@ import org.opendaylight.vtn.manager.VTerminalConfig;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 
+import org.opendaylight.vtn.manager.internal.LogProvider;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
@@ -39,6 +40,7 @@ import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
@@ -57,7 +59,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1930350835055234980L;
+    private static final long serialVersionUID = -4401735057418279006L;
 
     /**
      * Logger instance.
@@ -479,18 +481,47 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      */
     @Override
     protected PacketResult handlePacket(VTNManagerImpl mgr, PacketContext pctx,
-                                        VirtualMapNode vnode) {
+                                        final VirtualMapNode vnode) {
         RedirectFlowException rex = pctx.getFirstRedirection();
         if (rex == null) {
             // Notify source host of the packet.
             notifyHost(mgr, pctx);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}:{}: Disable input from vTerminal interface.",
-                          getContainerName(), vnode.getPath());
-            }
+            if (pctx.isFiltered()) {
+                LOG.debug("{}:{}: Discard packet from vTerminal interface: " +
+                          "packet={}", getContainerName(), vnode.getPath(),
+                          pctx.getDescription());
 
-            vnode.disableInput(mgr, pctx);
+                if (!pctx.isUnicast()) {
+                    // In that case we should specify multicast address in a
+                    // drop flow entry, or it may discard packets to be
+                    // filtered by flow filter.
+                    pctx.addMatchField(MatchType.DL_TYPE);
+                    pctx.addMatchField(MatchType.DL_DST);
+                }
+
+                LogProvider lp = new LogProvider() {
+                    @Override
+                    public Logger getLogger() {
+                        return LOG;
+                    }
+
+                    @Override
+                    public String getLogPrefix() {
+                        StringBuilder builder =
+                            new StringBuilder(getContainerName());
+                        builder.append(':').append(vnode.getPath());
+                        return builder.toString();
+                    }
+                };
+                pctx.installDropFlow(mgr, getNodePath(), lp);
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{}:{}: Disable input from vTerminal interface.",
+                              getContainerName(), vnode.getPath());
+                }
+                vnode.disableInput(mgr, pctx);
+            }
         } else {
             Logger logger = rex.getLogger();
             VNodePath path = getNodePath();
