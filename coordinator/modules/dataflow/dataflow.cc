@@ -232,7 +232,8 @@ DataflowCmn::~DataflowCmn() {
   pfc_log_trace("DataflowCmn -Destructor call");
   if (df_segment != NULL) {
     if (df_segment->st_num_ == kidx_val_df_data_flow_cmn) {
-      if (df_segment->df_common->controller_type != UNC_CT_PFC) {
+      if (df_segment->df_common->controller_type != UNC_CT_PFC &&
+          df_segment->df_common->controller_type != UNC_CT_ODC) {
         pfc_log_debug("~DataflowCmn deleting %d df_segment %p",
           df_segment->df_common->controller_type, df_segment);
         delete df_segment;
@@ -240,7 +241,8 @@ DataflowCmn::~DataflowCmn() {
       }
     } else {
       // LOGICAL
-      if (df_segment->vtn_df_common->controller_type != UNC_CT_PFC) {
+      if (df_segment->vtn_df_common->controller_type != UNC_CT_PFC &&
+          df_segment->vtn_df_common->controller_type != UNC_CT_ODC) {
         pfc_log_debug("~DataflowCmn deleting %d df_segment %p",
            df_segment->vtn_df_common->controller_type, df_segment);
         delete df_segment;

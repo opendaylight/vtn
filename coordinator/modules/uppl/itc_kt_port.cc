@@ -1915,13 +1915,21 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
                                                  controller_type,
                                                  UNC_DT_STATE);
     pfc_log_debug("Port:controller type is %d ", controller_type);
-    if (controller_type ==  UNC_CT_PFC) {
+    if (controller_type ==  UNC_CT_PFC ||
+        controller_type == UNC_CT_ODC ) {
       UncRespCode driver_response = UNC_RC_SUCCESS;
 
      UncRespCode err_resp = UNC_RC_SUCCESS;
-     IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, err_resp);
+     IPCClientDriverHandler *drv_handler(NULL);
+
+     if ( controller_type ==  UNC_CT_PFC ) {
+       drv_handler=new IPCClientDriverHandler(UNC_CT_PFC, err_resp);
+     } else if ( controller_type ==  UNC_CT_ODC ) {
+       drv_handler=new IPCClientDriverHandler(UNC_CT_ODC, err_resp);
+     }
+     PFC_ASSERT(drv_handler != NULL);
      if (err_resp == 0) {
-      cli_session = pfc_drv_handler.ResetAndGetSession();
+      cli_session = drv_handler->ResetAndGetSession();
       // Creating a session to driver
       string domain_id = "";
       int err = 0;
@@ -1946,7 +1954,7 @@ UncRespCode Kt_Port::PerformRead(OdbcmConnectionHandler *db_conn,
       err |= cli_session->addOutput(*obj_key_port);
       if (err == 0) {
       driver_response_header rsp;
-      driver_response = pfc_drv_handler.SendReqAndGetResp(rsp);
+      driver_response = drv_handler->SendReqAndGetResp(rsp);
       if (driver_response == UNC_RC_SUCCESS) {
       uint8_t response_count = cli_session->getResponseCount();
       pfc_log_info("drv resp cnt=%d", response_count);
