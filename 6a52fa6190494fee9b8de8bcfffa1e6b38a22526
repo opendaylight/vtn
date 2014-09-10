@@ -1,0 +1,38 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_37731917",
+        "filename": "manager/api/src/test/java/org/opendaylight/vtn/manager/flow/DataFlowTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-09-10T03:01:46Z",
+      "side": 1,
+      "message": "Add copyright.",
+      "revId": "6a52fa6190494fee9b8de8bcfffa1e6b38a22526",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "fa82b9bf_f764d14a",
+        "filename": "manager/api/src/test/java/org/opendaylight/vtn/manager/flow/DataFlowTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 24,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-09-10T03:01:46Z",
+      "side": 1,
+      "message": "This javadoc comment should be on the same indentation level as testGetter().",
+      "revId": "6a52fa6190494fee9b8de8bcfffa1e6b38a22526",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
