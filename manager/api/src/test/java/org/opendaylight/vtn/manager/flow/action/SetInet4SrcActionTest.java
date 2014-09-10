@@ -123,6 +123,8 @@ public class SetInet4SrcActionTest extends TestBase {
         // Specifying invalid address.
         String[] invalid = {
             // Invalid address
+            "",
+            "  ",
             "invalid_address",
             "100.200.300.400",
 

@@ -11,9 +11,12 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -32,10 +35,10 @@ import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RedirectFlowException;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
-import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
 import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
 import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
+import org.opendaylight.vtn.manager.internal.packet.L4Packet;
 import org.opendaylight.vtn.manager.internal.packet.TcpPacket;
 import org.opendaylight.vtn.manager.internal.packet.UdpPacket;
 
@@ -139,10 +142,10 @@ public class PacketContext implements Cloneable {
     private Inet4Packet  inet4Packet;
 
     /**
-     * A {@link CachedPacket} instance which represents the layer 4 protocol
+     * A {@link L4Packet} instance which represents the layer 4 protocol
      * data.
      */
-    private CachedPacket  l4Packet;
+    private L4Packet  l4Packet;
 
     /**
      * Route resolver for this packet.
@@ -166,9 +169,9 @@ public class PacketContext implements Cloneable {
     private MapReference  mapReference;
 
     /**
-     * A list of SAL actions created by flow filters.
+     * A map that keeps SAL actions created by flow filters.
      */
-    private List<Action>  filterActions;
+    private Map<Class<? extends Action>, Action>  filterActions;
 
     /**
      * The number of virtual node hops caused by REDIRECT flow filter.
@@ -191,6 +194,11 @@ public class PacketContext implements Cloneable {
      * Determine whether the flow filter should be disabled or not.
      */
     private boolean  filterDisabled;
+
+    /**
+     * Set {@code true} at least one flow filter is evaluated.
+     */
+    private boolean  filtered;
 
     /**
      * Determine whether the destination MAC address of this packet is equal to
@@ -574,13 +582,13 @@ public class PacketContext implements Cloneable {
     }
 
     /**
-     * Return a {@link CachedPacket} instance which represents layer 4
-     * protocol data.
+     * Return a {@link L4Packet} instance which represents layer 4 protocol
+     * data.
      *
-     * @return  A {@link CachedPacket} instance if found.
+     * @return  A {@link L4Packet} instance if found.
      *          {@code null} if not found.
      */
-    public CachedPacket getL4Packet() {
+    public L4Packet getL4Packet() {
         if (l4Packet == null) {
             Inet4Packet ipv4 = getInet4Packet();
             if (ipv4 != null) {
@@ -678,6 +686,18 @@ public class PacketContext implements Cloneable {
     }
 
     /**
+     * Determine whether the given match field will be configured in a flow
+     * entry or not.
+     *
+     * @param type  A match type to be tested.
+     * @return  {@code true} only if the given match type will be configured
+     *          in a flow entry.
+     */
+    public boolean hasMatchField(MatchType type) {
+        return matchFields.contains(type);
+    }
+
+    /**
      * Add match fields to be configured into an unicast flow entry.
      */
     public void addUnicastMatchFields() {
@@ -705,7 +725,7 @@ public class PacketContext implements Cloneable {
         Inet4Packet ipv4 = getInet4Packet();
         if (ipv4 != null) {
             ipv4.setMatch(match, matchFields);
-            CachedPacket l4 = getL4Packet();
+            L4Packet l4 = getL4Packet();
             if (l4 != null) {
                 l4.setMatch(match, matchFields);
             }
@@ -917,21 +937,33 @@ public class PacketContext implements Cloneable {
     public void addFilterAction(Action act) {
         if (!flooding) {
             if (filterActions == null) {
-                filterActions = new ArrayList<Action>();
+                filterActions =
+                    new LinkedHashMap<Class<? extends Action>, Action>();
             }
-            filterActions.add(act);
+            filterActions.put(act.getClass(), act);
+        }
+    }
+
+    /**
+     * Remove the specified flow action from the flow filter action list.
+     *
+     * @param actClass  A class of SAL action to be removed.
+     */
+    public void removeFilterAction(Class<? extends Action> actClass) {
+        if (!flooding && filterActions != null) {
+            filterActions.remove(actClass);
         }
     }
 
     /**
      * Return a list of SAL actions created by flow filters.
      *
-     * @return  A list of SAL actions.
+     * @return  A collection of SAL actions.
      *          {@code null} is returned if no SAL action was created by
      *          flow filter.
      */
-    public List<Action> getFilterActions() {
-        return filterActions;
+    public Collection<Action> getFilterActions() {
+        return (filterActions == null) ? null : filterActions.values();
     }
 
     /**
@@ -941,11 +973,28 @@ public class PacketContext implements Cloneable {
      *    Failed to copy the packet.
      */
     public void commit() throws VTNException {
+        // Commit modification to the Ethernet header.
         etherFrame.commit(this);
-        CachedPacket l4 = l4Packet;
+
+        // Commit modification to layer 4 protocol header.
+        L4Packet l4 = l4Packet;
         Inet4Packet inet4 = inet4Packet;
-        boolean l4Changed = (l4 != null) ? l4.commit(this) : false;
+        boolean l4Changed;
+        if (l4 == null) {
+            l4Changed = false;
+        } else {
+            l4Changed = l4.commit(this);
+            if (l4Changed || inet4.isAddressModified()) {
+                // Update checksum.
+                if (l4.updateChecksum(inet4)) {
+                    l4Changed = true;
+                }
+            }
+        }
+
+        // Commit modification to IPv4 header.
         boolean inet4Changed = (inet4 != null) ? inet4.commit(this) : false;
+
         if (l4Changed) {
             Packet payload = l4.getPacket();
             inet4.getPacket().setPayload(payload);
@@ -1001,6 +1050,27 @@ public class PacketContext implements Cloneable {
      */
     public void setFilterDisabled(boolean b) {
         filterDisabled = b;
+    }
+
+    /**
+     * Determine whether at least one flow filter is evaluated with this packet
+     * or not.
+     *
+     * @return  {@code true} only if at least one flow filter is evaluated.
+     */
+    public boolean isFiltered() {
+        return filtered;
+    }
+
+    /**
+     * Set a boolean value which determines whetehr at least one flow filter
+     * is evaluated with this packet or not.
+     *
+     * @param b  {@code true} means that at least one flow filter is evaluated
+     *           with this packet.
+     */
+    public void setFiltered(boolean b) {
+        filtered = b;
     }
 
     /**
@@ -1102,7 +1172,7 @@ public class PacketContext implements Cloneable {
                 pctx.inet4Packet = inet4.clone();
             }
 
-            CachedPacket l4 = pctx.l4Packet;
+            L4Packet l4 = pctx.l4Packet;
             if (l4 != null) {
                 pctx.l4Packet = l4.clone();
             }

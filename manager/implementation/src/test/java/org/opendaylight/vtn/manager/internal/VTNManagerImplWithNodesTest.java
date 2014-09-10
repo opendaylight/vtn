@@ -3133,7 +3133,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             }
         }
 
-        InetAddress ia = getInetAddressFromAddress(new byte[] {10, 0, 0, 1});
+        InetAddress ia = createInetAddress(new byte[] {10, 0, 0, 1});
 
         InetAddress ia6 = null;
         try {

@@ -9,9 +9,12 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import javax.xml.bind.JAXB;
 
 import org.junit.Test;
 
@@ -31,20 +34,21 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 public class SetDlSrcActionImplTest extends TestBase {
     /**
      * Test case for getter methods.
+     *
+     * @throws Exception  An unexpected exception occurred.
      */
     @Test
-    public void testGetter() {
+    public void testGetter() throws Exception {
         for (EthernetAddress eaddr: createEthernetAddresses(false)) {
             byte[] bytes = eaddr.getValue();
             SetDlSrcAction act = new SetDlSrcAction(bytes);
             try {
                 SetDlSrcActionImpl impl = new SetDlSrcActionImpl(act);
+                assertEquals(act, impl.getFlowAction());
 
                 // Ensure that MAC address bytes are copied.
-                for (int i = 0; i < bytes.length; i++) {
-                    bytes[i] = 0;
-                }
-                assertEquals(act, impl.getFlowAction());
+                assertNotSame(bytes, impl.getAddress());
+                assertArrayEquals(bytes, impl.getAddress());
             } catch (Exception e) {
                 unexpected(e);
             }
@@ -94,6 +98,19 @@ public class SetDlSrcActionImplTest extends TestBase {
             } catch (VTNException e) {
                 assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
             }
+        }
+
+        // Specify invalid MAC address via JAXB.
+        String xml =
+            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
+            "<setdlsrc address=\"bad MAC address\" />";
+        ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
+        SetDlSrcAction act = JAXB.unmarshal(in, SetDlSrcAction.class);
+        try {
+            new SetDlSrcActionImpl(act);
+            unexpected();
+        } catch (VTNException e) {
+            assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
         }
     }
 

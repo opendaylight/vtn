@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +26,10 @@ import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
@@ -46,14 +51,18 @@ public class FlowActionImplTest extends TestBase {
      * Test case for {@link FlowActionImpl#create(FlowAction)}.
      */
     @Test
-    public void testCreate() {
+    public void testCreate() throws Exception {
         // Expected action implementation classes.
         HashMap<Class<?>, Class<?>> implClasses =
             new HashMap<Class<?>, Class<?>>();
         implClasses.put(SetDlSrcAction.class, SetDlSrcActionImpl.class);
         implClasses.put(SetDlDstAction.class, SetDlDstActionImpl.class);
         implClasses.put(SetVlanPcpAction.class, SetVlanPcpActionImpl.class);
+        implClasses.put(SetInet4SrcAction.class, SetInet4SrcActionImpl.class);
+        implClasses.put(SetInet4DstAction.class, SetInet4DstActionImpl.class);
         implClasses.put(SetDscpAction.class, SetDscpActionImpl.class);
+        implClasses.put(SetTpSrcAction.class, SetTpSrcActionImpl.class);
+        implClasses.put(SetTpDstAction.class, SetTpDstActionImpl.class);
         implClasses.put(SetIcmpTypeAction.class, SetIcmpTypeActionImpl.class);
         implClasses.put(SetIcmpCodeAction.class, SetIcmpCodeActionImpl.class);
 
@@ -86,9 +95,37 @@ public class FlowActionImplTest extends TestBase {
             actions.add(new SetVlanPcpAction(pri));
         }
 
+        count = 0;
+        do {
+            int v = rand.nextInt();
+            byte[] addr = NetUtils.intToByteArray4(v);
+            InetAddress iaddr = InetAddress.getByAddress(addr);
+            actions.add(new SetInet4SrcAction(iaddr));
+            count++;
+        } while (count < naddrs);
+
+        count = 0;
+        do {
+            int v = rand.nextInt();
+            byte[] addr = NetUtils.intToByteArray4(v);
+            InetAddress iaddr = InetAddress.getByAddress(addr);
+            actions.add(new SetInet4DstAction(iaddr));
+            count++;
+        } while (count < naddrs);
+
         byte[] dscps = {0, 18, 32, 63};
         for (byte dscp: dscps) {
             actions.add(new SetDscpAction(dscp));
+        }
+
+        int[] ports = {0, 53, 200, 456, 20000, 40000, 65535};
+        for (int port: ports) {
+            actions.add(new SetTpSrcAction(port));
+        }
+
+        ports = new int[]{0, 31, 113, 789, 12345, 34567, 65535};
+        for (int port: ports) {
+            actions.add(new SetTpDstAction(port));
         }
 
         short[] types = {0, 63, 112, 255};
@@ -140,7 +177,11 @@ public class FlowActionImplTest extends TestBase {
             new SetDlSrcAction(new byte[0]),
             new SetDlDstAction(new byte[]{0, 0, 0, 0, 0, 0}),
             new SetVlanPcpAction((byte)-1),
+            new SetInet4SrcAction((InetAddress)null),
+            new SetInet4DstAction((InetAddress)null),
             new SetDscpAction((byte)64),
+            new SetTpSrcAction(-1),
+            new SetTpDstAction(0x10000),
             new SetIcmpTypeAction((short)256),
             new SetIcmpCodeAction((short)-1),
         };

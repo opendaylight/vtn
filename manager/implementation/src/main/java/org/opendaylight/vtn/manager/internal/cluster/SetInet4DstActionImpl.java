@@ -9,8 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import java.net.InetAddress;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
+
+import org.opendaylight.controller.sal.action.SetNwDst;
 
 /**
  * Implementation of flow action that modifies destination IP address in IPv4
@@ -26,7 +33,7 @@ public final class SetInet4DstActionImpl extends InetAddressActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3548684343825850653L;
+    private static final long serialVersionUID = -846214438904204416L;
 
     /**
      * Construct a new instance.
@@ -47,5 +54,21 @@ public final class SetInet4DstActionImpl extends InetAddressActionImpl {
     @Override
     public SetInet4DstAction getFlowAction() {
         return new SetInet4DstAction(getAddress());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        Inet4Packet ipv4 = pctx.getInet4Packet();
+        if (ipv4 != null) {
+            InetAddress iaddr = getAddress();
+            ipv4.setDestinationAddress(iaddr);
+            pctx.addFilterAction(new SetNwDst(iaddr));
+            return true;
+        }
+
+        return false;
     }
 }

@@ -446,7 +446,7 @@ public class VTNManagerImplDisableNodesTest extends TestBase {
 
         RawPacketEvent ev = new RawPacketEvent(pkt, outnc);
 
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evidLocal = new ClusterEventId();
 

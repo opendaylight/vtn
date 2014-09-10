@@ -14,6 +14,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.opendaylight.vtn.manager.flow.FlowStats;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
@@ -29,6 +32,12 @@ import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
  * </p>
  */
 public class StatsReader {
+    /**
+     * Logger instance.
+     */
+    private static final Logger  LOG =
+        LoggerFactory.getLogger(StatsReader.class);
+
     /**
      * Statistics manager service.
      */
@@ -47,7 +56,7 @@ public class StatsReader {
     /**
      * Construct a new instance.
      *
-     * @param stMgr    VTN Manager service.
+     * @param stMgr    Statistics manager service.
      * @param update   if {@code true}, flow statistics are derived from
      *                 physical switch. Otherwise this instance will return
      *                 statistics cached in statistics manager.
@@ -73,10 +82,14 @@ public class StatsReader {
      *          the specified flow entry was not found.
      */
     public FlowStats get(FlowEntry fent) {
+        LOG.debug("Request for statistics: {}", fent);
         FlowOnNode stats = getStats(fent);
         if (stats == null) {
+            LOG.debug("Statistics not found: {}", fent);
             return null;
         }
+
+        LOG.debug("Statistics found: fent={}, stat={}", fent, stats);
 
         // Convert duration into the number of milliseconds.
         int sec = stats.getDurationSeconds();
@@ -105,6 +118,8 @@ public class StatsReader {
         if (statsCache != null) {
             nodeMap = statsCache.get(node);
             if (nodeMap != null) {
+                LOG.trace("Use statistics cache: node={}, cache={}",
+                          node, nodeMap);
                 return nodeMap.get(fent);
             }
 
@@ -120,6 +135,8 @@ public class StatsReader {
         List<FlowOnNode> stats = (doUpdate)
             ? statsManager.getFlowsNoCache(node)
             : statsManager.getFlows(node);
+
+        LOG.trace("Statistics for node {}: {}", node, stats);
         for (FlowOnNode st: stats) {
             // Ignore flow tables other than table 0.
             if (st.getTableId() == 0) {

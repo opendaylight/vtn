@@ -293,9 +293,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
             getCache(VTNManagerImpl.CACHE_STATE);
 
         VTenantPath tpathNull = new VTenantPath(null);
-        InetAddress ia
-            = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                    (byte)0, (byte)2});
+        InetAddress ia = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)0, (byte)2});
         ObjectPair<InetAddress, Boolean> obj
             = new ObjectPair<InetAddress, Boolean>(ia, Boolean.FALSE);
         stateDB.put(tpathNull, obj);
@@ -313,8 +312,8 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         stateDB = (ConcurrentMap<VTenantPath, Object>)stubObj.
             getCache(VTNManagerImpl.CACHE_STATE);
 
-        ia = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                   (byte)0, (byte)99});
+        ia = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)0, (byte)99});
         obj = new ObjectPair<InetAddress, Boolean>(ia, Boolean.FALSE);
         assertNull(stateDB.put(tpathNull, obj));
 
@@ -479,7 +478,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(1, vtnMgr.getFlowDB().size());
 
         // in case MAC Address Table cache remain.
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[]{10, 0, 0, 1});
+        InetAddress ipaddr = createInetAddress(new byte[]{10, 0, 0, 1});
         MacTableEntry tent = new MacTableEntry(bpath, 1L, innc,
                                                (short)0, ipaddr);
         vtnMgr.putMacTableEntry(tent);
@@ -498,7 +497,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         assertEquals(0, map.size());
 
         // in case remote entry is remained.
-        InetAddress ipaddrRemote = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddrRemote = createInetAddress(new byte[] {0, 0, 0, 0});
         MacTableEntryId evidRemote = new MacTableEntryId(ipaddrRemote, 1L, bpath, 1L);
 
         tent = new MacTableEntry(evidRemote, innc, (short)0, ipaddr);
@@ -1360,7 +1359,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         File configFile = new File(dir, configFileName);
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evidLocal = new ClusterEventId();
         evIdSet.add(evidLocal);
@@ -1449,7 +1448,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         File configFile = new File(dir, configFileName);
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evIdRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evIdLocal = new ClusterEventId();
         evIdSet.add(evIdLocal);
@@ -1502,7 +1501,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         File configFile = new File(dir, configFileName);
 
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evIdRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evIdLocal = new ClusterEventId();
         evIdSet.add(evIdLocal);
@@ -1546,7 +1545,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         nodeSet.add(node0);
         nodeSet.add(node1);
 
-        InetAddress ipaddr = getInetAddressFromAddress(new byte[] {0, 0, 0, 0});
+        InetAddress ipaddr = createInetAddress(new byte[] {0, 0, 0, 0});
         ClusterEventId evidRemote = new ClusterEventId(ipaddr, 0);
         ClusterEventId evidLocal = new ClusterEventId();
         Set<ClusterEventId> evIdSet = new HashSet<ClusterEventId>();

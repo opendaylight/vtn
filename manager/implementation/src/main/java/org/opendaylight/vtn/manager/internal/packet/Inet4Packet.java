@@ -9,14 +9,16 @@
 
 package org.opendaylight.vtn.manager.internal.packet;
 
+import java.net.InetAddress;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 
+import org.opendaylight.controller.sal.action.SetNwDst;
+import org.opendaylight.controller.sal.action.SetNwSrc;
 import org.opendaylight.controller.sal.action.SetNwTos;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
@@ -39,31 +41,44 @@ public final class Inet4Packet implements CachedPacket {
     private static final byte  DSCP_NONE = -1;
 
     /**
+     * The number of bytes in an IPv4 address.
+     */
+    private static final int ADDR_SIZE = 4;
+
+    /**
+     * Byte offset to the source address in a pseudo IPv4 header used for
+     * computing TCP/UDP checksum.
+     */
+    private static final int CKSUM_OFF_SRC = 0;
+
+    /**
+     * Byte offset to the destination address in a pseudo IPv4 header used for
+     * computing TCP/UDP checksum.
+     */
+    private static final int CKSUM_OFF_DST = 4;
+
+    /**
+     * Byte offset to the IP protocol number in a pseudo IPv4 header used for
+     * computing TCP/UDP checksum.
+     */
+    private static final int CKSUM_OFF_PROTO = 9;
+
+    /**
+     * Byte offset to the payload length in a pseudo IPv4 header used for
+     * computing TCP/UDP checksum.
+     */
+    private static final int CKSUM_OFF_LEN = 10;
+
+    /**
+     * The number of bytes in a pseudo IPv4 header used for computing
+     * TCP/UDP checksum.
+     */
+    private static final int CKSUM_HEADER_SIZE = 12;
+
+    /**
      * An {@link IPv4} packet.
      */
     private IPv4  packet;
-
-    /**
-     * An integer value which indicates the source IP address.
-     */
-    private int  sourceAddress;
-
-    /**
-     * An integer value which indicates the destination IP address.
-     */
-    private int  destinationAddress;
-
-    /**
-     * A boolean value which determines whether {@link #sourceAddress} is
-     * initialized or not.
-     */
-    private boolean sourceSet;
-
-    /**
-     * A boolean value which determines whether {@link #destinationAddress} is
-     * initialized or not.
-     */
-    private boolean destinationSet;
 
     /**
      * The IP protocol number in the IPv4 packet.
@@ -90,16 +105,131 @@ public final class Inet4Packet implements CachedPacket {
      */
     private static final class Values implements Cloneable {
         /**
+         * An integer value which indicates the source IP address.
+         */
+        private int  sourceAddress;
+
+        /**
+         * An integer value which indicates the destination IP address.
+         */
+        private int  destinationAddress;
+
+        /**
+         * An {@link InetAddress} instance which indicates the source IP
+         * address.
+         */
+        private InetAddress  sourceInetAddress;
+
+        /**
+         * An {@link InetAddress} instance which indicates the destination IP
+         * address.
+         */
+        private InetAddress  destinationInetAddress;
+
+        /**
          * The DSCP field value in the IPv4 packet.
          */
         private byte  dscp = DSCP_NONE;
-
-        // REVISIT: Source and destination IP address are not yet supported.
 
         /**
          * Constructor.
          */
         private Values() {
+        }
+
+        /**
+         * Return the source IP address.
+         *
+         * @return  An integer value which represents the source IP address.
+         *          Note that the returned value is unspecified if
+         *          {@link #getSourceInetAddress()} returns {@code null}.
+         */
+        private int getSourceAddress() {
+            return sourceAddress;
+        }
+
+        /**
+         * Return the source IP address.
+         *
+         * @return  An {@link InetAddress} instance which represents the
+         *          source IP address.
+         *         {@code null} is returned if not configured.
+         */
+        private InetAddress getSourceInetAddress() {
+            return sourceInetAddress;
+        }
+
+        /**
+         * Set the source IP address.
+         *
+         * @param addr  An {@link InetAddress} instance which represents the
+         *              source IPv4 address.
+         */
+        private void setSourceAddress(InetAddress addr) {
+            sourceAddress = MiscUtils.toInteger(addr);
+            sourceInetAddress = addr;
+        }
+
+        /**
+         * Set the source IP address.
+         *
+         * @param addr  An integer value which represents the source IPv4
+         *              address.
+         * @return  An {@link InetAddress} instance which represents the
+         *          given IP address.
+         */
+        private InetAddress setSourceAddress(int addr) {
+            sourceAddress = addr;
+            sourceInetAddress = MiscUtils.toInetAddress(addr);
+            return sourceInetAddress;
+        }
+
+        /**
+         * Return the destination IP address.
+         *
+         * @return  An integer value which represents the destination IP
+         *          address.
+         *          Note that the returned value is unspecified if
+         *          {@link #getDestinationInetAddress()} returns {@code null}.
+         */
+        private int getDestinationAddress() {
+            return destinationAddress;
+        }
+
+        /**
+         * Return the destination IP address.
+         *
+         * @return  An {@link InetAddress} instance which represents the
+         *          destination IP address.
+         *         {@code null} is returned if not configured.
+         */
+        private InetAddress getDestinationInetAddress() {
+            return destinationInetAddress;
+        }
+
+        /**
+         * Set the destination IP address.
+         *
+         * @param addr  An {@link InetAddress} instance which represents the
+         *              destination IPv4 address.
+         */
+        private void setDestinationAddress(InetAddress addr) {
+            destinationAddress = MiscUtils.toInteger(addr);
+            destinationInetAddress = addr;
+        }
+
+        /**
+         * Set the destination IP address.
+         *
+         * @param addr  An integer value which represents the destination IPv4
+         *              address.
+         * @return  An {@link InetAddress} instance which represents the
+         *          given IP address.
+         */
+        private InetAddress setDestinationAddress(int addr) {
+            destinationAddress = addr;
+            destinationInetAddress = MiscUtils.toInetAddress(addr);
+            return destinationInetAddress;
         }
 
         /**
@@ -132,7 +262,13 @@ public final class Inet4Packet implements CachedPacket {
          * @param ipv4  An {@link IPv4} instance.
          */
         private void fill(IPv4 ipv4) {
-            if (dscp != DSCP_NONE) {
+            if (sourceInetAddress == null) {
+                setSourceAddress(ipv4.getSourceAddress());
+            }
+            if (destinationInetAddress == null) {
+                setDestinationAddress(ipv4.getDestinationAddress());
+            }
+            if (dscp == DSCP_NONE) {
                 dscp = ipv4.getDiffServ();
             }
         }
@@ -168,12 +304,44 @@ public final class Inet4Packet implements CachedPacket {
      * @return  An integer value which represents the source IP address.
      */
     public int getSourceAddress() {
-        if (!sourceSet) {
-            sourceAddress = packet.getSourceAddress();
-            sourceSet = true;
+        Values v = getValues();
+        int addr;
+        if (v.getSourceInetAddress() == null) {
+            addr = packet.getSourceAddress();
+            v.setSourceAddress(addr);
+        } else {
+            addr = v.getSourceAddress();
         }
 
-        return sourceAddress;
+        return addr;
+    }
+
+    /**
+     * Return the source IP address.
+     *
+     * @return  An {@link InetAddress} instance which represents the source
+     *          IP address.
+     */
+    public InetAddress getSourceInetAddress() {
+        Values v = getValues();
+        InetAddress addr = v.getSourceInetAddress();
+        if (addr == null) {
+            int address = packet.getSourceAddress();
+            addr = v.setSourceAddress(address);
+        }
+
+        return addr;
+    }
+
+    /**
+     * Set the source IP address.
+     *
+     * @param addr  An {@link InetAddress} instance which represents the
+     *              source IPv4 address.
+     */
+    public void setSourceAddress(InetAddress addr) {
+        Values v = getModifiedValues();
+        v.setSourceAddress(addr);
     }
 
     /**
@@ -182,12 +350,44 @@ public final class Inet4Packet implements CachedPacket {
      * @return  An integer value which represents the destination IP address.
      */
     public int getDestinationAddress() {
-        if (!destinationSet) {
-            destinationAddress = packet.getDestinationAddress();
-            destinationSet = true;
+        Values v = getValues();
+        int addr;
+        if (v.getDestinationInetAddress() == null) {
+            addr = packet.getDestinationAddress();
+            v.setDestinationAddress(addr);
+        } else {
+            addr = v.getDestinationAddress();
         }
 
-        return destinationAddress;
+        return addr;
+    }
+
+    /**
+     * Return the destination IP address.
+     *
+     * @return  An {@link InetAddress} instance which represents the
+     *          destination IP address.
+     */
+    public InetAddress getDestinationInetAddress() {
+        Values v = getValues();
+        InetAddress addr = v.getDestinationInetAddress();
+        if (addr == null) {
+            int address = packet.getDestinationAddress();
+            addr = v.setDestinationAddress(address);
+        }
+
+        return addr;
+    }
+
+    /**
+     * Set the destination IP address.
+     *
+     * @param addr  An {@link InetAddress} instance which represents the
+     *              destination IPv4 address.
+     */
+    public void setDestinationAddress(InetAddress addr) {
+        Values v = getModifiedValues();
+        v.setDestinationAddress(addr);
     }
 
     /**
@@ -230,6 +430,43 @@ public final class Inet4Packet implements CachedPacket {
     }
 
     /**
+     * Determine whether the source or destination address is modified or not.
+     *
+     * @return  {@code true} only if the source or destination address is
+     *          modified.
+     */
+    public boolean isAddressModified() {
+        if (modifiedValues == null) {
+            return false;
+        }
+
+        return (values.getSourceAddress() !=
+                modifiedValues.getSourceAddress() ||
+                values.getDestinationAddress() !=
+                modifiedValues.getDestinationAddress());
+    }
+
+    /**
+     * Create a pseudo IPv4 header used for computing TCP/UDP checksum.
+     *
+     * @param proto  An IP protocol number.
+     * @param len    The number of octets in a payload.
+     * @return  A byte array which represents the pseudo IPv4 header.
+     */
+    public byte[] getHeaderForChecksum(byte proto, short len) {
+        byte[] header = new byte[CKSUM_HEADER_SIZE];
+
+        int src = getSourceAddress();
+        int dst = getDestinationAddress();
+        MiscUtils.setInt(header, CKSUM_OFF_SRC, src);
+        MiscUtils.setInt(header, CKSUM_OFF_DST, dst);
+        header[CKSUM_OFF_PROTO] = proto;
+        MiscUtils.setShort(header, CKSUM_OFF_LEN, len);
+
+        return header;
+    }
+
+    /**
      * Return a {@link Values} instance that keeps current values for
      * IPv4 header fields.
      *
@@ -263,16 +500,8 @@ public final class Inet4Packet implements CachedPacket {
      */
     private IPv4 getPacketForWrite() throws VTNException {
         if (cloned) {
-            try {
-                byte[] raw = packet.serialize();
-                int nbits = raw.length * NetUtils.NumBitsInAByte;
-                packet = new IPv4();
-                packet.deserialize(raw, 0, nbits);
-            } catch (Exception e) {
-                // This should never happen.
-                throw new VTNException("Failed to copy the packet.", e);
-            }
-
+            // Create a copy of the original packet.
+            packet = MiscUtils.copy(packet, new IPv4());
             cloned = false;
         }
 
@@ -316,14 +545,13 @@ public final class Inet4Packet implements CachedPacket {
         MatchType type = MatchType.NW_SRC;
         if (fields.contains(type)) {
             // Test source IP address.
-            match.setField(type, MiscUtils.toInetAddress(getSourceAddress()));
+            match.setField(type, v.getSourceInetAddress());
         }
 
         type = MatchType.NW_DST;
         if (fields.contains(type)) {
             // Test destination IP address.
-            match.setField(type,
-                           MiscUtils.toInetAddress(getDestinationAddress()));
+            match.setField(type, v.getDestinationInetAddress());
         }
 
         type = MatchType.NW_PROTO;
@@ -345,17 +573,55 @@ public final class Inet4Packet implements CachedPacket {
     @Override
     public boolean commit(PacketContext pctx) throws VTNException {
         boolean mod = false;
+        IPv4 ipv4 = null;
         if (modifiedValues != null) {
+            // At least one flow action that modifies IPv4 header is
+            // configured.
+            pctx.addMatchField(MatchType.DL_TYPE);
+
+            if (values.getSourceAddress() !=
+                modifiedValues.getSourceAddress()) {
+                // Source address was modified.
+                InetAddress iaddr = modifiedValues.getSourceInetAddress();
+                ipv4 = getPacketForWrite();
+                ipv4.setSourceAddress(iaddr);
+                mod = true;
+            } else if (pctx.hasMatchField(MatchType.NW_SRC)) {
+                // Source IP address in the original packet is unchanged and
+                // it will be specified in flow match. So we don't need to
+                // configure SET_NW_SRC action.
+                pctx.removeFilterAction(SetNwSrc.class);
+            }
+
+            if (values.getDestinationAddress() !=
+                modifiedValues.getDestinationAddress()) {
+                // Destination address was modified.
+                InetAddress iaddr = modifiedValues.getDestinationInetAddress();
+                if (ipv4 == null) {
+                    ipv4 = getPacketForWrite();
+                }
+                ipv4.setDestinationAddress(iaddr);
+                mod = true;
+            } else if (pctx.hasMatchField(MatchType.NW_DST)) {
+                // Destination IP address in the original packet is unchanged
+                // and it will be specified in flow match. So we don't need to
+                // configure SET_NW_DST action.
+                pctx.removeFilterAction(SetNwDst.class);
+            }
+
             byte dscp = modifiedValues.getDscp();
             if (values.getDscp() != dscp) {
                 // DSCP field was modified.
-                // Note that this action must be applied to only IPv4 packets.
-                int tos = (int)SetDscpAction.dscpToTos(dscp);
-                pctx.addFilterAction(new SetNwTos(tos));
-                pctx.addMatchField(MatchType.DL_TYPE);
-                IPv4 ipv4 = getPacketForWrite();
+                if (ipv4 == null) {
+                    ipv4 = getPacketForWrite();
+                }
                 ipv4.setDiffServ(dscp);
                 mod = true;
+            } else if (pctx.hasMatchField(MatchType.NW_TOS)) {
+                // DSCP value in the original packet is unchanged and it will
+                // be specified in flow match. So we don't need to configure
+                // SET_NW_TOS action.
+                pctx.removeFilterAction(SetNwTos.class);
             }
         }
 

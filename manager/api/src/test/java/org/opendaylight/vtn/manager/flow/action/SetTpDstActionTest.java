@@ -32,7 +32,7 @@ public class SetTpDstActionTest extends TestBase {
             assertEquals(port, act.getPort());
         }
 
-        int[] valid = {1, 2, 100, 999, 10000, 29999, 49999, 65534, 65535};
+        int[] valid = {0, 1, 2, 100, 999, 10000, 29999, 49999, 65534, 65535};
         for (int port: valid) {
             SetTpDst sact = new SetTpDst(port);
             SetTpDstAction act = new SetTpDstAction(sact);

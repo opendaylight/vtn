@@ -219,9 +219,8 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         swMgr.addSubnet(sconf);
 
         // in case VLAN ID doesn't match.
-        InetAddress ia
-            = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                    (byte)0, (byte)254});
+        InetAddress ia = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)0, (byte)254});
 
         Subnet sub = swMgr.getSubnetByNetworkAddress(ia);
         sub.setVlan((short)2);
@@ -233,7 +232,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
         assertEquals(PacketResult.IGNORED, result);
         assertEquals(0, dataList.size());
 
-        ia = getInetAddressFromAddress(HOST_IP);
+        ia = createInetAddress(HOST_IP);
         sub = swMgr.getSubnetByNetworkAddress(ia);
         sub.setVlan((short)0);
         for (Node node : existNodes) {
@@ -484,7 +483,7 @@ public class ArpHandlerTest extends VTNManagerImplTestCommon {
             unexpected(e);
         }
 
-        InetAddress ia = getInetAddressFromAddress(
+        InetAddress ia = createInetAddress(
             new byte[] {(byte)10, (byte)0, (byte)0, (byte)1});
 
         byte [] mac = new byte [] {0x00, 0x00, 0x00, 0x11, 0x22, 0x33};

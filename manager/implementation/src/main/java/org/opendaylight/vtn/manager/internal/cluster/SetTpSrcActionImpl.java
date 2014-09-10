@@ -12,6 +12,12 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.L4Packet;
+import org.opendaylight.vtn.manager.internal.packet.PortProtoPacket;
+
+import org.opendaylight.controller.sal.action.SetTpSrc;
+
 /**
  * Implementation of flow action that modifies source port number in
  * TCP or UDP header.
@@ -26,7 +32,7 @@ public final class SetTpSrcActionImpl extends TpPortActionImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 644126347054787614L;
+    private static final long serialVersionUID = 531081632567093651L;
 
     /**
      * Construct a new instance.
@@ -47,5 +53,22 @@ public final class SetTpSrcActionImpl extends TpPortActionImpl {
     @Override
     public SetTpSrcAction getFlowAction() {
         return new SetTpSrcAction(getPort());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean apply(PacketContext pctx) {
+        L4Packet packet = pctx.getL4Packet();
+        if (packet instanceof PortProtoPacket) {
+            PortProtoPacket pkt = (PortProtoPacket)packet;
+            int port = getPort();
+            pkt.setSourcePort(port);
+            pctx.addFilterAction(new SetTpSrc(port));
+            return true;
+        }
+
+        return false;
     }
 }

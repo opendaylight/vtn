@@ -2341,7 +2341,7 @@ public class GlobalResourceManagerTest extends TestBase {
     @Test
     public void testGetRemoteClusterSize() {
         InetAddress loopbackAddr = InetAddress.getLoopbackAddress();
-        InetAddress otherAddr = getInetAddressFromAddress(
+        InetAddress otherAddr = createInetAddress(
             new byte[] {(byte)10, (byte)0, (byte)1, (byte)99});
 
         ComponentImpl c = new ComponentImpl(null, null, null);
@@ -2446,16 +2446,15 @@ public class GlobalResourceManagerTest extends TestBase {
         List<MacAddressEntry> entries = getMacEntries(vtnMgr, bpath);
         assertEquals(0, entries.size());
 
-        InetAddress ipaddr
-            = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                    (byte)0, (byte)2});
+        InetAddress ipaddr = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)0, (byte)2});
         mac = 2L;
         MacTableEntryId eidRemote = new MacTableEntryId(ipaddr, 2L, bpath, mac);
         MacTableEntry entRemote = new MacTableEntry(eidRemote, nc, (short)0,
                                                     ipaddr);
 
-        ipaddr = getInetAddressFromAddress(new byte[] {(byte)192, (byte)168,
-                                                       (byte)0, (byte)3});
+        ipaddr = createInetAddress(
+            new byte[] {(byte)192, (byte)168, (byte)0, (byte)3});
         mac = 3L;
         MacTableEntryId eidRemote2 = new MacTableEntryId(ipaddr, 3L, bpath,
                                                          mac);

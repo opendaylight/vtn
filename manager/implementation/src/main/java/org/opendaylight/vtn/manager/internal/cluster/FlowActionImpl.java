@@ -27,6 +27,10 @@ import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
 import org.opendaylight.vtn.manager.internal.MiscUtils;
@@ -71,15 +75,15 @@ public abstract class FlowActionImpl implements Serializable {
      */
     static {
         CONSTRUCTORS = new HashMap<Class<?>, Constructor<?>>();
-
-        // REVISIT:
-        //   Currenlty flow actions that require recalculation of TCP/UDP
-        //   checksum are not yet supported.
         Class<?>[] classes = {
             SetDlSrcAction.class,
             SetDlDstAction.class,
             SetVlanPcpAction.class,
+            SetInet4SrcAction.class,
+            SetInet4DstAction.class,
             SetDscpAction.class,
+            SetTpSrcAction.class,
+            SetTpDstAction.class,
             SetIcmpTypeAction.class,
             SetIcmpCodeAction.class,
         };

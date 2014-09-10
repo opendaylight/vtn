@@ -10,12 +10,14 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.net.InetAddress;
+import java.net.Inet4Address;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 
+import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
@@ -26,6 +28,16 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  * methods.
  */
 public final class MiscUtils {
+    /**
+     * A mask value which represents all bits in a byte value.
+     */
+    public static final int  MASK_BYTE = (1 << Byte.SIZE) - 1;
+
+    /**
+     * A mask value which represents all bits in a short value.
+     */
+    public static final int  MASK_SHORT = (1 << Short.SIZE) - 1;
+
     /**
      * Maximum length of the resource name.
      */
@@ -58,6 +70,21 @@ public final class MiscUtils {
      * layer protocol.
      */
     private static final int  MASK_TP_PORT = 0xffff;
+
+    /**
+     * The number of bits to be shifted to get the first octet in an integer.
+     */
+    private static final int  INT_SHIFT_OCTET1 = 24;
+
+    /**
+     * The number of bits to be shifted to get the second octet in an integer.
+     */
+    private static final int  INT_SHIFT_OCTET2 = 16;
+
+    /**
+     * The number of bits to be shifted to get the third octet in an integer.
+     */
+    private static final int  INT_SHIFT_OCTET3 = 8;
 
     /**
      * Private constructor that protects this class from instantiating.
@@ -205,5 +232,76 @@ public final class MiscUtils {
             builder.append(Integer.toHexString(address));
             throw new IllegalStateException(builder.toString(), e);
         }
+    }
+
+    /**
+     * Convert an IPv4 address into an integer.
+     *
+     * @param addr  A {@link InetAddress} instance which represents an IPv4
+     *              address.
+     * @return  An integer value.
+     * @throws IllegalStateException
+     *    An error occurred.
+     */
+    public static int toInteger(InetAddress addr) {
+        if (addr instanceof Inet4Address) {
+            byte[] bytes = addr.getAddress();
+            return NetUtils.byteArray4ToInt(bytes);
+        }
+
+        StringBuilder builder =
+            new StringBuilder("Unexpected InetAddress: addr=");
+        builder.append(addr);
+        throw new IllegalStateException(builder.toString());
+    }
+
+    /**
+     * Copy the contents of the given packet.
+     *
+     * @param src  The source {@link Packet} instance.
+     * @param dst  The destination {@link Packet} instance.
+     * @param <T>  Type of packet.
+     * @return  {@code dst}.
+     * @throws VTNException
+     *    Failed to copy the packet.
+     */
+    public static <T extends Packet> T copy(T src, T dst) throws VTNException {
+        try {
+            byte[] raw = src.serialize();
+            int nbits = raw.length * NetUtils.NumBitsInAByte;
+            dst.deserialize(raw, 0, nbits);
+            return dst;
+        } catch (Exception e) {
+            // This should never happen.
+            throw new VTNException("Failed to copy the packet.", e);
+        }
+    }
+
+    /**
+     * Set an integer value into the given byte array in network byte order.
+     *
+     * @param array  A byte array.
+     * @param off    Index of {@code array} to store value.
+     * @param value  An integer value.
+     */
+    public static void setInt(byte[] array, int off, int value) {
+        int index = off;
+        array[index++] = (byte)(value >>> INT_SHIFT_OCTET1);
+        array[index++] = (byte)(value >>> INT_SHIFT_OCTET2);
+        array[index++] = (byte)(value >>> INT_SHIFT_OCTET3);
+        array[index] = (byte)value;
+    }
+
+    /**
+     * Set a short integer value into the given byte array in network byte
+     * order.
+     *
+     * @param array  A byte array.
+     * @param off    Index of {@code array} to store value.
+     * @param value  A short integer value.
+     */
+    public static void setShort(byte[] array, int off, short value) {
+        array[off] = (byte)(value >>> Byte.SIZE);
+        array[off + 1] = (byte)value;
     }
 }

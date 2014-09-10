@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.opendaylight.controller.sal.action.Action;
@@ -84,14 +85,15 @@ public class ActionList {
     }
 
     /**
-     * Append all SAL actions in the given list to the tail of the action list.
+     * Append all SAL actions in the given collection to the tail of the
+     * action list.
      *
-     * @param list  A SAL actions.
+     * @param c  A collection of SAL actions.
      * @return  This object is always returned.
      */
-    public ActionList addAll(List<? extends Action> list) {
-        if (list != null) {
-            actionList.addAll(list);
+    public ActionList addAll(Collection<? extends Action> c) {
+        if (c != null) {
+            actionList.addAll(c);
         }
         return this;
     }
