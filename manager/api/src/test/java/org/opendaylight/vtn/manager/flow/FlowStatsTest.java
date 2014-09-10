@@ -34,8 +34,7 @@ public class FlowStatsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowStatslist#equals(Object)}
-     *
+     * Test case for {@link FlowStats#equals(Object)}
      */
     @Test
     public void testEquals() {
@@ -46,9 +45,9 @@ public class FlowStatsTest extends TestBase {
         FlowStats flowStats = new FlowStats(packets, bytes, duration);
         toTestEquals(set, flowStats, new FlowStats(packets, bytes, duration));
     }
+
     /**
-     * Test case for {@link FlowStatslist#toString(Object)}
-     *
+     * Test case for {@link FlowStats#toString()}
      */
     @Test
     public void testToString() {

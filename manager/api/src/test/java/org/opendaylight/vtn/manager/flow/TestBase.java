@@ -51,6 +51,7 @@ public class TestBase extends Assert {
         assertFalse(set.add(o1));
         assertFalse(set.add(o2));
     }
+
     /**
      * Throw an error which indicates an unexpected throwable is caught.
      *
@@ -114,5 +115,4 @@ public class TestBase extends Assert {
 
         return list;
     }
-
 }
