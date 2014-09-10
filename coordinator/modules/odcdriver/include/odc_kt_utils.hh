@@ -34,6 +34,12 @@ class odlutils {
       std::string vtn_name,
       std::set <std::string> *vbridges);
 
+  static UncRespCode get_vterm_names(
+      unc::driver::controller *ctr_ptr,
+      unc::restjson::ConfFileValues_t conf_values,
+      std::string vtn_name,
+      std::set <std::string> *vbridges);
+
   static UncRespCode get_portname(
       unc::driver::controller *ctr_ptr,
       unc::restjson::ConfFileValues_t conf_values,

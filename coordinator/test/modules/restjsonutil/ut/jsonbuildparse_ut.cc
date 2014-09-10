@@ -45,7 +45,7 @@ TEST(JsonBuildParse , Build_null) {
   json_object *jobj = json_object_new_object();
   json_object *jint = NULL;
   obj.build("Name", jint , jobj);
-  char *str = const_cast<char *>("{ }");
+  char *str = const_cast<char *>("{ \"Name\": null }");
   EXPECT_STREQ(str, json_object_to_json_string(jobj));
   json_object_put(jobj);
 }
@@ -55,7 +55,7 @@ TEST(JsonBuildParse , Build_null_pattern1) {
   json_object *jobj = json_object_new_object();
   json_object *jint = NULL;
   obj.build("", jint , jobj);
-  char *str =  const_cast<char *>("{ }");
+  char *str =  const_cast<char *>("{ \"\": null }");
   EXPECT_STREQ(str, json_object_to_json_string(jobj));
   json_object_put(jobj);
 }
