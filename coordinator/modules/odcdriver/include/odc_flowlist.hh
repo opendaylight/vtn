@@ -114,7 +114,7 @@ public:
                               std::string &request_indicator,
                               char* data) {
     ODC_FUNC_TRACE;
-    if ( Op != unc::odcdriver::CONFIG_READ ) {
+    if ( Op == unc::odcdriver::CONFIG_READ ) {
       unc::odcdriver::flowConditionsUtil util_;
       json_object *parse(unc::restjson::JsonBuildParse::get_json_object(data));
       if ( parse != NULL ) {
