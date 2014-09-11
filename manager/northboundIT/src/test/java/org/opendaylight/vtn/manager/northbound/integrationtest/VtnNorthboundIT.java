@@ -4585,7 +4585,7 @@ public class VtnNorthboundIT extends TestBase {
                 mavenBundle("org.ow2.chameleon.management", "chameleon-mbeans").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller.thirdparty", "net.sf.jung2").versionAsInProject(),
                 mavenBundle("org.opendaylight.controller.thirdparty", "com.sun.jersey.jersey-servlet").versionAsInProject(),
-                mavenBundle("org.opendaylight.controller.thirdparty", "org.apache.catalina.filters.CorsFilter").versionAsInProject().noStart(),
+
                 //OVSDB Bundles
                 mavenBundle("org.opendaylight.ovsdb", "library").versionAsInProject(),
                 mavenBundle("org.opendaylight.ovsdb", "plugin").versionAsInProject(),
