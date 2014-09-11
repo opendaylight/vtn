@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_4b0b942b",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-09-11T15:35:34Z",
+      "side": 1,
+      "message": "I think you don\u0027t need \"double quotes\" in the commit message.",
+      "revId": "bb816fb55d481c1c1de7839d15d91fde54ac80aa",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
