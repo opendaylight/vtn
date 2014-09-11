@@ -62,6 +62,9 @@ import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
  * org.opendaylight.vtn.manager package.
  */
 public class VTNManagerStub implements IVTNManager {
+    // An invalid UUID
+    static final String INVALID_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C30F-";
+
     // A tenant information which the stub class has.
     static final String TENANT_1_UUID = "4b99cbea5fa7450ab40a81929e40371d";
     static final String TENANT_1_NAME = "4b99cbea5fa750ab40a81929e40371d";
@@ -73,6 +76,8 @@ public class VTNManagerStub implements IVTNManager {
     // A vBridge interface information which stub the class has.
     static final String VBR_IF_1_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C30F";
     static final String VBR_IF_1_NAME = "F6197D5497A14D2ABFB6DFED030C30F";
+    static final String VBR_IF_2_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C300";
+    static final String VBR_IF_2_NAME = "F6197D5497A14D2ABFB6DFED030C300";
 
     // Following methods are used in UnitTest.
     @Override
@@ -162,8 +167,19 @@ public class VTNManagerStub implements IVTNManager {
         VBridgeIfPath if1 = new VBridgeIfPath(TENANT_1_NAME,
                                               BRIDGE_1_NAME,
                                               VBR_IF_1_NAME);
+
+        VBridgeIfPath if2 = new VBridgeIfPath(TENANT_1_NAME,
+                                              BRIDGE_1_NAME,
+                                              VBR_IF_2_NAME);
         if (path.equals(if1)) {
             VInterfaceConfig iconf = new VInterfaceConfig(null, true);
+            VInterface vif = new VInterface(VBR_IF_1_NAME,
+                                            VNodeState.UNKNOWN,
+                                            VNodeState.UNKNOWN,
+                                            iconf);
+            return vif;
+        } else if (path.equals(if2)) {
+            VInterfaceConfig iconf = new VInterfaceConfig("br-int config", true);
             VInterface vif = new VInterface(VBR_IF_1_NAME,
                                             VNodeState.UNKNOWN,
                                             VNodeState.UNKNOWN,
@@ -182,12 +198,52 @@ public class VTNManagerStub implements IVTNManager {
 
         VBridgeIfPath bif1 = new VBridgeIfPath(TENANT_1_NAME,
                                                BRIDGE_1_NAME,
+                                               VBR_IF_2_NAME);
+        if (path.equals(bif1)) {
+            return new Status(StatusCode.CONFLICT);
+        }
+
+        return new Status(StatusCode.SUCCESS);
+    }
+
+    @Override
+    public Status modifyInterface(VBridgeIfPath path, VInterfaceConfig iconf, boolean all) {
+        if (path == null || iconf == null) {
+            return new Status(StatusCode.BADREQUEST);
+        }
+
+        VBridgeIfPath bif1 = new VBridgeIfPath(TENANT_1_NAME,
+                                               BRIDGE_1_NAME,
                                                VBR_IF_1_NAME);
         if (path.equals(bif1)) {
             return new Status(StatusCode.CONFLICT);
         }
 
         return new Status(StatusCode.SUCCESS);
+    }
+
+    @Override
+    public Status removeInterface(VBridgeIfPath path) {
+        if (path == null) {
+            return new Status(StatusCode.BADREQUEST);
+        }
+
+        VBridgeIfPath bif1 = new VBridgeIfPath(TENANT_1_NAME,
+                                               BRIDGE_1_NAME,
+                                               VBR_IF_1_NAME);
+        if (path.equals(bif1)) {
+            return new Status(StatusCode.SUCCESS);
+        }
+
+        return new Status(StatusCode.NOTFOUND);
+    }
+
+    @Override
+    public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
+        if (!TestBase.CONFLICTED_NETWORK_UUID.equalsIgnoreCase(path.getBridgeName())) {
+            return new Status(StatusCode.CREATED, "desc");
+        }
+        return new Status(StatusCode.NOTFOUND);
     }
 
     // Following methods are Unused in UnitTest.
@@ -246,15 +302,6 @@ public class VTNManagerStub implements IVTNManager {
         return null;
     }
 
-    @Override
-    public Status modifyInterface(VBridgeIfPath path, VInterfaceConfig iconf, boolean all) {
-        return null;
-    }
-
-    @Override
-    public Status removeInterface(VBridgeIfPath path) {
-        return null;
-    }
 
     @Override
     public List<VInterface> getInterfaces(VTerminalPath path) throws VTNException {
@@ -313,11 +360,6 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public PortMap getPortMap(VTerminalIfPath path) throws VTNException {
-        return null;
-    }
-
-    @Override
-    public Status setPortMap(VBridgeIfPath path, PortMapConfig pmconf) {
         return null;
     }
 

@@ -45,6 +45,33 @@ public class NeutronPortCRUDStub implements INeutronPortCRUD {
             neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
             neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
             return neutron;
+        } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78474")) {
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+            neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
+            neutron.setNetworkUUID(TestBase.CONFLICTED_NETWORK_UUID);
+            return neutron;
+        } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78475")) {
+            // Invalid TenantID
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("");
+            neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
+            neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
+            return neutron;
+        } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78476")) {
+            // Invalid NetworkID
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+            neutron.setPortUUID("9c781fc0-f215-11e3-aac3-0002a5d5c51b");
+            neutron.setNetworkUUID("");
+            return neutron;
+        } else if (uuid.equals("0D2206F8-B700-4F78-913D-9CE7A2D78477")) {
+            // Invalid PortID
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+            neutron.setPortUUID("");
+            neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
+            return neutron;
         }
         return null;
     }

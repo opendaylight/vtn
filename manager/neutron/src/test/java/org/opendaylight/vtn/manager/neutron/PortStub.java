@@ -28,7 +28,7 @@ import org.opendaylight.ovsdb.schema.openvswitch.Port;
 public class PortStub implements Port{
 
     /*
-     * GenericTableSchema declaration for creating Tableschema of Bridge
+     * GenericTableSchema declaration for creating Tableschema of Port
      */
     private GenericTableSchema tableSchema = new GenericTableSchema("Port");
 
