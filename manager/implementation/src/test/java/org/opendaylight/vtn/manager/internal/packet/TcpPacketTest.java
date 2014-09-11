@@ -20,6 +20,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.VTNException;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -32,6 +34,7 @@ import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
+import org.opendaylight.controller.sal.packet.PacketException;
 import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
@@ -230,6 +233,20 @@ public class TcpPacketTest extends TestBase {
             assertEquals(false, tcp1.commit(pctx));
             assertEquals(src0, tcp1.getSourcePort());
             assertEquals(dst0, tcp1.getDestinationPort());
+
+            // Ensure that a set of modified values is deeply cloned.
+            TcpPacket tcp2 = (TcpPacket)tcp1.clone();
+            assertNotSame(tcp1, tcp2);
+            assertEquals(src0, tcp1.getSourcePort());
+            assertEquals(dst0, tcp1.getDestinationPort());
+            assertEquals(src0, tcp2.getSourcePort());
+            assertEquals(dst0, tcp2.getDestinationPort());
+            tcp2.setSourcePort(src1);
+            tcp2.setDestinationPort(dst1);
+            assertEquals(src0, tcp1.getSourcePort());
+            assertEquals(dst0, tcp1.getDestinationPort());
+            assertEquals(src1, tcp2.getSourcePort());
+            assertEquals(dst1, tcp2.getDestinationPort());
         }
     }
 
@@ -295,6 +312,29 @@ public class TcpPacketTest extends TestBase {
      */
     @Test
     public void testUpdateChecksum() throws Exception {
+        // Ensure that an exception is wrapped by a VTNException.
+        IPv4 ipv4 = new IPv4();
+        Inet4Packet inet4 = new Inet4Packet(ipv4);
+        TCP pkt = new TCP();
+        TcpPacket tcp = new TcpPacket(pkt);
+        try {
+            tcp.updateChecksum(inet4);
+            unexpected();
+        } catch (VTNException e) {
+            Throwable cause = e.getCause();
+            assertNotNull(cause);
+            assertEquals(PacketException.class, cause.getClass());
+        }
+
+        try {
+            PortProtoPacket.verifyChecksum(inet4, pkt);
+            unexpected();
+        } catch (VTNException e) {
+            Throwable cause = e.getCause();
+            assertNotNull(cause);
+            assertEquals(PacketException.class, cause.getClass());
+        }
+
         // Fixed TCP parameters.
         int seq = 0xa2ffa3fc;
         int ack = 0x7261bf41;
@@ -347,14 +387,13 @@ public class TcpPacketTest extends TestBase {
         int src = 37397;
         int dst = 9999;
 
-        TCP pkt = new TCP();
         pkt.setSourcePort((short)src).setDestinationPort((short)dst).
             setSequenceNumber(seq).setAckNumber(ack).setDataOffset(off).
             setHeaderLenFlags(flags).setReserved(resv).setWindowSize(win).
             setChecksum(checksumIni).setUrgentPointer(urp);
-        IPv4 ipv4 = createIPv4(srcIp, dstIp, pkt);
-        TcpPacket tcp = new TcpPacket(pkt);
-        Inet4Packet inet4 = new Inet4Packet(ipv4);
+        ipv4 = createIPv4(srcIp, dstIp, pkt);
+        tcp = new TcpPacket(pkt);
+        inet4 = new Inet4Packet(ipv4);
 
         List<ChecksumData> list = new ArrayList<ChecksumData>();
         list.add(new ChecksumData(empty, 0xdd1d));

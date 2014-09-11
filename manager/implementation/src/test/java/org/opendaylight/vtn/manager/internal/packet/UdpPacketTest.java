@@ -20,6 +20,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.VTNException;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -32,6 +34,7 @@ import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
+import org.opendaylight.controller.sal.packet.PacketException;
 import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
@@ -195,6 +198,20 @@ public class UdpPacketTest extends TestBase {
             assertEquals(false, udp1.commit(pctx));
             assertEquals(src0, udp1.getSourcePort());
             assertEquals(dst0, udp1.getDestinationPort());
+
+            // Ensure that a set of modified values is deeply cloned.
+            UdpPacket udp2 = (UdpPacket)udp1.clone();
+            assertNotSame(udp1, udp2);
+            assertEquals(src0, udp1.getSourcePort());
+            assertEquals(dst0, udp1.getDestinationPort());
+            assertEquals(src0, udp2.getSourcePort());
+            assertEquals(dst0, udp2.getDestinationPort());
+            udp2.setSourcePort(src1);
+            udp2.setDestinationPort(dst1);
+            assertEquals(src0, udp1.getSourcePort());
+            assertEquals(dst0, udp1.getDestinationPort());
+            assertEquals(src1, udp2.getSourcePort());
+            assertEquals(dst1, udp2.getDestinationPort());
         }
     }
 
@@ -260,6 +277,30 @@ public class UdpPacketTest extends TestBase {
      */
     @Test
     public void testUpdateChecksum() throws Exception {
+        // Ensure that an exception is wrapped by a VTNException.
+        IPv4 ipv4 = new IPv4();
+        Inet4Packet inet4 = new Inet4Packet(ipv4);
+        UDP pkt = new UDP();
+        pkt.setHeaderField("Checksum", new byte[]{1});
+        UdpPacket udp = new UdpPacket(pkt);
+        try {
+            udp.updateChecksum(inet4);
+            unexpected();
+        } catch (VTNException e) {
+            Throwable cause = e.getCause();
+            assertNotNull(cause);
+            assertEquals(PacketException.class, cause.getClass());
+        }
+
+        try {
+            PortProtoPacket.verifyChecksum(inet4, pkt);
+            unexpected();
+        } catch (VTNException e) {
+            Throwable cause = e.getCause();
+            assertNotNull(cause);
+            assertEquals(PacketException.class, cause.getClass());
+        }
+
         // Fixed UDP parameters.
         short len = 0x1234;
         short checksumIni = (short)0xaaaa;
@@ -295,12 +336,12 @@ public class UdpPacketTest extends TestBase {
         int src = 54321;
         int dst = 7777;
 
-        UDP pkt = new UDP();
+        pkt = new UDP();
         pkt.setSourcePort((short)src).setDestinationPort((short)dst).
             setChecksum(checksumIni).setLength(len);
-        IPv4 ipv4 = createIPv4(srcIp, dstIp, pkt);
-        UdpPacket udp = new UdpPacket(pkt);
-        Inet4Packet inet4 = new Inet4Packet(ipv4);
+        ipv4 = createIPv4(srcIp, dstIp, pkt);
+        udp = new UdpPacket(pkt);
+        inet4 = new Inet4Packet(ipv4);
 
         List<ChecksumData> list = new ArrayList<ChecksumData>();
         list.add(new ChecksumData(empty, 0x8d07));

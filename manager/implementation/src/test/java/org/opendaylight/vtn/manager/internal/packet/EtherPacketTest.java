@@ -217,6 +217,7 @@ public class EtherPacketTest extends TestBase {
     public void testSetter() {
         int type = 0x0806;
         short[] vids = {MatchType.DL_VLAN_NONE, (short)1, (short)4095};
+        short vid1 = (short)1000;
 
         byte[] src0 = {
             (byte)0x10, (byte)0x20, (byte)0x30,
@@ -407,6 +408,41 @@ public class EtherPacketTest extends TestBase {
                     assertEquals(vid, ether1.getVlan());
                     assertEquals(vlanPcp, ether1.getVlanPriority());
                     assertEquals(type, ether1.getEtherType());
+
+                    // Ensure that a set of modified values is deeply cloned.
+                    EtherPacket ether2 = ether1.clone();
+                    assertArrayEquals(src0, ether1.getSourceAddress());
+                    assertEquals(srcMac0, ether1.getSourceMacAddress());
+                    assertArrayEquals(dst0, ether1.getDestinationAddress());
+                    assertEquals(dstMac0, ether1.getDestinationMacAddress());
+                    assertEquals(vid, ether1.getVlan());
+                    assertEquals(vlanPcp, ether1.getVlanPriority());
+                    assertEquals(type, ether1.getEtherType());
+                    assertArrayEquals(src0, ether2.getSourceAddress());
+                    assertEquals(srcMac0, ether2.getSourceMacAddress());
+                    assertArrayEquals(dst0, ether2.getDestinationAddress());
+                    assertEquals(dstMac0, ether2.getDestinationMacAddress());
+                    assertEquals(vid, ether2.getVlan());
+                    assertEquals(vlanPcp, ether2.getVlanPriority());
+                    assertEquals(type, ether2.getEtherType());
+                    ether2.setSourceAddress(src1);
+                    ether2.setDestinationAddress(dst1);
+                    ether2.setVlan(vid1);
+                    ether2.setVlanPriority(pcp);
+                    assertArrayEquals(src0, ether1.getSourceAddress());
+                    assertEquals(srcMac0, ether1.getSourceMacAddress());
+                    assertArrayEquals(dst0, ether1.getDestinationAddress());
+                    assertEquals(dstMac0, ether1.getDestinationMacAddress());
+                    assertEquals(vid, ether1.getVlan());
+                    assertEquals(vlanPcp, ether1.getVlanPriority());
+                    assertEquals(type, ether1.getEtherType());
+                    assertArrayEquals(src1, ether2.getSourceAddress());
+                    assertEquals(srcMac1, ether2.getSourceMacAddress());
+                    assertArrayEquals(dst1, ether2.getDestinationAddress());
+                    assertEquals(dstMac1, ether2.getDestinationMacAddress());
+                    assertEquals(vid1, ether2.getVlan());
+                    assertEquals(pcp, ether2.getVlanPriority());
+                    assertEquals(type, ether2.getEtherType());
                 }
             }
         }

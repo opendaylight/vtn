@@ -270,6 +270,36 @@ public class Inet4PacketTest extends TestBase {
             assertEquals(dstAddr0, ip.getDestinationAddress());
             assertEquals(proto, ip.getProtocol());
             assertEquals(dscp0, ip.getDscp());
+
+            // Ensure that a set of modified values is deeply cloned.
+            Inet4Packet ip1 = ip.clone();
+            assertEquals(src0, ip.getSourceInetAddress());
+            assertEquals(srcAddr0, ip.getSourceAddress());
+            assertEquals(dst0, ip.getDestinationInetAddress());
+            assertEquals(dstAddr0, ip.getDestinationAddress());
+            assertEquals(proto, ip.getProtocol());
+            assertEquals(dscp0, ip.getDscp());
+            assertEquals(src0, ip1.getSourceInetAddress());
+            assertEquals(srcAddr0, ip1.getSourceAddress());
+            assertEquals(dst0, ip1.getDestinationInetAddress());
+            assertEquals(dstAddr0, ip1.getDestinationAddress());
+            assertEquals(proto, ip1.getProtocol());
+            assertEquals(dscp0, ip1.getDscp());
+            ip1.setSourceAddress(src1);
+            ip1.setDestinationAddress(dst1);
+            ip1.setDscp(dscp1);
+            assertEquals(src0, ip.getSourceInetAddress());
+            assertEquals(srcAddr0, ip.getSourceAddress());
+            assertEquals(dst0, ip.getDestinationInetAddress());
+            assertEquals(dstAddr0, ip.getDestinationAddress());
+            assertEquals(proto, ip.getProtocol());
+            assertEquals(dscp0, ip.getDscp());
+            assertEquals(src1, ip1.getSourceInetAddress());
+            assertEquals(srcAddr1, ip1.getSourceAddress());
+            assertEquals(dst1, ip1.getDestinationInetAddress());
+            assertEquals(dstAddr1, ip1.getDestinationAddress());
+            assertEquals(proto, ip1.getProtocol());
+            assertEquals(dscp1, ip1.getDscp());
         }
     }
 

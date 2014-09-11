@@ -212,6 +212,19 @@ public class IcmpPacketTest extends TestBase {
             assertEquals(false, icmp1.commit(pctx));
             assertEquals(type0, icmp1.getType());
             assertEquals(code0, icmp1.getCode());
+
+            // Ensure that a set of modified values is deeply cloned.
+            IcmpPacket icmp2 = icmp1.clone();
+            assertEquals(type0, icmp1.getType());
+            assertEquals(code0, icmp1.getCode());
+            assertEquals(type0, icmp2.getType());
+            assertEquals(code0, icmp2.getCode());
+            icmp2.setType(type1);
+            icmp2.setCode(code1);
+            assertEquals(type0, icmp1.getType());
+            assertEquals(code0, icmp1.getCode());
+            assertEquals(type1, icmp2.getType());
+            assertEquals(code1, icmp2.getCode());
         }
     }
 
