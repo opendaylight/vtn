@@ -15,8 +15,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.controller.sal.action.PopVlan;
-
 /**
  * This class describes a flow action that strips the outermost VLAN tag.
  *
@@ -32,19 +30,11 @@ public final class PopVlanAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2316086444406730945L;
+    private static final long serialVersionUID = 1671527159907644934L;
 
     /**
      * Construct a new instance.
      */
     public PopVlanAction() {
-    }
-
-    /**
-     * Construct a new instance from the given SAL action.
-     *
-     * @param act  Unused.
-     */
-    public PopVlanAction(PopVlan act) {
     }
 }

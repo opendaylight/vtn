@@ -364,7 +364,7 @@ public abstract class FlowFilterMap implements Serializable, Cloneable {
         if (!flowFilters.isEmpty()) {
             pctx.setFiltered(true);
             if (pctx.isFilterDisabled()) {
-                logDisabled(mgr, pctx);
+                logDisabled(pctx);
             } else {
                 pc = getPacketContext(pctx);
                 evaluateImpl(mgr, pc, vid);
@@ -479,10 +479,9 @@ public abstract class FlowFilterMap implements Serializable, Cloneable {
      * Record a log message that indicates the given packet disables the
      * flow filter.
      *
-     * @param mgr    VTN Manager service.
-     * @param pctx   A packet context which contains the packet.
+     * @param pctx  A packet context which contains the packet.
      */
-    private void logDisabled(VTNManagerImpl mgr, PacketContext pctx) {
+    private void logDisabled(PacketContext pctx) {
         if (LOG.isTraceEnabled()) {
             LOG.trace("{}:{}:{}: Flow filter is disabled: {}",
                       parent.getContainerName(), parent.getPath(),

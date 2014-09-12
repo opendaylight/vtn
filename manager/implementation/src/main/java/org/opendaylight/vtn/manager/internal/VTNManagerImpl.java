@@ -1547,7 +1547,7 @@ public class VTNManagerImpl
      * @param service  Cluster container service.
      */
     void unsetClusterContainerService(IClusterContainerServices service) {
-        if (clusterService == service) {
+        if (service != null && service.equals(clusterService)) {
             LOG.trace("{}: Unset cluster service: {}", containerName, service);
             clusterService = null;
         }
@@ -1578,7 +1578,7 @@ public class VTNManagerImpl
      * @param service  Switch manager service.
      */
     void unsetSwitchManager(ISwitchManager service) {
-        if (switchManager == service) {
+        if (service != null && service.equals(switchManager)) {
             LOG.trace("{}: Unset switch manager: {}", containerName, service);
             switchManager = null;
         }
@@ -1609,7 +1609,7 @@ public class VTNManagerImpl
      * @param service  Topology manager service.
      */
     void unsetTopologyManager(ITopologyManager service) {
-        if (topologyManager == service) {
+        if (service != null && service.equals(topologyManager)) {
             LOG.trace("{}: Unset topology manager: {}", containerName,
                       service);
             topologyManager = null;
@@ -1642,7 +1642,7 @@ public class VTNManagerImpl
      * @param service  Forwarding rule manager service.
      */
     void unsetForwardingRuleManager(IForwardingRulesManager service) {
-        if (fwRuleManager == service) {
+        if (service != null && service.equals(fwRuleManager)) {
             LOG.trace("{}: Unset forwarding rule manager: {}", containerName,
                       service);
             fwRuleManager = null;
@@ -1674,7 +1674,7 @@ public class VTNManagerImpl
      * @param service  Routing service.
      */
     void unsetRouting(IRouting service) {
-        if (routing == service) {
+        if (service != null && service.equals(routing)) {
             LOG.trace("{}: Unset routing service: {}", containerName, service);
             routing = null;
         }
@@ -1705,7 +1705,7 @@ public class VTNManagerImpl
      * @param service  Data packet service.
      */
     void unsetDataPacketService(IDataPacketService service) {
-        if (dataPacketService == service) {
+        if (service != null && service.equals(dataPacketService)) {
             LOG.trace("{}: Unset data packet service: {}", containerName,
                       service);
             dataPacketService = null;
@@ -1738,7 +1738,7 @@ public class VTNManagerImpl
      * @param service  Statistics manager service.
      */
     void unsetStatisticsManager(IStatisticsManager service) {
-        if (statisticsManager == service) {
+        if (service != null && service.equals(statisticsManager)) {
             LOG.trace("{}: Unset statistics manager service: {}",
                       containerName, service);
             statisticsManager = null;
@@ -1770,7 +1770,7 @@ public class VTNManagerImpl
      * @param service  Host tracker service.
      */
     void unsetHostTracker(IfIptoHost service) {
-        if (hostTracker == service) {
+        if (service != null && service.equals(hostTracker)) {
             LOG.trace("{}: Unset host tracker service: {}", containerName,
                       service);
             hostTracker = null;
@@ -1803,7 +1803,7 @@ public class VTNManagerImpl
      * @param service  Connection manager service.
      */
     void unsetConnectionManager(IConnectionManager service) {
-        if (connectionManager == service) {
+        if (service != null && service.equals(connectionManager)) {
             LOG.trace("{}: Unset connection manager service: {}",
                       containerName, service);
             connectionManager = null;
@@ -1836,7 +1836,7 @@ public class VTNManagerImpl
      * @param service  Container manager service.
      */
     void unsetContainerManager(IContainerManager service) {
-        if (containerManager == service) {
+        if (service != null && service.equals(containerManager)) {
             LOG.trace("{}: Unset container manager service: {}",
                       containerName, service);
             containerManager = null;
@@ -1892,7 +1892,7 @@ public class VTNManagerImpl
      * @param service  VTN resource manager service.
      */
     void unsetResourceManager(IVTNResourceManager service) {
-        if (resourceManager == service) {
+        if (service != null && service.equals(resourceManager)) {
             LOG.trace("{}: Unset VTN resource manager: {}", containerName,
                       service);
             resourceManager = null;

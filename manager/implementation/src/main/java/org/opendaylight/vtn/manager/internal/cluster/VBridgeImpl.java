@@ -747,18 +747,6 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     }
 
     /**
-     * Return a failure status that indicates the specified interface does not
-     * exist.
-     *
-     * @param ifName  The name of the interface.
-     * @return  A failure status.
-     */
-    private Status interfaceNotFound(String ifName) {
-        String msg = ifName + ": Interface does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
-    }
-
-    /**
      * Return a failure status that indicates the specified VLAN mapping does
      * not exist.
      *

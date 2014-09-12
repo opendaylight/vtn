@@ -984,11 +984,10 @@ public class PacketContext implements Cloneable {
             l4Changed = false;
         } else {
             l4Changed = l4.commit(this);
-            if (l4Changed || inet4.isAddressModified()) {
-                // Update checksum.
-                if (l4.updateChecksum(inet4)) {
-                    l4Changed = true;
-                }
+            // Update checksum if needed.
+            if ((l4Changed || inet4.isAddressModified()) &&
+                l4.updateChecksum(inet4)) {
+                l4Changed = true;
             }
         }
 

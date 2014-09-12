@@ -246,8 +246,7 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
         MiscUtils.setShort(data, sumOff, (short)0);
 
         // Compute checksum.
-        int sum = computeChecksum(ipv4, data);
-        return (short)~sum;
+        return (short)~computeChecksum(ipv4, data);
     }
 
     /**
