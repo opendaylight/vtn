@@ -217,7 +217,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OVSDBPluginEventHandler#isUpdateOfInterest(Node, oldRow, newRow)}.
+     * {@link OVSDBPluginEventHandler#isUpdateOfInterest(Node,org.opendaylight.ovsdb.lib.notation.Row,org.opendaylight.ovsdb.lib.notation.Row)}.
      * Test isUpdateOfInterest Methods with Neutron Port in OVSDBPluginEventHandler.
      */
     @Test

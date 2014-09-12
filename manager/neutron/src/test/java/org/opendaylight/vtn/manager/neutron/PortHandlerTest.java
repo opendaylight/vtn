@@ -110,7 +110,7 @@ public class PortHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link PortHandler#getVTNIdentifiers(NeutronPort, []vtnIDs)}.
+     * {@link PortHandler#getVTNIdentifiers(NeutronPort, String[])}.
      */
     @Test
     public void testGetVTNIdentifiers() {
@@ -435,7 +435,7 @@ public class PortHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link PortHandler#neutronPortDeleted(NeutronPort)
+     * {@link PortHandler#neutronPortDeleted(NeutronPort)}.
      */
     public void testNeutronPortDeleted(NeutronPort port) {
         PortHandler ph = new PortHandler();
