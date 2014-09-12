@@ -34,11 +34,6 @@ public final class EtherPacket implements CachedPacket {
     private static final long  MAC_NONE = -1L;
 
     /**
-     * A pseudo VLAN ID which represents the VLAN ID is not specified.
-     */
-    private static final short  VLAN_NONE = -1;
-
-    /**
      * A pseudo VLAN priority which represents the VLAN priority is not
      * specified.
      */
@@ -187,8 +182,6 @@ public final class EtherPacket implements CachedPacket {
          * Return the VLAN ID.
          *
          * @return  A VLAN ID.
-         *          {@link EtherPacket#VLAN_NONE} is returned if not
-         *          configured.
          */
         private short getVlan() {
             return vlan;

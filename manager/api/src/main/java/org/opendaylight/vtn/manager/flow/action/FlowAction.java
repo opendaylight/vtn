@@ -125,14 +125,20 @@ public abstract class FlowAction implements Serializable {
      *          is not supported.
      */
     public static final FlowAction create(Action act, int ipproto) {
-        Constructor<?> ctor = getConstructor(act, ipproto);
+        if (act == null) {
+            return null;
+        }
+
+        Class<? extends Action> salClass = act.getClass();
+        Constructor<?> ctor = getConstructor(salClass, ipproto);
         if (ctor == null) {
             return null;
         }
 
+        Object[] params = (useDefault(salClass)) ? null : new Object[]{act};
         Exception error;
         try {
-            return (FlowAction)ctor.newInstance(act);
+            return (FlowAction)ctor.newInstance(params);
         } catch (InvocationTargetException e) {
             Throwable cause = e.getCause();
             if (cause instanceof RuntimeException) {
@@ -161,9 +167,12 @@ public abstract class FlowAction implements Serializable {
     private static void setConstructor(Map<Class<?>, Constructor<?>> map,
                                        Class<? extends FlowAction> actClass,
                                        Class<? extends Action> salClass) {
-        Constructor<?> ctor = null;
+        Constructor<?> ctor;
+        Class<?>[] paramTypes = (useDefault(salClass))
+            ? null : new Class<?>[]{salClass};
+
         try {
-            ctor = actClass.getConstructor(salClass);
+            ctor = actClass.getConstructor(paramTypes);
         } catch (NoSuchMethodException e) {
             String msg = "No constructor for " + actClass.getSimpleName();
             throw new IllegalStateException(msg, e);
@@ -176,18 +185,14 @@ public abstract class FlowAction implements Serializable {
      * Return a constructor for {@code FlowAction} variants associated with
      * the given SAL action.
      *
-     * @param act      A SAL action.
+     * @param c        Class of A SAL action.
      * @param ipproto  IP protocol number.
      * @return  A constructor for {@code FlowAction} variants associated with
      *          {@code act}.
      */
-    private static Constructor<?> getConstructor(Action act, int ipproto) {
-        if (act == null) {
-            return null;
-        }
-
-        Class<?> salClass = act.getClass();
-        Constructor<?> ctor = CTORS.get(salClass);
+    private static Constructor<?> getConstructor(Class<? extends Action> c,
+                                                 int ipproto) {
+        Constructor<?> ctor = CTORS.get(c);
         if (ctor != null) {
             return ctor;
         }
@@ -199,7 +204,22 @@ public abstract class FlowAction implements Serializable {
             return null;
         }
 
-        return map.get(salClass);
+        return map.get(c);
+    }
+
+    /**
+     * Determine whether the {@code FlowAction} class associated with the given
+     * SAL action can be instantiated using default constructor or not.
+     *
+     * @param c  SAL action class.
+     * @return   {@code true} is returned if the {@code FlowAction} class
+     *           associated with the given SAL action can be instantiated
+     *           using default constructor.
+     *           {@code false} is returned if an instance of SAL action needs
+     *           to be passed to the constructor.
+     */
+    private static boolean useDefault(Class<? extends Action> c) {
+        return (PopVlan.class.equals(c) || Drop.class.equals(c));
     }
 
     /**

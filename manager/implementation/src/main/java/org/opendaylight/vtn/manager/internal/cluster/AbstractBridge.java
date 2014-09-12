@@ -337,7 +337,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
     protected final void setState(VTNManagerImpl mgr,
                                   ConcurrentMap<VTenantPath, Object> db,
                                   BridgeState bst, VNodeState state) {
-        VNodeState st = bst.setState(state);
+        bst.setState(state);
         if (bst.isDirty()) {
             db.put(getNodePath(), bst);
             stateChanged(mgr, bst, state);

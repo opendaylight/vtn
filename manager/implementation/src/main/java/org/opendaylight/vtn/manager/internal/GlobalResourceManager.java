@@ -1142,7 +1142,7 @@ public class GlobalResourceManager
      * @param service  Cluster global service.
      */
     void unsetClusterGlobalService(IClusterGlobalServices service) {
-        if (clusterService == service) {
+        if (service != null && service.equals(clusterService)) {
             LOG.trace("Unset cluster service: ", service);
             clusterService = null;
         }

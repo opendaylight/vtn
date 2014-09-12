@@ -101,6 +101,11 @@ public final class VTenantImpl implements FlowFilterNode {
         LoggerFactory.getLogger(VTenantImpl.class);
 
     /**
+     * A status message that means no resource was modified.
+     */
+    private static final String  MSG_NOT_MODIFIED = "Not modified";
+
+    /**
      * Maximum value of flow timeout value.
      */
     private static final int  MAX_FLOW_TIMEOUT = 65535;
@@ -240,7 +245,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 cf = merge(tconf);
             }
             if (cf.equals(tenantConfig)) {
-                return new Status(StatusCode.SUCCESS, "Not modified");
+                return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
             }
 
             checkConfig(cf);
@@ -332,7 +337,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 return saveConfigImpl(null);
             }
 
-            return new Status(StatusCode.SUCCESS, "Not modified");
+            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -484,7 +489,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 return saveConfigImpl(null);
             }
 
-            return new Status(StatusCode.SUCCESS, "Not modified");
+            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -619,7 +624,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 return saveConfigImpl(null);
             }
 
-            return new Status(StatusCode.SUCCESS, "Not modified");
+            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -744,7 +749,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 return saveConfigImpl(null);
             }
 
-            return new Status(StatusCode.SUCCESS, "Not modified");
+            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -999,7 +1004,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 return saveConfigImpl(null);
             }
 
-            return new Status(StatusCode.SUCCESS, "Not modified");
+            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }
@@ -1029,7 +1034,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 return saveConfigImpl(null);
             }
 
-            return new Status(StatusCode.SUCCESS, "Not modified");
+            return new Status(StatusCode.SUCCESS, MSG_NOT_MODIFIED);
         } finally {
             rdlock.unlock();
         }

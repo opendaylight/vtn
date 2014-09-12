@@ -539,7 +539,7 @@ public class MacMapState implements Serializable, Cloneable {
             return mst;
         } catch (CloneNotSupportedException e) {
             // This should never happen.
-            throw new InternalError();
+            throw new IllegalStateException("clone() failed", e);
         }
     }
 

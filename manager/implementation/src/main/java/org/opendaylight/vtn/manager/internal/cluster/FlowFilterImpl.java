@@ -213,7 +213,6 @@ public abstract class FlowFilterImpl implements Serializable {
             FlowCondImpl fc = getCondition(mgr, pctx);
             if (fc.match(mgr, pctx)) {
                 // Apply this flow filter.
-                Logger logger = getLogger();
                 if (needFlowAction()) {
                     applyFlowActions(pctx, ffmap);
                 }

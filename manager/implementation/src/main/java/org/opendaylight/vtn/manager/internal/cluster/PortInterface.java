@@ -766,7 +766,6 @@ public abstract class PortInterface extends AbstractInterface
             return cur;
         }
 
-        VInterfacePath path = getInterfacePath();
         NodeConnector mapped = ist.getMappedPort();
         VNodeState state = VNodeState.UNKNOWN;
         switch (type) {

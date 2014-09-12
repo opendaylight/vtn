@@ -41,11 +41,6 @@ public final class Inet4Packet implements CachedPacket {
     private static final byte  DSCP_NONE = -1;
 
     /**
-     * The number of bytes in an IPv4 address.
-     */
-    private static final int ADDR_SIZE = 4;
-
-    /**
      * Byte offset to the source address in a pseudo IPv4 header used for
      * computing TCP/UDP checksum.
      */

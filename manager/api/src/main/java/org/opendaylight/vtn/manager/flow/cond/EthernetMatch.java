@@ -395,7 +395,7 @@ public final class EthernetMatch implements Serializable {
                 return new EthernetAddress(b);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder("Invalid ");
-                builder.append(desc).append(" MAC address: " + mac);
+                builder.append(desc).append(" MAC address: ").append(mac);
                 validationStatus =
                     new Status(StatusCode.BADREQUEST, builder.toString());
             }

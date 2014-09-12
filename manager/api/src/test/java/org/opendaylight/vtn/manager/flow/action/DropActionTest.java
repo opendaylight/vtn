@@ -15,8 +15,6 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
 
-import org.opendaylight.controller.sal.action.Drop;
-
 /**
  * JUnit test for {@link DropAction}.
  */
@@ -30,10 +28,8 @@ public class DropActionTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
         assertTrue(set.add(new DropAction()));
 
-        Drop drop = new Drop();
         for (int i = 0; i < 10; i++) {
             assertFalse(set.add(new DropAction()));
-            assertFalse(set.add(new DropAction(drop)));
         }
         assertEquals(1, set.size());
     }

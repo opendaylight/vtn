@@ -275,7 +275,7 @@ public class VTNConfig {
      * The number of milliseconds to wait for completion of modification of
      * a single flow entry.
      */
-    @IntConfig(min = MIN_FLOWMOD_TIMEOUT, max = 60000)
+    @IntConfig(min = MIN_FLOWMOD_TIMEOUT, max = MAX_FLOWMOD_TIMEOUT)
     private int  flowModTimeout = DEFAULT_FLOWMOD_TIMEOUT;
 
     /**

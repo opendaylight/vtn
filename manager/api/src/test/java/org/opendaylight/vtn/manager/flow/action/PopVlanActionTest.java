@@ -15,8 +15,6 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
 
-import org.opendaylight.controller.sal.action.PopVlan;
-
 /**
  * JUnit test for {@link PopVlanAction}.
  */
@@ -30,10 +28,8 @@ public class PopVlanActionTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
         assertTrue(set.add(new PopVlanAction()));
 
-        PopVlan pop = new PopVlan();
         for (int i = 0; i < 10; i++) {
             assertFalse(set.add(new PopVlanAction()));
-            assertFalse(set.add(new PopVlanAction(pop)));
         }
         assertEquals(1, set.size());
     }
