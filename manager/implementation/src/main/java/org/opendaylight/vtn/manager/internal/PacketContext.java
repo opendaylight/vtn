@@ -387,6 +387,10 @@ public class PacketContext implements Cloneable {
      *    Failed to commit packet modification.
      */
     public Ethernet createFrame(short vlan) throws VTNException {
+        // Configure VLAN ID for outgoing packet. It is used to determine
+        // flow actions to be configured.
+        etherFrame.setVlan(vlan);
+
         // Commit changes made by flow filters to the packet.
         commit();
 
