@@ -1,0 +1,39 @@
+#
+# Copyright (c) 2014 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+[FlowlistOne]
+flowlist_name=flowlist1
+ip_version=first flowlist
+controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist1
+flowlist_url=/flowlists/flowlist1
+
+[FlowlistTwo]
+flowlist_name=flowlist2
+ip_version=second flowlist
+controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist2
+flowlist_url=/flowlists/flowlist2
+
+
+[FlowlistThree]
+flowlist_name=flowlist3
+ip_version=third flowlist
+controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlist3
+flowlist_url=/flowlists/flowlist3
+
+
+[FlowlistFour]
+flowlist_name=flowlistfour
+ip_version=fourth flowlist
+controller_url=/controller/nb/v2/vtn/default/flowconditions/flowlistfour
+flowlist_url=/flowlists/flowlistfour
+
+[FLOWLISTURL]
+url=/flowlists.json
+ctr_url=/flowconditions/
+
