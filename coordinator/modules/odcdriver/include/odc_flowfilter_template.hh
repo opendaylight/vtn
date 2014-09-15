@@ -107,7 +107,7 @@ public:
   UncRespCode handle_response(unc::odcdriver::OdcDriverOps Op,
                               std::string &request_indicator,
                               char* data) {
-    if ( Op != unc::odcdriver::CONFIG_READ ) {
+    if ( Op == unc::odcdriver::CONFIG_READ ) {
       unc::odcdriver::flowfilterlistUtil util_;
       json_object *parse(unc::restjson::JsonBuildParse::get_json_object(data));
       if ( parse != NULL ) {
