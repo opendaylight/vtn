@@ -126,6 +126,7 @@ public final class EthernetMatch implements Serializable {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private EthernetMatch() {
     }
 

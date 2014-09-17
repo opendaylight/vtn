@@ -28,6 +28,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 
+import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
+import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
+import org.opendaylight.vtn.manager.flow.cond.InetMatch;
+import org.opendaylight.vtn.manager.flow.cond.L4Match;
+import org.opendaylight.vtn.manager.flow.cond.PortMatch;
+import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
+import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.flow.action.DropAction;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.PopVlanAction;
@@ -51,6 +60,7 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 
 import org.junit.Assert;
@@ -60,12 +70,24 @@ import org.junit.Assert;
  */
 public abstract class TestBase extends Assert {
     /**
+     * A JSON object mapper.
+     */
+    private static ObjectMapper objectMapper;
+
+    /**
      * Throw an error which indicates an unexpected throwable is caught.
      *
      * @param t  A throwable.
      */
     protected static void unexpected(Throwable t) {
         throw new AssertionError("Unexpected throwable: " + t, t);
+    }
+
+    /**
+     * Throw an error which indicates the test code should never reach here.
+     */
+    protected static void unexpected() {
+        fail("Should never reach here.");
     }
 
     /**
@@ -92,6 +114,58 @@ public abstract class TestBase extends Assert {
             bool = new Boolean(bool.booleanValue());
         }
         return bool;
+    }
+
+    /**
+     * Create a copy of the specified {@link Byte} object.
+     *
+     * @param num  A {@link Byte} object to be copied.
+     * @return     A copied boolean object.
+     */
+    protected static Byte copy(Byte num) {
+        if (num != null) {
+            num = new Byte(num.byteValue());
+        }
+        return num;
+    }
+
+    /**
+     * Create a copy of the specified {@link Short} object.
+     *
+     * @param num  A {@link Short} object to be copied.
+     * @return     A copied boolean object.
+     */
+    protected static Short copy(Short num) {
+        if (num != null) {
+            num = new Short(num.shortValue());
+        }
+        return num;
+    }
+
+    /**
+     * Create a copy of the specified {@link Integer} object.
+     *
+     * @param num  An {@link Integer} object to be copied.
+     * @return     A copied boolean object.
+     */
+    protected static Integer copy(Integer num) {
+        if (num != null) {
+            num = new Integer(num.intValue());
+        }
+        return num;
+    }
+
+    /**
+     * Create a copy of the specified {@link Long} object.
+     *
+     * @param num  An {@link Long} object to be copied.
+     * @return     A copied boolean object.
+     */
+    protected static Long copy(Long num) {
+        if (num != null) {
+            num = new Long(num.longValue());
+        }
+        return num;
     }
 
     /**
@@ -388,6 +462,8 @@ public abstract class TestBase extends Assert {
                 dst.add(copy((TestDataLinkHost)elem));
             } else if (elem instanceof MacAddressEntry) {
                 dst.add(copy((MacAddressEntry)elem));
+            } else if (elem instanceof FlowMatch) {
+                dst.add(copy((FlowMatch)elem));
             } else if (elem instanceof FlowAction) {
                 dst.add(copy((FlowAction)elem));
             } else if (elem instanceof FilterType) {
@@ -396,6 +472,153 @@ public abstract class TestBase extends Assert {
                 fail("Unexpected instanse in the collection: " + elem);
             }
         }
+    }
+
+    /**
+     * Create a copy of the given {@link PortMatch} instance.
+     *
+     * @param pm  A {@link PortMatch} instance.
+     * @return  A copied {@link PortMatch} instance.
+     */
+    protected static PortMatch copy(PortMatch pm) {
+        if (pm != null) {
+            pm = new PortMatch(pm.getPortFrom(), pm.getPortTo());
+        }
+
+        return pm;
+    }
+
+    /**
+     * Create a copy of the given {@link EthernetMatch} instance.
+     *
+     * @param em  A {@link EthernetMatch} instance.
+     * @return  A copied {@link EthernetMatch} instance.
+     */
+    protected static EthernetMatch copy(EthernetMatch em) {
+        if (em != null) {
+            EthernetAddress src = em.getSourceAddress();
+            EthernetAddress dst = em.getDestinationAddress();
+            Integer type = em.getType();
+            Short vlan = em.getVlan();
+            Byte pri = em.getVlanPriority();
+            em = new EthernetMatch(src, dst, copy(type), copy(vlan),
+                                   copy(pri));
+        }
+
+        return em;
+    }
+
+    /**
+     * Create a copy of the given {@link InetMatch} instance.
+     *
+     * @param im  A {@link InetMatch} instance.
+     * @return  A copied {@link InetMatch} instance.
+     */
+    protected static InetMatch copy(InetMatch im) {
+        if (im != null) {
+            assertTrue(im instanceof Inet4Match);
+
+            InetAddress src = im.getSourceAddress();
+            InetAddress dst = im.getDestinationAddress();
+            Short srcsuff = im.getSourceSuffix();
+            Short dstsuff = im.getDestinationSuffix();
+            Short proto = im.getProtocol();
+            Byte dscp = im.getDscp();
+            im = new Inet4Match(copy(src), copy(srcsuff), copy(dst),
+                                copy(dstsuff), copy(proto), copy(dscp));
+        }
+
+        return im;
+    }
+
+    /**
+     * Create a copy of the given {@link L4Match} instance.
+     *
+     * @param lm  A {@link L4Match} instance.
+     * @return  A copied {@link L4Match} instance.
+     */
+    protected static L4Match copy(L4Match lm) {
+        if (lm != null) {
+            if (lm instanceof TcpMatch) {
+                return copy((TcpMatch)lm);
+            }
+            if (lm instanceof UdpMatch) {
+                return copy((UdpMatch)lm);
+            }
+
+            assertTrue(lm instanceof IcmpMatch);
+            return copy((IcmpMatch)lm);
+        }
+
+        return lm;
+    }
+
+    /**
+     * Create a copy of the given {@link TcpMatch} instance.
+     *
+     * @param tm  A {@link TcpMatch} instance.
+     * @return  A copied {@link TcpMatch} instance.
+     */
+    protected static TcpMatch copy(TcpMatch tm) {
+        if (tm != null) {
+            PortMatch src = tm.getSourcePort();
+            PortMatch dst = tm.getDestinationPort();
+            tm = new TcpMatch(copy(src), copy(dst));
+        }
+
+        return tm;
+    }
+
+    /**
+     * Create a copy of the given {@link UdpMatch} instance.
+     *
+     * @param um  A {@link UdpMatch} instance.
+     * @return  A copied {@link UdpMatch} instance.
+     */
+    protected static UdpMatch copy(UdpMatch um) {
+        if (um != null) {
+            PortMatch src = um.getSourcePort();
+            PortMatch dst = um.getDestinationPort();
+            um = new UdpMatch(copy(src), copy(dst));
+        }
+
+        return um;
+    }
+
+    /**
+     * Create a copy of the given {@link IcmpMatch} instance.
+     *
+     * @param icm  A {@link IcmpMatch} instance.
+     * @return  A copied {@link IcmpMatch} instance.
+     */
+    protected static IcmpMatch copy(IcmpMatch icm) {
+        if (icm != null) {
+            Short type = icm.getType();
+            Short code = icm.getCode();
+            icm = new IcmpMatch(copy(type), copy(code));
+        }
+
+        return icm;
+    }
+
+    /**
+     * Create a copy of the given {@link FlowMatch} instance.
+     *
+     * @param fm  A {@link FlowMatch} instance.
+     * @return  A copied {@link FlowMatch} instance.
+     */
+    protected static FlowMatch copy(FlowMatch fm) {
+        if (fm != null) {
+            EthernetMatch em = copy(fm.getEthernetMatch());
+            InetMatch im = copy(fm.getInetMatch());
+            L4Match lm = copy(fm.getLayer4Match());
+            Integer idx = copy(fm.getIndex());
+            fm = (idx == null)
+                ? new FlowMatch(em, im, lm)
+                : new FlowMatch(idx, em, im, lm);
+        }
+
+        return fm;
     }
 
     /**
@@ -741,6 +964,19 @@ public abstract class TestBase extends Assert {
      */
     protected static List<EthernetAddress> createEthernetAddresses(
         boolean setNull) {
+        int num = (setNull) ? 4 : 3;
+        return createEthernetAddresses(num, setNull);
+    }
+
+    /**
+     * Create a list of {@link EthernetAddress}.
+     *
+     * @param num      The number of objects to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return A list of {@link EthernetAddress}.
+     */
+    protected static List<EthernetAddress> createEthernetAddresses(
+        int num, boolean setNull) {
         List<EthernetAddress> list = new ArrayList<EthernetAddress>();
         byte [][] addrbytes = {
             new byte[] {(byte)0x00, (byte)0x00, (byte)0x00,
@@ -753,6 +989,9 @@ public abstract class TestBase extends Assert {
 
         if (setNull) {
             list.add(null);
+            if (list.size() >= num) {
+                return list;
+            }
         }
 
         for (byte[] addr : addrbytes) {
@@ -760,9 +999,24 @@ public abstract class TestBase extends Assert {
                 EthernetAddress ea;
                 ea = new EthernetAddress(addr);
                 list.add(ea);
+                if (list.size() >= num) {
+                    return list;
+                }
             } catch (Exception e) {
                 unexpected(e);
             }
+        }
+
+        long v = 1;
+        try {
+            do {
+                byte[] mac = NetUtils.longToByteArray6(v);
+                EthernetAddress ea = new EthernetAddress(mac);
+                list.add(ea);
+                v++;
+            } while (list.size() < num);
+        } catch (Exception e) {
+            unexpected(e);
         }
 
         return list;
@@ -860,9 +1114,25 @@ public abstract class TestBase extends Assert {
      * @return  A list of {@link InetAddress} instances.
      */
     protected static List<InetAddress> createInet4Addresses(boolean setNull) {
+        int num = (setNull) ? 6 : 5;
+        return createInet4Addresses(num, setNull);
+    }
+
+    /**
+     * Create a list of IPv4 addresses.
+     *
+     * @param num      The number of objects to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link InetAddress} instances.
+     */
+    protected static List<InetAddress> createInet4Addresses(int num,
+                                                            boolean setNull) {
         List<InetAddress> list = new ArrayList<InetAddress>();
         if (setNull) {
             list.add(null);
+            if (list.size() >= num) {
+                return list;
+            }
         }
 
         String[] addrs = {
@@ -875,9 +1145,23 @@ public abstract class TestBase extends Assert {
         for (String addr: addrs) {
             try {
                 list.add(InetAddress.getByName(addr));
+                if (list.size() >= num) {
+                    return list;
+                }
             } catch (Exception e) {
                 unexpected(e);
             }
+        }
+
+        int v = 1;
+        try {
+            do {
+                byte[] addr = NetUtils.intToByteArray4(v);
+                list.add(InetAddress.getByAddress(addr));
+                v++;
+            } while (list.size() < num);
+        } catch (Exception e) {
+            unexpected(e);
         }
 
         return list;
@@ -927,6 +1211,62 @@ public abstract class TestBase extends Assert {
                 break;
             }
         }
+
+        return list;
+    }
+
+
+    /**
+     * Create a list of {@link PortMatch} instances and {@code null}.
+     *
+     * @return  A list of {@link PortMatch} instances.
+     */
+    protected static List<PortMatch> createPortMatches() {
+        return createPortMatches(16, true);
+    }
+
+    /**
+     * Create a list of {@link PortMatch} instances.
+     *
+     * @param num      The number of objects to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link PortMatch} instances.
+     */
+    protected static List<PortMatch> createPortMatches(int num,
+                                                       boolean setNull) {
+        List<PortMatch> list = new ArrayList<PortMatch>();
+        Integer[] fromPorts = {
+            null, Integer.valueOf(0), Integer.valueOf(33),
+            Integer.valueOf(65535),
+        };
+        Integer[] toPorts = {
+            null, Integer.valueOf(4), Integer.valueOf(3312),
+            Integer.valueOf(65534),
+        };
+
+        if (setNull) {
+            list.add(null);
+            if (list.size() >= num) {
+                return list;
+            }
+        }
+
+        for (Integer from: fromPorts) {
+            for (Integer to: toPorts) {
+                list.add(new PortMatch(from, to));
+                if (list.size() >= num) {
+                    return list;
+                }
+            }
+        }
+
+        int f = 100;
+        int t = 3100;
+        do {
+            list.add(new PortMatch(Integer.valueOf(f), Integer.valueOf(t)));
+            f++;
+            t++;
+        } while (list.size() < num);
 
         return list;
     }
@@ -1104,12 +1444,16 @@ public abstract class TestBase extends Assert {
      * @return  A {@code ObjectMapper} instance.
      */
     protected static ObjectMapper getJsonObjectMapper() {
-        // Create Jackson object mapper with enabling JAXB annotations.
-        ObjectMapper mapper = new ObjectMapper();
-        AnnotationIntrospector introspector =
-            AnnotationIntrospector.pair(new JacksonAnnotationIntrospector(),
-                                        new JaxbAnnotationIntrospector());
-        mapper.setAnnotationIntrospector(introspector);
+        ObjectMapper mapper = objectMapper;
+        if (mapper == null) {
+            // Create Jackson object mapper with enabling JAXB annotations.
+            mapper = new ObjectMapper();
+            AnnotationIntrospector introspector =
+                AnnotationIntrospector.pair(new JacksonAnnotationIntrospector(),
+                                            new JaxbAnnotationIntrospector());
+            mapper.setAnnotationIntrospector(introspector);
+            objectMapper = mapper;
+        }
 
         return mapper;
     }

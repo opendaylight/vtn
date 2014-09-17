@@ -83,6 +83,7 @@ public final class PortMatch implements Serializable {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private PortMatch() {
     }
 

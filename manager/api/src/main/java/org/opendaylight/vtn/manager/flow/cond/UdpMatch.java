@@ -44,6 +44,7 @@ public final class UdpMatch extends PortProtoMatch {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private UdpMatch() {
     }
 

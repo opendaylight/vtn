@@ -470,6 +470,14 @@ public abstract class InetMatch implements Serializable {
      */
     private InetAddress toInetAddress(String ip, String desc) {
         if (ip != null) {
+            if (ip.length() == 0) {
+                StringBuilder builder = new StringBuilder("Empty ");
+                builder.append(desc).append(" address: ");
+                validationStatus =
+                    new Status(StatusCode.BADREQUEST, builder.toString());
+                return null;
+            }
+
             try {
                 InetAddress iaddr = InetAddress.getByName(ip);
                 Class<?> cls = getAddressClass();
@@ -516,11 +524,11 @@ public abstract class InetMatch implements Serializable {
         }
 
         InetMatch im = (InetMatch)o;
-        return (Objects.equals(sourceAddress, im.sourceAddress) ^
-                Objects.equals(destinationAddress, im.destinationAddress) ^
-                Objects.equals(sourceSuffix, im.sourceSuffix) ^
-                Objects.equals(destinationSuffix, im.destinationSuffix) ^
-                Objects.equals(protocol, im.protocol) ^
+        return (Objects.equals(sourceAddress, im.sourceAddress) &&
+                Objects.equals(destinationAddress, im.destinationAddress) &&
+                Objects.equals(sourceSuffix, im.sourceSuffix) &&
+                Objects.equals(destinationSuffix, im.destinationSuffix) &&
+                Objects.equals(protocol, im.protocol) &&
                 Objects.equals(dscp, im.dscp));
     }
 

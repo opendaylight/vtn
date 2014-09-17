@@ -44,6 +44,7 @@ public final class TcpMatch extends PortProtoMatch {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private TcpMatch() {
     }
 

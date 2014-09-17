@@ -224,6 +224,7 @@ public final class FlowMatch implements Serializable {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private FlowMatch() {
     }
 
@@ -242,122 +243,10 @@ public final class FlowMatch implements Serializable {
      *    Unexcepted instance of class is configured in {@code match}.
      */
     public FlowMatch(Match match) {
-        if (match == null) {
-            return;
-        }
-
-        EthernetAddress dlsrc = null;
-        EthernetAddress dldst = null;
-        Integer dltype = null;
-        Short vlanId = null;
-        Byte vlanPri = null;
-        InetAddress nwsrc = null;
-        Short nwsrcsuff = null;
-        InetAddress nwdst = null;
-        Short nwdstsuff = null;
-        Short nwproto = null;
-        Byte nwtos = null;
-        Short tpsrc = null;
-        Short tpdst = null;
-
-        MatchField field = match.getField(MatchType.DL_SRC);
-        if (field != null) {
-            dlsrc = getEthernetAddress(field);
-        }
-
-        field = match.getField(MatchType.DL_DST);
-        if (field != null) {
-            dldst = getEthernetAddress(field);
-        }
-
-        field = match.getField(MatchType.DL_VLAN);
-        if (field != null) {
-            vlanId = (Short)field.getValue();
-        }
-
-        field = match.getField(MatchType.DL_VLAN_PR);
-        if (field != null) {
-            vlanPri = (Byte)field.getValue();
-        }
-
-        field = match.getField(MatchType.DL_TYPE);
-        if (field != null) {
-            short sval = ((Short)field.getValue()).shortValue();
-            dltype = Integer.valueOf(NetUtils.getUnsignedShort(sval));
-        }
-
-        field = match.getField(MatchType.NW_TOS);
-        if (field != null) {
-            nwtos = (Byte)field.getValue();
-        }
-
-        field = match.getField(MatchType.NW_PROTO);
-        if (field != null) {
-            byte bval = ((Byte)field.getValue()).byteValue();
-            int ival = NetUtils.getUnsignedByte(bval);
-            nwproto = Short.valueOf((short)ival);
-        }
-
-        field = match.getField(MatchType.NW_SRC);
-        if (field != null) {
-            nwsrc = (InetAddress)field.getValue();
-            InetAddress mask = (InetAddress)field.getMask();
-            if (mask != null) {
-                int len = NetUtils.getSubnetMaskLength(mask);
-                nwsrcsuff = Short.valueOf((short)len);
-            }
-        }
-
-        field = match.getField(MatchType.NW_DST);
-        if (field != null) {
-            nwdst = (InetAddress)field.getValue();
-            InetAddress mask = (InetAddress)field.getMask();
-            if (mask != null) {
-                int len = NetUtils.getSubnetMaskLength(mask);
-                nwdstsuff = Short.valueOf((short)len);
-            }
-        }
-
-        field = match.getField(MatchType.TP_SRC);
-        if (field != null) {
-            tpsrc = (Short)field.getValue();
-        }
-
-        field = match.getField(MatchType.TP_DST);
-        if (field != null) {
-            tpdst = (Short)field.getValue();
-        }
-
-        if (dlsrc != null || dldst != null || dltype != null ||
-            vlanId != null || vlanPri != null) {
-            ethernetMatch = new EthernetMatch(dlsrc, dldst, dltype, vlanId,
-                                              vlanPri);
-        }
-
-        if (nwsrc != null || nwdst != null || nwproto != null ||
-            nwtos != null) {
-            inetMatch = new Inet4Match(nwsrc, nwsrcsuff, nwdst, nwdstsuff,
-                                       nwproto, nwtos);
-        }
-
-        if (tpsrc != null || tpdst != null) {
-            // Layer 4 match requires NW_PROTO match.
-            if (nwproto == null) {
-                throw new IllegalArgumentException(
-                    "L4 match without NW_PROTO: " + tpsrc + ", " + tpdst);
-            }
-
-            int proto = nwproto.intValue();
-            if (IPProtocols.TCP.intValue() == proto) {
-                l4Match = new TcpMatch(tpsrc, tpdst);
-            } else if (IPProtocols.UDP.intValue() == proto) {
-                l4Match = new UdpMatch(tpsrc, tpdst);
-            } else if (IPProtocols.ICMP.intValue() == proto) {
-                l4Match = new IcmpMatch(tpsrc, tpdst);
-            } else {
-                throw new IllegalArgumentException(
-                    "Unexpected IP protocol: " + nwproto);
-            }
+        if (match != null) {
+            initEthernetMatch(match);
+            Short nwproto = initInetMatch(match);
+            initL4Match(match, nwproto);
         }
     }
 
@@ -558,6 +447,176 @@ public final class FlowMatch implements Serializable {
             return new EthernetAddress(mac);
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to get MAC address", e);
+        }
+    }
+
+    /**
+     * Initialize {@link #ethernetMatch} field from the given SAL match.
+     *
+     * @param match  A SAL match.
+     * @throws IllegalArgumentException
+     *    Unexpected value is configured in {@code match}.
+     * @throws ClassCastException
+     *    Unexcepted instance of class is configured in {@code match}.
+     */
+    private void initEthernetMatch(Match match) {
+        EthernetAddress dlsrc = null;
+        EthernetAddress dldst = null;
+        Integer dltype = null;
+        Short vlanId = null;
+        Byte vlanPri = null;
+
+        boolean hasMatch = false;
+        MatchField field = match.getField(MatchType.DL_SRC);
+        if (field != null) {
+            dlsrc = getEthernetAddress(field);
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.DL_DST);
+        if (field != null) {
+            dldst = getEthernetAddress(field);
+            hasMatch = true;
+        }
+
+        boolean hasVlan = false;
+        field = match.getField(MatchType.DL_VLAN);
+        if (field != null) {
+            vlanId = (Short)field.getValue();
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.DL_VLAN_PR);
+        if (field != null) {
+            vlanPri = (Byte)field.getValue();
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.DL_TYPE);
+        if (field != null) {
+            short sval = ((Short)field.getValue()).shortValue();
+            dltype = Integer.valueOf(NetUtils.getUnsignedShort(sval));
+            hasMatch = true;
+        }
+
+        if (hasMatch) {
+            ethernetMatch = new EthernetMatch(dlsrc, dldst, dltype, vlanId,
+                                              vlanPri);
+        }
+    }
+
+    /**
+     * Initialize {@link #inetMatch} field from the given SAL match.
+     *
+     * @param match  A SAL match.
+     * @return  A {@link Short} instance which represents the IP protocol
+     *          number specified by {@code match} is returned.
+     *          {@code null} is returned if the IP protocol number is not
+     *          configured in {@code match}.
+     * @throws IllegalArgumentException
+     *    Unexpected value is configured in {@code match}.
+     * @throws ClassCastException
+     *    Unexcepted instance of class is configured in {@code match}.
+     */
+    private Short initInetMatch(Match match) {
+        InetAddress nwsrc = null;
+        Short nwsrcsuff = null;
+        InetAddress nwdst = null;
+        Short nwdstsuff = null;
+        Short nwproto = null;
+        Byte nwtos = null;
+
+        boolean hasMatch = false;
+        MatchField field = match.getField(MatchType.NW_TOS);
+        if (field != null) {
+            nwtos = (Byte)field.getValue();
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.NW_PROTO);
+        if (field != null) {
+            byte bval = ((Byte)field.getValue()).byteValue();
+            int ival = NetUtils.getUnsignedByte(bval);
+            nwproto = Short.valueOf((short)ival);
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.NW_SRC);
+        if (field != null) {
+            nwsrc = (InetAddress)field.getValue();
+            InetAddress mask = (InetAddress)field.getMask();
+            if (mask != null) {
+                int len = NetUtils.getSubnetMaskLength(mask);
+                nwsrcsuff = Short.valueOf((short)len);
+            }
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.NW_DST);
+        if (field != null) {
+            nwdst = (InetAddress)field.getValue();
+            InetAddress mask = (InetAddress)field.getMask();
+            if (mask != null) {
+                int len = NetUtils.getSubnetMaskLength(mask);
+                nwdstsuff = Short.valueOf((short)len);
+            }
+            hasMatch = true;
+        }
+
+        if (hasMatch) {
+            inetMatch = new Inet4Match(nwsrc, nwsrcsuff, nwdst, nwdstsuff,
+                                       nwproto, nwtos);
+        }
+
+        return nwproto;
+    }
+
+    /**
+     * Initialize {@link #l4Match} field from the given SAL match.
+     *
+     * @param match    A SAL match.
+     * @param nwproto  A {@link Short} instance which represents the
+     *                 IP protocol number configured in {@code match}.
+     * @throws IllegalArgumentException
+     *    Unexpected value is configured in {@code match}.
+     * @throws ClassCastException
+     *    Unexcepted instance of class is configured in {@code match}.
+     */
+    private void initL4Match(Match match, Short nwproto) {
+        Short tpsrc = null;
+        Short tpdst = null;
+
+        boolean hasMatch = false;
+        MatchField field = match.getField(MatchType.TP_SRC);
+        if (field != null) {
+            tpsrc = (Short)field.getValue();
+            hasMatch = true;
+        }
+
+        field = match.getField(MatchType.TP_DST);
+        if (field != null) {
+            tpdst = (Short)field.getValue();
+            hasMatch = true;
+        }
+
+        if (hasMatch) {
+            // Layer 4 match requires NW_PROTO match.
+            if (nwproto == null) {
+                throw new IllegalArgumentException(
+                    "L4 match without NW_PROTO: " + tpsrc + ", " + tpdst);
+            }
+
+            int proto = nwproto.intValue();
+            if (IPProtocols.TCP.intValue() == proto) {
+                l4Match = new TcpMatch(tpsrc, tpdst);
+            } else if (IPProtocols.UDP.intValue() == proto) {
+                l4Match = new UdpMatch(tpsrc, tpdst);
+            } else if (IPProtocols.ICMP.intValue() == proto) {
+                l4Match = new IcmpMatch(tpsrc, tpdst);
+            } else {
+                throw new IllegalArgumentException(
+                    "Unexpected IP protocol: " + nwproto);
+            }
         }
     }
 

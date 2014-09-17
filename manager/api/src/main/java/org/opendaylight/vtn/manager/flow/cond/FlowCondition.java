@@ -122,6 +122,7 @@ public final class FlowCondition implements Serializable {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private FlowCondition() {
     }
 

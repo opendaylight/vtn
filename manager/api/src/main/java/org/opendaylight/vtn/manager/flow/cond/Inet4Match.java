@@ -46,6 +46,7 @@ public final class Inet4Match extends InetMatch {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private Inet4Match() {
     }
 

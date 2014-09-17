@@ -77,6 +77,7 @@ public final class IcmpMatch extends L4Match {
     /**
      * Private constructor only for JAXB.
      */
+    @SuppressWarnings("unused")
     private IcmpMatch() {
     }
 

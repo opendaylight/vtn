@@ -369,7 +369,7 @@ public final class FlowMatchBuilder {
      * </ul>
      * @return  This instance.
      */
-    public FlowMatchBuilder setInetDSCP(byte dscp) {
+    public FlowMatchBuilder setInetDscp(byte dscp) {
         inetDscp = Byte.valueOf(dscp);
         return this;
     }
@@ -675,6 +675,22 @@ public final class FlowMatchBuilder {
     }
 
     /**
+     * Construct a new {@link FlowMatch} instance specifying conditions
+     * configured in this instance.
+     *
+     * @param index  An index value to be assigned to a new {@link FlowMatch}
+     *               instance.
+     * @return  A {@link FlowMatch} instance.
+     */
+    public FlowMatch build(int index) {
+        EthernetMatch em = buildEthernetMatch();
+        InetMatch im = buildInetMatch();
+        L4Match l4m = buildL4Match();
+
+        return new FlowMatch(index, em, im, l4m);
+    }
+
+    /**
      * Validate the specified IP address.
      *
      * @param iaddr  An {@link InetAddress} instance to be validated.
@@ -711,7 +727,47 @@ public final class FlowMatchBuilder {
     }
 
     /**
-     * Build a new {@link L4Match} instance specifying conditions
+     * Build a new {@link EthernetMatch} instance which specifies Ethernet
+     * protocol conditions configured in this instance.
+     *
+     * @return  A {@link EthernetMatch} instance.
+     *          {@code null} is returned if no condition for Ethernet protocol
+     *          is configured.
+     */
+    private EthernetMatch buildEthernetMatch() {
+        boolean hasAddr = (sourceMacAddress != null ||
+                           destinationMacAddress != null);
+        boolean hasVlan = (vlanId != null || vlanPriority != null);
+
+        return (hasAddr || hasVlan || etherType != null)
+            ? new EthernetMatch(sourceMacAddress, destinationMacAddress,
+                                etherType, vlanId, vlanPriority)
+            : null;
+    }
+
+    /**
+     * Build a new {@link InetMatch} instance which specifies IP protocol
+     * conditions configured in this instance.
+     *
+     * @return  A {@link InetMatch} instance.
+     *          {@code null} is returned if no condition for IP protocol
+     *          is configured.
+     */
+    private InetMatch buildInetMatch() {
+        boolean hasSrc = (sourceAddress != null || sourceSuffix != null);
+        boolean hasDst = (destinationAddress != null ||
+                          destinationSuffix != null);
+        boolean hasMisc = (inetProtocol != null || inetDscp != null);
+
+        return (hasSrc || hasDst || hasMisc)
+            ? new Inet4Match(sourceAddress, sourceSuffix,
+                             destinationAddress, destinationSuffix,
+                             inetProtocol, inetDscp)
+            : null;
+    }
+
+    /**
+     * Build a new {@link L4Match} instance which specifies conditions
      * configured in this instance.
      *
      * @return  A {@link L4Match} instance.
@@ -736,35 +792,5 @@ public final class FlowMatchBuilder {
         // This should never happen.
         throw new IllegalStateException("Unexpected L4Match class: " +
                                         l4Class);
-    }
-
-    /**
-     * Construct a new {@link FlowMatch} instance specifying conditions
-     * configured in this instance.
-     *
-     * @param index  An index value to be assigned to a new {@link FlowMatch}
-     *               instance.
-     * @return  A {@link FlowMatch} instance.
-     */
-    public FlowMatch build(int index) {
-        EthernetMatch em = null;
-        if (sourceMacAddress != null || destinationMacAddress != null ||
-            etherType != null || vlanId != null || vlanPriority != null) {
-            em = new EthernetMatch(sourceMacAddress, destinationMacAddress,
-                                   etherType, vlanId, vlanPriority);
-        }
-
-        InetMatch im = null;
-        if (sourceAddress != null || destinationAddress != null ||
-            sourceSuffix != null || destinationSuffix != null ||
-            inetProtocol != null || inetDscp != null) {
-            im = new Inet4Match(sourceAddress, sourceSuffix,
-                                destinationAddress, destinationSuffix,
-                                inetProtocol, inetDscp);
-        }
-
-        L4Match l4m = buildL4Match();
-
-        return new FlowMatch(index, em, im, l4m);
     }
 }
