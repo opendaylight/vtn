@@ -17,7 +17,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.controller.sal.action.SetNwTos;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * This class describes a flow action that sets the specified value into the
@@ -38,12 +37,7 @@ public final class SetDscpAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8431285777472515088L;
-
-    /**
-     * The number of bits in IPv4 ECN field.
-     */
-    private static final int  NBITS_ECN = 2;
+    private static final long serialVersionUID = 7711399852397187977L;
 
     /**
      * DSCP field value to be set.
@@ -61,26 +55,6 @@ public final class SetDscpAction extends FlowAction {
      */
     @XmlAttribute
     private byte  dscp;
-
-    /**
-     * Convert DSCP field value into type-of-service value.
-     *
-     * @param dscp  DSCP field value.
-     * @return  Type-of-service field value.
-     */
-    public static byte dscpToTos(byte dscp) {
-        return (byte)(dscp << NBITS_ECN);
-    }
-
-    /**
-     * Convert type-of-service field value into DSCP value.
-     *
-     * @param tos  Type-of-service field value.
-     * @return  DSCP field value.
-     */
-    public static byte tosToDscp(byte tos) {
-        return (byte)(NetUtils.getUnsignedByte(tos) >>> NBITS_ECN);
-    }
 
     /**
      * Private constructor only for JAXB.
@@ -106,7 +80,7 @@ public final class SetDscpAction extends FlowAction {
      *    {@code null} is passed to {@code act}.
      */
     public SetDscpAction(SetNwTos act) {
-        dscp = tosToDscp((byte)act.getNwTos());
+        dscp = (byte)act.getNwTos();
     }
 
     /**

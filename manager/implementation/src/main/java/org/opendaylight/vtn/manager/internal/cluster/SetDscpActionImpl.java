@@ -119,8 +119,7 @@ public final class SetDscpActionImpl extends FlowActionImpl {
         Inet4Packet ipv4 = pctx.getInet4Packet();
         if (ipv4 != null) {
             ipv4.setDscp(dscp);
-            int tos = (int)SetDscpAction.dscpToTos(dscp);
-            pctx.addFilterAction(new SetNwTos(tos));
+            pctx.addFilterAction(new SetNwTos((int)dscp));
             return true;
         }
 

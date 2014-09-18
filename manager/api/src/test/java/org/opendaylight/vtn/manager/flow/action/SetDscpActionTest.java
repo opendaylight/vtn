@@ -22,20 +22,6 @@ import org.opendaylight.controller.sal.action.SetNwTos;
  */
 public class SetDscpActionTest extends TestBase {
     /**
-     * Test case for {@link SetDscpAction#dscpToTos(byte)} and
-     * {@link SetDscpAction#tosToDscp(byte)}.
-     */
-    @Test
-    public void testTos() {
-        for (byte dscp = 0; dscp <= 63; dscp++) {
-            byte tos = SetDscpAction.dscpToTos(dscp);
-            byte expected = (byte)((dscp << 2) & 0xff);
-            assertEquals(expected, tos);
-            assertEquals(dscp, SetDscpAction.tosToDscp(tos));
-        }
-    }
-
-    /**
      * Test case for getter methods.
      */
     @Test
@@ -46,10 +32,8 @@ public class SetDscpActionTest extends TestBase {
             assertEquals(b, act.getDscp());
         }
 
-        // REVISIT: SetNwTos
-        for (byte b = 0; b <= 15; b++) {
-            int tos = (b << 2) & 0xff;
-            SetNwTos sact = new SetNwTos(tos);
+        for (int b = 0; b <= 63; b++) {
+            SetNwTos sact = new SetNwTos(b);
             SetDscpAction act = new SetDscpAction(sact);
             assertEquals(b, act.getDscp());
         }
