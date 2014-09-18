@@ -179,9 +179,7 @@ public final class Inet4AddressMatch implements Serializable {
 
         Inet4AddressMatch cond = (Inet4AddressMatch)o;
 
-        // Netmask is already ANDed to the IP address specified by the caller.
-        // So we don't need to check netmask.
-        return (address == cond.address);
+        return (address == cond.address && mask == cond.mask);
     }
 
     /**
