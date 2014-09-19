@@ -118,7 +118,9 @@ class ServerSession {
   int addOutput(key_vtnstation_controller&);
   int addOutput(val_vtnstation_controller_st&);
   int addOutput(val_vtnstation_controller_stat&);
-  
+  int addOutput(key_vtn_flowfilter&);
+  int addOutput(val_flowfilter&);
+
 
   int   getArgument(uint32_t index, int8_t &data);
   int   getArgument(uint32_t index, uint8_t &data);
@@ -166,6 +168,8 @@ class ServerSession {
   int getArgument(int, key_vtnstation_controller&);
   int getArgument(int, val_vtnstation_controller_st&);
   int getArgument(int, val_vtnstation_controller_stat&);
+  int getArgument(int, key_vtn_flowfilter_t&);
+  int getArgument(int, val_flowfilter_t&);
 
   uint32_t getArgCount(void);
   int   getArgType(uint32_t index, pfc_ipctype_t &type);

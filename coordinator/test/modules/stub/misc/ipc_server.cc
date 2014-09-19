@@ -737,6 +737,15 @@ ServerSession::getArgument(int /*index*/, val_vtnstation_controller_stat& /*data
   return result_;
 }
 
+int
+ServerSession::getArgument(int /*index*/, key_vtn_flowfilter_t& /*data*/) {
+  return result_;
+}
+
+int
+ServerSession::getArgument(int /*index*/, val_flowfilter_t& /*data*/) {
+  return result_;
+}
 void
 ServerSession::stub_setArgument(uint32_t index, uint32_t value) {
   arg_map.insert(std::make_pair(index, value) );

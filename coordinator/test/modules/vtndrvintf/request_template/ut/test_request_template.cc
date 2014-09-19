@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 #include <unc/keytype.h>
 #include <unc/unc_base.h>
+#include <unc/upll_ipc_enum.h>
 #include <pfcxx/ipc_server.hh>
 #include <driver/driver_interface.hh>
 #include <confignode.hh>
