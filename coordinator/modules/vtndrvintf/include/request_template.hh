@@ -412,7 +412,31 @@ KtRequestHandler<key_root_t, val_root_t>::parse_request(
   request_header.key_type = UNC_KT_ROOT;
   return UNC_RC_SUCCESS;
 }
+  /**
+   * @brief     - This method retrieves the key and val structures
+   * @param[in] - ServerSession, odl_drv_request_header_t, key, val
+   * @retval    -  UncRespCode
+   **/
+template<>
+UncRespCode
+KtRequestHandler<key_vtn_flowfilter_t, val_flowfilter_t>::parse_request(
+    pfc::core::ipc::ServerSession &sess,
+    unc::driver::odl_drv_request_header_t &request_header,
+    key_vtn_flowfilter_t &key_generic_,
+    val_flowfilter_t &val_generic_) {
+  if (sess.getArgument(INPUT_KEY_STRUCT_INDEX, key_generic_)) {
+    pfc_log_debug("%s: Exting Function.getArg Failed to read key struct."
+                  " rc=%u", PFC_FUNCNAME, 2);
+    return UNC_DRV_RC_MISSING_KEY_STRUCT;
+  }
+  if (sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic_)) {
+    pfc_log_debug("%s: No value struct present.", PFC_FUNCNAME);
+  }
+  if ( key_generic_.input_direction == UPLL_FLOWFILTER_DIR_OUT)
+    return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
 
+  return UNC_RC_SUCCESS;
+}
   /**
    * @brief    - This method is the template Specialization for
    *             KT ROOT command Execution

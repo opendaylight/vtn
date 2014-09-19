@@ -15,6 +15,7 @@
 #include <vtn_cache_mod.hh>
 #include <stdio.h>
 #include <map>
+#include <unc/upll_ipc_enum.h>
 #include "../../../stub/tclib_module/tclib_interface.hh"
 #include "../../../stub/tclib_module/tclib_module.hh"
 #include "../../../stub/ContrllerFrameworkStub/driver/driver_interface.hh"
