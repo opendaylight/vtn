@@ -405,7 +405,7 @@ public final class EthernetMatchImpl implements PacketMatch {
                 return false;
             }
 
-            // Test VLAN priority only if the packet has a VLAN tag.
+            // Test VLAN priority only if a VLAN ID is specified.
             if (vlanPriority != VLANPRI_ANY) {
                 pctx.addMatchField(MatchType.DL_VLAN_PR);
                 if (vlanPriority != ether.getVlanPriority()) {

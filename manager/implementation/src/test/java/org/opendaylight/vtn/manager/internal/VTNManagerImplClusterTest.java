@@ -153,7 +153,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
      * {@link VTNManagerImpl#destroy()}.
      */
     @Test
-    public void testInitDestory() {
+    public void testInitDestroy() {
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         String containerName = "default";

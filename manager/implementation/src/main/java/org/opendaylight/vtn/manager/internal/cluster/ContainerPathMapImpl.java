@@ -79,7 +79,7 @@ public final class ContainerPathMapImpl extends PathMapImpl {
     }
 
     /**
-     * Destory this container path map.
+     * Destroy this container path map.
      *
      * @param mgr  VTN Manager service.
      */

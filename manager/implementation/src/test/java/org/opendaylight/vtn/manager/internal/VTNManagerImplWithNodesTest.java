@@ -125,7 +125,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      * {@code resume()} method of some modules are also tested.
      */
     @Test
-    public void testInitDestory() {
+    public void testInitDestroy() {
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         String containerName = "default";
@@ -379,7 +379,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      * was saved.
      */
     @Test
-    public void testInitDestoryAfterInvalidMap() {
+    public void testInitDestroyAfterInvalidMap() {
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         String containerName = "default";
@@ -435,7 +435,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
     /**
      * Check {@link VBridge} and {@link VInterface} state,
-     * used in testInitDestory().
+     * used in testInitDestroy().
      *
      * @param tpath     A {@link VTenantPath}.
      * @param bpaths    A map between {@link VBridgePath} and {@link VNodeState}

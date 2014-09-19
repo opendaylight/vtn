@@ -29,7 +29,7 @@ import org.opendaylight.controller.sal.utils.NetUtils;
  */
 public class FlowMatchTest extends TestBase {
     /**
-     * Test case for getter methods.
+     * Test case for getter methods and {@link FlowMatch#assignIndex(int)}.
      */
     @Test
     public void testGetter() {
@@ -37,6 +37,8 @@ public class FlowMatchTest extends TestBase {
             null, Integer.valueOf(1), Integer.valueOf(100),
             Integer.valueOf(65535)
         };
+
+        Integer newIndex = Integer.valueOf(350);
 
         for (Integer idx: indices) {
             for (EthernetMatch em: createEthernetMatches()) {
@@ -58,6 +60,20 @@ public class FlowMatchTest extends TestBase {
                             }
                         }
                         assertEquals(p, fm.getInetProtocol());
+
+                        int ni = newIndex.intValue();
+                        FlowMatch fm1 = fm.assignIndex(ni);
+                        assertEquals(newIndex, fm1.getIndex());
+                        assertEquals(em, fm1.getEthernetMatch());
+                        assertEquals(im, fm1.getInetMatch());
+                        assertEquals(lm, fm1.getLayer4Match());
+                        assertNotSame(fm1, fm);
+                        FlowMatch fm2 = fm1.assignIndex(ni);
+                        assertEquals(newIndex, fm1.getIndex());
+                        assertEquals(em, fm1.getEthernetMatch());
+                        assertEquals(im, fm1.getInetMatch());
+                        assertEquals(lm, fm1.getLayer4Match());
+                        assertSame(fm1, fm2);
                     }
                 }
             }

@@ -403,6 +403,21 @@
  *       controller's MAC address, the VTN Manager ignores all flow filters.
  *     </p>
  *   </div>
+ *
+ *   <h4 id="multicast" style="border-bottom: 1px dashed #aaaaaa;">
+ *     Fragmented layer 4 packet
+ *   </h4>
+ *   <div style="margin-left: 1em;">
+ *     <p>
+ *       A flow condtition which specifies layer 4 protocol header fields
+ *       (e.g. TCP/UDP port, ICMP type and code) never matches fragments of
+ *       layer 4 packet except the first fragment because layer protocol header
+ *       is present only in the first fragment.
+ *       If a flow filter is configured with such a flow condition,
+ *       it will never be applied to fragments of layer 4 packet except the
+ *       first fragment.
+ *     </p>
+ *   </div>
  * </div>
  *
  * @since  Helium

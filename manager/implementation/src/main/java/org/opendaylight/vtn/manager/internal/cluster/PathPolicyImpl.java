@@ -407,7 +407,7 @@ public final class PathPolicyImpl implements Serializable, Cloneable {
     }
 
     /**
-     * Destory this path policy.
+     * Destroy this path policy.
      *
      * @param mgr  VTN Manager service.
      */

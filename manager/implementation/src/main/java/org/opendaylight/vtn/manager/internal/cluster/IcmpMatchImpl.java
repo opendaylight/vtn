@@ -62,8 +62,8 @@ public final class IcmpMatchImpl extends L4MatchImpl {
      *    {@code match} contains invalid value.
      */
     public IcmpMatchImpl(IcmpMatch match) throws VTNException {
-        type = getValue(match.getType(), "ICMP type.");
-        code = getValue(match.getCode(), "ICMP code.");
+        type = getValue(match.getType(), "ICMP type");
+        code = getValue(match.getCode(), "ICMP code");
     }
 
     /**
@@ -105,7 +105,7 @@ public final class IcmpMatchImpl extends L4MatchImpl {
         short value = s.shortValue();
         if (!MiscUtils.isIcmpValueValid(value)) {
             throw new VTNException(StatusCode.BADREQUEST,
-                                   "Invalid value for " + desc);
+                                   "Invalid value for " + desc + ": " + s);
         }
 
         return value;
@@ -148,7 +148,8 @@ public final class IcmpMatchImpl extends L4MatchImpl {
      */
     @Override
     public int hashCode() {
-        return (int)((type << 2) | code);
+        return (int)(((int)type << Short.SIZE) |
+                     (int)(code & MiscUtils.MASK_SHORT));
     }
 
     // L4PacketMatch

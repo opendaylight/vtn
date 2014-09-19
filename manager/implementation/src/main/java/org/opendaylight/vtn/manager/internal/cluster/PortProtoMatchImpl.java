@@ -127,7 +127,7 @@ public abstract class PortProtoMatchImpl extends L4MatchImpl {
             return new L4PortMatch(match);
         } catch (VTNException e) {
             StringBuilder builder = new StringBuilder(desc);
-            builder.append(": ").append(e.getMessage());
+            builder.append(": ").append(e.getStatus().getDescription());
             Status st = new Status(StatusCode.BADREQUEST, builder.toString());
             throw new VTNException(st, e);
         }

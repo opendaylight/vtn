@@ -128,7 +128,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
      * {@link VTNManagerImpl#destroy()}.
      */
     @Test
-    public void testInitDestory() {
+    public void testInitDestroy() {
         ComponentImpl c = new ComponentImpl(null, null, null);
         Hashtable<String, String> properties = new Hashtable<String, String>();
         String containerName = "default";
@@ -4373,7 +4373,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
             private long activateAny(long mac, byte[] src)
                 throws VTNException {
                 for (short vlan: anyMap) {
-                    EthernetAddress eaddr = createEthernetAddresses(mac);
+                    EthernetAddress eaddr = createEthernetAddress(mac);
                     InetAddress ipaddr = createInetAddress(src);
                     activate(eaddr, vlan, ipaddr);
                     mac++;
@@ -4521,7 +4521,7 @@ public class VTNManagerImplTest extends VTNManagerImplTestCommon {
                 }
                 assertEquals(exref, resMgr.getMapReference(pvlan));
 
-                EthernetAddress eaddr = createEthernetAddresses(mac);
+                EthernetAddress eaddr = createEthernetAddress(mac);
                 assertNull(vtnMgr.getMacEntry(bridgePath, eaddr));
             }
 

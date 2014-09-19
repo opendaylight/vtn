@@ -30,12 +30,17 @@ public class FlowConditionTest extends TestBase {
      */
     @Test
     public void testGetter() {
+        List<FlowMatch> empty = new ArrayList<FlowMatch>(0);
         for (String name: createStrings("cond")) {
             for (List<FlowMatch> matches: createFlowMatchLists()) {
                 FlowCondition fc = new FlowCondition(name, matches);
                 assertEquals(name, fc.getName());
                 List<FlowMatch> fml = fc.getMatches();
-                assertEquals(matches, fml);
+                if (matches == null) {
+                    assertEquals(empty, fml);
+                } else {
+                    assertEquals(matches, fml);
+                }
                 assertNotSame(matches, fml);
             }
         }
@@ -151,6 +156,7 @@ public class FlowConditionTest extends TestBase {
      */
     private List<List<FlowMatch>> createFlowMatchLists() {
         List<List<FlowMatch>> list = new ArrayList<List<FlowMatch>>();
+        list.add(null);
         List<FlowMatch> matches = new ArrayList<FlowMatch>();
         for (FlowMatch fm: createFlowMatches()) {
             List<FlowMatch> l = new ArrayList<FlowMatch>();

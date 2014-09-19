@@ -252,7 +252,9 @@ public abstract class InetMatchImpl implements PacketMatch {
      */
     @Override
     public int hashCode() {
-        return (int)(((int)protocol << Byte.SIZE) | dscp);
+        int h = (int)(((int)protocol << Byte.SIZE) |
+                      (dscp & MiscUtils.MASK_BYTE));
+        return h;
     }
 
     /**

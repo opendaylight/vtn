@@ -82,8 +82,8 @@ public final class FlowMatchImpl implements PacketMatch {
 
         Integer idx = match.getIndex();
         if (idx == null) {
-            throw new VTNException(StatusCode.BADREQUEST,
-                                   "Match index cannot be null.");
+            Status st = MiscUtils.argumentIsNull("Match index");
+            throw new VTNException(st);
         }
 
         index = idx.intValue();

@@ -283,7 +283,7 @@ public final class FlowCondImpl implements Serializable, Cloneable {
     }
 
     /**
-     * Destory this flow condition.
+     * Destroy this flow condition.
      *
      * @param mgr  VTN Manager service.
      */

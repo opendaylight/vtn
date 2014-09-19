@@ -711,9 +711,38 @@ public abstract class TestBase extends Assert {
      *
      * @param mac  A long integer value which represents the MAC address.
      * @return  A {@link EthernetAddress} instance.
+     *          {@code null} is returned if -1 is specified to {@code mac}.
      */
-    protected static EthernetAddress createEthernetAddresses(long mac) {
+    protected static EthernetAddress createEthernetAddress(long mac) {
+        if (mac == -1L) {
+            return null;
+        }
+
         byte[] addr = NetUtils.longToByteArray6(mac);
+        EthernetAddress eaddr = null;
+        try {
+            eaddr = new EthernetAddress(addr);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return eaddr;
+    }
+
+    /**
+     * Create a {@link EthernetAddress} instance which represents the
+     * MAC address specified by a byte array.
+     *
+     * @param addr  A byte array which represents the MAC address.
+     * @return  A {@link EthernetAddress} instance.
+     *          {@code null} is returned if {@code null} is specified to
+     *          {@code mac}.
+     */
+    protected static EthernetAddress createEthernetAddress(byte[] addr) {
+        if (addr == null) {
+            return null;
+        }
+
         EthernetAddress eaddr = null;
         try {
             eaddr = new EthernetAddress(addr);
@@ -1262,7 +1291,7 @@ public abstract class TestBase extends Assert {
      * @return  A {@link EthernetHost} instance.
      */
     protected static EthernetHost createEthernetHost(long mac, short vlan) {
-        EthernetAddress eaddr = createEthernetAddresses(mac);
+        EthernetAddress eaddr = createEthernetAddress(mac);
         return new EthernetHost(eaddr, vlan);
     }
 

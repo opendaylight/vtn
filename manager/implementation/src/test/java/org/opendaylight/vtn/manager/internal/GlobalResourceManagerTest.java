@@ -1689,7 +1689,7 @@ public class GlobalResourceManagerTest extends TestBase {
             mc0.checkCache(cs, container);
             mc1.checkCache(cs, container);
 
-            // Destory MAC mappings.
+            // Destroy MAC mappings.
             mc1.remove();
             try {
                 revMap.activateTest(updateFailure);
