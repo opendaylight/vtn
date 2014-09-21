@@ -108,6 +108,8 @@ public class FlowCondImplTest extends TestBase {
             }
             first = false;
 
+            assertEquals(null, fci.setMatch(fm));
+
             assertEquals(expected, fci.getMatch(index));
             ArrayList<FlowMatch> matches = new ArrayList<FlowMatch>();
             matches.add(expected);
@@ -143,6 +145,7 @@ public class FlowCondImplTest extends TestBase {
             FlowMatch expected = value.assignIndex(index);
             expectedList.add(expected);
             assertEquals(UpdateType.ADDED, fci.setMatch(fm));
+            assertEquals(null, fci.setMatch(fm));
             index += 13;
 
             // Reverse order of match list.
