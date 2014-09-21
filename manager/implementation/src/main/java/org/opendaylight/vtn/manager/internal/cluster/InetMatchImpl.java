@@ -234,9 +234,6 @@ public abstract class InetMatchImpl implements PacketMatch {
      */
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
         if (o == null || !getClass().equals(o.getClass())) {
             return false;
         }

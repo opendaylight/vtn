@@ -90,6 +90,11 @@ public class FlowMatchImplTest extends TestBase {
         FlowMatch expected = new FlowMatch(em, im, null);
         map.put(fm, expected);
 
+        im = inet4Builder.setDscp((byte)41).getInet4Match();
+        fm = new FlowMatch(null, im, null);
+        expected = new FlowMatch(em, im, null);;
+        map.put(fm, expected);
+
         em = ethBuilder.setSourceAddress(0x3873cad23847L).setVlanId((short)3).
             getEthernetMatch();
         im = inet4Builder.reset().
@@ -115,13 +120,20 @@ public class FlowMatchImplTest extends TestBase {
         expected = new FlowMatch(em, im, tm);
         map.put(fm, expected);
 
+        tm = tcpBuilder.setSourcePortFrom(35).setDestinationPortFrom(987).
+            getTcpMatch();
+        fm = new FlowMatch(null, null, tm);
+        expected = new FlowMatch(em, im, tm);
+        map.put(fm, expected);
+
         em = ethBuilder.setSourceAddress(0x043e1eb0e32cL).
             setDestinationAddress(0xc8ff32f9e7feL).setVlanId((short)123).
             setVlanPriority((byte)4).getEthernetMatch();
         im = inet4Builder.setSourceAddress("10.20.30.45").
             setDestinationAddress("192.168.90.100").setDscp((byte)0).
             getInet4Match();
-        tm = tcpBuilder.setSourcePortFrom(100).
+        tm = tcpBuilder.reset().
+            setSourcePortFrom(100).setSourcePortTo(101).
             setDestinationPortFrom(30000).setDestinationPortTo(40000).
             getTcpMatch();
         fm = new FlowMatch(em, im, tm);
@@ -140,13 +152,19 @@ public class FlowMatchImplTest extends TestBase {
         expected = new FlowMatch(em, im, um);
         map.put(fm, expected);
 
+        um = udpBuilder.setSourcePortFrom(999).setDestinationPortFrom(64321).
+            getUdpMatch();
+        fm = new FlowMatch(null, null, um);
+        expected = new FlowMatch(em, im, um);
+        map.put(fm, expected);
+
         em = ethBuilder.setSourceAddress(0xfc086b487935L).setVlanId((short)19).
             getEthernetMatch();
         im = inet4Builder.setDestinationAddress("123.234.56.78").
             getInet4Match();
-        um = udpBuilder.setSourcePortFrom(12345).setSourcePortTo(20000).
-            setDestinationPortFrom(50).setDestinationPortTo(60).
-            getUdpMatch();
+        um = udpBuilder.reset().
+            setSourcePortFrom(12345).setSourcePortTo(20000).
+            setDestinationPortFrom(50).setDestinationPortTo(60).getUdpMatch();
         fm = new FlowMatch(em, im, um);
         map.put(fm, fm);
 
@@ -163,6 +181,12 @@ public class FlowMatchImplTest extends TestBase {
         expected = new FlowMatch(em, im, icm);
         map.put(fm, expected);
 
+        icm = icmpBuilder.setType((short)0).setCode((short)0).
+            getIcmpMatch();
+        fm = new FlowMatch(null, null, icm);
+        expected = new FlowMatch(em, im, icm);
+        map.put(fm, expected);
+
         em = ethBuilder.setVlanId((short)159).setVlanPriority((byte)6).
             getEthernetMatch();
         im = inet4Builder.setSourceAddress("10.245.32.189").
@@ -170,7 +194,7 @@ public class FlowMatchImplTest extends TestBase {
             setDestinationAddress("192.168.195.209").
             setDestinationSuffix((short)31).setDscp((byte)49).
             getInet4Match();
-        icm = icmpBuilder.setType((short)123).setCode((short)91).
+        icm = icmpBuilder.reset().setType((short)123).setCode((short)91).
             getIcmpMatch();
         fm = new FlowMatch(em, im, icm);
         expected = new FlowMatch(em, inet4Builder.getExpectedInet4Match(),
