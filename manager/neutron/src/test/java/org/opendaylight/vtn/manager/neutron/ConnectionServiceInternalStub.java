@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.opendaylight.ovsdb.plugin.api.Connection;
-import org.opendaylight.ovsdb.plugin.IConnectionServiceInternal;
+import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.connection.ConnectionConstants;
 
@@ -24,7 +24,7 @@ import org.opendaylight.controller.sal.connection.ConnectionConstants;
  * org.opendaylight.ovsdb.plugin package.
  */
 
-public class ConnectionServiceInternalStub implements IConnectionServiceInternal {
+public class ConnectionServiceInternalStub implements OvsdbConnectionService{
     // Following Methods are Unused in UnitTest.
     @Override
     public Connection getConnection(Node node) {

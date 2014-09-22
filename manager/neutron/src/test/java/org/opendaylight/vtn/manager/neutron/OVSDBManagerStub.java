@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.neutron;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -19,14 +20,13 @@ import org.opendaylight.ovsdb.lib.notation.OvsdbSet;
 import org.opendaylight.ovsdb.lib.notation.Row;
 import org.opendaylight.ovsdb.lib.notation.UUID;
 import org.opendaylight.ovsdb.lib.notation.OvsdbMap;
-import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
-import org.opendaylight.ovsdb.schema.openvswitch.Interface;
 import org.opendaylight.ovsdb.lib.schema.GenericTableSchema;
 import org.opendaylight.ovsdb.lib.schema.typed.TypedBaseTable;
-import org.opendaylight.ovsdb.plugin.OvsdbConfigService;
+import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
+import org.opendaylight.ovsdb.schema.openvswitch.Interface;
+import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
 import org.opendaylight.ovsdb.plugin.api.StatusWithUuid;
-
-import java.util.concurrent.ConcurrentMap;
+import org.opendaylight.ovsdb.plugin.error.OvsdbPluginException;
 
 /**
  * Stub class for unit tests.
@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
  * This stub provides APIs implemented in
  * org.opendaylight.ovsdb.plugin package.
  */
-public class OVSDBManagerStub extends TestBase implements OvsdbConfigService {
+public class OVSDBManagerStub extends TestBase implements OvsdbConfigurationService {
     /**
      * String Declaration for OpenFlow.
      */
@@ -409,6 +409,66 @@ public class OVSDBManagerStub extends TestBase implements OvsdbConfigService {
     }
 
     // Following methods are Unused in UnitTest.
+    @Override
+    public UUID insertRow(Node node, String databaseName, String tableName, UUID parentRowUuid,
+                            Row<GenericTableSchema> row) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public UUID insertRow(Node node, String databaseName, String tableName, String parentTable,
+                            UUID parentRowUuid, String parentColumn, Row<GenericTableSchema> row) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public Row<GenericTableSchema> insertTree(Node node, String databaseName, String tableName, UUID parentRowUuid,
+                                                Row<GenericTableSchema> row) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public Row<GenericTableSchema> insertTree(Node node, String databaseName, String tableName, String parentTable,
+                                                UUID parentRowUuid, String parentColumn, Row<GenericTableSchema> row) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public Row<GenericTableSchema> updateRow(Node node, String databaseName, String tableName, UUID rowUuid,
+                                                Row<GenericTableSchema> row, boolean overwrite) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public void deleteRow(Node node, String databaseName, String tableName, UUID rowUuid) throws OvsdbPluginException {
+    }
+
+    @Override
+    public void deleteRow(Node node, String databaseName, String tableName, String parentTable, UUID parentRowUuid,
+                            String parentColumn, UUID rowUuid) throws OvsdbPluginException {
+    }
+
+    @Override
+    public Row<GenericTableSchema> getRow(Node node, String databaseName, String tableName, UUID uuid) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public ConcurrentMap<UUID, Row<GenericTableSchema>> getRows(Node node, String databaseName, String tableName) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public ConcurrentMap<UUID, Row<GenericTableSchema>> getRows(Node node, String databaseName, String tableName,
+                                                                    String fiqlQuery) throws OvsdbPluginException {
+        return null;
+    }
+
+    @Override
+    public List<String> getTables(Node node, String databaseName) throws OvsdbPluginException {
+        return null;
+    }
+
     @Override
     public List<String> getTables(Node node) {
         return null;
