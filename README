@@ -79,50 +79,20 @@ https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Ins
 
 == Run VTN Coordinator ==
 === Prior preparation ===
- 1. Install Tomcat.
-    * Download the following file.
-      http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.39/bin/apache-tomcat-7.0.39.tar.gz
-    * Extract under /usr/share/java.
-        tar zxvf apache-tomcat-7.0.39.tar.gz -C /usr/share/java
-
- 2. Carry out Tomcat settings.
-    * Create the following symbolic link.
-        ln -s /usr/local/vtn/tomcat/webapps/vtn-webapi \
-              /usr/share/java/apache-tomcat-7.0.39/webapps/vtn-webapi
-
-    * Add the following to "common.loader" of
-      /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
-
-        /usr/local/vtn/tomcat/lib,/usr/local/vtn/tomcat/lib/*.jar
-
-    * Add the following to "shared.loader" of
-      /usr/share/java/apache-tomcat-7.0.39/conf/catalina.properties.
-
-        /usr/local/vtn/tomcat/shared/lib/*.jar
-
-    * Add the following to <Server> of
-      /usr/share/java/apache-tomcat-7.0.39/conf/server.xml.
-
-        <Listener className="org.opendaylight.vtn.tomcat.server.StateListener" />
-
- 3. Set up the DB.
+  Set up the DB.
         /usr/local/vtn/sbin/db_setup
 
 === Start ===
- 1. Start VTN Coordinator and Tomcat.
+ 1. Start VTN Coordinator.
         /usr/local/vtn/bin/vtn_start
-        /usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh start
-
- 2. Execute the following commands while stopping.
-        /usr/share/java/apache-tomcat-7.0.39/bin/catalina.sh stop
-        /usr/local/vtn/bin/vtn_stop
+  (to stop please use: /usr/local/vtn/bin/vtn_stop)
 
 === WebAPI ===
  * VTN Coordinator version information will be displayed if following command
    is executed when VTN has started successfully.
         $ curl -X GET -H 'content-type: application/json' -H 'username: admin' \
                -H 'password: adminpass' -H 'ipaddr:127.0.0.1' \
-               http://127.0.0.1:8080/vtn-webapi/api_version.json
+               http://127.0.0.1:8083/vtn-webapi/api_version.json
 
 VTN Manager Installation Guide
 ==============================
@@ -158,7 +128,9 @@ The installation directory is usually
 ${VTN_DIR}/manager/dist/target/distribution.vtn-manager-0.1.0-SNAPSHOT-osgipackage/opendaylight.
 
         cd ${VTN_DIR}/manager/dist/target/distribution.vtn-manager-0.1.0-SNAPSHOT-osgipackage/opendaylight
-        ./run.sh
+        ./run.sh -of10 (to work with OpenFlow 1.0 switches)
+        (or)
+        ./run.sh -of13 (If work with OpenFlow 1.0 as well as OpenFlow 1.3 switches)
 
 Please see Controller's Installation Guide for more information.
     https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
