@@ -14,24 +14,28 @@ Supported Platforms
 
       # yum install java-1.7.0-openjdk-devel
 
+  * Fedora 20
+     yum install java-1.7.0-openjdk-devel
+
 Installation
 ------------
 
 Installing ODL Controller and Execution
 ***************************************
 
-1.Unzip the file as follows.
-  This will create a directory with name "opendaylight".
-
-    # unzip distributions-virtualization-%ODL_VIRT_VERSION%.osgipackage.zip
+1.Unzip the karaf distro as follows.
+    # unzip distributions-virtualization-%ODL_VIRT_VERSION%.zip
 
 2. Please ensure the environment variable JAVA_HOME is set to the location
    of the JDK.
 
 3. Execute Controller for VTN using the below command.
 
-    # cd opendaylight
-    # ./run.sh -virt vtn
+    # bin/karaf
+
+    Once the prompt appears, Please type the below commands to use VTN Manager
+    feature:install odl-vtn-manager-all odl-adsal-compatibility-all odl-openflowplugin-all
+
 
 4. The Controller will be up and running with the components required for
    VTN virtualization.
@@ -40,7 +44,7 @@ Installing the VTN Coordinator
 ******************************
 
 1. The VTN Coordinator is available in the "externalapps" directory of the
-   virtualization edition as the tarball named
+   karaf edition as the tarball named
    org.opendaylight.vtn.distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-bin.tar.bz2.
 
    If you want to run the VTN Coordinator on a different machine, copy the
@@ -102,7 +106,7 @@ Test and use VTN Coordinator
      http://<VTN_COORDINATOR_IP_ADDRESS>:8083/vtn-webapi/api_version.json
 
      Response
-     {"api_version":{"version":"V1.1"}}
+     {"api_version":{"version":"VX.X"}} // The recent version will be returned!!
 
 2. Create and use VTN
    Please refer to the below URI for all the API details to create VTN and
