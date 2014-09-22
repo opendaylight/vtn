@@ -46,6 +46,7 @@
               org.opendaylight.ovsdb.plugin,
               org.opendaylight.ovsdb.plugin.api,
               org.opendaylight.ovsdb.schema.openvswitch,
+              org.opendaylight.ovsdb.lib.schema,
               org.opendaylight.vtn.manager,
               org.apache.felix.dm,
               org.slf4j

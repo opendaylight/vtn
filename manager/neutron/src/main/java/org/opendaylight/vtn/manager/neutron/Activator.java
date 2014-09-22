@@ -15,9 +15,10 @@ import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
-import org.opendaylight.ovsdb.plugin.OvsdbConfigService;
-import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
-import org.opendaylight.ovsdb.plugin.IConnectionServiceInternal;
+import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
+import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
+import org.opendaylight.ovsdb.plugin.api.OvsdbInventoryListener;
+
 import org.opendaylight.vtn.manager.IVTNManager;
 
 /**
@@ -102,7 +103,7 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setCallbacks("setVTNManager", "unsetVTNManager").
                   setRequired(true));
             c.add(createServiceDependency().
-                  setService(OvsdbConfigService.class).
+                  setService(OvsdbConfigurationService.class).
                   setCallbacks("setOVSDBConfigService", "unsetOVSDBConfigService").
                   setRequired(true));
 
@@ -112,7 +113,7 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setRequired(true));
 
             c.add(createServiceDependency().
-                  setService(IConnectionServiceInternal.class).
+                  setService(OvsdbConnectionService.class).
                   setCallbacks("setConnectionService", "unsetConnectionService").
                   setRequired(true));
         }

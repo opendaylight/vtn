@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Properties;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
 import org.opendaylight.controller.networkconfig.neutron.NeutronPort;
@@ -30,9 +31,9 @@ import org.opendaylight.ovsdb.schema.openvswitch.Interface;
 import org.opendaylight.ovsdb.schema.openvswitch.Port;
 import org.opendaylight.ovsdb.schema.openvswitch.OpenVSwitch;
 import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
-import org.opendaylight.ovsdb.plugin.OvsdbConfigService;
-import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
-import org.opendaylight.ovsdb.plugin.IConnectionServiceInternal;
+import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
+import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
+import org.opendaylight.ovsdb.plugin.api.OvsdbInventoryListener;
 import org.opendaylight.ovsdb.plugin.api.StatusWithUuid;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Handle events from OVSDB Southbound plugin.
  */
-public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInventoryListener {
+public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInventoryListener{
     /**
      * Logger instance.
      */
@@ -55,14 +56,14 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     private INeutronPortCRUD neutronPortCRUD;
 
     /**
-     * ovsdbConfigService object to utlilize the add,update and delete rows.
+     * OvsdbConfigurationService object to utlilize the add,update and delete rows.
      */
-    private OvsdbConfigService ovsdbConfigService;
+    private volatile OvsdbConfigurationService ovsdbConfigService;
 
     /**
      * To connect to the given Node.
      */
-    private IConnectionServiceInternal connectionService;
+    private OvsdbConnectionService connectionService;
 
     /**
      * identifier for neutron external-id.
@@ -107,7 +108,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     /**
      * identifier for Default protocol.
      */
-    private static final String DEFAULT_PROTOCOLS = "OpenFlow10";
+    private static final String DEFAULT_PROTOCOLS = "OpenFlow13";
 
     /**
      * identifier for Default portname.
@@ -164,18 +165,18 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     }
 
     /**
-     * Set ovsdb config service.
-     * @param service Instance of OVSDBConfigService to be set.
+     * Set ovsdb configuration service.
+     * @param service Instance of OvsdbConfigurationService to be set.
      */
-    void setOVSDBConfigService(OvsdbConfigService service) {
+    void setOVSDBConfigService(OvsdbConfigurationService service) {
         this.ovsdbConfigService = service;
     }
 
     /**
-     * Unset OVSDBConfigservice.
-     * @param service Instance of OVSDBConfigService to be unset.
+     * Unset OvsdbConfigurationService.
+     * @param service Instance of OvsdbConfigurationService to be unset.
      */
-    void unsetOVSDBConfigService(OvsdbConfigService service) {
+    void unsetOVSDBConfigService(OvsdbConfigurationService service) {
         if (this.ovsdbConfigService == service) {
             this.ovsdbConfigService = null;
         }
@@ -183,18 +184,18 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
 
     /**
      * Set connection service.
-     * @param service Instance of IConnectionServiceInternal to be set.
+     * @param service Instance of OvsdbConnectionService to be set.
      */
-    public void setConnectionService(IConnectionServiceInternal service) {
+    public void setConnectionService(OvsdbConnectionService service) {
         LOG.trace("Set ConnectionServiceInternal: {}", service);
         this.connectionService = service;
     }
 
     /**
      * unset for connection service.
-     * @param service Instance of IConnectionServiceInternal to be unset.
+     * @param service Instance of OvsdbConnectionService to be unset.
      */
-    public void unsetConnectionService(IConnectionServiceInternal service) {
+    public void unsetConnectionService(OvsdbConnectionService service) {
         if (service == this.connectionService) {
             LOG.trace("Unset ConnectionServiceInternal: {}", service);
             this.connectionService = null;
@@ -268,9 +269,11 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     /**
      * Method invoked when the open flow switch is Added.
      * @param node Instance of Node object to be added.
+     * @param address Instance of InetAddress.
+     * @param port int value.
      */
     @Override
-    public void nodeAdded(Node node) {
+    public void nodeAdded(Node node, InetAddress address, int port) {
         LOG.trace("nodeAdded() - {}", node.toString());
         processNodeUpdate(node);
     }

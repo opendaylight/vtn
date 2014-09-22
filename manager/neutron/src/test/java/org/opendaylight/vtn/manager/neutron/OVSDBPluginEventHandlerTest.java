@@ -71,17 +71,17 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
                     //            String strObj = String.valueOf(Long.parseLong(CREATE_NETWORK[NODE_ADD_NODE_ID]));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], Long.parseLong(createNetwork[NODE_ADD_NODE_ID]));
                     //            ovsdb.prepareInternalNetwork(nodeObj);
-                    ovsdb.nodeAdded(nodeObj);
+                    ovsdb.nodeAdded(nodeObj, null, 0);
 
                 } else if ((ONEPK.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) ||
                         (PRODUCTION.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE]))) {
                     //            String strNode = String.valueOf(Long.parseLong(CREATE_NETWORK[NODE_ADD_NODE_ID], 16));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], createNetwork[NODE_ADD_NODE_ID]);
-                    ovsdb.nodeAdded(nodeObj);
+                    ovsdb.nodeAdded(nodeObj, null, 0);
                 } else if (PCEP.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) {
                     UUID idOne = new UUID(new Long(0), new Long(createNetwork[NODE_ADD_NODE_ID]));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], idOne);
-                    ovsdb.nodeAdded(nodeObj);
+                    ovsdb.nodeAdded(nodeObj, null, 0);
                 }
 
                 ovsdb.unsetOVSDBConfigService(ovsdbConfig);
