@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "fa82b9bf_00a55003",
+        "filename": "coordinator/dist/src/main/txt/README.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 95,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-09-25T07:13:39Z",
+      "side": 1,
+      "message": "A whitespace is missing between \"odl-openflowplugin-all\" and \"odl-adsal-compatibility-all\".",
+      "revId": "941ebd3c24cb88a3e52ba3f9040922d9cfa2cca3",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
