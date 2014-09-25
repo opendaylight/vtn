@@ -1,47 +1,23 @@
-Virtualization Edition Guide for VTN
--------------------------------------
+VTN COORDINATOR GUIDE
+=====================
 
-Supported Platforms
+SUPPORTED PLATFORMS
 -------------------
 
-  * RHEL 6.1 (x86_64)
-    Download Oracle JDK 7 and install it.
+ * RHEL 6 (x86_64)
+ * CentOS 6 (x86_64)
+ * Fedora 20 (x86_64)
+ * Fedora 19 (x86_64)
 
-      http://www.oracle.com/technetwork/java/javase/downloads/index.html
-
-  * RHEL 6.4 (x86_64)
-    Install OpenJDK 7 from installation media.
-
-      # yum install java-1.7.0-openjdk-devel
-
-Installation
+INSTALLATION
 ------------
 
-Installing ODL Controller and Execution
-***************************************
-
-1.Unzip the file as follows.
-  This will create a directory with name "opendaylight".
-
-    # unzip distributions-virtualization-%ODL_VIRT_VERSION%.osgipackage.zip
-
-2. Please ensure the environment variable JAVA_HOME is set to the location
-   of the JDK.
-
-3. Execute Controller for VTN using the below command.
-
-    # cd opendaylight
-    # ./run.sh -virt vtn
-
-4. The Controller will be up and running with the components required for
-   VTN virtualization.
-
-Installing the VTN Coordinator
-******************************
+### INSTALLING VTN COORDINATOR
 
 1. The VTN Coordinator is available in the "externalapps" directory of the
-   virtualization edition as the tarball named
-   org.opendaylight.vtn.distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-bin.tar.bz2.
+   Karaf distribution as the tarball named:
+
+   distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-Helium-bin.tar.bz2
 
    If you want to run the VTN Coordinator on a different machine, copy the
    tarball to the target machine.
@@ -49,68 +25,94 @@ Installing the VTN Coordinator
 2. Extract the VTN Coordinator tarball under the root directory.
    This will install the VTN Coordinator to /usr/local/vtn directory.
 
-     # tar -C / -xvjf \
-       org.opendaylight.vtn.distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-bin.tar.bz2
+    tar -C / -xvjf \
+    distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-Helium-bin.tar.bz2
 
-Installing prerequisites
-************************
+### INSTALLING JAVA
 
-Install additional applications required for VTN Coordinator
+ * For RHEL/CentOS 6.1 (x86_64)
+     Download Oracle JDK 7 and install it.
+     http://www.oracle.com/technetwork/java/javase/downloads/index.html
 
-   # yum install perl-Digest-SHA uuid libxslt libcurl unixODBC
-   # wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
-   # rpm -Uvh epel-release-6-8.noarch.rpm
-   # yum install json-c
+ * For RHEL/CentOS 6.4 (x86_64)
+     Install OpenJDK 7.
+     yum install java-1.7.0-openjdk-devel
 
-Installing PostgreSQL Database
-******************************
+ * Fedora 19/20
+     Install OpenJDK 7.
+     yum install java-1.7.0-openjdk-devel
 
-Download the following PostgreSQL 9.1 files from
-http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/ and install them.
+### INSTALLING PREREQUISITES
 
-    postgresql91-libs-9.1.9-1PGDG.rhel6.x86_64.rpm
-    postgresql91-9.1.9-1PGDG.rhel6.x86_64.rpm
-    postgresql91-server-9.1.9-1PGDG.rhel6.x86_64.rpm
-    postgresql91-contrib-9.1.9-1PGDG.rhel6.x86_64.rpm
-    postgresql91-odbc-09.00.0310-1PGDG.rhel6.x86_64.rpm
+Install additional applications required for VTN Coordinator.
 
-Configure Tomcat server
-***********************
+    yum install perl-Digest-SHA uuid libxslt libcurl unixODBC
+    wget http://dl.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+    rpm -Uvh epel-release-6-8.noarch.rpm
+    yum install json-c
 
-By default, Tomcat server will listen on 8083/tcp. If you want to change
-the listening port, modify the TOMCAT_PORT defined in below file:
+### INSTALLING POSTGRESQL DATABASE
 
-    /usr/local/vtn/tomcat/conf/tomcat-env.sh
+Configure Yum repository to download the latest rpms for PostgreSQL 9.1.
 
-Configure Database for VTN Coordinator
-**************************************
+    rpm -ivh http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/pgdg-redhat91-9.1-5.noarch.rpm
 
-  # /usr/local/vtn/sbin/db_setup
+Install the required PostgreSQL packages.
 
-Launch VTN Coordinator
+    yum install postgresql91-libs postgresql91 postgresql91-server \
+    postgresql91-contrib postgresql91-odbc
+
+VTN Coordinator supports postgres version greater than 9.1 only and currently
+tested with 9.1 and 9.3. Please ensure the postgres version>=9.1 is installed.
+
+If you are facing any problems while installing postgreSQL rpm,
+please refer to openssl_problems query in troubleshooting FAQ.
+
+https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):Installation:Troubleshooting#Problems_while_Installing_PostgreSQL_due_to_openssl
+
+### Configure Database for VTN Coordinator
+
+    /usr/local/vtn/sbin/db_setup
+
+LAUNCH VTN COORDINATOR
 ----------------------
 
-  # /usr/local/vtn/bin/vtn_start
+    /usr/local/vtn/bin/vtn_start
 
-Test and use VTN Coordinator
+TEST AND USE VTN COORDINATOR
 ----------------------------
+
+### RUN OPENDAYLIGHT CONTROLLER
+VTN Coordinator depends on virtual network function of OpenDaylight controllers.
+Therefore, you need to run OpenDaylight controllers, and enable VTN features.
+
+1. Run an OpenDaylight controller.
+
+    bin/karaf
+
+2. Install VTN Manager and OpenFlow plugin features.
+
+    feature:install odl-vtn-manager-all odl-openflowplugin-allodl-adsal-compatibility-all
+
+### TEST VTN COORDINATOR
 
 1. The below command should yield such a response to ensure successful
    installation.
 
-   # curl -X GET -H 'content-type: application/json' -u admin:adminpass \
-     http://<VTN_COORDINATOR_IP_ADDRESS>:8083/vtn-webapi/api_version.json
+    curl -X GET -H 'content-type: application/json' -u admin:adminpass \
+    http://<VTN_COORDINATOR_IP_ADDRESS>:8083/vtn-webapi/api_version.json
 
-     Response
-     {"api_version":{"version":"V1.1"}}
+   The response should be:
+     {"api_version":{"version":"VX.X"}}
+   The API version will be returned.
 
-2. Create and use VTN
+2. Create and use virtual networks.
    Please refer to the below URI for all the API details to create VTN and
    all its sub components.
 
      https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:VTN_Coordinator:RestApi
 
-Terminate VTN Coordinator
-----------------------
+TERMINATE VTN COORDINATOR
+-------------------------
 
-  # /usr/local/vtn/bin/vtn_stop
+    /usr/local/vtn/bin/vtn_stop
