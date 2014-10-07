@@ -149,19 +149,24 @@ in directory ${VTN_DIR}.
 
  2. Build the code of VTN Manager.
         cd ${VTN_DIR}
-        mvn -f manager/dist/pom.xml install
+        mvn -f manager/dist-karaf/pom.xml install
 
 == Run the Controller with VTN Manager ==
-On Linux/Unix systems, execute run.sh in the installation directory of
-OpenDaylight Controller.
-The installation directory is usually
-${VTN_DIR}/manager/dist/target/distribution.vtn-manager-0.1.0-SNAPSHOT-osgipackage/opendaylight.
+
+ 1. Run Karaf.
+   Execute bin/karaf in the installation directory of
+   OpenDaylight Controller.
+   The installation directory is usually
+   ${VTN_DIR}/manager/dist-karaf/target/assembly.
 
         cd ${VTN_DIR}/manager/dist/target/distribution.vtn-manager-0.1.0-SNAPSHOT-osgipackage/opendaylight
-        ./run.sh
+        cd ${VTN_DIR}/manager/dist-karaf/target/assembly
+        ./bin/karaf
 
-Please see Controller's Installation Guide for more information.
-    https://wiki.opendaylight.org/view/OpenDaylight_Controller:Installation
+ 2. Install VTN Manager features and OpenFlow plugin into Karaf.
+   Execute the following Karaf command in Karaf console.
+
+        feature:install odl-vtn-manager-all odl-adsal-compatibility-all odl-openflowplugin-all
 
 === REST API ===
 VTN Manager provides REST API for virtual network functions.
