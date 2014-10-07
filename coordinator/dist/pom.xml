@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.2.0-Helium</version>
+    <version>0.2.1-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>distribution.vtn-coordinator</artifactId>
-  <version>6.0.0.0-Helium</version>
+  <version>6.0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <profiles>
@@ -47,10 +47,10 @@
 
   <properties>
     <!-- Version of VTN Coordinator. -->
-    <vtn.coordinator.version>6.0.0.0</vtn.coordinator.version>
+    <vtn.coordinator.version>6.0.0.1</vtn.coordinator.version>
 
     <!-- Version of OpenDaylight virtualization edition. -->
-    <odl.virt.version>0.2.0</odl.virt.version>
+    <odl.virt.version>0.2.1</odl.virt.version>
 
     <!-- Skip tests entirely unless integrationtests profile is active. -->
     <skipTests>false</skipTests>
