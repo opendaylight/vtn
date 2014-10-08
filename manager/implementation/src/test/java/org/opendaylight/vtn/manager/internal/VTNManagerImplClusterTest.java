@@ -136,6 +136,7 @@ public class VTNManagerImplClusterTest extends VTNManagerImplTestCommon {
         vtnMgr.setHostTracker(stubObj);
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(stubObj);
+        vtnMgr.setContainerManager(stubObj);
         startVTNManager(c);
     }
 

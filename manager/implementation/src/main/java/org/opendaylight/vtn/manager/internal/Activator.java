@@ -30,6 +30,7 @@ import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
+import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
@@ -168,6 +169,12 @@ public class Activator extends ComponentActivatorAbstractBase {
             list.add(IFlowProgrammerListener.class.getName());
             if (containerName.equals(GlobalConstants.DEFAULT.toString())) {
                 list.add(IContainerListener.class.getName());
+
+                c.add(createServiceDependency().
+                      setService(IContainerManager.class).
+                      setCallbacks("setContainerManager",
+                                   "unsetContainerManager").
+                      setRequired(true));
             }
 
             // Export IVTNFlowDebugger only if "vtn.debug" system property

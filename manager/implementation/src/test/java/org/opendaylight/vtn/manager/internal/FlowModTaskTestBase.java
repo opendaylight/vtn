@@ -435,6 +435,7 @@ public class FlowModTaskTestBase extends TestUseVTNManagerBase {
         vtnMgr.setHostTracker(stubObj);
         vtnMgr.setForwardingRuleManager(stubObj);
         vtnMgr.setConnectionManager(cm);
+        vtnMgr.setContainerManager(stubObj);
         startVTNManager(c);
     }
 

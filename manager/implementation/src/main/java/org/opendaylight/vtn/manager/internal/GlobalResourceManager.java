@@ -525,6 +525,15 @@ public class GlobalResourceManager
         for (PortVlan pvlan: pvSet) {
             portMaps.remove(pvlan);
         }
+
+        if (vtnManagers.size() == 1) {
+            // The controller quits the container mode.
+            // Some FLOW_REMOVED notifications might be ignored when the
+            // controller entered the container mode.
+            // So we need to clean up them.
+            VTNManagerImpl mgr = vtnManagers.get(0);
+            mgr.cleanUpRemovedFlows();
+        }
     }
 
     // ICoordinatorChangeAware
