@@ -1,0 +1,8 @@
+Code-Review+2: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Verified+1: jenkins-vtn <jenkins-vtn@opendaylight.org>
+Code-Review+1: Thanh Ha <thanh.ha@linuxfoundation.org>
+Submitted-by: Shigeru Yasuda <s-yasuda@da.jp.nec.com>
+Submitted-at: Fri, 10 Oct 2014 17:35:44 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/11790
+Project: vtn
+Branch: refs/heads/stable/helium
