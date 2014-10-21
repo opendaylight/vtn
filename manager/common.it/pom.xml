@@ -308,10 +308,6 @@
       <groupId>org.jboss.spec.javax.transaction</groupId>
       <artifactId>jboss-transaction-api_1.1_spec</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.jboss.jbossts.jta</groupId>
-      <artifactId>narayana-jta</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>virgomirror</groupId>
@@ -340,11 +336,6 @@
     <dependency>
       <groupId>org.ops4j.pax.exam</groupId>
       <artifactId>pax-exam-link-mvn</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.exam</groupId>
-      <artifactId>pax-exam-spi</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -486,7 +477,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>${properties-maven.version}</version>
+        <version>${propertymavenplugin.version}</version>
         <executions>
           <execution>
             <goals>

@@ -47,7 +47,7 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OVSDBPluginEventHandler#nodeAdded(Node)}.
+     * {@link OVSDBPluginEventHandler#nodeAdded(Node,InetAddress,int)}.
      * Test nodeAdded Method.
      */
     @Test

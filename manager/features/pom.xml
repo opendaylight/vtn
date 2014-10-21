@@ -79,7 +79,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire.version}</version>
+        <version>${maven.surefire.version}</version>
         <configuration>
           <systemPropertyVariables>
             <karaf.distro.groupId>org.opendaylight.controller</karaf.distro.groupId>

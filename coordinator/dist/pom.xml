@@ -47,7 +47,7 @@
 
   <properties>
     <!-- Version of VTN Coordinator. -->
-    <vtn.coordinator.version>6.0.0.0</vtn.coordinator.version>
+    <vtn.coordinator.version>6.1.0.0</vtn.coordinator.version>
 
     <!-- Version of OpenDaylight virtualization edition. -->
     <odl.virt.version>0.2.0</odl.virt.version>
@@ -60,7 +60,7 @@
     <vtn.gson.version>2.2.2</vtn.gson.version>
     <vtn.json.version>20090211</vtn.json.version>
     <vtn.log4j.version>1.2.17</vtn.log4j.version>
-    <vtn.tomcat.version>7.0.39</vtn.tomcat.version>
+    <vtn.tomcat.version>7.0.56</vtn.tomcat.version>
     <vtn.commons.codec.version>1.9</vtn.commons.codec.version>
     <vtn.commons.net.version>3.3</vtn.commons.net.version>
     <vtn.postgresql.jdbc.version>9.2-1003-jdbc4</vtn.postgresql.jdbc.version>
