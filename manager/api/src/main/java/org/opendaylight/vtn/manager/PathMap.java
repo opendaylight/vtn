@@ -419,7 +419,8 @@ public final class PathMap implements Serializable, Cloneable {
         }
 
         PathMap ptmap = (PathMap)o;
-        return (mapIndex == ptmap.mapIndex && policyId == ptmap.policyId &&
+        return (Objects.equals(mapIndex, ptmap.mapIndex) &&
+                policyId == ptmap.policyId &&
                 Objects.equals(condition, ptmap.condition) &&
                 Objects.equals(idleTimeout, ptmap.idleTimeout) &&
                 Objects.equals(hardTimeout, ptmap.hardTimeout));
@@ -432,8 +433,8 @@ public final class PathMap implements Serializable, Cloneable {
      */
     @Override
     public int hashCode() {
-        return Objects.hash(condition, idleTimeout, hardTimeout) +
-            (mapIndex * 17) + (policyId * 31);
+        return Objects.hash(mapIndex, condition, idleTimeout, hardTimeout) +
+            (policyId * 31);
     }
 
     /**
