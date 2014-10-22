@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.neutron;
 
+import java.io.File;
+
 import org.junit.Assert;
 
 /**
@@ -516,4 +518,31 @@ public abstract class TestBase extends Assert {
         {"OF", "56456644", "interface1", "8c781fc0-f215-11e3-aac3-0002a5d5c51b", "", "65534", "0" },
         {"OF", "56456644", "interface1", "0D2206F8-B700-4F78-913D-9CE7A2D78473", "", "65534", "0" },
     };
+
+    /**
+     * Delete the specified directory recursively.
+     *
+     * @param file  A {@link File} instance which represents a file or
+     *              directory to be removed.
+     */
+    protected static void delete(File file) {
+        if (!file.exists()) {
+            return;
+        }
+
+        File[] files = file.listFiles();
+        if (files == null) {
+            // Delete the specified file.
+            file.delete();
+            return;
+        }
+
+        // Make the specified directory empty.
+        for (File f: files) {
+            delete(f);
+        }
+
+        // Delete the specified directory.
+        file.delete();
+    }
 }
