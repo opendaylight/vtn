@@ -272,7 +272,7 @@ public final class PathPolicy implements Serializable {
      * @see #PathPolicy(int, long, List)
      */
     private PathPolicy(Integer id, long defcost, List<PathCost> costs) {
-        policyId = Integer.valueOf(id);
+        policyId = id;
         defaultCost = defcost;
         if (costs != null && !costs.isEmpty()) {
             pathCosts = new ArrayList<PathCost>(costs);
