@@ -51,6 +51,16 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     static final Logger LOG = LoggerFactory.getLogger(OVSDBPluginEventHandler.class);
 
     /**
+     * The name of the configuration directory.
+     */
+    private static final String  CONFIG_DIR = "configuration";
+
+    /**
+     * The name of the configuration file.
+     */
+    private static final String  VTN_INI_NAME = "vtn.ini";
+
+    /**
      * Interface object for CRUD of NB Port objects.
      */
     private INeutronPortCRUD neutronPortCRUD;
@@ -78,22 +88,22 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     /**
      * identifier for the integration bridge name.
      */
-    private static String integrationBridgeName;
+    private String integrationBridgeName;
 
     /**
      * identifier to define failmode of integration bridge.
      */
-    private static String failmode;
+    private String failmode;
 
     /**
      * identifier to define protocol of integration bridge.
      */
-    private static String protocols;
+    private String protocols;
 
      /**
      * identifier to define portname of the integration bridge.
      */
-    private static String portname;
+    private String portname;
 
     /**
      * Default integration bridge name.
@@ -103,7 +113,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     /**
      * identifier for Default failmode.
      */
-    private static final String DEFAULT_FAILMDOE = "secure";
+    private static final String DEFAULT_FAILMODE = "secure";
 
     /**
      * identifier for Default protocol.
@@ -118,12 +128,12 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     /**
      * identifier to read for integration bridge name from config file.
      */
-    private static final String CONFIG_INTEGRATION_BRIDGENAME = "integration_bridge";
+    private static final String CONFIG_INTEGRATION_BRIDGENAME = "bridgename";
 
     /**
      * identifier to read failmode from config file.
      */
-    private static final String CONFIG_FAILMODE = "fail_mode";
+    private static final String CONFIG_FAILMODE = "failmode";
 
     /**
      * identifier to read protocol from config file.
@@ -139,11 +149,6 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      * identifier to represent radix for String while retrieving value from Long Type.
      */
     private static final int RADIX_FOR_STRING = 16;
-
-    /**
-     * Properties instance to read from vtn.ini file.
-     */
-    private Properties configProp = new Properties();
 
     /**
      * Set neutron port service.
@@ -334,6 +339,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
 
     /**
      * Ignore unneccesary updates to be even considered for processing.
+     * @param node A {@link Node} instance.
      * @param oldRow Instance of old Row Table.
      * @param newRow Instance of new Row Table.
      * @return true while the new row is added.
@@ -379,7 +385,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     private void processRowUpdated(Node node, String tableName, String uuid, Row row) {
         String intfName = ovsdbConfigService.getTableName(node, Interface.class);
         if (!intfName.equalsIgnoreCase(tableName)) {
-            LOG.trace(" Not an interface event ");
+            LOG.trace("Not an interface event ");
             return;
         }
 
@@ -387,24 +393,24 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
 
         NeutronPort neutronPort = getNeutronPortFormInterface(intf);
         if (neutronPort == null) {
-            LOG.error(" No neutron port associated with interface {} ", intf);
+            LOG.error("No neutron port associated with interface {}", intf);
             return;
         }
 
         String switchId = getSwitchIdFromInterface(node, uuid);
         if (switchId == null) {
-            LOG.error(" No switch is associated with interface {} ", uuid);
+            LOG.error("No switch is associated with interface {}", uuid);
             return;
         }
 
         String ofPort = getOfPortFormInterface(intf);
         if (ofPort == null) {
-            LOG.error(" No OF port associated with interface {} ", intf);
+            LOG.error("No OF port associated with interface {}", intf);
             return;
         }
         int result = setPortMapForInterface(node, intf, neutronPort, switchId, ofPort);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Set Port mapping failed for interface {}", intf);
+            LOG.error("Set Port mapping failed for interface {}", intf);
         }
         return;
     }
@@ -420,20 +426,20 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
         String intfName = ovsdbConfigService.getTableName(node, Interface.class);
         LOG.trace("processRowRemoved() - {} , tableNmae {}, UUID{}, ROw{}, intfName{}", node.toString(), tableName, uuid , row.toString(), intfName);
         if (!intfName.equalsIgnoreCase(tableName)) {
-            LOG.error(" Not an interface event ");
+            LOG.error("Not an interface event ");
             return;
         }
         Interface intf = ovsdbConfigService.getTypedRow(node, Interface.class, row);
 
         NeutronPort neutronPort = getNeutronPortFormInterface(intf);
         if (neutronPort == null) {
-            LOG.error(" No neutron port associated with interface {} ", intf);
+            LOG.error("No neutron port associated with interface {}", intf);
             return;
         }
 
         int result = deletePortMapForInterface(neutronPort);
         if (result != HttpURLConnection.HTTP_OK) {
-            LOG.error(" Set Port mapping failed for interface {}", intf);
+            LOG.error("Set Port mapping failed for interface {}", intf);
         }
         return;
     }
@@ -482,16 +488,17 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
     private String getOfPortFormInterface(Interface intf) {
         LOG.trace("getOFPortFormInterface for {}", intf);
         if (intf == null) {
-            LOG.error(" Interface is null");
+            LOG.error("Interface is null");
             return null;
         }
 
         Set<Long> setBigInt = intf.getOpenFlowPortColumn().getData();
         if (setBigInt == null || setBigInt.isEmpty()) {
-            LOG.error(" No OF Ports configured for interface {} ", intf);
+            LOG.error("No OF Ports configured for interface {}", intf);
             return null;
         }
-        LOG.trace("OF Port for interface {} ", setBigInt.toArray()[0].toString());
+        LOG.trace("OF Port for interface {}",
+                  setBigInt.toArray()[0].toString());
         return setBigInt.toArray()[0].toString();
     }
 
@@ -503,7 +510,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      */
     private String getSwitchIdFromInterface(Node node, String interfaceUuid) {
         if ((node == null) || (interfaceUuid == null)) {
-            LOG.error(" Node or interface Uuid is Null");
+            LOG.error("Node or interface Uuid is Null");
             return null;
         }
         try {
@@ -513,10 +520,12 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
                 Set<UUID> ports = br.getPortsColumn().getData();
                 for (UUID portId: ports) {
                     Port port = ovsdbConfigService.getTypedRow(node, Port.class, ovsdbConfigService.getRow(node, "Port", portId.toString()));
-                    LOG.trace(" Node or Port getRow ={} ", port.getRow());
                     if (port == null) {
                         LOG.error("Port is Null");
                         continue;
+                    }
+                    if (LOG.isTraceEnabled()) {
+                        LOG.trace("Node or Port getRow ={}", port.getRow());
                     }
                     Set<UUID> interfaces = port.getInterfacesColumn().getData();
                     for (UUID intfIds: interfaces) {
@@ -528,7 +537,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             }
             LOG.error("Failed to get switch Id related to the interface({}).", interfaceUuid);
         } catch (Exception e) {
-            LOG.error(" Exception {} while getting switch identifier ", e);
+            LOG.error("Exception while getting switch identifier", e);
         }
         return null;
     }
@@ -548,8 +557,10 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             LOG.error("data pathid is empty for bridge {}", bridge);
             return null;
         }
-        LOG.trace(" datapath Id of Bridge - {} is {} ", bridge, dpids.toArray()[0].toString());
-        return dpids.toArray()[0].toString();
+
+        String dpid = dpids.toArray()[0].toString();
+        LOG.trace("datapath Id of Bridge - {} is {}", bridge, dpid);
+        return dpid;
     }
 
     /**
@@ -568,7 +579,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
                                        String ofPort) {
         int result = HttpURLConnection.HTTP_BAD_REQUEST;
         short vlan = 0;
-        LOG.trace(" switch ID - {}", switchId);
+        LOG.trace("switch ID - {}", switchId);
         Node switchNode = NodeCreator.createOFNode(Long.valueOf(switchId, RADIX_FOR_STRING));
         SwitchPort switchPort = new SwitchPort(intf.getName(), "OF", ofPort);
         PortMapConfig portMapConfig = new PortMapConfig(switchNode, switchPort, vlan);
@@ -704,7 +715,8 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             this.createInternalNetworkForNeutron(node);
             LOG.trace("Process internal neutron network ,node {}", node);
         } catch (Exception e) {
-            LOG.error("Error {} while creating internal network for node {}", e, node.toString());
+            LOG.error("Error while creating internal network for node " +  node,
+                      e);
         }
     }
 
@@ -719,7 +731,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
         LOG.trace("createInternalNetworkForNeutron() - node ={}, integration bridge ={}", node.toString(), brInt);
         Status status = this.addInternalBridge(node, brInt);
         if (!status.isSuccess()) {
-            LOG.trace("Integration Bridge Creation Status ={} ", status.toString());
+            LOG.trace("Integration Bridge Creation Status ={}", status.toString());
         }
     }
 
@@ -727,25 +739,34 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      * Read the paramaters configured in configuration file(vtn.ini).
      */
     public void getSystemProperties() {
+        File f = new File(new File(CONFIG_DIR), VTN_INI_NAME);
+        FileInputStream in = null;
+        Properties prop = new Properties();
         try {
-            File f = new File("configuration/vtn.ini");
-            String filepath = f.getAbsolutePath();
-            FileInputStream in = new FileInputStream(filepath);
-            configProp.load(in);
+            in = new FileInputStream(f);
+            prop.load(in);
             LOG.trace("loaded Integration bridge Configuartion details from vtn.ini");
         } catch (Exception e) {
-            LOG.trace("Exception {} occured while reading SystemProperties ", e);
+            LOG.trace("Exception occured while reading SystemProperties", e);
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Exception e) {
+                    LOG.warn("Exception occurred while closing file", e);
+                }
+                in = null;
+            }
         }
 
-        integrationBridgeName = configProp.getProperty("bridgename");
-        failmode = configProp.getProperty("failmode");
-        protocols = configProp.getProperty("protocols");
-        portname = configProp.getProperty("portname");
-        if (integrationBridgeName == null) { integrationBridgeName = DEFAULT_INTEGRATION_BRIDGENAME; }
-        if (failmode == null) { failmode = DEFAULT_FAILMDOE; }
-        if (protocols == null) { protocols = DEFAULT_PROTOCOLS; }
-        if (portname == null) { portname = DEFAULT_PORTNAME; }
-        LOG.trace("System properties values : {},{},{},{}:", integrationBridgeName, failmode, protocols, portname);
+        integrationBridgeName =
+            prop.getProperty(CONFIG_INTEGRATION_BRIDGENAME,
+                             DEFAULT_INTEGRATION_BRIDGENAME);
+        failmode = prop.getProperty(CONFIG_FAILMODE, DEFAULT_FAILMODE);
+        protocols = prop.getProperty(CONFIG_PROTOCOLS, DEFAULT_PROTOCOLS);
+        portname = prop.getProperty(CONFIG_PORTNAME, DEFAULT_PORTNAME);
+        LOG.trace("System properties values : {},{},{},{}:",
+                  integrationBridgeName, failmode, protocols, portname);
     }
 
     /**
@@ -756,7 +777,8 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      * @throws Exception any exception occurred while bridge add.
      */
     private Status addInternalBridge(Node node, String bridgeName) throws Exception {
-        LOG.trace("Added InternalBridge  bridgeName - {}, for the node - {}, ", bridgeName, node);
+        LOG.trace("Added InternalBridge  bridgeName - {}, for the node - {}",
+                  bridgeName, node);
         String bridgeUUID = this.getInternalBridgeUUID(node, bridgeName);
         Bridge bridgeobj = ovsdbConfigService.createTypedRow(node, Bridge.class);
         bridgeobj.setName(bridgeName);
@@ -771,7 +793,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
         if (bridgeUUID == null) {
             bridgeobj.setName(bridgeName);
             StatusWithUuid statusWithUuid = ovsdbConfigService.insertRow(node, bridgeobj.getSchema().getName(), null, bridgeobj.getRow());
-            LOG.trace("Successfully inserted Bridge.NAME.getName() {} statusWithUuid ={} ", bridgeobj.getSchema().getName(), statusWithUuid);
+            LOG.trace("Successfully inserted Bridge.NAME.getName() {} statusWithUuid ={}", bridgeobj.getSchema().getName(), statusWithUuid);
             if (!statusWithUuid.isSuccess()) { return statusWithUuid; }
             bridgeUUID = statusWithUuid.getUuid().toString();
 
@@ -801,14 +823,17 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             if (bridgeTable == null) {
                 return null;
             }
-            for (String key : bridgeTable.keySet()) {
-                Bridge bridge = ovsdbConfigService.getTypedRow(node, Bridge.class, bridgeTable.get(key));
+            for (Map.Entry<String, Row> entry: bridgeTable.entrySet()) {
+                Row row = entry.getValue();
+                Bridge bridge =
+                    ovsdbConfigService.getTypedRow(node, Bridge.class, row);
                 if (bridge.getName().equals(bridgeName)) {
-                    return key;
+                    return entry.getKey();
                 }
             }
         } catch (Exception e) {
-            LOG.error("Error {} getting Bridge Identifier for {} / {}", node, bridgeName, e);
+            LOG.error("Error while getting Bridge Identifier for " + node +
+                      " / " + bridgeName, e);
         }
         return null;
     }
