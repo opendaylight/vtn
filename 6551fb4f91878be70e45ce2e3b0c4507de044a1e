@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "ba8cc1f7_b1a09ff5",
+        "filename": "manager/api/src/test/java/org/opendaylight/vtn/manager/PathMapTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 165,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-10-22T20:21:53Z",
+      "side": 1,
+      "message": "The variable \"c\" is not used after the initialization. Therefore, I think the line should be removed.",
+      "revId": "6551fb4f91878be70e45ce2e3b0c4507de044a1e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba8cc1f7_51a59302",
+        "filename": "manager/api/src/test/java/org/opendaylight/vtn/manager/PathMapTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-10-22T20:21:53Z",
+      "side": 1,
+      "message": "The variable \"p\" is not used.",
+      "revId": "6551fb4f91878be70e45ce2e3b0c4507de044a1e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "ba8cc1f7_f15e2712",
+        "filename": "manager/api/src/test/java/org/opendaylight/vtn/manager/PathMapTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 169,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-10-22T20:21:53Z",
+      "side": 1,
+      "message": "The variable \"it\" is not used.",
+      "revId": "6551fb4f91878be70e45ce2e3b0c4507de044a1e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
