@@ -9,8 +9,13 @@
 
 package org.opendaylight.vtn.manager.neutron;
 
-import org.junit.Test;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Properties;
 import java.util.UUID;
+
+import org.junit.After;
+import org.junit.Test;
 
 import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
 import org.opendaylight.ovsdb.schema.openvswitch.Port;
@@ -26,6 +31,25 @@ import static org.junit.Assert.assertEquals;
  * JUnit test for {@link OVSDBPluginEventHandler}.
  */
 public class OVSDBPluginEventHandlerTest extends TestBase {
+    /**
+     * The name of the configuration directory.
+     */
+    private static final String  CONFIG_DIR = "configuration";
+
+    /**
+     * The name of the configuration file.
+     */
+    private static final String  VTN_INI_NAME = "vtn.ini";
+
+    /**
+     * Tear down the test environment.
+     */
+    @After
+    public void tearDown() {
+        File config = new File(CONFIG_DIR);
+        delete(config);
+    }
+
     /**
      * Test method for
      * {@link OVSDBPluginEventHandler#getIntegrationBridgeName()}.
@@ -365,16 +389,97 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
     /**
     * Test method for
     * {@link OVSDBPluginEventHandler#getSystemProperties()}.
-    * Test getSystemProperties Method in OVSDBPluginEventHandler.
+    *
+     * @throws Exception  An error occurredn
     */
     @Test
-    public void testSystemProperties() {
-        try {
-            OVSDBPluginEventHandler ovsdb = new OVSDBPluginEventHandler();
-            ovsdb.getSystemProperties();
-            assertEquals(0, 0);
-        } catch (Exception ex) {
-            assertEquals(1, 0);
+    public void testSystemProperties() throws Exception {
+        // Check default values.
+        File config = new File(CONFIG_DIR);
+        delete(config);
+        OVSDBPluginEventHandler handler = new OVSDBPluginEventHandler();
+        handler.getSystemProperties();
+        String defBridge = "br-int";
+        String defMode = "secure";
+        String defProto = "OpenFlow13";
+        String defPort = "ens33";
+        assertEquals(defBridge, handler.getIntegrationBridgeName());
+        assertEquals(defMode, handler.getFailmode());
+        assertEquals(defProto, handler.getProtocols());
+        assertEquals(defPort, handler.getPortName());
+
+        Properties defProp = new Properties();
+        defProp.setProperty("bridgename", defBridge);
+        defProp.setProperty("failmode", defMode);
+        defProp.setProperty("protocols", defProto);
+        defProp.setProperty("portname", defPort);
+
+        // Ensure that the configuration file is loaded.
+        assertTrue(config.mkdirs());
+        String[] bridges = {null, "bridge-1", "bridge-2"};
+        String[] failmodes = {null, "mode-1", "mode-2"};
+        String[] protos = {null, "OpenFlow10", "OpenFlow10,OpenFlow13"};
+        String[] ports = {null, "port-1", "port-2"};
+        File file = new File(config, VTN_INI_NAME);
+        for (String bridge: bridges) {
+            for (String failmode: failmodes) {
+                for (String proto: protos) {
+                    for (String port: ports) {
+                        Properties prop = new Properties(defProp);
+                        if (bridge != null) {
+                            prop.setProperty("bridgename", bridge);
+                        }
+                        if (failmode != null) {
+                            prop.setProperty("failmode", failmode);
+                        }
+                        if (proto != null) {
+                            prop.setProperty("protocols", proto);
+                        }
+                        if (port != null) {
+                            prop.setProperty("portname", port);
+                        }
+
+                        systemPropertiesTest(file, prop);
+                    }
+                }
+            }
         }
+    }
+
+    /**
+     * Internal method for {@link #testSystemProperties()}.
+     *
+     * @param file  A {@link File} instance corresponding to the configuration
+     *              file.
+     * @param prop  A {@link Properties} instance that contains configurations.
+     * @throws Exception  An error occurredn
+     */
+    private void systemPropertiesTest(File file, Properties prop)
+        throws Exception {
+        if (file.exists()) {
+            assertTrue(file.delete());
+        }
+
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(file);
+            prop.store(out, "Test configuration");
+        } finally {
+            if (out != null) {
+                out.close();
+            }
+        }
+
+        OVSDBPluginEventHandler handler = new OVSDBPluginEventHandler();
+        handler.getSystemProperties();
+
+        String bridge = prop.getProperty("bridgename");
+        String failmode = prop.getProperty("failmode");
+        String proto = prop.getProperty("protocols");
+        String port = prop.getProperty("portname");
+        assertEquals(bridge, handler.getIntegrationBridgeName());
+        assertEquals(failmode, handler.getFailmode());
+        assertEquals(proto, handler.getProtocols());
+        assertEquals(port, handler.getPortName());
     }
 }
