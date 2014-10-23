@@ -388,7 +388,8 @@ public class PortHandler extends VTNNeutronUtils
          * if admin state is changed set modify to true
          */
         Boolean portAdminState = port.getAdminStateUp();
-        if ((portAdminState != null) && (portAdminState != vIf.getEnabled())) {
+        if (portAdminState != null &&
+            !portAdminState.equals(vIf.getEnabled())) {
             modify = true;
         }
         return modify;
