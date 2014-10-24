@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,8 +9,11 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.List;
+
+import javax.xml.bind.JAXB;
 
 import org.junit.Test;
 
@@ -19,24 +22,34 @@ import org.junit.Test;
  */
 public class VBridgeConfigTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VBridgeConfig} class.
+     */
+    private static final String  XML_ROOT = "vbridgeconf";
+
+    /**
      * Test case for getter methods.
      */
     @Test
     public void testGetter() {
         for (String desc: createStrings("description")) {
             for (Integer ival: createIntegers(-10, 20)) {
-                VBridgeConfig bconf = createVBridgeConfig(desc, ival);
-                assertEquals(desc, bconf.getDescription());
-
+                VBridgeConfig[] configs = {
+                    createVBridgeConfig(desc, ival),
+                    createVBridgeConfigJAXB(desc, ival),
+                };
                 String emsg = "(input interval value)"
-                        + ((ival == null) ? "null" : ival.intValue());
-                if (ival == null || ival.intValue() < 0) {
-                    assertEquals(emsg, -1, bconf.getAgeInterval());
-                    assertNull(emsg, bconf.getAgeIntervalValue());
-                } else {
-                    assertEquals(emsg, ival.intValue(),
-                            bconf.getAgeInterval());
-                    assertEquals(emsg, ival, bconf.getAgeIntervalValue());
+                    + ((ival == null) ? "null" : ival.intValue());
+                for (VBridgeConfig bconf: configs) {
+                    assertEquals(desc, bconf.getDescription());
+
+                    if (ival == null || ival.intValue() < 0) {
+                        assertEquals(emsg, -1, bconf.getAgeInterval());
+                        assertNull(emsg, bconf.getAgeIntervalValue());
+                    } else {
+                        assertEquals(emsg, ival.intValue(),
+                                     bconf.getAgeInterval());
+                        assertEquals(emsg, ival, bconf.getAgeIntervalValue());
+                    }
                 }
             }
         }
@@ -104,5 +117,34 @@ public class VBridgeConfigTest extends TestBase {
                 jaxbTest(bconf, "vbridgeconf");
             }
         }
+    }
+
+    /**
+     * Construct a {@link VBridgeConfig} instance using JAXB.
+     *
+     * @param desc  A brief description about the vBridge.
+     * @param age   MAC address aging interval.
+     * @return  A {@link VBridgeConfig} instance.
+     */
+    private VBridgeConfig createVBridgeConfigJAXB(String desc, Integer age) {
+        StringBuilder builder = new StringBuilder(XML_DECLARATION);
+        builder.append('<').append(XML_ROOT);
+        if (desc != null) {
+            builder.append(" description=\"").append(desc).append("\"");
+        }
+        if (age != null) {
+            builder.append(" ageInterval=\"").append(age).append("\"");
+        }
+
+        String xml = builder.append(" />").toString();
+        VBridgeConfig bconf = null;
+        try {
+            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
+            bconf = JAXB.unmarshal(in, VBridgeConfig.class);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        return bconf;
     }
 }

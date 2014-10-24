@@ -33,6 +33,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  */
 public class SetInet4SrcActionTest extends TestBase {
     /**
+     * Root XML element name associated with {@link SetInet4SrcAction} class.
+     */
+    private static final String  XML_ROOT = "setinet4src";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -116,7 +121,7 @@ public class SetInet4SrcActionTest extends TestBase {
         for (InetAddress iaddr: createInet4Addresses()) {
             SetInet4SrcAction act = new SetInet4SrcAction(iaddr);
             SetInet4SrcAction newobj =
-                (SetInet4SrcAction)jaxbTest(act, "setinet4src");
+                (SetInet4SrcAction)jaxbTest(act, XML_ROOT);
             assertEquals(null, newobj.getValidationStatus());
         }
 
@@ -133,22 +138,21 @@ public class SetInet4SrcActionTest extends TestBase {
             "::1",
         };
 
-        for (String addr: invalid) {
-            StringBuilder builder = new StringBuilder(
-                "<?xml version=\"1.0\" encoding=\"UTF-8\" " +
-                "standalone=\"yes\"?>" +
-                "<setdlsrc address=\"");
-            String xml = builder.append(addr).append("\" />").toString();
-            try {
+        try {
+            for (String addr: invalid) {
+                StringBuilder builder = new StringBuilder(XML_DECLARATION);
+                String xml = builder.append('<').append(XML_ROOT).
+                    append(" address=\"").append(addr).append("\" />").
+                    toString();
                 ByteArrayInputStream in =
                     new ByteArrayInputStream(xml.getBytes());
                 SetInet4SrcAction act =
                     JAXB.unmarshal(in, SetInet4SrcAction.class);
                 Status st = act.getValidationStatus();
                 assertEquals(StatusCode.BADREQUEST, st.getCode());
-            } catch (Exception e) {
-                unexpected(e);
             }
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 
@@ -163,6 +167,7 @@ public class SetInet4SrcActionTest extends TestBase {
         }
 
         // Specifying invalid address.
+        ObjectMapper mapper = getJsonObjectMapper();
         String[] invalid = {
             // Invalid address
             "invalid_address",
@@ -173,18 +178,17 @@ public class SetInet4SrcActionTest extends TestBase {
             "::1",
         };
 
-        ObjectMapper mapper = getJsonObjectMapper();
-        for (String addr: invalid) {
-            try {
+        try {
+            for (String addr: invalid) {
                 JSONObject json = new JSONObject();
                 json.put("address", addr);
                 SetInet4SrcAction act =
                     mapper.readValue(json.toString(), SetInet4SrcAction.class);
                 Status st = act.getValidationStatus();
                 assertEquals(StatusCode.BADREQUEST, st.getCode());
-            } catch (Exception e) {
-                unexpected(e);
             }
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 }

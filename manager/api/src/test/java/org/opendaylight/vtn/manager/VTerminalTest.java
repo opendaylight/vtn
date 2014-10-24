@@ -22,6 +22,11 @@ import org.junit.Test;
  */
 public class VTerminalTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VTerminal} class.
+     */
+    private static final String  XML_ROOT = "vterminal";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -144,7 +149,7 @@ public class VTerminalTest extends TestBase {
                 VTerminalConfig vtconf = new VTerminalConfig(desc);
                 for (VNodeState state: states) {
                     VTerminal vterm = new VTerminal(name, state, 0, vtconf);
-                    jaxbTest(vterm, "vterminal");
+                    jaxbTest(vterm, XML_ROOT);
 
                     // Ensure that "state" attribute is decoded as
                     // VNodeState.
@@ -184,9 +189,8 @@ public class VTerminalTest extends TestBase {
      */
     private void jaxbStateTest(String name, String desc, Integer faults,
                                Integer state, VNodeState required) {
-        StringBuilder builder = new StringBuilder(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<vterminal");
+        StringBuilder builder = new StringBuilder(XML_DECLARATION);
+        builder.append('<').append(XML_ROOT);
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }

@@ -33,6 +33,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  */
 public class Inet4MatchTest extends TestBase {
     /**
+     * Root XML element name associated with {@link Inet4Match} class.
+     */
+    private static final String  XML_ROOT = "inet4match";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -264,7 +269,7 @@ public class Inet4MatchTest extends TestBase {
                                     new Inet4Match(src, srcsuff, dst, dstsuff,
                                                    proto, dscp);
                                 Inet4Match im1 = (Inet4Match)
-                                    jaxbTest(im, "inet4match");
+                                    jaxbTest(im, XML_ROOT);
                                 assertEquals(null, im1.getValidationStatus());
                             }
                         }
@@ -274,16 +279,14 @@ public class Inet4MatchTest extends TestBase {
         }
 
         // Specifying invalid IP address.
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
         String[] badAddrs = {
             "", "192.168.100.256", "::1", "bad_address",
         };
         for (String addr: badAddrs) {
             for (String attr: new String[]{"src", "dst"}) {
-                StringBuilder builder = new StringBuilder(xml);
-                builder.append("<inet4match ").append(attr).append("=\"").
-                    append(addr).append("\" />");
+                StringBuilder builder = new StringBuilder(XML_DECLARATION);
+                builder.append('<').append(XML_ROOT).append(' ').append(attr).
+                    append("=\"").append(addr).append("\" />");
                 try {
                     ByteArrayInputStream in =
                         new ByteArrayInputStream(builder.toString().getBytes());

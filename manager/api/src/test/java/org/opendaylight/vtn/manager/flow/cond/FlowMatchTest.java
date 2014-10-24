@@ -430,6 +430,24 @@ public class FlowMatchTest extends TestBase {
             assertEquals(lm, fm.getLayer4Match());
             assertEquals(ipp.intValue(), fm.getInetProtocol());
         }
+
+        // Constructor of FlowMatch will throw IllegalArgumentException
+        // if an invalid MAC address is configured in DL_SRC/DL_DST field.
+        MatchType[] dlTypes = {
+            MatchType.DL_SRC,
+            MatchType.DL_DST,
+        };
+        byte[] badAddr = {0};
+        for (MatchType type: dlTypes) {
+            match = new Match();
+            match.setField(type, badAddr);
+
+            try {
+                new FlowMatch(match);
+                unexpected();
+            } catch (IllegalArgumentException e) {
+            }
+        }
     }
 
     /**

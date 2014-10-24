@@ -144,6 +144,27 @@ public class FlowActionTest extends TestBase {
                 assertEquals(expected, act);
             }
         }
+
+        // Specifying IPv6 address to SET_NW_SRC/SET_NW_DST action causes
+        // IllegalArgumentException.
+        InetAddress v6addr = null;
+        try {
+            v6addr = InetAddress.getByName("::1");
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        int proto = IPProtocols.TCP.intValue();
+        try {
+            FlowAction.create(new SetNwSrc(v6addr), proto);
+            unexpected();
+        } catch (IllegalArgumentException e) {
+        }
+        try {
+            FlowAction.create(new SetNwDst(v6addr), proto);
+            unexpected();
+        } catch (IllegalArgumentException e) {
+        }
     }
 
     /**

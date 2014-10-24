@@ -27,7 +27,7 @@ public class PathMapTest extends TestBase {
     private static final String  XML_ROOT = "pathmap";
 
     /**
-     * Test case for getter methods.
+     * Test case for getter methods and {@link PathMap#clone()}.
      */
     @Test
     public void testGetter() {
@@ -52,6 +52,15 @@ public class PathMapTest extends TestBase {
                     assertEquals(null, pmap.getIdleTimeout());
                     assertEquals(null, pmap.getHardTimeout());
 
+                    PathMap cloned = pmap.clone();
+                    assertNotSame(pmap, cloned);
+                    assertEquals(pmap, cloned);
+                    assertEquals(idx, cloned.getIndex());
+                    assertEquals(cond, cloned.getFlowConditionName());
+                    assertEquals(policyId, cloned.getPathPolicyId());
+                    assertEquals(null, cloned.getIdleTimeout());
+                    assertEquals(null, cloned.getHardTimeout());
+
                     for (int idle: idles) {
                         for (int hard: hards) {
                             pmap = (idx == null)
@@ -65,6 +74,17 @@ public class PathMapTest extends TestBase {
                                          pmap.getIdleTimeout());
                             assertEquals(Integer.valueOf(hard),
                                          pmap.getHardTimeout());
+
+                            cloned = pmap.clone();
+                            assertNotSame(pmap, cloned);
+                            assertEquals(pmap, cloned);
+                            assertEquals(idx, cloned.getIndex());
+                            assertEquals(cond, cloned.getFlowConditionName());
+                            assertEquals(policyId, cloned.getPathPolicyId());
+                            assertEquals(Integer.valueOf(idle),
+                                         cloned.getIdleTimeout());
+                            assertEquals(Integer.valueOf(hard),
+                                         cloned.getHardTimeout());
                         }
                     }
                 }
@@ -239,9 +259,8 @@ public class PathMapTest extends TestBase {
      */
     private PathMap createPathMap(Integer index, String cond, int policy,
                                   Integer idle, Integer hard) {
-        StringBuilder builder = new StringBuilder(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><");
-        builder.append(XML_ROOT);
+        StringBuilder builder = new StringBuilder(XML_DECLARATION);
+        builder.append('<').append(XML_ROOT);
         if (index != null) {
             builder.append(" index=\"").append(index).append("\"");
         }

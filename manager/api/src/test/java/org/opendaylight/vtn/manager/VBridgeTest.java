@@ -22,6 +22,11 @@ import org.junit.Test;
  */
 public class VBridgeTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VBridge} class.
+     */
+    private static final String  XML_ROOT = "vbridge";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -174,9 +179,9 @@ public class VBridgeTest extends TestBase {
                     for (VNodeState state: states) {
                         VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                         VBridge vbridge = new VBridge(name, state, 0, bconf);
-                        jaxbTest(vbridge, "vbridge");
+                        jaxbTest(vbridge, XML_ROOT);
                         vbridge = new VBridge(name, state, 1, bconf);
-                        jaxbTest(vbridge, "vbridge");
+                        jaxbTest(vbridge, XML_ROOT);
                     }
 
                     // Ensure that "state" attribute is decoded as VNodeState.
@@ -217,9 +222,8 @@ public class VBridgeTest extends TestBase {
     private void jaxbStateTest(String name, String desc, Integer ival,
                                Integer faults, Integer state,
                                VNodeState required) {
-        StringBuilder builder = new StringBuilder(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<vbridge");
+        StringBuilder builder = new StringBuilder(XML_DECLARATION);
+        builder.append('<').append(XML_ROOT);
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }
