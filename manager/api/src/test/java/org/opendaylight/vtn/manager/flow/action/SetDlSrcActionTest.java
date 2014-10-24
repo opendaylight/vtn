@@ -35,6 +35,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  */
 public class SetDlSrcActionTest extends TestBase {
     /**
+     * Root XML element name associated with {@link SetDlSrcAction} class.
+     */
+    private static final String  XML_ROOT = "setdlsrc";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -113,19 +118,30 @@ public class SetDlSrcActionTest extends TestBase {
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             byte[] bytes = (eaddr == null) ? null : eaddr.getValue();
             SetDlSrcAction act = new SetDlSrcAction(bytes);
-            SetDlSrcAction newobj = (SetDlSrcAction)jaxbTest(act, "setdlsrc");
+            SetDlSrcAction newobj = (SetDlSrcAction)jaxbTest(act, XML_ROOT);
             assertEquals(null, newobj.getValidationStatus());
         }
 
         // Specifying invalid MAC address.
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<setdlsrc address=\"invalid_address\" />";
+        String[] invalidAddrs = {
+            "invalid_address",
+            "1z:22:33:44:55:66",
+            "",
+            "123456789012345",
+        };
+
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            SetDlSrcAction act = JAXB.unmarshal(in, SetDlSrcAction.class);
-            Status st = act.getValidationStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            for (String addr: invalidAddrs) {
+                StringBuilder builder = new StringBuilder(XML_DECLARATION);
+                String xml = builder.append('<').append(XML_ROOT).
+                    append(" address=\"").append(addr).append("\" />").
+                    toString();
+                ByteArrayInputStream in =
+                    new ByteArrayInputStream(xml.getBytes());
+                SetDlSrcAction act = JAXB.unmarshal(in, SetDlSrcAction.class);
+                Status st = act.getValidationStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+            }
         } catch (Exception e) {
             unexpected(e);
         }
@@ -144,13 +160,22 @@ public class SetDlSrcActionTest extends TestBase {
 
         // Specifying invalid MAC address.
         ObjectMapper mapper = getJsonObjectMapper();
+        String[] invalidAddrs = {
+            "invalid_address",
+            "1z:22:33:44:55:66",
+            "",
+            "123456789012345",
+        };
+
         try {
-            JSONObject json = new JSONObject();
-            json.put("address", "invalid_address");
-            SetDlSrcAction act =
-                mapper.readValue(json.toString(), SetDlSrcAction.class);
-            Status st = act.getValidationStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            for (String addr: invalidAddrs) {
+                JSONObject json = new JSONObject();
+                json.put("address", addr);
+                SetDlSrcAction act =
+                    mapper.readValue(json.toString(), SetDlSrcAction.class);
+                Status st = act.getValidationStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+            }
         } catch (Exception e) {
             unexpected(e);
         }

@@ -70,6 +70,12 @@ import org.junit.Assert;
  */
 public abstract class TestBase extends Assert {
     /**
+     * XML declaration.
+     */
+    public static final String  XML_DECLARATION =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+
+    /**
      * A JSON object mapper.
      */
     private static ObjectMapper objectMapper;
@@ -1272,6 +1278,58 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Create a list of {@link VNodePath} instances and {@code null}.
+     *
+     * @param num      The number of instances to be created.
+     * @return  A list of {@link VNodePath} instances.
+     */
+    protected static List<VNodePath> createVNodePaths(int num) {
+        return createVNodePaths(num, true);
+    }
+
+    /**
+     * Create a list of {@link VNodePath} instances.
+     *
+     * @param num      The number of instances to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link VNodePath} instances.
+     */
+    protected static List<VNodePath> createVNodePaths(int num,
+                                                      boolean setNull) {
+        List<VNodePath> list = new ArrayList<VNodePath>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        String tname = "tenant";
+        int index = 0;
+        final int nclasses = 4;
+        while (list.size() < num) {
+            int classIndex = index % nclasses;
+            switch (classIndex) {
+            case 0:
+                list.add(new VBridgePath(tname, "bridge_" + index));
+                break;
+
+            case 1:
+                list.add(new VBridgeIfPath(tname, "bridge_" + index, "if0"));
+                break;
+
+            case 2:
+                list.add(new VTerminalPath(tname, "term_" + index));
+                break;
+
+            default:
+                list.add(new VTerminalIfPath(tname, "term_" + index, "if0"));
+                break;
+            }
+            index++;
+        }
+
+        return list;
+    }
+
+    /**
      * Join the separated strings with inserting a separator.
      *
      * @param prefix     A string to be prepended to the string.
@@ -1365,7 +1423,11 @@ public abstract class TestBase extends Assert {
             unexpected(e);
         }
 
-        assertNotSame(o, newobj);
+        if (o instanceof Enum) {
+            assertSame(o, newobj);
+        } else {
+            assertNotSame(o, newobj);
+        }
         assertEquals(o, newobj);
     }
 
@@ -1503,5 +1565,22 @@ public abstract class TestBase extends Assert {
         assertEquals(']', str.charAt(start));
 
         return start + 1;
+    }
+
+    /**
+     * Create a list of objects that contains the given objects.
+     *
+     * @param args  Objects to be stored into an array.
+     * @return  A list of objects that contains all the given objects.
+     */
+    protected static List<Object> toList(Object ... args) {
+        List<Object> list = new ArrayList<Object>();
+        if (args != null) {
+            for (Object o: args) {
+                list.add(o);
+            }
+        }
+
+        return list;
     }
 }

@@ -22,6 +22,11 @@ import org.junit.Test;
  */
 public class VTenantTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VTenant} class.
+     */
+    private static final String  XML_ROOT = "vtn";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -155,7 +160,7 @@ public class VTenantTest extends TestBase {
                         VTenantConfig tconf =
                             createVTenantConfig(desc, iv, hv);
                         VTenant vtenant = new VTenant(name, tconf);
-                        jaxbTest(vtenant, "vtn");
+                        jaxbTest(vtenant, XML_ROOT);
                     }
                 }
 
@@ -179,9 +184,8 @@ public class VTenantTest extends TestBase {
      */
     private void jaxbTimeoutTest(String name, String desc, Integer idle,
                                  Integer hard) {
-        StringBuilder builder = new StringBuilder(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<vbridge");
+        StringBuilder builder = new StringBuilder(XML_DECLARATION);
+        builder.append('<').append(XML_ROOT);
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }

@@ -23,6 +23,11 @@ import org.junit.Test;
  */
 public class VInterfaceTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VInterface} class.
+     */
+    private static final String  XML_ROOT = "interface";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -171,7 +176,7 @@ public class VInterfaceTest extends TestBase {
                     for (VNodeState estate: states) {
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
-                        jaxbTest(viface, "interface");
+                        jaxbTest(viface, XML_ROOT);
                     }
                 }
             }
@@ -223,9 +228,8 @@ public class VInterfaceTest extends TestBase {
     private void jaxbStateTest(String name, String desc, Boolean enabled,
                                Integer state, Integer estate,
                                VNodeState required, VNodeState reqestate) {
-        StringBuilder builder = new StringBuilder(
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<interface");
+        StringBuilder builder = new StringBuilder(XML_DECLARATION);
+        builder.append('<').append(XML_ROOT);
         if (name != null) {
             builder.append(" name=\"").append(name).append('"');
         }

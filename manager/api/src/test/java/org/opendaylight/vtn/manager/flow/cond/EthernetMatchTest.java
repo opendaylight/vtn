@@ -32,6 +32,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  */
 public class EthernetMatchTest extends TestBase {
     /**
+     * Root XML element name associated with {@link EthernetMatch} class.
+     */
+    private static final String  XML_ROOT = "ethermatch";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -222,7 +227,7 @@ public class EthernetMatchTest extends TestBase {
                             EthernetMatch em =
                                 new EthernetMatch(src, dst, type, vlan, pri);
                             EthernetMatch em1 = (EthernetMatch)
-                                jaxbTest(em, "ethermatch");
+                                jaxbTest(em, XML_ROOT);
                             assertEquals(null, em1.getValidationStatus());
                         }
                     }
@@ -231,27 +236,27 @@ public class EthernetMatchTest extends TestBase {
         }
 
         // Specifying invalid MAC address.
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
         String[] badAddrs = {
             "", "aa:bb:cc:dd:ee:ff:11", "00:11", "bad_address",
         };
-        for (String addr: badAddrs) {
-            for (String attr: new String[]{"src", "dst"}) {
-                StringBuilder builder = new StringBuilder(xml);
-                builder.append("<ethermatch ").append(attr).append("=\"").
-                    append(addr).append("\" />");
-                try {
+
+        try {
+            for (String addr: badAddrs) {
+                for (String attr: new String[]{"src", "dst"}) {
+                    StringBuilder builder = new StringBuilder(XML_DECLARATION);
+                    String xml = builder.append('<').append(XML_ROOT).
+                        append(' ').append(attr).append("=\"").append(addr).
+                        append("\" />").toString();
                     ByteArrayInputStream in =
-                        new ByteArrayInputStream(builder.toString().getBytes());
+                        new ByteArrayInputStream(xml.getBytes());
                     EthernetMatch em =
                         JAXB.unmarshal(in, EthernetMatch.class);
                     Status st = em.getValidationStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
-                } catch (Exception e) {
-                    unexpected(e);
                 }
             }
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 
@@ -287,23 +292,24 @@ public class EthernetMatchTest extends TestBase {
         }
 
         // Specifying invalid MAC address.
+        ObjectMapper mapper = getJsonObjectMapper();
         String[] badAddrs = {
             "", "aa:bb:cc:dd:ee:ff:11", "00:11", "bad_address",
         };
-        ObjectMapper mapper = getJsonObjectMapper();
-        for (String addr: badAddrs) {
-            for (String attr: new String[]{"src", "dst"}) {
-                try {
+
+        try {
+            for (String addr: badAddrs) {
+                for (String attr: new String[]{"src", "dst"}) {
                     JSONObject json = new JSONObject();
                     json.put(attr, addr);
                     EthernetMatch em =
                         mapper.readValue(json.toString(), EthernetMatch.class);
                     Status st = em.getValidationStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
-                } catch (Exception e) {
-                    unexpected(e);
                 }
             }
+        } catch (Exception e) {
+            unexpected(e);
         }
     }
 }

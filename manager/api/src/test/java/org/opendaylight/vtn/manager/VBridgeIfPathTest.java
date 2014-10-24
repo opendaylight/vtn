@@ -9,12 +9,19 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
 
 /**
  * JUnit test for {@link VBridgeIfPath}.
@@ -80,6 +87,89 @@ public class VBridgeIfPathTest extends TestBase {
                     containsTest(path, tname, notMatched, iname, false);
                     containsTest(path, tname, bname, notMatched, false);
                 }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VBridgeIfPath#vInterfaceChanged(IVTNManagerAware,VInterface,UpdateType)}.
+     */
+    @Test
+    public void testVInterfaceChanged() {
+        TestVTNManagerAware listener = new TestVTNManagerAware();
+        String iname = "if_1";
+        VBridgeIfPath path = new VBridgeIfPath("tenant", "vbridge", iname);
+        VInterfaceConfig iconf = new VInterfaceConfig("vBridge 1", null);
+        VInterface vif = new VInterface(iname, VNodeState.DOWN,
+                                        VNodeState.UNKNOWN, iconf);
+        UpdateType type = UpdateType.ADDED;
+        List<List<Object>> expected = new ArrayList<List<Object>>();
+        expected.add(toList(path, vif, type));
+        path.vInterfaceChanged(listener, vif, type);
+
+        vif = new VInterface(iname, VNodeState.UP, VNodeState.UP, iconf);
+        type = UpdateType.CHANGED;
+        expected.add(toList(path, vif, type));
+        path.vInterfaceChanged(listener, vif, type);
+
+        type = UpdateType.REMOVED;
+        expected.add(toList(path, vif, type));
+        path.vInterfaceChanged(listener, vif, type);
+
+        for (VTNListenerType ltype: VTNListenerType.values()) {
+            List<List<Object>> called = listener.getArguments(ltype);
+
+            switch (ltype) {
+            case VBRIDGE_IF:
+                assertEquals(expected, called);
+                break;
+
+            default:
+                assertEquals(null, called);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VBridgefPath#portMapChanged(IVTNManagerAware,PortMap,UpdateType)}.
+     */
+    @Test
+    public void testPortMapChanged() {
+        TestVTNManagerAware listener = new TestVTNManagerAware();
+        String iname = "if_1";
+        VBridgeIfPath path = new VBridgeIfPath("tenant", "vbridge", iname);
+        Node node = NodeCreator.createOFNode(Long.valueOf(123L));
+        NodeConnector port = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)1), node);
+        SwitchPort swport = new SwitchPort("OF", "1");
+        PortMapConfig pmconf = new PortMapConfig(node, swport, (short)0);
+        PortMap pmap = new PortMap(pmconf, null);
+        UpdateType type = UpdateType.ADDED;
+        List<List<Object>> expected = new ArrayList<List<Object>>();
+        expected.add(toList(path, pmap, type));
+        path.portMapChanged(listener, pmap, type);
+
+        pmap = new PortMap(pmconf, port);
+        type = UpdateType.CHANGED;
+        expected.add(toList(path, pmap, type));
+        path.portMapChanged(listener, pmap, type);
+
+        type = UpdateType.REMOVED;
+        expected.add(toList(path, pmap, type));
+        path.portMapChanged(listener, pmap, type);
+
+        for (VTNListenerType ltype: VTNListenerType.values()) {
+            List<List<Object>> called = listener.getArguments(ltype);
+
+            switch (ltype) {
+            case PORTMAP:
+                assertEquals(expected, called);
+                break;
+
+            default:
+                assertEquals(null, called);
+                break;
             }
         }
     }

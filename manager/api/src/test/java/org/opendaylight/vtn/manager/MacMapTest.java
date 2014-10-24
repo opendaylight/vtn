@@ -211,6 +211,7 @@ public class MacMapTest extends TestBase {
         List<List<MacAddressEntry>> list =
             new ArrayList<List<MacAddressEntry>>();
         List<MacAddressEntry> mlist = new ArrayList<MacAddressEntry>();
+        list.add(null);
 
         List<NodeConnector> ports = createNodeConnectors(4, false);
         List<Set<InetAddress>> ipaddrs = createInetAddresses();
