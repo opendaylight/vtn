@@ -272,10 +272,8 @@ public class VTenantPath
         if (!cls.equals(otherCls)) {
             String name = cls.getName();
             String otherName = otherCls.getName();
-            ret = name.compareTo(otherName);
-            if (ret != 0) {
-                return ret;
-            }
+            assert !name.equals(otherName);
+            return name.compareTo(otherName);
         }
 
         for (int i = 0; i < size; i++) {
