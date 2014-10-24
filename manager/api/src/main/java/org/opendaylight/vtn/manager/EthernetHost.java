@@ -124,7 +124,7 @@ public class EthernetHost extends DataLinkHost {
         if (o == this) {
             return true;
         }
-        if (!((o instanceof EthernetHost) && super.equals(o))) {
+        if (!super.equals(o)) {
             return false;
         }
 

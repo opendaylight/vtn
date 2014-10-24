@@ -14,6 +14,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
 /**
@@ -57,7 +58,18 @@ public class EthernetHostTest extends TestBase {
             }
         }
 
-        assertEquals(eaddrs.size() * vlans.length, set.size());
+        // An instance of different class should be treated as different
+        // instance.
+        List<DataLinkAddress> dladdrs = createDataLinkAddresses();
+        for (DataLinkAddress dladdr1: dladdrs) {
+            DataLinkAddress dladdr2 = copy(dladdr1);
+            DataLinkHost dh1 = new TestDataLinkHost(dladdr1);
+            DataLinkHost dh2 = new TestDataLinkHost(dladdr2);
+            testEquals(set, dh1, dh2);
+        }
+
+        int required = eaddrs.size() * vlans.length + dladdrs.size();
+        assertEquals(required, set.size());
     }
 
     /**

@@ -29,26 +29,5 @@ public class TestDataLinkHost extends DataLinkHost {
     public TestDataLinkHost(DataLinkAddress addr) {
         super(addr);
     }
-
-    /**
-     * Determine whether the given object is identical to this object.
-     *
-     * @param o  An object to be compared.
-     * @return   {@code true} if identical. Otherwise {@code false}.
-     */
-    @Override
-    public boolean equals(Object o) {
-        return ((o instanceof TestDataLinkHost) && super.equals(o));
-    }
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        return getClass().hashCode() * super.hashCode();
-    }
 }
 

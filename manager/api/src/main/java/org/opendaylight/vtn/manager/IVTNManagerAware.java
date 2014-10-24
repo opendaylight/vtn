@@ -257,6 +257,7 @@ public interface IVTNManagerAware {
      *       </ul>
      *     </li>
      *   </ul>
+     * @since  Helium
      */
     void vTerminalChanged(VTerminalPath path, VTerminal vterm,
                           UpdateType type);

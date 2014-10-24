@@ -65,7 +65,7 @@ public abstract class DataLinkHost implements Serializable {
      * </p>
      * <ul>
      *   <li>
-     *     {@code o} is a {@code DataLinkHost} object.
+     *     The class of {@code o} is identical to the class of this instance.
      *   </li>
      *   <li>
      *     The following values stored in {@code o} are the same as in this
@@ -84,10 +84,7 @@ public abstract class DataLinkHost implements Serializable {
      */
     @Override
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (!(o instanceof DataLinkHost)) {
+        if (o == null || !getClass().equals(o.getClass())) {
             return false;
         }
 
@@ -106,7 +103,12 @@ public abstract class DataLinkHost implements Serializable {
      */
     @Override
     public int hashCode() {
-        return (address != null) ? address.hashCode() : 0;
+        int h = getClass().getName().hashCode();
+        if (address != null) {
+            h += address.hashCode() * 127;
+        }
+
+        return h;
     }
 
     /**
