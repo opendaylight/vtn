@@ -95,7 +95,7 @@ public class VNodeRouteTest extends TestBase {
     public void testSerialize() {
         for (VNodePath path: createVNodePaths(10)) {
             for (VNodeRoute.Reason reason: createReasons()) {
-                VNodeRoute vnr = new VNodeRoute(path, null);
+                VNodeRoute vnr = new VNodeRoute(path, reason);
                 serializeTest(vnr);
             }
         }
@@ -111,7 +111,7 @@ public class VNodeRouteTest extends TestBase {
         };
         for (VNodePath path: createVNodePaths(10)) {
             for (VNodeRoute.Reason reason: createReasons()) {
-                VNodeRoute vnr = new VNodeRoute(path, null);
+                VNodeRoute vnr = new VNodeRoute(path, reason);
                 jaxbTest(vnr, XML_ROOT);
             }
 
@@ -131,7 +131,7 @@ public class VNodeRouteTest extends TestBase {
     public void testJSON() {
         for (VNodePath path: createVNodePaths(10)) {
             for (VNodeRoute.Reason reason: createReasons()) {
-                VNodeRoute vnr = new VNodeRoute(path, null);
+                VNodeRoute vnr = new VNodeRoute(path, reason);
                 jsonTest(vnr);
             }
         }
