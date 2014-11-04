@@ -175,7 +175,7 @@ public final class DataFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3092253679738796414L;
+    private static final long serialVersionUID = 3132586177881619796L;
 
     /**
      * This enum specifies modes used to query information about data flow.
@@ -648,7 +648,7 @@ public final class DataFlow implements Serializable {
      *          of the egress port.
      *          {@code null} is returned if the data flow discards the packet.
      */
-    public PortLocation getEnressPort() {
+    public PortLocation getEgressPort() {
         return egressPort;
     }
 

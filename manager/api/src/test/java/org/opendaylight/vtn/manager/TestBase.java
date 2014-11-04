@@ -61,6 +61,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 
 import org.junit.Assert;
@@ -1302,28 +1303,89 @@ public abstract class TestBase extends Assert {
         }
 
         String tname = "tenant";
-        int index = 0;
-        final int nclasses = 4;
-        while (list.size() < num) {
-            int classIndex = index % nclasses;
+        int classIndex = 0;
+        for (int index = 0; list.size() < num; index++) {
             switch (classIndex) {
             case 0:
                 list.add(new VBridgePath(tname, "bridge_" + index));
+                classIndex++;
                 break;
 
             case 1:
                 list.add(new VBridgeIfPath(tname, "bridge_" + index, "if0"));
+                classIndex++;
                 break;
 
             case 2:
                 list.add(new VTerminalPath(tname, "term_" + index));
+                classIndex++;
                 break;
 
             default:
                 list.add(new VTerminalIfPath(tname, "term_" + index, "if0"));
+                classIndex = 0;
                 break;
             }
-            index++;
+        }
+
+        return list;
+    }
+
+    /**
+     * Create a list of {@link PortLocation} instances and a {@code null}.
+     *
+     * @param base     A long integer value used to create DPID.
+     * @param num      The number of instances to be created.
+     * @return  A list of {@link PortLocation} instances.
+     */
+    protected static  List<PortLocation> createPortLocations(
+        long base, int num) {
+        return createPortLocations(base, num, true);
+    }
+
+    /**
+     * Create a list of {@link PortLocation} instances.
+     *
+     * @param base     A long integer value used to create DPID.
+     * @param num      The number of instances to be created.
+     * @param setNull  Set {@code null} to returned list if {@code true}.
+     * @return  A list of {@link PortLocation} instances.
+     */
+    protected static  List<PortLocation> createPortLocations(
+        long base, int num, boolean setNull) {
+        List<PortLocation> list = new ArrayList<PortLocation>();
+        if (setNull) {
+            list.add(null);
+        }
+
+        int id1 = 1;
+        int id2 = 3;
+        int id3 = 5;
+        int type = 0;
+        for (long dpid = base; list.size() < num; dpid++) {
+            Node node = NodeCreator.createOFNode(Long.valueOf(dpid));
+            SwitchPort port;
+            switch (type) {
+            case 0:
+                port = new SwitchPort("port" + id1);
+                id1++;
+                type++;
+                break;
+
+            case 1:
+                port = new SwitchPort("OF", Integer.toString(id2));
+                id2++;
+                type++;
+                break;
+
+            default:
+                port = new SwitchPort("port" + id3, "OF",
+                                      Integer.toString(id3));
+                id3++;
+                type = 0;
+                break;
+            }
+            list.add(new PortLocation(node, port));
         }
 
         return list;

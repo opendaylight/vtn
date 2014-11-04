@@ -148,7 +148,6 @@ public final class FlowStats implements Serializable {
         StringBuilder builder = new StringBuilder("FlowStats[packets=");
         builder.append(packetCount).append(",bytes=").append(byteCount).
             append(",duration=").append(duration).append(']');
-        builder.append(']');
 
         return builder.toString();
     }
