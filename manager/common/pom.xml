@@ -71,7 +71,6 @@
     <!-- Karaf features -->
     <feature.adsal-compatibility.version>1.5.0-SNAPSHOT</feature.adsal-compatibility.version>
     <feature.nsf.version>0.5.0-SNAPSHOT</feature.nsf.version>
-    <feature.openflowplugin.version>0.1.0-SNAPSHOT</feature.openflowplugin.version>
     <feature.ovsdb.version>1.1.0-SNAPSHOT</feature.ovsdb.version>
     <feature.test.version>0.7.0-SNAPSHOT</feature.test.version>
 
@@ -83,6 +82,9 @@
 
     <!-- Default checkstyle configuration -->
     <vtn.checkstyle.xml>vtn/checkstyle.xml</vtn.checkstyle.xml>
+
+    <!-- OpenDaylight artifacts -->
+    <odl.openflowplugin.version>0.1.0-SNAPSHOT</odl.openflowplugin.version>
   </properties>
 
   <profiles>
@@ -775,37 +777,42 @@
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin-api</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin-extension-api</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin-controller-config</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowplugin-extension-nicira</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowjava-extension-nicira-api</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>openflowjava-extension-nicira</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>${odl.openflowplugin.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.applications</groupId>
+        <artifactId>lldp-speaker</artifactId>
+        <version>${odl.openflowplugin.version}</version>
       </dependency>
 
       <!-- OpenDaylight OVSDB project -->
@@ -880,7 +887,7 @@
       <dependency>
         <groupId>org.opendaylight.openflowplugin</groupId>
         <artifactId>features-openflowplugin</artifactId>
-        <version>${feature.openflowplugin.version}</version>
+        <version>${odl.openflowplugin.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
         <scope>runtime</scope>

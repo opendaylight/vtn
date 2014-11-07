@@ -83,7 +83,7 @@
     <dependencySet>
       <includes>
         <include>org.opendaylight.openflowjava:*</include>
-        <include>org.opendaylight.openflowplugin:*</include>
+        <include>org.opendaylight.openflowplugin*:*</include>
         <include>org.opendaylight.ovsdb:*</include>
       </includes>
       <excludes>

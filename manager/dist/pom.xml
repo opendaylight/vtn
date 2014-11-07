@@ -97,6 +97,10 @@
       <groupId>org.opendaylight.openflowplugin</groupId>
       <artifactId>openflowjava-extension-nicira</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.openflowplugin.applications</groupId>
+      <artifactId>lldp-speaker</artifactId>
+    </dependency>
 
     <!-- OpenDaylight ovsdb -->
     <dependency>
@@ -171,11 +175,16 @@
               <outputDirectory>
                 ${project.build.directory}/provided-configs
               </outputDirectory>
+              <includeGroupIds>
+                org.opendaylight.openflowplugin,
+                org.opendaylight.openflowplugin.applications
+              </includeGroupIds>
               <includeArtifactIds>
                 openflowplugin-controller-config,
                 openflowplugin-extension-nicira,
                 openflowjava-extension-nicira,
-                openflowjava-extension-nicira-api
+                openflowjava-extension-nicira-api,
+                lldp-speaker
               </includeArtifactIds>
               <includes>**\/*.xml</includes>
               <excludeTransitive>true</excludeTransitive>
