@@ -62,6 +62,9 @@ import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
  * org.opendaylight.vtn.manager package.
  */
 public class VTNManagerStub implements IVTNManager {
+    // Boolean identifier for returning valid VInterface on setting this boolean variable
+    static boolean isReturnValidVInterface = false;
+
     // An invalid UUID
     static final String INVALID_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C30F-";
 
@@ -78,6 +81,10 @@ public class VTNManagerStub implements IVTNManager {
     static final String VBR_IF_1_NAME = "F6197D5497A14D2ABFB6DFED030C30F";
     static final String VBR_IF_2_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C300";
     static final String VBR_IF_2_NAME = "F6197D5497A14D2ABFB6DFED030C300";
+    static final String VBR_IF_3_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C301";
+    static final String VBR_IF_3_NAME = "F6197D5497A14D2ABFB6DFED030C301";
+    static final String VBR_IF_4_UUID = "F6197D54-97A1-44D2-ABFB-6DFED030C302";
+    static final String VBR_IF_4_NAME = "F6197D5497A14D2ABFB6DFED030C302";
 
     // Following methods are used in UnitTest.
     @Override
@@ -93,10 +100,14 @@ public class VTNManagerStub implements IVTNManager {
         }
 
         VTenantPath tenant1 = new VTenantPath(TENANT_1_NAME);
+        VTenantPath tenant2 = new VTenantPath(TENANT_1_UUID);
         if (path.equals(tenant1)) {
             VTenantConfig conf = new VTenantConfig(null);
             VTenant tenant = new VTenant(TENANT_1_NAME, conf);
             return tenant;
+        } else if (path.equals(tenant2)) {
+            Status status = new Status(StatusCode.BADREQUEST);
+            throw new VTNException(status);
         }
 
         return null;
@@ -125,6 +136,10 @@ public class VTNManagerStub implements IVTNManager {
 
         VBridgePath bridge1 = new VBridgePath(TENANT_1_NAME,
                                               BRIDGE_1_NAME);
+
+        VBridgePath bridge2 = new VBridgePath(TENANT_1_UUID,
+                                              BRIDGE_1_NAME);
+
         if (path.equals(bridge1)) {
             VBridgeConfig bconf = new VBridgeConfig(null);
             VBridge bridge = new VBridge(BRIDGE_1_NAME,
@@ -132,6 +147,9 @@ public class VTNManagerStub implements IVTNManager {
                                          0,
                                          bconf);
             return bridge;
+        } else if (path.equals(bridge2)) {
+            Status status = new Status(StatusCode.BADREQUEST);
+            throw new VTNException(status);
         }
 
         return null;
@@ -171,6 +189,10 @@ public class VTNManagerStub implements IVTNManager {
         VBridgeIfPath if2 = new VBridgeIfPath(TENANT_1_NAME,
                                               BRIDGE_1_NAME,
                                               VBR_IF_2_NAME);
+
+        VBridgeIfPath if3 = new VBridgeIfPath(TENANT_1_NAME,
+                                              BRIDGE_1_NAME,
+                                              VBR_IF_3_NAME);
         if (path.equals(if1)) {
             VInterfaceConfig iconf = new VInterfaceConfig(null, true);
             VInterface vif = new VInterface(VBR_IF_1_NAME,
@@ -185,6 +207,19 @@ public class VTNManagerStub implements IVTNManager {
                                             VNodeState.UNKNOWN,
                                             iconf);
             return vif;
+        } else if (path.equals(if3)) {
+            if (isReturnValidVInterface) {
+                isReturnValidVInterface = false;
+
+                VInterfaceConfig iconf = new VInterfaceConfig(null, true);
+                VInterface vif = new VInterface(VBR_IF_3_NAME,
+                                                VNodeState.UNKNOWN,
+                                                VNodeState.UNKNOWN,
+                                                iconf);
+                return vif;
+            }
+            Status status = new Status(StatusCode.BADREQUEST);
+            throw new VTNException(status);
         }
 
         return null;
@@ -199,7 +234,12 @@ public class VTNManagerStub implements IVTNManager {
         VBridgeIfPath bif1 = new VBridgeIfPath(TENANT_1_NAME,
                                                BRIDGE_1_NAME,
                                                VBR_IF_2_NAME);
-        if (path.equals(bif1)) {
+
+        VBridgeIfPath bif2 = new VBridgeIfPath(TENANT_1_NAME,
+                                              BRIDGE_1_NAME,
+                                              VBR_IF_4_NAME);
+
+        if ((path.equals(bif1)) || (path.equals(bif2))) {
             return new Status(StatusCode.CONFLICT);
         }
 

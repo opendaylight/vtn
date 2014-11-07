@@ -25,7 +25,19 @@ public class NeutronPortCRUDStub implements INeutronPortCRUD {
     @Override
     public NeutronPort getPort(String uuid) {
         if (uuid.equals("C387EB44-7832-49F4-B9F0-D30D27770883")) {
+            //Setting all IDs(TenantID, SwitchID, PortID) to NULL
             NeutronPort neutron = new NeutronPort();
+            return neutron;
+        } else if (uuid.equals("D387EB44-7832-49F4-B9F0-D30D27770884")) {
+            //Setting SwitchID and PortID to NULL
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("D387EB44-7832-49F4-B9F0-D30D27770885");
+            return neutron;
+        } else if (uuid.equals("4790F3C1-AB34-4ABC-B7A5-C1B5C7202389")) {
+            //Setting PortID to NULL
+            NeutronPort neutron = new NeutronPort();
+            neutron.setTenantID("E6E005D3A24542FCB03897730A5150E2");
+            neutron.setNetworkUUID("5e7e0900-f215-11e3-aa76-0002a5d5c51b");
             return neutron;
         } else if (uuid.equals("4790F3C1-AB34-4ABC-B7A5-C1B5C7202389")) {
             NeutronPort neutron = new NeutronPort();

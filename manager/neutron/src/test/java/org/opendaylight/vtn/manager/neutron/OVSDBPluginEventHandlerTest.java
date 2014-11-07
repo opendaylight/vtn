@@ -93,18 +93,16 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
 
                 if (OPENFLOW.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) {
                     //            String strObj = String.valueOf(Long.parseLong(CREATE_NETWORK[NODE_ADD_NODE_ID]));
-                    Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], Long.parseLong(createNetwork[NODE_ADD_NODE_ID]));
+                    Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], Long.parseLong(createNetwork[NODE_ADD_NODE_ID], HEX_RADIX));
                     //            ovsdb.prepareInternalNetwork(nodeObj);
                     ovsdb.nodeAdded(nodeObj, null, 0);
-
                 } else if ((ONEPK.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) ||
                         (PRODUCTION.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE]))) {
                     //            String strNode = String.valueOf(Long.parseLong(CREATE_NETWORK[NODE_ADD_NODE_ID], 16));
                     Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], createNetwork[NODE_ADD_NODE_ID]);
                     ovsdb.nodeAdded(nodeObj, null, 0);
                 } else if (PCEP.equalsIgnoreCase(createNetwork[NODE_ADD_NODE_TYPE])) {
-                    UUID idOne = new UUID(new Long(0), new Long(createNetwork[NODE_ADD_NODE_ID]));
-                    Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], idOne);
+                    Node nodeObj = new Node(createNetwork[NODE_ADD_NODE_TYPE], UUID.fromString(createNetwork[NODE_ADD_NODE_ID]));
                     ovsdb.nodeAdded(nodeObj, null, 0);
                 }
 
@@ -208,6 +206,10 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
                     Interface interfaceBridge = new InterfaceStub();
                     interfaceBridge.setName(rowUpdate[ROW_UPDATE_NODE_OBJECT_NAME]);
 
+                    if (SET_NULL_TO_NODE.equalsIgnoreCase(rowUpdate[ROW_UPDATE_PARENT_UUID])) {
+                        nodeObj = null;
+                    }
+
                     if (rowUpdate[ROW_UPDATE_OLD_ROW].equalsIgnoreCase("null")
                             && rowUpdate[ROW_UPDATE_NEW_ROW].equalsIgnoreCase("null")) {
                         ovsdb.rowUpdated(nodeObj, rowUpdate[ROW_UPDATE_ACTUAL_TABLE_NAME], rowUpdate[ROW_UPDATE_PARENT_UUID], null, null);
@@ -297,6 +299,14 @@ public class OVSDBPluginEventHandlerTest extends TestBase {
                     OpenVSwitch oldOpenVSwitch = new OpenVSwitchStub();
 
                     ovsdb.rowUpdated(nodeObj, isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME], isUpdateOfInterest[ROW_UPDATE_PARENT_UUID], oldOpenVSwitch.getRow(), newOpenVSwitch.getRow());
+                } else if (isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME].equalsIgnoreCase("Bridge")) {
+                    Bridge newBridge = new BridgeStub();
+                    newBridge.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+
+                    Bridge oldBridge = new BridgeStub();
+                    oldBridge.setName(isUpdateOfInterest[ROW_UPDATE_NODE_OBJECT_NAME]);
+
+                    ovsdb.rowUpdated(nodeObj, isUpdateOfInterest[ROW_UPDATE_ACTUAL_TABLE_NAME], isUpdateOfInterest[ROW_UPDATE_PARENT_UUID], oldBridge.getRow(), newBridge.getRow());
                 }
 
                 ovsdb.unsetOVSDBConfigService(ovsdbConfig);
