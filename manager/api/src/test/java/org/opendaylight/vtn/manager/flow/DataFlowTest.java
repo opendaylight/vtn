@@ -642,6 +642,21 @@ public class DataFlowTest extends TestBase {
     }
 
     /**
+     * Test case for {@link DataFlow.Mode} class.
+     */
+    @Test
+    public void testMode() {
+        DataFlow.Mode[] values = DataFlow.Mode.values();
+        assertEquals(3, values.length);
+        assertEquals(DataFlow.Mode.SUMMARY, values[0]);
+        assertEquals(DataFlow.Mode.DETAIL, values[1]);
+        assertEquals(DataFlow.Mode.UPDATE_STATS, values[2]);
+        assertEquals(0, DataFlow.Mode.SUMMARY.ordinal());
+        assertEquals(1, DataFlow.Mode.DETAIL.ordinal());
+        assertEquals(2, DataFlow.Mode.UPDATE_STATS.ordinal());
+    }
+
+    /**
      * Internal method for {@link #testGetter()}.
      *
      * @param id       An identifier of the data flow.
