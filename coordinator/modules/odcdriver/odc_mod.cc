@@ -274,14 +274,6 @@ pfc_bool_t ODCModule::ping_controller(unc::driver::controller* ctr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr != NULL);
 
-  // If controller is down clear physical port cache
-  if (unc::driver::CONNECTION_DOWN == ctr->get_connection_status()) {
-    pfc_log_debug("Controller is Down, Clear Physical port cache");
-    if (NULL != ctr->physical_port_cache) {
-       delete ctr->physical_port_cache;
-       ctr->physical_port_cache = NULL;
-    }
-  }
   std::string url = "";
   url.append(BASE_URL);
   url.append(VERSION);
@@ -321,6 +313,15 @@ pfc_bool_t ODCModule::get_physical_port_details(
   OdcSwitch odc_switch_obj(conf_file_values_);
   pfc_bool_t cache_empty = PFC_TRUE;
 
+  // If controller is down clear physical port cache
+  if (unc::driver::CONNECTION_DOWN == ctr_ptr->get_connection_status()) {
+    pfc_log_debug("Controller is Down, Clear Physical port cache");
+    if (NULL != ctr_ptr->physical_port_cache) {
+       delete ctr_ptr->physical_port_cache;
+       ctr_ptr->physical_port_cache = NULL;
+    }
+    return PFC_FALSE;
+  }
   if (NULL == ctr_ptr->physical_port_cache) {
     pfc_log_error("Physical port cache pointer is NULL");
     return PFC_FALSE;

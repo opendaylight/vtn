@@ -261,13 +261,6 @@ void ReadConfig::GetPhysicalConfig() {
     ctr_instance->physical_port_cache =
         unc::vtndrvcache::KeyTree::create_cache();
   }
-  if ((ctr_instance->get_connection_status() == CONNECTION_DOWN) ||
-      (ctr_instance->audit_result_ == PFC_FALSE)) {
-    pfc_log_error("Controller down/Audit failed in controller");
-    ctr_fw_->post_physical_taskq(ctlr_name_, drv_instance, ctr_instance,
-                                 ctr_fw_->time_interval_);
-    return;
-  }
   pfc_bool_t ping_status =
       drv_instance->get_physical_port_details(ctr_instance);
 
