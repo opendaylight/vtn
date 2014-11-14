@@ -32,7 +32,10 @@ public class VTNNeutronUtilsTest extends TestBase {
         IVTNManager mgr = new VTNManagerStub();
 
         utils.setVTNManager(mgr);
-        assertSame(mgr, utils.getVTNManager());
+        assertEquals(mgr, utils.getVTNManager());
+
+        utils.unsetVTNManager(null);
+        assertEquals(mgr, utils.getVTNManager());
 
         utils.unsetVTNManager(mgr);
         assertNull(utils.getVTNManager());
@@ -88,6 +91,10 @@ public class VTNNeutronUtilsTest extends TestBase {
         invalidId = "550e8400-e29b41d4a716446655440000";
         assertFalse(VTNNeutronUtils.isValidNeutronID(invalidId));
 
+        // The length is 36 but invalid UUID format for IllegalArgumentException.
+        invalidId = "550e8400-e29b-41d4--716-446655440000";
+        assertFalse(VTNNeutronUtils.isValidNeutronID(invalidId));
+
         for (String neutronId: NEUTRON_UUID_ARRAY) {
             assertTrue(VTNNeutronUtils.isValidNeutronID(neutronId));
         }
@@ -120,6 +127,10 @@ public class VTNNeutronUtilsTest extends TestBase {
         invalidId = "550e8400-e29b41d4a716446655440000";
         assertNull(VTNNeutronUtils.convertNeutronIDToVTNKey(invalidId));
 
+        // The length is 32 but invalid UUID format for IllegalArgumentException.
+        invalidId = "550e8400e29b-1d4a716446655440000";
+        assertNull(VTNNeutronUtils.convertNeutronIDToVTNKey(invalidId));
+
         String validId = "550e8400-e29b-41d4-a716-446655440000";
         assertEquals("550e8400e29b1d4a716446655440000",
                      VTNNeutronUtils.convertNeutronIDToVTNKey(validId));
@@ -146,7 +157,7 @@ public class VTNNeutronUtilsTest extends TestBase {
                      utils.isTenantExist(tenantID));
 
         tenantID = VTNManagerStub.TENANT_1_UUID;
-        assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                      utils.isTenantExist(tenantID));
 
         tenantID = VTNManagerStub.TENANT_1_NAME;
@@ -168,6 +179,10 @@ public class VTNNeutronUtilsTest extends TestBase {
 
         String tenantID = "a";
         String bridgeID = "a";
+
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                     utils.isBridgeExist(tenantID, null));
+
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                      utils.isBridgeExist(tenantID, bridgeID));
 
@@ -179,6 +194,11 @@ public class VTNNeutronUtilsTest extends TestBase {
         tenantID = "c";
         bridgeID = VTNManagerStub.BRIDGE_1_NAME;
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                     utils.isBridgeExist(tenantID, bridgeID));
+
+        tenantID = VTNManagerStub.TENANT_1_UUID;
+        bridgeID = VTNManagerStub.BRIDGE_1_NAME;
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                      utils.isBridgeExist(tenantID, bridgeID));
 
         tenantID = VTNManagerStub.TENANT_1_NAME;
@@ -202,6 +222,13 @@ public class VTNNeutronUtilsTest extends TestBase {
         String tenantID = "a";
         String bridgeID = "a";
         String portID = "a";
+
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                     utils.isBridgeInterfaceExist(tenantID, null, null));
+
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                     utils.isBridgeInterfaceExist(tenantID, bridgeID, null));
+
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                      utils.isBridgeInterfaceExist(tenantID, bridgeID, portID));
 
@@ -209,6 +236,12 @@ public class VTNNeutronUtilsTest extends TestBase {
         bridgeID = "a";
         portID = "a";
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
+                     utils.isBridgeInterfaceExist(tenantID, bridgeID, portID));
+
+        tenantID = VTNManagerStub.TENANT_1_NAME;
+        bridgeID = VTNManagerStub.BRIDGE_1_NAME;
+        portID = VTNManagerStub.VBR_IF_3_NAME;
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                      utils.isBridgeInterfaceExist(tenantID, bridgeID, portID));
 
         tenantID = VTNManagerStub.TENANT_1_NAME;

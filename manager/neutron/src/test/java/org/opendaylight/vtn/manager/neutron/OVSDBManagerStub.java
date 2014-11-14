@@ -257,14 +257,15 @@ public class OVSDBManagerStub extends TestBase implements OvsdbConfigurationServ
         bridge.setName("invalid Bridge name");
 
         boolean isValidPeNodeIdOf5 = false;
-        if ((String.valueOf(node.getID()).length() == UUID_LEN)
-                && (NODE_ID_2.equalsIgnoreCase(String.valueOf(Long.parseLong(String.valueOf(node.getID()).substring(UUID_POSITION_IN_NODE), HEX_RADIX))))) {
+        if (NODE_ID_2.equalsIgnoreCase(node.getID().toString())) {
             isValidPeNodeIdOf5 = true;
         }
-        if ((NODE_ID_1.equalsIgnoreCase(String.valueOf(node.getID())))
-                || (isValidPeNodeIdOf5)) {
-            bridge.setName("br-int");
-        }
+        try {
+            if ((isValidPeNodeIdOf5)
+                    || (NODE_ID_1.equalsIgnoreCase(Long.toHexString(Long.parseLong(node.getID().toString()))))) {
+                bridge.setName("br-int");
+            }
+        } catch (Exception e) { }
 
         return (T)bridge;
     }

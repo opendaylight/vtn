@@ -29,13 +29,13 @@ public class PortHandlerTest extends TestBase {
         PortHandler ph = new PortHandler();
         ph.setVTNManager(new VTNManagerStub());
 
-        // In the cases that the method returns HTTP_BAD_REQUEST by setting NULL to NeutronPort object.
+        // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to NeutronPort object.
         NeutronPort port = null;
 
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // In the cases that the method returns HTTP_NOT_FOUND by setting wrong TenantID.
+        // Failure Case - Method returns HTTP_NOT_FOUND by setting wrong TenantID.
         port = new NeutronPort();
         port.setTenantID(TENANT_ID_ARRAY[0]);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -46,7 +46,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                 ph.canCreatePort(port));
 
-        // In the cases that the method returns HTTP_NOT_FOUND by setting wrong NetworkID.
+        // Failure Case - Method returns HTTP_NOT_FOUND by setting wrong NetworkID.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -57,7 +57,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                 ph.canCreatePort(port));
 
-        // In the cases that the method returns HTTP_CONFLICT.
+        // Failure Case - Method returns HTTP_CONFLICT by setting existing UUID to Port UUID
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -68,18 +68,18 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_CONFLICT,
                 ph.canCreatePort(port));
 
-        // In the cases that the method returns HTTP_CREATED.
+        // Failure Case - Method returns HTTP_BAD_REQUEST by setting wrong UUID to Port UUID.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
-        port.setPortUUID(NEUTRON_UUID_ARRAY[1]);
+        port.setPortUUID(VTNManagerStub.VBR_IF_3_UUID);
         port.setMacAddress(MAC_ADDR_ARRAY[0]);
         port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
 
-        assertEquals(HttpURLConnection.HTTP_CREATED,
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // In the cases that the method returns HTTP_CREATED.
+        // Success Case - Method returns HTTP_CREATED.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -91,7 +91,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_CREATED,
                 ph.canCreatePort(port));
 
-        // In the cases that the method returns HTTP_CREATED.
+        // Success Case - Method returns HTTP_CREATED.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -118,13 +118,13 @@ public class PortHandlerTest extends TestBase {
         ph.setVTNManager(new VTNManagerStub());
 
         NeutronPort port = null;
-        // Case - Failure case by setting NULL to NeutronPort object
+        // Failure Case - By setting NULL to NeutronPort object
         port = null;
 
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // Case - Failure case by setting NULL to TennantID
+        // Failure Case - By setting NULL to TennantID
         port = new NeutronPort();
         port.setTenantID(null);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -135,7 +135,28 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // Case - Failure case by setting invalid UUID to TennantID
+        // Failure Case - By setting NULL to NetworkID
+        port = new NeutronPort();
+        port.setTenantID(NEUTRON_UUID_ARRAY[0]);
+        port.setNetworkUUID(null);
+        port.setPortUUID(NEUTRON_UUID_ARRAY[1]);
+        port.setMacAddress(MAC_ADDR_ARRAY[0]);
+        port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
+
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                ph.canCreatePort(port));
+
+        // Failure Case - By setting NULL to PortID
+        port = new NeutronPort();
+        port.setTenantID(NEUTRON_UUID_ARRAY[0]);
+        port.setNetworkUUID(NEUTRON_UUID_ARRAY[1]);
+        port.setPortUUID(null);
+        port.setMacAddress(MAC_ADDR_ARRAY[0]);
+        port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
+
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                ph.canCreatePort(port));
+        // Failure Case - By setting invalid UUID to TennantID
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.INVALID_UUID);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -146,7 +167,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // Case - Failure case by setting invalid UUID to NetworkID
+        // Failure Case - By setting invalid UUID to NetworkID
         port = new NeutronPort();
         port.setTenantID(TENANT_ID_ARRAY[0]);
         port.setNetworkUUID(VTNManagerStub.INVALID_UUID);
@@ -157,7 +178,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // Case - Failure case by setting invalid UUID to PortID
+        // Failure Case - By setting invalid UUID to PortID
         port = new NeutronPort();
         port.setTenantID(TENANT_ID_ARRAY[0]);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -168,7 +189,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canCreatePort(port));
 
-        // Case - Success
+        // Success Case - Only for Method(getVTNIdentifiers)
         port = new NeutronPort();
         port.setTenantID(TENANT_ID_ARRAY[0]);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -189,7 +210,7 @@ public class PortHandlerTest extends TestBase {
         PortHandler ph = new PortHandler();
         ph.setVTNManager(new VTNManagerStub());
 
-        // In the cases that the method returns HTTP_CONFLICT and failed to create New NeutronPort.
+        // Failure Case - Method returns HTTP_CONFLICT and failed to create New NeutronPort.
         NeutronPort port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -199,7 +220,7 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortCreated(port);
 
-        // In the cases that the method returns HTTP_CONFLICT and failed to create New NeutronPort.
+        // Failure Case - Method returns HTTP_CONFLICT and failed to create New NeutronPort.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -209,7 +230,17 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortCreated(port);
 
-        // In the cases that the method successfully executes.
+        // Failure Case - Method returns HTTP_CONFLICT and failed to create Bridge Interface.
+        port = new NeutronPort();
+        port.setTenantID(VTNManagerStub.TENANT_1_UUID);
+        port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
+        port.setPortUUID(VTNManagerStub.VBR_IF_4_UUID);
+        port.setMacAddress(MAC_ADDR_ARRAY[0]);
+        port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
+
+        ph.neutronPortCreated(port);
+
+        // Success Case - Method successfully executes.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -230,16 +261,20 @@ public class PortHandlerTest extends TestBase {
         PortHandler ph = new PortHandler();
         ph.setVTNManager(new VTNManagerStub());
 
-        // In the cases that the method returns HTTP_BAD_REQUEST by setting NULL to both NeutronPort object.
+        // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to both NeutronPort object.
         NeutronPort portDelta = null;
         NeutronPort portOriginal = null;
 
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canUpdatePort(portDelta, portOriginal));
 
+        // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to portOriginal object.
         portDelta = new NeutronPort();
 
-        // In the cases that the method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
+        assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
+                ph.canUpdatePort(portDelta, portOriginal));
+
+        // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
         portOriginal = new NeutronPort();
         portOriginal.setTenantID(null);
         portOriginal.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -250,7 +285,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canUpdatePort(portDelta, portOriginal));
 
-        // Cases - returns HTTP_NOT_FOUND(Interface does not exist) by setting wrong PortUUID.
+        // Failure Case - Method returns HTTP_NOT_FOUND(Interface does not exist) by setting wrong PortUUID.
         portOriginal = new NeutronPort();
         portOriginal.setTenantID(VTNManagerStub.TENANT_1_UUID);
         portOriginal.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -261,7 +296,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                 ph.canUpdatePort(portDelta, portOriginal));
 
-        // In the cases that the method returns HTTP_OK.
+        // Success Case - Method returns HTTP_OK.
         portOriginal = new NeutronPort();
         portOriginal.setTenantID(VTNManagerStub.TENANT_1_UUID);
         portOriginal.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -282,7 +317,7 @@ public class PortHandlerTest extends TestBase {
         PortHandler ph = new PortHandler();
         ph.setVTNManager(new VTNManagerStub());
 
-        // Case - returns HTTP_BAD_REQUEST by setting NULL to TenantID.
+        // Failure Case - Method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
         NeutronPort port = new NeutronPort();
         port.setTenantID(null);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -292,7 +327,7 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortUpdated(port);
 
-        // Case - returns HTTP_NOT_FOUND(Interface does not exist for tenant-id) by setting wrong PortUUID.
+        // Failure Case - Method returns HTTP_NOT_FOUND(Interface does not exist for tenant-id) by setting wrong PortUUID.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -302,7 +337,22 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortUpdated(port);
 
-        // Case - returns HTTP_CONFLICT(Modifying bridge interface failed) by setting Port-AdminStateUp to null
+        // Failure Case - Method(getBridgeInterface) returns NULL(throws VTNException) by setting Wrong Port UUID
+        port = new NeutronPort();
+        port.setTenantID(VTNManagerStub.TENANT_1_UUID);
+        port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
+        port.setPortUUID(VTNManagerStub.VBR_IF_3_UUID);
+        port.setMacAddress(MAC_ADDR_ARRAY[0]);
+        port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
+
+        VTNManagerStub.isReturnValidVInterface = true;
+        try {
+            ph.neutronPortUpdated(port);
+        } catch (NullPointerException exception) {
+            assertEquals(exception.getMessage(), exception.toString(), new NullPointerException().toString());
+        }
+
+        // Failure Case - Method(canModifyInterface returns false) by setting Port-AdminStateUp to null
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -312,7 +362,7 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortUpdated(port);
 
-        // Case - Modifying bridge interface failed
+        // Failure Case - Modifying bridge interface failed
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -323,7 +373,7 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortUpdated(port);
 
-        // Case - Success
+        // Success Case
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -366,6 +416,18 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortUpdated(port);
 
+        // Case - returns True by setting Port-AdminStateUp to False and valid name to NeutronPort
+        port = new NeutronPort();
+        port.setTenantID(VTNManagerStub.TENANT_1_UUID);
+        port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
+        port.setPortUUID(VTNManagerStub.VBR_IF_1_UUID);
+        port.setMacAddress(MAC_ADDR_ARRAY[0]);
+        port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
+        port.setAdminStateUp(Boolean.FALSE);
+        port.setName("Neutron-port");
+
+        ph.neutronPortUpdated(port);
+
         // Case - returns True by setting Port-AdminStateUp to True and valid Description to VBridgeIfConfig
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
@@ -388,6 +450,18 @@ public class PortHandlerTest extends TestBase {
         port.setName("Neutron-port");
 
         ph.neutronPortUpdated(port);
+
+        // Case - returns True by setting Port-AdminStateUp to True, valid Description to VBridgeIfConfig and same name of port object to VInterfaceConfig
+        port = new NeutronPort();
+        port.setTenantID(VTNManagerStub.TENANT_1_UUID);
+        port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
+        port.setPortUUID(VTNManagerStub.VBR_IF_2_UUID);
+        port.setMacAddress(MAC_ADDR_ARRAY[0]);
+        port.setFixedIPs(new ArrayList<Neutron_IPs>(0));
+        port.setAdminStateUp(Boolean.TRUE);
+        port.setName("br-int config");
+
+        ph.neutronPortUpdated(port);
     }
 
     /**
@@ -399,7 +473,7 @@ public class PortHandlerTest extends TestBase {
         PortHandler ph = new PortHandler();
         ph.setVTNManager(new VTNManagerStub());
 
-        // In the cases that the method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
+        // Case - Method returns HTTP_BAD_REQUEST by setting NULL to TenantID.
         NeutronPort port = new NeutronPort();
         port.setTenantID(null);
         port.setNetworkUUID(NEUTRON_UUID_ARRAY[0]);
@@ -410,7 +484,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_BAD_REQUEST,
                 ph.canDeletePort(port));
 
-        // Cases - returns HTTP_NOT_FOUND(Interface does not exist) by setting wrong PortUUID.
+        // Case - returns HTTP_NOT_FOUND(Interface does not exist) by setting wrong PortUUID.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -421,7 +495,7 @@ public class PortHandlerTest extends TestBase {
         assertEquals(HttpURLConnection.HTTP_NOT_FOUND,
                 ph.canDeletePort(port));
 
-        // In the cases that the method returns HTTP_OK.
+        // Case - Method returns HTTP_OK.
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
@@ -437,12 +511,13 @@ public class PortHandlerTest extends TestBase {
      * Test method for
      * {@link PortHandler#neutronPortDeleted(NeutronPort)}.
      */
-    public void testNeutronPortDeleted(NeutronPort port) {
+    @Test
+    public void testNeutronPortDeleted() {
         PortHandler ph = new PortHandler();
         ph.setVTNManager(new VTNManagerStub());
 
         // Case - returns HTTP_NOT_FOUND(Interface does not exist) by setting wrong PortUUID.
-        port = new NeutronPort();
+        NeutronPort port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);
         port.setPortUUID(NEUTRON_UUID_ARRAY[1]);
@@ -461,7 +536,7 @@ public class PortHandlerTest extends TestBase {
 
         ph.neutronPortDeleted(port);
 
-        // Case - Success.
+        // Success Case
         port = new NeutronPort();
         port.setTenantID(VTNManagerStub.TENANT_1_UUID);
         port.setNetworkUUID(VTNManagerStub.BRIDGE_1_UUID);

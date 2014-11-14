@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.neutron;
 import java.io.File;
 
 import org.junit.Assert;
+import java.util.UUID;
 
 /**
  * Abstract base class for JUnit tests.
@@ -104,7 +105,7 @@ public abstract class TestBase extends Assert {
     /**
      * String Declaration for identifying the Bridge with below NodeID.
      */
-    protected static final String NODE_ID_2 = "D30D27770885";
+    protected static final String NODE_ID_2 = UUID.randomUUID().toString();
 
     /**
      * String Declaration for identifying the Interface with below Parent_UUID.
@@ -120,6 +121,11 @@ public abstract class TestBase extends Assert {
      * String declaration for identifying the conflicted NetworkUUID
      */
     public static final String CONFLICTED_NETWORK_UUID = "5e7e0900f2151e3aa760002a5d5c51c";
+
+    /*
+     * String declaration for setting Node to NULL for the below UUID
+     */
+    public static final String SET_NULL_TO_NODE = "5e7e0900f2151e3aa760002a5d5c51d";
 
     /**
      * String Declaration for setting the OFPortArray to NULL.
@@ -288,7 +294,13 @@ public abstract class TestBase extends Assert {
          "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b", "not_null", "not_null",
          "", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770881"},
 
-        // Fail case for No switch is associated with interface, Node or interface Uuid is Null by setting UUID to null
+        // Fail case for No switch is associated with interface, Node or interface Uuid is Null by setting Node to null
+        // At present case, the below case failes
+        {"PE", "bridge-int", "br-int", "Interface", "",
+         SET_NULL_TO_NODE, "null", "null",
+         "", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
+
+         // Fail case for No switch is associated with interface, Node or interface Uuid is Null by setting UUID to null
         {"PE", "bridge-int", "br-int", "Interface", "",
          null, "null", "null",
          "", "null_msg", "iface-id", "C387EB44-7832-49F4-B9F0-D30D27770883"},
@@ -371,86 +383,18 @@ public abstract class TestBase extends Assert {
         // OpenVSwitch
         {"PE", "intf-neutron", "interface1", "OpenVSwitch", "",
          "9b2b6560-f21e-11e3-a6a2-0002a5d5c51f", "not_null", "not_null",
-         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"}};
+         "", "no_ex_msg", "iface-id", "0D2206F8-B700-4F78-913D-9CE7A2D78473"},
+
+        // Bridge
+        {"PE", "intf-neutron", "interface1", "Bridge", "",
+         "", "not_null", "not_null",
+         "", "no_ex_msg", "", ""}};
 
     /**
      * Exception message to be checked.
      */
     protected static final String EXCEPTION_MSG =
             "org.opendaylight.ovsdb.lib.table.Bridge cannot be cast to org.opendaylight.ovsdb.lib.table.Interface";
-
-    /**
-     * An array of elements to update row with type OF.
-     */
-    protected static final String[][] RW_UPDT_INP_OF_ARY = {
-        {"Set_OF_neutron", "0", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "12344321", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "12344321", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", null,
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "12344321", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Bridge",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "12345678", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "9b2b6560-f21e-11e3-a6a2-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "12345678", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "", "0", "0", "no_ex_msg", "1", "0" }  ,
-
-        {"Set_OF_neutron", "23456789", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "85c27f20-f218-11e3-a7b6-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "23456789", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "c09b7fc0-f218-11e3-bf2f-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "23456789", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         null,
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_neutron", "98765432", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "85c27f20-f218-11e3-a7b6-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" },
-
-        {"Set_OF_Null", "12345678", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "0d0ff2a0-f219-11e3-a482-0002a5d5c51b",
-         "1", "0", "null_msg", "0", "0" },
-
-        {"Set_OF_Bridge", "98765432", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "85c27f20-f218-11e3-a7b6-0002a5d5c51b",
-         "1", "0", "ex_msg", "0", "0" },
-
-        {"Set_OF_Bridge_intf", "98765432", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "85c27f20-f218-11e3-a7b6-0002a5d5c51b",
-         "1", "0", "ex_msg", "0", "0" },
-
-        {"Set_OF_neutron", "12345678", "interface1", "iface-id",
-         "C387EB44-7832-49F4-B9F0-D30D27770883", "Interface",
-         "85c27f20-f218-11e3-a7b6-0002a5d5c51b",
-         "0", "0", "no_ex_msg", "1", "0" } };
 
     /**
      * An array of elements to create network.
@@ -470,7 +414,7 @@ public abstract class TestBase extends Assert {
         // Update case in Node added method
         {"PE", NODE_ID_2, "0", "" },
         // New NODE added case - Successful
-        {"PE", "D30D27770883", "0", "" }
+        {"PE", UUID.randomUUID().toString(), "0", "" }
     };
 
     /**
@@ -491,7 +435,11 @@ public abstract class TestBase extends Assert {
         {"22222224", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78483", "0"},
         // Fail case(processRowUpdated getVTNIdentifiers failed) - by setting NodeID and return HTTP_BAD_REQUEST in Method-deletePortMapForInterface()
         {"22222225", "Interface",        "C387EB44-7832-49F4-B9F0-D30D27770883", "0"},
-        // Fail case(neutron identifiers not specified) - by setting invalid NodeID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        // Fail case(neutron identifiers not specified) - by setting invalid TennantID, SwitchID, PortID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        {"22222226", "Interface",        "D387EB44-7832-49F4-B9F0-D30D27770884", "0"},
+        // Fail case(neutron identifiers not specified) - by setting invalid SwitchID, PortID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
+        {"22222226", "Interface",        "D387EB44-7832-49F4-B9F0-D30D27770885", "0"},
+        // Fail case(neutron identifiers not specified) - by setting invalid PortID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
         {"22222226", "Interface",        "C387EB44-7832-49F4-B9F0-D30D27770883", "0"},
         // Fail case(Invalid tenant identifier) - by setting invalid TennantID and return HTTP_BAD_REQUEST in Method-getVTNIdentifiers()
         {"22222227", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78475", "0"},
@@ -503,20 +451,6 @@ public abstract class TestBase extends Assert {
         {"22222230", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78474", "0"},
         // Success case
         {"22222231", "Interface",        "0D2206F8-B700-4F78-913D-9CE7A2D78473", "0"},
-    };
-
-    /**
-     * An array of elements to update row.
-     */
-    protected static final String[][] ROW_UPDATE_PORT_ARRAY = {
-        {"OF", "56456644", "interface1", "C387EB44-7832-49F4-B9F0-D30D27770883", "set_port", "", "0" },
-        {"OF", "56456644", "interface1", "C387EB44-7832-49F4-B9F0-D30D27770883", "set_null_port", "", "0" },
-        {"OF", "56456644", "interface1", "C387EB44-7832-49F4-B9F0-D30D27770883", "set_empty_port", "", "0" },
-        {"OF", "12345678", "interface1", "C387EB44-7832-49F4-B9F0-D30D27770883", "without_port", "65534", "0" },
-        {"OF", "56456644", "interface1", "4790F3C1-AB34-4ABC-B7A5-C1B5C7202389", "", "65534", "0" },
-        {"OF", "56456644", "interface1", "52B1482F-A41E-409F-AC68-B04ACFD07779", "", "65534", "0" },
-        {"OF", "56456644", "interface1", "8c781fc0-f215-11e3-aac3-0002a5d5c51b", "", "65534", "0" },
-        {"OF", "56456644", "interface1", "0D2206F8-B700-4F78-913D-9CE7A2D78473", "", "65534", "0" },
     };
 
     /**
