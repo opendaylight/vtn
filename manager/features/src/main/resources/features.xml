@@ -15,29 +15,52 @@
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
-    <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
-    <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${feature.ovsdb.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-adsal-compatibility/${feature.adsal-compatibility.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${feature.ovsdb.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${feature.openflowplugin.version}/xml/features</repository>
 
-    <feature name='odl-vtn-manager-all' description="OpenDaylight VTN Manager All" version='${project.version}'>
-        <feature version="${project.version}">odl-vtn-manager-java-api</feature>
-        <feature version="${project.version}">odl-vtn-manager-northbound</feature>
-        <feature version="${project.version}">odl-vtn-manager-neutron</feature>
-    </feature>
+  <feature
+      name='odl-vtn-manager-all'
+      description="OpenDaylight VTN Manager All"
+      version='${project.version}'>
+    <feature version="${project.version}">odl-vtn-manager-runtime</feature>
+    <feature version="${project.version}">odl-vtn-manager-java-api</feature>
+    <feature version="${project.version}">odl-vtn-manager-northbound</feature>
+    <feature version="${project.version}">odl-vtn-manager-neutron</feature>
+  </feature>
 
-    <feature name='odl-vtn-manager-java-api' description="OpenDaylight :: VTN Manager :: Java API" version='${project.version}'>
-        <feature version="${feature.nsf.version}">odl-nsf-all</feature>
-        <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
-        <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
-    </feature>
+  <feature
+      name='odl-vtn-manager-java-api'
+      description="OpenDaylight :: VTN Manager :: Java API"
+      version='${project.version}'>
+    <feature version="${feature.nsf.version}">odl-nsf-all</feature>
+    <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
+    <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
+  </feature>
 
-    <feature name='odl-vtn-manager-northbound' description="OpenDaylight :: VTN Manager :: Northbound" version='${project.version}'>
-        <feature version="${project.version}">odl-vtn-manager-java-api</feature>
-        <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
-    </feature>
+  <feature
+      name='odl-vtn-manager-northbound'
+      description="OpenDaylight :: VTN Manager :: Northbound"
+      version='${project.version}'>
+    <feature version="${project.version}">odl-vtn-manager-java-api</feature>
+    <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
+  </feature>
 
-    <feature name='odl-vtn-manager-neutron' description="OpenDaylight :: VTN Manager :: Neutron Interface" version='${project.version}'>
-        <feature version='${feature.ovsdb.version}'>odl-ovsdb-all</feature>
-        <feature version="${project.version}">odl-vtn-manager-java-api</feature>
-        <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
-    </feature>
+  <feature
+      name='odl-vtn-manager-neutron'
+      description="OpenDaylight :: VTN Manager :: Neutron Interface"
+      version='${project.version}'>
+    <feature version='${feature.ovsdb.version}'>odl-ovsdb-all</feature>
+    <feature version="${project.version}">odl-vtn-manager-java-api</feature>
+    <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
+  </feature>
+
+  <feature
+      name='odl-vtn-manager-runtime'
+      description="OpenDaylight :: VTN Manager :: Runtime Dependencies"
+      version='${project.version}'>
+    <feature version="${feature.adsal-compatibility.version}">odl-adsal-compatibility-all</feature>
+    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
+  </feature>
 </features>

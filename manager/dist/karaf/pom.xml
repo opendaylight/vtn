@@ -17,10 +17,10 @@
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>manager.common</artifactId>
     <version>0.3.0-SNAPSHOT</version>
-    <relativePath>../common</relativePath>
+    <relativePath>../../common</relativePath>
   </parent>
 
-  <artifactId>vtn-karaf</artifactId>
+  <artifactId>distribution.vtn-manager.karaf</artifactId>
   <packaging>pom</packaging>
 
   <scm>
@@ -30,9 +30,11 @@
     <tag>HEAD</tag>
   </scm>
 
-  <modules>
-    <module>../features</module>
-  </modules>
+  <properties>
+    <sonar.jacoco.itReportPath>
+      ../../common.it/target/code-coverage/jacoco-it.exec
+    </sonar.jacoco.itReportPath>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -64,24 +66,6 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>opendaylight-karaf-resources</artifactId>
-    </dependency>
-
-    <!-- Controller feature -->
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>features-adsal-compatibility</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-      <scope>runtime</scope>
-    </dependency>
-
-    <!-- OpenFlow Plugin feature -->
-    <dependency>
-      <groupId>org.opendaylight.openflowplugin</groupId>
-      <artifactId>features-openflowplugin</artifactId>
-      <classifier>features</classifier>
-      <type>xml</type>
-      <scope>runtime</scope>
     </dependency>
 
     <!-- VTN Manager feature -->
@@ -186,8 +170,6 @@
           <!-- no startupFeatures -->
           <bootFeatures>
             <feature>standard</feature>
-            <feature>odl-adsal-compatibility-all</feature>
-            <feature>odl-openflowplugin-all</feature>
             <feature>odl-vtn-manager-all</feature>
           </bootFeatures>
           <!-- no installedFeatures -->
