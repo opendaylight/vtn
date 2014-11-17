@@ -1,0 +1,7 @@
+Verified+1: jenkins-vtn <jenkins-vtn@opendaylight.org>
+Code-Review+2: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-by: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-at: Mon, 17 Nov 2014 22:30:51 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/12747
+Project: vtn
+Branch: refs/heads/stable/helium
