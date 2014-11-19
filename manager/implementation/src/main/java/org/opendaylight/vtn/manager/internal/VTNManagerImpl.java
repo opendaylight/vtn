@@ -290,12 +290,11 @@ public class VTNManagerImpl
      * Keeps internal ports as map key.
      *
      * <p>
-     *   This map is used as {@code Set<NodeConnector>}. So we use
-     *   {@code VNodeState} enum as value in order to reduce memory footprint
-     *   and traffic between cluster nodes.
+     *   This map keeps pairs of {@link NodeConnector} instances corresponding
+     *   to switch ports connected each other.
      * </p>
      */
-    private ConcurrentMap<NodeConnector, VNodeState>  islDB;
+    private ConcurrentMap<NodeConnector, NodeConnector>  islDB;
 
     /**
      * Keeps flow conditions configured in this container.
@@ -861,7 +860,7 @@ public class VTNManagerImpl
             stateDB = new ConcurrentHashMap<VTenantPath, Object>();
             nodeDB = new ConcurrentHashMap<Node, VNodeState>();
             portDB = new ConcurrentHashMap<NodeConnector, PortProperty>();
-            islDB = new ConcurrentHashMap<NodeConnector, VNodeState>();
+            islDB = new ConcurrentHashMap<NodeConnector, NodeConnector>();
             clusterEvent =
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
             flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
@@ -893,7 +892,7 @@ public class VTNManagerImpl
             getCache(cluster, CACHE_NODES);
         portDB = (ConcurrentMap<NodeConnector, PortProperty>)
             getCache(cluster, CACHE_PORTS);
-        islDB = (ConcurrentMap<NodeConnector, VNodeState>)
+        islDB = (ConcurrentMap<NodeConnector, NodeConnector>)
             getCache(cluster, CACHE_ISL);
         flowCondDB = (ConcurrentMap<String, FlowCondImpl>)
             getCache(cluster, CACHE_FLOWCOND);
@@ -1246,7 +1245,6 @@ public class VTNManagerImpl
         PortProperty pp = new PortProperty(propMap);
         PortProperty old = portDB.putIfAbsent(nc, pp);
         if (old == null) {
-            addNode(nc.getNode(), false);
             LOG.info("{}: addPort: New port: port={}, prop={}",
                      containerName, nc, pp);
             return UpdateType.ADDED;
@@ -1348,18 +1346,25 @@ public class VTNManagerImpl
      *          {@code -1} is returned if the given edge is invalid.
      */
     private int addISL(Edge edge, Map<NodeConnector, Boolean> islMap) {
+        // Ensure both ports are valid.
         NodeConnector head = edge.getHeadNodeConnector();
         NodeConnector tail = edge.getTailNodeConnector();
-        if (portDB.containsKey(head) && portDB.containsKey(tail)) {
-            boolean h = addISLPort(head, islMap);
-            boolean t = addISLPort(tail, islMap);
-            return (h || t) ? 1 : 0;
-        } else if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: addISL: Ignore invalid edge: {}",
-                      containerName, edge);
+
+        try {
+            NodeUtils.checkNodeConnector(head);
+            NodeUtils.checkNodeConnector(tail);
+        } catch (VTNException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("{}: addISL: Ignore invalid edge {}: {}",
+                          containerName, edge, e);
+            }
+
+            return -1;
         }
 
-        return -1;
+        boolean h = addISLPort(head, tail, islMap);
+        boolean t = addISLPort(tail, head, islMap);
+        return (h || t) ? 1 : 0;
     }
 
     /**
@@ -1396,7 +1401,10 @@ public class VTNManagerImpl
      *   {@link #rwLock}.
      * </p>
      *
-     * @param nc      A node connector.
+     * @param nc      A {@link NodeConnector} instance corresponding to the
+     *                target switch port.
+     * @param peer    A {@link NodeConnector} instance corresponding to the
+     *                switch port connected to {@link nc}.
      * @param islMap  If a non-{@code null} value is specified, the specified
      *                port is put to the given map only if the port was
      *                actually added to the ISL map.
@@ -1404,19 +1412,19 @@ public class VTNManagerImpl
      *          actually added. {@code false} is returned if the given node
      *          connector exists in the inter switch link map.
      */
-    private boolean addISLPort(NodeConnector nc,
+    private boolean addISLPort(NodeConnector nc, NodeConnector peer,
                                Map<NodeConnector, Boolean> islMap) {
-        if (islDB.putIfAbsent(nc, VNodeState.UP) == null) {
+        if (islDB.putIfAbsent(nc, peer) == null) {
             if (islMap != null) {
                 islMap.put(nc, Boolean.TRUE);
             }
-            LOG.info("{}: addISLPort: New ISL port {}",
-                     containerName, nc);
+            LOG.info("{}: addISLPort: New ISL port {} <-> {}",
+                     containerName, nc, peer);
             return true;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: addISLPort: Ignore existing port {}",
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("{}: addISLPort: Ignore existing port {}",
                       containerName, nc);
         }
         return false;
@@ -1440,19 +1448,47 @@ public class VTNManagerImpl
      */
     private boolean removeISLPort(NodeConnector nc,
                                   Map<NodeConnector, Boolean> islMap) {
-        if (islDB.remove(nc) != null) {
-            if (islMap != null) {
-                islMap.put(nc, Boolean.FALSE);
+        NodeConnector port = nc;
+        boolean removed = false;
+        while (true) {
+            NodeConnector peer = islDB.remove(port);
+            if (peer == null) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("{}: removeISLPort: Ignore unknown port {}",
+                              containerName, port);
+                }
+                break;
             }
-            LOG.info("{}: removeISLPort: Removed {}", containerName, nc);
-            return true;
+
+            removed = true;
+            if (islMap != null) {
+                islMap.put(port, Boolean.FALSE);
+            }
+            LOG.info("{}: removeISLPort: Removed {} <-> {}",
+                     containerName, port, peer);
+            port = peer;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: removeISLPort: Ignore unknown port {}",
-                      containerName, nc);
-        }
-        return false;
+        return removed;
+    }
+
+    /**
+     * Determine whether the given node connector is associated with the
+     * physical switch port at the edge of the SDN network.
+     *
+     * <p>
+     *   Note that this method does not check whether the given switch port
+     *   is managed by the controller or not.
+     * </p>
+     *
+     * @param nc  A node connector.
+     * @return  {@code true} is returned only if the given node connector
+     *          is associated with the physical switch port at the edge of
+     *          the SDN network.
+     */
+    private boolean isEdgePortImpl(NodeConnector nc) {
+        NodeConnector peer = islDB.get(nc);
+        return (peer == null || !exists(peer));
     }
 
     /**
@@ -2286,7 +2322,7 @@ public class VTNManagerImpl
      *          the SDN network.
      */
     public boolean isEdgePort(NodeConnector nc) {
-        return (portDB.containsKey(nc) && !islDB.containsKey(nc));
+        return (exists(nc) && isEdgePortImpl(nc));
     }
 
     /**
@@ -2318,7 +2354,8 @@ public class VTNManagerImpl
      *          Otherwise {@code false} is returned.
      */
     public boolean exists(NodeConnector port) {
-        return portDB.containsKey(port);
+        return (nodeDB.containsKey(port.getNode()) &&
+                portDB.containsKey(port));
     }
 
     /**
@@ -2333,9 +2370,11 @@ public class VTNManagerImpl
     public void collectUpEdgePorts(Set<NodeConnector> portSet) {
         for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
             NodeConnector port = entry.getKey();
-            PortProperty pp = entry.getValue();
-            if (pp.isEnabled() && !islDB.containsKey(port)) {
-                portSet.add(port);
+            if (nodeDB.containsKey(port.getNode())) {
+                PortProperty pp = entry.getValue();
+                if (pp.isEnabled() && isEdgePortImpl(port)) {
+                    portSet.add(port);
+                }
             }
         }
     }
@@ -2369,10 +2408,12 @@ public class VTNManagerImpl
 
         for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
             NodeConnector port = entry.getKey();
-            PortProperty pp = entry.getValue();
-            if (pp.isEnabled() && !islDB.containsKey(port) &&
-                filter.accept(port, pp)) {
-                portSet.add(port);
+            if (nodeDB.containsKey(port.getNode())) {
+                PortProperty pp = entry.getValue();
+                if (pp.isEnabled() && isEdgePortImpl(port) &&
+                    filter.accept(port, pp)) {
+                    portSet.add(port);
+                }
             }
         }
     }
@@ -2392,9 +2433,9 @@ public class VTNManagerImpl
     public boolean hasEdgePort(Node node) {
         for (Map.Entry<NodeConnector, PortProperty> entry: portDB.entrySet()) {
             NodeConnector port = entry.getKey();
-            if (port.getNode().equals(node)) {
+            if (nodeDB.containsKey(node) && port.getNode().equals(node)) {
                 PortProperty pp = entry.getValue();
-                if (pp.isEnabled() && !islDB.containsKey(port)) {
+                if (pp.isEnabled() && isEdgePortImpl(port)) {
                     return true;
                 }
             }
@@ -2411,8 +2452,12 @@ public class VTNManagerImpl
      *          is enabled. Otherwise {@code false} is returned.
      */
     public boolean isEnabled(NodeConnector port) {
-        PortProperty pp = portDB.get(port);
-        return (pp != null && pp.isEnabled());
+        if (nodeDB.containsKey(port.getNode())) {
+            PortProperty pp = portDB.get(port);
+            return (pp != null && pp.isEnabled());
+        }
+
+        return false;
     }
 
     /**
@@ -2423,7 +2468,7 @@ public class VTNManagerImpl
      *          property is returned. {@code null} is returned if not found.
      */
     public PortProperty getPortProperty(NodeConnector nc) {
-        return portDB.get(nc);
+        return (nodeDB.containsKey(nc.getNode())) ? portDB.get(nc) : null;
     }
 
     /**
@@ -2436,8 +2481,12 @@ public class VTNManagerImpl
      *          determined.
      */
     public String getPortName(NodeConnector nc) {
-        PortProperty prop = portDB.get(nc);
-        return (prop == null) ? null : prop.getName();
+        if (nodeDB.containsKey(nc.getNode())) {
+            PortProperty prop = portDB.get(nc);
+            return (prop == null) ? null : prop.getName();
+        }
+
+        return null;
     }
 
     /**
@@ -5783,6 +5832,12 @@ public class VTNManagerImpl
             return false;
         }
 
+        if (!exists(nc)) {
+            LOG.debug("{}: probeHost: Ignore request for {}: Unknown port {}",
+                      containerName, host, nc);
+            return false;
+        }
+
         // Create an unicast ARP request.
         InetAddress target = host.getNetworkAddress();
         byte[] dst = host.getDataLayerAddressBytes();
@@ -5804,7 +5859,7 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (islDB.containsKey(nc)) {
+            if (!isEdgePortImpl(nc)) {
                 LOG.debug("{}: probeHost: Ignore request for {}: " +
                           "Internal port", containerName, host);
                 return false;
@@ -7377,33 +7432,14 @@ public class VTNManagerImpl
     @Override
     public void notifyNode(Node node, UpdateType type,
                            Map<String, Property> propMap) {
-        if (type == UpdateType.CHANGED) {
-            // Nothing to do.
-            return;
-        }
-
         // Acquire writer lock because this operation may change existing
         // virtual network mapping.
         Lock wrlock = rwLock.writeLock();
+        UpdateType utype = type;
         wrlock.lock();
         try {
             // Maintain the node DB.
-            if (type == UpdateType.ADDED) {
-                if (connectionManager.getLocalityStatus(node) ==
-                    ConnectionLocality.LOCAL) {
-                    // Remove all VTN flows related to this node because
-                    // all flow entries in this node should be removed by
-                    // protocol plugin.
-                    for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                        fdb.removeFlows(this, node);
-                    }
-                }
-
-                if (!addNode(node)) {
-                    return;
-                }
-            } else {
-                assert type == UpdateType.REMOVED;
+            if (type == UpdateType.REMOVED) {
                 if (!removeNode(node)) {
                     return;
                 }
@@ -7418,10 +7454,25 @@ public class VTNManagerImpl
                 for (MacAddressTable table: macTableMap.values()) {
                     table.flush(node);
                 }
+            } else {
+                if (connectionManager.getLocalityStatus(node) ==
+                    ConnectionLocality.LOCAL) {
+                    // Remove all VTN flows related to this node because
+                    // all flow entries in this node should be removed by
+                    // protocol plugin.
+                    for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                        fdb.removeFlows(this, node);
+                    }
+                }
+
+                if (!addNode(node)) {
+                    return;
+                }
+                utype = UpdateType.ADDED;
             }
 
             for (VTenantImpl vtn: tenantDB.values()) {
-                vtn.notifyNode(this, node, type);
+                vtn.notifyNode(this, node, utype);
             }
         } finally {
             unlock(wrlock);
@@ -7446,21 +7497,19 @@ public class VTNManagerImpl
         wrlock.lock();
         try {
             // Maintain the port DB.
+            VNodeState pstate;
             if (type == UpdateType.REMOVED) {
                 if (!removePort(nc)) {
                     return;
                 }
+
+                pstate = VNodeState.UNKNOWN;
             } else {
                 utype = addPort(nc, propMap);
                 if (utype == null) {
                     return;
                 }
-            }
 
-            VNodeState pstate;
-            if (type == UpdateType.REMOVED) {
-                pstate = VNodeState.UNKNOWN;
-            } else {
                 // Determine whether the port is up or not.
                 pstate = (isEnabled(nc)) ? VNodeState.UP : VNodeState.DOWN;
             }
@@ -7719,7 +7768,7 @@ public class VTNManagerImpl
             NodeUtils.checkNodeType(node.getType());
             NodeUtils.checkNodeConnectorType(nc.getType());
 
-            if (islDB.containsKey(nc)) {
+            if (!isEdgePortImpl(nc)) {
                 LOG.debug("{}: Ignore packet from internal node connector: {}",
                           containerName, nc);
                 if (connectionManager.getLocalityStatus(node) ==

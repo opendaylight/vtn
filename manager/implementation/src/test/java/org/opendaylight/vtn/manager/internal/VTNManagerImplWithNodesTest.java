@@ -951,7 +951,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.initISL();
 
         Set<NodeConnector> existNodeConnector = new HashSet<NodeConnector>();
-        Set<NodeConnector> existISL = new HashSet<NodeConnector>();
+        Map<NodeConnector, NodeConnector> existISL =
+            new HashMap<NodeConnector, NodeConnector>();
         List<TopoEdgeUpdate> addTopoList = new ArrayList<TopoEdgeUpdate>();
         getInventoryNodeAndPortData(mgr, existNodeConnector, existISL,
                                     addTopoList);
@@ -964,10 +965,12 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             Map<String, Property> propMap = swMgr.getNodeConnectorProps(nc);
 
             mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
-            int expectedNumISL = existISL.contains(nc)
-                ? existISL.size() - 1 : existISL.size();
+            int expectedNumISL =
+                existISL.size() - getRemovedLinkSize(existISL, nc);
             checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                     existNodeConnector.size() - 1, expectedNumISL);
+            assertTrue(mgr.exists(nc.getNode()));
+            assertFalse(mgr.exists(nc));
 
             // remove same port again. status is not changed.
             mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
@@ -977,8 +980,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
             checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                     existNodeConnector.size(), expectedNumISL);
+            assertTrue(mgr.exists(nc.getNode()));
+            assertTrue(mgr.exists(nc));
 
-            if (existISL.contains(nc)) {
+            if (existISL.containsKey(nc)) {
                 // edge information isn't updated by invoking notifyNodeConnector()
                 // until edgeUpdate() is invoked.
                 mgr.edgeUpdate(addTopoList);
@@ -996,39 +1001,44 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                     existNodeConnector.size(), existISL.size());
         }
 
-        // add and remove not existing node connector.
-        // If added existing node connector , it is added to DB.
+        // When a node connector in unknown node is added, node connector
+        // should be added but node.
         Node node10 = NodeCreator.createOFNode(Long.valueOf("10"));
         NodeConnector nc = NodeConnectorCreator
                 .createOFNodeConnector(Short.valueOf("99"), node10);
         Map<String, Property> propMap = new HashMap<String, Property>();
 
         mgr.notifyNodeConnector(nc, UpdateType.ADDED, propMap);
-        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() + 1,
+        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                 existNodeConnector.size() + 1, existISL.size());
 
+        // exists(NodeConnector) should return false if the node is not added.
+        assertFalse(mgr.exists(node10));
+        assertFalse(mgr.exists(nc));
+
         mgr.notifyNodeConnector(nc, UpdateType.CHANGED, propMap);
-        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() + 1,
+        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                 existNodeConnector.size() + 1, existISL.size());
+        assertFalse(mgr.exists(node10));
+        assertFalse(mgr.exists(nc));
 
         // nodeDB isn't updated when notifyNodeConnector() invoked with
         // UpdateType.REMOVED.
         mgr.notifyNodeConnector(nc, UpdateType.REMOVED, propMap);
-        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() + 1,
+        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                 existNodeConnector.size(), existISL.size());
 
-        // nodeDB isn't updated until notifyNode() received().
         mgr.notifyNode(node10, UpdateType.REMOVED, propMap);
         checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                 existNodeConnector.size(), existISL.size());
 
         // in case propMap == null
         mgr.notifyNodeConnector(nc, UpdateType.ADDED, null);
-        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() + 1,
+        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                 existNodeConnector.size() + 1, existISL.size());
 
         mgr.notifyNodeConnector(nc, UpdateType.REMOVED, null);
-        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() + 1,
+        checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                 existNodeConnector.size(), existISL.size());
 
         mgr.notifyNode(node10, UpdateType.REMOVED, null);
@@ -1136,7 +1146,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.initISL();
 
         Set<NodeConnector> existNodeConnector = new HashSet<NodeConnector>();
-        Set<NodeConnector> existISL = new HashSet<NodeConnector>();
+        Map<NodeConnector, NodeConnector> existISL =
+            new HashMap<NodeConnector, NodeConnector>();
         List<TopoEdgeUpdate> addTopoList = new ArrayList<TopoEdgeUpdate>();
         getInventoryNodeAndPortData(mgr, existNodeConnector, existISL,
                                     addTopoList);
@@ -1159,13 +1170,19 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             getInventoryNodeAndPortData(mgr, existNodeConnector, existISL,
                                         addTopoList);
 
+            int removed = 0;
             for (Node node : swMgr.getNodes()) {
                 mgr.initInventory();
                 mgr.initISL();
 
-                int expectedNumISL = 1;
-                if (mode == 3) {
-                    expectedNumISL = (node.equals(node0)) ? 2 : 3;
+                // If test mode is 3, node0 is linked with both node1 and
+                // node2. So all inter-switch links will be removed when node0
+                // is removed.
+                int expectedNumISL;
+                if (mode == 2 || node.equals(node0)) {
+                    expectedNumISL = 0;
+                } else {
+                    expectedNumISL = 2;
                 }
 
                 Map<String, Property> propMap = swMgr.getNodeProps(node);
@@ -1176,11 +1193,6 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
 
                 // remove same node again. status is not changed.
                 mgr.notifyNode(node, UpdateType.REMOVED, propMap);
-                checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() - 1,
-                        existNodeConnector.size() - swMgr.getNodeConnectors(node).size(),
-                        expectedNumISL);
-
-                mgr.notifyNode(node, UpdateType.CHANGED, propMap);
                 checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size() - 1,
                         existNodeConnector.size() - swMgr.getNodeConnectors(node).size(),
                         expectedNumISL);
@@ -1272,7 +1284,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.initISL();
 
         Set<NodeConnector> existNodeConnector = new HashSet<NodeConnector>();
-        Set<NodeConnector> existISL = new HashSet<NodeConnector>();
+        Map<NodeConnector, NodeConnector> existISL =
+            new HashMap<NodeConnector, NodeConnector>();
         getInventoryNodeAndPortData(mgr, existNodeConnector, existISL, null);
 
         checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(), existNodeConnector.size(),
@@ -1371,6 +1384,13 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         NodeConnector head = NodeConnectorCreator
                                 .createOFNodeConnector(Short.valueOf(portHead),
                                                        nodeHead);
+                        boolean tailExists = !(nodeTail.equals(node100) ||
+                                               portTail == 99);
+                        boolean headExists = !(nodeHead.equals(node100) ||
+                                               portHead == 99);
+                        assertEquals(tailExists, mgr.exists(tail));
+                        assertEquals(headExists, mgr.exists(head));
+
                         Edge newEdge = null;
                         try {
                             newEdge = new Edge(tail, head);
@@ -1384,20 +1404,16 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         addTopoList.add(update);
 
                         mgr.edgeUpdate(addTopoList);
-                        if (nodeTail.equals(node100) || nodeHead.equals(node100)
-                                || portTail == 99 || portHead == 99) {
-                            // if tail or head is not existing NodeConnector
-                            // islDB isn't updated.
-                            checkNodeDBAndPortDBAndIslDB(cs,
-                                    swMgr.getNodes().size(),
-                                    existNodeConnector.size(),
-                                    existISL.size());
-                        } else {
-                            checkNodeDBAndPortDBAndIslDB(cs,
-                                    swMgr.getNodes().size(),
-                                    existNodeConnector.size(),
-                                    existISL.size() + 2);
-                        }
+
+                        // ISL DB should be updated even if edge contains
+                        // unknown port.
+                        checkNodeDBAndPortDBAndIslDB(
+                            cs, swMgr.getNodes().size(),
+                            existNodeConnector.size(), existISL.size() + 2);
+                        boolean tailEdge = (tailExists && !headExists);
+                        boolean headEdge = (headExists && !tailExists);
+                        assertEquals(tailEdge, mgr.isEdgePort(tail));
+                        assertEquals(headEdge, mgr.isEdgePort(head));
 
                         update = new TopoEdgeUpdate(newEdge, null,
                                                     UpdateType.REMOVED);
@@ -1407,6 +1423,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
                         mgr.edgeUpdate(removeTopoList);
                         checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                                 existNodeConnector.size(), existISL.size());
+
+                        assertEquals(tailEdge, mgr.isEdgePort(tail));
+                        assertEquals(headEdge, mgr.isEdgePort(head));
                     }
                 }
             }
@@ -1430,7 +1449,9 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         mgr.edgeUpdate(addTopoList);
         checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                                      existNodeConnector.size(),
-                                     existISL.size());
+                                     existISL.size() + 2);
+        assertFalse(mgr.isEdgePort(tail));
+        assertFalse(mgr.isEdgePort(head));
 
         update = new TopoEdgeUpdate(newEdge, null, UpdateType.REMOVED);
         removeTopoList.clear();
@@ -1440,6 +1461,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         checkNodeDBAndPortDBAndIslDB(cs, swMgr.getNodes().size(),
                                      existNodeConnector.size(),
                                      existISL.size());
+        assertFalse(mgr.isEdgePort(tail));
+        assertFalse(mgr.isEdgePort(head));
 
         // start with invalid topology.
         // (topologyManager has edges associated with not existing Node.)
@@ -1454,7 +1477,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         vtnMgr.setSwitchManager(stubObj);
         vtnMgr.setTopologyManager(stubNew);
         startVTNManager(c);
-        assertEquals(2, cs.getCache(CACHE_ISL).size());
+        assertEquals(4, cs.getCache(CACHE_ISL).size());
     }
 
     /**
@@ -1465,15 +1488,15 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
      * @param mgr                   VTNManager service.
      * @param existNodeConnector    A List of {@link NodeConnector} which is set
      *                              existing Nodeconnectors.
-     * @param existISL              A List of {@link NodeConnector} which is set
-     *                              existing ISLs.
+     * @param existISL              A map of {@link NodeConnector} which
+     *                              contains internal links.
      * @param addTopoList           A List of {@link TopoEdgeUpdate} which is set
      *                              {@link TopoEdgeUpdate} of existing Edges.
      */
-    private void getInventoryNodeAndPortData(VTNManagerImpl mgr,
-                                             Set<NodeConnector> existNodeConnector,
-                                             Set<NodeConnector> existISL,
-                                             List<TopoEdgeUpdate> addTopoList) {
+    private void getInventoryNodeAndPortData(
+        VTNManagerImpl mgr, Set<NodeConnector> existNodeConnector,
+        Map<NodeConnector, NodeConnector> existISL,
+        List<TopoEdgeUpdate> addTopoList) {
         ISwitchManager swMgr = mgr.getSwitchManager();
         ITopologyManager topoMgr = mgr.getTopologyManager();
         for (Node node : swMgr.getNodes()) {
@@ -1481,8 +1504,10 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
         }
 
         for (Edge edge : topoMgr.getEdges().keySet()) {
-            existISL.add(edge.getHeadNodeConnector());
-            existISL.add(edge.getTailNodeConnector());
+            NodeConnector head = edge.getHeadNodeConnector();
+            NodeConnector tail = edge.getTailNodeConnector();
+            existISL.put(head, tail);
+            existISL.put(tail, head);
 
             if (addTopoList != null) {
                 TopoEdgeUpdate update = new TopoEdgeUpdate(edge, null,
@@ -1512,10 +1537,8 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             cs.getCache(CACHE_PORTS);
         List<NodeConnector> portMapList
             = new ArrayList<NodeConnector>(portMap.keySet());
-        ConcurrentMap<NodeConnector, VNodeState> islMap =
-            (ConcurrentMap<NodeConnector, VNodeState>)cs.getCache(CACHE_ISL);
-        List<NodeConnector> islMapList =
-            new ArrayList<NodeConnector>(islMap.keySet());
+        ConcurrentMap<NodeConnector, NodeConnector> islMap =
+            (ConcurrentMap<NodeConnector, NodeConnector>)cs.getCache(CACHE_ISL);
 
         if (nodeDBSize >= 0) {
             assertEquals(nodeDBSize, nodeMapList.size());
@@ -1524,7 +1547,7 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             assertEquals(portDBSize, portMapList.size());
         }
         if (islDBSize >= 0) {
-            assertEquals(islDBSize, islMapList.size());
+            assertEquals(islDBSize, islMap.size());
         }
     }
 
@@ -5054,5 +5077,29 @@ public class VTNManagerImplWithNodesTest extends VTNManagerImplTestCommon {
             Status st = mgr.flushMacEntries(bpath);
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
+    }
+
+    /**
+     * Return the number of inter-switch links to be removed when the given
+     * node is removed.
+     *
+     * @param map  A map that contains inter-switch links.
+     * @param nc   A node connector to be removed.
+     * @return  The number of inter-switch links to be removed.
+     */
+    private int getRemovedLinkSize(Map<NodeConnector, NodeConnector> map,
+                                   NodeConnector nc) {
+        Set<NodeConnector> removed = new HashSet<NodeConnector>();
+        NodeConnector port = nc;
+        do {
+            NodeConnector peer = map.get(port);
+            if (peer == null || !removed.add(port)) {
+                break;
+            }
+
+            port = peer;
+        } while (true);
+
+        return removed.size();
     }
 }
