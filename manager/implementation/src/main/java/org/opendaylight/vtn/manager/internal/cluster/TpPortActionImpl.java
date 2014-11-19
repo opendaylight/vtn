@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.TpPortAction;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 

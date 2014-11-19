@@ -7,7 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal;
+package org.opendaylight.vtn.manager.internal.util;
 
 import java.net.InetAddress;
 import java.net.Inet4Address;
@@ -20,6 +20,8 @@ import java.util.Random;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
@@ -45,6 +47,8 @@ public class MiscUtilsTest extends TestBase {
     public void testConstants() {
         assertEquals(0xff, MiscUtils.MASK_BYTE);
         assertEquals(0xffff, MiscUtils.MASK_SHORT);
+        assertEquals(12, MiscUtils.NBITS_VLAN_ID);
+        assertEquals(0xfffL, MiscUtils.MASK_VLAN_ID);
     }
 
     /**

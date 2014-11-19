@@ -14,6 +14,7 @@ import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.util.NodeUtils;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;

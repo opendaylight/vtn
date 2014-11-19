@@ -15,10 +15,10 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.Status;

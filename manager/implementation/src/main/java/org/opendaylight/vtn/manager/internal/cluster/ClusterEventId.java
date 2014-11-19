@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 /**
  * {@code ClusterEventId} describes an identifier of cluster cache event.

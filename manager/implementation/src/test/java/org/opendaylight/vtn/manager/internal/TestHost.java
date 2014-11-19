@@ -21,6 +21,7 @@ import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.hosttracker.HostIdFactory;
 import org.opendaylight.controller.hosttracker.IHostId;

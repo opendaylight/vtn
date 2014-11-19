@@ -14,7 +14,7 @@ import java.io.Serializable;
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.NetUtils;
@@ -47,20 +47,10 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     private static final int  NBITS_MAC = 48;
 
     /**
-     * The number of bits in a valid VLAN ID.
-     */
-    private static final int  NBITS_VLAN_ID = 12;
-
-    /**
-     * Mask value which represents a VLAN ID bits in a long integer.
-     */
-    public static final long MASK_VLAN_ID = (1L << NBITS_VLAN_ID) - 1L;
-
-    /**
      * Mask value which represents valid bits in {@link #encodedValue}.
      */
     private static final long MASK_ENCODED =
-        (1L << (NBITS_MAC + NBITS_VLAN_ID)) - 1L;
+        (1L << (NBITS_MAC + MiscUtils.NBITS_VLAN_ID)) - 1L;
 
     /**
      * A long value which keeps a MAC address and a VLAN ID.
@@ -156,7 +146,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      *          in this instance.
      */
     public long getMacAddress() {
-        return (encodedValue >>> NBITS_VLAN_ID);
+        return (encodedValue >>> MiscUtils.NBITS_VLAN_ID);
     }
 
     /**
@@ -165,7 +155,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      * @return  VLAN ID.
      */
     public short getVlan() {
-        return (short)(encodedValue & MASK_VLAN_ID);
+        return (short)(encodedValue & MiscUtils.MASK_VLAN_ID);
     }
 
     /**
@@ -236,7 +226,8 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      *          VLAN ID.
      */
     private long encode(long mac, short vlan) {
-        return (((mac << NBITS_VLAN_ID) | ((long)vlan & MASK_VLAN_ID)) &
+        return (((mac << MiscUtils.NBITS_VLAN_ID) |
+                 ((long)vlan & MiscUtils.MASK_VLAN_ID)) &
                 MASK_ENCODED);
     }
 

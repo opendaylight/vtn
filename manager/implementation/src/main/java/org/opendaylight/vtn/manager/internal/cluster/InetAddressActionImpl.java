@@ -14,7 +14,7 @@ import java.net.InetAddress;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.InetAddressAction;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.utils.Status;
 

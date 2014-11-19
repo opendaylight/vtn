@@ -16,7 +16,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 

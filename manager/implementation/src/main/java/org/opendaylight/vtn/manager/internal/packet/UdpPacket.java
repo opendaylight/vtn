@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal.packet;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.packet.UDP;
 

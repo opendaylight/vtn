@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.io.Serializable;
 import java.util.Map;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.core.Bandwidth;
 import org.opendaylight.controller.sal.core.Config;

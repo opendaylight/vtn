@@ -69,8 +69,6 @@ public class MacVlanTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        assertEquals(MASK_VLAN_ID, MacVlan.MASK_VLAN_ID);
-
         short[] vlans = new short[] {0, 1, 1000, 4095};
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan : vlans) {

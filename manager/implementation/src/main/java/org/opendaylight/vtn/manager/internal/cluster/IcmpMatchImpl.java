@@ -12,10 +12,10 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
-import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
 import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.IPProtocols;

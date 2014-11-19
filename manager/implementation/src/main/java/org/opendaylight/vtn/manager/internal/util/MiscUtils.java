@@ -7,7 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal;
+package org.opendaylight.vtn.manager.internal.util;
 
 import java.net.InetAddress;
 import java.net.Inet4Address;
@@ -15,7 +15,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.utils.HexEncode;
@@ -48,6 +47,16 @@ public final class MiscUtils {
      */
     private static final Pattern RESOURCE_NAME_REGEX =
         Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
+
+    /**
+     * The number of bits in a valid VLAN ID.
+     */
+    public static final int  NBITS_VLAN_ID = 12;
+
+    /**
+     * Mask value which represents a VLAN ID bits in a long integer.
+     */
+    public static final long MASK_VLAN_ID = (1L << NBITS_VLAN_ID) - 1L;
 
     /**
      * A mask value which represents valid bits in an VLAN priority.
@@ -154,7 +163,7 @@ public final class MiscUtils {
      * @throws VTNException  The specified VLAN ID is invalid.
      */
     public static void checkVlan(short vlan) throws VTNException {
-        if (((long)vlan & ~MacVlan.MASK_VLAN_ID) != 0L) {
+        if (((long)vlan & ~MASK_VLAN_ID) != 0L) {
             String msg = "Invalid VLAN ID: " + vlan;
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }

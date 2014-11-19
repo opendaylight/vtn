@@ -12,8 +12,8 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
-import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.Status;

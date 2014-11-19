@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.net.InetAddress;
 
 import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.internal.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 /**
  * {@code MacTableEntryId} describes an identifier of a MAC address table

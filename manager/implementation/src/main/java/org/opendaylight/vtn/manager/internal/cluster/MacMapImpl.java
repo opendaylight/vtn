@@ -41,11 +41,11 @@ import org.opendaylight.vtn.manager.internal.MacMapConflictException;
 import org.opendaylight.vtn.manager.internal.MacMapDuplicateException;
 import org.opendaylight.vtn.manager.internal.MacMapGoneException;
 import org.opendaylight.vtn.manager.internal.MacMapPortBusyException;
-import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.NodePortFilter;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.SpecificPortFilter;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -1242,7 +1242,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *              by {@code addr} is contained in {@code set}.
      */
     private boolean containsMacAddress(NavigableSet<MacVlan> set, long addr) {
-        MacVlan key = new MacVlan(addr, (short)MacVlan.MASK_VLAN_ID);
+        MacVlan key = new MacVlan(addr, (short)MiscUtils.MASK_VLAN_ID);
         MacVlan floor = set.floor(key);
         return (floor != null && floor.getMacAddress() == addr);
     }

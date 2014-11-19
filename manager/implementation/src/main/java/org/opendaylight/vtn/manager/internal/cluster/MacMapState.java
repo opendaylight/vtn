@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import org.opendaylight.vtn.manager.internal.MacMapActivation;
 import org.opendaylight.vtn.manager.internal.MacMapDuplicateException;
 import org.opendaylight.vtn.manager.internal.PortFilter;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 
@@ -394,7 +395,7 @@ public class MacMapState implements Serializable, Cloneable {
      *          {@code null} if not found.
      */
     private Entry<MacVlan, NodeConnector> getDuplicateEntry(long mac) {
-        MacVlan key = new MacVlan(mac, (short)MacVlan.MASK_VLAN_ID);
+        MacVlan key = new MacVlan(mac, (short)MiscUtils.MASK_VLAN_ID);
         Entry<MacVlan, NodeConnector> entry = activeMap.floorEntry(key);
         if (entry != null) {
             MacVlan floor = entry.getKey();

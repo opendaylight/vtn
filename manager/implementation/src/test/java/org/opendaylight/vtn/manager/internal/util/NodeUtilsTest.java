@@ -7,13 +7,15 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal;
+package org.opendaylight.vtn.manager.internal.util;
 
 import java.util.UUID;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
 import org.opendaylight.controller.sal.core.Node;
@@ -22,9 +24,10 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
-import static org.opendaylight.vtn.manager.internal.NodeUtils.checkNodeType;
 import static
-    org.opendaylight.vtn.manager.internal.NodeUtils.checkNodeConnectorType;
+    org.opendaylight.vtn.manager.internal.util.NodeUtils.checkNodeType;
+import static
+    org.opendaylight.vtn.manager.internal.util.NodeUtils.checkNodeConnectorType;
 
 /**
  * JUnit test for {@link NodeUtils}.

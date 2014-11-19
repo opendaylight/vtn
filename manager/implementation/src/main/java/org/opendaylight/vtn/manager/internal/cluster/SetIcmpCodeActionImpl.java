@@ -13,10 +13,10 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
 
-import org.opendaylight.vtn.manager.internal.MiscUtils;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
 import org.opendaylight.vtn.manager.internal.packet.L4Packet;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.utils.StatusCode;
