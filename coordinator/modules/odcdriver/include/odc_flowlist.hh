@@ -31,10 +31,12 @@ namespace odcdriver {
 class odl_flowlist_http_request: public odl_http_rest_intf {
 
 public:
-  odl_flowlist_http_request(flowcondition *value, std::string url, flowConditions *read_value):
+  odl_flowlist_http_request(flowcondition *value, std::string url,
+                            flowConditions *read_value, pfc_bool_t entry):
     url_(url),
     flow_condition_(value),
-    flow_conditions_(read_value) {}
+    flow_conditions_(read_value),
+    is_entry_(entry) {}
 
   // Is multiple requests need to be sent to handle the request?
   pfc_bool_t is_multiple_requests(unc::odcdriver::OdcDriverOps Op) {
@@ -65,12 +67,23 @@ public:
                                      json_object *object) {
     ODC_FUNC_TRACE;
     if ( Op != unc::odcdriver::CONFIG_READ &&
-         Op != unc::odcdriver::CONFIG_DELETE ) {
+        Op != unc::odcdriver::CONFIG_DELETE ) {
       unc::odcdriver::flowConditionsUtil util_;
-      UncRespCode ret(util_.SetValue(object,flow_condition_));
-      if ( ret != UNC_RC_SUCCESS ) {
-        pfc_log_error("Failed to Copy from flowcondtion to json!!");
-        return ret;
+      UncRespCode ret(UNC_RC_SUCCESS);
+      if ( is_entry_ == PFC_FALSE ) {
+        ret=util_.SetValue(object,flow_condition_);
+      } else {
+        std::list <match*>::iterator iter_;
+        iter_ = flow_condition_->match_.begin();
+        if ( iter_ != flow_condition_->match_.end() && (*iter_ == NULL) ) {
+          pfc_log_error("No Contents in match");
+        } else {
+          UncRespCode ret(util_.SetValue(object,*iter_));
+          if ( ret != UNC_RC_SUCCESS ) {
+            pfc_log_error("Failed to Copy from flowcondtion to json!!");
+            return ret;
+          }
+        }
       }
     } else {
       pfc_log_info("READ or delete");
@@ -132,6 +145,7 @@ private:
   std::string url_;
   flowcondition* flow_condition_;
   flowConditions* flow_conditions_;
+  pfc_bool_t is_entry_;
 };
 
 template <typename key,typename value>
@@ -139,10 +153,13 @@ class OdcFlowConditionCmd {
 
 private:
   unc::restjson::ConfFileValues_t conf_values_;
+  pfc_bool_t is_entry_;
 
 public:
-  OdcFlowConditionCmd(unc::restjson::ConfFileValues_t conf_values):
-    conf_values_(conf_values) {}
+  OdcFlowConditionCmd(unc::restjson::ConfFileValues_t conf_values,
+                      pfc_bool_t is_entry):
+    conf_values_(conf_values),
+    is_entry_(is_entry) {}
 
   ~OdcFlowConditionCmd() {}
 
@@ -174,7 +191,7 @@ public:
 
     pfc_log_info("The Flow list URL: %s",url.c_str());
 
-    odl_flowlist_http_request flow_cond_request(&command_,url,NULL);
+    odl_flowlist_http_request flow_cond_request(&command_,url, NULL, is_entry_);
 
     odl_http_request odl_fc_create;
     return odl_fc_create.handle_request(ctr,
@@ -194,7 +211,7 @@ public:
     url.append("flowconditions");
     pfc_log_info("The Flow list URL: %s",url.c_str());
 
-    odl_flowlist_http_request flow_cond_request(NULL,url,&read_all_);
+    odl_flowlist_http_request flow_cond_request(NULL,url,&read_all_,is_entry_);
     odl_http_request odl_fc_create;
     UncRespCode ret (odl_fc_create.handle_request(ctr,
                      unc::odcdriver::CONFIG_READ,
@@ -220,7 +237,7 @@ public:
    * @param[in]                      - conf file values
    */
   explicit OdcFlowListCommand(unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowConditionCmd<key_flowlist,val_flowlist>(conf_values),
+    OdcFlowConditionCmd<key_flowlist,val_flowlist>(conf_values,PFC_FALSE),
     conf_file_values_(conf_values) {}
 
   /**
@@ -235,6 +252,7 @@ public:
                        val_in,
                        ctr,
                        unc::odcdriver::CONFIG_UPDATE);
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode delete_cmd(key_flowlist &key_in, val_flowlist &val_in,
@@ -250,6 +268,10 @@ public:
   UncRespCode update_cmd(key_flowlist &key_in, val_flowlist &val_in,
                          unc::driver::controller *ctr) {
     ODC_FUNC_TRACE;
+    return run_command(key_in,
+                       val_in,
+                       ctr,
+                       unc::odcdriver::CONFIG_UPDATE);
     return UNC_RC_SUCCESS;
   }
   /**
@@ -295,7 +317,7 @@ public:
    * @param[in]                      - conf file values
    */
   explicit OdcFlowListEntryCommand(unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowConditionCmd<key_flowlist_entry, val_flowlist_entry>(conf_values),
+    OdcFlowConditionCmd<key_flowlist_entry, val_flowlist_entry>(conf_values, PFC_TRUE),
     conf_file_values_(conf_values) {}
 
   /**
