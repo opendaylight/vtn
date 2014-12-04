@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Assert;
-
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.SwitchPort;
@@ -38,11 +37,14 @@ import org.opendaylight.vtn.manager.VTenantConfig;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.flow.action.FlowAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
+import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
-
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -57,6 +59,7 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.core.UpdateType;
 
 /**
  * Abstract base class for JUnit tests.
@@ -85,6 +88,15 @@ public abstract class TestBase extends Assert {
      */
     protected static final String SWITCH_RESERVED =
         "switch port is reserved: host={";
+     /**
+     * An array of index values with positive and negative values.
+     */
+    public static final int[] INDEX_ARRAY = {3, 0, 65536};
+
+     /**
+     * An array of Tenant values with valid and invalid values.
+     */
+    public static final String[] TENANT_NAME = {"tenant", "", null};
 
     /**
      * Throw an error which indicates an unexpected throwable is caught.
@@ -1767,6 +1779,98 @@ public abstract class TestBase extends Assert {
                 assertArrayEquals(msg, targetAddr,
                         arp.getTargetProtocolAddress());
             }
+        }
+    }
+    /**
+    * VtnmanagerImpl  object creation
+    * @return VtnmanagerImplList
+    */
+    public List<VTNManagerImpl> createVtnManagerImplobj() {
+        List<VTNManagerImpl> vtnMangerList = new ArrayList<VTNManagerImpl>();
+        try {
+            vtnMangerList.add(null);
+            VTNManagerImpl vtnmangerimpl = new VTNManagerImpl();
+            vtnMangerList.add(vtnmangerimpl);
+            return vtnMangerList;
+        } catch (Exception ex) {
+            return vtnMangerList;
+        }
+    }
+
+
+    /**
+     * Common Method to create UpdateTye.
+     *  @return UpdateType list.
+     */
+    public List<UpdateType> updateTypeList() {
+        List<UpdateType> updatetypeList = new ArrayList<UpdateType>();
+        updatetypeList.add(null);
+
+        try {
+            updatetypeList.add(UpdateType.ADDED);
+            updatetypeList.add(UpdateType.REMOVED);
+            updatetypeList.add(UpdateType.CHANGED);
+            return updatetypeList;
+        } catch (Exception ex) {
+            return updatetypeList;
+        }
+    }
+
+    /**
+     * Common Method to create FlowFilter.
+     *  @return flowfilter list object.
+     */
+    public List<FlowFilter> createFlowFilter() {
+        List<FlowFilter> flowList = new ArrayList<FlowFilter>();
+        flowList.add(null);
+
+        try {
+            FlowFilter flowfilter = createFlowFilterobj();
+            flowList.add(flowfilter);
+            flowfilter = null;
+            flowList.add(flowfilter);
+            return flowList;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /*
+    *Common Method to create FlowFilter.
+    *  @return flowfilter object.
+    */
+    public FlowFilter createFlowFilterobj() {
+        int idx = 3;
+        int port = 0;
+        String cond = "Flow";
+        try {
+            List<FlowAction> actionList = new ArrayList<FlowAction>();
+            actionList.add(new SetTpSrcAction(port));
+            FlowFilter flowfilterobj = new FlowFilter(cond, new PassFilter(), actionList);
+            return flowfilterobj;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Common Method to create VtenantPaths.
+     *  @return VTenantPath list object.
+     */
+    public List<VTenantPath> creatVtenantPaths() {
+        List<VTenantPath> pathList = new ArrayList<VTenantPath>();
+        try {
+            VTenantPath vpath = null;
+            pathList.add(null);
+            pathList.add(vpath);
+
+            for (String tenantName : TENANT_NAME) {
+                vpath = new  VTenantPath(tenantName);
+                pathList.add(vpath);
+            }
+            return pathList;
+        } catch (Exception ex) {
+            return null;
         }
     }
 
