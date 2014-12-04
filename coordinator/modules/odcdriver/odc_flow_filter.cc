@@ -617,7 +617,7 @@ flowfilterlistUtil::GetValue(json_object *in,flowfilter* out) {
     if ( filterType_getret != UNC_RC_SUCCESS )
       return filterType_getret;
   }
-  std::string actionkey ("action");
+  std::string actionkey ("actions");
   int array_length (JsonBuildParse::get_array_length(in,actionkey));
   if ( array_length == 0 ) {
     pfc_log_error("parse failed %s", actionkey.c_str());
@@ -680,7 +680,7 @@ flowfilterlistUtil::SetValue(json_object *out,flowfilter* in) {
       }
     }
   }
-  std::string actionkey ("action");
+  std::string actionkey ("actions");
   json_object* array(JsonBuildParse::create_json_array_obj());
   std::list <action*>::iterator iter=in->action_.begin();
   while ( iter != in->action_.end() ) {
