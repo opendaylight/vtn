@@ -431,9 +431,9 @@ public class VTNManagerImpl
     private TaskQueueThread  flowTaskThread;
 
     /**
-     * ARP handler emulator.
+     * True if VTN is active.
      */
-    private ArpHandler  arpHandler;
+    private boolean  vtnMode;
 
     /**
      * True if non-default container exists.
@@ -740,10 +740,7 @@ public class VTNManagerImpl
         ppmap.register();
         pathPolicyMap.put(Integer.valueOf(PathPolicyImpl.POLICY_ID), ppmap);
 
-        if (inContainerMode || tenantDB.isEmpty()) {
-            // Start ARP handler emulator.
-            arpHandler = new ArpHandler(this);
-        }
+        vtnMode = !(inContainerMode || tenantDB.isEmpty());
 
         resourceManager.addManager(this);
         serviceAvailable = true;
@@ -779,16 +776,6 @@ public class VTNManagerImpl
      */
     void stop() {
         LOG.trace("{}: stop() called", containerName);
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            // Stop timeout timer in the ARP handler emulator.
-            if (arpHandler != null) {
-                arpHandler.destroy();
-            }
-        } finally {
-            rdlock.unlock();
-        }
     }
 
     /**
@@ -4354,19 +4341,18 @@ public class VTNManagerImpl
      */
     private void updateVTNMode(boolean sync) {
         if (!inContainerMode && !tenantDB.isEmpty()) {
-            // Stop ARP handler emulator, and activate VTN.
-            if (arpHandler != null) {
-                arpHandler.destroy();
-                arpHandler = null;
+            // Activate VTN.
+            if (!vtnMode) {
+                vtnMode = true;
                 if (sync) {
                     notifyListeners(true);
                 } else {
                     notifyChange(true);
                 }
             }
-        } else if (arpHandler == null) {
-            // Inactivate VTN, and start ARP handler emulator.
-            arpHandler = new ArpHandler(this);
+        } else if (vtnMode) {
+            // Inactivate VTN.
+            vtnMode = false;
             if (sync) {
                 notifyListeners(false);
             } else {
@@ -4742,13 +4728,7 @@ public class VTNManagerImpl
      */
     @Override
     public boolean isActive() {
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            return (arpHandler == null);
-        } finally {
-            unlock(rdlock);
-        }
+        return vtnMode;
     }
 
     /**
@@ -7759,11 +7739,6 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (arpHandler != null) {
-                // No VTN. Pass packet to the ARP handler emulator.
-                return arpHandler.receive(pctx);
-            }
-
             // Ensure that the packet was sent by an OpenFlow node. */
             NodeUtils.checkNodeType(node.getType());
             NodeUtils.checkNodeConnectorType(nc.getType());
@@ -7839,10 +7814,8 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (arpHandler == null) {
+            if (vtnMode) {
                 findHost(networkAddress, null);
-            } else {
-                arpHandler.find(networkAddress);
             }
         } finally {
             unlock(rdlock);
@@ -7860,10 +7833,8 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            if (arpHandler == null) {
+            if (vtnMode) {
                 probeHost(host);
-            } else {
-                arpHandler.probe(host);
             }
         } finally {
             unlock(rdlock);
