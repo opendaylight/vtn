@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -18,8 +18,10 @@
 #include <string>
 #include <stdint.h>
 #include <pthread.h>
+#include <boost/noncopyable.hpp>
 #include <pfc/synch.h>
 #include <pfc/clock.h>
+#include <pfc/debug.h>
 
 /*
  * Thread's exit state that means the thread is stopped by force.
@@ -82,6 +84,9 @@ protected:
 
 private:
     static void	*entry(void *arg);
+    static void	dtor(void *arg);
+
+    int		timedJoin(void);
 
     /* Thread state. */
     volatile tstate_t	_state;
@@ -97,6 +102,35 @@ private:
 
     /* Error message. */
     std::string		_message;
+
+    /* Set true when the thread returns from run(). */
+    bool		_done;
+
+    /* Mutex lock and condition variable for timed join. */
+    pfc_mutex_t		_join_mutex;
+    pfc_cond_t		_join_cond;
+};
+
+/*
+ * Scoped mutex which uses pfc_mutex_t.
+ */
+class PfcMutex
+    : boost::noncopyable
+{
+public:
+    PfcMutex(pfc_mutex_t &mutex)
+        : _mutex(&mutex)
+    {
+        PFC_VERIFY_INT(pfc_mutex_lock(_mutex), 0);
+    }
+
+    ~PfcMutex()
+    {
+        PFC_VERIFY_INT(pfc_mutex_unlock(_mutex), 0);
+    }
+
+private:
+    pfc_mutex_t    *_mutex;
 };
 
 #endif	/* !_TEST_THREAD_SUBR_HH */

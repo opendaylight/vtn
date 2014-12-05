@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -338,13 +338,8 @@ public:
     bool
     checkState(void)
     {
-        test_state_t	state;
-
-        pfc_mutex_lock(&_mutex);
-        state = _state;
-        pfc_mutex_unlock(&_mutex);
-
-        return (state == ATS_RUNNING) ? true : false;
+        PfcMutex  m(_mutex);
+        return (_state == ATS_RUNNING) ? true : false;
     }
 
     void
@@ -383,9 +378,7 @@ private:
 bool
 AtomicThreadEnv::waitForStart(void)
 {
-    bool	ret(true);
-
-    pfc_mutex_lock(&_mutex);
+    PfcMutex  m(_mutex);
 
     for (;;) {
         test_state_t	state(_state);
@@ -396,16 +389,13 @@ AtomicThreadEnv::waitForStart(void)
 
         if (PFC_EXPECT_FALSE(state == ATS_FINI)) {
             // Test was cancelled.
-            ret = false;
-            break;
+            return false;
         }
 
         pfc_cond_wait(&_cond, &_mutex);
     }
 
-    pfc_mutex_unlock(&_mutex);
-
-    return ret;
+    return true;
 }
 
 void
@@ -418,12 +408,11 @@ AtomicThreadEnv::initCommon(void)
 void
 AtomicThreadEnv::setState(test_state_t state)
 {
-    pfc_mutex_lock(&_mutex);
+    PfcMutex  m(_mutex);
     if (_state != ATS_FINI) {
         _state = state;
         pfc_cond_broadcast(&_cond);
     }
-    pfc_mutex_unlock(&_mutex);
 }
 
 /*
@@ -519,6 +508,7 @@ class AtomicThread
 {
 public:
     static const uint32_t	QUANTUM = 10;
+    static const uint32_t	MIN_COUNT = 20;
 
     AtomicThread(AtomicThreadEnv &env)
         : _env(&env), _succeeded(false), _count(0), _quantum(0)
@@ -543,7 +533,7 @@ public:
     bool
     checkState(void)
     {
-        return _env->checkState();
+        return (_env->checkState() || _count < MIN_COUNT);
     }
 
     uint32_t
@@ -603,26 +593,26 @@ AtomicThreadEnv::invoke(AtomicThread **threads, int nthreads, uint32_t &count)
 
     pfc_timespec_t  ts = {ATOMIC_RACE_DURATION, ATOMIC_RACE_DURATION_NSEC};
     pfc_timespec_t  abs;
-    pfc_mutex_lock(&_mutex);
 
-    ASSERT_EQ(0, pfc_clock_abstime(&abs, &ts));
-    for (;;) {
-        test_state_t	state(_state);
-        if (PFC_EXPECT_FALSE(state != ATS_RUNNING)) {
-            pfc_mutex_unlock(&_mutex);
-            return;
-        }
+    {
+        PfcMutex  m(_mutex);
+        ASSERT_EQ(0, pfc_clock_abstime(&abs, &ts));
 
-        int	err(pfc_cond_timedwait_abs(&_cond, &_mutex, &abs));
-        if (err == ETIMEDOUT) {
-            // Terminate all test threads.
-            _state = ATS_FINI;
-            pfc_cond_broadcast(&_cond);
-            break;
+        for (;;) {
+            test_state_t	state(_state);
+            if (PFC_EXPECT_FALSE(state != ATS_RUNNING)) {
+                return;
+            }
+
+            int  err(pfc_cond_timedwait_abs(&_cond, &_mutex, &abs));
+            if (err == ETIMEDOUT) {
+                // Terminate all test threads.
+                _state = ATS_FINI;
+                pfc_cond_broadcast(&_cond);
+                break;
+            }
         }
     }
-
-    pfc_mutex_unlock(&_mutex);
 
     uint32_t	cnt(0);
     for (int i(0); i < nthreads; i++) {

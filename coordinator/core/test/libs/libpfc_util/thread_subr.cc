@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2014 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -13,17 +13,37 @@
 
 #include <sstream>
 #include <cstring>
+#include <pfc/atomic.h>
 #include "thread_subr.hh"
+
+#define	JOIN_TIMEOUT	30
+
+/*
+ * TSD key used to call destructor.
+ */
+static pthread_key_t	thread_dtor_key;
+
+/*
+ * Set 1 if the thread utility is initialized.
+ */
+static uint8_t		thread_initialized = 0;
 
 /*
  * TempThread::TempThread()
  *	Constructor of temporary thread instance.
  */
 TempThread::TempThread()
-    : _state(THR_INIT)
+    : _state(THR_INIT), _done(false)
 {
+    if (pfc_atomic_swap_uint8(&thread_initialized, 0U) == 0U) {
+        PFC_VERIFY_INT(pthread_key_create(&thread_dtor_key, TempThread::dtor),
+                       0);
+    }
+
     PFC_MUTEX_INIT(&_mutex);
+    PFC_MUTEX_INIT(&_join_mutex);
     pfc_cond_init(&_cond);
+    pfc_cond_init(&_join_cond);
 }
 
 /*
@@ -46,12 +66,14 @@ TempThread::~TempThread()
         pthread_t	t(_thread);
 
         if (t != PFC_PTHREAD_INVALID_ID) {
-            (void)pthread_join(_thread, NULL);
+            (void)timedJoin();
         }
     }
 
     pfc_cond_destroy(&_cond);
+    pfc_cond_destroy(&_join_cond);
     pfc_mutex_destroy(&_mutex);
+    pfc_mutex_destroy(&_join_mutex);
 }
 
 /*
@@ -109,7 +131,7 @@ TempThread::join(void)
     condSignal();
     unlock();
 
-    int	err(pthread_join(_thread, NULL));
+    int	err(timedJoin());
     _thread = PFC_PTHREAD_INVALID_ID;
 
     return err;
@@ -215,10 +237,64 @@ TempThread::entry(void *arg)
 {
     TempThread	*thr(reinterpret_cast<TempThread *>(arg));
 
+    // Set TempThread instance into TSD.
+    PFC_VERIFY_INT(pthread_setspecific(thread_dtor_key, thr), 0);
+
     // Disable cancellation.
     (void)pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 
     thr->run();
 
     return NULL;
+}
+
+/*
+ * void
+ * TempThread::dtor(void *arg)
+ *	Destructor of the thread bound to a TempThread instance.
+ */
+void
+TempThread::dtor(void *arg)
+{
+    TempThread	*thr(reinterpret_cast<TempThread *>(arg));
+
+    PfcMutex  m(thr->_join_mutex);
+    thr->_done = true;
+    pfc_cond_broadcast(&thr->_join_cond);
+}
+
+/*
+ * int
+ * TempThread::timedJoin(void)
+ *	Wait for the thread to terminate within the timeout.
+ *
+ * Calling/Exit State:
+ *	Upon successful completion, zero is returned.
+ *	Otherwise error number which indicates the cause of error is returned.
+ */
+int
+TempThread::timedJoin(void)
+{
+    pfc_timespec_t  timeout = {JOIN_TIMEOUT, 0};
+    pfc_timespec_t  abs;
+    int  err(pfc_clock_abstime(&abs, &timeout));
+
+    if (PFC_EXPECT_FALSE(err != 0)) {
+        return err;
+    }
+
+    {
+        PfcMutex  m(_join_mutex);
+        while (!_done) {
+            err = pfc_cond_timedwait_abs(&_join_cond, &_join_mutex, &abs);
+            if (PFC_EXPECT_FALSE(err != 0 && err != EINTR)) {
+                if (_done) {
+                    break;
+                }
+                return err;
+            }
+        }
+    }
+
+    return pthread_join(_thread, NULL);
 }
