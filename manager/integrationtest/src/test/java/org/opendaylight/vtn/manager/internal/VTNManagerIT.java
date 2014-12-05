@@ -139,7 +139,6 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
-import org.opendaylight.controller.switchmanager.Subnet;
 import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
 
 import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
@@ -5525,6 +5524,10 @@ public class VTNManagerIT extends TestBase {
                 }
             }
 
+            // All packets should be discarded unless VTN is present.
+            boolean found = (bpath != null);
+            long timeout = (found) ? LATCH_TIMEOUT : LATCH_FALSE_TIMEOUT;
+
             String emsg =
                     "(bpath)" + ((bpath == null) ? "(null)" : bpath.toString()) +
                     "(vlan)" + (new Short(vlan)).toString();
@@ -5532,11 +5535,13 @@ public class VTNManagerIT extends TestBase {
             CountDownLatch res = dps.setLatch(existConnectors.size());
             hostFinder.find(ia);
             try {
-                assertTrue(emsg, res.await(LATCH_TIMEOUT, TimeUnit.SECONDS));
+                assertEquals(emsg, found, res.await(timeout, TimeUnit.SECONDS));
             } catch (Exception e) {
                 unexpected(e);
             }
-            assertEquals(emsg, existConnectors.size(), dps.getPktCount());
+
+            int npackets = (found) ? existConnectors.size() : 0;
+            assertEquals(emsg, npackets, dps.getPktCount());
 
             // IPv6 Address case
             dps.clearPkt();
@@ -5577,15 +5582,6 @@ public class VTNManagerIT extends TestBase {
                 unexpected(e);
             }
 
-            // ArpHandler.probe(HostNodeConnector) sends an ARP request only
-            // if a subnet matching destination address exists.
-            boolean found;
-            if (bpath == null) {
-                Subnet subnet = swmgr.getSubnetByNetworkAddress(ia);
-                found = (subnet != null && subnet.getVlan() == vlan);
-            } else {
-                found = true;
-            }
             int count;
             long tmout;
             if (found) {
