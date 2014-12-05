@@ -3617,16 +3617,16 @@ sub search_pkgconfig(\%$$$)
 		(@PKG_CONFIG_LIBDIR) = split(/:/, $env) if ($env);
 
 		my $multiarch = $vars->{MULTIARCH};
-		my $libdir = '/usr/lib';
+		my (@libdirs) = qw(/usr/lib /lib);
 		if ($multiarch) {
 			push(@PKG_CONFIG_LIBDIR,
 			     '/usr/lib/' . $multiarch . '/pkgconfig');
 		}
 		elsif ($vars->{UNC_LP64}) {
-			$libdir = '/usr/lib64';
+			(@libdirs) = qw(/usr/lib64 /lib64);
 		}
 
-		push(@PKG_CONFIG_LIBDIR, $libdir . '/pkgconfig',
+		push(@PKG_CONFIG_LIBDIR, map {$_ . '/pkgconfig'} @libdirs,
 		     '/usr/share/pkgconfig');
 	}
 
