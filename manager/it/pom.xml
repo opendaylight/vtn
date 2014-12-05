@@ -17,10 +17,10 @@
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>manager.common</artifactId>
     <version>0.3.0-SNAPSHOT</version>
-    <relativePath>common</relativePath>
+    <relativePath>../common</relativePath>
   </parent>
 
-  <artifactId>vtn-manager</artifactId>
+  <artifactId>manager.it</artifactId>
   <packaging>pom</packaging>
 
   <scm>
@@ -31,42 +31,13 @@
   </scm>
 
   <properties>
-    <vtn.manager.dir>.</vtn.manager.dir>
+    <vtn.manager.dir>..</vtn.manager.dir>
     <checkstyle.skip>true</checkstyle.skip>
   </properties>
 
   <modules>
-    <module>api</module>
-    <module>implementation</module>
-    <module>neutron</module>
-    <module>northbound</module>
-
-    <!-- Karaf distribution -->
-    <module>features</module>
-    <module>dist/karaf</module>
-
-    <!-- Parents -->
-    <module>checkstyle</module>
     <module>common</module>
-    <module>../common</module>
+    <module>core</module>
+    <module>northbound</module>
   </modules>
-
-  <profiles>
-    <profile>
-      <id>integrationtests</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-
-        <!-- Activate IT modules if vtn.build.sonar property is defined. -->
-        <property>
-          <name>vtn.build.sonar</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <modules>
-        <!-- Run integration tests if integrationtests profile is active. -->
-        <module>it</module>
-      </modules>
-    </profile>
-  </profiles>
 </project>

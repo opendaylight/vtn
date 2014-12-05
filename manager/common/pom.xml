@@ -36,35 +36,35 @@
   </scm>
 
   <properties>
+    <!-- Path to the top directory -->
+    <vtn.manager.dir>..</vtn.manager.dir>
+
+    <!-- Default checkstyle configuration -->
+    <vtn.checkstyle.xml>vtn/checkstyle.xml</vtn.checkstyle.xml>
+
+    <!-- Ignore maven-site-plugin goals if true -->
+    <vtn.site.skip>false</vtn.site.skip>
+
     <!-- Sonar properties -->
     <sonar.host.url>https://sonar.opendaylight.org/</sonar.host.url>
     <sonar.branch>${user.name}-private-view</sonar.branch>
     <sonar.language>java</sonar.language>
-    <sonar.jacoco.reportPath>
-      target/code-coverage/jacoco.exec
-    </sonar.jacoco.reportPath>
 
     <!-- All modules have to share a single IT code coverage report file.  -->
     <sonar.jacoco.itReportPath>
-      ../common.it/target/code-coverage/jacoco-it.exec
+      ${vtn.manager.dir}/it/common/target/code-coverage/jacoco-it.exec
     </sonar.jacoco.itReportPath>
-    <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
-    <sonar-jacoco-listeners.version>2.4</sonar-jacoco-listeners.version>
-
-    <!-- Use maven-checkstyle-plugin 2.12 for strict indentation check. -->
-    <checkstyle.version>2.12</checkstyle.version>
 
     <jxr.version>2.3</jxr.version>
     <apiviz.version>1.3.2.GA</apiviz.version>
     <java-formatter.version>0.3.1</java-formatter.version>
-    <maven-javadoc.version>2.8.1</maven-javadoc.version>
-    <maven-paxexam.version>1.2.4</maven-paxexam.version>
-    <maven-resources.version>2.6</maven-resources.version>
+
+    <!-- maven-javadoc-plugin 2.10.1 breaks "mvn site" -->
+    <maven-javadoc.version>2.9.1</maven-javadoc.version>
 
     <testvm.argLine>-Xmx1024m -XX:MaxPermSize=256m</testvm.argLine>
 
     <!-- Karaf properties -->
-    <karaf.version>3.0.1</karaf.version>
     <karaf.empty.version>1.5.0-SNAPSHOT</karaf.empty.version>
     <karaf.resources.version>1.5.0-SNAPSHOT</karaf.resources.version>
 
@@ -80,9 +80,6 @@
 
     <!-- Exclude internal package from javadoc -->
     <javadoc.exclude>*.internal</javadoc.exclude>
-
-    <!-- Default checkstyle configuration -->
-    <vtn.checkstyle.xml>vtn/checkstyle.xml</vtn.checkstyle.xml>
   </properties>
 
   <profiles>
@@ -177,7 +174,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>${propertymavenplugin.version}</version>
         <executions>
           <execution>
             <goals>
@@ -187,7 +183,9 @@
               <properties>
                 <property>
                   <name>logback.configurationFile</name>
-                  <value>${project.parent.basedir}/logback.xml</value>
+                  <value>
+                    ${vtn.manager.dir}/common/logback.xml
+                  </value>
                 </property>
               </properties>
             </configuration>
@@ -206,7 +204,7 @@
             ${java.version.target}
           </compilerTargetPlatform>
           <configFile>
-            ${project.parent.basedir}/sun_coding_style.xml
+            ${vtn.manager.dir}/common/sun_coding_style.xml
           </configFile>
         </configuration>
       </plugin>
@@ -214,7 +212,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${checkstyle.version}</version>
         <dependencies>
           <dependency>
             <groupId>org.opendaylight.vtn</groupId>
@@ -244,7 +241,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven.surefire.version}</version>
         <configuration>
           <argLine>${testvm.argLine} ${jacoco.agent.ut.arg}</argLine>
           <excludedGroups>${vtn.test.slowtest}</excludedGroups>
@@ -276,7 +272,6 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>${bundle.plugin.version}</version>
           <extensions>true</extensions>
           <configuration>
             <instructions>
@@ -289,7 +284,6 @@
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
           <configuration>
             <lifecycleMappingMetadata>
               <pluginExecutions>
@@ -372,7 +366,6 @@
         <plugin>
           <groupId>org.codehaus.enunciate</groupId>
           <artifactId>maven-enunciate-plugin</artifactId>
-          <version>${enunciate.version}</version>
           <configuration>
             <configFile>enunciate.xml</configFile>
           </configuration>
@@ -386,9 +379,15 @@
         </plugin>
 
         <plugin>
+          <artifactId>maven-site-plugin</artifactId>
+          <configuration>
+            <skip>${vtn.site.skip}</skip>
+          </configuration>
+        </plugin>
+
+        <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>${compiler.version}</version>
           <configuration>
             <source>${java.version.source}</source>
             <target>${java.version.target}</target>
@@ -435,7 +434,6 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>${jacoco.version}</version>
           <executions>
             <execution>
               <id>prepare-ut-agent</id>
@@ -460,11 +458,6 @@
               </configuration>
             </execution>
           </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-resources-plugin</artifactId>
-          <version>${maven-resources.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>

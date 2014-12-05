@@ -15,12 +15,12 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>manager.common.it</artifactId>
+    <artifactId>manager.it.common</artifactId>
     <version>0.3.0-SNAPSHOT</version>
-    <relativePath>../common.it</relativePath>
+    <relativePath>../common</relativePath>
   </parent>
 
-  <artifactId>manager.integrationtest</artifactId>
+  <artifactId>manager.it.core</artifactId>
   <packaging>bundle</packaging>
 
   <scm>
@@ -31,6 +31,8 @@
   </scm>
 
   <properties>
+    <vtn.manager.dir>../..</vtn.manager.dir>
+
     <!-- Exclude all files from Sonar analysis. -->
     <sonar.exclusions>src/main/java/**/*</sonar.exclusions>
   </properties>

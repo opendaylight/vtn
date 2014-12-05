@@ -30,6 +30,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <vtn.manager.dir>..</vtn.manager.dir>
+  </properties>
+
   <profiles>
     <!-- Build REST API document unless vtn.doc.skip property is defined -->
     <profile>
@@ -44,7 +48,6 @@
           <plugin>
             <groupId>org.codehaus.enunciate</groupId>
             <artifactId>maven-enunciate-plugin</artifactId>
-            <version>${enunciate.version}</version>
             <configuration>
               <additionalClasspathEntries>
                 <!-- Specify VTN Manager public API sources. -->

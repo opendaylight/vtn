@@ -31,6 +31,8 @@
   </scm>
 
   <properties>
+    <vtn.manager.dir>..</vtn.manager.dir>
+
     <!-- Parameters passed to maven-javadoc-plugin. -->
     <doctitle>VTN Manager ${project.version} API</doctitle>
     <windowtitle>${doctitle}</windowtitle>

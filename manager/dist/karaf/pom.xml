@@ -31,9 +31,10 @@
   </scm>
 
   <properties>
-    <sonar.jacoco.itReportPath>
-      ../../common.it/target/code-coverage/jacoco-it.exec
-    </sonar.jacoco.itReportPath>
+    <vtn.manager.dir>../..</vtn.manager.dir>
+
+    <!-- Ignore maven-site-plugin goals -->
+    <vtn.site.skip>true</vtn.site.skip>
   </properties>
 
   <dependencies>
@@ -84,7 +85,6 @@
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
           <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
           <configuration>
             <lifecycleMappingMetadata>
               <pluginExecutions>
@@ -164,7 +164,6 @@
       <plugin>
         <groupId>org.apache.karaf.tooling</groupId>
         <artifactId>karaf-maven-plugin</artifactId>
-        <version>${karaf.version}</version>
         <extensions>true</extensions>
         <configuration>
           <!-- no startupFeatures -->
@@ -193,7 +192,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${checkstyle.version}</version>
         <configuration>
           <excludes>**\/target\/,**\/bin\/,**\/target-ide\/,**\/configuration\/initial\/</excludes>
         </configuration>
@@ -201,7 +199,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <version>2.6</version>
         <executions>
           <execution>
             <id>copy</id>

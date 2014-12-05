@@ -26,8 +26,27 @@
   <packaging>jar</packaging>
 
   <properties>
+    <vtn.manager.dir>..</vtn.manager.dir>
     <features.file>features.xml</features.file>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>skip-features-test</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+
+        <!-- Skip features integration test if vtn.karaf.skip is true. -->
+        <property>
+          <name>vtn.karaf.skip</name>
+          <value>true</value>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+      </properties>
+    </profile>
+  </profiles>
 
   <scm>
     <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
@@ -47,7 +66,6 @@
       <plugin>
         <groupId>org.apache.karaf.tooling</groupId>
         <artifactId>karaf-maven-plugin</artifactId>
-        <version>${karaf.version}</version>
         <extensions>true</extensions>
         <executions>
           <execution>
@@ -79,7 +97,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${maven.surefire.version}</version>
         <configuration>
           <systemPropertyVariables>
             <karaf.distro.groupId>org.opendaylight.controller</karaf.distro.groupId>

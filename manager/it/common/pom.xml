@@ -17,10 +17,10 @@
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>manager.common</artifactId>
     <version>0.3.0-SNAPSHOT</version>
-    <relativePath>../common</relativePath>
+    <relativePath>../../common</relativePath>
   </parent>
 
-  <artifactId>manager.common.it</artifactId>
+  <artifactId>manager.it.common</artifactId>
   <packaging>pom</packaging>
 
   <scm>
@@ -29,6 +29,10 @@
     <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
     <tag>HEAD</tag>
   </scm>
+
+  <properties>
+    <vtn.manager.dir>../..</vtn.manager.dir>
+  </properties>
 
   <dependencies>
     <!-- VTN Manager bundles -->
@@ -422,7 +426,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>${failsafe.version}</version>
         <configuration>
           <argLine>${testvm.argLine} ${jacoco.agent.it.arg}</argLine>
           <properties>
@@ -445,7 +448,6 @@
       <plugin>
         <groupId>org.ops4j.pax.exam</groupId>
         <artifactId>maven-paxexam-plugin</artifactId>
-        <version>${maven-paxexam.version}</version>
         <executions>
           <execution>
             <id>generate-config</id>
@@ -477,7 +479,6 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>properties-maven-plugin</artifactId>
-        <version>${propertymavenplugin.version}</version>
         <executions>
           <execution>
             <goals>

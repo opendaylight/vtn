@@ -30,6 +30,10 @@
     <tag>HEAD</tag>
   </scm>
 
+  <properties>
+    <vtn.manager.dir>..</vtn.manager.dir>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
