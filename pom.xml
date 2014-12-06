@@ -64,9 +64,7 @@
         <module>manager/northbound</module>
 
         <!-- IT modules -->
-        <module>manager/common.it</module>
-        <module>manager/integrationtest</module>
-        <module>manager/northboundIT</module>
+        <module>manager/it</module>
       </modules>
     </profile>
   </profiles>
