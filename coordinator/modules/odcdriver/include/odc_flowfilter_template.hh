@@ -111,6 +111,8 @@ public:
       unc::odcdriver::flowfilterlistUtil util_;
       json_object *parse(unc::restjson::JsonBuildParse::get_json_object(data));
       if ( parse != NULL ) {
+        // Clear memory when variable(parse) is out of scope
+        unc::restjson::json_obj_destroy_util delete_obj(parse);
         UncRespCode ret(util_.GetValue( parse, filter_list_));
         if ( ret != UNC_RC_SUCCESS )
           return ret;
