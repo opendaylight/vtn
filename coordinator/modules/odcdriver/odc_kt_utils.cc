@@ -250,6 +250,7 @@ class port_name_read_request : public odl_http_rest_intf {
       return UNC_DRV_RC_ERR_GENERIC;
 
 
+    unc::restjson::json_obj_destroy_util delete_node_obj(node_json_data);
     json_object* node_array_data(NULL);
     std::string node_search("nodeConnectorProperties");
 
@@ -261,6 +262,7 @@ class port_name_read_request : public odl_http_rest_intf {
     if (node_ret != unc::restjson::REST_OP_SUCCESS)
       return UNC_DRV_RC_ERR_GENERIC;
 
+    unc::restjson::json_obj_destroy_util delete_node_array_obj(node_array_data);
 
     port_info_resp_parser port_parse(node_array_data);
     if (port_parse(port_id_, port_name_) != UNC_RC_SUCCESS)
@@ -365,6 +367,7 @@ class vtn_read_request : public odl_http_rest_intf {
       return UNC_DRV_RC_ERR_GENERIC;
     }
 
+    unc::restjson::json_obj_destroy_util delete_vtn_obj(vtn_data_json);
     if (json_object_is_type(vtn_data_json, json_type_null)) {
       pfc_log_info("JSON is NULL");
       return UNC_DRV_RC_ERR_GENERIC;
@@ -377,6 +380,7 @@ class vtn_read_request : public odl_http_rest_intf {
 
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS)
       return UNC_DRV_RC_ERR_GENERIC;
+    unc::restjson::json_obj_destroy_util delete_vtn_date_obj(vtn_array_json);
 
     vtn_read_resp_parser vtn_collect(vtn_array_json, vtnnames_);
     int resp(vtn_collect.extract_values());
@@ -469,6 +473,8 @@ class vbr_read_request : public odl_http_rest_intf {
     if ( vtn_data_json == NULL )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    unc::restjson::json_obj_destroy_util delete_vtn_obj(vtn_data_json);
+
     int vtn_ret(unc::restjson::json_object_parse_util::extract_json_object
                  (vtn_data_json,
                   vtn_content,
@@ -477,14 +483,7 @@ class vbr_read_request : public odl_http_rest_intf {
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
-    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
-      get_array_length(vtn_array_json));
-
-      if ( arr_length == 0 ) {
-      pfc_log_info("No Data in array");
-      return UNC_DRV_RC_ERR_GENERIC;
-      } */
-
+    unc::restjson::json_obj_destroy_util delete_vtn_array_obj(vtn_array_json);
     vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
     int vtn_collect_ret(vtn_collect.extract_values());
     if ( vtn_collect_ret != unc::restjson::REST_OP_SUCCESS )
@@ -575,6 +574,8 @@ class vterm_read_request : public odl_http_rest_intf {
     if ( vtn_data_json == NULL )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    unc::restjson::json_obj_destroy_util delete_vterm_obj(vtn_data_json);
+
     int vtn_ret(unc::restjson::json_object_parse_util::extract_json_object
                  (vtn_data_json,
                   vtn_content,
@@ -583,14 +584,7 @@ class vterm_read_request : public odl_http_rest_intf {
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
-    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
-      get_array_length(vtn_array_json));
-
-      if ( arr_length == 0 ) {
-      pfc_log_info("No Data in array");
-      return UNC_DRV_RC_ERR_GENERIC;
-      } */
-
+    unc::restjson::json_obj_destroy_util delete_vterm_array_obj(vtn_array_json);
     vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
     int vtn_collect_ret(vtn_collect.extract_values());
     if ( vtn_collect_ret != unc::restjson::REST_OP_SUCCESS )
@@ -720,7 +714,5 @@ UncRespCode odlutils::get_portname(unc::driver::controller *ctr_ptr,
   port_name_read_request port_req;
   return port_req(ctr_ptr, conf_values, switch_id, port_id, port_name);
 }
-
-
 }  // namespace odcdriver
 }  // namespace  unc
