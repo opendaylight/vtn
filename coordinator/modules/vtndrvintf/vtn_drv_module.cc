@@ -32,22 +32,10 @@ VtnDrvIntf::VtnDrvIntf(const pfc_modattr_t* attr)
 VtnDrvIntf::~VtnDrvIntf() {
   ODC_FUNC_TRACE;
   std::map <unc_key_type_t, unc::driver::KtHandler*> ::iterator map_it;
-  std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_key;
   for (map_it = map_kt_.begin(); map_it != map_kt_.end(); map_it++) {
        delete (map_it)->second;
   }
   map_kt_.clear();
-  for (map_key = key_map.begin(); map_key != key_map.end(); map_key++) {
-    delete map_key->second;
-    map_key->second = NULL;
-  }
-  for (map_key = val_map.begin(); map_key != val_map.end(); map_key++) {
-    delete map_key->second;
-    map_key->second = NULL;
-  }
-
-  key_map.clear();
-  val_map.clear();
 }
 
 /**
@@ -121,6 +109,22 @@ pfc_bool_t VtnDrvIntf::init(void) {
 pfc_bool_t VtnDrvIntf::fini(void) {
   ODC_FUNC_TRACE;
 
+  std::map<unc_key_type_t, pfc_ipcstdef_t*> :: iterator map_key;
+  for (map_key = key_map.begin(); map_key != key_map.end(); map_key++) {
+    delete map_key->second;
+    map_key->second = NULL;
+  }
+  for (map_key = val_map.begin(); map_key != val_map.end(); map_key++) {
+    delete map_key->second;
+    map_key->second = NULL;
+  }
+
+  if (!key_map.empty()) {
+    key_map.clear();
+  }
+  if (!val_map.empty()) {
+    val_map.clear();
+  }
   if (taskq_) {
     delete taskq_;
     taskq_ = NULL;
