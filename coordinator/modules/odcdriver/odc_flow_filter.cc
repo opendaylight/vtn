@@ -17,6 +17,8 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
     return UNC_DRV_RC_ERR_GENERIC;
   std::string dlsrckey ("dlsrc");
   json_object *dlsrc_obj (JsonBuildParse::create_json_obj());
+  // Clear memory when variable(dlsrc_obj) is out of scope
+  unc::restjson::json_obj_destroy_util dlsrc_obj_delete_obj(dlsrc_obj);
   int dlsrc_ret (JsonBuildParse::parse(in,dlsrckey,dlsrc_obj));
   if ( dlsrc_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", dlsrckey.c_str());
@@ -28,6 +30,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string dldstkey ("dldst");
   json_object *dldst_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util dldst_obj_delete_obj(dldst_obj);
   int dldst_ret (JsonBuildParse::parse(in,dldstkey,dldst_obj));
   if ( dldst_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", dldstkey.c_str());
@@ -39,6 +42,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string vlanpcpkey ("vlanpcp");
   json_object *vlanpcp_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util vlanpcp_obj_delete_obj(vlanpcp_obj);
   int vlanpcp_ret (JsonBuildParse::parse(in,vlanpcpkey,vlanpcp_obj));
   if ( vlanpcp_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", vlanpcpkey.c_str());
@@ -50,6 +54,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string inet4srckey ("inet4src");
   json_object *inet4src_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util inet4src_obj_delete_obj(inet4src_obj);
   int inet4src_ret (JsonBuildParse::parse(in,inet4srckey,inet4src_obj));
   if ( inet4src_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", inet4srckey.c_str());
@@ -61,6 +66,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string inet4dstkey ("inet4dst");
   json_object *inet4dst_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util inet4dst_obj_delete_obj(inet4dst_obj);
   int inet4dst_ret (JsonBuildParse::parse(in,inet4dstkey,inet4dst_obj));
   if ( inet4dst_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", inet4dstkey.c_str());
@@ -72,6 +78,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string dscpkey ("dscp");
   json_object *dscp_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util dscp_obj_delete_obj(dscp_obj);
   int dscp_ret (JsonBuildParse::parse(in,dscpkey,dscp_obj));
   if ( dscp_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", dscpkey.c_str());
@@ -83,6 +90,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string tpsrckey ("tpsrc");
   json_object *tpsrc_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util tpsrc_obj_delete_obj(tpsrc_obj);
   int tpsrc_ret (JsonBuildParse::parse(in,tpsrckey,tpsrc_obj));
   if ( tpsrc_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", tpsrckey.c_str());
@@ -94,6 +102,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string tpdstkey ("tpdst");
   json_object *tpdst_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util tpdst_obj_delete_obj(tpdst_obj);
   int tpdst_ret (JsonBuildParse::parse(in,tpdstkey,tpdst_obj));
   if ( tpdst_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", tpdstkey.c_str());
@@ -105,6 +114,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string icmpcodekey ("icmpcode");
   json_object *icmpcode_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util icmpcode_obj_delete_obj(icmpcode_obj);
   int icmpcode_ret (JsonBuildParse::parse(in,icmpcodekey,icmpcode_obj));
   if ( icmpcode_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", icmpcodekey.c_str());
@@ -116,6 +126,7 @@ flowfilterlistUtil::GetValue(json_object *in,action* out) {
   }
   std::string icmptypekey ("icmptype");
   json_object *icmptype_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util icmptype_obj_delete_obj(icmptype_obj);
   int icmptype_ret (JsonBuildParse::parse(in,icmptypekey,icmptype_obj));
   if ( icmptype_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", icmptypekey.c_str());
@@ -141,6 +152,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode dlsrc_ret (SetValue(dlsrc_obj,in->dlsrc_));
     if ( dlsrc_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", dlsrckey.c_str());
+      json_object_put(dlsrc_obj);
     } else {
       int dlsrc_setret(JsonBuildParse::build(dlsrckey,dlsrc_obj,out));
       if ( dlsrc_setret != REST_OP_SUCCESS ) {
@@ -156,6 +168,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode dldst_ret (SetValue(dldst_obj,in->dldst_));
     if ( dldst_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", dldstkey.c_str());
+      json_object_put(dldst_obj);
     } else {
       int dldst_setret(JsonBuildParse::build(dldstkey,dldst_obj,out));
       if ( dldst_setret != REST_OP_SUCCESS ) {
@@ -171,6 +184,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode vlanpcp_ret (SetValue(vlanpcp_obj,in->vlanpcp_));
     if ( vlanpcp_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", vlanpcpkey.c_str());
+      json_object_put(vlanpcp_obj);
     } else {
       int vlanpcp_setret(JsonBuildParse::build(vlanpcpkey,vlanpcp_obj,out));
       if ( vlanpcp_setret != REST_OP_SUCCESS ) {
@@ -186,6 +200,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode inet4src_ret (SetValue(inet4src_obj,in->inet4src_));
     if ( inet4src_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", inet4srckey.c_str());
+      json_object_put(inet4src_obj);
     } else {
       int inet4src_setret(JsonBuildParse::build(inet4srckey,inet4src_obj,out));
       if ( inet4src_setret != REST_OP_SUCCESS ) {
@@ -201,6 +216,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode inet4dst_ret (SetValue(inet4dst_obj,in->inet4dst_));
     if ( inet4dst_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", inet4dstkey.c_str());
+      json_object_put(inet4dst_obj);
     } else {
       int inet4dst_setret(JsonBuildParse::build(inet4dstkey,inet4dst_obj,out));
       if ( inet4dst_setret != REST_OP_SUCCESS ) {
@@ -216,6 +232,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode dscp_ret (SetValue(dscp_obj,in->dscp_));
     if ( dscp_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", dscpkey.c_str());
+      json_object_put(dscp_obj);
     } else {
       int dscp_setret(JsonBuildParse::build(dscpkey,dscp_obj,out));
       if ( dscp_setret != REST_OP_SUCCESS ) {
@@ -231,6 +248,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode tpsrc_ret (SetValue(tpsrc_obj,in->tpsrc_));
     if ( tpsrc_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", tpsrckey.c_str());
+      json_object_put(tpsrc_obj);
     } else {
       int tpsrc_setret(JsonBuildParse::build(tpsrckey,tpsrc_obj,out));
       if ( tpsrc_setret != REST_OP_SUCCESS ) {
@@ -246,6 +264,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode tpdst_ret (SetValue(tpdst_obj,in->tpdst_));
     if ( tpdst_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", tpdstkey.c_str());
+      json_object_put(tpdst_obj);
     } else {
       int tpdst_setret(JsonBuildParse::build(tpdstkey,tpdst_obj,out));
       if ( tpdst_setret != REST_OP_SUCCESS ) {
@@ -261,6 +280,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode icmpcode_ret (SetValue(icmpcode_obj,in->icmpcode_));
     if ( icmpcode_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", icmpcodekey.c_str());
+      json_object_put(icmpcode_obj);
     } else {
       int icmpcode_setret(JsonBuildParse::build(icmpcodekey,icmpcode_obj,out));
       if ( icmpcode_setret != REST_OP_SUCCESS ) {
@@ -276,6 +296,7 @@ flowfilterlistUtil::SetValue(json_object *out,action* in) {
     UncRespCode icmptype_ret (SetValue(icmptype_obj,in->icmptype_));
     if ( icmptype_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", icmptypekey.c_str());
+      json_object_put(icmptype_obj);
     } else {
       int icmptype_setret(JsonBuildParse::build(icmptypekey,icmptype_obj,out));
       if ( icmptype_setret != REST_OP_SUCCESS ) {
@@ -501,6 +522,7 @@ flowfilterlistUtil::GetValue(json_object *in,filterType* out) {
     return UNC_DRV_RC_ERR_GENERIC;
   std::string passkey ("pass");
   json_object *pass_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util pass_obj_delete_obj(pass_obj);
   int pass_ret (JsonBuildParse::parse(in,passkey,pass_obj));
   if ( pass_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", passkey.c_str());
@@ -512,6 +534,7 @@ flowfilterlistUtil::GetValue(json_object *in,filterType* out) {
   }
   std::string dropkey ("drop");
   json_object *drop_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util drop_obj_delete_obj(drop_obj);
   int drop_ret (JsonBuildParse::parse(in,dropkey,drop_obj));
   if ( drop_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", dropkey.c_str());
@@ -523,6 +546,7 @@ flowfilterlistUtil::GetValue(json_object *in,filterType* out) {
   }
   std::string redirectkey ("redirect");
   json_object *redirect_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util redirect_obj_delete_obj(redirect_obj);
   int redirect_ret (JsonBuildParse::parse(in,redirectkey,redirect_obj));
   if ( redirect_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", redirectkey.c_str());
@@ -548,6 +572,7 @@ flowfilterlistUtil::SetValue(json_object *out,filterType* in) {
     UncRespCode pass_ret (SetValue(pass_obj,in->pass_));
     if ( pass_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", passkey.c_str());
+      json_object_put(pass_obj);
     } else {
       int pass_setret(JsonBuildParse::build(passkey,pass_obj,out));
       if ( pass_setret != REST_OP_SUCCESS ) {
@@ -563,6 +588,7 @@ flowfilterlistUtil::SetValue(json_object *out,filterType* in) {
     UncRespCode drop_ret (SetValue(drop_obj,in->drop_));
     if ( drop_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", dropkey.c_str());
+      json_object_put(drop_obj);
     } else {
       int drop_setret(JsonBuildParse::build(dropkey,drop_obj,out));
       if ( drop_setret != REST_OP_SUCCESS ) {
@@ -578,6 +604,7 @@ flowfilterlistUtil::SetValue(json_object *out,filterType* in) {
     UncRespCode redirect_ret (SetValue(redirect_obj,in->redirect_));
     if ( redirect_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", redirectkey.c_str());
+      json_object_put(redirect_obj);
     } else {
       int redirect_setret(JsonBuildParse::build(redirectkey,redirect_obj,out));
       if ( redirect_setret != REST_OP_SUCCESS ) {
@@ -608,6 +635,7 @@ flowfilterlistUtil::GetValue(json_object *in,flowfilter* out) {
   }
   std::string filterTypekey ("filterType");
   json_object *filterType_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util filterType_obj_delete_obj(filterType_obj);
   int filterType_ret (JsonBuildParse::parse(in,filterTypekey,filterType_obj));
   if ( filterType_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", filterTypekey.c_str());
@@ -673,6 +701,7 @@ flowfilterlistUtil::SetValue(json_object *out,flowfilter* in) {
     UncRespCode filterType_ret (SetValue(filterType_obj,in->filterType_));
     if ( filterType_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", filterTypekey.c_str());
+      json_object_put(filterType_obj);
     } else {
       int filterType_setret(JsonBuildParse::build(filterTypekey,filterType_obj,out));
       if ( filterType_setret != REST_OP_SUCCESS ) {
@@ -856,6 +885,7 @@ flowfilterlistUtil::GetValue(json_object *in,redirect* out) {
     return UNC_DRV_RC_ERR_GENERIC;
   std::string destinationkey ("destination");
   json_object *destination_obj (JsonBuildParse::create_json_obj());
+  unc::restjson::json_obj_destroy_util destination_obj_delete_obj(destination_obj);
   int destination_ret (JsonBuildParse::parse(in,destinationkey,destination_obj));
   if ( destination_ret != REST_OP_SUCCESS ) {
     pfc_log_error("parse failed %s", destinationkey.c_str());
@@ -888,6 +918,7 @@ flowfilterlistUtil::SetValue(json_object *out,redirect* in) {
     UncRespCode destination_ret (SetValue(destination_obj,in->destination_));
     if ( destination_ret != UNC_RC_SUCCESS ) {
       pfc_log_error("build failed %s", destinationkey.c_str());
+      json_object_put(destination_obj);
       return destination_ret;
     } else {
       int destination_setret(JsonBuildParse::build(destinationkey,destination_obj,out));
