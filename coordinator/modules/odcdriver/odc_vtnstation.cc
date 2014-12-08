@@ -714,6 +714,8 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
     if ( get_resp != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    unc::restjson::json_obj_destroy_util mac_delete_obj(mac_entries_complete);
+
     std::string mac_string("macentry");
     json_object *mac_entries_array(NULL);
     int get_array_resp(unc::restjson::json_object_parse_util::
@@ -721,6 +723,7 @@ class odl_vtn_station_command : public unc::odcdriver::odl_http_rest_intf {
                                            &mac_entries_array));
     if ( get_array_resp != unc::restjson::REST_OP_SUCCESS)
       return UNC_DRV_RC_ERR_GENERIC;
+    unc::restjson::json_obj_destroy_util mac_entrydelete_obj(mac_entries_array);
     std::string vtn("");
     std::string vbr("");
     split_request_indicator(request_indicator, vtn, vbr);
