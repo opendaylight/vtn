@@ -131,6 +131,7 @@ public:
       unc::odcdriver::flowConditionsUtil util_;
       json_object *parse(unc::restjson::JsonBuildParse::get_json_object(data));
       if ( parse != NULL ) {
+        unc::restjson::json_obj_destroy_util delete_obj(parse);
         UncRespCode ret(util_.GetValue( parse, flow_conditions_));
         if ( ret != UNC_RC_SUCCESS )
           return ret;
