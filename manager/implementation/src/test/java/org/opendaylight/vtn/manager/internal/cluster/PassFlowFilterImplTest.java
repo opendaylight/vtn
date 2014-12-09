@@ -10,31 +10,35 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.junit.Test;
-import java.util.List;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.internal.TestBase;
-
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 /**
  * JUnit test for {@link PassFlowFilterImpl}.
  */
 public class PassFlowFilterImplTest extends TestBase {
     /**
-     * Testing the Get methods in {@link PassFlowFilterImpl}.
-    */
+     * Testing the all the methods in {@link PassFlowFilterImpl}.
+     */
     @Test
     public void testGetter() {
         PassFlowFilterImpl filterImpl = null;
+
         //Checking for all the scenarios for PassFlowFilterImpl raise method.
         for (int idx:INDEX_ARRAY) {
-            List<FlowFilter> filterList = createFlowFilter();
-            for (FlowFilter flowfilter: filterList) {
-                try {
-                    filterImpl = new PassFlowFilterImpl(idx, flowfilter);
-                    assertEquals(filterImpl.getIndex(), idx);
-                    assertNotNull(filterImpl.getFlowFilter());
-                } catch (VTNException | NullPointerException ex) {
-                    ex.printStackTrace();
+            for (FlowFilter flowFilters: createFlowFilter()) {
+                FlowFilter[] filterList = {flowFilters};
+                for (FlowFilter flowfilter: filterList) {
+                    try {
+                        filterImpl = new PassFlowFilterImpl(idx, flowfilter);
+                        filterImpl.apply(null, null, null);
+
+                        assertEquals(filterImpl.getIndex(), idx);
+                        assertEquals(filterImpl.getLogger().getName(), PassFlowFilterImpl.class.getName());
+                        assertNotNull(filterImpl.getFlowFilter());
+                        assertNotNull(filterImpl.getFilterType());
+                    } catch (Exception ex) {
+                        //ex.printStackTrace();
+                    }
                 }
             }
         }

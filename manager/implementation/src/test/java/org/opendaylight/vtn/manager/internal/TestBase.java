@@ -28,6 +28,10 @@ import org.junit.After;
 import org.junit.Assert;
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
+import org.opendaylight.vtn.manager.PathCost;
+import org.opendaylight.vtn.manager.PathMap;
+import org.opendaylight.vtn.manager.PathPolicy;
+import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -39,12 +43,14 @@ import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
+import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -86,17 +92,29 @@ public abstract class TestBase extends Assert {
     /**
      * String Declaration for Switch Reserved .
      */
+
     protected static final String SWITCH_RESERVED =
         "switch port is reserved: host={";
      /**
      * An array of index values with positive and negative values.
      */
+
     public static final int[] INDEX_ARRAY = {3, 0, 65536};
 
      /**
      * An array of Tenant values with valid and invalid values.
      */
     public static final String[] TENANT_NAME = {"tenant", "", null};
+
+    /**
+     * An array of Cost values with valid and invalid values.
+     */
+    public static final long[] COST = {0L, 333L, Long.MAX_VALUE};
+
+    /**
+     * An array of FlowCondition names with valid and invalid values.
+     */
+    public static final String[] FLOW_CONDITION_NAME = {"flowCondition", "", null};
 
     /**
      * Throw an error which indicates an unexpected throwable is caught.
@@ -1781,10 +1799,11 @@ public abstract class TestBase extends Assert {
             }
         }
     }
+
     /**
-    * VtnmanagerImpl  object creation
-    * @return VtnmanagerImplList
-    */
+     * VtnmanagerImpl  object creation
+     * @return VtnmanagerImplList
+     */
     public List<VTNManagerImpl> createVtnManagerImplobj() {
         List<VTNManagerImpl> vtnMangerList = new ArrayList<VTNManagerImpl>();
         try {
@@ -1796,7 +1815,6 @@ public abstract class TestBase extends Assert {
             return vtnMangerList;
         }
     }
-
 
     /**
      * Common Method to create UpdateTye.
@@ -1835,10 +1853,10 @@ public abstract class TestBase extends Assert {
         }
     }
 
-    /*
-    *Common Method to create FlowFilter.
-    *  @return flowfilter object.
-    */
+    /**
+     * Common Method to create FlowFilter.
+     *  @return flowfilter object.
+     */
     public FlowFilter createFlowFilterobj() {
         int idx = 3;
         int port = 0;
@@ -1870,6 +1888,216 @@ public abstract class TestBase extends Assert {
             }
             return pathList;
         } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Common Method to create FlowCondition.
+     *  @return FlowCondition list object.
+     */
+    public List<FlowCondition> createFlowConditions() {
+        List<FlowCondition> flowConditionList = new ArrayList<FlowCondition>();
+
+        try {
+            FlowCondition flowCondition = null;
+            flowConditionList.add(null);
+            flowConditionList.add(flowCondition);
+
+            for (String conditionName : FLOW_CONDITION_NAME) {
+                flowCondition = new FlowCondition(conditionName, null);
+                flowConditionList.add(flowCondition);
+            }
+            return flowConditionList;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Common Method to create PathMap.
+     *  @return PathMap list object.
+     */
+    public List<PathMap> createPathMaps() {
+        List<PathMap> pathmaplist = new ArrayList<PathMap>();
+
+        try {
+            PathMap pathmap = null;
+            pathmaplist.add(null);
+            pathmaplist.add(pathmap);
+
+            // PathMap with ConditionName and PolicyId
+            for (String conditionName : TENANT_NAME) {
+                for (int policyId: createIntegers(-1, 4, false)) {
+                    pathmap = new PathMap(conditionName, policyId);
+                    pathmaplist.add(pathmap);
+                }
+            }
+
+            // PathMap with Index, ConditionName and PolicyId
+            pathmaplist.addAll(createPathMapsWithIndex());
+
+            // PathMap with Index, ConditionName, PolicyId, IdleTimeout and HardTimeout
+            pathmaplist.addAll(createPathMapsWithAllParameters());
+
+            return pathmaplist;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Common Method to create PathMap with Index, ConditionName, PolicyId.
+     *  @return PathMap list object.
+     */
+    public List<PathMap> createPathMapsWithIndex() {
+        List<PathMap> pathmaplist = new ArrayList<PathMap>();
+
+        try {
+            // PathMap with Index, ConditionName and PolicyId
+            for (int policyId : createIntegers(1, 1, false)) {
+                for (int idx : createIntegers(5, 3, false)) {
+                    PathMap pathmap = new PathMap(idx, TENANT_NAME[0], policyId);
+                    pathmaplist.add(pathmap);
+                }
+            }
+
+            return pathmaplist;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Common Method to create PathMap with Index, ConditionName, PolicyId, IdleTimeout and HardTimeout.
+     *  @return PathMap list object.
+     */
+    public List<PathMap> createPathMapsWithAllParameters() {
+        List<PathMap> pathmaplist = new ArrayList<PathMap>();
+
+        try {
+            PathMap pathmap = null;
+            // PathMap with Index, ConditionName, PolicyId, IdleTimeout and HardTimeout
+            for (String conditionName : TENANT_NAME) {
+                for (int policyId : createIntegers(0, 2, false)) {
+                    for (int idx : INDEX_ARRAY) {
+                        // VTenantConfig.idleTimeout List
+                        for (Integer idleTimeout: createIntegers(-1, 3, false)) {
+                            // VTenantConfig.hardTimeout List
+                            for (Integer hardTimeout: createIntegers(-1, 3, false)) {
+                                pathmap = new PathMap(idx, conditionName, policyId, idleTimeout, hardTimeout);
+                                pathmaplist.add(pathmap);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return pathmaplist;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Common Method to create VTenantImpl.
+     *
+     *  @param description      The description of the VTN.
+     *  @param vContainerName   The name of the container to which the tenant belongs.
+     *  @param tenantName       The name of the tenant.
+     *  @return VTenantImpl list object.
+     */
+    public List<VTenantImpl> createVTenantImpl(String description, String vContainerName, String tenantName) {
+        List<VTenantImpl> vTenantImplList = new ArrayList<VTenantImpl>();
+
+        try {
+            VTenantImpl vTenantImpl = null;
+            vTenantImplList.add(null);
+            vTenantImplList.add(vTenantImpl);
+
+
+            // VTenantConfig.idleTimeout List
+            for (Integer idleTimeout: createIntegers(-1, 4, false)) {
+                // VTenantConfig.hardTimeout List
+                for (Integer hardTimeout: createIntegers(-1, 4, false)) {
+                    VTenantConfig tconf = createVTenantConfig(description, idleTimeout, hardTimeout);
+                    VTenantImpl vtenantImpl = new VTenantImpl(vContainerName, tenantName, tconf);
+
+                    vTenantImplList.add(vTenantImpl);
+                }
+            }
+            return vTenantImplList;
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Create lists of {@link PortLocation} instances for test.
+     *
+     * @return A list of {@link PortLocation} lists.
+     */
+
+    public List<PortLocation> createPortLocation() {
+        try {
+
+            List<PortLocation> portLocation = new ArrayList<PortLocation>();
+            for (NodeConnector nodeConnector : createNodeConnectors(5)) {
+                for (String name : createStrings("portName")) {
+                    PortLocation locationobj = new PortLocation(nodeConnector, name);
+                    portLocation.add(locationobj);
+                }
+            }
+            return portLocation;
+        } catch (Exception ex) {
+            //ex.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Create lists of {@link PathPolicy} instances for test.
+     *
+     * @return A list of {@link PathPolicy} lists.
+     */
+    public List<PathPolicy> createPathPolicy() {
+        try {
+            int[] ids = {0, 1, 30};
+
+            ArrayList<List<PathCost>> list = new ArrayList<List<PathCost>>();
+            ArrayList<PathPolicy> pathPolicyList = new ArrayList<PathPolicy>();
+            list.add(new ArrayList<PathCost>());
+            ArrayList<PathCost> pathCostList = new ArrayList<PathCost>();
+
+            for (Node node : createNodes(2)) {
+                for (SwitchPort port : createSwitchPorts(2)) {
+                    for (long cost : COST) {
+                        PortLocation ploc = new PortLocation(node, port);
+                        PathCost pc = new PathCost(ploc, cost);
+                        pathCostList.add(pc);
+                        list.add(new ArrayList<PathCost>(pathCostList));
+                    }
+                }
+            }
+
+            PathPolicy ppolicy = null;
+            pathPolicyList.add(null);
+            pathPolicyList.add(ppolicy);
+
+            for (int id : ids) {
+                for (long cost : COST) {
+                    for (List<PathCost> pathCost : list) {
+                        ppolicy = new PathPolicy(cost, pathCost);
+                        pathPolicyList.add(ppolicy);
+                    }
+                }
+            }
+            return pathPolicyList;
+        } catch (Exception ex) {
+            //ex.printStackTrace();
             return null;
         }
     }
