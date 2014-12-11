@@ -1,0 +1,215 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a96c907_96f9c0ca",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 56,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "Please make sure all this traling spaces are removed",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_36322ca8",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "the highlighted sections are also repeated code, Please try to add them as common method",
+      "range": {
+        "startLine": 138,
+        "startChar": 4,
+        "endLine": 144,
+        "endChar": 62
+      },
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_d6266868",
+        "filename": "coordinator/modules/odcdriver/include/odc_vbr.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 198,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "The URL String can be in a header",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_f62b642e",
+        "filename": "coordinator/modules/odcdriver/include/odc_vterminal.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "remove trailing and heading spaces",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_9620e04a",
+        "filename": "coordinator/modules/odcdriver/include/odc_vterminal.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 124,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "repeated section, Please consider moving to a method or geenrrating",
+      "range": {
+        "startLine": 120,
+        "startChar": 4,
+        "endLine": 124,
+        "endChar": 64
+      },
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_b61ddc11",
+        "filename": "coordinator/modules/odcdriver/include/odc_vterminal.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 144,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "URL string: Can be placed in a header",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_761754ee",
+        "filename": "coordinator/modules/odcdriver/include/odc_vtn.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 10,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "Same comments as the other two files",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_16d4d01e",
+        "filename": "coordinator/modules/restconfig/Makefile",
+        "patchSetId": 1
+      },
+      "lineNbr": 1,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "1. Please remove the spaces\n2. The file is saving the generated files locally, Please ove it to objs directory\n3. the header path should be constructed at run time.",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_36d9cc57",
+        "filename": "coordinator/modules/restconfig/code_gen.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "1. Please remove spaces\n2. Generated files do not have the copyright header\n3.",
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_d6dd0844",
+        "filename": "coordinator/modules/restconfig/code_gen.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 213,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "Consider moving this to the top of script",
+      "range": {
+        "startLine": 212,
+        "startChar": 0,
+        "endLine": 213,
+        "endChar": 74
+      },
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_f6e28402",
+        "filename": "coordinator/modules/restconfig/code_gen.py",
+        "patchSetId": 1
+      },
+      "lineNbr": 301,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-11T02:43:37Z",
+      "side": 1,
+      "message": "Please consider splitting this as multiple methods",
+      "range": {
+        "startLine": 258,
+        "startChar": 2,
+        "endLine": 301,
+        "endChar": 73
+      },
+      "revId": "eaf9d36ea48af9487dbc8b4a5a9d52f9f2896458",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
