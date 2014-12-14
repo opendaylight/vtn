@@ -1877,12 +1877,12 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
 
     @Override
     public List<DataFlow> getDataFlows(VTenantPath path, Mode mode,
-            DataFlowFilter filter) throws VTNException {
+            DataFlowFilter filter, int interval) throws VTNException {
         return null;
     }
 
     @Override
-    public DataFlow getDataFlow(VTenantPath path, long flowId, Mode mode)
+    public DataFlow getDataFlow(VTenantPath path, long flowId, Mode mode, int interval)
         throws VTNException {
         return null;
     }

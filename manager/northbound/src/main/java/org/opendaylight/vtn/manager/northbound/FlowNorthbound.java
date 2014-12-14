@@ -31,7 +31,10 @@ import javax.ws.rs.core.Response;
 import org.codehaus.enunciate.jaxrs.ResponseCode;
 import org.codehaus.enunciate.jaxrs.StatusCodes;
 import org.codehaus.enunciate.jaxrs.TypeHint;
-
+import org.opendaylight.controller.sal.authorization.Privilege;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
@@ -40,11 +43,6 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
-
-import org.opendaylight.controller.sal.authorization.Privilege;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
 
 /**
  * This class provides Northbound REST APIs to handle data flow in the VTN.
@@ -216,7 +214,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                                              portType, portId, portName);
         try {
             return new DataFlowList(
-                mgr.getDataFlows(path, DataFlow.Mode.SUMMARY, filter));
+                mgr.getDataFlows(path, DataFlow.Mode.SUMMARY, filter, -1));
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -280,7 +278,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
         try {
-            return mgr.getDataFlow(path, flowId, DataFlow.Mode.SUMMARY);
+            return mgr.getDataFlow(path, flowId, DataFlow.Mode.SUMMARY, -1);
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -409,6 +407,9 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *       The statistics cache will be updated every 10 seconds.
      *     </li>
      *   </ul>
+     * @param interval
+     *   Time interval in seconds for retrieving the average statistics.
+     *   The default value is TEN seconds.
      * @return
      *    <strong>dataflows</strong> element contains detailed information
      *    about all data flows present in the VTN specified by the requested
@@ -447,7 +448,11 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             @QueryParam("portType") String portType,
             @QueryParam("portId") String portId,
             @QueryParam("portName") String portName,
-            @DefaultValue("false") @QueryParam("update") boolean update) {
+            @DefaultValue("false") @QueryParam("update") boolean update,
+            @DefaultValue("10") @QueryParam("interval") int interval) {
+        if (interval < 0 || interval > 30) {
+            throw new IllegalArgumentException("Statistics interval should be non-negative and no more than 30");
+        }
         checkPrivilege(containerName, Privilege.READ);
 
         IVTNManager mgr = getVTNManager(containerName);
@@ -458,7 +463,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             ? DataFlow.Mode.UPDATE_STATS
             : DataFlow.Mode.DETAIL;
         try {
-            return new DataFlowList(mgr.getDataFlows(path, mode, filter));
+            return new DataFlowList(mgr.getDataFlows(path, mode, filter, interval));
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -488,6 +493,9 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *       The statistics cache will be updated every 10 seconds.
      *     </li>
      *   </ul>
+     * @param interval
+     *   Time interval in seconds for retrieving the average statistics.
+     *   The default value is TEN seconds.
      * @return
      *    <strong>dataflow</strong> element contains detailed information
      *    about the data flow specified by the requested URI.
@@ -522,7 +530,11 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("flowId") long flowId,
-            @DefaultValue("false") @QueryParam("update") boolean update) {
+            @DefaultValue("false") @QueryParam("update") boolean update,
+            @DefaultValue("10") @QueryParam("interval") int interval) {
+        if (interval < 0 || interval > 30) {
+            throw new IllegalArgumentException("Statistics interval should be non-negative and no more than 30");
+        }
         checkPrivilege(containerName, Privilege.READ);
 
         IVTNManager mgr = getVTNManager(containerName);
@@ -531,7 +543,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             ? DataFlow.Mode.UPDATE_STATS
             : DataFlow.Mode.DETAIL;
         try {
-            return mgr.getDataFlow(path, flowId, mode);
+            return mgr.getDataFlow(path, flowId, mode, interval);
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }

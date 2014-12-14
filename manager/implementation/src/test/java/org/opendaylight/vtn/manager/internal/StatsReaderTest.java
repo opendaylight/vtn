@@ -13,7 +13,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.core.Node;
@@ -25,7 +24,6 @@ import org.opendaylight.controller.sal.reader.FlowOnNode;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
-import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 
 /**
  * JUnit test for {@link StatsReaderTest}.
@@ -37,23 +35,7 @@ public class StatsReaderTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
-        IStatisticsManager mgr = new IStatisticsManagerStub();
-        // Creating object for stats reader mgr- IStatisticsManager object,
-        // @update, @cache
-        StatsReader statsreader = new StatsReader(mgr, true, false);
-        StatsReader statsreader1 = new StatsReader(mgr, false, false);
-        StatsReader statsreader2 = new StatsReader(mgr, true, true);
-        StatsReader statsreader3 = new StatsReader(mgr, false, true);
-        Node node1 = NodeCreator.createOFNode(1L);
-        Node node2 = NodeCreator.createOFNode(25L);
-        FlowEntry fe1 = new FlowEntry("Junit", "flow1", getSampleFlowV6(node1),
-                                      node1);
-        FlowEntry fe2 = new FlowEntry("Junit", "flow2", getSampleFlowV6(node2),
-                                      node2);
-        assertNotNull(statsreader.get(fe1));
-        assertNotNull(statsreader1.get(fe1));
-        assertNotNull(statsreader2.get(fe1));
-        assertNotNull(statsreader3.get(fe2));
+        //TODO Add tests after migration to MD-SAL
     }
 
     /**

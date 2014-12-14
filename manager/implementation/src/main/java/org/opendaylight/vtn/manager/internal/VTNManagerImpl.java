@@ -33,11 +33,56 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.felix.dm.Component;
-
+import org.opendaylight.controller.clustering.services.CacheConfigException;
+import org.opendaylight.controller.clustering.services.CacheExistException;
+import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
+import org.opendaylight.controller.clustering.services.IClusterContainerServices;
+import org.opendaylight.controller.clustering.services.IClusterServices;
+import org.opendaylight.controller.configuration.IConfigurationContainerAware;
+import org.opendaylight.controller.connectionmanager.IConnectionManager;
+import org.opendaylight.controller.containermanager.IContainerManager;
+import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
+import org.opendaylight.controller.forwardingrulesmanager.IForwardingRulesManager;
+import org.opendaylight.controller.hosttracker.IfHostListener;
+import org.opendaylight.controller.hosttracker.IfIptoHost;
+import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
+import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
+import org.opendaylight.controller.sal.connection.ConnectionLocality;
+import org.opendaylight.controller.sal.core.ContainerFlow;
+import org.opendaylight.controller.sal.core.Edge;
+import org.opendaylight.controller.sal.core.IContainerListener;
+import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector;
+import org.opendaylight.controller.sal.core.Path;
+import org.opendaylight.controller.sal.core.Property;
+import org.opendaylight.controller.sal.core.UpdateType;
+import org.opendaylight.controller.sal.flowprogrammer.Flow;
+import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
+import org.opendaylight.controller.sal.packet.ARP;
+import org.opendaylight.controller.sal.packet.Ethernet;
+import org.opendaylight.controller.sal.packet.IDataPacketService;
+import org.opendaylight.controller.sal.packet.IEEE8021Q;
+import org.opendaylight.controller.sal.packet.IListenDataPacket;
+import org.opendaylight.controller.sal.packet.LLDP;
+import org.opendaylight.controller.sal.packet.Packet;
+import org.opendaylight.controller.sal.packet.PacketResult;
+import org.opendaylight.controller.sal.packet.RawPacket;
+import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
+import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
+import org.opendaylight.controller.sal.routing.IRouting;
+import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
+import org.opendaylight.controller.sal.utils.EtherTypes;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
+import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
+import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
+import org.opendaylight.controller.switchmanager.IInventoryListener;
+import org.opendaylight.controller.switchmanager.ISwitchManager;
+import org.opendaylight.controller.topologymanager.ITopologyManager;
+import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNFlowDebugger;
 import org.opendaylight.vtn.manager.IVTNManager;
@@ -78,9 +123,6 @@ import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.NodeUtils;
-
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapEvent;
@@ -105,58 +147,10 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
-
-import org.opendaylight.controller.clustering.services.CacheConfigException;
-import org.opendaylight.controller.clustering.services.CacheExistException;
-import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
-import org.opendaylight.controller.clustering.services.
-    IClusterContainerServices;
-import org.opendaylight.controller.clustering.services.IClusterServices;
-import org.opendaylight.controller.configuration.IConfigurationContainerAware;
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.containermanager.IContainerManager;
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.forwardingrulesmanager.
-    IForwardingRulesManager;
-import org.opendaylight.controller.hosttracker.IfHostListener;
-import org.opendaylight.controller.hosttracker.IfIptoHost;
-import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
-import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
-import org.opendaylight.controller.sal.connection.ConnectionLocality;
-import org.opendaylight.controller.sal.core.ContainerFlow;
-import org.opendaylight.controller.sal.core.Edge;
-import org.opendaylight.controller.sal.core.IContainerListener;
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.Path;
-import org.opendaylight.controller.sal.core.Property;
-import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.flowprogrammer.Flow;
-import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IDataPacketService;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.IListenDataPacket;
-import org.opendaylight.controller.sal.packet.LLDP;
-import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.packet.PacketResult;
-import org.opendaylight.controller.sal.packet.RawPacket;
-import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
-import org.opendaylight.controller.sal.routing.IRouting;
-import org.opendaylight.controller.sal.topology.TopoEdgeUpdate;
-import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.NetUtils;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
-import org.opendaylight.controller.switchmanager.IInventoryListener;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
-import org.opendaylight.controller.topologymanager.ITopologyManager;
-import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.NodeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of VTN Manager service.
@@ -170,7 +164,7 @@ public class VTNManagerImpl
     /**
      * Logger instance.
      */
-    static final Logger  LOG = LoggerFactory.getLogger(VTNManagerImpl.class);
+    static final Logger LOG = LoggerFactory.getLogger(VTNManagerImpl.class);
 
     /**
      * Maximum lifetime, in milliseconds, of a cluster event.
@@ -492,6 +486,8 @@ public class VTNManagerImpl
     private final Set<RemoteFlowRequest>  remoteFlowRequests =
         new HashSet<RemoteFlowRequest>();
 
+    private volatile StatsReader statsReader;
+
     /**
      * A thread which executes queued tasks.
      */
@@ -744,6 +740,8 @@ public class VTNManagerImpl
 
         resourceManager.addManager(this);
         serviceAvailable = true;
+
+        statsReader = new StatsReader(statisticsManager, this);
     }
 
     /**
@@ -2203,7 +2201,7 @@ public class VTNManagerImpl
      *
      * @param name  The name of the virtual tenant.
      * @return  A VTN flow database associated with the specified virtual
-     *          tenant. {@code null} is returned if not fonud.
+     *          tenant. {@code null} is returned if not found.
      */
     public VTNFlowDatabase getTenantFlowDB(String name) {
         return vtnFlowMap.get(name);
@@ -4508,15 +4506,13 @@ public class VTNManagerImpl
      *
      * @param mode   A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
      *               instance.
-     * @param cache  Specify {@code true} if you want to cache statistics in
-     *               a returned {@link StatsReader} instance.
      * @return  A {@link StatsReader} instance.
      *          {@code null} is returned if
      *          {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode#SUMMARY}
      *          is passed to {@code mode}.
      * @throws VTNException   {@code mode} is {@code null}.
      */
-    private StatsReader createStatsReader(DataFlow.Mode mode, boolean cache)
+    private StatsReader createStatsReader(DataFlow.Mode mode)
         throws VTNException {
         if (mode == DataFlow.Mode.SUMMARY) {
             return null;
@@ -4524,8 +4520,7 @@ public class VTNManagerImpl
             throw new VTNException(MiscUtils.argumentIsNull("Mode"));
         }
 
-        boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
-        return new StatsReader(statisticsManager, update, cache);
+        return new StatsReader(statisticsManager, this);
     }
 
     /**
@@ -5974,7 +5969,7 @@ public class VTNManagerImpl
      */
     @Override
     public List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
-                                       DataFlowFilter filter)
+                                       DataFlowFilter filter, int interval)
         throws VTNException {
         if (inContainerMode) {
             // No flow entry is active in container mode.
@@ -5987,9 +5982,16 @@ public class VTNManagerImpl
         // make requests to get flow statistics. Synchronization will be done
         // by VTNFlowDatabase appropriately.
         VTNFlowDatabase fdb = getTenantFlowDB(path);
-        StatsReader reader = createStatsReader(mode, true);
+        boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
         DataFlowFilterImpl flt = new DataFlowFilterImpl(this, filter);
-        return fdb.getFlows(this, reader, flt);
+
+        if (mode == DataFlow.Mode.SUMMARY) {
+            return fdb.getFlows(this, null, update, flt, interval);
+        } else if (mode == null) {
+            throw new VTNException(MiscUtils.argumentIsNull("Mode"));
+        }
+
+        return fdb.getFlows(this, statsReader, update, flt, interval);
     }
 
     /**
@@ -6008,7 +6010,7 @@ public class VTNManagerImpl
      */
     @Override
     public DataFlow getDataFlow(VTenantPath path, long flowId,
-                                DataFlow.Mode mode)
+                                DataFlow.Mode mode, int interval)
         throws VTNException {
         if (inContainerMode) {
             // No flow entry is active in container mode.
@@ -6021,8 +6023,16 @@ public class VTNManagerImpl
         // make requests to get flow statistics. Synchronization will be done
         // by VTNFlowDatabase appropriately.
         VTNFlowDatabase fdb = getTenantFlowDB(path);
-        StatsReader reader = createStatsReader(mode, false);
-        return fdb.getFlow(this, flowId, reader);
+
+        boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
+
+        if (mode == DataFlow.Mode.SUMMARY) {
+            return fdb.getFlow(this, flowId, null, update, interval);
+        } else if (mode == null) {
+            throw new VTNException(MiscUtils.argumentIsNull("Mode"));
+        }
+
+        return fdb.getFlow(this, flowId, statsReader, update, interval);
     }
 
     /**
