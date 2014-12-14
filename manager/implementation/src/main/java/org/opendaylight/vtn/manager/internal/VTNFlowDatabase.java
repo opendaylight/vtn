@@ -864,6 +864,9 @@ public class VTNFlowDatabase {
      * @param streader  If a {@link StatsReader} instance is specified,
      *                  this method returns detailed information about the VTN
      *                  flow including statistics information.
+     * @param update    if {@code true}, flow statistics are derived from
+     *                  physical switch. Otherwise, and also if {@code streader} is not null,
+     *                  this instance will return statistics cached in statistics manager.
      * @param filter    A {@link DataFlowFilterImpl} instance which selects
      *                  data flows to be returned.
      *                  All data flows will be selected if {@code null} is
@@ -871,7 +874,7 @@ public class VTNFlowDatabase {
      * @return  A list of {@link DataFlow} instances.
      */
     public List<DataFlow> getFlows(VTNManagerImpl mgr, StatsReader streader,
-                                   DataFlowFilterImpl filter) {
+                                   boolean update, DataFlowFilterImpl filter, int interval) {
         if (filter.isNotMatch()) {
             // No data flow should be selected.
             return new ArrayList<DataFlow>(0);
@@ -885,7 +888,7 @@ public class VTNFlowDatabase {
                 DataFlow df = vflow.getDataFlow(mgr, detail);
                 if (detail) {
                     FlowEntry fent = vflow.getFlowEntries().get(0);
-                    df.setStatistics(streader.get(fent));
+                    df.setStatistics(streader.get(fent, update, interval));
                 }
                 list.add(df);
             }
@@ -904,11 +907,14 @@ public class VTNFlowDatabase {
      *                  flow including statistics information.
      *                  If {@code null} is specified, this method returns
      *                  summarized information.
+     * @param update    if {@code true}, flow statistics are derived from
+     *                  physical switch. Otherwise, and also if {@code streader} is not null,
+     *                  this instance will return statistics cached in statistics manager.
      * @return  A {@link DataFlow} instance.
      *          {@code null} is returned if the VTN flow was not found.
      */
     public DataFlow getFlow(VTNManagerImpl mgr, long flowId,
-                            StatsReader streader) {
+                            StatsReader streader, boolean update, int interval) {
         boolean detail = (streader != null);
         VTNFlow vflow;
         synchronized (this) {
@@ -921,10 +927,19 @@ public class VTNFlowDatabase {
         DataFlow df = vflow.getDataFlow(mgr, detail);
         if (detail) {
             FlowEntry fent = vflow.getFlowEntries().get(0);
-            df.setStatistics(streader.get(fent));
+            df.setStatistics(streader.get(fent, update, interval));
         }
 
         return df;
+    }
+
+    /**
+     * Return a list of all VTN flows.
+     *
+     * @return  A list of {@link VTNFlow} instance.
+     */
+    public synchronized List<VTNFlow> getAllFlows() {
+        return new ArrayList<VTNFlow>(vtnFlows.values());
     }
 
     /**

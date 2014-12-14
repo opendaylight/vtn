@@ -3035,15 +3035,16 @@ public interface IVTNManager {
      * Return information about all data flows present in the specified
      * {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      *
-     * @param path    A {@link VTenantPath} object that specifies the position
-     *                of the VTN.
-     * @param mode    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
-     *                instance which specifies behavior of this method.
-     * @param filter  If a {@link DataFlowFilter} instance is specified,
-     *                only data flows that meet the condition specified by
-     *                {@link DataFlowFilter} instance is returned.
-     *                All data flows in the VTN is returned if {@code null}
-     *                is specified.
+     * @param path      A {@link VTenantPath} object that specifies the position
+     *                  of the VTN.
+     * @param mode      A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
+     *                  instance which specifies behavior of this method.
+     * @param filter    If a {@link DataFlowFilter} instance is specified,
+     *                  only data flows that meet the condition specified by
+     *                  {@link DataFlowFilter} instance is returned.
+     *                  All data flows in the VTN is returned if {@code null}
+     *                  is specified.
+     * @param interval  Time interval in seconds for retrieving the average statistics.
      * @return  A list of {@link DataFlow} instances which represents
      *          information about data flows.
      * @throws VTNException  An error occurred.
@@ -3069,7 +3070,7 @@ public interface IVTNManager {
      * @since  Helium
      */
     List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
-                                DataFlowFilter filter)
+                                DataFlowFilter filter, int interval)
         throws VTNException;
 
     /**
@@ -3113,7 +3114,7 @@ public interface IVTNManager {
      *   </dl>
      * @since  Helium
      */
-    DataFlow getDataFlow(VTenantPath path, long flowId, DataFlow.Mode mode)
+    DataFlow getDataFlow(VTenantPath path, long flowId, DataFlow.Mode mode, int interval)
         throws VTNException;
 
     /**

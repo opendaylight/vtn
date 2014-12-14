@@ -253,11 +253,11 @@ public final class DataFlowGenerator extends TestBase {
         ingressPorts.addAll(createPortLocations(1L, DATAFLOW_COUNT / 7));
         egressPaths.addAll(createVNodePaths(DATAFLOW_COUNT / 2));
         egressPorts.addAll(createPortLocations(0x123456789aL, 13));
-        statistics.add((FlowStats)null).add(new FlowStats(0L, 0L, 0L)).
-            add(new FlowStats(100L, 3000L, 50000L)).
-            add(new FlowStats(12345L, 67890L, 123456789L)).
-            add(new FlowStats(0x12345L, 0x67890L, 0x123456789L)).
-            add(new FlowStats(10000000L, 123456712L, 9999999999L));
+        statistics.add((FlowStats)null).add(new FlowStats(0L, 0L, 0L, 0L, 0L, 10000L)).
+            add(new FlowStats(100L, 3000L, 50000L, 2L, 60L, 10000L)).
+            add(new FlowStats(12345L, 67890L, 123456789L, 1235L, 37050, 20000L)).
+            add(new FlowStats(0x12345L, 0x67890L, 0x123456789L, 10L, 300L, 20000L)).
+            add(new FlowStats(10000000L, 123456712L, 9999999999L, 300L, 9000L, 30000L));
 
         virtualRoutes.add((List<VNodeRoute>)null);
         String tname = "tenant_1";
