@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- # # Copyright (c) 2014 NEC Corporation # All rights reserved. # # This 
+    program and the accompanying materials are made available under the # terms 
+    of the Eclipse Public License v1.0 which accompanies this # distribution, 
+    and is available at http://www.eclipse.org/legal/epl-v10.html # -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <prerequisites>
+        <maven>3.0</maven>
+    </prerequisites>
+
+    <groupId>org.opendaylight.vtn.application</groupId>
+    <artifactId>VTNClient-checkstyle</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+
+    <scm>
+        <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
+        <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
+        <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
+        <tag>HEAD</tag>
+    </scm>
+
+    <properties>
+        <nexusproxy>http://nexus.opendaylight.org/content</nexusproxy>
+        <sitedeploy>
+            dav:http://nexus.opendaylight.org/content/sites/site
+        </sitedeploy>
+    </properties>
+
+    <pluginRepositories>
+        <!-- OpenDayLight repository mirror -->
+        <pluginRepository>
+            <id>opendaylight-mirror</id>
+            <name>opendaylight-mirror</name>
+            <url>${nexusproxy}/groups/public/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+        </pluginRepository>
+
+        <!-- OpenDayLight Snapshot artifact -->
+        <pluginRepository>
+            <id>opendaylight-snapshot</id>
+            <name>opendaylight-snapshot</name>
+            <url>${nexusproxy}/repositories/opendaylight.snapshot/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <distributionManagement>
+        <!-- OpenDayLight Released artifact -->
+        <repository>
+            <id>opendaylight-release</id>
+            <url>${nexusproxy}/repositories/opendaylight.release/</url>
+        </repository>
+
+        <!-- OpenDayLight Snapshot artifact -->
+        <snapshotRepository>
+            <id>opendaylight-snapshot</id>
+            <url>${nexusproxy}/repositories/opendaylight.snapshot/</url>
+        </snapshotRepository>
+
+        <!-- Site deployment -->
+        <site>
+            <id>website</id>
+            <url>${sitedeploy}</url>
+        </site>
+    </distributionManagement>
+</project>
