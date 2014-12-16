@@ -41,6 +41,7 @@
       <modules>
         <module>manager</module>
         <module>coordinator/dist</module>
+        <module>application/</module>
       </modules>
     </profile>
 
