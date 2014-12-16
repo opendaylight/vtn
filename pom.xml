@@ -62,6 +62,8 @@
         <module>manager/implementation</module>
         <module>manager/neutron</module>
         <module>manager/northbound</module>
+        <module>application/checkstyle</module>
+        <module>application/vtn_running_app</module>
 
         <!-- IT modules -->
         <module>manager/it</module>
