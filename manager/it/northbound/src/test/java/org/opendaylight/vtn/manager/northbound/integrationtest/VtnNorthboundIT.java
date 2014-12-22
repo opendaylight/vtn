@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -59,8 +60,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.ExamReactorStrategy;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.ops4j.pax.exam.util.PathUtils;
 import org.osgi.framework.Bundle;
@@ -124,6 +125,11 @@ public class VtnNorthboundIT extends TestBase {
     private static final String  RES_FLOWFILTERS = "flowfilters";
 
     /**
+     * Resource name for path policy APIs.
+     */
+    private static final String RES_PATHPOLICIES = "pathpolicies";
+
+    /**
      * Valid bits in flow filter index.
      */
     private static final int  MASK_FLOWFILTER_INDEX = 0xffff;
@@ -142,6 +148,16 @@ public class VtnNorthboundIT extends TestBase {
      * Valid bits in ICMP type and code.
      */
     private static final int  MASK_ICMP = 0xff;
+
+    /**
+     * The minimum value of path policy identifier.
+     */
+    private static final int  PATH_POLICY_MIN = 1;
+
+    /**
+     * The maximum value of path policy identifier.
+     */
+    private static final int  PATH_POLICY_MAX = 1;
 
     // get the OSGI bundle context
     @Inject
@@ -204,14 +220,16 @@ public class VtnNorthboundIT extends TestBase {
             assertEquals(Bundle.ACTIVE, implBundle.getState());
         }
 
-        ServiceReference r = bc.getServiceReference(IUserManager.class.getName());
-        if (r != null) {
-            this.userManager = (IUserManager)bc.getService(r);
+        ServiceReference<IUserManager> umr =
+            bc.getServiceReference(IUserManager.class);
+        if (umr != null) {
+            this.userManager = bc.getService(umr);
         }
 
-        r = bc.getServiceReference(IVTNManager.class.getName());
-        if (r != null) {
-            this.vtnManager = (IVTNManager)bc.getService(r);
+        ServiceReference<IVTNManager> vmr =
+            bc.getServiceReference(IVTNManager.class);
+        if (vmr != null) {
+            this.vtnManager = bc.getService(vmr);
             this.listenDataPacket = (IListenDataPacket)this.vtnManager;
         }
 
@@ -237,13 +255,26 @@ public class VtnNorthboundIT extends TestBase {
 
             JSONTokener jt = new JSONTokener(result);
             JSONObject json = new JSONObject(jt);
-            JSONArray vtnArray = json.getJSONArray("vtn");
-            for (int i = 0; i < vtnArray.length(); i++) {
-                JSONObject vtn = vtnArray.getJSONObject(i);
+            JSONArray array = json.getJSONArray("vtn");
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject vtn = array.getJSONObject(i);
                 String name = vtn.getString("name");
                 LOG.debug("Clean up VTN: {}", name);
-                result = getJsonResult(uri + "/" + name, "DELETE");
-                assertResponse(HTTP_NOT_FOUND);
+                getJsonResult(uri + "/" + name, "DELETE");
+                assertResponse(HTTP_OK);
+            }
+
+            // Remove all path policies.
+            String ppBase = createURI("default", RES_PATHPOLICIES);
+            json = getJSONObject(ppBase);
+            array = json.getJSONArray("integer");
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject pp = array.getJSONObject(i);
+                String id = pp.getString("value");
+                LOG.debug("Clean up path policy: {}", id);
+                uri = createRelativeURI(ppBase, id);
+                getJsonResult(uri, "DELETE");
+                assertResponse(HTTP_OK);
             }
         } catch (Exception e) {
             unexpected(e);
@@ -433,6 +464,187 @@ public class VtnNorthboundIT extends TestBase {
     }
 
     /**
+     * Determine whether the given two objects are identical.
+     *
+     * <p>
+     *   This method is used to compare scalar values in JSON object.
+     * </p>
+     *
+     * @param o1  A {@link Object} to be compared.
+     * @param o2  A {@link Object} to be compared.
+     * @return  {@code true} only if the given objects are identical.
+     * @throws JSONException  An error occurred.
+     */
+    private boolean equalsScalar(Object o1, Object o2) {
+        if (Objects.equals(o1, o2)) {
+            return true;
+        }
+        if (o1 == null || o2 == null) {
+            return false;
+        }
+
+        return String.valueOf(o1).equals(String.valueOf(o2));
+    }
+
+    /**
+     * Determine whether the given two JSON objects are identical.
+     *
+     * @param json1  A {@link JSONObject} to be compared.
+     * @param json2  A {@link JSONObject} to be compared.
+     * @return  {@code true} only if the given objects are identical.
+     * @throws JSONException  An error occurred.
+     */
+    private boolean equals(JSONObject json1, JSONObject json2)
+        throws JSONException {
+        if (json1 == null) {
+            return (json2 == null);
+        } else if (json2 == null) {
+            return false;
+        }
+
+        JSONArray keys1 = json1.names();
+        JSONArray keys2 = json2.names();
+        if (keys1 == null) {
+            return (keys2 == null);
+        } else if (!equals(keys1, keys2)) {
+            return false;
+        }
+
+        int keyLen = keys1.length();
+        for (int i = 0; i < keyLen; i++) {
+            String key = keys1.getString(i);
+            Object v1 = json1.get(key);
+            Object v2 = json2.get(key);
+            if (v1 instanceof JSONArray) {
+                if (!(v2 instanceof JSONArray)) {
+                    return false;
+                }
+                if (!equals((JSONArray)v1, (JSONArray)v2)) {
+                    return false;
+                }
+            } else if (v1 instanceof JSONObject) {
+                if (!(v2 instanceof JSONObject)) {
+                    return false;
+                }
+                if (!equals((JSONObject)v1, (JSONObject)v2)) {
+                    return false;
+                }
+            } else if (!equalsScalar(v1, v2)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine whether the given two JSON arrays are identical,
+     *
+     * <p>
+     *   Note that this method ignores element order in the given arrays.
+     * </p>
+     *
+     * @param jarray1  A {@link JSONArray} to be compared.
+     * @param jarray2  A {@link JSONArray} to be compared.
+     * @return  {@code true} only if the given arrays are identical.
+     * @throws JSONException  An error occurred.
+     */
+    private boolean equals(JSONArray jarray1, JSONArray jarray2)
+        throws JSONException {
+        if (jarray1 == null) {
+            return (jarray2 == null);
+        } else if (jarray2 == null) {
+            return false;
+        }
+
+        int len = jarray1.length();
+        if (jarray2.length() != len) {
+            return false;
+        }
+
+        List<JSONObject> objs1 = new ArrayList<>();
+        List<JSONObject> objs2 = new ArrayList<>();
+        List<JSONArray> arrays1 = new ArrayList<>();
+        List<JSONArray> arrays2 = new ArrayList<>();
+        List<Object> others1 = new ArrayList<>();
+        List<Object> others2 = new ArrayList<>();
+        for (int i = 0; i < len; i++) {
+            Object v1 = jarray1.get(i);
+            if (v1 instanceof JSONObject) {
+                objs1.add((JSONObject)v1);
+            } else if (v1 instanceof JSONArray) {
+                arrays1.add((JSONArray)v1);
+            } else {
+                others1.add(v1);
+            }
+
+            Object v2 = jarray2.get(i);
+            if (v2 instanceof JSONObject) {
+                objs2.add((JSONObject)v2);
+            } else if (v2 instanceof JSONArray) {
+                arrays2.add((JSONArray)v2);
+            } else {
+                others2.add(v2);
+            }
+        }
+
+        if (objs1.size() != objs2.size() || arrays1.size() != arrays2.size() ||
+            others1.size() != others2.size()) {
+            return false;
+        }
+
+        for (JSONObject json1: objs1) {
+            boolean found = false;
+            for (Iterator<JSONObject> it = objs2.iterator(); it.hasNext();) {
+                JSONObject json2 = it.next();
+                if (equals(json1, json2)) {
+                    it.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+
+        for (JSONArray a1: arrays1) {
+            boolean found = false;
+            for (Iterator<JSONArray> it = arrays2.iterator(); it.hasNext();) {
+                JSONArray a2 = it.next();
+                if (equals(a1, a2)) {
+                    it.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+
+        for (Object v1: others1) {
+            boolean found = false;
+            for (Iterator<Object> it = others2.iterator(); it.hasNext();) {
+                Object v2 = it.next();
+                if (equalsScalar(v1, v2)) {
+                    it.remove();
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                return false;
+            }
+        }
+
+        assertTrue(objs2.isEmpty());
+        assertTrue(arrays2.isEmpty());
+        assertTrue(others2.isEmpty());
+        return true;
+    }
+
+    /**
      * Verify that the given two JSON objects are identical.
      *
      * @param expected   An expected value.
@@ -441,26 +653,10 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void assertEquals(JSONObject expected, JSONObject json)
         throws JSONException {
-        JSONArray keys = json.names();
-        JSONArray exkeys = expected.names();
-        if (keys == null) {
-            Assert.assertEquals(null, exkeys);
-            return;
-        }
-        assertEquals(exkeys, keys);
-
-        int keyLen = keys.length();
-        for (int i = 0; i < keyLen; i++) {
-            String key = keys.getString(i);
-            Object exv = expected.get(key);
-            Object value = json.get(key);
-            if (exv instanceof JSONArray) {
-                assertEquals((JSONArray)exv, (JSONArray)value);
-            } else if (exv instanceof JSONObject) {
-                assertEquals((JSONObject)exv, (JSONObject)value);
-            } else {
-                assertEquals(exv, value);
-            }
+        if (!equals(expected, json)) {
+            String msg = "JSONObject does not match: expected=<" + expected +
+                ">, actual=<" + json + ">";
+            fail(msg);
         }
     }
 
@@ -468,7 +664,7 @@ public class VtnNorthboundIT extends TestBase {
      * Verify that the given two JSON arrays are identical,
      *
      * <p>
-     *   Note that this method ignores element order in the arrays.
+     *   Note that this method ignores element order in the given arrays.
      * </p>
      *
      * @param expected  An expected value.
@@ -477,40 +673,11 @@ public class VtnNorthboundIT extends TestBase {
      */
     private void assertEquals(JSONArray expected, JSONArray jarray)
         throws JSONException {
-        if (expected == null) {
-            Assert.assertEquals(null, jarray);
-            return;
+        if (!equals(expected, jarray)) {
+            String msg = "JSONArray does not match: expected=<" + expected +
+                ">, actual=<" + jarray + ">";
+            fail(msg);
         }
-        if (jarray == null) {
-            Assert.assertEquals(null, expected);
-            return;
-        }
-        int len = jarray.length();
-        assertEquals(expected.length(), len);
-
-        // Convert expected array elements into strings.
-        HashMap<String, Integer> exmap = new HashMap<String, Integer>();
-        for (int i = 0; i < len; i++) {
-            String value = expected.getString(i);
-            Integer count = exmap.get(value);
-            int newcnt = (count == null) ? 1 : count.intValue() + 1;
-            exmap.put(value, Integer.valueOf(newcnt));
-        }
-
-        // Test the specified array.
-        for (int i = 0; i < len; i++) {
-            String value = jarray.getString(i);
-            Integer count = exmap.get(value);
-            assertNotNull(count);
-            int cnt = count.intValue() - 1;
-            if (cnt == 0) {
-                exmap.remove(value);
-            } else {
-                exmap.put(value, Integer.valueOf(cnt));
-            }
-        }
-
-        assertTrue(exmap.isEmpty());
     }
 
     /**
@@ -709,6 +876,18 @@ public class VtnNorthboundIT extends TestBase {
     }
 
     /**
+     * Create a {@link JSONObject} instance which represents an OpenFlow node.
+     *
+     * @param dpid  The datapath ID.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject createNode(long dpid) throws JSONException {
+        JSONObject json = new JSONObject();
+        return json.put("type", "OF").
+            put("id", HexEncode.longToHexString(dpid));
+    }
+
+    /**
      *  A class to construct query parameter for HTTP request
      */
     private class QueryParameter {
@@ -732,6 +911,8 @@ public class VtnNorthboundIT extends TestBase {
      * <p>
      *   This calls {@link #testVBridgeAPI(String, String)}.
      * </p>
+     *
+     * @throws JSONException  Failed to handle JSON object.
      */
     @Test
     public void testVTNAPI() throws JSONException {
@@ -4216,6 +4397,8 @@ public class VtnNorthboundIT extends TestBase {
      * Test case for getting version information APIs.
      *
      * This method is called by {@link #testVTNAPI()}.
+     *
+     * @throws JSONException  Failed to handle JSON object.
      */
     private void testVtnGlobal(String base) throws JSONException {
         LOG.info("Starting IVTNGlobal JAX-RS client.");
@@ -4635,6 +4818,8 @@ public class VtnNorthboundIT extends TestBase {
 
     /**
      * Test case for flow filter APIs.
+     *
+     * @throws JSONException  Failed to handle JSON object.
      */
     @Test
     public void testFlowFilterAPI() throws JSONException {
@@ -5176,5 +5361,588 @@ public class VtnNorthboundIT extends TestBase {
         assertEquals(expected, all);
 
         return all;
+    }
+
+    /**
+     * Test case for path policy APIs.
+     *
+     * @throws JSONException  Failed to handle JSON object.
+     */
+    @Test
+    public void testPathPolicyAPI() throws JSONException {
+        LOG.info("Starting path policy JAX-RS client.");
+
+        // Get all path policy IDs.
+        String base = createURI("default", RES_PATHPOLICIES);
+        JSONObject json = getJSONObject(base);
+        JSONArray array = json.getJSONArray("integer");
+        assertEquals(0, array.length());
+
+        Map<Integer, JSONObject> pathPolicies = new HashMap<>();
+        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
+            JSONObject pp = testPathPolicyAPI(id);
+            assertNotNull(pp);
+            assertNull(pathPolicies.put(id, pp));
+        }
+
+        // Specifying invalid path policy ID.
+        List<String> badIds = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            badIds.add(String.valueOf(PATH_POLICY_MIN - i));
+            badIds.add(String.valueOf(PATH_POLICY_MAX + i));
+        }
+        badIds.add("bad_ID");
+        badIds.add("1111111111111111111111111111111111111");
+
+        json = new JSONObject();
+        json.put("default", 100);
+        String body = json.toString();
+
+        json = new JSONObject();
+        json.put("value", 100);
+        String xi = json.toString();
+        for (String id: badIds) {
+            int putErr = HTTP_BAD_REQUEST;
+            try {
+                Integer.parseInt(id);
+            } catch (Exception e) {
+                putErr = HTTP_NOT_FOUND;
+            }
+
+            String ppUri = createRelativeURI(base, id);
+            getJsonResult(ppUri);
+            assertResponse(HTTP_NOT_FOUND);
+            getJsonResult(ppUri, "PUT", body);
+            assertResponse(putErr);
+            getJsonResult(ppUri, "DELETE");
+            assertResponse(HTTP_NOT_FOUND);
+
+            String[] uris = {
+                createRelativeURI(ppUri, "costs", "OF", "1"),
+                createRelativeURI(ppUri, "costs", "OF", "1", "name", "port-1"),
+                createRelativeURI(ppUri, "costs", "OF", "1", "type", "OF", "1"),
+                createRelativeURI(ppUri, "costs", "OF", "1", "type", "OF", "1",
+                                  "port-1"),
+            };
+
+            for (String uri: uris) {
+                getJsonResult(uri);
+                assertResponse(HTTP_NOT_FOUND);
+                getJsonResult(uri, "PUT", xi);
+                assertResponse(HTTP_NOT_FOUND);
+                getJsonResult(uri, "DELETE");
+                assertResponse(HTTP_NOT_FOUND);
+            }
+
+            String uri = createRelativeURI(ppUri, "default");
+            getJsonResult(uri);
+            assertResponse(HTTP_NOT_FOUND);
+            getJsonResult(uri, "PUT", xi);
+            assertResponse(HTTP_NOT_FOUND);
+        }
+
+        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
+            JSONObject pp = pathPolicies.get(id);
+            String uri = createRelativeURI(base, String.valueOf(id));
+            assertEquals(pp, getJSONObject(uri));
+
+            // Delete path policy.
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_OK);
+
+            getJsonResult(uri);
+            assertResponse(HTTP_NOT_FOUND);
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_NOT_FOUND);
+
+            testPathPolicyError(id, null);
+        }
+    }
+
+    /**
+     * Test path policy APIs.
+     *
+     * @param id  Path policy identifier.
+     * @return  A {@link JSONObject} instance which represents the path policy
+     *          configuration.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject testPathPolicyAPI(int id) throws JSONException {
+        String base = createURI("default", RES_PATHPOLICIES,
+                                String.valueOf(id));
+        getJsonResult(base);
+        assertResponse(HTTP_NOT_FOUND);
+
+        Set<JSONObject> costs = new HashSet<>();
+        JSONObject ploc = new JSONObject().put("node", createNode(1L));
+        JSONObject pc = new JSONObject().put("location", ploc).
+            put("cost", 1);
+        assertTrue(costs.add(pc));
+
+        JSONObject swport = new JSONObject().put("name", "port-1");
+        ploc = new JSONObject().put("node", createNode(2L)).
+            put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 20);
+        assertTrue(costs.add(pc));
+
+        swport = new JSONObject().put("type", "OF").put("id", "2");
+        ploc = new JSONObject().put("node", createNode(3L)).
+            put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 300);
+        assertTrue(costs.add(pc));
+
+        swport = new JSONObject().put("type", "OF").put("id", "3").
+            put("name", "port-3");
+        ploc = new JSONObject().put("node", createNode(4L)).
+            put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 4000);
+        assertTrue(costs.add(pc));
+
+        // Path policy ID in JSON object should be ignored.
+        JSONObject pp = new JSONObject().put("id", 10000).put("cost", costs).
+            put("default", 1);
+        String body = pp.toString();
+        getJsonResult(base, "PUT", body);
+        assertResponse(HTTP_CREATED);
+        assertEquals(base, httpLocation);
+        getJsonResult(base, "PUT", body);
+        assertResponse(HTTP_NO_CONTENT);
+
+        String[] attrs = {"cost", "default"};
+        JSONObject expected = new JSONObject(pp, attrs).put("id", id);
+        JSONObject json = getJSONObject(base);
+        assertEquals(expected, json);
+
+        // Change default cost.
+        for (long l = 0; l <= 5; l++) {
+            long cost = 0x100000000L + l * 10000L;
+            pp.put("default", cost);
+            body = pp.toString();
+            getJsonResult(base, "PUT", body);
+            assertResponse(HTTP_OK);
+            getJsonResult(base, "PUT", body);
+            assertResponse(HTTP_NO_CONTENT);
+
+            expected.put("default", cost);
+            json = getJSONObject(base);
+            assertEquals(expected, json);
+        }
+
+        // Change whole path policy configuration.
+        costs.clear();
+        ploc = new JSONObject().put("node", createNode(10L));
+        pc = new JSONObject().put("location", ploc).put("cost", 111);
+        assertTrue(costs.add(pc));
+
+        swport = new JSONObject().put("name", "eth10");
+        ploc = new JSONObject().put("node", createNode(200L)).
+            put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 2222);
+        assertTrue(costs.add(pc));
+
+        swport = new JSONObject().put("type", "OF").put("id", "33");
+        ploc = new JSONObject().put("node", createNode(3333L)).
+            put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 3333333L);
+        assertTrue(costs.add(pc));
+
+        swport = new JSONObject().put("type", "OF").put("id", "444").
+            put("name", "port-444");
+        ploc = new JSONObject().put("node", createNode(4444444444444444L)).
+            put("port", swport);
+        pc = new JSONObject().put("location", ploc).
+            put("cost", 55555555555555L);
+        assertTrue(costs.add(pc));
+
+        pp = new JSONObject().put("id", 12345678).put("cost", costs);
+        body = pp.toString();
+        getJsonResult(base, "PUT", body);
+        assertResponse(HTTP_OK);
+        getJsonResult(base, "PUT", body);
+        assertResponse(HTTP_NO_CONTENT);
+
+        expected = new JSONObject(pp, attrs).put("id", id).put("default", 0);
+        json = getJSONObject(base);
+        assertEquals(expected, json);
+
+        // Set cost for a specific port.
+        List<JSONObject> portCosts = new ArrayList<>();
+        JSONObject node = createNode(9999L);
+        ploc = new JSONObject().put("node", node);
+        pc = new JSONObject().put("location", ploc).put("cost", 77777777L);
+        portCosts.add(pc);
+
+        swport = new JSONObject().put("name", "port-name-1");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 666666L);
+        portCosts.add(pc);
+
+        swport = new JSONObject().put("type", "OF").put("id", "5555");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 555555555L);
+        portCosts.add(pc);
+
+        swport = new JSONObject().put("type", "OF").put("id", "5555").
+            put("name", "port-name-1");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 444444L);
+        portCosts.add(pc);
+
+        Map<JSONObject, String> portUris = new HashMap<>();
+        for (JSONObject pcost: portCosts) {
+            JSONObject location = pcost.getJSONObject("location");
+            Object c = pcost.get("cost");
+            JSONObject xi = new JSONObject().put("value", c);
+            body = xi.toString();
+            JSONObject nd = location.getJSONObject("node");
+            String nodeType = nd.getString("type");
+            String nodeId = nd.getString("id");
+            String uri;
+            if (location.has("port")) {
+                JSONObject pt = location.getJSONObject("port");
+                String portType = (pt.has("type"))
+                    ? pt.getString("type") : null;
+                String portId = (pt.has("id"))
+                    ? pt.getString("id") : null;
+                String portName = (pt.has("name"))
+                    ? pt.getString("name") : null;
+                if (portType == null) {
+                    uri = createRelativeURI(base, "costs", nodeType, nodeId,
+                                            "name", portName);
+                } else {
+                    uri = createRelativeURI(base, "costs", nodeType, nodeId,
+                                            "type", portType, portId,
+                                            portName);
+                }
+            } else {
+                uri = createRelativeURI(base, "costs", nodeType, nodeId);
+            }
+
+            assertNull(portUris.put(pcost, uri));
+            getJsonResult(uri);
+            assertResponse(HTTP_NO_CONTENT);
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_NO_CONTENT);
+            getJsonResult(uri, "PUT", body);
+            assertResponse(HTTP_CREATED);
+            assertEquals(uri, httpLocation);
+            json = getJSONObject(uri);
+            assertEquals(xi, json);
+            getJsonResult(uri, "PUT", body);
+            assertResponse(HTTP_NO_CONTENT);
+
+            assertTrue(costs.add(pcost));
+            expected.put("cost", costs);
+            json = getJSONObject(base);
+            assertEquals(expected, json);
+        }
+
+        for (JSONObject pcost: portCosts) {
+            String uri = portUris.get(pcost);
+            assertNotNull(uri);
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_OK);
+            getJsonResult(uri);
+            assertResponse(HTTP_NO_CONTENT);
+
+            assertTrue(costs.remove(pcost));
+            expected.put("cost", costs);
+            assertEquals(expected, getJSONObject(base));
+
+            getJsonResult(uri, "DELETE");
+            assertResponse(HTTP_NO_CONTENT);
+        }
+
+        // Change default cost only.
+        String uri = createRelativeURI(base, "default");
+        JSONObject xi = new JSONObject().put("value", 0);
+        json = getJSONObject(uri);
+        assertEquals(xi, json);
+        for (long l = 0; l <= 5; l++) {
+            long cost = 0x9999999L + id * 100L + l;
+            xi = new JSONObject().put("value", cost);
+            body = xi.toString();
+            getJsonResult(uri, "PUT", body);
+            assertResponse(HTTP_OK);
+            assertEquals(xi, getJSONObject(uri));
+
+            getJsonResult(uri, "PUT", body);
+            assertResponse(HTTP_NO_CONTENT);
+
+            expected.put("default", cost);
+            assertEquals(expected, getJSONObject(base));
+        }
+
+        testPathPolicyError(id, expected);
+
+        return expected;
+    }
+
+    /**
+     * Error test case for path policy APIs.
+     *
+     * @param id        Path policy identifier.
+     * @param expected  A {@link JSONObject} that contains current path policy
+     *                  configuration. {@code null} means that the specified
+     *                  path policy is not configured.
+     * @throws JSONException  An error occurred.
+     */
+    private void testPathPolicyError(int id, JSONObject expected)
+        throws JSONException {
+        String base = createURI("default", RES_PATHPOLICIES,
+                                String.valueOf(id));
+
+        // Invalid default cost.
+        for (long c = -10; c <= 0; c++) {
+            if (c != 0) {
+                JSONObject pp = new JSONObject().put("default", c);
+                getJsonResult(base, "PUT", pp.toString());
+                assertResponse(HTTP_BAD_REQUEST);
+                if (expected == null) {
+                    getJsonResult(base);
+                    assertResponse(HTTP_NOT_FOUND);
+                } else {
+                    assertEquals(expected, getJSONObject(base));
+                }
+            }
+
+            String uri = createRelativeURI(base, "default");
+            JSONObject xi = new JSONObject();
+            if (c != 0) {
+                xi.put("value", c);
+            }
+            getJsonResult(uri, "PUT", xi.toString());
+            int code = (expected == null && c != 0)
+                ? HTTP_NOT_FOUND : HTTP_BAD_REQUEST;
+            assertResponse(code);
+            if (expected == null) {
+                getJsonResult(uri);
+                assertResponse(HTTP_NOT_FOUND);
+            } else {
+                xi = (expected.has("default"))
+                    ? new JSONObject().put("value", expected.get("default"))
+                    : new JSONObject().put("value", 0);
+                assertEquals(xi, getJSONObject(uri));
+            }
+        }
+
+        List<JSONObject> badPolicies = new ArrayList<>();
+        List<String> badCostUris = new ArrayList<>();
+
+        // Null path cost.
+        List<JSONObject> costs = new ArrayList<>();
+        costs.add(null);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Null port location.
+        JSONObject pc = new JSONObject().put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Null node.
+        JSONObject ploc = new JSONObject();
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Unsupported node.
+        JSONObject node = new JSONObject().put("type", "PR").
+            put("id", "node-1");
+        ploc = new JSONObject().put("node", node);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        badCostUris.add(createRelativeURI(base, "costs", "PR", "node-1"));
+        badCostUris.add(createRelativeURI(base, "costs", "PR", "node-1",
+                                          "name", "port-1"));
+        badCostUris.add(createRelativeURI(base, "costs", "PR", "node-1",
+                                          "type", "PR", "port-1"));
+        badCostUris.add(createRelativeURI(base, "costs", "PR", "node-1",
+                                          "type", "PR", "port-1", "port-1"));
+
+        // Incomplete node.
+        node = new JSONObject().put("type", "OF");
+        ploc = new JSONObject().put("node", node);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Broken node.
+        node = new JSONObject().put("type", "OF").put("id", "node-1");
+        ploc = new JSONObject().put("node", node);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        Map<String, Integer> httpCode = new HashMap<>();
+        String nodeType = "OF";
+        String[] badUris = {
+            createRelativeURI(base, "costs", nodeType, "node-1"),
+            createRelativeURI(base, "costs", nodeType, "node-1", "name",
+                              "port-1"),
+            createRelativeURI(base, "costs", nodeType, "node-1", "type", "OF",
+                              "1"),
+            createRelativeURI(base, "costs", nodeType, "node-1", "type", "OF",
+                              "1", "port-1"),
+        };
+        for (String uri: badUris) {
+            badCostUris.add(uri);
+            httpCode.put(uri, HTTP_BAD_REQUEST);
+        }
+
+        // Unsuported node connector type.
+        JSONObject swport = new JSONObject().put("type", "PR").
+            put("id", "port-1");
+        node = createNode(1L);
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        String nodeId = "00:00:00:00:00:00:00:01";
+        badCostUris.add(createRelativeURI(base, "costs", nodeType, nodeId,
+                                          "type", "PR", "port-1"));
+        badCostUris.add(createRelativeURI(base, "costs", nodeType, nodeId,
+                                          "type", "PR", "port-1", "port-1"));
+
+        // Empty port.
+        swport = new JSONObject();
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        swport = new JSONObject().put("name", JSONObject.NULL);
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Incomplete port.
+        swport = new JSONObject().put("type", "OF");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Broken OF port.
+        swport = new JSONObject().put("type", "OF").put("id", "port-1");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        badCostUris.add(createRelativeURI(base, "costs", nodeType, nodeId,
+                                          "type", "OF", "port-1"));
+        badCostUris.add(createRelativeURI(base, "costs", nodeType, nodeId,
+                                          "type", "OF", "port-1", "name-1"));
+
+        // Empty port name.
+        swport = new JSONObject().put("name", "");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Cost is undefined.
+        swport = new JSONObject().put("name", "port-1");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc);
+        costs.clear();
+        costs.add(pc);
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Duplicate port location.
+        swport = new JSONObject().put("name", "port-1");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 10L);
+        costs.clear();
+        costs.add(pc);
+
+        swport = new JSONObject().put("type", "OF").put("id", "2");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 20L);
+        costs.add(pc);
+
+        swport = new JSONObject().put("name", "port-1");
+        ploc = new JSONObject().put("node", node).put("port", swport);
+        pc = new JSONObject().put("location", ploc).put("cost", 30L);
+        costs.add(pc);
+
+        badPolicies.add(new JSONObject().put("cost", costs));
+
+        // Invalid cost.
+        for (long c = -10; c <= 0; c++) {
+            swport = new JSONObject().put("name", "port-1");
+            ploc = new JSONObject().put("node", node).put("port", swport);
+            pc = new JSONObject().put("location", ploc).put("cost", c);
+            costs.clear();
+            costs.add(pc);
+            badPolicies.add(new JSONObject().put("cost", costs));
+        }
+
+        for (JSONObject bad: badPolicies) {
+            getJsonResult(base, "PUT", bad.toString());
+            assertResponse(HTTP_BAD_REQUEST);
+            if (expected == null) {
+                getJsonResult(base);
+                assertResponse(HTTP_NOT_FOUND);
+            } else {
+                assertEquals(expected, getJSONObject(base));
+            }
+        }
+
+        JSONObject xi = new JSONObject().put("value", 1L);
+        String body = xi.toString();
+        for (String uri: badCostUris) {
+            getJsonResult(uri, "PUT", body);
+            if (expected == null) {
+                Integer code = httpCode.get(uri);
+                if (code == null) {
+                    assertResponse(HTTP_NOT_FOUND);
+                } else {
+                    assertResponse(code.intValue());
+                }
+                getJsonResult(base);
+                assertResponse(HTTP_NOT_FOUND);
+            } else {
+                assertResponse(HTTP_BAD_REQUEST);
+                assertEquals(expected, getJSONObject(base));
+            }
+        }
+
+        // Link cost is not specified in XmlLongInteger.
+        String[] uris = {
+            createRelativeURI(base, "costs", nodeType, nodeId),
+            createRelativeURI(base, "costs", nodeType, nodeId, "name",
+                              "port-1"),
+            createRelativeURI(base, "costs", nodeType, nodeId, "type",
+                              "OF", "1"),
+            createRelativeURI(base, "costs", nodeType, nodeId, "type",
+                              "OF", "1", "port-1"),
+        };
+        body = "{}";
+        for (String uri: uris) {
+            getJsonResult(uri, "PUT", body);
+            assertResponse(HTTP_BAD_REQUEST);
+            if (expected == null) {
+                getJsonResult(base);
+                assertResponse(HTTP_NOT_FOUND);
+            } else {
+                assertEquals(expected, getJSONObject(base));
+            }
+        }
     }
 }

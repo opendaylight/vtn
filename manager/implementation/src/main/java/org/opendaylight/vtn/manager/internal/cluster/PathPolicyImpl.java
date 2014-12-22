@@ -438,9 +438,13 @@ public final class PathPolicyImpl implements Serializable, Cloneable {
             PortLocation ploc = pc.getLocation();
             NodeUtils.checkPortLocation(ploc);
 
-            long cost = pc.getCost();
-            checkCost(cost);
-            if (map.put(ploc, Long.valueOf(cost)) != null) {
+            Long cost = pc.getCost();
+            if (cost == null) {
+                Status st = MiscUtils.argumentIsNull("Cost in PathCost");
+                throw new VTNException(st);
+            }
+            checkCost(cost.longValue());
+            if (map.put(ploc, cost) != null) {
                 String msg = "Duplicate port location: " + ploc;
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }
