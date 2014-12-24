@@ -526,6 +526,7 @@ public class PacketContextTest extends TestUseVTNManagerBase {
                 PacketContext pctx = createARPPacketContext(
                     src, dst, sender, target, (vlan > 0) ? vlan : -1,
                     innc, ARP.REQUEST);
+                pctx.setRouteResolver(vtnMgr);
 
                 InetAddress ipaddr = null;
                 byte[] sip = pctx.getSourceIpAddress();

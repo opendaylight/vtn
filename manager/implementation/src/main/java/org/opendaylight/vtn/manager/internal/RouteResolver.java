@@ -18,6 +18,12 @@ import org.opendaylight.controller.sal.core.Path;
  */
 public interface RouteResolver {
     /**
+     * Pseudo route resolver identifier which indicates the system default
+     * route resolver.
+     */
+    int  ID_DEFAULT = 0;
+
+    /**
      * Return the packet route from the source to the destination switch.
      *
      * <p>
@@ -31,4 +37,12 @@ public interface RouteResolver {
      *             {@code null} is returned if no route was found.
      */
     Path getRoute(Node src, Node dst);
+
+    /**
+     * Return the identifier of the path policy associated with this
+     * route resolver.
+     *
+     * @return  The identifier of the path policy.
+     */
+    int getPathPolicyId();
 }

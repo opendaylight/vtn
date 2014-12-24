@@ -86,6 +86,14 @@ public final class PathPolicyMap implements Map<Edge, Number>, RouteResolver {
         return routing.getMaxThroughputRoute(src, dst);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getPathPolicyId() {
+        return policyId;
+    }
+
     // Map
 
     /**

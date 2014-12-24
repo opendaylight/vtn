@@ -813,6 +813,9 @@ public class PacketContext implements Cloneable {
         vflow.addVirtualRoute(virtualRoute);
         vflow.setEgressVNodeRoute(egressNodeRoute);
 
+        // Set path policy identifier.
+        vflow.setPathPolicy(routeResolver.getPathPolicyId());
+
         // Set additional dependencies.
         vflow.addDependency(virtualNodes);
 
