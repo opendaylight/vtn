@@ -6471,10 +6471,19 @@ public class VTNManagerImpl
                 }
             }
 
-            // Remove all flows that was routed by the specified path policy.
-            PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb, fmatch);
+            if (result == UpdateType.ADDED) {
+                // Remove all flows because new path policy may affect
+                // all present flows.
+                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                    VTNThreadData.removeFlows(this, fdb);
+                }
+            } else {
+                // Remove all flows that was routed by the specified path
+                // policy.
+                PathPolicyFlowMatch fmatch = new PathPolicyFlowMatch(id);
+                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
+                    VTNThreadData.removeFlows(this, fdb, fmatch);
+                }
             }
 
             updatePathPolicyMap(pid);
@@ -6591,7 +6600,7 @@ public class VTNManagerImpl
                 pp = oldpp.clone();
                 old = pp.setDefaultCost(cost);
                 if (old == null) {
-                    // No change was made to flow condition.
+                    // No change was made to path policy.
                     return false;
                 }
             } while (!pathPolicyDB.replace(pid, oldpp, pp));
@@ -7224,6 +7233,14 @@ public class VTNManagerImpl
     @Override
     public Path getRoute(Node src, Node dst) {
         return routing.getRoute(src, dst);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getPathPolicyId() {
+        return RouteResolver.ID_DEFAULT;
     }
 
     // ICacheUpdateAware

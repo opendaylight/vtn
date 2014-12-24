@@ -57,7 +57,6 @@ public class BridgeStateTest extends TestBase {
 
         // RouteResolver
 
-        // IRouting
         @Override
         public Path getRoute(Node src, Node dst) {
             ObjectPair<Node, Node> path = new ObjectPair<Node, Node>(src, dst);
@@ -75,6 +74,13 @@ public class BridgeStateTest extends TestBase {
             }
             return null;
         }
+
+        @Override
+        public int getPathPolicyId() {
+            return 0;
+        }
+
+        // IRouting
 
         @Override
         public Path getMaxThroughputRoute(Node src, Node dst) {
