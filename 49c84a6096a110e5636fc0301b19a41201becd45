@@ -16,6 +16,29 @@
       "revId": "49c84a6096a110e5636fc0301b19a41201becd45",
       "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
       "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_769bc618",
+        "filename": "application/pom.xml",
+        "patchSetId": 3
+      },
+      "lineNbr": 5,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2014-12-24T07:01:35Z",
+      "side": 1,
+      "message": "Bad groupId.\nGroup IDs for all POM files in VTN project should start with \"org.opendaylight.vtn\".\nThe same thing can be said about Java package name.\nAll Java classes in VTN project should be located under \"org.opendaylight.vtn\" package.",
+      "range": {
+        "startLine": 5,
+        "startChar": 13,
+        "endLine": 5,
+        "endChar": 21
+      },
+      "revId": "49c84a6096a110e5636fc0301b19a41201becd45",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
     }
   ]
 }
