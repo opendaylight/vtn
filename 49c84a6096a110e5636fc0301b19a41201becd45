@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a96c907_b6f94e4f",
+        "filename": "application/README.txt",
+        "patchSetId": 3
+      },
+      "lineNbr": 52,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2014-12-24T06:41:39Z",
+      "side": 1,
+      "message": "Please mention the output format whether a file will be generated or the ouput will be displayed?",
+      "revId": "49c84a6096a110e5636fc0301b19a41201becd45",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
