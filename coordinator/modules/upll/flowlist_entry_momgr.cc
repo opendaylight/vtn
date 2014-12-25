@@ -1963,7 +1963,8 @@ upll_rc_t FlowListEntryMoMgr::UpdateControllerTable(ConfigKeyVal *ikey,
   unc_keytype_ctrtype_t ctrlrtype = UNC_CT_UNKNOWN;
   uuc::CtrlrMgr *ctrlr_mgr = uuc::CtrlrMgr::GetInstance();
   if ((!ctrlr_mgr->GetCtrlrType(reinterpret_cast<char *>(ctrl_id),
-     dt_type, &ctrlrtype)) || (ctrlrtype != UNC_CT_PFC)) {
+     dt_type, &ctrlrtype)) || ((ctrlrtype != UNC_CT_PFC)
+                         && (ctrlrtype != UNC_CT_ODC))) {
     UPLL_LOG_DEBUG("Controller type is  %d", ctrlrtype);
     return UPLL_RC_SUCCESS;
   }
@@ -4201,7 +4202,8 @@ upll_rc_t FlowListEntryMoMgr::CreateEntryCtrlrTbl(IpcReqRespHeader *req,
     // supported
       DELETE_IF_NOT_NULL(ctrlr_ckv);
       if ((!ctrlr_mgr->GetCtrlrType(reinterpret_cast<char *>(ctrlr_id),
-          req->datatype, &ctrlrtype)) || (ctrlrtype != UNC_CT_PFC)) {
+          req->datatype, &ctrlrtype)) || ((ctrlrtype != UNC_CT_PFC)
+                                   && (ctrlrtype != UNC_CT_ODC))) {
           result_code = UPLL_RC_SUCCESS;
           UPLL_LOG_DEBUG("Controller type is  %d", ctrlrtype);
           temp_pkey = temp_pkey->get_next_cfg_key_val();
