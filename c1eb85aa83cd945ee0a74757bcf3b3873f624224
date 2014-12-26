@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a96c907_642c6c9a",
+        "filename": "application/list_vtn_configuration/README.txt",
+        "patchSetId": 5
+      },
+      "lineNbr": 6,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-12-26T02:37:21Z",
+      "side": 1,
+      "message": "Would you clearly mention that this application gets information about VTN *Manager*?\n\nFrom this sentence, I\u0027m not sure if this application gets information on VTN Manager or information on VTN Coordinator.",
+      "range": {
+        "startLine": 6,
+        "startChar": 67,
+        "endLine": 6,
+        "endChar": 74
+      },
+      "revId": "c1eb85aa83cd945ee0a74757bcf3b3873f624224",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_a448345c",
+        "filename": "application/list_vtn_configuration/pom.xml",
+        "patchSetId": 5
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-12-26T02:37:21Z",
+      "side": 1,
+      "message": "The artifactId is too general.\n\nI think there will be more than one VTN clients.\n\nTherefore, Would you change the artifactId to be more specific?\nFor example, \"listconfig\" or \"getconfig\".",
+      "range": {
+        "startLine": 13,
+        "startChar": 16,
+        "endLine": 13,
+        "endChar": 25
+      },
+      "revId": "c1eb85aa83cd945ee0a74757bcf3b3873f624224",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
