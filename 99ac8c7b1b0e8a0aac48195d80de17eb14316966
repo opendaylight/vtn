@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a96c907_443850a0",
+        "filename": "application/list_vtn_configuration/pom.xml",
+        "patchSetId": 7
+      },
+      "lineNbr": 13,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2014-12-28T09:12:20Z",
+      "side": 1,
+      "message": "You should use lowercase letters for \u003cartifactId\u003e.\n\nI\u0027ve never seen any \u003cartifactId\u003e with uppercase letters.\n\nAnd the following guide recommend us to use lowercase letters for \u003cartifactId\u003e.\nhttp://maven.apache.org/guides/mini/guide-naming-conventions.html",
+      "range": {
+        "startLine": 13,
+        "startChar": 16,
+        "endLine": 13,
+        "endChar": 37
+      },
+      "revId": "99ac8c7b1b0e8a0aac48195d80de17eb14316966",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
