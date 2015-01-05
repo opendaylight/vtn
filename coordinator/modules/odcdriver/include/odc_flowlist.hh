@@ -69,9 +69,12 @@ public:
     if ( Op != unc::odcdriver::CONFIG_READ &&
         Op != unc::odcdriver::CONFIG_DELETE ) {
       unc::odcdriver::flowConditionsUtil util_;
-      UncRespCode ret(UNC_RC_SUCCESS);
       if ( is_entry_ == PFC_FALSE ) {
-        ret=util_.SetValue(object,flow_condition_);
+        UncRespCode ret(util_.SetValue(object,flow_condition_));
+        if ( ret != UNC_RC_SUCCESS ) {
+          pfc_log_error("Failed to Copy from flowcondtion to json!!");
+          return ret;
+        }
       } else {
         std::list <match*>::iterator iter_;
         iter_ = flow_condition_->match_.begin();

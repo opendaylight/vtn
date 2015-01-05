@@ -66,6 +66,15 @@ class OdcPort : public unc::driver::vtn_driver_read_command {
   // For reading PORT statistics
   UncRespCode read_cmd(unc::driver::controller *ctr,
                         unc::vtnreadutil::driver_read_util*);
+ /**
+   * @brief                          - retruns the map
+   * @param[out] link_map_           - link_map_which contains
+   *                                   switch id, portname, state
+   *                                   value and config value
+   */
+  std::map <std::string, std::string> get_linkmap( ) {
+        return link_map_;
+      }
 
  private:
   /**
@@ -271,6 +280,7 @@ class OdcPort : public unc::driver::vtn_driver_read_command {
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;
   std::map <std::string, std::string> port_id_val_;
+  std::map <std::string, std::string> link_map_;
 };
 }  // namespace odcdriver
 }  // namespace unc

@@ -311,6 +311,7 @@ pfc_bool_t ODCModule::get_physical_port_details(
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
   OdcSwitch odc_switch_obj(conf_file_values_);
+  OdcPort odc_port_obj(conf_file_values_);
   pfc_bool_t cache_empty = PFC_TRUE;
 
   // If controller is down clear physical port cache
@@ -360,7 +361,6 @@ pfc_bool_t ODCModule::get_physical_port_details(
         pfc_log_error("key_switch is NULL");
         return PFC_FALSE;
       }
-      OdcPort odc_port_obj(conf_file_values_);
       //  Gets the port details of a particular SW
       ret_val = odc_port_obj.fetch_config(ctr_ptr, key_switch, cache_empty);
       if (UNC_RC_SUCCESS != ret_val) {
@@ -369,7 +369,10 @@ pfc_bool_t ODCModule::get_physical_port_details(
       }
     }
   }
+  std::map<std::string, std::string> link_prop;
+  link_prop = odc_port_obj.get_linkmap();
   OdcLink odc_link_obj(conf_file_values_);
+  odc_link_obj.set_map(link_prop);
   ret_val = odc_link_obj.fetch_config(ctr_ptr, cache_empty);
   if (UNC_RC_SUCCESS != ret_val) {
     pfc_log_error("Error occured in getting link details");
