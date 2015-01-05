@@ -1,0 +1,78 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "7a96c907_7fe5d9a6",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 1
+      },
+      "lineNbr": 11,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-01-05T02:37:15Z",
+      "side": 1,
+      "message": "Please remove the COnflicts from the commit message.",
+      "range": {
+        "startLine": 11,
+        "startChar": 0,
+        "endLine": 11,
+        "endChar": 0
+      },
+      "revId": "7bd4b8eec1638e6cb44aa28c76155e483c9fd58b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_9fe2259e",
+        "filename": "coordinator/modules/odcdriver/include/odc_flowfilter_template.hh",
+        "patchSetId": 1
+      },
+      "lineNbr": 113,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-01-05T02:37:15Z",
+      "side": 1,
+      "message": "Can you pleae add a comment on the intention of this new local variable?",
+      "revId": "7bd4b8eec1638e6cb44aa28c76155e483c9fd58b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_3fef5189",
+        "filename": "coordinator/modules/vtndrvintf/vtn_drv_module.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 122,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-01-05T02:37:15Z",
+      "side": 1,
+      "message": "Please check indent in the below line",
+      "revId": "7bd4b8eec1638e6cb44aa28c76155e483c9fd58b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "7a96c907_5ff49d5a",
+        "filename": "coordinator/modules/vtndrvintf/vtn_drv_module.cc",
+        "patchSetId": 1
+      },
+      "lineNbr": 125,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-01-05T02:37:15Z",
+      "side": 1,
+      "message": "Please check indent",
+      "revId": "7bd4b8eec1638e6cb44aa28c76155e483c9fd58b",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
