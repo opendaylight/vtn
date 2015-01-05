@@ -20,6 +20,8 @@ OdcLink::OdcLink(unc::restjson::ConfFileValues_t conf_values)
 
 // Destructor
 OdcLink::~OdcLink() {
+  pfc_log_info("odclink link_map cleared");
+  link_map_.clear();
 }
 
 
@@ -187,86 +189,6 @@ UncRespCode OdcLink::fill_edge_value_map(
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  json_object *json_obj_prop = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                            "properties",
-                                            arr_idx,
-                                            json_obj_prop);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_prop, json_type_null))) {
-    pfc_log_error(" Error while parsing json_obj_prop or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  json_object *json_obj_prop_name = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_prop,
-                                            "name",
-                                            -1,
-                                            json_obj_prop_name);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_prop_name, json_type_null))) {
-    pfc_log_error(" Error while parsing json_obj_prop_name or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string prop_name = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_prop_name,
-                                            "value",
-                                            -1,
-                                            prop_name);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (prop_name.empty())) {
-    pfc_log_error("Error while parsing prop name value");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  json_object *json_obj_prop_state = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_prop,
-                                            "state",
-                                            -1,
-                                            json_obj_prop_state);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_prop_state, json_type_null))) {
-    pfc_log_error(" Error while parsing json_obj_prop_state or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  uint state_value = 0;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_prop_state,
-                                            "value",
-                                            -1,
-                                            state_value);
-
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error while parsing prop state value");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  json_object *json_obj_prop_config = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_prop, "config",
-                                            -1, json_obj_prop_config);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_prop_config, json_type_null))) {
-    pfc_log_error(" Error while parsing json_obj_prop_config"
-                  "or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  uint config_value = 0;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_prop_config,
-                                            "value",
-                                            -1,
-                                            config_value);
-
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error while parsing prop config value");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
   std::string tail_conn_prop = "";
   tail_conn_prop.append(tail_node_id);
   tail_conn_prop.append(PIPE_SEPARATOR);
@@ -276,27 +198,41 @@ UncRespCode OdcLink::fill_edge_value_map(
   head_conn_prop.append(head_node_id);
   head_conn_prop.append(PIPE_SEPARATOR);
   head_conn_prop.append(head_id);
+  // extract porp_name, state value and config value from link_map
+  std::string port_name    = "";
+  std::string state_value  = "";
+  std::string config_value = "";
+  std::map<std::string, std::string>::iterator iter;
+  iter = link_map_.find(head_conn_prop);
+  if (iter != link_map_.end()) {
+    std::string prob_str = iter->second;
+    pfc_log_info("Entry in link map is  val : %s", prob_str.c_str());
+    std::size_t pos = prob_str.find(PIPE_SEPARATOR);
+    port_name = prob_str.substr(0, pos);
+    std::string config_sub = prob_str.substr(pos);
+    pos = config_sub.find(PIPE_SEPARATOR);
+    state_value = config_sub.substr(pos+1, 1);
+    config_value= config_sub.substr(pos+3, 4);
+  } else {
+    pfc_log_error("Error while parsing prop config value");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
 
   // head_conn_map contains details in the format sample
   // head_conn_map["00:00:00:00:00:00:00:03|3"]="s3-eth3" used to map the port
   // of tail node connector key is the combination of headnodeid, head id. Value
   // is the combination of name value
-  head_conn_map[head_conn_prop] = prop_name;
+  head_conn_map[head_conn_prop] = port_name;
 
   pfc_log_trace("Entry in head_conn_map is key : %s, val : %s",
-                head_conn_prop.c_str(), prop_name.c_str());
+                head_conn_prop.c_str(), port_name.c_str());
 
   head_conn_prop.append(PIPE_SEPARATOR);
-  head_conn_prop.append(prop_name);
+  head_conn_prop.append(port_name);
   head_conn_prop.append(PIPE_SEPARATOR);
-  std::ostringstream str_state_val;
-  str_state_val << state_value;
-  head_conn_prop.append(str_state_val.str());
+  head_conn_prop.append(state_value);
   head_conn_prop.append(PIPE_SEPARATOR);
-
-  std::ostringstream str_conf_val;
-  str_conf_val << config_value;
-  head_conn_prop.append(str_conf_val.str());
+  head_conn_prop.append(config_value);
 
   // edge_prop_map contains details in the format
   // edge_prop_map["00:00:00:00:00:00:00:01|2"]=
