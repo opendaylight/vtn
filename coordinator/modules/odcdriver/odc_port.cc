@@ -20,6 +20,8 @@ OdcPort::OdcPort(unc::restjson::ConfFileValues_t conf_values)
 
 // Destructor
 OdcPort::~OdcPort() {
+  link_map_.clear();
+  pfc_log_info("odcport link_map cleared");
 }
 
 
@@ -201,7 +203,23 @@ UncRespCode OdcPort::fill_config_node_vector(
   port_id.append(HYPHEN);
   port_id.append(name_value);
   pfc_log_debug("Port id formed in logical port : %s", port_id.c_str());
+  // Fill link map
+  std::string head_conn = node_id;
+  std::string port_value = name_value;
+  port_value.append(PIPE_SEPARATOR);
+  std::ostringstream str_state_val;
+  str_state_val << state_value;
+  port_value.append(str_state_val.str());
+  port_value.append(PIPE_SEPARATOR);
+  std::ostringstream str_conf_val;
+  str_conf_val << config_value;
+  port_value.append(str_conf_val.str());
+  head_conn.append(PIPE_SEPARATOR);
+  head_conn.append(node_conn_id);
+  link_map_[head_conn] = port_value;
 
+  pfc_log_debug("link details framed %s | %s", head_conn.c_str(),
+                port_value.c_str());
   strncpy(reinterpret_cast<char*> (val_port.logical_port_id), port_id.c_str(),
           strlen(port_id.c_str()));
   val_port.valid[kIdxPortLogicalPortId] = UNC_VF_VALID;

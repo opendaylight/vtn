@@ -50,6 +50,13 @@ class OdcLink {
    */
   UncRespCode fetch_config(unc::driver::controller* ctr,
                            const pfc_bool_t &cache_empty);
+  /**
+   * @brief                          - method to set the map
+   * @param[in] link_prop            - map that contains link properties
+   */
+  void set_map(std::map<std::string, std::string> &link_prop) {
+    link_map_ = link_prop;
+  }
 
  private:
   /**
@@ -208,6 +215,7 @@ class OdcLink {
 
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;
+  std::map<std::string, std::string> link_map_;
 };
 }  // namespace odcdriver
 }  // namespace unc
