@@ -4,10 +4,9 @@ VTN COORDINATOR GUIDE
 SUPPORTED PLATFORMS
 -------------------
 
- * RHEL 6 (x86_64)
- * CentOS 6 (x86_64)
+ * RHEL 6 / 7 (x86_64)
+ * CentOS 6 / 7 (x86_64)
  * Fedora 20 (x86_64)
- * Fedora 19 (x86_64)
 
 INSTALLATION
 ------------
@@ -53,7 +52,7 @@ Install additional applications required for VTN Coordinator.
 
 ### INSTALLING POSTGRESQL DATABASE
 
-Configure Yum repository to download the latest rpms for PostgreSQL 9.1.
+Configure Yum repository to download the latest rpms for PostgreSQL 9.1 
 
     rpm -ivh http://yum.postgresql.org/9.1/redhat/rhel-6-x86_64/pgdg-redhat91-9.1-5.noarch.rpm
 
@@ -62,8 +61,12 @@ Install the required PostgreSQL packages.
     yum install postgresql91-libs postgresql91 postgresql91-server \
     postgresql91-contrib postgresql91-odbc
 
-VTN Coordinator supports postgres version greater than 9.1 only and currently
-tested with 9.1 and 9.3. Please ensure the postgres version>=9.1 is installed.
+Note: 
+
+ 1. VTN Coordinator supports postgres version greater than 9.1 only and currently
+  tested with 9.1 and 9.3. Please ensure the postgres version>=9.1 is installed.
+ 2. Please install the rpm for the particular platform from 
+   http://yum.postgresql.org/9.1/ or http://yum.postgresql.org/9.3/
 
 If you are facing any problems while installing postgreSQL rpm,
 please refer to openssl_problems query in troubleshooting FAQ.
