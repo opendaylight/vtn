@@ -20,6 +20,7 @@
     <relativePath>common</relativePath>
   </parent>
   <artifactId>distribution</artifactId>
+  <name>vtn</name> <!-- Used by Sonar to set project name -->
   <packaging>pom</packaging>
 
   <scm>
