@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -560,32 +560,21 @@ public class VTNFlow implements Serializable {
             return false;
         }
 
-        boolean portMatched = false, vlanMatched = false;
+        // Determine VLAN ID configured in the ingress flow match.
+        Flow ingress = flowEntries.get(0).getFlow();
+        Match match = ingress.getMatch();
+        MatchField mf = match.getField(MatchType.DL_VLAN);
+        short vid = ((Short)mf.getValue()).shortValue();
+
         for (Action action: actions) {
             if (action instanceof Output) {
+                // We assume that OUTPUT action comes last.
                 Output out = (Output)action;
-                if (filter.accept(out.getPort(), null)) {
-                    if (vlanMatched) {
-                        return true;
-                    }
-                    portMatched = true;
-                }
-            } else if (getOutputVlan(action) == vlan) {
-                if (portMatched) {
-                    return true;
-                }
-                vlanMatched = true;
+                return (filter.accept(out.getPort(), null) && vlan == vid);
+            } else {
+                // Update VLAN ID of the outgoing packet.
+                vid = getOutputVlan(action, vid);
             }
-        }
-
-        if (portMatched) {
-            // Determine VLAN ID by match field because this flow does not
-            // change VLAN ID.
-            Flow flow = flowEntries.get(0).getFlow();
-            Match match = flow.getMatch();
-            MatchField mf = match.getField(MatchType.DL_VLAN);
-            Short vid = (Short)mf.getValue();
-            return (vid.shortValue() == vlan);
         }
 
         return false;
@@ -821,13 +810,12 @@ public class VTNFlow implements Serializable {
      * Return VLAN ID of outgoing packet set by the given action.
      *
      * @param action  An action in a flow entry.
-     * @return  If the given action removes the VLAN tag,
-     *          {@link MatchType#DL_VLAN_NONE} is returned.
-     *          A valid VLAN ID is returned if the given action sets it into
-     *          the VLAN TAG.
-     *          -1 is returned if the given action never sets a VLAN ID.
+     * @param vid     VLAN ID of the packet currently processing.
+     * @return  VLAN ID to be used for succeeding packet processing.
+     *          {@link MatchType#DL_VLAN_NONE} is returned if the given action
+     *          removes the VLAN tag.
      */
-    private short getOutputVlan(Action action) {
+    private short getOutputVlan(Action action, short vid) {
         if (action instanceof PopVlan) {
             return MatchType.DL_VLAN_NONE;
         }
@@ -835,7 +823,7 @@ public class VTNFlow implements Serializable {
             return (short)((SetVlanId)action).getVlanId();
         }
 
-        return -1;
+        return vid;
     }
 
 
@@ -867,10 +855,7 @@ public class VTNFlow implements Serializable {
                 port = ((Output)action).getPort();
                 break;
             } else {
-                short v = getOutputVlan(action);
-                if (v != -1) {
-                    vlan = v;
-                }
+                vlan = getOutputVlan(action, vlan);
             }
         }
 
