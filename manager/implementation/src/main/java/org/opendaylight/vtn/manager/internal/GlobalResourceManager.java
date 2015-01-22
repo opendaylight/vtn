@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1531,11 +1531,9 @@ public class GlobalResourceManager
             if (!old.equals(ref)) {
                 throw new MacMapPortBusyException(mvlan, ref, old);
             }
-        } else if (key.getMacAddress() == MacVlan.UNDEFINED) {
-            // The target VLAN network on the port has been reserved, and
-            // the target host is mapped by wildcard MAC address.
-            // In this case we need to purge obsolete network caches
-            // originated by VLAN mapping.
+        } else {
+            // We need to purge obsolete network caches originated by
+            // VLAN mapping.
             vlanMap = getVlanMapReference(port, vlan);
         }
 
