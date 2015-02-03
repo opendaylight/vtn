@@ -35,12 +35,12 @@
   </properties>
 
   <profiles>
-    <!-- Build REST API document unless vtn.doc.skip property is defined -->
+    <!-- Build REST API document unless sonar property is defined -->
     <profile>
       <id>restdoc</id>
       <activation>
         <property>
-          <name>!vtn.doc.skip</name>
+          <name>!sonar</name>
         </property>
       </activation>
       <build>
@@ -70,7 +70,7 @@
       <id>sonar</id>
       <activation>
         <property>
-          <name>vtn.build.sonar</name>
+          <name>sonar</name>
           <value>true</value>
         </property>
       </activation>
