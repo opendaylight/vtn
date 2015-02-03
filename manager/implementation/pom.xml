@@ -45,9 +45,9 @@
       <activation>
         <activeByDefault>false</activeByDefault>
 
-        <!-- Run all tests if vtn.build.sonar property is defined. -->
+        <!-- Run all tests if sonar property is defined. -->
         <property>
-          <name>vtn.build.sonar</name>
+          <name>sonar</name>
           <value>true</value>
         </property>
       </activation>
