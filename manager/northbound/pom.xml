@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -35,13 +35,11 @@
   </properties>
 
   <profiles>
-    <!-- Build REST API document unless sonar property is defined -->
+    <!-- Build REST API document only if docs profile is activated -->
     <profile>
-      <id>restdoc</id>
+      <id>docs</id>
       <activation>
-        <property>
-          <name>!sonar</name>
-        </property>
+        <activeByDefault>false</activeByDefault>
       </activation>
       <build>
         <plugins>
