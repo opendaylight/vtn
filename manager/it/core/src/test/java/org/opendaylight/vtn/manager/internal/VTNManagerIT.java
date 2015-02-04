@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -46,17 +46,19 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.junit.Configuration;
-import org.ops4j.pax.exam.junit.ExamReactorStrategy;
 import org.ops4j.pax.exam.junit.PaxExam;
+import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
 import org.ops4j.pax.exam.util.PathUtils;
+
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +95,6 @@ import org.opendaylight.vtn.manager.integrationtest.internal.DataPacketServices;
 import org.opendaylight.vtn.manager.integrationtest.internal.FlowProgrammerService;
 import org.opendaylight.vtn.manager.integrationtest.internal.InventoryService;
 import org.opendaylight.vtn.manager.integrationtest.internal.TopologyServices;
-import org.opendaylight.vtn.manager.integrationtest.internal.OvsdbServices;
 
 import org.opendaylight.controller.clustering.services.ICacheUpdateAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
@@ -140,10 +141,6 @@ import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.switchmanager.IInventoryListener;
 import org.opendaylight.controller.switchmanager.ISwitchManager;
 import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
-
-import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
-import org.opendaylight.ovsdb.lib.notation.Row;
-import org.opendaylight.ovsdb.lib.schema.GenericTableSchema;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -402,7 +399,6 @@ public class VTNManagerIT extends TestBase {
      */
     @Test
     public void testIVTNManager() {
-        testOvsdbNodes();
         testIVTNGlobal();
         testAddGetRemoveTenant();
         testModifyTenant();
@@ -413,33 +409,6 @@ public class VTNManagerIT extends TestBase {
         testFindHost();
         testProbeHost();
         testIsActive();
-    }
-
-   /**
-     * Test method for
-     * {@link OvsdbInventoryListener#nodeAdded(Node)},
-     * {@link OvsdbInventoryListener#nodeRemoved(Node)},
-     * {@link OvsdbInventoryListener#rowAdded(Node, String, String, Row)},
-     * {@link OvsdbInventoryListener#rowUpdated(Node, String, String, Row, Row)},
-     * {@link OvsdbInventoryListener#rowRemoved(Node, String, String, Row, Object)}
-     */
-    private void testOvsdbNodes() {
-        LOG.info("Running testOvsdbNodes()");
-        // Get OvsdbServices from openflow stub
-        OvsdbInventoryListener ovsdb = (OvsdbInventoryListener)ServiceHelper
-             .getInstance(OvsdbInventoryListener.class, GlobalConstants.DEFAULT.toString(), VTNManagerIT.this);
-        assertNotNull(ovsdb);
-        assertTrue(ovsdb instanceof OvsdbServices);
-        OvsdbServices ovs = (OvsdbServices)ovsdb;
-        for (Node node : createNodes(3)) {
-            ovs.nodeAdded(node);
-            ovs.nodeRemoved(node);
-            Row<GenericTableSchema> row = new Row<GenericTableSchema>();
-            ovs.rowAdded(node, "Bridge", "1234", row);
-            ovs.rowUpdated(node, "Bridge", "1234", row, row);
-            String obj = new String("testBridgeObject");
-            ovs.rowRemoved(node, "Bridge", "1234", row, obj);
-        }
     }
 
     /**

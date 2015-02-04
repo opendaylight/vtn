@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Cisco Systems, Inc. and others.  All rights reserved.
+ * Copyright (c) 2013-2015 Cisco Systems, Inc. and others.  All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -20,7 +20,6 @@ import org.opendaylight.controller.sal.topology.IPluginInTopologyService;
 import org.opendaylight.controller.sal.topology.IPluginOutTopologyService;
 import org.opendaylight.controller.sal.packet.IPluginInDataPacketService;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.ovsdb.plugin.OvsdbInventoryListener;
 
 
 import org.slf4j.Logger;
@@ -74,7 +73,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             InventoryService.class,
             TopologyServices.class,
             DataPacketServices.class,
-            OvsdbServices.class
         };
         return res;
     }
@@ -140,15 +138,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             // by SAL
             props.put(GlobalConstants.PROTOCOLPLUGINTYPE.toString(), Node.NodeIDType.OPENFLOW);
             c.setInterface(IPluginInDataPacketService.class.getName(), props);
-        }
-
-        if (imp.equals(OvsdbServices.class)) {
-            // export the service to be used by SAL
-            Dictionary<String, Object> props = new Hashtable<String, Object>();
-            // Set the protocolPluginType property which will be used
-            // by SAL
-            props.put(GlobalConstants.PROTOCOLPLUGINTYPE.toString(), Node.NodeIDType.OPENFLOW);
-            c.setInterface(OvsdbInventoryListener.class.getName(), props);
         }
     }
 
