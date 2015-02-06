@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -4320,9 +4320,6 @@ public class VTNManagerImpl
             }
         }
 
-        // Set flow timeout in the virtual tenant configuration.
-        pctx.setFlowTimeout(tconf.getIdleTimeout(),
-                            tconf.getHardTimeout());
         return this;
     }
 

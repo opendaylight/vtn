@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -1553,6 +1553,11 @@ public final class VTenantImpl implements FlowFilterNode {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            // Initialize flow timeout as specified in the virtual tenant
+            // configuration.
+            pctx.setFlowTimeout(tenantConfig.getIdleTimeout(),
+                                tenantConfig.getHardTimeout());
+
             // Determine whether the packet is sent to the controller or not.
             boolean toCtlr = isToController(mgr, pctx);
             if (toCtlr) {
