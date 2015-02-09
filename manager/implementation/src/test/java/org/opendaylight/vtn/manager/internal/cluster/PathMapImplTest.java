@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,13 +23,13 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 public class PathMapImplTest extends TestBase {
     /**
      * Test method for
-     * {@link PathMapImpl#PathMapImpl(int, PathMap),
-     *  @link PathMapImpl#getTimeout(Integer, String),
-     *  @link PathMapImpl#getIndex(),
-     *  @link PathMapImpl#getPathMap(),
-     *  @link PathMapImpl#hashCode(),
-     *  @link PathMapImpl#equals(Object),
-     *  @link PathMapImpl#toString()}.
+     * {@link PathMapImpl#PathMapImpl(int, PathMap)},
+     * {@link PathMapImpl#getTimeout(Integer, String)},
+     * {@link PathMapImpl#getIndex()},
+     * {@link PathMapImpl#getPathMap()},
+     * {@link PathMapImpl#hashCode()},
+     * {@link PathMapImpl#equals(Object)},
+     * {@link PathMapImpl#toString()}.
      */
     @Test
     public void testAllMethodExceptEvaluate() {

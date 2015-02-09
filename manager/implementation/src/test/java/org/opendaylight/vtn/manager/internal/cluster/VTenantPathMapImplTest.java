@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -40,10 +40,10 @@ public class VTenantPathMapImplTest extends TestBase{
 
     /**
      * Test method for
-     * {@link VTenantPathMapImpl#VTenantPathMapImpl(VTenantImpl, int, PathMap),
-     *  @link VTenantPathMapImpl#setVTenant(VTenantImpl),
-     *  @link VTenantPathMapImpl#getLogger(),
-     *  @link VTenantPathMapImpl#getLogPrefix()}.
+     * {@link VTenantPathMapImpl#VTenantPathMapImpl(VTenantImpl, int, PathMap)},
+     * {@link VTenantPathMapImpl#setVTenant(VTenantImpl)},
+     * {@link VTenantPathMapImpl#getLogger()},
+     * {@link VTenantPathMapImpl#getLogPrefix()}.
      */
     @Test
     public void testAllMethods() {

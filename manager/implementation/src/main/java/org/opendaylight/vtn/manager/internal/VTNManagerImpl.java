@@ -1391,7 +1391,7 @@ public class VTNManagerImpl
      * @param nc      A {@link NodeConnector} instance corresponding to the
      *                target switch port.
      * @param peer    A {@link NodeConnector} instance corresponding to the
-     *                switch port connected to {@link nc}.
+     *                switch port connected to {@code nc}.
      * @param islMap  If a non-{@code null} value is specified, the specified
      *                port is put to the given map only if the port was
      *                actually added to the ISL map.

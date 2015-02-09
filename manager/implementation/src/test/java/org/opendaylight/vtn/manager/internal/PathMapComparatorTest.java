@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,9 +20,9 @@ public class PathMapComparatorTest extends TestBase {
 
     /**
      * Test method for
-     * {@link PathMapComparator#hashCode(),
-     *  @link PathMapComparator#equals(Object),
-     *  @link PathMapComparator#compare(PathMap, PathMap)}.
+     * {@link PathMapComparator#hashCode()},
+     * {@link PathMapComparator#equals(Object)},
+     * {@link PathMapComparator#compare(PathMap, PathMap)}.
      */
     @Test
     public void testComparator() {

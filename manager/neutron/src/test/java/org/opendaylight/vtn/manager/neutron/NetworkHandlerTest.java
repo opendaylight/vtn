@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -826,9 +826,9 @@ public class NetworkHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link NetworkHandler#createVlanMap(NeutronNetwork, boolean, boolean),
-     *          NetworkHandler#NetworkHandler#createVlanMap(String, String, short),
-     *          NetworkHandler#createVlanMap(String, String, String, String)}.
+     * {@link NetworkHandler#createVlanMap(NeutronNetwork, boolean, boolean)},
+     * {@link NetworkHandler#createVlanMap(String, String, short)},
+     * {@link NetworkHandler#createVlanMap(String, String, String, String)}}.
      */
     @Test
     public void testCreateVlanMap() {
@@ -1041,7 +1041,7 @@ public class NetworkHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link NetworkHandler#canModifyBridge(String, VBridge)}.
+     * {@link NetworkHandler#canModifyBridge(NeutronNetwork, VBridge)}.
      */
     @Test
     public void testCanModifyBridge() {
@@ -1111,9 +1111,9 @@ public class NetworkHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link NetworkHandler#modifyVlanMap(NeutronNetwork),
-     *          NetworkHandler#NetworkHandler#createVlanMap(String, String, short),
-     *          NetworkHandler#createVlanMap(String, String, String, String)}.
+     * {@link NetworkHandler#modifyVlanMap(NeutronNetwork)},
+     * {@link NetworkHandler#createVlanMap(String, String, short)},
+     * {@link NetworkHandler#createVlanMap(String, String, String, String)}.
      */
     @Test
     public void testModifyVlanMap() {
@@ -1204,9 +1204,9 @@ public class NetworkHandlerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link NetworkHandler#deleteVlanMaps(String, String),
-     *          NetworkHandler#deleteVlanMap(String, String, String, String),
-     *          NetworkHandler#getVlanMaps(String, String)}.
+     * {@link NetworkHandler#deleteVlanMaps(String, String)},
+     * {@link NetworkHandler#deleteVlanMap(String, String, String)},
+     * {@link NetworkHandler#getVlanMaps(String, String)}.
      */
     @Test
     public void testDeleteVlanMaps() {
