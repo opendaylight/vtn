@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -117,6 +117,13 @@
       <artifactId>manager</artifactId>
     </dependency>
 
+    <!-- OSGi framework -->
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+    </dependency>
+
+    <!-- OpenDaylight AD-SAL -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
@@ -167,12 +174,7 @@
       <artifactId>statisticsmanager</artifactId>
     </dependency>
 
-    <!-- OSGi framework -->
-    <dependency>
-      <groupId>equinoxSDK381</groupId>
-      <artifactId>org.eclipse.osgi</artifactId>
-    </dependency>
-
+    <!-- AD-SAL requisites -->
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.dependencymanager</artifactId>
