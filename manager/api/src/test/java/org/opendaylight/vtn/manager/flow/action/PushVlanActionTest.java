@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -104,7 +104,7 @@ public class PushVlanActionTest extends TestBase {
         EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
-            jsonTest(act);
+            jsonTest(act, PushVlanAction.class);
         }
     }
 }

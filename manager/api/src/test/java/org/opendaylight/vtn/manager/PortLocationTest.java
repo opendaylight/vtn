@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -118,7 +118,7 @@ public class PortLocationTest extends TestBase {
         for (Node node: createNodes(5)) {
             for (SwitchPort port: createSwitchPorts(10)) {
                 PortLocation ploc = new PortLocation(node, port);
-                jsonTest(ploc);
+                jsonTest(ploc, PortLocation.class);
             }
         }
     }

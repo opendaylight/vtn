@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -132,7 +132,7 @@ public class VNodeRouteTest extends TestBase {
         for (VNodePath path: createVNodePaths(10)) {
             for (VNodeRoute.Reason reason: createReasons()) {
                 VNodeRoute vnr = new VNodeRoute(path, reason);
-                jsonTest(vnr);
+                jsonTest(vnr, VNodeRoute.class);
             }
         }
     }

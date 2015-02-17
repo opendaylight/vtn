@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -98,9 +98,9 @@ public class MacAddressEntryTest extends TestBase {
                     for (short vlan : vlans) {
                         MacAddressEntry mae1 =
                             new MacAddressEntry(ea, vlan, nc, ipset);
-                        MacAddressEntry mae2 =
-                            new MacAddressEntry(copy(ea), vlan, copy(nc),
-                                                copy(ipset));
+                        MacAddressEntry mae2 = new MacAddressEntry(
+                            copy(ea), vlan, copy(nc),
+                            copy(ipset, InetAddress.class));
 
                         testEquals(set, mae1, mae2);
                     }

@@ -1,5 +1,5 @@
 /*/*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -138,7 +138,7 @@ public class TcpMatchTest extends TestBase {
         for (PortMatch src: createPortMatches()) {
             for (PortMatch dst: createPortMatches()) {
                 TcpMatch tm = new TcpMatch(src, dst);
-                jsonTest(tm);
+                jsonTest(tm, TcpMatch.class);
             }
         }
     }

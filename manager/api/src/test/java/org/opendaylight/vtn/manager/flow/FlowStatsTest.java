@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -130,7 +130,7 @@ public class FlowStatsTest extends TestBase {
             for (long b: bytes) {
                 for (long d: duration) {
                     FlowStats fst = new FlowStats(p, b, d);
-                    jsonTest(fst);
+                    jsonTest(fst, FlowStats.class);
                 }
             }
         }

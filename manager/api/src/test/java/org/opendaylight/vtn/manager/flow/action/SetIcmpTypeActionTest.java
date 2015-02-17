@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -102,7 +102,7 @@ public class SetIcmpTypeActionTest extends TestBase {
         short[] types = {Short.MIN_VALUE, 0, 1, 100, 255, Short.MAX_VALUE};
         for (short type: types) {
             SetIcmpTypeAction act = new SetIcmpTypeAction(type);
-            jsonTest(act);
+            jsonTest(act, SetIcmpTypeAction.class);
         }
     }
 }

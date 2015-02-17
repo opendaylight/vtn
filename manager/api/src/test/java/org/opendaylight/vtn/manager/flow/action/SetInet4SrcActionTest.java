@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -163,7 +163,7 @@ public class SetInet4SrcActionTest extends TestBase {
     public void testJSON() {
         for (InetAddress iaddr: createInet4Addresses()) {
             SetInet4SrcAction act = new SetInet4SrcAction(iaddr);
-            jsonTest(act);
+            jsonTest(act, SetInet4SrcAction.class);
         }
 
         // Specifying invalid address.

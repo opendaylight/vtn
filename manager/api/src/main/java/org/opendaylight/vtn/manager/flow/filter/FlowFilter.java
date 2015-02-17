@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -348,7 +348,7 @@ public final class FlowFilter implements Serializable {
         condition = cond;
         filterType = type;
         if (acts != null && !acts.isEmpty()) {
-            actions = new ArrayList(acts);
+            actions = new ArrayList<FlowAction>(acts);
         }
     }
 

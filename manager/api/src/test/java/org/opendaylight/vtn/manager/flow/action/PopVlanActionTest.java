@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -71,7 +71,7 @@ public class PopVlanActionTest extends TestBase {
     @Test
     public void testJSON() {
         for (int i = 0; i < 10; i++) {
-            jsonTest(new PopVlanAction());
+            jsonTest(new PopVlanAction(), PopVlanAction.class);
         }
     }
 }

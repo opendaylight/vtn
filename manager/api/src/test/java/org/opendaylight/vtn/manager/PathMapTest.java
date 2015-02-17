@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -238,7 +238,7 @@ public class PathMapTest extends TestBase {
                         for (Integer hard: hards) {
                             PathMap pmap = createPathMap(idx, cond, policy,
                                                          idle, hard);
-                            jsonTest(pmap);
+                            jsonTest(pmap, PathMap.class);
                         }
                     }
                 }

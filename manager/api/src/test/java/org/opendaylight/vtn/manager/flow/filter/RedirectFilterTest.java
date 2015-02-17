@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -148,7 +148,7 @@ public class RedirectFilterTest extends TestBase {
                 RedirectFilter rf = (path instanceof VBridgeIfPath)
                     ? new RedirectFilter((VBridgeIfPath)path, output)
                     : new RedirectFilter((VTerminalIfPath)path, output);
-                jsonTest(rf);
+                jsonTest(rf, RedirectFilter.class);
             }
         }
 

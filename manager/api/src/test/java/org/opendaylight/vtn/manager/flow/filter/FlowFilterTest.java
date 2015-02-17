@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -114,12 +114,14 @@ public class FlowFilterTest extends TestBase {
 
                         if (index == 0) {
                             ff1 = new FlowFilter(cond, type, actions);
-                            ff2 = new FlowFilter(copy(cond), copy(type),
-                                                 copy(actions));
+                            ff2 = new FlowFilter(
+                                copy(cond), copy(type),
+                                copy(actions, FlowAction.class));
                         } else {
                             ff1 = new FlowFilter(index, cond, type, actions);
-                            ff2 = new FlowFilter(index, copy(cond), copy(type),
-                                                 copy(actions));
+                            ff2 = new FlowFilter(
+                                index, copy(cond), copy(type),
+                                copy(actions, FlowAction.class));
                         }
                         testEquals(set, ff1, ff2);
                     }
@@ -215,7 +217,7 @@ public class FlowFilterTest extends TestBase {
                         FlowFilter ff = (index == 0)
                             ? new FlowFilter(cond, type, actions)
                             : new FlowFilter(index, cond, type, actions);
-                        jsonTest(ff);
+                        jsonTest(ff, FlowFilter.class);
                     }
                 }
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -183,7 +183,7 @@ public class DataFlowTest extends TestBase {
             match.setField(MatchType.IN_PORT, port);
             match.setField(MatchType.DL_VLAN,
                            Short.valueOf(MatchType.DL_VLAN_NONE));
-            Flow flow = new Flow(match, (List<Action>)actions.clone());
+            Flow flow = new Flow(match, new ArrayList<Action>(actions));
             list.add(flow);
             if (list.size() >= num) {
                 break;
@@ -205,7 +205,7 @@ public class DataFlowTest extends TestBase {
             match.setField(MatchType.DL_VLAN, Short.valueOf((short)10));
             match.setField(MatchType.DL_SRC, srcMac);
             match.setField(MatchType.DL_DST, dstMac);
-            flow = new Flow(match, (List<Action>)actions.clone());
+            flow = new Flow(match, new ArrayList<Action>(actions));
             list.add(flow);
             if (list.size() >= num) {
                 break;
@@ -232,7 +232,7 @@ public class DataFlowTest extends TestBase {
             match.setField(MatchType.DL_TYPE, etherType);
             match.setField(MatchType.NW_SRC, srcIp);
             match.setField(MatchType.NW_DST, dstIp);
-            flow = new Flow(match, (List<Action>)actions.clone());
+            flow = new Flow(match, new ArrayList<Action>(actions));
             list.add(flow);
             if (list.size() >= num) {
                 break;
@@ -250,7 +250,7 @@ public class DataFlowTest extends TestBase {
             match.setField(MatchType.NW_PROTO, ipProto);
             match.setField(MatchType.TP_SRC, Short.valueOf(sport));
             match.setField(MatchType.TP_DST, Short.valueOf(dport));
-            flow = new Flow(match, (List<Action>)actions.clone());
+            flow = new Flow(match, new ArrayList<Action>(actions));
             list.add(flow);
             sport++;
             dport++;
@@ -637,7 +637,7 @@ public class DataFlowTest extends TestBase {
     @Test
     public void testJSON() {
         for (DataFlow df: DATAFLOWS) {
-            jsonTest(df);
+            jsonTest(df, DataFlow.class);
         }
     }
 

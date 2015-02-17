@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -162,7 +162,7 @@ public class NodeRouteTest extends TestBase {
             for (SwitchPort input: createSwitchPorts(5)) {
                 for (SwitchPort output: createSwitchPorts(5)) {
                     NodeRoute nr = new NodeRoute(node, input, output);
-                    jsonTest(nr);
+                    jsonTest(nr, NodeRoute.class);
                 }
             }
         }

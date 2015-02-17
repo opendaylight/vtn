@@ -1,5 +1,5 @@
 /*/*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -158,7 +158,7 @@ public class IcmpMatchTest extends TestBase {
         for (Short type: types) {
             for (Short code: codes) {
                 IcmpMatch icm = new IcmpMatch(type, code);
-                jsonTest(icm);
+                jsonTest(icm, IcmpMatch.class);
             }
         }
     }

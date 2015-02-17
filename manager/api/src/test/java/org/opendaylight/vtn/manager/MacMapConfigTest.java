@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -83,7 +83,9 @@ public class MacMapConfigTest extends TestBase {
         for (Set<DataLinkHost> allow: allowed) {
             for (Set<DataLinkHost> deny: denied) {
                 MacMapConfig mc1 = new MacMapConfig(allow, deny);
-                MacMapConfig mc2 = new MacMapConfig(copy(allow), copy(deny));
+                MacMapConfig mc2 = new MacMapConfig(
+                    copy(allow, DataLinkHost.class),
+                    copy(deny, DataLinkHost.class));
                 testEquals(set, mc1, mc2);
             }
         }

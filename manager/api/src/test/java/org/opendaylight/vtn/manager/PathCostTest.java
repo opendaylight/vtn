@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -196,22 +196,22 @@ public class PathCostTest extends TestBase {
             for (SwitchPort port: createSwitchPorts(5)) {
                 PortLocation ploc = new PortLocation(node, port);
                 PathCost pc = createUndefiedCost(ploc);
-                jsonTest(pc);
+                jsonTest(pc, PathCost.class);
 
                 for (long c = 0; c <= 5; c++) {
                     pc = new PathCost(ploc, c);
-                    jsonTest(pc);
+                    jsonTest(pc, PathCost.class);
                 }
             }
         }
 
         for (long c = 0; c <= 5; c++) {
             PathCost pc = new PathCost(null, c);
-            jsonTest(pc);
+            jsonTest(pc, PathCost.class);
         }
 
         PathCost pc = createUndefiedCost(null);
-        jsonTest(pc);
+        jsonTest(pc, PathCost.class);
     }
 
     /**

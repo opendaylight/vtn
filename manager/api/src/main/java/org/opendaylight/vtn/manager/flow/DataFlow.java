@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -675,7 +675,7 @@ public final class DataFlow implements Serializable {
     public List<FlowAction> getActions() {
         return (actions == null)
             ? null
-            : (List<FlowAction>)((ArrayList<FlowAction>)actions).clone();
+            : new ArrayList<FlowAction>(actions);
     }
 
     /**
@@ -689,7 +689,7 @@ public final class DataFlow implements Serializable {
     public List<VNodeRoute> getVirtualRoute() {
         return (virtualRoute == null)
             ? null
-            : (List<VNodeRoute>)((ArrayList<VNodeRoute>)virtualRoute).clone();
+            : new ArrayList<VNodeRoute>(virtualRoute);
     }
 
     /**
@@ -703,7 +703,7 @@ public final class DataFlow implements Serializable {
     public List<NodeRoute> getPhysicalRoute() {
         return (physicalRoute == null)
             ? null
-            : (List<NodeRoute>)((ArrayList<NodeRoute>)physicalRoute).clone();
+            : new ArrayList<NodeRoute>(physicalRoute);
     }
 
     /**

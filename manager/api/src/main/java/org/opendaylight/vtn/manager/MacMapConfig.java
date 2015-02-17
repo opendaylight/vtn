@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -92,8 +92,7 @@ public class MacMapConfig implements Serializable {
      * @return  A set of {@link DataLinkHost} instances.
      */
     public Set<DataLinkHost> getAllowedHosts() {
-        return (Set<DataLinkHost>)
-            ((HashSet<DataLinkHost>)allowedHosts).clone();
+        return new HashSet<DataLinkHost>(allowedHosts);
     }
 
     /**
@@ -104,7 +103,7 @@ public class MacMapConfig implements Serializable {
      * @return  A set of {@link DataLinkHost} instances.
      */
     public Set<DataLinkHost> getDeniedHosts() {
-        return (Set<DataLinkHost>)((HashSet<DataLinkHost>)deniedHosts).clone();
+        return new HashSet<DataLinkHost>(deniedHosts);
     }
 
     /**

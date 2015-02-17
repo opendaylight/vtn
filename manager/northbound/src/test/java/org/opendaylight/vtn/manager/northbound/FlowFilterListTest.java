@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -217,7 +217,7 @@ public class FlowFilterListTest extends TestBase {
                         List<FlowFilter> list =
                             new ArrayList<FlowFilter>(filters);
                         fl = new FlowFilterList(list);
-                        jsonTest(fl);
+                        jsonTest(fl, FlowFilterList.class);
                     }
                 }
             }

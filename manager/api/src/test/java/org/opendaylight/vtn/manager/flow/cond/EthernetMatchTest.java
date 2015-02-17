@@ -1,5 +1,5 @@
 /*/*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -283,7 +283,8 @@ public class EthernetMatchTest extends TestBase {
                         for (Byte pri: priorities) {
                             EthernetMatch em =
                                 new EthernetMatch(src, dst, type, vlan, pri);
-                            EthernetMatch em1 = jsonTest(em);
+                            EthernetMatch em1 =
+                                jsonTest(em, EthernetMatch.class);
                             assertEquals(null, em1.getValidationStatus());
                         }
                     }

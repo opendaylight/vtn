@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -64,7 +64,9 @@ public class MacMapConfigInfoTest extends TestBase {
         for (Set<EthernetHost> allow: allowed) {
             for (Set<EthernetHost> deny: denied) {
                 MacMapConfig mc1 = new MacMapConfig(allow, deny);
-                MacMapConfig mc2 = new MacMapConfig(copy(allow), copy(deny));
+                MacMapConfig mc2 = new MacMapConfig(
+                    copy(allow, EthernetHost.class),
+                    copy(deny, EthernetHost.class));
                 MacMapConfigInfo mci1 = new MacMapConfigInfo(mc1);
                 MacMapConfigInfo mci2 = new MacMapConfigInfo(mc2);
                 testEquals(set, mci1, mci2);

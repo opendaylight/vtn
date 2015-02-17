@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -100,7 +100,7 @@ public class SetDscpActionTest extends TestBase {
         byte[] bytes = {Byte.MIN_VALUE, 0, 1, 30, 63, Byte.MAX_VALUE};
         for (byte b: bytes) {
             SetDscpAction act = new SetDscpAction(b);
-            jsonTest(act);
+            jsonTest(act, SetDscpAction.class);
         }
     }
 }

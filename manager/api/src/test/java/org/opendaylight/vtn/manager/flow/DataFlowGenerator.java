@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -60,14 +60,14 @@ public final class DataFlowGenerator extends TestBase {
         private Iterator<T>  iterator;
 
         /**
-         * Add the given objects to the argument list.
+         * Add the given object to the argument list.
          *
-         * @param args  Arguments to be added.
+         * @param arg  An argument to be added.
+         * @return  This instance.
          */
-        private void add(T ... args) {
-            for (T a: args) {
-                arguments.add(a);
-            }
+        private ArgumentList<T> add(T arg) {
+            arguments.add(arg);
+            return this;
         }
 
         /**
@@ -242,20 +242,22 @@ public final class DataFlowGenerator extends TestBase {
      * Construct a new generator instance.
      */
     public DataFlowGenerator() {
-        flowIds.add(0L, 10L, 112233L, 9876543210L, 0x123456789abcdL,
-                    0xaaaabbbbccccL, 0xffffffffffffffffL);
-        creationTimes.add(0L, 111111L, 333333333L, 1234567890L);
-        idleTimeouts.add((short)0, (short)300, (short)1500, (short)2800);
-        hardTimeouts.add((short)0, (short)10000, (short)32767);
+        flowIds.add(0L).add(10L).add(112233L).add(9876543210L).
+            add(0x123456789abcdL).add(0xaaaabbbbccccL).
+            add(0xffffffffffffffffL);
+        creationTimes.add(0L).add(111111L).add(333333333L).add(1234567890L);
+        idleTimeouts.add((short)0).add((short)300).add((short)1500).
+            add((short)2800);
+        hardTimeouts.add((short)0).add((short)10000).add((short)32767);
         ingressPaths.addAll(createVNodePaths(DATAFLOW_COUNT / 3));
         ingressPorts.addAll(createPortLocations(1L, DATAFLOW_COUNT / 7));
         egressPaths.addAll(createVNodePaths(DATAFLOW_COUNT / 2));
         egressPorts.addAll(createPortLocations(0x123456789aL, 13));
-        statistics.add((FlowStats)null, new FlowStats(0L, 0L, 0L),
-                       new FlowStats(100L, 3000L, 50000L),
-                       new FlowStats(12345L, 67890L, 123456789L),
-                       new FlowStats(0x12345L, 0x67890L, 0x123456789L),
-                       new FlowStats(10000000L, 123456712L, 9999999999L));
+        statistics.add((FlowStats)null).add(new FlowStats(0L, 0L, 0L)).
+            add(new FlowStats(100L, 3000L, 50000L)).
+            add(new FlowStats(12345L, 67890L, 123456789L)).
+            add(new FlowStats(0x12345L, 0x67890L, 0x123456789L)).
+            add(new FlowStats(10000000L, 123456712L, 9999999999L));
 
         virtualRoutes.add((List<VNodeRoute>)null);
         String tname = "tenant_1";

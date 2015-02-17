@@ -1,5 +1,5 @@
 /*/*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -81,8 +81,8 @@ public class FlowConditionTest extends TestBase {
         for (String name: names) {
             for (List<FlowMatch> matches: matchLists) {
                 FlowCondition fc1 = new FlowCondition(name, matches);
-                FlowCondition fc2 = new FlowCondition(copy(name),
-                                                      copy(matches));
+                FlowCondition fc2 = new FlowCondition(
+                    copy(name), copy(matches, FlowMatch.class));
                 testEquals(set, fc1, fc2);
             }
         }
@@ -144,7 +144,7 @@ public class FlowConditionTest extends TestBase {
         for (String name: createStrings("cond")) {
             for (List<FlowMatch> matches: createFlowMatchLists()) {
                 FlowCondition fc = new FlowCondition(name, matches);
-                jsonTest(fc);
+                jsonTest(fc, FlowCondition.class);
             }
         }
     }

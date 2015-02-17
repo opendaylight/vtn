@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -194,7 +194,8 @@ public abstract class TestBase extends Assert {
             DataLinkAddress dladdr = copy(ment.getAddress());
             short vlan = ment.getVlan();
             NodeConnector nc = copy(ment.getNodeConnector());
-            Set<InetAddress> ipaddrs = copy(ment.getInetAddresses());
+            Set<InetAddress> ipaddrs =
+                copy(ment.getInetAddresses(), InetAddress.class);
             ment = new MacAddressEntry(dladdr, vlan, nc, ipaddrs);
         }
         return ment;
@@ -222,55 +223,68 @@ public abstract class TestBase extends Assert {
     /**
      * Create a deep copy of the specified set.
      *
-     * @param set  A set of instances.
-     * @param <T>  The type of elements in the set.
+     * @param set   A set of instances.
+     * @param type  The type of elements in the list.
+     * @param <T>   The type of elements in the set.
      * @return  A deep copy of the specified set.
      */
-    protected static <T> Set<T> copy(Set<T> set) {
+    protected static <T> Set<T> copy(Set<T> set, Class<T> type) {
+        Set<T> newset = set;
         if (set != null) {
-            HashSet<Object> newset = new HashSet<Object>();
-            copy(newset, set);
-            set = (Set<T>)newset;
+            newset = new HashSet<T>();
+            copy(newset, set, type);
         }
-        return set;
+        return newset;
     }
 
     /**
      * Create a deep copy of the specified list.
      *
      * @param list  A list of instances.
-     * @param <T>  The type of elements in the list.
+     * @param type  The type of elements in the list.
+     * @param <T>   The type of elements in the list.
      * @return  A deep copy of the specified list.
      */
-    protected static <T> List<T> copy(List<T> list) {
+    protected static <T> List<T> copy(List<T> list, Class<T> type) {
+        List<T> newlist = list;
         if (list != null) {
-            ArrayList<Object> newlist = new ArrayList<Object>();
-            copy(newlist, list);
-            list = (List<T>)newlist;
+            newlist = new ArrayList<T>();
+            copy(newlist, list, type);
         }
-        return list;
+        return newlist;
     }
 
     /**
      * Create a deep copy of the specified collection.
      *
-     * @param dst  A collection to store copies.
-     * @param src  A collection of instances.
-     * @param <T>  The type of elements in the collection.
+     * @param dst   A collection to store copies.
+     * @param src   A collection of instances.
+     * @param type  The type of elements in the collection.
+     * @param <T>   The type of elements in the collection.
      */
-    protected static <T> void copy(Collection<Object> dst, Collection<T> src) {
+    protected static <T> void copy(Collection<T> dst, Collection<T> src,
+                                   Class<T> type) {
         for (T elem: src) {
+            Object obj;
             if (elem instanceof InetAddress) {
-                dst.add(copy((InetAddress)elem));
+                obj = copy((InetAddress)elem);
             } else if (elem instanceof EthernetHost) {
-                dst.add(copy((EthernetHost)elem));
+                obj = copy((EthernetHost)elem);
             } else if (elem instanceof TestDataLinkHost) {
-                dst.add(copy((TestDataLinkHost)elem));
+                obj = copy((TestDataLinkHost)elem);
             } else if (elem instanceof MacAddressEntry) {
-                dst.add(copy((MacAddressEntry)elem));
+                obj = copy((MacAddressEntry)elem);
             } else {
                 fail("Unexpected instanse in the collection: " + elem);
+                break;
             }
+
+            if (obj != null && !type.isInstance(obj)) {
+                fail("Unexpected instance: src=" + elem + ", obj=" + obj);
+                break;
+            }
+
+            dst.add(type.cast(obj));
         }
     }
 
@@ -799,11 +813,13 @@ public abstract class TestBase extends Assert {
     /**
      * Ensure that the given object is mapped to JSON object.
      *
-     * @param o    An object to be tested.
-     * @param <T>  The type of the given object.
+     * @param o     An object to be tested.
+     * @param type  A {@link Class} instance associated with the type of the
+     *              given object.
+     * @param <T>   The type of the given object.
      * @return  Deserialized object.
      */
-    protected static <T> T jsonTest(T o) {
+    protected static <T> T jsonTest(T o, Class<T> type) {
         ObjectMapper mapper = getJsonObjectMapper();
 
         try {
@@ -813,7 +829,7 @@ public abstract class TestBase extends Assert {
             assertTrue(json.length() != 0);
 
             // Unmarshal the JSON notation.
-            T newobj = mapper.readValue(json, (Class<T>)o.getClass());
+            T newobj = mapper.readValue(json, type);
             assertNotSame(o, newobj);
             assertEquals(o, newobj);
             return newobj;

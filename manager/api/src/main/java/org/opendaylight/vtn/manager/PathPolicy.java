@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -462,7 +462,7 @@ public final class PathPolicy implements Serializable {
     public List<PathCost> getPathCosts() {
         return (pathCosts == null)
             ? new ArrayList<PathCost>(0)
-            : (List<PathCost>)(((ArrayList<PathCost>)pathCosts).clone());
+            : new ArrayList<PathCost>(pathCosts);
     }
 
     /**

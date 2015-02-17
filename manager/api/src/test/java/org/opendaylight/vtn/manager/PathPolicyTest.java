@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -175,11 +175,11 @@ public class PathPolicyTest extends TestBase {
         for (long def: defCosts) {
             for (List<PathCost> costs: createPathCostLists()) {
                 PathPolicy policy = new PathPolicy(def, costs);
-                jsonTest(policy);
+                jsonTest(policy, PathPolicy.class);
 
                 for (int id: ids) {
                     policy = new PathPolicy(id, def, costs);
-                    jsonTest(policy);
+                    jsonTest(policy, PathPolicy.class);
                 }
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -160,7 +160,7 @@ public final class FlowCondition implements Serializable {
     public List<FlowMatch> getMatches() {
         return (matches == null)
             ? new ArrayList<FlowMatch>(0)
-            : (List<FlowMatch>)(((ArrayList<FlowMatch>)matches).clone());
+            : new ArrayList<FlowMatch>(matches);
     }
 
     /**

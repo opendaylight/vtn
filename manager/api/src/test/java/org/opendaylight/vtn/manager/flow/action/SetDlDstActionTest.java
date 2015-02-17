@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -155,7 +155,7 @@ public class SetDlDstActionTest extends TestBase {
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             byte[] bytes = (eaddr == null) ? null : eaddr.getValue();
             SetDlDstAction act = new SetDlDstAction(bytes);
-            jsonTest(act);
+            jsonTest(act, SetDlDstAction.class);
         }
 
         // Specifying invalid MAC address.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -92,8 +92,7 @@ public class MacMap extends MacMapConfig {
      * @return  A list of {@link MacAddressEntry} instances.
      */
     public List<MacAddressEntry> getMappedHosts() {
-        return (List<MacAddressEntry>)
-            ((ArrayList<MacAddressEntry>)mappedHosts).clone();
+        return new ArrayList<MacAddressEntry>(mappedHosts);
     }
 
     /**
