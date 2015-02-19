@@ -62,7 +62,7 @@ const std::string PP_PREFIX             = "PP-";
 const std::string PP_OF_PREFIX          = "PP-OF:";
 const std::string UNTAGGED_VLANID       = "65535";
 
-const uint32_t DEFAULT_ODC_PORT         = 8080;
+const uint32_t DEFAULT_ODC_PORT         = 8282;
 const uint32_t DEFAULT_CONNECT_TIME_OUT = 30;
 const uint32_t DEFAULT_REQ_TIME_OUT     = 30;
 const uint32_t PING_INTERVAL            = 10;
