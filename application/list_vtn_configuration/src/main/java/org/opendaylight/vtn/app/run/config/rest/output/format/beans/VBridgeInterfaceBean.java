@@ -11,6 +11,10 @@ package org.opendaylight.vtn.app.run.config.rest.output.format.beans;
 
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgePortMap;
 
+/**
+ * VBridgeInterfaceBean - Bean which helps to map the responses as java object
+ *
+ */
 public class VBridgeInterfaceBean {
 
     /**
@@ -65,7 +69,7 @@ public class VBridgeInterfaceBean {
      * set the ports of the VBridge.
      *
      * @param portmap
-     *            {@link VBridgePortMap}
+     *        {@link VBridgePortMap}
      */
 
     public void setPortmap(VBridgePortMap portmap) {
@@ -76,7 +80,7 @@ public class VBridgeInterfaceBean {
      * set the name of the VBridge.
      *
      * @param name
-     *            {@link String}
+     *        {@link String}
      */
     public void setName(String name) {
         this.name = name;
@@ -95,7 +99,7 @@ public class VBridgeInterfaceBean {
      * set the state of the VBridge.
      *
      * @param name
-     *            {@link int}
+     *        {@link int}
      */
     public void setState(int state) {
         this.state = state;
@@ -114,7 +118,7 @@ public class VBridgeInterfaceBean {
      * set the Entitystate of the VBridge.
      *
      * @param entityState
-     *            {@link int}
+     *        {@link int}
      */
     public void setEntityState(int entityState) {
         this.entityState = entityState;
@@ -124,7 +128,7 @@ public class VBridgeInterfaceBean {
      * get the Description of the VBridge.
      *
      * @param description
-     *            {@link String}
+     *        {@link String}
      */
     public String getDescription() {
         return description;
@@ -134,7 +138,7 @@ public class VBridgeInterfaceBean {
      * set the Description of the VBridge.
      *
      * @param description
-     *            {@link String}
+     *        {@link String}
      */
     public void setDescription(String description) {
         this.description = description;
@@ -153,7 +157,7 @@ public class VBridgeInterfaceBean {
      * Enable or Disable VBridge
      *
      * @param enabled
-     *            {@link boolean}
+     *        {@link boolean}
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
