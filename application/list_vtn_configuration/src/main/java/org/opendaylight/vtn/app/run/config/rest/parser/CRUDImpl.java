@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -140,9 +140,9 @@ public class CRUDImpl implements CRUDOperation {
                     LOG.error("Unauthorized access :HTTP error code : {}", response.getStatus());
                     LOG.error(getHttpResponseObject(HTTP_RESPONSE.UNAUTHORIZED).toString());
                     throw new VTNClientException("\n\nFailed to connect to ODL Controller due to unauthorized access..."
-                                                    + "\nPlease check Username/Password...");
+                                        + "\nPlease check Username/Password...");
                 } else if (response.getStatus() != HTTP_RESPONSE.OPERATION_SUCCESS.getStatus()) {
-                    LOG.error("GET RequestFailed :HTTP error code : {}", response.getStatus());
+                    LOG.error("GET RequestFailed :HTTP error code : {}", response.getStatus() + "\nURL :" + url);
                     throw new VTNClientException("\n\nPage not found - " + response.getStatus());
                 }
                 return response.getEntity(String.class);
@@ -150,7 +150,7 @@ public class CRUDImpl implements CRUDOperation {
         } catch (ClientHandlerException e) {
             LOG.error("An exception occured - ", e);
             throw new VTNClientException("\n\nFailed to connect to ODL Controller..."
-                                                    + "\nPlease check Controller is running or IP address/Port number is incorrect...");
+                                        + "\nPlease check Controller is running or IP address/Port number is incorrect...");
         }
     }
 

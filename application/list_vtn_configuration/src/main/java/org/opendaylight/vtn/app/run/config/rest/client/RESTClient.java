@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -57,6 +57,14 @@ import org.opendaylight.vtn.app.run.config.rest.response.beans.VTNManagerVersion
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VTenantNorthBound;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VTenantNorthBoundList;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VlanNorthBoundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalIfFlowFilterNorthboundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalInterfaceNorthboundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalNorthBound;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalNorthBoundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalInterfaceNorthbound;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalPortMap;
+import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VTerminalBean;
+import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VTerminalInterfaceBean;
 
 /**
  * RESTClient - Client main class helps to perform all the CRUD Operations.
@@ -142,9 +150,9 @@ public class RESTClient {
      * @throws VTNClientException
      */
     public Object get(Object restObject) throws Exception,
-    JSONException, IllegalArgumentException,
-    IllegalAccessException, InstantiationException, ConnectException,
-    VTNClientException {
+            JSONException, IllegalArgumentException,
+            IllegalAccessException, InstantiationException, ConnectException,
+            VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         Map<String, Object> headers = new HashMap<String, Object>();
         return this.get(restObject, paramMap, headers);
@@ -164,7 +172,7 @@ public class RESTClient {
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers)
-        throws Exception,  JSONException,
+        throws Exception, JSONException,
             IllegalArgumentException, IllegalAccessException,
             InstantiationException, ConnectException,
             VTNClientException {
@@ -288,11 +296,11 @@ public class RESTClient {
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers,
-            String param1, String value1, String param2, String value2)
+        String param1, String value1, String param2, String value2)
         throws JSONException, Exception,
-                    IllegalArgumentException, IllegalAccessException,
-                    InstantiationException, ConnectException,
-                    VTNClientException {
+            IllegalArgumentException, IllegalAccessException,
+            InstantiationException, ConnectException,
+            VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         paramMap.put(param1, value1);
         paramMap.put(param2, value2);
@@ -346,14 +354,14 @@ public class RESTClient {
      * Get the request object for an object annotated with 'RestURL'
      *
      * @param obj
-     *            Rest object
+     *        Rest object
      * @param paramMap
-     *            Parameter map
+     *        Parameter map
      * @return Rest REquest object
      *
      * @throws VTNClientException
-     *             Throws VTNClientException if unable to construct the Rest
-     *             Request
+     *         Throws VTNClientException if unable to construct the Rest
+     *         Request
      */
     @SuppressWarnings("unused")
     public RestRequest getRestRequest(Object obj, Map<String, String> paramMap)
@@ -400,7 +408,6 @@ public class RESTClient {
     private Object parseResponse(Object target, RestRequest request)
         throws JSONException, IllegalArgumentException,
             IllegalAccessException, InstantiationException, VTNClientException {
-
         if (request.getResponse() != null && !request.getResponse().equals("")
                 && !request.getResponse().equals("null")) {
             LOG.debug(request.getResponse());
@@ -458,9 +465,9 @@ public class RESTClient {
     private static boolean validateIP(final String ip) {
         String ipAddressPattern =
                 "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
+                        "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+                        "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+                        "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 
         Pattern pattern = Pattern.compile(ipAddressPattern);
         Matcher matcher = pattern.matcher(ip);
@@ -536,7 +543,10 @@ public class RESTClient {
             VlanNorthBoundList vlan = null;
             VBridgeInterfaceList vbrIf = null;
             VBridgePortMap  vbrPort = null;
-
+            VTerminalPortMap vtPort = null;
+            VTerminalIfFlowFilterNorthboundList vtFlowfilterList = null, vtFlowfilter = null;
+            List<VTerminalIfFlowFilterNorthboundList> vtFlowfilters = new ArrayList<VTerminalIfFlowFilterNorthboundList>();
+            VTerminalInterfaceNorthboundList vtInterface = null;
             if (vtnList.getVtns().size() > 0) {
                 for (VTenantNorthBound vtn : vtnList.getVtns()) {
                     String vtnName = vtn.getVtnName();
@@ -544,6 +554,7 @@ public class RESTClient {
                     LOG.debug(" == == == == == == == == == == == == == == = RUNNING CONFIGURATION STARTED == == == == == == == == == == == == == == == == == == == == == == == == =  = ");
                     VTNConfigurationBean runConfig = new VTNConfigurationBean();
                     List<VBridgeBean> vbrBean = new ArrayList<VBridgeBean>();
+                    List<VTerminalBean> vterminalBean = new ArrayList<VTerminalBean>();
 
                     DataFlowList dflow = (DataFlowList)handler.get(new DataFlowList(), "containerName", container, "tenantName", vtnName);
 
@@ -602,7 +613,66 @@ public class RESTClient {
                             vbrBean.add(vbean);
                         }
                     }
+                    VTerminalNorthBoundList vTerminal = (VTerminalNorthBoundList)handler.get(new VTerminalNorthBoundList(), "containerName", container, "tenantName", vtnName);
+                    if (vTerminal.getVterm().size() > 0) {
+                        for (VTerminalNorthBound vTerminalNorthBound : vTerminal.getVterm()) {
+                            VTerminalBean vtbean = new VTerminalBean();
+                            vtbean.setName(vTerminalNorthBound.getName());
+                            vtbean.setFaults(vTerminalNorthBound.getFaults());
+                            vtbean.setDescription(vTerminalNorthBound.getDescription());
+                            vtbean.setState(vTerminalNorthBound.getState());
 
+                            Map<String, String> paramMap = new HashMap<String, String>();
+                            paramMap.put("containerName", "default");
+                            paramMap.put("tenantName", vtnName);
+                            paramMap.put("terminalName", vTerminalNorthBound.getName());
+                            vtInterface = (VTerminalInterfaceNorthboundList)handler.get(new VTerminalInterfaceNorthboundList(), paramMap, null);
+                            if (vtInterface.getInterfaces().size() > 0) {
+                                List<VTerminalInterfaceBean> vtinterfaces = new ArrayList<VTerminalInterfaceBean>();
+                                for (VTerminalInterfaceNorthbound vtInter : vtInterface.getInterfaces()) {
+
+                                    VTerminalInterfaceBean vtInterfaceBean = new VTerminalInterfaceBean();
+                                    vtInterfaceBean.setDescription(vtInter.getDescription());
+                                    vtInterfaceBean.setName(vtInter.getName());
+                                    vtInterfaceBean.setEnabled(vtInter.getEnabled());
+                                    vtInterfaceBean.setEntityState(vtInter.getEntityState());
+                                    vtInterfaceBean.setState(vtInter.getState());
+
+                                    Map<String, String> paramMap1 = new HashMap<String, String>();
+                                    paramMap1.put("containerName", "default");
+                                    paramMap1.put("tenantName", vtnName);
+                                    paramMap1.put("terminalName", vTerminalNorthBound.getName());
+                                    paramMap1.put("ifName", vtInter.getName());
+                                    vtPort = (VTerminalPortMap)handler.get(new VTerminalPortMap(), paramMap1, null);
+                                    vtInterfaceBean.setPortmap(vtPort);
+
+                                    Map<String, String> paramMap2 = new HashMap<String, String>();
+                                    paramMap2.put("containerName", "default");
+                                    paramMap2.put("tenantName", vtnName);
+                                    paramMap2.put("terminalName", vTerminalNorthBound.getName());
+                                    paramMap2.put("ifName", vtInter.getName());
+                                    paramMap2.put("listType", "in");
+                                    vtFlowfilterList = (VTerminalIfFlowFilterNorthboundList)handler.get(new VTerminalIfFlowFilterNorthboundList(), paramMap2 , null);
+                                    if (vtFlowfilterList.getFlowfilters().size() > 0) {
+                                        vtInterfaceBean.setVtFlowfilter(vtFlowfilterList);
+                                    }
+                                    Map<String, String> paramMap3 = new HashMap<String, String>();
+                                    paramMap3.put("containerName", "default");
+                                    paramMap3.put("tenantName", vtnName);
+                                    paramMap3.put("terminalName", vTerminalNorthBound.getName());
+                                    paramMap3.put("ifName", vtInter.getName());
+                                    paramMap3.put("listType", "out");
+                                    vtFlowfilter = (VTerminalIfFlowFilterNorthboundList)handler.get(new VTerminalIfFlowFilterNorthboundList(), paramMap3, null);
+                                    if (vtFlowfilter.getFlowfilters().size() > 0) {
+                                        vtInterfaceBean.setVtFlowfilter(vtFlowfilter);
+                                    }
+                                    vtinterfaces.add(vtInterfaceBean);
+                                }
+                                vtbean.setVInterface(vtinterfaces);
+                            }
+                            vterminalBean.add(vtbean);
+                        }
+                    }
                     runConfig.setName(vtn.getVtnName());
                     runConfig.setDescription(vtn.getVtnDesc());
                     runConfig.setIdleTimeout(vtn.getIdleTimeout());
@@ -610,6 +680,7 @@ public class RESTClient {
                     runConfig.setDataflow(dflow);
 
                     runConfig.setVbridge(vbrBean);
+                    runConfig.setVTerminal(vterminalBean);
                     bean.add(runConfig);
                     LOG.debug(" == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == = ");
                 }
