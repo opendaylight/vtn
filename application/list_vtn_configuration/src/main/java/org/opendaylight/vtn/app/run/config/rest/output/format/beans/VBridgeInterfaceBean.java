@@ -11,6 +11,10 @@ package org.opendaylight.vtn.app.run.config.rest.output.format.beans;
 
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgePortMap;
 
+/**
+ * VBridgeInterfaceBean - Bean which helps to map the responses as java object
+ *
+ */
 public class VBridgeInterfaceBean {
 
     /**
