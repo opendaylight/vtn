@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,7 +23,6 @@ import org.opendaylight.controller.networkconfig.neutron.NeutronPort;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.ovsdb.lib.notation.OvsdbSet;
 import org.opendaylight.ovsdb.lib.notation.UUID;
 import org.opendaylight.ovsdb.lib.notation.Row;
@@ -729,10 +728,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
         getSystemProperties();
         String brInt = getIntegrationBridgeName();
         LOG.trace("createInternalNetworkForNeutron() - node ={}, integration bridge ={}", node.toString(), brInt);
-        Status status = this.addInternalBridge(node, brInt);
-        if (!status.isSuccess()) {
-            LOG.trace("Integration Bridge Creation Status ={}", status.toString());
-        }
+        addInternalBridge(node, brInt);
     }
 
     /**
@@ -773,10 +769,11 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      * To add InternalBridge for the given Node object and bridgeName.
      * @param node Instance of Node object.
      * @param bridgeName name of the bridge.
-     * @return A StatusCode from the defined enumeration list.
+     * @return {@code true} on success. {@code false} on failure.
      * @throws Exception any exception occurred while bridge add.
      */
-    private Status addInternalBridge(Node node, String bridgeName) throws Exception {
+    private boolean addInternalBridge(Node node, String bridgeName)
+        throws Exception {
         LOG.trace("Added InternalBridge  bridgeName - {}, for the node - {}",
                   bridgeName, node);
         String bridgeUUID = this.getInternalBridgeUUID(node, bridgeName);
@@ -790,25 +787,35 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
         String protocolfile = getProtocols();
         protocolset.add(protocolfile);
         bridgeobj.setProtocols(protocolset);
+
+        String name = bridgeobj.getSchema().getName();
+        org.opendaylight.ovsdb.plugin.api.Status status;
         if (bridgeUUID == null) {
             bridgeobj.setName(bridgeName);
-            StatusWithUuid statusWithUuid = ovsdbConfigService.insertRow(node, bridgeobj.getSchema().getName(), null, bridgeobj.getRow());
-            LOG.trace("Successfully inserted Bridge.NAME.getName() {} statusWithUuid ={}", bridgeobj.getSchema().getName(), statusWithUuid);
-            if (!statusWithUuid.isSuccess()) { return statusWithUuid; }
-            bridgeUUID = statusWithUuid.getUuid().toString();
+            StatusWithUuid su = ovsdbConfigService.insertRow(
+                node, name, null, bridgeobj.getRow());
+            LOG.trace("Inserted Bridge.NAME.getName() {} status ={}",
+                      name, su);
+            if (!su.isSuccess()) {
+                return false;
+            }
+            bridgeUUID = su.getUuid().toString();
 
             Port port = ovsdbConfigService.createTypedRow(node, Port.class);
             String portnamefile = getPortName();
             port.setName(portnamefile);
             String portName = port.getSchema().getName();
-            Status status = ovsdbConfigService.insertRow(node, portName, bridgeUUID, port.getRow());
-            LOG.trace("addInternalBridge Port : Inserting Bridge ={} with Table name ={} and status ={}", bridgeUUID, port.getSchema().getName(), status);
-
+            status = ovsdbConfigService.insertRow(node, portName, bridgeUUID,
+                                                  port.getRow());
+            LOG.trace("addInternalBridge Port : Inserting Bridge ={} with Table name ={} and status ={}",
+                      bridgeUUID, port.getSchema().getName(), status);
         } else {
-            Status status = ovsdbConfigService.updateRow(node, bridgeobj.getSchema().getName(), null, bridgeUUID, bridgeobj.getRow());
+            status = ovsdbConfigService.updateRow(node, name, null, bridgeUUID,
+                                                  bridgeobj.getRow());
             LOG.trace("addInternalBridge : Updating Bridge {} with protocols {} and status {}", bridgeUUID, protocols, status);
         }
-        return new Status(StatusCode.SUCCESS);
+
+        return status.isSuccess();
     }
 
     /**

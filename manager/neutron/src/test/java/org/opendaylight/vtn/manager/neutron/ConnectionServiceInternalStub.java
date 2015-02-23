@@ -38,6 +38,11 @@ public class ConnectionServiceInternalStub implements OvsdbConnectionService{
     }
 
     @Override
+    public Node getNode(String identifier) {
+        return null;
+    }
+
+    @Override
     public Node connect(String identifier, Map<ConnectionConstants, String> params) {
         return null;
     }
