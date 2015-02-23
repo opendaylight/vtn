@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -797,7 +797,6 @@
         <version>${karaf.version}</version>
         <type>kar</type>
       </dependency>
-
       <dependency>
         <groupId>org.apache.karaf.features</groupId>
         <artifactId>standard</artifactId>
@@ -806,6 +805,14 @@
         <type>xml</type>
         <scope>runtime</scope>
       </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.odlparent</groupId>
+        <artifactId>features-test</artifactId>
+        <version>${odl.odlparent.version}</version>
+        <scope>test</scope>
+      </dependency>
+
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>features-adsal-compatibility</artifactId>
