@@ -71,7 +71,7 @@
     <!-- Karaf features -->
     <feature.adsal-compatibility.version>1.5.0-SNAPSHOT</feature.adsal-compatibility.version>
     <feature.nsf.version>0.5.0-SNAPSHOT</feature.nsf.version>
-    <feature.ovsdb.version>1.1.1-SNAPSHOT</feature.ovsdb.version>
+    <feature.ovsdb.version>1.1.0-SNAPSHOT</feature.ovsdb.version>
     <feature.openflowplugin.version>0.1.0-SNAPSHOT</feature.openflowplugin.version>
     <feature.test.version>0.7.0-SNAPSHOT</feature.test.version>
 
