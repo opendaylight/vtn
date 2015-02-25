@@ -61,7 +61,7 @@ public class PopVlanActionTest extends TestBase {
     @Test
     public void testJAXB() {
         for (int i = 0; i < 10; i++) {
-            jaxbTest(new PopVlanAction(), "popvlan");
+            jaxbTest(new PopVlanAction(), PopVlanAction.class, "popvlan");
         }
     }
 

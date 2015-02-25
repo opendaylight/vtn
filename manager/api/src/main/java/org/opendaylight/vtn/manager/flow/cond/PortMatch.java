@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,7 +19,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.controller.sal.utils.NetUtils;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 /**
  * This class describes the range of TCP/UDP port numbers to match against
@@ -124,7 +124,7 @@ public final class PortMatch implements Serializable {
      *   </ul>
      */
     public PortMatch(Short port) {
-        int iport = NetUtils.getUnsignedShort(port.shortValue());
+        int iport = NumberUtils.getUnsigned(port.shortValue());
         portFrom = Integer.valueOf(iport);
         portTo = portFrom;
     }
@@ -201,12 +201,12 @@ public final class PortMatch implements Serializable {
      *   </ul>
      */
     public PortMatch(Short from, Short to) {
-        int iport = NetUtils.getUnsignedShort(from.shortValue());
+        int iport = NumberUtils.getUnsigned(from.shortValue());
         portFrom = Integer.valueOf(iport);
         if (to == null) {
             portTo = portFrom;
         } else {
-            iport = NetUtils.getUnsignedShort(to.shortValue());
+            iport = NumberUtils.getUnsigned(to.shortValue());
             portTo = Integer.valueOf(iport);
         }
     }

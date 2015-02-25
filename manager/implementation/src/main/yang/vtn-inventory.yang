@@ -1,0 +1,130 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-inventory {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:impl:inventory";
+    prefix vinv;
+
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+    import network-topology {
+        prefix topo;
+        revision-date 2013-10-21;
+    }
+
+    description
+      "The internal module for managing inventories.
+       Application other than VTN Manager must not use models defined in
+       this module.";
+
+    revision 2015-02-09 {
+        description "Initial revision.";
+    }
+
+    typedef vtn-openflow-version {
+        description
+          "Describes the OpenFlow protocol version number.";
+
+        type enumeration {
+            enum OF10 {
+                description "Indicates the OpenFlow 1.0.";
+                value 1;
+            }
+
+            enum OF13 {
+                description "Indicates the OpenFlow 1.3.";
+                value 4;
+            }
+        }
+    }
+
+    grouping vtn-port-info {
+        description
+          "Generic information about a switch port managed by the
+           VTN Manager.";
+
+        leaf id {
+            description "The unique identifier for the switch port.";
+            type inv:node-connector-id;
+        }
+
+        leaf name {
+            description "Human readable name of the switch port.";
+            type string;
+        }
+
+        leaf enabled {
+            description "Determine whether the switch port is enabled or not.";
+            type boolean;
+        }
+
+        leaf cost {
+            description
+              "The cost of the link for transmitting a packet from this port.";
+            type int64;
+        }
+
+        list port-link {
+            description "A list of inter-switch links.";
+            key "link-id";
+
+            leaf link-id {
+                description "The identifier of the inter-switch link.";
+                type topo:link-id;
+            }
+
+            leaf peer {
+                description
+                  "The identifier of the peer switch port of the link.";
+                type inv:node-connector-id;
+            }
+        }
+    }
+
+    grouping vtn-node-info {
+        description
+            "Generic information about a node managed by the VTN Manager.";
+
+        leaf id {
+            description "The unique identifier for the switch.";
+            type inv:node-id;
+        }
+
+        leaf openflow-version {
+            description
+              "Estimated OpenFlow protocol version currently used on the
+               secure channel.";
+            type vtn-openflow-version;
+        }
+
+        list vtn-port {
+            description
+              "A list of physical switch ports that belong this node.";
+            key "id";
+            uses vtn-port-info;
+        }
+    }
+
+    container vtn-nodes {
+        description
+          "The root container of all nodes managed by the VTN Manager.";
+        config false;
+        presence
+          "Indicates that the inventory management is active.";
+
+        list vtn-node {
+            description "A list of nodes managed by the VTN Manager.";
+            key "id";
+            uses vtn-node-info;
+        }
+    }
+}

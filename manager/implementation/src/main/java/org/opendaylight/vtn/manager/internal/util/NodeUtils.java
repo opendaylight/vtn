@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,14 +11,14 @@ package org.opendaylight.vtn.manager.internal.util;
 
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 
 /**
  * {@code NodeUtils} class is a collection of utility class methods
@@ -26,17 +26,32 @@ import org.opendaylight.controller.switchmanager.ISwitchManager;
  */
 public final class NodeUtils {
     /**
+     * Field separator of {@link VtnPortDesc}.
+     */
+    private static final char  PORT_DESC_SEPARATOR = ',';
+
+    /**
      * Private constructor that protects this class from instantiating.
      */
     private NodeUtils() {}
 
     /**
+     * Return a new {@link RpcException} which indicates the
+     * {@link PortLocation} is {@code null}.
+     *
+     * @return  An {@link RpcException}.
+     */
+    public static RpcException getNullPortLocationException() {
+        return MiscUtils.getNullArgumentException("Port location");
+    }
+
+    /**
      * Check the specified node.
      *
      * @param node  Node to be tested.
-     * @throws VTNException  The specified node is invalid.
+     * @throws RpcException  The specified node is invalid.
      */
-    public static void checkNode(Node node) throws VTNException {
+    public static void checkNode(Node node) throws RpcException {
         // Currently only OpenFlow node is supported.
         checkNode(node, true);
     }
@@ -50,20 +65,19 @@ public final class NodeUtils {
      *                   not.
      *                   {@code false} means that the caller does not care
      *                   about node type.
-     * @throws VTNException  The specified node is invalid.
+     * @throws RpcException  The specified node is invalid.
      */
     public static void checkNode(Node node, boolean checkType)
-        throws VTNException {
+        throws RpcException {
         if (node == null) {
-            Status status = MiscUtils.argumentIsNull("Node");
-            throw new VTNException(status);
+            throw MiscUtils.getNullArgumentException("Node");
         }
 
         String type = node.getType();
         Object id = node.getID();
         if (type == null || id == null) {
             String msg = "Broken node is specified";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
 
         if (checkType) {
@@ -75,10 +89,10 @@ public final class NodeUtils {
      * Check the specified node connector.
      *
      * @param nc  Node connector to be tested.
-     * @throws VTNException  The specified node is invalid.
+     * @throws RpcException  The specified node is invalid.
      */
     public static void checkNodeConnector(NodeConnector nc)
-        throws VTNException {
+        throws RpcException {
         // Currently only OpenFlow node is supported.
         checkNodeConnector(nc, true);
     }
@@ -92,20 +106,19 @@ public final class NodeUtils {
      *                   supported or not.
      *                   {@code false} means that the caller does not care
      *                   about node connector type.
-     * @throws VTNException  The specified node is invalid.
+     * @throws RpcException  The specified node is invalid.
      */
     public static void checkNodeConnector(NodeConnector nc, boolean checkType)
-        throws VTNException {
+        throws RpcException {
         if (nc == null) {
-            Status status = MiscUtils.argumentIsNull("Node connector");
-            throw new VTNException(status);
+            throw MiscUtils.getNullArgumentException("Node connector");
         }
 
         String type = nc.getType();
         Object id = nc.getID();
         if (type == null || id == null) {
             String msg = "Broken node connector is specified";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
 
         if (checkType) {
@@ -119,14 +132,14 @@ public final class NodeUtils {
      * Check whether the given node type is supported by the VTN Manager.
      *
      * @param type  The node type to be tested.
-     * @throws VTNException  The specified node type is not supported.
+     * @throws RpcException  The specified node type is not supported.
      */
     public static void checkNodeType(String type)
-        throws VTNException {
+        throws RpcException {
         // Only OpenFlow switch is supported.
         if (!Node.NodeIDType.OPENFLOW.equals(type)) {
-            throw new VTNException(StatusCode.BADREQUEST,
-                                   "Unsupported node: type=" + type);
+            String msg = "Unsupported node: type=" + type;
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 
@@ -135,14 +148,14 @@ public final class NodeUtils {
      * VTN Manager.
      *
      * @param type  The node connector type to be tested.
-     * @throws VTNException  The specified node connector type is not
+     * @throws RpcException  The specified node connector type is not
      *                       supported.
      */
     public static void checkNodeConnectorType(String type)
-        throws VTNException {
+        throws RpcException {
         if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
-            throw new VTNException(StatusCode.BADREQUEST,
-                                   "Unsupported node connector: type=" + type);
+            String msg = "Unsupported node connector: type=" + type;
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 
@@ -151,13 +164,12 @@ public final class NodeUtils {
      *
      * @param port  A {@link SwitchPort} instance to be tested.
      * @param node  A {@link Node} instance corresponding to a switch port.
-     * @throws VTNException  The specified instance contains invalid value.
+     * @throws RpcException  The specified instance contains invalid value.
      */
     public static void checkSwitchPort(SwitchPort port, Node node)
-        throws VTNException {
+        throws RpcException {
         if (port == null) {
-            Status status = MiscUtils.argumentIsNull("Switch port");
-            throw new VTNException(status);
+            throw MiscUtils.getNullArgumentException("Switch port");
         }
 
         String type = port.getType();
@@ -165,35 +177,35 @@ public final class NodeUtils {
             String id = port.getId();
             if (id == null) {
                 String msg = "Port type must be specified with port ID";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
+                throw RpcException.getBadArgumentException(msg);
             }
 
             // Currently only OpenFlow node connector is supported.
             if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
                 String msg = "Unsupported node connector type";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
+                throw RpcException.getBadArgumentException(msg);
             }
 
             // Ensure that we can construct a NodeConnector instance.
             NodeConnector nc = NodeConnector.fromStringNoNode(type, id, node);
             if (nc == null) {
                 String msg = "Broken node connector is specified";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
+                throw RpcException.getBadArgumentException(msg);
             }
         } else if (port.getId() != null) {
             String msg = "Port ID must be specified with port type";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
 
         String name = port.getName();
         if (name == null) {
             if (type == null) {
                 String msg = "Switch port cannot be empty";
-                throw new VTNException(StatusCode.BADREQUEST, msg);
+                throw RpcException.getBadArgumentException(msg);
             }
         } else if (name.isEmpty()) {
             String msg = "Port name cannot be empty";
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
     }
 
@@ -206,13 +218,12 @@ public final class NodeUtils {
      * </p>
      *
      * @param ploc  A {@link PortLocation} instance to be tested.
-     * @throws VTNException  The specified instance contains invalid value.
+     * @throws RpcException  The specified instance contains invalid value.
      */
     public static void checkPortLocation(PortLocation ploc)
-        throws VTNException {
+        throws RpcException {
         if (ploc == null) {
-            Status status = MiscUtils.argumentIsNull("Port location");
-            throw new VTNException(status);
+            throw getNullPortLocationException();
         }
 
         Node node = ploc.getNode();
@@ -224,53 +235,160 @@ public final class NodeUtils {
     }
 
     /**
-     * Find a {@link NodeConnector} instance that meets the specified
-     * condition.
+     * Create an array of {@link VtnPortDesc} instances that represents the
+     * search condition for physical switch port.
      *
-     * @param mgr      VTN Manager service.
-     * @param node     A {@link Node} instance corresponding to a physical
-     *                 switch.
-     * @param port     A {@link SwitchPort} instance which specifies the
-     *                 condition to select switch port.
-     * @return  A {@link NodeConnector} instance if found.
-     *          {@code null} is returned if not found.
+     * @param sport  A {@link SalPort} instance.
+     * @param vport  A {@link VtnPort} instance.
+     * @return  An array of {@link VtnPortDesc} instances.
      */
-    public static NodeConnector findPort(VTNManagerImpl mgr, Node node,
-                                         SwitchPort port) {
-        if (!mgr.exists(node)) {
+    public static VtnPortDesc[] createPortDescArray(SalPort sport,
+                                                    VtnPort vport) {
+        String portId = Long.toString(sport.getPortNumber());
+        String portName = vport.getName();
+        if (portName == null) {
+            // Port name is unavailable. Port descriptors which specify the
+            // port name should not match.
+            return new VtnPortDesc[] {
+                createPortDesc(sport, portId, null),
+                createPortDesc(sport, null, null),
+            };
+        }
+
+        return new VtnPortDesc[] {
+            // Search for a port descriptor by port ID and name.
+            createPortDesc(sport, portId, portName),
+
+            // Search for a port descriptor by port ID.
+            createPortDesc(sport, portId, null),
+
+            // Search for a port descriptor by port name.
+            createPortDesc(sport, null, portName),
+
+            // Search for a port descriptor that does not specify the port.
+            createPortDesc(sport, null, null),
+        };
+    }
+
+    /**
+     * Create a {@link VtnPortDesc} instance.
+     *
+     * @param snode  A {@link SalNode} instance.
+     * @param id     A string implementation of the port identifier.
+     * @param name   The name of the switch port.
+     * @return  A {@link VtnPortDesc} instance.
+     */
+    public static VtnPortDesc createPortDesc(SalNode snode, String id,
+                                             String name) {
+        StringBuilder builder = new StringBuilder(snode.toNodeString()).
+            append(PORT_DESC_SEPARATOR);
+        if (id != null) {
+            builder.append(id);
+        }
+
+        builder.append(PORT_DESC_SEPARATOR);
+        if (name != null) {
+            builder.append(name);
+        }
+
+        return new VtnPortDesc(builder.toString());
+    }
+
+    /**
+     * Convert the given {@link PortLocation} instance into a
+     * {@link VtnPortDesc} instance.
+     *
+     * @param ploc  A {@link PortLocation} instance.
+     * @return  A {@link VtnPortDesc} instance or {@code null}.
+     * @throws RpcException
+     *    The given value contains an invalid value.
+     */
+    public static VtnPortDesc toVtnPortDesc(PortLocation ploc)
+        throws RpcException {
+        checkPortLocation(ploc);
+
+        SalNode snode = SalNode.create(ploc.getNode());
+        if (snode == null) {
+            // This should never happen.
+            String msg = "Invalid node in port location: " + ploc;
+            throw RpcException.getBadArgumentException(msg);
+        }
+
+        SwitchPort swport = ploc.getPort();
+        String id;
+        String name;
+        if (swport == null) {
+            id = null;
+            name = null;
+        } else {
+            id = swport.getId();
+            name = swport.getName();
+        }
+
+        try {
+            return createPortDesc(snode, id, name);
+        } catch (IllegalArgumentException e) {
+            // This should never happen.
+            String msg = "Unable to convert PortLocation into VtnPortDesc: " +
+                ploc;
+            throw new RpcException(msg, e);
+        }
+    }
+
+    /**
+     * Convert the given {@link VtnPortDesc} instance into a
+     * {@link PortLocation} instance.
+     *
+     * @param vdesc  A {@link VtnPortDesc} instance.
+     * @return  A {@link PortLocation} instance or {@code null}.
+     */
+    public static PortLocation toPortLocation(VtnPortDesc vdesc) {
+        if (vdesc == null) {
             return null;
         }
 
-        ISwitchManager swMgr = mgr.getSwitchManager();
-        NodeConnector target = null;
-        String type = port.getType();
-        String id = port.getId();
-        if (type != null && id != null) {
-            // Try to construct a NodeConnector instance.
-            // This returns null if invalid parameter is specified.
-            target = NodeConnector.fromStringNoNode(type, id, node);
-            if (target == null) {
-                return null;
-            }
+        // Parse node-id field.
+        String value = vdesc.getValue();
+        int idx = value.indexOf(PORT_DESC_SEPARATOR);
+        if (idx < 0) {
+            return null;
+        }
+        String nodeId = value.substring(0, idx);
+        SalNode snode = SalNode.create(nodeId);
+        if (snode == null) {
+            return null;
+        }
+        Node node = snode.getAdNode();
+
+        // Parse port ID field.
+        int idStart = idx + 1;
+        if (idStart >= value.length()) {
+            return null;
+        }
+        int idEnd = value.indexOf(PORT_DESC_SEPARATOR, idStart);
+        if (idStart < 0) {
+            return null;
         }
 
-        String name = port.getName();
-        if (name != null) {
-            // Search for a switch port by its name.
-            NodeConnector nc = swMgr.getNodeConnector(node, name);
-            if (nc == null || swMgr.isSpecial(nc)) {
-                return null;
-            }
-            if (target != null && !target.equals(nc)) {
-                nc = null;
-            }
-            return nc;
+        String id;
+        String type;
+        if (idStart == idEnd) {
+            id = null;
+            type = null;
+        } else {
+            id = value.substring(idStart, idEnd);
+
+            // We can use AD-SAL node type string as AD-SAL port type.
+            type = node.getType();
         }
 
-        // Ensure that the detected NodeConnector exists.
-        if (target != null && !mgr.exists(target)) {
-            target = null;
-        }
-        return target;
+        // Parse port name field.
+        int nameStart = idEnd + 1;
+        String name = (nameStart >= value.length())
+            ? null : value.substring(nameStart);
+
+        SwitchPort swport = (id == null && name == null)
+            ? null : new SwitchPort(name, type, id);
+        return new PortLocation(node, swport);
     }
 }

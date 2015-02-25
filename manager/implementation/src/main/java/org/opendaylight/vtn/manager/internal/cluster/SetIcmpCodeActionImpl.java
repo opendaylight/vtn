@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,9 +14,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
-import org.opendaylight.vtn.manager.internal.packet.L4Packet;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -53,7 +53,7 @@ public final class SetIcmpCodeActionImpl extends FlowActionImpl {
         super(act);
 
         code = act.getCode();
-        if (!MiscUtils.isIcmpValueValid(code)) {
+        if (!ProtocolUtils.isIcmpValueValid(code)) {
             String msg = getErrorMessage(act, "Invalid ICMP code: ", code);
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }

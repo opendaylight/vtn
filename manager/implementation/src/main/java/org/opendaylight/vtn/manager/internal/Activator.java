@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -34,22 +34,13 @@ import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
-import org.opendaylight.controller.hosttracker.IfIptoHost;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 import org.opendaylight.controller.sal.core.IContainerListener;
 import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
-import org.opendaylight.controller.sal.packet.IDataPacketService;
-import org.opendaylight.controller.sal.packet.IListenDataPacket;
-import org.opendaylight.controller.sal.routing.IListenRoutingUpdates;
-import org.opendaylight.controller.sal.routing.IRouting;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
-import org.opendaylight.controller.switchmanager.IInventoryListener;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
-import org.opendaylight.controller.topologymanager.ITopologyManager;
-import org.opendaylight.controller.topologymanager.ITopologyManagerAware;
 
 /**
  * OSGi bundle activator for the VTN implementation.
@@ -162,10 +153,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             list.add(IVTNManager.class.getName());
             list.add(ICacheUpdateAware.class.getName());
             list.add(IConfigurationContainerAware.class.getName());
-            list.add(IInventoryListener.class.getName());
-            list.add(ITopologyManagerAware.class.getName());
-            list.add(IListenDataPacket.class.getName());
-            list.add(IListenRoutingUpdates.class.getName());
             list.add(IHostFinder.class.getName());
             list.add(IFlowProgrammerListener.class.getName());
             if (containerName.equals(GlobalConstants.DEFAULT.toString())) {
@@ -175,6 +162,12 @@ public class Activator extends ComponentActivatorAbstractBase {
                       setService(IContainerManager.class).
                       setCallbacks("setContainerManager",
                                    "unsetContainerManager").
+                      setRequired(true));
+
+                // Register dependency to MD-SAL VTN Manager provider.
+                c.add(createServiceDependency().
+                      setService(VTNManagerProvider.class).
+                      setCallbacks("setVTNProvider", "unsetVTNProvider").
                       setRequired(true));
             }
 
@@ -216,30 +209,9 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setRequired(true));
 
             c.add(createContainerServiceDependency(containerName).
-                  setService(ISwitchManager.class).
-                  setCallbacks("setSwitchManager", "unsetSwitchManager").
-                  setRequired(true));
-
-            c.add(createContainerServiceDependency(containerName).
-                  setService(ITopologyManager.class).
-                  setCallbacks("setTopologyManager", "unsetTopologyManager").
-                  setRequired(true));
-
-            c.add(createContainerServiceDependency(containerName).
                   setService(IForwardingRulesManager.class).
                   setCallbacks("setForwardingRuleManager",
                                "unsetForwardingRuleManager").
-                  setRequired(true));
-
-            c.add(createContainerServiceDependency(containerName).
-                  setService(IRouting.class).
-                  setCallbacks("setRouting", "unsetRouting").
-                  setRequired(true));
-
-            c.add(createContainerServiceDependency(containerName).
-                  setService(IDataPacketService.class).
-                  setCallbacks("setDataPacketService",
-                               "unsetDataPacketService").
                   setRequired(true));
 
             c.add(createContainerServiceDependency(containerName).
@@ -253,13 +225,6 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setService(IfHostListener.class).
                   setCallbacks("addHostListener", "removeHostListener").
                   setRequired(false));
-
-            // Although VTN manager does not use IfIptoHost service,
-            // ArpHandler emulator does.
-            c.add(createContainerServiceDependency(containerName).
-                  setService(IfIptoHost.class).
-                  setCallbacks("setHostTracker", "unsetHostTracker").
-                  setRequired(true));
         }
     }
 

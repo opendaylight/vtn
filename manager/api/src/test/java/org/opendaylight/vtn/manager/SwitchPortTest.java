@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -102,7 +102,7 @@ public class SwitchPortTest extends TestBase {
     @Test
     public void testJAXB() {
         for (SwitchPort port: createSwitchPorts(100, false)) {
-            jaxbTest(port, "switchport");
+            jaxbTest(port, SwitchPort.class, "switchport");
         }
     }
 }

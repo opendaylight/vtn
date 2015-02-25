@@ -9,13 +9,12 @@
 
 package org.opendaylight.vtn.manager.flow.cond;
 
-import java.io.ByteArrayInputStream;
 import java.net.InetAddress;
 import java.net.Inet4Address;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -269,7 +268,7 @@ public class Inet4MatchTest extends TestBase {
                                     new Inet4Match(src, srcsuff, dst, dstsuff,
                                                    proto, dscp);
                                 Inet4Match im1 = (Inet4Match)
-                                    jaxbTest(im, XML_ROOT);
+                                    jaxbTest(im, Inet4Match.class, XML_ROOT);
                                 assertEquals(null, im1.getValidationStatus());
                             }
                         }
@@ -282,16 +281,15 @@ public class Inet4MatchTest extends TestBase {
         String[] badAddrs = {
             "", "192.168.100.256", "::1", "bad_address",
         };
+        Unmarshaller um = createUnmarshaller(Inet4Match.class);
         for (String addr: badAddrs) {
             for (String attr: new String[]{"src", "dst"}) {
                 StringBuilder builder = new StringBuilder(XML_DECLARATION);
                 builder.append('<').append(XML_ROOT).append(' ').append(attr).
                     append("=\"").append(addr).append("\" />");
+                String xml = builder.toString();
                 try {
-                    ByteArrayInputStream in =
-                        new ByteArrayInputStream(builder.toString().getBytes());
-                    Inet4Match im =
-                        JAXB.unmarshal(in, Inet4Match.class);
+                    Inet4Match im = unmarshal(um, xml, Inet4Match.class);
                     Status st = im.getValidationStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                 } catch (Exception e) {

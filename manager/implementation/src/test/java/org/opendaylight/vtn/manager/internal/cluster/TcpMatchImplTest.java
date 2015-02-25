@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,6 +18,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
 import org.opendaylight.vtn.manager.flow.cond.PortMatch;
 import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -30,7 +31,6 @@ import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -878,8 +878,8 @@ final class TcpParser implements L4Parser {
      */
     TcpParser(TCP tcp) {
         packet = tcp;
-        sourcePort = NetUtils.getUnsignedShort(tcp.getSourcePort());
-        destinationPort = NetUtils.getUnsignedShort(tcp.getDestinationPort());
+        sourcePort = NumberUtils.getUnsigned(tcp.getSourcePort());
+        destinationPort = NumberUtils.getUnsigned(tcp.getDestinationPort());
     }
 
     /**

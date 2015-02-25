@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -81,7 +81,8 @@ public class MacHostTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link MacHost} is mapped to XML root element.
+     * Ensure that {@link MacHost} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
@@ -90,7 +91,8 @@ public class MacHostTest extends TestBase {
             for (short vlan : vlans) {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);
                 MacHost host = new MacHost(dlhost);
-                jaxbTest(host, "machost");
+                jaxbTest(host, MacHost.class, "machost");
+                jsonTest(host, MacHost.class);
             }
         }
     }

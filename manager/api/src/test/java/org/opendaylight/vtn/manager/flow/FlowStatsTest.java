@@ -131,7 +131,7 @@ public class FlowStatsTest extends TestBase {
             for (long b: bytes) {
                 for (long d: duration) {
                     FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
-                    jaxbTest(fst, "flowstats");
+                    jaxbTest(fst, FlowStats.class, "flowstats");
                 }
             }
         }

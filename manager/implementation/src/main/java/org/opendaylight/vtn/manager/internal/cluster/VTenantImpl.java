@@ -45,7 +45,6 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -59,19 +58,20 @@ import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 
 import org.opendaylight.vtn.manager.internal.ContainerConfig;
-import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
-import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
+import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
+import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.routing.RoutingEvent;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
-import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.PacketResult;
@@ -92,7 +92,7 @@ public final class VTenantImpl implements FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2928818452457185931L;
+    private static final long serialVersionUID = -7256680315416381512L;
 
     /**
      * Logger instance.
@@ -601,6 +601,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * Change configuration of existing virtual bridge interface.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param path   Path to the interface.
      * @param iconf  Interface configuration.
      * @param all    If {@code true} is specified, all attributes of the
@@ -612,14 +613,15 @@ public final class VTenantImpl implements FlowFilterNode {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyInterface(VTNManagerImpl mgr, VBridgeIfPath path,
-                                  VInterfaceConfig iconf, boolean all)
+    public Status modifyInterface(VTNManagerImpl mgr, TxContext ctx,
+                                  VBridgeIfPath path, VInterfaceConfig iconf,
+                                  boolean all)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VBridgeImpl vbr = getBridgeImpl(path);
-            if (vbr.modifyInterface(mgr, path, iconf, all)) {
+            if (vbr.modifyInterface(mgr, ctx, path, iconf, all)) {
                 mgr.export(this);
                 return saveConfigImpl(null);
             }
@@ -726,6 +728,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * Change configuration of existing vTerminal interface.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param path   Path to the interface.
      * @param iconf  Interface configuration.
      * @param all    If {@code true} is specified, all attributes of the
@@ -737,14 +740,15 @@ public final class VTenantImpl implements FlowFilterNode {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status modifyInterface(VTNManagerImpl mgr, VTerminalIfPath path,
-                                  VInterfaceConfig iconf, boolean all)
+    public Status modifyInterface(VTNManagerImpl mgr, TxContext ctx,
+                                  VTerminalIfPath path, VInterfaceConfig iconf,
+                                  boolean all)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VTerminalImpl vtm = getTerminalImpl(path);
-            if (vtm.modifyInterface(mgr, path, iconf, all)) {
+            if (vtm.modifyInterface(mgr, ctx, path, iconf, all)) {
                 mgr.export(this);
                 return saveConfigImpl(null);
             }
@@ -826,18 +830,20 @@ public final class VTenantImpl implements FlowFilterNode {
      * Add a new VLAN mapping to to the specified L2 bridge.
      *
      * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param path    Path to the bridge.
      * @param vlconf  VLAN mapping configuration.
      * @return  Information about the added VLAN mapping is returned.
      * @throws VTNException  An error occurred.
      */
-    public VlanMap addVlanMap(VTNManagerImpl mgr, VBridgePath path,
-                              VlanMapConfig vlconf) throws VTNException {
+    public VlanMap addVlanMap(VTNManagerImpl mgr, TxContext ctx,
+                              VBridgePath path, VlanMapConfig vlconf)
+        throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VBridgeImpl vbr = getBridgeImpl(path);
-            VlanMap vlmap = vbr.addVlanMap(mgr, vlconf);
+            VlanMap vlmap = vbr.addVlanMap(mgr, ctx, vlconf);
 
             mgr.export(this);
             Status status = saveConfigImpl(null);
@@ -985,6 +991,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * virtual bridge interface.
      *
      * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param path    Path to the bridge interface.
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
@@ -993,13 +1000,14 @@ public final class VTenantImpl implements FlowFilterNode {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status setPortMap(VTNManagerImpl mgr, VBridgeIfPath path,
-                             PortMapConfig pmconf) throws VTNException {
+    public Status setPortMap(VTNManagerImpl mgr, TxContext ctx,
+                             VBridgeIfPath path, PortMapConfig pmconf)
+        throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VBridgeImpl vbr = getBridgeImpl(path);
-            if (vbr.setPortMap(mgr, path, pmconf)) {
+            if (vbr.setPortMap(mgr, ctx, path, pmconf)) {
                 mgr.export(this);
                 return saveConfigImpl(null);
             }
@@ -1015,6 +1023,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * vTerminal interface.
      *
      * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param path    Path to the vTerminal interface.
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
@@ -1023,13 +1032,14 @@ public final class VTenantImpl implements FlowFilterNode {
      *          operation.
      * @throws VTNException  An error occurred.
      */
-    public Status setPortMap(VTNManagerImpl mgr, VTerminalIfPath path,
-                             PortMapConfig pmconf) throws VTNException {
+    public Status setPortMap(VTNManagerImpl mgr, TxContext ctx,
+                             VTerminalIfPath path, PortMapConfig pmconf)
+        throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             VTerminalImpl vtm = getTerminalImpl(path);
-            if (vtm.setPortMap(mgr, path, pmconf)) {
+            if (vtm.setPortMap(mgr, ctx, path, pmconf)) {
                 mgr.export(this);
                 return saveConfigImpl(null);
             }
@@ -1341,8 +1351,9 @@ public final class VTenantImpl implements FlowFilterNode {
      * </p>
      *
      * @param mgr  VTN Manager service.
+     * @param ctx  A runtime context for MD-SAL datastore transaction task.
      */
-    public void resume(VTNManagerImpl mgr) {
+    public void resume(VTNManagerImpl mgr, TxContext ctx) {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
@@ -1350,11 +1361,11 @@ public final class VTenantImpl implements FlowFilterNode {
             mgr.createTenantFlowDB(tenantName);
 
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.resume(mgr);
+                vbr.resume(mgr, ctx);
             }
 
             for (VTerminalImpl vtm: vTerminals.values()) {
-                vtm.resume(mgr);
+                vtm.resume(mgr, ctx);
             }
         } finally {
             wrlock.unlock();
@@ -1364,24 +1375,25 @@ public final class VTenantImpl implements FlowFilterNode {
     }
 
     /**
-     * Invoked when a node is added, removed, or changed.
+     * Invoked when a node has been added or removed.
      *
-     * @param mgr   VTN Manager service.
-     * @param node  Node being updated.
-     * @param type  Type of update.
+     * @param mgr  VTN Manager service.
+     * @param ev   A {@link VtnNodeEvent} instance.
+     * @throws VTNException  An error occurred.
      */
-    public void notifyNode(VTNManagerImpl mgr, Node node, UpdateType type) {
+    public void notifyNode(VTNManagerImpl mgr, VtnNodeEvent ev)
+        throws VTNException {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
 
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.notifyNode(mgr, db, node, type);
+                vbr.notifyNode(mgr, db, ev);
             }
 
             for (VTerminalImpl vtm: vTerminals.values()) {
-                vtm.notifyNode(mgr, db, node, type);
+                vtm.notifyNode(mgr, db, ev);
             }
         } finally {
             rdlock.unlock();
@@ -1393,48 +1405,22 @@ public final class VTenantImpl implements FlowFilterNode {
      * added/deleted/changed.
      *
      * @param mgr     VTN Manager service.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param ev      A {@link VtnPortEvent} instance.
+     * @throws VTNException  An error occurred.
      */
-    public void notifyNodeConnector(VTNManagerImpl mgr, NodeConnector nc,
-                                    VNodeState pstate, UpdateType type) {
+    public void notifyNodeConnector(VTNManagerImpl mgr, VtnPortEvent ev)
+        throws VTNException {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
 
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.notifyNodeConnector(mgr, db, nc, pstate, type);
+                vbr.notifyNodeConnector(mgr, db, ev);
             }
 
             for (VTerminalImpl vtm: vTerminals.values()) {
-                vtm.notifyNodeConnector(mgr, db, nc, pstate, type);
-            }
-        } finally {
-            rdlock.unlock();
-        }
-    }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr     VTN Manager service.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     */
-    public void edgeUpdate(VTNManagerImpl mgr, EdgeUpdateState estate) {
-        ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.edgeUpdate(mgr, db, estate);
-            }
-
-            for (VTerminalImpl vtm: vTerminals.values()) {
-                vtm.edgeUpdate(mgr, db, estate);
+                vtm.notifyNodeConnector(mgr, db, ev);
             }
         } finally {
             rdlock.unlock();
@@ -1601,16 +1587,17 @@ public final class VTenantImpl implements FlowFilterNode {
      * Invoked when the recalculation of the all shortest path tree is done.
      *
      * @param mgr  VTN manager service.
+     * @param ev   A {@link RoutingEvent} instance.
      */
-    public void recalculateDone(VTNManagerImpl mgr) {
+    public void recalculateDone(VTNManagerImpl mgr, RoutingEvent ev) {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             for (VBridgeImpl vbr: vBridges.values()) {
-                vbr.recalculateDone(mgr);
+                vbr.recalculateDone(mgr, ev);
             }
             for (VTerminalImpl vtm: vTerminals.values()) {
-                vtm.recalculateDone(mgr);
+                vtm.recalculateDone(mgr, ev);
             }
         } finally {
             rdlock.unlock();
@@ -1649,8 +1636,7 @@ public final class VTenantImpl implements FlowFilterNode {
         }
 
         // Purge global timer task queue.
-        IVTNResourceManager resMgr = mgr.getResourceManager();
-        Timer timer = resMgr.getTimer();
+        Timer timer = mgr.getVTNProvider().getTimer();
         timer.purge();
     }
 
@@ -2364,7 +2350,8 @@ public final class VTenantImpl implements FlowFilterNode {
      *          controller. Otherwise {@code false} is returned.
      */
     private boolean isToController(VTNManagerImpl mgr, PacketContext pctx) {
-        byte[] ctlrMac = mgr.getSwitchManager().getControllerMAC();
+        byte[] ctlrMac = mgr.getVTNConfig().
+            getControllerMacAddress().getBytes();
         byte[] dst = pctx.getDestinationAddress();
         return Arrays.equals(ctlrMac, dst);
     }

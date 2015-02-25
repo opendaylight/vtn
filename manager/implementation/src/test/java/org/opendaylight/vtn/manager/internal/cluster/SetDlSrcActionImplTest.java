@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,23 +9,23 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -68,7 +68,7 @@ public class SetDlSrcActionImplTest extends TestBase {
 
         // Invalid length.
         for (int len = 0; len <= 10; len++) {
-            if (len != NetUtils.MACAddrLengthInBytes) {
+            if (len != EtherAddress.SIZE) {
                 byte[] addr = new byte[len];
                 if (len > 0) {
                     addr[0] = (byte)len;
@@ -88,7 +88,7 @@ public class SetDlSrcActionImplTest extends TestBase {
         }
 
         // Zero address.
-        addrs.add(new byte[NetUtils.MACAddrLengthInBytes]);
+        addrs.add(new byte[EtherAddress.SIZE]);
 
         for (byte[] addr: addrs) {
             SetDlSrcAction act = new SetDlSrcAction(addr);
@@ -101,11 +101,10 @@ public class SetDlSrcActionImplTest extends TestBase {
         }
 
         // Specify invalid MAC address via JAXB.
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-            "<setdlsrc address=\"bad MAC address\" />";
-        ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-        SetDlSrcAction act = JAXB.unmarshal(in, SetDlSrcAction.class);
+        String xml = new StringBuilder(XML_DECLARATION).
+            append("<setdlsrc address=\"bad MAC address\" />").toString();
+        Unmarshaller um = createUnmarshaller(SetDlSrcAction.class);
+        SetDlSrcAction act = unmarshal(um, xml, SetDlSrcAction.class);
         try {
             new SetDlSrcActionImpl(act);
             unexpected();
@@ -151,7 +150,7 @@ public class SetDlSrcActionImplTest extends TestBase {
             SetDlSrcAction act = new SetDlSrcAction(bytes);
             try {
                 SetDlSrcActionImpl impl = new SetDlSrcActionImpl(act);
-                String a = "addr=" + HexEncode.bytesToHexStringFormat(bytes);
+                String a = "addr=" + ByteUtils.toHexString(bytes);
                 String required = joinStrings(prefix, suffix, ",", a);
                 assertEquals(required, impl.toString());
             } catch (Exception e) {

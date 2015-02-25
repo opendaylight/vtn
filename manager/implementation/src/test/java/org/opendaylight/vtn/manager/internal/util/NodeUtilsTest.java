@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,11 +9,17 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.PortLocation;
+import org.opendaylight.vtn.manager.SwitchPort;
+
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -29,20 +35,22 @@ import static
 import static
     org.opendaylight.vtn.manager.internal.util.NodeUtils.checkNodeConnectorType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+
 /**
  * JUnit test for {@link NodeUtils}.
  */
 public class NodeUtilsTest extends TestBase {
     /**
      * Test case for {@link NodeUtils#checkNodeType(String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testCheckNodeType() {
-        try {
-            checkNodeType(NodeIDType.OPENFLOW);
-        } catch (VTNException e) {
-            unexpected(e);
-        }
+    public void testCheckNodeType() throws Exception {
+        checkNodeType(NodeIDType.OPENFLOW);
 
         String[] invalidTypes = {
             NodeIDType.PCEP,
@@ -56,14 +64,12 @@ public class NodeUtilsTest extends TestBase {
 
     /**
      * Test case for {@link NodeUtils#checkNodeConnectorType(String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testCheckNodeConnectorType() {
-        try {
-            checkNodeConnectorType(NodeConnectorIDType.OPENFLOW);
-        } catch (VTNException e) {
-            unexpected(e);
-        }
+    public void testCheckNodeConnectorType() throws Exception {
+        checkNodeConnectorType(NodeConnectorIDType.OPENFLOW);
 
         String[] invalidTypes = {
             NodeConnectorIDType.PCEP,
@@ -81,8 +87,340 @@ public class NodeUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link NodeUtils#checkPortLocation(PortLocation)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testCheckPortLocation() throws Exception {
+        try {
+            NodeUtils.checkPortLocation(null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+            assertEquals(null, e.getCause());
+            Status st = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals("Port location cannot be null", st.getDescription());
+        }
+
+        Node[] invalidNodes = {
+            null,
+            createNode(NodeIDType.ONEPK, 1L),
+            createNode(NodeIDType.PRODUCTION, 2L),
+            createNode(NodeIDType.PCEP, 3L),
+        };
+        for (Node node: invalidNodes) {
+            PortLocation ploc = new PortLocation(node, null);
+            try {
+                NodeUtils.checkPortLocation(ploc);
+                unexpected();
+            } catch (RpcException e) {
+                RpcErrorTag etag = (node == null)
+                    ? RpcErrorTag.MISSING_ELEMENT
+                    : RpcErrorTag.BAD_ELEMENT;
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(null, e.getCause());
+                Status status = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, status.getCode());
+                String msg = (node == null)
+                    ? "Node cannot be null"
+                    : "Unsupported node: type=" + node.getType();
+                assertEquals(msg, status.getDescription());
+            }
+        }
+
+        Node node = createNode(NodeIDType.OPENFLOW, 1L);
+        Map<SwitchPort, String> invalidSwPorts = new HashMap<>();
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.OPENFLOW, null),
+                           "Port type must be specified with port ID");
+        invalidSwPorts.put(new SwitchPort((String)null, "1"),
+                           "Port ID must be specified with port type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.ONEPK, "port-1"),
+                           "Unsupported node connector type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.PCEP, "port-1"),
+                           "Unsupported node connector type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.PRODUCTION,
+                                          "port-2"),
+                           "Unsupported node connector type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                          "port-3"),
+                           "Broken node connector is specified");
+        invalidSwPorts.put(new SwitchPort(null),
+                           "Switch port cannot be empty");
+        invalidSwPorts.put(new SwitchPort(""), "Port name cannot be empty");
+        for (Map.Entry<SwitchPort, String> entry: invalidSwPorts.entrySet()) {
+            SwitchPort swport = entry.getKey();
+            String msg = entry.getValue();
+            PortLocation ploc = new PortLocation(node, swport);
+            try {
+                NodeUtils.checkPortLocation(ploc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(null, e.getCause());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(msg, st.getDescription());
+            }
+        }
+
+        PortLocation[] plocs = {
+            new PortLocation(node, null),
+            new PortLocation(node, new SwitchPort("port-1")),
+            new PortLocation(node, new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                                  "10")),
+            new PortLocation(node, new SwitchPort("port-20",
+                                                  NodeConnectorIDType.OPENFLOW,
+                                                  "20")),
+        };
+
+        for (PortLocation ploc: plocs) {
+            NodeUtils.checkPortLocation(ploc);
+        }
+    }
+
+    /**
+     * Test case for {@link NodeUtils#createPortDescArray(SalPort, VtnPort)}.
+     */
+    @Test
+    public void testCreatePortDescArray() {
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            for (long port = 1L; port <= 20L; port++) {
+                SalPort sport = new SalPort(dpid, port);
+                VtnPortBuilder vpbuilder = createVtnPortBuilder(sport);
+                VtnPort vport = vpbuilder.build();
+                String name = vport.getName();
+                String base = "openflow:" + dpid + ",";
+                VtnPortDesc[] expected = {
+                    new VtnPortDesc(base + port + "," + name),
+                    new VtnPortDesc(base + port + ","),
+                    new VtnPortDesc(base + "," + name),
+                    new VtnPortDesc(base + ","),
+                };
+                assertArrayEquals(expected,
+                                  NodeUtils.createPortDescArray(sport, vport));
+
+                // Port name is unavailable.
+                vport = vpbuilder.setName(null).build();
+                expected = new VtnPortDesc[] {
+                    new VtnPortDesc(base + port + ","),
+                    new VtnPortDesc(base + ","),
+                };
+                assertArrayEquals(expected,
+                                  NodeUtils.createPortDescArray(sport, vport));
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link NodeUtils#createPortDesc(SalNode, String, String)}.
+     */
+    @Test
+    public void testCreatePortDesc() {
+        String[] names = {
+            null, "port-1", "port-2",
+        };
+        String[] ids = {
+            null, "1", "2",
+        };
+
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            SalNode snode = new SalNode(dpid);
+            String base = snode.toString() + ",";
+            for (String id: ids) {
+                String i = (id == null) ? "" : id;
+                for (String name: names) {
+                    String n = (name == null) ? "" : name;
+                    String desc = base + i + "," + n;
+                    VtnPortDesc vdesc = NodeUtils.
+                        createPortDesc(snode, id, name);
+                    assertEquals(desc, vdesc.getValue());
+
+                    // SalPort can be passed instead of SalNode.
+                    for (long port = 1L; port <= 20L; port++) {
+                        SalPort sport = new SalPort(dpid, port);
+                        vdesc = NodeUtils.createPortDesc(sport, id, name);
+                        assertEquals(desc, vdesc.getValue());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link NodeUtils#toVtnPortDesc(PortLocation)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testToVtnPortDesc() throws Exception {
+        try {
+            NodeUtils.toVtnPortDesc(null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+            assertEquals(null, e.getCause());
+            Status st = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals("Port location cannot be null", st.getDescription());
+        }
+
+        Node[] invalidNodes = {
+            null,
+            createNode(NodeIDType.ONEPK, 1L),
+            createNode(NodeIDType.PRODUCTION, 2L),
+            createNode(NodeIDType.PCEP, 3L),
+        };
+
+        for (Node node: invalidNodes) {
+            PortLocation ploc = new PortLocation(node, null);
+            try {
+                NodeUtils.toVtnPortDesc(ploc);
+                unexpected();
+            } catch (RpcException e) {
+                RpcErrorTag etag = (node == null)
+                    ? RpcErrorTag.MISSING_ELEMENT
+                    : RpcErrorTag.BAD_ELEMENT;
+                assertEquals(etag, e.getErrorTag());
+                assertEquals(null, e.getCause());
+                Status status = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, status.getCode());
+                String msg = (node == null)
+                    ? "Node cannot be null"
+                    : "Unsupported node: type=" + node.getType();
+                assertEquals(msg, status.getDescription());
+            }
+        }
+
+        SalNode snode = new SalNode(1L);
+        Node node = snode.getAdNode();
+        Map<SwitchPort, String> invalidSwPorts = new HashMap<>();
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.OPENFLOW, null),
+                           "Port type must be specified with port ID");
+        invalidSwPorts.put(new SwitchPort((String)null, "1"),
+                           "Port ID must be specified with port type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.ONEPK, "port-1"),
+                           "Unsupported node connector type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.PRODUCTION,
+                                          "port-2"),
+                           "Unsupported node connector type");
+        invalidSwPorts.put(new SwitchPort(NodeConnectorIDType.OPENFLOW,
+                                          "port-3"),
+                           "Broken node connector is specified");
+        invalidSwPorts.put(new SwitchPort(null),
+                           "Switch port cannot be empty");
+        invalidSwPorts.put(new SwitchPort(""), "Port name cannot be empty");
+        for (Map.Entry<SwitchPort, String> entry: invalidSwPorts.entrySet()) {
+            SwitchPort swport = entry.getKey();
+            String msg = entry.getValue();
+            PortLocation ploc = new PortLocation(node, swport);
+            try {
+                NodeUtils.toVtnPortDesc(ploc);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                assertEquals(null, e.getCause());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals(msg, st.getDescription());
+            }
+        }
+
+        String[] names = {
+            "port-1", "port-2",
+        };
+        String[] ids = {
+            "1", "2",
+        };
+        String type = NodeConnectorIDType.OPENFLOW;
+
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            snode = new SalNode(dpid);
+            node = snode.getAdNode();
+            PortLocation ploc = new PortLocation(node, null);
+            String desc = "openflow:" + dpid + ",,";
+            VtnPortDesc vdesc = NodeUtils.toVtnPortDesc(ploc);
+            assertEquals(desc, vdesc.getValue());
+
+            for (String id: ids) {
+                SwitchPort swport = new SwitchPort(type, id);
+                ploc = new PortLocation(node, swport);
+                desc = "openflow:" + dpid + "," + id + ",";
+                vdesc = NodeUtils.toVtnPortDesc(ploc);
+                assertEquals(desc, vdesc.getValue());
+            }
+
+            for (String name: names) {
+                SwitchPort swport = new SwitchPort(name);
+                ploc = new PortLocation(node, swport);
+                desc = "openflow:" + dpid + ",," + name;
+                vdesc = NodeUtils.toVtnPortDesc(ploc);
+                assertEquals(desc, vdesc.getValue());
+
+                for (String id: ids) {
+                    swport = new SwitchPort(name, type, id);
+                    ploc = new PortLocation(node, swport);
+                    desc = "openflow:" + dpid + "," + id + "," + name;
+                    vdesc = NodeUtils.toVtnPortDesc(ploc);
+                    assertEquals(desc, vdesc.getValue());
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link NodeUtils#toPortLocation(VtnPortDesc)}.
+     */
+    @Test
+    public void testToPortLocation() {
+        assertEquals(null, NodeUtils.toPortLocation(null));
+
+        String[] invalid = {
+            "unknown,,",
+            "unknown,1,",
+            "unknown,2,port-2",
+            "openflow1:,,",
+            "openflow1:,1,",
+            "openflow1:,1,port-1",
+        };
+
+        for (String desc: invalid) {
+            VtnPortDesc vdesc = new VtnPortDesc(desc);
+            assertEquals(null, NodeUtils.toPortLocation(vdesc));
+        }
+
+        String[] names = {
+            null, "port-1", "port-2",
+        };
+        String[] ids = {
+            null, "1", "2",
+        };
+        String ofType = NodeConnectorIDType.OPENFLOW;
+
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            SalNode snode = new SalNode(dpid);
+            Node node = snode.getAdNode();
+            for (String id: ids) {
+                String i = (id == null) ? "" : id;
+                for (String name: names) {
+                    String n = (name == null) ? "" : name;
+                    VtnPortDesc vdesc = new VtnPortDesc(
+                        "openflow:" + dpid + "," + i + "," + n);
+                    String type = (id == null) ? null : ofType;
+                    SwitchPort swport = (id == null && name == null)
+                        ? null
+                        : new SwitchPort(name, type, id);
+                    PortLocation expected = new PortLocation(node, swport);
+                    assertEquals(expected, NodeUtils.toPortLocation(vdesc));
+                }
+            }
+        }
+    }
+
+    /**
      * Verify that {@link NodeUtils#checkNodeType(String)} throws
-     * an {@link VTNException} if the given node type is invalid.
+     * an {@link RpcException} if the given node type is invalid.
      *
      * @param type  A node type.
      */
@@ -90,7 +428,9 @@ public class NodeUtilsTest extends TestBase {
         try {
             checkNodeType(type);
             fail("Succeeded unexpectedly: type=" + type);
-        } catch (VTNException e) {
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+            assertEquals(null, e.getCause());
             Status status = e.getStatus();
             assertEquals(StatusCode.BADREQUEST, status.getCode());
             String msg = "Unsupported node: type=" + type;
@@ -100,7 +440,7 @@ public class NodeUtilsTest extends TestBase {
 
     /**
      * Verify that {@link NodeUtils#checkNodeConnectorType(String)}
-     * throws an {@link VTNException} if the given node type is invalid.
+     * throws an {@link RpcException} if the given node type is invalid.
      *
      * @param type  A node connector type.
      */
@@ -108,7 +448,9 @@ public class NodeUtilsTest extends TestBase {
         try {
             checkNodeConnectorType(type);
             fail("Succeeded unexpectedly: type=" + type);
-        } catch (VTNException e) {
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+            assertEquals(null, e.getCause());
             Status status = e.getStatus();
             assertEquals(StatusCode.BADREQUEST, status.getCode());
             String msg = "Unsupported node connector: type=" + type;

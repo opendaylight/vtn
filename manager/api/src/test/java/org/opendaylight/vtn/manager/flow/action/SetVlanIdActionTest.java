@@ -90,7 +90,7 @@ public class SetVlanIdActionTest extends TestBase {
         short[] vlans = {Short.MIN_VALUE, 0, 1, 100, 4095, Short.MAX_VALUE};
         for (short vlan: vlans) {
             SetVlanIdAction act = new SetVlanIdAction(vlan);
-            jaxbTest(act, "setvlanid");
+            jaxbTest(act, SetVlanIdAction.class, "setvlanid");
         }
     }
 

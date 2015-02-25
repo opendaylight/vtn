@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -48,10 +48,11 @@ public class FlowAddTask extends RemoteFlowModTask {
      * Construct a new flow install task.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param vflow  A VTN flow to be installed.
      */
-    FlowAddTask(VTNManagerImpl mgr, VTNFlow vflow) {
-        super(mgr);
+    FlowAddTask(VTNManagerImpl mgr, TxContext ctx, VTNFlow vflow) {
+        super(mgr, ctx);
         vtnFlow = vflow;
     }
 
@@ -172,13 +173,14 @@ public class FlowAddTask extends RemoteFlowModTask {
             Node node = fent.getNode();
             ConnectionLocality cl = cnm.getLocalityStatus(node);
             if (cl == ConnectionLocality.LOCAL) {
-                LocalFlowAddTask task = new LocalFlowAddTask(mgr, fent);
+                LocalFlowAddTask task =
+                    new LocalFlowAddTask(mgr, getTxContext(), fent);
                 local.add(task);
                 mgr.postAsync(task);
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
             } else {
-                if (mgr.exists(node)) {
+                if (exists(node)) {
                     LOG.error("{}: " +
                               "Target node of flow entry is disconnected: {}",
                               mgr.getContainerName(), fent);
@@ -217,7 +219,8 @@ public class FlowAddTask extends RemoteFlowModTask {
         FlowGroupId gid = vtnFlow.getGroupId();
         if (remote != null && !remote.isEmpty()) {
             FlowRemoveTask task =
-                new FlowRemoveTask(mgr, gid, null, remote.iterator());
+                new FlowRemoveTask(mgr, getTxContext(), gid, null,
+                                   remote.iterator());
             task.run();
             task.getResult();
         }
@@ -264,7 +267,7 @@ public class FlowAddTask extends RemoteFlowModTask {
                 LOG.error("{}: Ingress flow must be installed to " +
                           "local node: {}", mgr.getContainerName(),
                           ingress);
-            } else if (mgr.exists(node)) {
+            } else if (exists(node)) {
                 LOG.error("{}: Target node of ingress flow entry is " +
                           "disconnected: {}", mgr.getContainerName(),
                           ingress);

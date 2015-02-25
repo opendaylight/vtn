@@ -61,7 +61,7 @@ public class DropActionTest extends TestBase {
     @Test
     public void testJAXB() {
         for (int i = 0; i < 10; i++) {
-            jaxbTest(new DropAction(), "drop");
+            jaxbTest(new DropAction(), DropAction.class, "drop");
         }
     }
 

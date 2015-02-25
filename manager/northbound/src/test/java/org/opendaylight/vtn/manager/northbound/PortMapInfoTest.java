@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -117,7 +117,8 @@ public class PortMapInfoTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link PortMapInfo} is mapped to XML root element.
+     * Ensure that {@link PortMapInfo} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
@@ -129,7 +130,8 @@ public class PortMapInfoTest extends TestBase {
                         PortMapConfig pmconf =
                             new PortMapConfig(node, port, vlan);
                         PortMapInfo pi = new PortMapInfo(pmconf, nc);
-                        jaxbTest(pi, "portmap");
+                        jaxbTest(pi, PortMapInfo.class, "portmap");
+                        jsonTest(pi, PortMapInfo.class);
                     }
                 }
             }

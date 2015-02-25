@@ -20,7 +20,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
@@ -28,15 +31,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector;
 
-import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
-import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
-import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
-import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
-import org.opendaylight.vtn.manager.flow.cond.InetMatch;
-import org.opendaylight.vtn.manager.flow.cond.L4Match;
-import org.opendaylight.vtn.manager.flow.cond.PortMatch;
-import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
-import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.flow.action.DropAction;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.PopVlanAction;
@@ -51,16 +45,26 @@ import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
+import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
+import org.opendaylight.vtn.manager.flow.cond.InetMatch;
+import org.opendaylight.vtn.manager.flow.cond.L4Match;
+import org.opendaylight.vtn.manager.flow.cond.PortMatch;
+import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
+import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.flow.filter.DropFilter;
 import org.opendaylight.vtn.manager.flow.filter.FilterType;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 
@@ -1030,7 +1034,7 @@ public abstract class TestBase extends Assert {
         long v = 1;
         try {
             do {
-                byte[] mac = NetUtils.longToByteArray6(v);
+                byte[] mac = EtherAddress.toBytes(v);
                 EthernetAddress ea = new EthernetAddress(mac);
                 list.add(ea);
                 v++;
@@ -1176,7 +1180,7 @@ public abstract class TestBase extends Assert {
         int v = 1;
         try {
             do {
-                byte[] addr = NetUtils.intToByteArray4(v);
+                byte[] addr = NumberUtils.toBytes(v);
                 list.add(InetAddress.getByAddress(addr));
                 v++;
             } while (list.size() < num);
@@ -1471,8 +1475,9 @@ public abstract class TestBase extends Assert {
      * Ensure that the given object is serializable.
      *
      * @param o  An object to be tested.
+     * @return  A deserialized object.
      */
-    protected static void serializeTest(Object o) {
+    protected static Object serializeTest(Object o) {
         // Serialize the given object.
         byte[] bytes = null;
         try {
@@ -1504,39 +1509,57 @@ public abstract class TestBase extends Assert {
             assertNotSame(o, newobj);
         }
         assertEquals(o, newobj);
+
+        return newobj;
+    }
+
+    /**
+     * Ensure that the given object is serializable.
+     *
+     * @param o    An object to be tested.
+     * @param cls  A class which indicates the type of object.
+     * @param <T>  The type of the object.
+     * @return  A deserialized object.
+     */
+    protected static <T> T serializeTest(T o, Class<T> cls) {
+        Object newobj = serializeTest(o);
+        assertEquals(cls, newobj.getClass());
+        return cls.cast(newobj);
     }
 
     /**
      * Ensure that the given object is mapped to XML root element.
      *
      * @param o         An object to be tested.
+     * @param cls       A class which indicates the type of object.
      * @param rootName  The name of expected root element.
+     * @param <T>       The type of the object.
      * @return  Deserialized object.
      */
-    protected static Object jaxbTest(Object o, String rootName) {
-        // Ensure that the class of the given class has XmlRootElement
-        // annotation.
-        Class<?> cl = o.getClass();
-        XmlRootElement xmlRoot = cl.getAnnotation(XmlRootElement.class);
+    protected static <T> T jaxbTest(T o, Class<T> cls, String rootName) {
+        // Ensure that the given class has XmlRootElement annotation.
+        XmlRootElement xmlRoot = cls.getAnnotation(XmlRootElement.class);
         assertNotNull(xmlRoot);
         assertEquals(rootName, xmlRoot.name());
 
         // Marshal the given object into XML.
-        byte[] bytes = null;
+        Marshaller m = createMarshaller(cls);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            JAXB.marshal(o, out);
-            bytes = out.toByteArray();
+            m.marshal(o, out);
         } catch (Exception e) {
             unexpected(e);
         }
+
+        byte[] bytes = out.toByteArray();
         assertTrue(bytes.length != 0);
 
         // Construct a new Java object from XML.
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        Unmarshaller um = createUnmarshaller(cls);
         Object newobj = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-            newobj = JAXB.unmarshal(in, cl);
+            newobj = um.unmarshal(in);
         } catch (Exception e) {
             unexpected(e);
         }
@@ -1544,7 +1567,62 @@ public abstract class TestBase extends Assert {
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
 
-        return newobj;
+        assertTrue(cls.isInstance(newobj));
+        return cls.cast(newobj);
+    }
+
+    /**
+     * Create JAXB marshaller for the given JAXB class.
+     *
+     * @param cls  A class mapped to XML root element.
+     * @return  An JAXB marshaller.
+     */
+    protected static Marshaller createMarshaller(Class<?> cls) {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(cls);
+            Marshaller m = jc.createMarshaller();
+            m.setEventHandler(new TestXmlEventHandler());
+            return m;
+        } catch (Exception e) {
+            unexpected(e);
+            return null;
+        }
+    }
+
+    /**
+     * Create JAXB unmarshaller for the given JAXB class.
+     *
+     * @param cls  A class mapped to XML root element.
+     * @return  An JAXB unmarshaller.
+     */
+    protected static Unmarshaller createUnmarshaller(Class<?> cls) {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(cls);
+            Unmarshaller um = jc.createUnmarshaller();
+            um.setEventHandler(new TestXmlEventHandler());
+            return um;
+        } catch (Exception e) {
+            unexpected(e);
+            return null;
+        }
+    }
+
+    /**
+     * Unmarshal the given XML using the given unmarshaller.
+     *
+     * @param um   An {@link Unmarshaller} instance.
+     * @param xml  A XML text.
+     * @param cls  A class which indicates the type of object.
+     * @param <T>  The type of the object to be deserialized.
+     * @return  The deserialized object.
+     * @throws JAXBException  Failed to unmarshal.
+     */
+    protected static <T> T unmarshal(Unmarshaller um, String xml,
+                                     Class<T> cls) throws JAXBException {
+        ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
+        Object o = um.unmarshal(in);
+        assertTrue(cls.isInstance(o));
+        return cls.cast(o);
     }
 
     /**

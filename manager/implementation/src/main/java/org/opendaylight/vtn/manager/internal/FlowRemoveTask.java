@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +70,7 @@ public class FlowRemoveTask extends RemoteFlowModTask {
      * Construct a new flow task to uninstall flow entries in a VTN flow.
      *
      * @param mgr      VTN Manager service.
+     * @param ctx      MD-SAL datastore transaction context.
      * @param gid      Identifier of the VTN flow.
      * @param ingress  A ingress flow of a VTN flow.
      *                 {@code null} can be specified if there is no need to
@@ -75,9 +78,9 @@ public class FlowRemoveTask extends RemoteFlowModTask {
      * @param it       A list iterator which contains flow entries except for
      *                 ingress flow.
      */
-    FlowRemoveTask(VTNManagerImpl mgr, FlowGroupId gid, FlowEntry ingress,
-                   Iterator<FlowEntry> it) {
-        super(mgr);
+    FlowRemoveTask(VTNManagerImpl mgr, TxContext ctx, FlowGroupId gid,
+                   FlowEntry ingress, Iterator<FlowEntry> it) {
+        super(mgr, ctx);
 
         groupSet = new HashSet<FlowGroupId>();
         groupSet.add(gid);
@@ -101,18 +104,19 @@ public class FlowRemoveTask extends RemoteFlowModTask {
      * Construct a new flow task to uninstall bulk flow entries.
      *
      * @param mgr      VTN Manager service.
+     * @param ctx      MD-SAL datastore transaction context.
      * @param gidset   A set of VTN flow identifiers to be removed.
      * @param ingress  A list of ingress flows.
      * @param entries  A list of flow entries except for ingress flow.
      */
-    FlowRemoveTask(VTNManagerImpl mgr, Set<FlowGroupId> gidset,
+    FlowRemoveTask(VTNManagerImpl mgr, TxContext ctx, Set<FlowGroupId> gidset,
                    List<FlowEntry> ingress, List<FlowEntry> entries) {
-        super(mgr);
+        super(mgr, ctx);
         groupSet = new HashSet<FlowGroupId>(gidset);
         ingressFlows = new ArrayList<FlowEntry>(ingress);
         flowEntries = new ArrayList<FlowEntry>(entries);
         VTNConfig vc = mgr.getVTNConfig();
-        taskTimeout = (long)vc.getRemoteBulkFlowModTimeout();
+        taskTimeout = (long)vc.getBulkFlowModTimeout();
     }
 
     /**
@@ -122,19 +126,7 @@ public class FlowRemoveTask extends RemoteFlowModTask {
      *          is returned.
      */
     FlowModResult getResult() {
-        long abs = System.currentTimeMillis() + taskTimeout;
-        FlowModResult ret = getResultAbs(abs);
-        if (ret == FlowModResult.SUCCEEDED) {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: VTN flow remove task has completed: {}",
-                          getVTNManager().getContainerName(), groupSet);
-            }
-        } else {
-            LOG.error("{}: Failed to remove VTN flows: result={}, group={}",
-                      getVTNManager().getContainerName(), ret, groupSet);
-        }
-
-        return ret;
+        return getResult(taskTimeout);
     }
 
     /**
@@ -253,13 +245,13 @@ public class FlowRemoveTask extends RemoteFlowModTask {
             ConnectionLocality cl = cnm.getLocalityStatus(node);
             if (cl == ConnectionLocality.LOCAL) {
                 LocalFlowRemoveTask task =
-                    new LocalFlowRemoveTask(mgr, fent);
+                    new LocalFlowRemoveTask(mgr, getTxContext(), fent);
                 local.add(task);
                 mgr.postAsync(task);
             } else if (cl == ConnectionLocality.NOT_LOCAL) {
                 remote.add(fent);
             } else {
-                if (mgr.exists(node)) {
+                if (exists(node)) {
                     LOG.warn("{}: " +
                              "Target node of flow entry is not connected: {}",
                              mgr.getContainerName(), fent);
@@ -271,5 +263,45 @@ public class FlowRemoveTask extends RemoteFlowModTask {
         }
 
         return local;
+    }
+
+    /**
+     * Invoked when the result of this task has been set.
+     *
+     * @param ret  A {@link FlowModResult} instance.
+     * @return  {@code ret}.
+     */
+    private FlowModResult completed(FlowModResult ret) {
+        if (ret == FlowModResult.SUCCEEDED) {
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}: VTN flow remove task has completed: {}",
+                          getVTNManager().getContainerName(), groupSet);
+            }
+        } else {
+            LOG.error("{}: Failed to remove VTN flows: result={}, group={}",
+                      getVTNManager().getContainerName(), ret, groupSet);
+        }
+
+        return ret;
+    }
+
+    // FlowModTask
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowModResult get() {
+        // Use internal timeout.
+        return getResult();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowModResult get(long timeout, TimeUnit unit)
+        throws InterruptedException, TimeoutException {
+        return completed(super.get(timeout, unit));
     }
 }

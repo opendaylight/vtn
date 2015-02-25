@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,8 +14,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.action.SetVlanPcp;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -51,7 +51,7 @@ public final class SetVlanPcpActionImpl extends FlowActionImpl {
         super(act);
 
         priority = act.getPriority();
-        if (!MiscUtils.isVlanPriorityValid(priority)) {
+        if (!ProtocolUtils.isVlanPriorityValid(priority)) {
             String msg = getErrorMessage(act, "Invalid VLAN priority: ",
                                          priority);
             throw new VTNException(StatusCode.BADREQUEST, msg);

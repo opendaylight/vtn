@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -32,10 +32,11 @@ import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -74,7 +75,7 @@ public class FlowActionImplTest extends TestBase {
         do {
             long v = rand.nextLong() & MACADDR_MASK;
             if (v != 0) {
-                byte[] addr = NetUtils.longToByteArray6(v);
+                byte[] addr = EtherAddress.toBytes(v);
                 actions.add(new SetDlSrcAction(addr));
                 count++;
             }
@@ -84,7 +85,7 @@ public class FlowActionImplTest extends TestBase {
         do {
             long v = rand.nextLong() & MACADDR_MASK;
             if (v != 0) {
-                byte[] addr = NetUtils.longToByteArray6(v);
+                byte[] addr = EtherAddress.toBytes(v);
                 actions.add(new SetDlDstAction(addr));
                 count++;
             }
@@ -98,7 +99,7 @@ public class FlowActionImplTest extends TestBase {
         count = 0;
         do {
             int v = rand.nextInt();
-            byte[] addr = NetUtils.intToByteArray4(v);
+            byte[] addr = NumberUtils.toBytes(v);
             InetAddress iaddr = InetAddress.getByAddress(addr);
             actions.add(new SetInet4SrcAction(iaddr));
             count++;
@@ -107,7 +108,7 @@ public class FlowActionImplTest extends TestBase {
         count = 0;
         do {
             int v = rand.nextInt();
-            byte[] addr = NetUtils.intToByteArray4(v);
+            byte[] addr = NumberUtils.toBytes(v);
             InetAddress iaddr = InetAddress.getByAddress(addr);
             actions.add(new SetInet4DstAction(iaddr));
             count++;

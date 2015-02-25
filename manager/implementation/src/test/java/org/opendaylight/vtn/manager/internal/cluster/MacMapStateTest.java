@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,6 +31,8 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 
 /**
  * JUnit test for {@link MacMapState}.
@@ -1026,7 +1028,7 @@ public class MacMapStateTest extends TestBase {
         // all switch ports.
         PortFilter filter = new PortFilter() {
             @Override
-            public boolean accept(NodeConnector port, PortProperty prop) {
+            public boolean accept(NodeConnector port, VtnPort vport) {
                 return true;
             }
         };

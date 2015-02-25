@@ -68,7 +68,7 @@ public class PassFilterTest extends TestBase {
     @Test
     public void testJAXB() {
         for (int i = 0; i < 10; i++) {
-            jaxbTest(new PassFilter(), "pass");
+            jaxbTest(new PassFilter(), PassFilter.class, "pass");
         }
     }
 

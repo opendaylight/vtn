@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,15 +24,23 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 
-import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VlanMapPortFilter;
+import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
+import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -54,7 +62,7 @@ public final class VlanMapImpl implements VBridgeNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 5510476699760360824L;
+    private static final long serialVersionUID = 4123355894114921752L;
 
     /**
      * Logger instance.
@@ -145,10 +153,11 @@ public final class VlanMapImpl implements VBridgeNode {
      * </p>
      *
      * @param mgr     VTN Manager service.
+     * @param ctx    A runtime context for MD-SAL datastore transaction task.
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    VNodeState resume(VTNManagerImpl mgr, VNodeState bstate) {
+    VNodeState resume(VTNManagerImpl mgr, TxContext ctx, VNodeState bstate) {
         // Register this VLAN mapping to the global resource manager.
         IVTNResourceManager resMgr = mgr.getResourceManager();
         short vlan = vlanMapConfig.getVlan();
@@ -163,7 +172,20 @@ public final class VlanMapImpl implements VBridgeNode {
             // FALLTHROUGH
         }
 
-        boolean valid = (node == null) ? true : checkNode(mgr, node);
+        boolean valid;
+        if (node == null) {
+            valid = true;
+        } else {
+            try {
+                valid = checkNode(ctx, node);
+            } catch (Exception e) {
+                LOG.error(mgr.getContainerName() + ":" + mapPath +
+                          ": Failed to determine state of VLAN mapping: " +
+                          nvlan, e);
+                valid = false;
+            }
+        }
+
         if (valid) {
             ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
             db.put(mapPath, Boolean.valueOf(valid));
@@ -173,28 +195,29 @@ public final class VlanMapImpl implements VBridgeNode {
     }
 
     /**
-     * Invoked when a node is added, removed, or changed.
+     * Invoked when a node has been added or removed.
      *
-     * @param mgr   VTN Manager service.
-     * @param db    Virtual node state DB.
+     * @param mgr     VTN Manager service.
+     * @param db      Virtual node state DB.
      * @param bstate  Current bridge state value.
-     * @param node  Node being updated.
-     * @param type  Type of update.
+     * @param ev      A {@link VtnNodeEvent} instance.
      * @return  New bridge state value.
      */
     VNodeState notifyNode(VTNManagerImpl mgr,
                           ConcurrentMap<VTenantPath, Object> db,
-                          VNodeState bstate, Node node, UpdateType type) {
+                          VNodeState bstate, VtnNodeEvent ev) {
         boolean cur = isValid(db);
         Node myNode = vlanMapConfig.getNode();
+        SalNode snode = ev.getSalNode();
+        Node node = snode.getAdNode();
         if (myNode == null || !myNode.equals(node)) {
             return getBridgeState(cur, bstate);
         }
 
         boolean valid;
-        switch (type) {
-        case ADDED:
-            valid = mgr.hasEdgePort(node);
+        switch (ev.getUpdateType()) {
+        case CREATED:
+            valid = InventoryUtils.hasEdgePort(ev.getVtnNode());
             break;
 
         case REMOVED:
@@ -216,57 +239,34 @@ public final class VlanMapImpl implements VBridgeNode {
      * @param mgr     VTN Manager service.
      * @param db      Virtual node state DB.
      * @param bstate  Current bridge state value.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param ev      A {@link VtnPortEvent} instance.
      * @return  New bridge state value.
+     * @throws VTNException  An error occurred.
      */
     VNodeState notifyNodeConnector(VTNManagerImpl mgr,
                                    ConcurrentMap<VTenantPath, Object> db,
-                                   VNodeState bstate, NodeConnector nc,
-                                   VNodeState pstate, UpdateType type) {
+                                   VNodeState bstate, VtnPortEvent ev)
+        throws VTNException {
         boolean cur = isValid(db);
-        Node node = nc.getNode();
-        if (node == null) {
-            return getBridgeState(cur, bstate);
-        }
-
+        SalPort sport = ev.getSalPort();
+        SalNode snode = sport.getSalNode();
+        Node node = snode.getAdNode();
         Node myNode = vlanMapConfig.getNode();
         if (myNode == null || !myNode.equals(node)) {
             return getBridgeState(cur, bstate);
         }
 
-        // VLAN mapping can work if at least one physical switch port
-        // is up.
-        boolean valid = (pstate == VNodeState.UP && mgr.isEdgePort(nc))
-            ? true : mgr.hasEdgePort(node);
+        // VLAN mapping can work if at least one physical switch port is up.
+        VtnPort vport = ev.getVtnPort();
+        boolean valid = InventoryUtils.isEnabledEdge(vport);
+        if (!valid) {
+            InventoryReader reader = ev.getTxContext().getInventoryReader();
+            VtnNode vnode = reader.get(snode);
+            valid = InventoryUtils.hasEdgePort(vnode);
+        }
 
         setValid(db, cur, valid);
         return getBridgeState(valid, bstate);
-    }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param bstate  Current bridge state value.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     * @return  New bridge state value.
-     */
-    VNodeState edgeUpdate(VTNManagerImpl mgr,
-                          ConcurrentMap<VTenantPath, Object> db,
-                          VNodeState bstate, EdgeUpdateState estate) {
-        boolean cur = isValid(db);
-        Node node = vlanMapConfig.getNode();
-        if (node != null && estate.contains(node)) {
-            boolean valid = estate.hasEdgePort(mgr, node);
-            setValid(db, cur, valid);
-            cur = valid;
-        }
-
-        return getBridgeState(cur, bstate);
     }
 
     /**
@@ -291,7 +291,13 @@ public final class VlanMapImpl implements VBridgeNode {
         HashSet<NodeConnector> ports = new HashSet<NodeConnector>();
         VlanMapPortFilter filter =
             VlanMapPortFilter.create(resMgr, node, vlan, sent);
-        mgr.collectUpEdgePorts(ports, filter);
+        InventoryReader reader = pctx.getTxContext().getInventoryReader();
+        try {
+            reader.collectUpEdgePorts(ports, filter);
+        } catch (Exception e) {
+            mgr.logException(LOG, mapPath, e);
+            return;
+        }
 
         if (ports.isEmpty()) {
             LOG.trace("{}:{}: transmit: No port is available",
@@ -334,12 +340,17 @@ public final class VlanMapImpl implements VBridgeNode {
      * Determine whether the given node is suitable for the VLAN mapping or
      * not.
      *
-     * @param mgr   VTN Manager service.
+     * @param ctx    A runtime context for MD-SAL datastore transaction task.
      * @param node  Node to be tested.
      * @return  {@code true} is returned only if the given node is valid.
+     * @throws VTNException  An error occurred.
      */
-    private boolean checkNode(VTNManagerImpl mgr, Node node) {
-        return (mgr.exists(node) && mgr.hasEdgePort(node));
+    private boolean checkNode(TxContext ctx, Node node)
+        throws VTNException {
+        SalNode snode = SalNode.create(node);
+        InventoryReader reader = ctx.getInventoryReader();
+        VtnNode vnode = reader.get(snode);
+        return InventoryUtils.hasEdgePort(vnode);
     }
 
     /**
@@ -380,12 +391,14 @@ public final class VlanMapImpl implements VBridgeNode {
      * Register a new VLAN mapping to the resource manager.
      *
      * @param mgr    VTN manager service.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param bpath  Path to the parent bridge.
      * @param nvlan  A {@link NodeVlan} instance which contains a pair of
      *               {@link Node} instance and VLAN ID.
      * @throws VTNException  An error occurred.
      */
-    void register(VTNManagerImpl mgr, VBridgePath bpath, NodeVlan nvlan)
+    void register(VTNManagerImpl mgr, TxContext ctx, VBridgePath bpath,
+                  NodeVlan nvlan)
         throws VTNException {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         MapReference ref;
@@ -418,7 +431,7 @@ public final class VlanMapImpl implements VBridgeNode {
 
         // Initialize the state of the VLAN mapping.
         Node node = vlanMapConfig.getNode();
-        boolean valid = (node == null) ? true : checkNode(mgr, node);
+        boolean valid = (node == null) ? true : checkNode(ctx, node);
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         db.put(mapPath, Boolean.valueOf(valid));
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,8 +12,10 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.Status;
@@ -123,7 +125,7 @@ public abstract class InetMatchImpl implements PacketMatch {
             dscp = DSCP_ANY;
         } else {
             dscp = d.byteValue();
-            if (!MiscUtils.isDscpValid(dscp)) {
+            if (!ProtocolUtils.isDscpValid(dscp)) {
                 String msg = "Invalid DSCP field value: " + d;
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }
@@ -250,7 +252,7 @@ public abstract class InetMatchImpl implements PacketMatch {
     @Override
     public int hashCode() {
         int h = (int)(((int)protocol << Byte.SIZE) |
-                      (dscp & MiscUtils.MASK_BYTE));
+                      (dscp & NumberUtils.MASK_BYTE));
         return h;
     }
 

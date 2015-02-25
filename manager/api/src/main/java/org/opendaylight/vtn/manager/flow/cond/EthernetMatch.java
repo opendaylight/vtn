@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,8 +19,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.vtn.manager.util.ByteUtils;
+
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -392,7 +393,7 @@ public final class EthernetMatch implements Serializable {
     private EthernetAddress toEthernetAddress(String mac, String desc) {
         if (mac != null) {
             try {
-                byte[] b = HexEncode.bytesFromHexString(mac);
+                byte[] b = ByteUtils.toBytes(mac);
                 return new EthernetAddress(b);
             } catch (Exception e) {
                 StringBuilder builder = new StringBuilder("Invalid ");

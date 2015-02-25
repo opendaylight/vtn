@@ -16,13 +16,14 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.util.Ip4Network;
+
 import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * JUnit test for {@link FlowMatch}.
@@ -199,10 +200,8 @@ public class FlowMatchTest extends TestBase {
         // L3 conditions (with netmask)
         Short inetSrcSuff = Short.valueOf((short)24);
         Short inetDstSuff = Short.valueOf((short)31);
-        InetAddress srcSuff =
-            NetUtils.getInetNetworkMask(inetSrcSuff.intValue(), false);
-        InetAddress dstSuff =
-            NetUtils.getInetNetworkMask(inetDstSuff.intValue(), false);
+        InetAddress srcSuff = Ip4Network.getInetMask(inetSrcSuff.intValue());
+        InetAddress dstSuff = Ip4Network.getInetMask(inetDstSuff.intValue());
 
         matchTypes = new MatchType[]{
             MatchType.NW_SRC, MatchType.NW_DST,
@@ -570,7 +569,7 @@ public class FlowMatchTest extends TestBase {
                         FlowMatch fm = (idx == null)
                             ? new FlowMatch(em, im, lm)
                             : new FlowMatch(idx.intValue(), em, im, lm);
-                        jaxbTest(fm, "flowmatch");
+                        jaxbTest(fm, FlowMatch.class, "flowmatch");
                     }
                 }
             }

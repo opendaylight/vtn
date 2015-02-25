@@ -176,7 +176,7 @@ public class PortMatchTest extends TestBase {
         for (Integer from: fromPorts) {
             for (Integer to: toPorts) {
                 PortMatch pm = new PortMatch(from, to);
-                jaxbTest(pm, "portmatch");
+                jaxbTest(pm, PortMatch.class, "portmatch");
             }
         }
     }

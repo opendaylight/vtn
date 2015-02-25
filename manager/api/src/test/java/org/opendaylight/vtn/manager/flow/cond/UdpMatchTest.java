@@ -125,7 +125,7 @@ public class UdpMatchTest extends TestBase {
         for (PortMatch src: createPortMatches()) {
             for (PortMatch dst: createPortMatches()) {
                 UdpMatch um = new UdpMatch(src, dst);
-                jaxbTest(um, "udpmatch");
+                jaxbTest(um, UdpMatch.class, "udpmatch");
             }
         }
     }

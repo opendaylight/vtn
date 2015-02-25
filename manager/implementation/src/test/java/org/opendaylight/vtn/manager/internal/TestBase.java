@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,8 +24,19 @@ import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.annotation.XmlRootElement;
+
 import org.junit.After;
 import org.junit.Assert;
+
+import com.google.common.base.Optional;
+import com.google.common.util.concurrent.CheckedFuture;
+import com.google.common.util.concurrent.Futures;
+
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.PathCost;
@@ -46,11 +57,19 @@ import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
-import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
+import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
+
+import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -64,13 +83,28 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.core.UpdateType;
+
+import org.opendaylight.yangtools.yang.binding.DataObject;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLinkBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceivedBuilder;
+import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
 
 /**
  * Abstract base class for JUnit tests.
  */
 public abstract class TestBase extends Assert {
+    /**
+     * XML declaration.
+     */
+    public static final String  XML_DECLARATION =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+
     /**
      * String Declaration for Mac Unavilable.
      */
@@ -320,7 +354,7 @@ public abstract class TestBase extends Assert {
         if (src != null) {
             try {
                 byte[] raw = src.serialize();
-                int nbits = raw.length * NetUtils.NumBitsInAByte;
+                int nbits = raw.length * Byte.SIZE;
                 dst.deserialize(raw, 0, nbits);
             } catch (Exception e) {
                 unexpected(e);
@@ -748,7 +782,7 @@ public abstract class TestBase extends Assert {
             return null;
         }
 
-        byte[] addr = NetUtils.longToByteArray6(mac);
+        byte[] addr = EtherAddress.toBytes(mac);
         EthernetAddress eaddr = null;
         try {
             eaddr = new EthernetAddress(addr);
@@ -940,18 +974,19 @@ public abstract class TestBase extends Assert {
      * @return A {@link PacketContext} object.
      */
     protected PacketContext createPacketContext(Ethernet eth, NodeConnector nc) {
-        PacketContext pctx = null;
-        RawPacket raw = null;
+        PacketReceivedBuilder builder = new PacketReceivedBuilder();
         try {
-            raw = new RawPacket(eth.serialize());
+            builder.setPayload(eth.serialize());
+            SalPort ingress = SalPort.create(nc);
+            assertNotNull(ingress);
+            PacketInEvent pin =
+                new PacketInEvent(null, builder.build(), ingress);
+            return new PacketContext(pin);
         } catch (Exception e) {
             unexpected(e);
         }
 
-        raw.setIncomingNodeConnector(copy(nc));
-        pctx = new PacketContext(raw, eth);
-
-        return pctx;
+        return null;
     }
 
     /**
@@ -1094,8 +1129,8 @@ public abstract class TestBase extends Assert {
      */
     protected static IPv4 createIPv4(int src, int dst, short proto,
                                      byte dscp) {
-        byte[] srcAddr = NetUtils.intToByteArray4(src);
-        byte[] dstAddr = NetUtils.intToByteArray4(dst);
+        byte[] srcAddr = NumberUtils.toBytes(src);
+        byte[] dstAddr = NumberUtils.toBytes(dst);
         return createIPv4(srcAddr, dstAddr, proto, dscp);
     }
 
@@ -1572,6 +1607,105 @@ public abstract class TestBase extends Assert {
     }
 
     /**
+     * Ensure that the given object is mapped to XML root element.
+     *
+     * @param o         An object to be tested.
+     * @param cls       The type of the given object.
+     * @param rootName  The name of expected root element.
+     * @param <T>       The type of the given object.
+     * @return  Deserialized object.
+     */
+    protected static <T> T jaxbTest(T o, Class<T> cls, String rootName) {
+        // Ensure that the class of the given class has XmlRootElement
+        // annotation.
+        XmlRootElement xmlRoot = cls.getAnnotation(XmlRootElement.class);
+        assertNotNull(xmlRoot);
+        assertEquals(rootName, xmlRoot.name());
+
+        // Marshal the given object into XML.
+        Marshaller m = createMarshaller(cls);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            m.marshal(o, out);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        byte[] bytes = out.toByteArray();
+        assertTrue(bytes.length != 0);
+
+        // Construct a new Java object from XML.
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        Unmarshaller um = createUnmarshaller(cls);
+        Object newobj = null;
+        try {
+            newobj = um.unmarshal(in);
+        } catch (Exception e) {
+            unexpected(e);
+        }
+
+        assertNotSame(o, newobj);
+        assertEquals(o, newobj);
+
+        assertTrue(cls.isInstance(newobj));
+        return cls.cast(newobj);
+    }
+
+    /**
+     * Create JAXB marshaller for the given JAXB class.
+     *
+     * @param cls  A class mapped to XML root element.
+     * @return  An JAXB marshaller.
+     */
+    protected static Marshaller createMarshaller(Class<?> cls) {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(cls);
+            Marshaller m = jc.createMarshaller();
+            m.setEventHandler(new TestXmlEventHandler());
+            return m;
+        } catch (Exception e) {
+            unexpected(e);
+            return null;
+        }
+    }
+
+    /**
+     * Create JAXB unmarshaller for the given JAXB class.
+     *
+     * @param cls  A class mapped to XML root element.
+     * @return  An JAXB unmarshaller.
+     */
+    protected static Unmarshaller createUnmarshaller(Class<?> cls) {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(cls);
+            Unmarshaller um = jc.createUnmarshaller();
+            um.setEventHandler(new TestXmlEventHandler());
+            return um;
+        } catch (Exception e) {
+            unexpected(e);
+            return null;
+        }
+    }
+
+    /**
+     * Unmarshal the given XML using the given unmarshaller.
+     *
+     * @param um   An {@link Unmarshaller} instance.
+     * @param xml  A XML text.
+     * @param cls  A class which indicates the type of object.
+     * @param <T>  The type of the object to be deserialized.
+     * @return  The deserialized object.
+     * @throws JAXBException  Failed to unmarshal.
+     */
+    protected static <T> T unmarshal(Unmarshaller um, String xml,
+                                     Class<T> cls) throws JAXBException {
+        ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
+        Object o = um.unmarshal(in);
+        assertTrue(cls.isInstance(o));
+        return cls.cast(o);
+    }
+
+    /**
      * Ensure that the given object is serializable.
      *
      * <p>
@@ -1688,6 +1822,16 @@ public abstract class TestBase extends Assert {
 
         // Delete the specified directory.
         file.delete();
+    }
+
+    /**
+     * Return a path to the default container configuration directory.
+     *
+     * @return  A {@link File} instance which represents the default container
+     *          configuration directory.
+     */
+    protected static File getConfigDir() {
+        return getConfigDir(GlobalConstants.DEFAULT.toString());
     }
 
     /**
@@ -2119,6 +2263,82 @@ public abstract class TestBase extends Assert {
                                               short vlan) {
         checkOutEthernetPacket(msg, eth, ethType, srcMac, destMac, vlan, null,
                                (short)-1, null, null, null, null);
+    }
+
+
+    /**
+     * Create a response of read request on a MD-SAL transaction.
+     *
+     * @param obj  An object to be read.
+     * @return  A {@link CheckedFuture} instance.
+     * @param <T>  The type of the data object.
+     */
+    protected static <T extends DataObject> CheckedFuture<Optional<T>, ReadFailedException> getReadResult(
+        T obj) {
+        Optional<T> opt = Optional.fromNullable(obj);
+        return Futures.<Optional<T>, ReadFailedException>
+            immediateCheckedFuture(opt);
+    }
+
+    /**
+     * Create a {@link VtnPortBuilder} instance corresponding to an enabled
+     * edge port.
+     *
+     * @param sport    A {@link SalPort} instance.
+     */
+    protected static VtnPortBuilder createVtnPortBuilder(SalPort sport) {
+        return createVtnPortBuilder(sport, Boolean.TRUE, true);
+    }
+
+    /**
+     * Create a {@link VtnPortBuilder} instance.
+     *
+     * @param sport    A {@link SalPort} instance.
+     * @param enabled  The state of the port.
+     * @param edge     Determine edge port or not.
+     */
+    protected static VtnPortBuilder createVtnPortBuilder(
+        SalPort sport, Boolean enabled, boolean edge) {
+        String name = "sw" + sport.getNodeNumber() + "-eth" +
+            sport.getPortNumber();
+        VtnPortBuilder builder = new VtnPortBuilder();
+        builder.setCost(Long.valueOf(1000)).
+            setId(sport.getNodeConnectorId()).setName(name).
+            setEnabled(enabled);
+
+        if (!edge) {
+            PortLinkBuilder pbuilder = new PortLinkBuilder();
+            long n = sport.getNodeNumber() + 100L;
+            NodeConnectorId peer = new SalPort(n, sport.getPortNumber()).
+                getNodeConnectorId();
+            pbuilder.setLinkId(new LinkId("isl:" + name)).
+                setPeer(peer);
+            List<PortLink> list = new ArrayList<>();
+            list.add(pbuilder.build());
+            builder.setPortLink(list);
+        }
+
+        return builder;
+    }
+
+    /**
+     * Generate tri-state boolean value.
+     *
+     * @param b  A {@link Boolean} instance.
+     * @return
+     *   {@link Boolean#TRUE} if {@code b} is {@code null}.
+     *   {@link Boolean#FALSE} if {@code b} is {@link Boolean#TRUE}.
+     *   {@code null} if {@code b} is {@link Boolean#FALSE}.
+     */
+    protected static Boolean triState(Boolean b) {
+        if (b == null) {
+            return Boolean.TRUE;
+        }
+        if (Boolean.TRUE.equals(b)) {
+            return Boolean.FALSE;
+        }
+
+        return null;
     }
 
     /**

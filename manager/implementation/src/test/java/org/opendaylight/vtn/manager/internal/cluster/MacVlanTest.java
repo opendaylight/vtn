@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,13 +19,14 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.TestDataLink;
 import org.opendaylight.vtn.manager.internal.TestDataLinkHost;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -72,9 +73,16 @@ public class MacVlanTest extends TestBase {
         short[] vlans = new short[] {0, 1, 1000, 4095};
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan : vlans) {
-                byte[] mac = (ea == null) ? null : ea.getValue();
+                byte[] mac;
+                long macLongVal;
+                if (ea == null) {
+                    mac = null;
+                    macLongVal = 0;
+                } else {
+                    mac = ea.getValue();
+                    macLongVal = EtherAddress.toLong(mac);
+                }
                 MacVlan mv = new MacVlan(mac, vlan);
-                long macLongVal = NetUtils.byteArray6ToLong(mac);
                 long encoded = ((macLongVal & MASK_MAC) << NBITS_VLAN_ID) |
                     ((long)vlan & MASK_VLAN_ID);
                 assertEquals(macLongVal, mv.getMacAddress());
@@ -146,7 +154,7 @@ public class MacVlanTest extends TestBase {
             invaddrs.add((rand.nextLong() & MASK_MAC) | BIT_MULTICAST);
         }
         for (Long addr: invaddrs) {
-            byte[] raw = NetUtils.longToByteArray6(addr.longValue());
+            byte[] raw = EtherAddress.toBytes(addr.longValue());
             EthernetAddress eth = null;
             try {
                 eth = new EthernetAddress(raw);
@@ -212,8 +220,15 @@ public class MacVlanTest extends TestBase {
         set.clear();
         for (EthernetAddress ea : ethers) {
             for (short vlan: vlans) {
-                byte[] mac = (ea == null) ? null : ea.getValue();
-                long macLongVal = NetUtils.byteArray6ToLong(mac);
+                byte[] mac;
+                long macLongVal;
+                if (ea == null) {
+                    mac = null;
+                    macLongVal = 0;
+                } else {
+                    mac = ea.getValue();
+                    macLongVal = EtherAddress.toLong(mac);
+                }
                 MacVlan mv1 = new MacVlan(macLongVal, vlan);
                 MacVlan mv2 = new MacVlan(macLongVal, vlan);
                 testEquals(set, mv1, mv2);
@@ -235,11 +250,18 @@ public class MacVlanTest extends TestBase {
 
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan: vlans) {
-                byte[] mac = (ea == null) ? null : ea.getValue();
+                byte[] mac;
+                long lmac;
+                if (ea == null) {
+                    mac = null;
+                    lmac = 0;
+                } else {
+                    mac = ea.getValue();
+                    lmac = EtherAddress.toLong(mac);
+                }
                 MacVlan mvlan = new MacVlan(mac, vlan);
-                long lmac = NetUtils.byteArray6ToLong(mac);
                 String c = (lmac == MacVlan.UNDEFINED)
-                    ? null : "addr=" + HexEncode.bytesToHexStringFormat(mac);
+                    ? null : "addr=" + ByteUtils.toHexString(mac);
                 String v = "vlan=" + vlan;
 
                 StringBuilder builder = new StringBuilder();

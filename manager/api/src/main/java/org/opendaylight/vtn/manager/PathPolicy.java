@@ -41,9 +41,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
  *   {@link org.opendaylight.vtn.manager.flow.cond.FlowCondition Flow condition}
  *   is used to determine path policy to be applied for packet routing.
  * </p>
- * <p>
- *   Currently only one path policy can be defined.
- * </p>
  *
  * <h4>Example JSON</h4>
  * <pre class="prettyprint lang-json">
@@ -89,7 +86,7 @@ public final class PathPolicy implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1047984171405025032L;
+    private static final long serialVersionUID = -7534290274507861993L;
 
     /**
      * The pseudo cost value which represents the cost is not defined.
@@ -100,8 +97,8 @@ public final class PathPolicy implements Serializable {
      * The identifier of this path policy.
      * <ul>
      *   <li>
-     *     Current VTN Manager can define only one path policy.
-     *     So the value of this attribute must be <strong>1</strong>.
+     *     The range of value that can be specified is from
+     *     <strong>1</strong> to <strong>3</strong>.
      *   </li>
      * </ul>
      */
@@ -266,12 +263,13 @@ public final class PathPolicy implements Serializable {
      * Construct a new instance without specifying policy identifier.
      *
      * @param id       The identifier of the path policy.
+     *                 {@code null} means that the identifier is not specified.
      * @param defcost  The default cost for unspecified link.
      * @param costs    A list of {@link PathCost} instances whcih describes
      *                 the cost of using the switch link.
      * @see #PathPolicy(int, long, List)
      */
-    private PathPolicy(Integer id, long defcost, List<PathCost> costs) {
+    public PathPolicy(Integer id, long defcost, List<PathCost> costs) {
         policyId = id;
         defaultCost = defcost;
         if (costs != null && !costs.isEmpty()) {
@@ -298,8 +296,8 @@ public final class PathPolicy implements Serializable {
      *   The identifier of the path policy.
      *   <ul>
      *     <li>
-     *       Current VTN Manager can define only one path policy.
-     *       So the value of this attribute must be <strong>1</strong>.
+     *       The range of value that can be specified is from
+     *       <strong>1</strong> to <strong>3</strong>.
      *     </li>
      *   </ul>
      * @param defcost

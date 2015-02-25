@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,8 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.net.InetAddress;
 
 import org.opendaylight.vtn.manager.VBridgePath;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 /**
@@ -129,7 +131,7 @@ public class MacTableEntryId extends ClusterEventId {
     @Override
     public int hashCode() {
         return super.hashCode() ^ mapPath.hashCode() ^
-            MiscUtils.hashCode(macAddress);
+            NumberUtils.hashCode(macAddress);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -113,7 +113,7 @@ public class VlanMapTest extends TestBase {
             for (Node node: createNodes(3)) {
                 for (short vlan: vlans) {
                     VlanMap vlmap = new VlanMap(id, node, vlan);
-                    jaxbTest(vlmap, "vlanmap");
+                    jaxbTest(vlmap, VlanMap.class, "vlanmap");
                 }
             }
         }

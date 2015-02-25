@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,8 @@ import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenantPath;
+
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -38,7 +40,7 @@ public abstract class AbstractInterface implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 302872890426044663L;
+    private static final long serialVersionUID = -8695908264365793708L;
 
     /**
      * The parent node which contains this virtual interface.
@@ -177,6 +179,7 @@ public abstract class AbstractInterface implements Serializable {
      * </p>
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param iconf  Interface configuration.
      * @param all    If {@code true} is specified, all attributes of the
      *               interface are modified. In this case, {@code null} in
@@ -186,7 +189,7 @@ public abstract class AbstractInterface implements Serializable {
      * @return  {@code true} if the configuration is actually changed.
      *          Otherwise {@code false}.
      */
-    final boolean setVInterfaceConfig(VTNManagerImpl mgr,
+    final boolean setVInterfaceConfig(VTNManagerImpl mgr, TxContext ctx,
                                       VInterfaceConfig iconf, boolean all) {
         VInterfaceConfig cf = (all) ? resolve(iconf) : merge(iconf);
         if (cf.equals(ifConfig)) {
@@ -203,7 +206,7 @@ public abstract class AbstractInterface implements Serializable {
         VNodeState state;
         if (changed) {
             // Need to change interface state.
-            state = changeEnableState(mgr, db, ist, newen.booleanValue());
+            state = changeEnableState(mgr, ctx, db, ist, newen.booleanValue());
         } else {
             state = ist.getState();
         }
@@ -223,13 +226,15 @@ public abstract class AbstractInterface implements Serializable {
      * </p>
      *
      * @param mgr      VTN Manager service.
+     * @param ctx      A runtime context for MD-SAL datastore transaction task.
      * @param prstate  Current state of the parent node.
      * @return  New state of the parent node.
      */
-    final VNodeState resume(VTNManagerImpl mgr, VNodeState prstate) {
+    final VNodeState resume(VTNManagerImpl mgr, TxContext ctx,
+                            VNodeState prstate) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VInterfaceState ist = getIfState(db);
-        VNodeState state = resuming(mgr, db, ist);
+        VNodeState state = resuming(mgr, db, ctx, ist);
         if (!isEnabled()) {
             // State of disabled interface must be DOWN.
             state = VNodeState.DOWN;
@@ -500,6 +505,7 @@ public abstract class AbstractInterface implements Serializable {
      * </p>
      *
      * @param mgr      VTN Manager service.
+     * @param ctx      MD-SAL datastore transaction context.
      * @param db       Virtual node state DB.
      * @param ist      Current runtime state of this interface.
      * @param enabled  {@code true} is passed if this interface has been
@@ -509,8 +515,9 @@ public abstract class AbstractInterface implements Serializable {
      * @return  New state of this interface.
      */
     protected abstract VNodeState changeEnableState(
-        VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        VInterfaceState ist, boolean enabled);
+        VTNManagerImpl mgr, TxContext ctx,
+        ConcurrentMap<VTenantPath, Object> db, VInterfaceState ist,
+        boolean enabled);
 
     /**
      * Invoked when this interface is going to be resuming from the
@@ -518,12 +525,13 @@ public abstract class AbstractInterface implements Serializable {
      *
      * @param mgr  VTN Manager service.
      * @param db   Virtual node state DB.
+     * @param ctx  A runtime context for MD-SAL datastore transaction task.
      * @param ist  Current state of this interface.
      * @return  New state of this interface.
      */
     protected abstract VNodeState resuming(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        VInterfaceState ist);
+        TxContext ctx, VInterfaceState ist);
 
     /**
      * Invoked when this interface is going to be destroyed.

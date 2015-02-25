@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,6 +27,9 @@ import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
@@ -35,12 +38,14 @@ import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RedirectFlowException;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
-import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
-import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
-import org.opendaylight.vtn.manager.internal.packet.Inet4Packet;
-import org.opendaylight.vtn.manager.internal.packet.L4Packet;
-import org.opendaylight.vtn.manager.internal.packet.TcpPacket;
-import org.opendaylight.vtn.manager.internal.packet.UdpPacket;
+import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
+import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.Inet4Packet;
+import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
+import org.opendaylight.vtn.manager.internal.packet.cache.TcpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.UdpPacket;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
 
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -56,8 +61,6 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * {@code PacketContext} class describes the context of received packet.
@@ -90,6 +93,11 @@ public class PacketContext implements Cloneable {
      * A received raw packet.
      */
     private final RawPacket  rawPacket;
+
+    /**
+     * PACKET_IN event.
+     */
+    private final PacketInEvent  packetIn;
 
     /**
      * Decoded ethernet frame.
@@ -207,14 +215,20 @@ public class PacketContext implements Cloneable {
     private boolean  toController;
 
     /**
-     * Construct a new packet context.
-     *
-     * @param raw    A received raw packet.
-     * @param ether  Decoded ethernet frame.
+     * A MD-SAL datastore transaction context.
      */
-    PacketContext(RawPacket raw, Ethernet ether) {
-        rawPacket = raw;
-        etherFrame = new EtherPacket(ether);
+    private final TxContext txContext;
+
+    /**
+     * Construct a new packet context to handle PACKET_IN message.
+     *
+     * @param ev  A {@link PacketInEvent} instance.
+     */
+    PacketContext(PacketInEvent ev) {
+        rawPacket = ev.getPayload();
+        etherFrame = new EtherPacket(ev.getEthernet());
+        txContext = ev.getTxContext();
+        packetIn = ev;
     }
 
     /**
@@ -226,10 +240,14 @@ public class PacketContext implements Cloneable {
      *
      * @param ether     An ethernet frame.
      * @param out       Outgoing node connector.
+     * @param ctx       A MD-SAL datastore transaction only for read.
      */
-    PacketContext(Ethernet ether, NodeConnector out) {
-        this(null, ether);
+    PacketContext(Ethernet ether, NodeConnector out, TxContext ctx) {
+        rawPacket = null;
+        etherFrame = new EtherPacket(ether);
+        txContext = ctx;
         outgoing = out;
+        packetIn = null;
 
         // Flow filter must not affect self-originated packet.
         filterDisabled = true;
@@ -287,7 +305,7 @@ public class PacketContext implements Cloneable {
                 if (arp.getProtocolType() == EtherTypes.IPv4.shortValue()) {
                     // Ignore sender protocol address if it is zero.
                     byte[] sender = arp.getSenderProtocolAddress();
-                    if (NetUtils.byteArray4ToInt(sender) != 0) {
+                    if (NumberUtils.toInteger(sender) != 0) {
                         sourceInetAddress = sender;
                         sip = sender;
                     }
@@ -330,6 +348,16 @@ public class PacketContext implements Cloneable {
      */
     public NodeConnector getIncomingNodeConnector() {
         return rawPacket.getIncomingNodeConnector();
+    }
+
+    /**
+     * Return a {@link SalPort} instance corresponding to the ingress switch
+     * port.
+     *
+     * @return  A {@link SalPort} instance or {@code null}.
+     */
+    public SalPort getIngressPort() {
+        return (packetIn == null) ? null : packetIn.getIngressPort();
     }
 
     /**
@@ -552,8 +580,8 @@ public class PacketContext implements Cloneable {
      */
     public String getDescription(byte[] src, byte[] dst, int type,
                                  NodeConnector port, short vlan) {
-        String srcmac = HexEncode.bytesToHexStringFormat(src);
-        String dstmac = HexEncode.bytesToHexStringFormat(dst);
+        String srcmac = ByteUtils.toHexString(src);
+        String dstmac = ByteUtils.toHexString(dst);
 
         StringBuilder builder = new StringBuilder("src=");
         builder.append(srcmac).
@@ -627,7 +655,7 @@ public class PacketContext implements Cloneable {
      */
     public boolean isUnicast() {
         byte[] dst = etherFrame.getDestinationAddress();
-        return NetUtils.isUnicastMACAddr(dst);
+        return EtherAddress.isUnicast(dst);
     }
 
     /**
@@ -655,26 +683,26 @@ public class PacketContext implements Cloneable {
             // Send an ARP request to the source address of this packet.
             int srcIp = ipv4.getSourceAddress();
             byte[] dst = etherFrame.getSourceAddress();
-            byte[] tpa = NetUtils.intToByteArray4(srcIp);
+            byte[] tpa = NumberUtils.toBytes(srcIp);
             short vlan = etherFrame.getOriginalVlan();
             Ethernet ether = mgr.createArpRequest(dst, tpa, vlan);
-            NodeConnector port = getIncomingNodeConnector();
+            SalPort sport = getIngressPort();
 
             if (LOG.isTraceEnabled()) {
-                String dstmac = HexEncode.bytesToHexStringFormat(dst);
+                String dstmac = ByteUtils.toHexString(dst);
                 String target;
                 try {
                     InetAddress ia = InetAddress.getByAddress(tpa);
                     target = ia.getHostAddress();
                 } catch (Exception e) {
-                    target = HexEncode.bytesToHexStringFormat(tpa);
+                    target = ByteUtils.toHexString(tpa);
                 }
                 LOG.trace("{}: Send an ARP request to detect IP address: " +
                           "dst={}, tpa={}, vlan={}, port={}",
-                          mgr.getContainerName(), dstmac, target, vlan, port);
+                          mgr.getContainerName(), dstmac, target, vlan, sport);
             }
 
-            mgr.transmit(port, ether);
+            mgr.transmit(sport, ether);
         }
     }
 
@@ -1156,6 +1184,15 @@ public class PacketContext implements Cloneable {
      */
     public RedirectFlowException getFirstRedirection() {
         return firstRedirection;
+    }
+
+    /**
+     * Return a MD-SAL datastore transaction context.
+     *
+     * @return  A {@link TxContext} instance.
+     */
+    public TxContext getTxContext() {
+        return txContext;
     }
 
     /**

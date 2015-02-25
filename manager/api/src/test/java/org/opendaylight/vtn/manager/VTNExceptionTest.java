@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -62,7 +62,7 @@ public class VTNExceptionTest extends TestBase {
         }
 
         // in case null is specified.
-        VTNException e = new VTNException(null);
+        VTNException e = new VTNException((Status)null);
         assertEquals(null, e.getCause());
         assertEquals(null, e.getMessage());
         assertEquals(null, e.getStatus());
@@ -72,6 +72,19 @@ public class VTNExceptionTest extends TestBase {
         assertEquals(et, e.getCause());
         assertEquals(null, e.getMessage());
         assertEquals(null, e.getStatus());
+
+        e = new VTNException((String)null);
+        Status st = new Status(StatusCode.INTERNALERROR, null);
+        assertEquals(null, e.getCause());
+        assertEquals(st.toString(), e.getMessage());
+        assertEquals(st, e.getStatus());
+
+        String msg = "This is an error message.";
+        e = new VTNException(msg);
+        st = new Status(StatusCode.INTERNALERROR, msg);
+        assertEquals(null, e.getCause());
+        assertEquals(st.toString(), e.getMessage());
+        assertEquals(st, e.getStatus());
     }
 
     /**

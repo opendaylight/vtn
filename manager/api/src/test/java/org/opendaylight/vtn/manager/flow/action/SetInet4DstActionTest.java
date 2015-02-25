@@ -9,12 +9,11 @@
 
 package org.opendaylight.vtn.manager.flow.action;
 
-import java.io.ByteArrayInputStream;
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -121,7 +120,7 @@ public class SetInet4DstActionTest extends TestBase {
         for (InetAddress iaddr: createInet4Addresses()) {
             SetInet4DstAction act = new SetInet4DstAction(iaddr);
             SetInet4DstAction newobj =
-                (SetInet4DstAction)jaxbTest(act, XML_ROOT);
+                jaxbTest(act, SetInet4DstAction.class, XML_ROOT);
             assertEquals(null, newobj.getValidationStatus());
         }
 
@@ -138,16 +137,15 @@ public class SetInet4DstActionTest extends TestBase {
             "::1",
         };
 
+        Unmarshaller um = createUnmarshaller(SetInet4DstAction.class);
         try {
             for (String addr: invalid) {
                 StringBuilder builder = new StringBuilder(XML_DECLARATION);
                 String xml = builder.append('<').append(XML_ROOT).
                     append(" address=\"").append(addr).append("\" />").
                     toString();
-                ByteArrayInputStream in =
-                    new ByteArrayInputStream(xml.getBytes());
                 SetInet4DstAction act =
-                    JAXB.unmarshal(in, SetInet4DstAction.class);
+                    unmarshal(um, xml, SetInet4DstAction.class);
                 Status st = act.getValidationStatus();
                 assertEquals(StatusCode.BADREQUEST, st.getCode());
             }

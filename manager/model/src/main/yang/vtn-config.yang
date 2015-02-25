@@ -1,0 +1,129 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-config {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:config";
+    prefix vconf;
+
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+
+    description
+      "The module that describes runtime configuration for the VTN Manager.";
+
+    revision 2015-02-09 {
+        description "Initial revision.";
+    }
+
+    container vtn-config {
+        presence
+          "Indicates the custom configuration of VTN Manager is present.";
+        description
+          "The global configuration of the VTN Manager.";
+
+        leaf node-edge-wait {
+            description
+              "The number of milliseconds to wait for node edges to be
+               detected.";
+            type int32 {
+                range "0 .. 600000";
+            }
+            default 3000;
+        }
+
+        leaf l2-flow-priority {
+            description "Priority value of layer 2 flow entries.";
+            type int32 {
+                range "1 .. 999";
+            }
+            default 10;
+        }
+
+        leaf flow-mod-timeout {
+            description
+              "The number of milliseconds to wait for completion of a single
+               FLOW_MOD request.";
+            type int32 {
+                range "100 .. 60000";
+            }
+            default 3000;
+        }
+
+        leaf remote-flow-mod-timeout {
+            description
+              "The number of milliseconds to wait for remote cluster nodes
+               to finish modifying flow entries in a VTN flow.
+               *** Note that this parameter is obsolete and will be removed.";
+            type int32 {
+                range "1000 .. 60000";
+            }
+            default 5000;
+        }
+
+        leaf bulk-flow-mod-timeout {
+            description
+              "The number of milliseconds to wait for completion of bulk
+               FLOW_MOD requests.";
+            type int32 {
+                range "3000 .. 600000";
+            }
+            default 10000;
+        }
+
+        leaf init-timeout {
+            description
+              "The number of milliseconds to wait for another controller in
+               the cluster to complete initialization.";
+            type int32 {
+                range "100 .. 600000";
+            }
+            default 3000;
+        }
+
+        leaf cache-transaction-timeout {
+            description
+              "The number of milliseconds to wait for cluster cache
+               transaction to be established.
+               *** Note that this parameter is obsolete and will be removed.";
+            type int32 {
+                range "100 .. 600000";
+            }
+            default 10000;
+        }
+
+        leaf max-redirections {
+            description
+              "The maximum number of virtual node hops per a flow
+               (the maximum number of packet redirections by REDIRECT flow
+               filter per a flow).";
+            type int32 {
+                range "10 .. 100000";
+            }
+            default 100;
+        }
+
+        leaf controller-mac-address {
+            description
+              "MAC address of the controller used as source MAC address of
+               ARP packet. It is determined by the controller if omitted.";
+            type yang:mac-address;
+        }
+
+        leaf init-state {
+            description
+              "Internal data used to determine whether the VTN Manager is
+               configured successfully.";
+            config false;
+            type boolean;
+        }
+    }
+}

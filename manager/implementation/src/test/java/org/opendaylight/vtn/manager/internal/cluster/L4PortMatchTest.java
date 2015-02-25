@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,10 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -31,16 +30,15 @@ public class L4PortMatchTest extends TestBase {
     /**
      * Test for getter methods.
      *
-     * @throws VTNException  An error occurred.
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testGetter() throws VTNException {
+    public void testGetter() throws Exception {
         int[] ports = {
             0, 1, 10, 150, 789, 12345, 33333, 56789, 65535,
         };
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
 
+        Unmarshaller um = createUnmarshaller(PortMatch.class);
         int nranges = 3;
         for (int port: ports) {
             Integer from = Integer.valueOf(port);
@@ -50,11 +48,10 @@ public class L4PortMatchTest extends TestBase {
             assertEquals(port, lpm.getPortTo());
 
             // Construct PortMatch that has no portTo field.
-            StringBuilder sb = new StringBuilder(xml);
-            sb.append("<portmatch from=\"").append(port).append("\" />");
-            ByteArrayInputStream in =
-                new ByteArrayInputStream(sb.toString().getBytes());
-            pm = JAXB.unmarshal(in, PortMatch.class);
+            StringBuilder sb = new StringBuilder(XML_DECLARATION);
+            String xml = sb.append("<portmatch from=\"").append(port).
+                append("\" />").toString();
+            pm = unmarshal(um, xml, PortMatch.class);
             assertEquals(null, pm.getPortTo());
             lpm = new L4PortMatch(pm);
             assertEquals(port, lpm.getPortFrom());

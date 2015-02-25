@@ -147,7 +147,7 @@ public class NodeRouteTest extends TestBase {
             for (SwitchPort input: createSwitchPorts(5)) {
                 for (SwitchPort output: createSwitchPorts(5)) {
                     NodeRoute nr = new NodeRoute(node, input, output);
-                    jaxbTest(nr, XML_ROOT);
+                    jaxbTest(nr, NodeRoute.class, XML_ROOT);
                 }
             }
         }

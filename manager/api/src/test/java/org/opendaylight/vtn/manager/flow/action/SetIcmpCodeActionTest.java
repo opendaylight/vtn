@@ -90,7 +90,7 @@ public class SetIcmpCodeActionTest extends TestBase {
         short[] codes = {Short.MIN_VALUE, 0, 1, 100, 255, Short.MAX_VALUE};
         for (short code: codes) {
             SetIcmpCodeAction act = new SetIcmpCodeAction(code);
-            jaxbTest(act, "seticmpcode");
+            jaxbTest(act, SetIcmpCodeAction.class, "seticmpcode");
         }
     }
 

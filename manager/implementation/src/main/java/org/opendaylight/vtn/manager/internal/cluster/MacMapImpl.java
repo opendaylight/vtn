@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -32,8 +32,8 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.MacMapChange;
@@ -44,18 +44,24 @@ import org.opendaylight.vtn.manager.internal.MacMapPortBusyException;
 import org.opendaylight.vtn.manager.internal.NodePortFilter;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.SpecificPortFilter;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
+import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
 
-import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * Implementation of MAC mapping to the virtual L2 bridge.
@@ -74,7 +80,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -854824423184977244L;
+    private static final long serialVersionUID = -5231707441002111262L;
 
     /**
      * Logger instance.
@@ -780,7 +786,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         }
 
         EthernetAddress eaddr = (EthernetAddress)addr;
-        long mac = NetUtils.byteArray6ToLong(eaddr.getValue());
+        long mac = EtherAddress.toLong(eaddr.getValue());
 
         IVTNResourceManager resMgr = mgr.getResourceManager();
         PortVlan pvlan = resMgr.getMacMappedNetwork(mgr, mapPath, mac);
@@ -869,10 +875,11 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * </p>
      *
      * @param mgr     VTN Manager service.
+     * @param ctx    A runtime context for MD-SAL datastore transaction task.
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    VNodeState resume(VTNManagerImpl mgr, VNodeState bstate) {
+    VNodeState resume(VTNManagerImpl mgr, TxContext ctx, VNodeState bstate) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         MacMapChange change = new MacMapChange(allowedHosts, deniedHosts,
                                                MacMapChange.DONT_PURGE);
@@ -936,29 +943,29 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     }
 
     /**
-     * Invoked when a node is added, removed, or changed.
+     * Invoked when a node has been added or removed.
      *
      * @param mgr     VTN Manager service.
      * @param bstate  Current bridge state value.
-     * @param node    Node being updated.
-     * @param type    Type of update.
+     * @param ev   A {@link VtnNodeEvent} instance.
      * @return  New bridge state value.
      */
-    VNodeState notifyNode(VTNManagerImpl mgr, VNodeState bstate, Node node,
-                          UpdateType type) {
+    VNodeState notifyNode(VTNManagerImpl mgr, VNodeState bstate,
+                          VtnNodeEvent ev) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
-        if (type != UpdateType.REMOVED) {
+        if (ev.getUpdateType() != VtnUpdateType.REMOVED) {
             return getBridgeState(mgr, resMgr, bstate);
         }
 
-        NodePortFilter filter = new NodePortFilter(node);
+        SalNode snode = ev.getSalNode();
+        NodePortFilter filter = new NodePortFilter(snode.getAdNode());
         try {
             boolean active = resMgr.inactivateMacMap(mgr, mapPath, filter);
             return getBridgeState(active, bstate);
         } catch (Exception e) {
             StringBuilder builder = createLog(
                 mgr, "Failed to inactivate MAC mapping on switch: ").
-                append(node.toString());
+                append(snode);
             LOG.error(builder.toString(), e);
         }
 
@@ -971,19 +978,19 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *
      * @param mgr     VTN Manager service.
      * @param bstate  Current bridge state value.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param ev      A {@link VtnPortEvent} instance.
      * @return  New bridge state value.
      */
     VNodeState notifyNodeConnector(VTNManagerImpl mgr, VNodeState bstate,
-                                   NodeConnector nc, VNodeState pstate,
-                                   UpdateType type) {
+                                   VtnPortEvent ev) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
-        if (type != UpdateType.REMOVED && pstate == VNodeState.UP) {
+        if (ev.getUpdateType() != VtnUpdateType.REMOVED &&
+            InventoryUtils.isEnabledEdge(ev.getVtnPort())) {
             return getBridgeState(mgr, resMgr, bstate);
         }
 
+        SalPort sport = ev.getSalPort();
+        NodeConnector nc = sport.getAdNodeConnector();
         SpecificPortFilter filter = new SpecificPortFilter(nc);
         try {
             boolean active = resMgr.inactivateMacMap(mgr, mapPath, filter);
@@ -991,33 +998,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         } catch (Exception e) {
             StringBuilder builder = createLog(
                 mgr, "Failed to inactivate MAC mapping on switch port: ").
-                append(nc.toString());
-            LOG.error(builder.toString(), e);
-        }
-
-        return bstate;
-    }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr     VTN Manager service.
-     * @param bstate  Current bridge state value.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     * @return  New bridge state value.
-     */
-    VNodeState edgeUpdate(VTNManagerImpl mgr, VNodeState bstate,
-                          EdgeUpdateState estate) {
-        // Inactivate MAC mappings associated with ISL ports.
-        IVTNResourceManager resMgr = mgr.getResourceManager();
-        try {
-            boolean active = resMgr.inactivateMacMap(mgr, mapPath, estate);
-            return getBridgeState(active, bstate);
-        } catch (Exception e) {
-            StringBuilder builder =
-                createLog(mgr, "Failed to inactivate MAC mapping on " +
-                          "ISL ports");
+                append(sport);
             LOG.error(builder.toString(), e);
         }
 
@@ -1242,7 +1223,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *              by {@code addr} is contained in {@code set}.
      */
     private boolean containsMacAddress(NavigableSet<MacVlan> set, long addr) {
-        MacVlan key = new MacVlan(addr, (short)MiscUtils.MASK_VLAN_ID);
+        MacVlan key = new MacVlan(addr, (short)ProtocolUtils.MASK_VLAN_ID);
         MacVlan floor = set.floor(key);
         return (floor != null && floor.getMacAddress() == addr);
     }
@@ -1328,7 +1309,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                                                   NodeConnector port)
         throws VTNException {
         long mac = mvlan.getMacAddress();
-        byte[] addr = NetUtils.longToByteArray6(mac);
+        byte[] addr = EtherAddress.toBytes(mac);
         EthernetAddress eaddr;
         try {
             eaddr = new EthernetAddress(addr);

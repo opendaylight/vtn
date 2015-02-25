@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 
 import org.opendaylight.vtn.manager.internal.ClusterFlowAddTask;
 import org.opendaylight.vtn.manager.internal.ClusterFlowModTask;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
@@ -31,7 +32,7 @@ public class FlowAddEvent extends FlowModEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5294903918196762899L;
+    private static final long serialVersionUID = 8331943297735778886L;
 
     /**
      * Construct a new flow install event.
@@ -46,11 +47,13 @@ public class FlowAddEvent extends FlowModEvent {
      * Create a flow mod task to modify the given flow entry.
      *
      * @param mgr   VTN Manager service.
+     * @param ctx   MD-SAL datastore transaction context.
      * @param fent  A flow entry to be modified.
      * @return  A flow mod task to add the given flow entry.
      */
-    protected ClusterFlowModTask createTask(VTNManagerImpl mgr,
+    @Override
+    protected ClusterFlowModTask createTask(VTNManagerImpl mgr, TxContext ctx,
                                             FlowEntry fent) {
-        return new ClusterFlowAddTask(mgr, fent);
+        return new ClusterFlowAddTask(mgr, ctx, fent);
     }
 }

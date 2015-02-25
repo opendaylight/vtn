@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,10 +20,10 @@ import java.util.HashSet;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * {@code MacTableEntry} class represents a table entry in the MAC address
@@ -247,7 +247,7 @@ public class MacTableEntry implements Serializable {
      */
     public MacAddressEntry getEntry() throws VTNException {
         try {
-            byte[] mac = NetUtils.longToByteArray6(entryId.getMacAddress());
+            byte[] mac = EtherAddress.toBytes(entryId.getMacAddress());
             EthernetAddress ethAddr = new EthernetAddress(mac);
             return new MacAddressEntry(ethAddr, vlan, port,
                                        getInetAddresses());

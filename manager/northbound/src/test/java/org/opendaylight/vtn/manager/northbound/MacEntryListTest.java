@@ -122,7 +122,8 @@ public class MacEntryListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link MacEntryList} is mapped to XML root element.
+     * Ensure that {@link MacEntryList} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
@@ -136,11 +137,13 @@ public class MacEntryListTest extends TestBase {
 
         // null list.
         meList = new MacEntryList(null);
-        jaxbTest(meList, rootName);
+        jaxbTest(meList, MacEntryList.class, rootName);
+        jsonTest(meList, MacEntryList.class);
 
         // Empty list should be treated as null list.
         meList = new MacEntryList(list);
-        jaxbTest(meList, rootName);
+        jaxbTest(meList, MacEntryList.class, rootName);
+        jsonTest(meList, MacEntryList.class);
 
         // use a combination of NodeConnectors, InetAddresses,
         // EthernetAddresses, vlans as input parameter
@@ -154,7 +157,8 @@ public class MacEntryListTest extends TestBase {
                             new ArrayList<MacAddressEntry>();
                         one.add(mae);
                         meList = new MacEntryList(one);
-                        jaxbTest(meList, rootName);
+                        jaxbTest(meList, MacEntryList.class, rootName);
+                        jsonTest(meList, MacEntryList.class);
 
                         list.add(mae);
                     }
@@ -163,6 +167,7 @@ public class MacEntryListTest extends TestBase {
         }
 
         meList = new MacEntryList(list);
-        jaxbTest(meList, rootName);
+        jaxbTest(meList, MacEntryList.class, rootName);
+        jsonTest(meList, MacEntryList.class);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,8 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.util.EnumSet;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
@@ -22,7 +24,6 @@ import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
@@ -63,7 +64,7 @@ public final class PacketMatchTest extends TestBase {
 
         ARP_PACKET = new ARP();
         ARP_PACKET.setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setHardwareAddressLength((byte)NetUtils.MACAddrLengthInBytes).
+            setHardwareAddressLength((byte)EtherAddress.SIZE).
             setProtocolType(EtherTypes.IPv4.shortValue()).
             setProtocolAddressLength((byte)4).
             setOpCode(ARP.REQUEST).

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,8 +13,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
 import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
-import org.opendaylight.vtn.manager.internal.packet.UdpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.CachedPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.UdpPacket;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.IPProtocols;

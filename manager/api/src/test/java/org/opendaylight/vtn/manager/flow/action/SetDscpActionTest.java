@@ -88,7 +88,7 @@ public class SetDscpActionTest extends TestBase {
         byte[] bytes = {Byte.MIN_VALUE, 0, 1, 30, 63, Byte.MAX_VALUE};
         for (byte b: bytes) {
             SetDscpAction act = new SetDscpAction(b);
-            jaxbTest(act, "setdscp");
+            jaxbTest(act, SetDscpAction.class, "setdscp");
         }
     }
 

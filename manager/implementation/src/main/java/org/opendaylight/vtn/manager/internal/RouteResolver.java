@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,8 +9,11 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.Path;
+import java.util.List;
+
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
 
 /**
  * {@code RouteResolver} provides interfaces to be implemented by classes
@@ -26,17 +29,19 @@ public interface RouteResolver {
     /**
      * Return the packet route from the source to the destination switch.
      *
-     * <p>
-     *   This method must be called with holding the VTN Manager lock.
-     * </p>
-     *
-     * @param src  A {@link Node} instance corresponding th the source switch.
-     * @param dst  A {@link Node} instance corresponding th the destination
+     * @param rdr  A {@link InventoryReader} instance which contains active
+     *             read transaction for the MD-SAL datastore.
+     * @param src  A {@link SalNode} instance corresponding to the source
      *             switch.
-     * @return     A {@link Path} instance which represents the packet route.
+     * @param dst  A {@link SalNode} instance corresponding to the destination
+     *             switch.
+     * @return     A list of {@link LinkEdge} instances which represents the
+     *             packet route.
+     *             An empty list is returned if the destination node is the
+     *             same as the source.
      *             {@code null} is returned if no route was found.
      */
-    Path getRoute(Node src, Node dst);
+    List<LinkEdge> getRoute(InventoryReader rdr, SalNode src, SalNode dst);
 
     /**
      * Return the identifier of the path policy associated with this

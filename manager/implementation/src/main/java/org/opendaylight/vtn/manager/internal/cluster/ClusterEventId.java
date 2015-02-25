@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 /**
  * {@code ClusterEventId} describes an identifier of cluster cache event.
@@ -180,7 +180,7 @@ public class ClusterEventId implements Serializable {
      */
     @Override
     public int hashCode() {
-        return controllerAddress.hashCode() ^ MiscUtils.hashCode(eventId);
+        return controllerAddress.hashCode() ^ NumberUtils.hashCode(eventId);
     }
 
     /**

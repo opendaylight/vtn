@@ -95,7 +95,8 @@ public class MacMapInfoTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link MacMapInfo} is mapped to XML root element.
+     * Ensure that {@link MacMapInfo} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
@@ -105,7 +106,8 @@ public class MacMapInfoTest extends TestBase {
                          createMacAddressEntryLists(10)) {
                     MacMap mcmap = new MacMap(allow, deny, map);
                     MacMapInfo mi = new MacMapInfo(mcmap);
-                    jaxbTest(mi, "macmap");
+                    jaxbTest(mi, MacMapInfo.class, "macmap");
+                    jsonTest(mi, MacMapInfo.class);
                 }
             }
         }

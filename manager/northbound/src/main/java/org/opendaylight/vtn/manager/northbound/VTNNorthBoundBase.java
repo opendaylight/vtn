@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,6 +22,7 @@ import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
+import org.opendaylight.vtn.manager.util.ByteUtils;
 
 import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.northbound.commons.RestMessages;
@@ -44,7 +45,6 @@ import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -106,7 +106,7 @@ public abstract class VTNNorthBoundBase {
         IContainerManager containerManager = (IContainerManager)ServiceHelper.
             getGlobalInstance(IContainerManager.class, this);
         if (containerManager == null) {
-            serviceUnavailable("Container");
+            throw serviceUnavailable("Container");
         }
         if (!containerManager.doesContainerExist(containerName)) {
             String msg = containerName + ": " +
@@ -123,14 +123,14 @@ public abstract class VTNNorthBoundBase {
     }
 
     /**
-     * Throw a ServiceUnavailableException.
+     * Return a ServiceUnavailableException.
      *
      * @param service  The name of unavailable service.
-     * @throws ServiceUnavailableException  Always thrown.
+     * @return  A {@link ServiceUnavailableException} instance.
      */
-    protected void serviceUnavailable(String service) {
+    protected ServiceUnavailableException serviceUnavailable(String service) {
         String msg = service + ": " + RestMessages.SERVICEUNAVAILABLE;
-        throw new ServiceUnavailableException(msg);
+        return new ServiceUnavailableException(msg);
     }
 
     /**
@@ -177,7 +177,7 @@ public abstract class VTNNorthBoundBase {
         IVTNManager mgr = (IVTNManager)ServiceHelper.
             getInstance(IVTNManager.class, containerName, this);
         if (mgr == null) {
-            serviceUnavailable("VTN Manager");
+            throw serviceUnavailable("VTN Manager");
         }
 
         return mgr;
@@ -199,7 +199,7 @@ public abstract class VTNNorthBoundBase {
         IVTNFlowDebugger debugger = (IVTNFlowDebugger)ServiceHelper.
             getInstance(IVTNFlowDebugger.class, containerName, this);
         if (debugger == null) {
-            serviceUnavailable("VTN Flow Debugger");
+            throw serviceUnavailable("VTN Flow Debugger");
         }
 
         return debugger;
@@ -215,7 +215,7 @@ public abstract class VTNNorthBoundBase {
      */
     protected EthernetAddress parseEthernetAddress(String str) {
         try {
-            byte[] b = HexEncode.bytesFromHexString(str);
+            byte[] b = ByteUtils.toBytes(str);
             return new EthernetAddress(b);
         } catch (Exception e) {
             throw new BadRequestException("Invalid MAC address.");

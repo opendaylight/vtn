@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,10 +14,13 @@ import java.io.Serializable;
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -50,7 +53,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      * Mask value which represents valid bits in {@link #encodedValue}.
      */
     private static final long MASK_ENCODED =
-        (1L << (NBITS_MAC + MiscUtils.NBITS_VLAN_ID)) - 1L;
+        (1L << (NBITS_MAC + ProtocolUtils.NBITS_VLAN_ID)) - 1L;
 
     /**
      * A long value which keeps a MAC address and a VLAN ID.
@@ -97,7 +100,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      * @param vlan  VLAN ID. Only lower 12 bits in the value is used.
      */
     public MacVlan(byte[] mac, short vlan) {
-        this(NetUtils.byteArray6ToLong(mac), vlan);
+        this((mac == null) ? UNDEFINED : EtherAddress.toLong(mac), vlan);
     }
 
     /**
@@ -134,7 +137,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
         }
 
         short vlan = ehost.getVlan();
-        MiscUtils.checkVlan(vlan);
+        ProtocolUtils.checkVlan(vlan);
         encodedValue = encode(mac, vlan);
     }
 
@@ -146,7 +149,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      *          in this instance.
      */
     public long getMacAddress() {
-        return (encodedValue >>> MiscUtils.NBITS_VLAN_ID);
+        return (encodedValue >>> ProtocolUtils.NBITS_VLAN_ID);
     }
 
     /**
@@ -155,7 +158,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      * @return  VLAN ID.
      */
     public short getVlan() {
-        return (short)(encodedValue & MiscUtils.MASK_VLAN_ID);
+        return (short)(encodedValue & ProtocolUtils.MASK_VLAN_ID);
     }
 
     /**
@@ -185,7 +188,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
             if (mac == UNDEFINED) {
                 eaddr = null;
             } else {
-                byte[] raw = NetUtils.longToByteArray6(mac);
+                byte[] raw = EtherAddress.toBytes(mac);
                 eaddr = new EthernetAddress(raw);
             }
 
@@ -226,8 +229,8 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      *          VLAN ID.
      */
     private long encode(long mac, short vlan) {
-        return (((mac << MiscUtils.NBITS_VLAN_ID) |
-                 ((long)vlan & MiscUtils.MASK_VLAN_ID)) &
+        return (((mac << ProtocolUtils.NBITS_VLAN_ID) |
+                 ((long)vlan & ProtocolUtils.MASK_VLAN_ID)) &
                 MASK_ENCODED);
     }
 
@@ -243,11 +246,11 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     private long getMacAddress(EthernetAddress eth)
         throws VTNException {
         byte[] raw = eth.getValue();
-        long mac = NetUtils.byteArray6ToLong(raw);
+        long mac = EtherAddress.toLong(raw);
         String badaddr = null;
-        if (NetUtils.isBroadcastMACAddr(raw)) {
+        if (EtherAddress.isBroadcast(raw)) {
             badaddr = "Broadcast address";
-        } else if (!NetUtils.isUnicastMACAddr(raw)) {
+        } else if (!EtherAddress.isUnicast(raw)) {
             badaddr = "Multicast address";
         } else if (mac == UNDEFINED) {
             badaddr = "Zero";
@@ -287,7 +290,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      */
     @Override
     public int hashCode() {
-        return MiscUtils.hashCode(encodedValue);
+        return NumberUtils.hashCode(encodedValue);
     }
 
     /**

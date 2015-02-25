@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -110,19 +110,22 @@ public class VBridgeListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VBridgeList} is mapped to XML root element.
+     * Ensure that {@link VBridgeList} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
         // null list.
         VBridgeList vbList = new VBridgeList(null);
         String rootName = "vbridges";
-        jaxbTest(vbList, rootName);
+        jaxbTest(vbList, VBridgeList.class, rootName);
+        jsonTest(vbList, VBridgeList.class);
 
         // Empty list.
         List<VBridge> list = new ArrayList<VBridge>();
         vbList = new VBridgeList(list);
-        jaxbTest(vbList, rootName);
+        jaxbTest(vbList, VBridgeList.class, rootName);
+        jsonTest(vbList, VBridgeList.class);
 
         VNodeState[] states = VNodeState.values();
         for (String name: createStrings("vBridge")) {
@@ -136,7 +139,8 @@ public class VBridgeListTest extends TestBase {
                         List<VBridge> one = new ArrayList<VBridge>();
                         one.add(vbridge);
                         vbList = new VBridgeList(one);
-                        jaxbTest(vbList, rootName);
+                        jaxbTest(vbList, VBridgeList.class, rootName);
+                        jsonTest(vbList, VBridgeList.class);
 
                         list.add(vbridge);
                     }
@@ -145,6 +149,7 @@ public class VBridgeListTest extends TestBase {
         }
 
         vbList = new VBridgeList(list);
-        jaxbTest(vbList, rootName);
+        jaxbTest(vbList, VBridgeList.class, rootName);
+        jsonTest(vbList, VBridgeList.class);
     }
 }

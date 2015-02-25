@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,11 +28,12 @@ public class LocalFlowRemoveTask extends FlowEntryTask {
     /**
      * Construct a new flow remove task.
      *
-     * @param mgr    VTN Manager service.
-     * @param fent   A flow entry to be uninstalled from local node.
+     * @param mgr   VTN Manager service.
+     * @param ctx   MD-SAL datastore transaction context.
+     * @param fent  A flow entry to be uninstalled from local node.
      */
-    LocalFlowRemoveTask(VTNManagerImpl mgr, FlowEntry fent) {
-        super(mgr, fent);
+    LocalFlowRemoveTask(VTNManagerImpl mgr, TxContext ctx, FlowEntry fent) {
+        super(mgr, ctx, fent);
     }
 
     /**

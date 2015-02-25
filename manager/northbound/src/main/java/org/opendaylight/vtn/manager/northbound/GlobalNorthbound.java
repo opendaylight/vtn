@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -78,7 +78,7 @@ public class GlobalNorthbound extends VTNNorthBoundBase {
         IVTNGlobal global = (IVTNGlobal)
             ServiceHelper.getGlobalInstance(IVTNGlobal.class, this);
         if (global == null) {
-            serviceUnavailable("VTN Global Service");
+            throw serviceUnavailable("VTN Global Service");
         }
 
         return global;

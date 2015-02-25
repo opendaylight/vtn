@@ -1,0 +1,326 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-path-policy {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:pathpolicy";
+    prefix pathpolicy;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    description
+      "The module that describes the path policy configuration.";
+
+    revision 2015-02-09 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-path-cost-config {
+        description
+          "Describes the cost of using specific switch link for packet
+           transmission.";
+
+        leaf port-desc {
+            description "Describes the location of the physical switch port.";
+            type vtype:vtn-port-desc;
+        }
+
+        leaf cost {
+            description
+              "The cost of using physical switch port.
+               The specified cost is used when a packet is transmitted
+               from the specified switch port. If omitted, it will be
+               treated as if 1 is specified.";
+            type int64 {
+                range "1 .. max";
+            }
+            default 1;
+        }
+    }
+
+    grouping vtn-path-policy-config {
+        description "Describes configuration for a path policy.";
+
+        leaf id {
+            description "The identifier of the path policy.";
+            type int32 {
+                range "1 .. 3";
+            }
+        }
+
+        leaf default-cost {
+            description
+              "The default cost for unspecified link.
+               If the cost of outgoing switch port is not defined in
+               `vtn-path-cost' list, this value is used as the cost.
+               Specifying zero means that the default link cost should be
+               determined individually by the link speed configured to a
+               switch port. If omitted or zero is specified, the default
+               link cost of a switch port is calculated by the following
+               formula:
+                      MAX(10,000,000,000,000 / (link speed (bps)), 1)";
+            type int64 {
+                range "0 .. max";
+            }
+            default 0;
+        }
+
+        list vtn-path-cost {
+            description
+              "A list of costs of switch links for transmitting.
+               The cost of using the specific switch port is determined by
+               searching for an element in this list which matches the
+               switch port location. If multiple elements match the target
+               switch port, the VTN Manager gives higher priority to one
+               which specifies more extract port location.";
+            key "port-desc";
+            uses vtn-path-cost-config;
+        }
+    }
+
+    container vtn-path-policies {
+        description
+          "The root container of all the path policy configurations.
+           Note that the path policy configuration must be modified by RPC.
+           Do not edit this container directly.";
+        config false;
+        presence
+          "Indicates that the path policy management is active.";
+
+        list vtn-path-policy {
+            description
+              "A list of path policies shared with all VTNs.";
+            key "id";
+            uses vtn-path-policy-config;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    grouping vtn-port-desc-result {
+        description
+          "Describes a pair of `vtn-port-desc' and `vtn-update-type'.
+
+           This grouping is used as output of RPC that modifies the link
+           cost configuration in a path policy.";
+
+        leaf port-desc {
+            description  "Describes the location of the physical switch port.";
+            type vtype:vtn-port-desc;
+        }
+
+        uses vtype:vtn-rpc-result;
+    }
+
+    rpc set-path-policy {
+        description
+          "Create or modify the path policy.
+
+           If the path policy specified by the path policy ID does not exist,
+           a new path policy will be associated with the specified ID.
+           If the path policy specified by the path policy ID already exists,
+           it will be modified as specified by the RPC input.
+
+           `status' in RPC output describes the result of the operation.
+
+           CREATED indicates that the specified path policy has been newly
+           created.
+
+           CHANGED indicates that existing path policy configuration has been
+           successfully changed.
+
+           Null indicates that existing path policy configuration was not
+           changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if true is set to `present' field in the RPC
+           input and the target path policy is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            uses vtn-path-policy-config;
+
+            leaf operation {
+                description
+                  "Describes how to update the specified path policy if it
+                   already exists.
+
+                   If SET is specified, the given path policy configuration
+                   will be applied as specified. In other words, existing
+                   path policy configuration will be removed, and the given
+                   path policy will be created.
+
+                   If ADD is specified, the given path policy configuration
+                   will be merged with existing configuration. The target
+                   path policy will be created if it is not present.
+
+                   Null will be treated as if ADD is specified.
+
+                   Note that the operation will fail if true is set to
+                   `present' field and the target path policy is not
+                   presnt.";
+                type vtype:vtn-update-operation-type;
+            }
+
+            leaf present {
+                description
+                  "If true is set, the opration will fail unless the target
+                   path policy is present.
+                  Null will be treated as if false is specified.";
+                type boolean;
+            }
+        }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
+    }
+
+    rpc remove-path-policy {
+        description
+          "Remove the path policy specified by the path policy identifier.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified path policy is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf id {
+                description "The identifier of the path policy to be removed.";
+                type int32;
+            }
+        }
+    }
+
+    rpc set-path-cost {
+        description
+          "Associate the cost of transmitting a packet with the specified
+           switch port in the specified path policy.
+
+           This operation takes a list of `vtn-path-cost-config', and
+           put all configurations in that list into the specified path policy.
+
+           Switch port descriptors specified in the RPC input will be copied
+           to the RPC output, and `status' field in `vtn-port-desc-result'
+           describes the result of the opration.
+
+           CREATED indicates that the link cost configuration for the switch
+           port specified by `port-desc' has been newly created.
+
+           CHANGED indicates that the link cost configuration for the switch
+           port specified by `port-desc' has been successfully changed.
+
+           Null indicates that the link cost configuration for the switch
+           port specified by `port-desc' was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified path policy is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf id {
+                description "The identifier of the path policy.";
+                type int32;
+            }
+
+            list path-cost-list {
+                description
+                  "Pairs of the switch port descriptors and link cost
+                   configuratins to be applied to the path policy specified by
+                   `id'. Note that a duplicate switch port descriptor in this
+                   list will cause a `BADREQUEST' error.";
+                uses vtn-path-cost-config;
+            }
+        }
+
+        output {
+            list set-path-cost-result {
+                description
+                  "Describes pairs of switch port descriptors passed to the
+                   RPC input and results.";
+                uses vtn-port-desc-result;
+            }
+        }
+    }
+
+    rpc remove-path-cost {
+        description
+          "Remove link cost configurations for all the given switch ports in
+           the given path policy configuration.
+
+           Values passed to `port-desc' list will be copied to the RPC output,
+           and `status' field in `vtn-port-desc-result' describes the result
+           of the opration.
+
+           REMOVED indicates that the link cost configuration for the switch
+           port associated with the `vtn-port-desc' value has been
+           successfully removed.
+
+           Null indicates that the link cost configuration for the switch
+           port specified by `port-desc' was not configured in the specified
+           path policy.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified path policy is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf id {
+                description "The identifier of the path policy.";
+                type int32;
+            }
+
+            leaf-list port-desc {
+                description
+                  "A list of switch port descriptors to be removed from the
+                   path policy configuration specified by the `id' field.
+                   Duplicates in this list will be eliminated automatically.";
+                type vtype:vtn-port-desc;
+            }
+        }
+
+        output {
+            list remove-path-cost-result {
+                description
+                  "Describes pairs of switch port descriptors passed to the
+                   RPC input and results.";
+                uses vtn-port-desc-result;
+            }
+        }
+    }
+}

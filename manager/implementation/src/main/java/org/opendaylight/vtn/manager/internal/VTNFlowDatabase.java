@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,9 +24,13 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
+
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;
@@ -146,6 +150,20 @@ public class VTNFlowDatabase {
         private final Set<FlowGroupId>  groupSet = new HashSet<FlowGroupId>();
 
         /**
+         * MD-SAL datastore transaction context.
+         */
+        private final TxContext  txContext;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param ctx  MD-SAL transaction context.
+         */
+        private FlowCollector(TxContext ctx) {
+            txContext = ctx;
+        }
+
+        /**
          * Collect flow entries in the specified VTN flow.
          *
          * @param mgr    VTN Manager service.
@@ -187,11 +205,12 @@ public class VTNFlowDatabase {
             if (!groupSet.isEmpty() || !ingressFlows.isEmpty() ||
                 !flowEntries.isEmpty()) {
                 // Uninstall flow entries in background.
-                task = new FlowRemoveTask(mgr, groupSet, ingressFlows,
-                                          flowEntries);
+                task = new FlowRemoveTask(mgr, txContext, groupSet,
+                                          ingressFlows, flowEntries);
                 mgr.postFlowTask(task);
             } else {
                 task = null;
+                txContext.cancelTransaction();
             }
 
             return task;
@@ -208,13 +227,21 @@ public class VTNFlowDatabase {
         private boolean match(VTNManagerImpl mgr, FlowEntry fent) {
             // Don't collect flow entry in the removed node.
             Node node = fent.getNode();
-            boolean ret = mgr.exists(node);
-            if (!ret && LOG.isTraceEnabled()) {
-                LOG.trace("{}: Ignore flow entry in the removed node: {}",
-                          mgr.getContainerName(), fent);
+            SalNode snode = SalNode.create(node);
+            InventoryReader reader = txContext.getInventoryReader();
+            try {
+                boolean ret = reader.exists(snode);
+                if (!ret && LOG.isTraceEnabled()) {
+                    LOG.trace("{}: Ignore flow entry in the removed node: {}",
+                              mgr.getContainerName(), fent);
+                }
+                return ret;
+            } catch (Exception e) {
+                String msg = MiscUtils.join("Failed to read node information",
+                                            node);
+                LOG.error(msg, e);
+                return true;
             }
-
-            return ret;
         }
     }
 
@@ -257,10 +284,16 @@ public class VTNFlowDatabase {
             return;
         }
 
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return;
+        }
+
         // Create indices for the given VTN flow.
         if (createIndex(mgr, vflow)) {
             // Rest of work will be done by the VTN flow task thread.
-            FlowAddTask task = new FlowAddTask(mgr, vflow);
+            TxContext ctx = provider.newTxContext();
+            FlowAddTask task = new FlowAddTask(mgr, ctx, vflow);
             mgr.postFlowTask(task);
         }
     }
@@ -321,8 +354,13 @@ public class VTNFlowDatabase {
 
         if (hasNext) {
             // Uninstall flow entries.
-            FlowRemoveTask task = new FlowRemoveTask(mgr, gid, null, it);
-            mgr.postFlowTask(task);
+            VTNManagerProvider provider = mgr.getVTNProvider();
+            if (provider != null) {
+                TxContext ctx = provider.newTxContext();
+                FlowRemoveTask task =
+                    new FlowRemoveTask(mgr, ctx, gid, null, it);
+                mgr.postFlowTask(task);
+            }
         }
 
         return true;
@@ -362,8 +400,13 @@ public class VTNFlowDatabase {
             return null;
         }
 
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
         // Eliminate flow entries in the specified node.
-        FlowCollector collector = new FlowCollector();
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (VTNFlow vflow: vflows) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: Remove VTN flow related to node {}: " +
@@ -401,7 +444,7 @@ public class VTNFlowDatabase {
      *   </li>
      *   <li>
      *     {@code true} is returned by the call of
-     *     {@link PortFilter#accept(NodeConnector, PortProperty)} on
+     *     {@link PortFilter#accept(NodeConnector, org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort)} on
      *     {@code filter} with specifying {@link NodeConnector} instance
      *     configured in the flow entry.
      *     Note that {@code null} is always passed as port property to the
@@ -427,7 +470,12 @@ public class VTNFlowDatabase {
             return null;
         }
 
-        FlowCollector collector = new FlowCollector();
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (Iterator<VTNFlow> it = vflows.iterator(); it.hasNext();) {
             VTNFlow vflow = it.next();
             String type;
@@ -482,7 +530,12 @@ public class VTNFlowDatabase {
             return null;
         }
 
-        FlowCollector collector = new FlowCollector();
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (VTNFlow vflow: vflows) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: Remove VTN flow related to port {}: " +
@@ -525,8 +578,13 @@ public class VTNFlowDatabase {
             return null;
         }
 
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
         SpecificPortFilter filter = new SpecificPortFilter(port);
-        FlowCollector collector = new FlowCollector();
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (Iterator<VTNFlow> it = vflows.iterator(); it.hasNext();) {
             VTNFlow vflow = it.next();
             String type;
@@ -608,7 +666,12 @@ public class VTNFlowDatabase {
             return null;
         }
 
-        FlowCollector collector = new FlowCollector();
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (Iterator<VTNFlow> it = vflows.iterator(); it.hasNext();) {
             VTNFlow vflow = it.next();
             if (vflow.dependsOn(mvlan)) {
@@ -651,7 +714,12 @@ public class VTNFlowDatabase {
      */
     public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
                                                    List<VTNFlow> vflows) {
-        FlowCollector collector = new FlowCollector();
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (VTNFlow vflow: vflows) {
             // Remove this VTN flow from the database.
             if (removeIndex(mgr, vflow)) {
@@ -684,7 +752,12 @@ public class VTNFlowDatabase {
      */
     public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
                                                    VTNFlowMatch fmatch) {
-        FlowCollector collector = new FlowCollector();
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (Iterator<VTNFlow> it = vtnFlows.values().iterator();
              it.hasNext();) {
             VTNFlow vflow = it.next();
@@ -794,7 +867,12 @@ public class VTNFlowDatabase {
      *          entry to be removed.
      */
     public synchronized FlowRemoveTask clear(VTNManagerImpl mgr) {
-        FlowCollector collector = new FlowCollector();
+        VTNManagerProvider provider = mgr.getVTNProvider();
+        if (provider == null) {
+            return null;
+        }
+
+        FlowCollector collector = new FlowCollector(provider.newTxContext());
         for (Iterator<VTNFlow> it = vtnFlows.values().iterator();
              it.hasNext();) {
             // Remove this VTN flow from the database.
@@ -860,7 +938,7 @@ public class VTNFlowDatabase {
     /**
      * Return information about all VTN flows present in the VTN.
      *
-     * @param mgr       VTN Manager service.
+     * @param ctx       MD-SAL datastore transaction context.
      * @param streader  If a {@link StatsReader} instance is specified,
      *                  this method returns detailed information about the VTN
      *                  flow including statistics information.
@@ -873,8 +951,9 @@ public class VTNFlowDatabase {
      *                  specified.
      * @return  A list of {@link DataFlow} instances.
      */
-    public List<DataFlow> getFlows(VTNManagerImpl mgr, StatsReader streader,
-                                   boolean update, DataFlowFilterImpl filter, int interval) {
+    public List<DataFlow> getFlows(TxContext ctx, StatsReader streader,
+                                   boolean update, DataFlowFilterImpl filter,
+                                   int interval) {
         if (filter.isNotMatch()) {
             // No data flow should be selected.
             return new ArrayList<DataFlow>(0);
@@ -885,7 +964,7 @@ public class VTNFlowDatabase {
         List<DataFlow> list = new ArrayList<DataFlow>(flist.size());
         for (VTNFlow vflow: flist) {
             if (filter.select(vflow)) {
-                DataFlow df = vflow.getDataFlow(mgr, detail);
+                DataFlow df = vflow.getDataFlow(ctx, detail);
                 if (detail) {
                     FlowEntry fent = vflow.getFlowEntries().get(0);
                     df.setStatistics(streader.get(fent, update, interval));
@@ -900,7 +979,7 @@ public class VTNFlowDatabase {
     /**
      * Return information about the specified VTN flow present in the VTN.
      *
-     * @param mgr       VTN Manager service.
+     * @param ctx       MD-SAL datastore transaction context.
      * @param flowId    An identifier which specifies the VTN flow.
      * @param streader  If a {@link StatsReader} instance is specified,
      *                  this method returns detailed information about the VTN
@@ -913,8 +992,8 @@ public class VTNFlowDatabase {
      * @return  A {@link DataFlow} instance.
      *          {@code null} is returned if the VTN flow was not found.
      */
-    public DataFlow getFlow(VTNManagerImpl mgr, long flowId,
-                            StatsReader streader, boolean update, int interval) {
+    public DataFlow getFlow(TxContext ctx, long flowId, StatsReader streader,
+                            boolean update, int interval) {
         boolean detail = (streader != null);
         VTNFlow vflow;
         synchronized (this) {
@@ -924,7 +1003,7 @@ public class VTNFlowDatabase {
             }
         }
 
-        DataFlow df = vflow.getDataFlow(mgr, detail);
+        DataFlow df = vflow.getDataFlow(ctx, detail);
         if (detail) {
             FlowEntry fent = vflow.getFlowEntries().get(0);
             df.setStatistics(streader.get(fent, update, interval));

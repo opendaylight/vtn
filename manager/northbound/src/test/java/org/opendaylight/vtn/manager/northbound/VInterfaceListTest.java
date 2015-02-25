@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -128,19 +128,22 @@ public class VInterfaceListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VInterfaceList} is mapped to XML root element.
+     * Ensure that {@link VInterfaceList} is mapped to both XML root element
+     * and JSON object.
      */
     @Test
     public void testJAXB() {
         // null list.
         VInterfaceList ifList = new VInterfaceList(null);
         String rootName = "interfaces";
-        jaxbTest(ifList, rootName);
+        jaxbTest(ifList, VInterfaceList.class, rootName);
+        jsonTest(ifList, VInterfaceList.class);
 
         // Empty list.
         List<VInterface> list = new ArrayList<VInterface>();
         ifList = new VInterfaceList(list);
-        jaxbTest(ifList, rootName);
+        jaxbTest(ifList, VInterfaceList.class, rootName);
+        jsonTest(ifList, VInterfaceList.class);
 
         VNodeState[] states = VNodeState.values();
         for (String name: createStrings("nm")) {
@@ -154,7 +157,8 @@ public class VInterfaceListTest extends TestBase {
                         List<VInterface> one = new ArrayList<VInterface>();
                         one.add(viface);
                         ifList = new VInterfaceList(one);
-                        jaxbTest(ifList, rootName);
+                        jaxbTest(ifList, VInterfaceList.class, rootName);
+                        jsonTest(ifList, VInterfaceList.class);
 
                         list.add(viface);
                     }
@@ -163,7 +167,8 @@ public class VInterfaceListTest extends TestBase {
         }
 
         ifList = new VInterfaceList(list);
-        jaxbTest(ifList, rootName);
+        jaxbTest(ifList, VInterfaceList.class, rootName);
+        jsonTest(ifList, VInterfaceList.class);
     }
 
     /**

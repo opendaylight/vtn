@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -36,6 +36,7 @@
     <!-- Ignore maven-site-plugin goals -->
     <vtn.site.skip>true</vtn.site.skip>
     <vtn.karaf.dir>${project.build.directory}/assembly</vtn.karaf.dir>
+    <vtn.karaf.sysdir>${vtn.karaf.dir}/system</vtn.karaf.sysdir>
   </properties>
 
   <dependencies>
@@ -77,6 +78,12 @@
       <classifier>features</classifier>
       <type>xml</type>
       <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.config</artifactId>
+      <classifier>config</classifier>
+      <type>xml</type>
     </dependency>
   </dependencies>
 
@@ -230,12 +237,12 @@
             </goals>
             <phase>prepare-package</phase>
             <configuration>
-             <outputDirectory>${vtn.karaf.dir}</outputDirectory>
-             <groupId>org.opendaylight.controller</groupId>
-             <includeArtifactIds>opendaylight-karaf-resources</includeArtifactIds>
-             <excludes>META-INF\/**</excludes>
-             <excludeTransitive>true</excludeTransitive>
-             <ignorePermissions>false</ignorePermissions>
+              <outputDirectory>${vtn.karaf.dir}</outputDirectory>
+              <groupId>org.opendaylight.controller</groupId>
+              <includeArtifactIds>opendaylight-karaf-resources</includeArtifactIds>
+              <excludes>META-INF\/**</excludes>
+              <excludeTransitive>true</excludeTransitive>
+              <ignorePermissions>false</ignorePermissions>
             </configuration>
           </execution>
 
@@ -262,6 +269,24 @@
               <overWriteSnapshots>true</overWriteSnapshots>
             </configuration>
           </execution>
+
+          <!-- Include configuration file for config subsystem in archive. -->
+          <execution>
+            <id>copy-config-file</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <configuration>
+              <outputDirectory>${vtn.karaf.sysdir}</outputDirectory>
+              <includeGroupIds>org.opendaylight.vtn</includeGroupIds>
+              <includeArtifactIds>manager.config</includeArtifactIds>
+              <classifier>config</classifier>
+              <type>xml</type>
+              <useRepositoryLayout>true</useRepositoryLayout>
+            </configuration>
+          </execution>
+
         </executions>
       </plugin>
 

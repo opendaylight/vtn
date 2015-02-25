@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -46,23 +46,28 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
+import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
+import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -80,7 +85,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3947051458930048809L;
+    private static final long serialVersionUID = 889018147735369186L;
 
     /**
      * Logger instance.
@@ -209,11 +214,12 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * Add VLAN mapping to this vBridge.
      *
      * @param mgr     VTN Manager serivce.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param vlconf  Configuration for the VLAN mapping.
      * @return  Information about the added VLAN mapping is returned.
      * @throws VTNException  An error occurred.
      */
-    VlanMap addVlanMap(VTNManagerImpl mgr, VlanMapConfig vlconf)
+    VlanMap addVlanMap(VTNManagerImpl mgr, TxContext ctx, VlanMapConfig vlconf)
         throws VTNException {
         if (vlconf == null) {
             Status status = MiscUtils.
@@ -222,7 +228,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         }
 
         short vlan = vlconf.getVlan();
-        MiscUtils.checkVlan(vlan);
+        ProtocolUtils.checkVlan(vlan);
 
         // Create ID for this VLAN mapping.
         Node node = vlconf.getNode();
@@ -239,7 +245,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         Lock wrlock = writeLock();
         try {
             // Register a new VLAN mapping to the resource manager.
-            vmap.register(mgr, path, nvlan);
+            vmap.register(mgr, ctx, path, nvlan);
             vlanMaps.put(id, vmap);
 
             VlanMap vlmap = new VlanMap(id, node, vlan);
@@ -797,13 +803,15 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      *    The given packet was discarded by a flow filter.
      * @throws RedirectFlowException
      *    The given packet was redirected by a flow filter.
+     * @throws VTNException
+     *    An error occurred.
      */
     private MacTableEntry getDestination(VTNManagerImpl mgr,
                                          PacketContext pctx,
                                          MacAddressTable table)
-        throws DropFlowException, RedirectFlowException {
+        throws DropFlowException, RedirectFlowException, VTNException {
         byte[] dst = pctx.getDestinationAddress();
-        if (!NetUtils.isUnicastMACAddr(dst)) {
+        if (!EtherAddress.isUnicast(dst)) {
             // Flood the non-unicast packet.
             flood(mgr, pctx);
             return null;
@@ -840,7 +848,9 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             return null;
         }
 
-        if (!mgr.isEnabled(outgoing)) {
+        SalPort egress = SalPort.create(outgoing);
+        InventoryReader reader = pctx.getTxContext().getInventoryReader();
+        if (!reader.isEnabled(egress)) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("{}:{}: Drop packet because outgoing port is down: " +
                          "{}", getContainerName(), getNodePath(),
@@ -1134,21 +1144,23 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * file.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    A runtime context for MD-SAL datastore transaction task.
      * @param state  Current state of this node.
      * @return  New state of this node.
      */
     @Override
-    protected VNodeState resuming(VTNManagerImpl mgr, VNodeState state) {
+    protected VNodeState resuming(VTNManagerImpl mgr, TxContext ctx,
+                                  VNodeState state) {
         // Resume MAC mapping.
         VNodeState cur = state;
         MacMapImpl mmap = macMap;
         if (mmap != null) {
-            cur = mmap.resume(mgr, cur);
+            cur = mmap.resume(mgr, ctx, cur);
         }
 
         // Resume VLAN mappings.
         for (VlanMapImpl vmap: vlanMaps.values()) {
-            cur = vmap.resume(mgr, cur);
+            cur = vmap.resume(mgr, ctx, cur);
         }
 
         return cur;
@@ -1274,22 +1286,22 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     /**
      * Invoked when a node is added, removed, or changed.
      *
-     * @param mgr   VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param node  Node being updated.
-     * @param type  Type of update.
+     * @param mgr  VTN Manager service.
+     * @param db   Virtual node state DB.
+     * @param ev   A {@link VtnNodeEvent} instance.
+     * @throws VTNException  An error occurred.
      */
     @Override
     void notifyNode(VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-                    Node node, UpdateType type) {
+                    VtnNodeEvent ev) throws VTNException {
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNode(mgr, db, bst, node, type);
+            VNodeState state = notifyIfNode(mgr, db, bst, ev);
 
             MacMapImpl mmap = macMap;
             if (mmap != null) {
-                VNodeState s = mmap.notifyNode(mgr, state, node, type);
+                VNodeState s = mmap.notifyNode(mgr, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNode(macmap): {} -> {}",
                               getContainerName(), getNodePath(), state, s);
@@ -1298,7 +1310,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                VNodeState s = vmap.notifyNode(mgr, db, state, node, type);
+                VNodeState s = vmap.notifyNode(mgr, db, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNode(vmap:{}): {} -> {}",
                               getContainerName(), getNodePath(),
@@ -1317,27 +1329,23 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * This method is called when some properties of a node connector are
      * added/deleted/changed.
      *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param mgr  VTN Manager service.
+     * @param db   Virtual node state DB.
+     * @param ev   A {@link VtnPortEvent} instance.
+     * @throws VTNException  An error occurred.
      */
     @Override
     void notifyNodeConnector(VTNManagerImpl mgr,
                              ConcurrentMap<VTenantPath, Object> db,
-                             NodeConnector nc, VNodeState pstate,
-                             UpdateType type) {
+                             VtnPortEvent ev) throws VTNException {
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNodeConnector(mgr, db, bst, nc, pstate,
-                                                     type);
+            VNodeState state = notifyIfNodeConnector(mgr, db, bst, ev);
 
             MacMapImpl mmap = macMap;
             if (mmap != null) {
-                VNodeState s = mmap.notifyNodeConnector(mgr, state, nc, pstate,
-                                                        type);
+                VNodeState s = mmap.notifyNodeConnector(mgr, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNodeConnector(macmap): {} -> {}",
                               getContainerName(), getNodePath(), state, s);
@@ -1346,8 +1354,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                VNodeState s = vmap.notifyNodeConnector(mgr, db, state, nc,
-                                                        pstate, type);
+                VNodeState s = vmap.notifyNodeConnector(mgr, db, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNodeConnector(vmap:{}): {} -> {}",
                               getContainerName(), getNodePath(),
@@ -1361,49 +1368,6 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             wrlock.unlock();
         }
     }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     */
-    @Override
-    void edgeUpdate(VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-                    EdgeUpdateState estate) {
-        Lock wrlock = readLock();
-        try {
-            BridgeState bst = getBridgeState(db);
-            VNodeState state = edgeIfUpdate(mgr, db, bst, estate);
-
-            MacMapImpl mmap = macMap;
-            if (mmap != null) {
-                VNodeState s = mmap.edgeUpdate(mgr, state, estate);
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}: edgeUpdate(macmap): {} -> {}",
-                              getContainerName(), getNodePath(), state, s);
-                }
-                state = s;
-            }
-
-            for (VlanMapImpl vmap: vlanMaps.values()) {
-                VNodeState s = vmap.edgeUpdate(mgr, db, state, estate);
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}: edgeUpdate(vmap:{}): {} -> {}",
-                              getContainerName(), getNodePath(),
-                              vmap.getMapId(), state, s);
-                }
-                state = s;
-            }
-
-            setState(mgr, db, bst, state);
-        } finally {
-            wrlock.unlock();
-        }
-    }
-
 
     /**
      * Handle the received packet.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -60,14 +60,16 @@ public class ManagerVersionTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link ManagerVersion} is mapped to XML root element.
+     * Ensure that {@link ManagerVersion} is mapped to both XML root element
+     * and JSON object.
      */
     @Test
     public void testJAXB() {
         for (int api = 0; api < 3; api++) {
             for (BundleVersion bv: createBundleVersions()) {
                 ManagerVersion mv = new ManagerVersion(api, bv);
-                jaxbTest(mv, "version");
+                jaxbTest(mv, ManagerVersion.class, "version");
+                jsonTest(mv, ManagerVersion.class);
             }
         }
     }

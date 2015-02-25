@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,6 +19,7 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.Status;
@@ -37,7 +38,7 @@ public abstract class PathMapImpl implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4357453759022403623L;
+    private static final long serialVersionUID = 8053791075634629385L;
 
     /**
      * The minimum value of index.
@@ -109,12 +110,9 @@ public abstract class PathMapImpl implements Serializable {
         condition = ptmap.getFlowConditionName();
         MiscUtils.checkName("Flow condition", condition);
 
+        // Use PathPolicyConfigBuilder for verifying path policy ID.
         policyId = ptmap.getPathPolicyId();
-        if (policyId != PathPolicyImpl.POLICY_ID &&
-            policyId != PathPolicyImpl.POLICY_DEFAULT) {
-            String msg = "Invalid policy ID: " + policyId;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
+        new PathPolicyConfigBuilder.Data().setId(Integer.valueOf(policyId));
 
         idleTimeout = getTimeout(ptmap.getIdleTimeout(), "idle");
         hardTimeout = getTimeout(ptmap.getHardTimeout(), "hard");
@@ -205,7 +203,7 @@ public abstract class PathMapImpl implements Serializable {
         }
 
         RouteResolver rr = mgr.getRouteResolver(policyId);
-        if (rr == null || !mgr.pathPolicyExists(policyId)) {
+        if (rr == null) {
             logger.debug("{}{}: Ignore path map: path policy not found: {}",
                          mgr.getContainerName(), getLogPrefix(), policyId);
             return null;

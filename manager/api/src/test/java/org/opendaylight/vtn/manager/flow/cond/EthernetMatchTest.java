@@ -9,11 +9,10 @@
 
 package org.opendaylight.vtn.manager.flow.cond;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -227,7 +226,7 @@ public class EthernetMatchTest extends TestBase {
                             EthernetMatch em =
                                 new EthernetMatch(src, dst, type, vlan, pri);
                             EthernetMatch em1 = (EthernetMatch)
-                                jaxbTest(em, XML_ROOT);
+                                jaxbTest(em, EthernetMatch.class, XML_ROOT);
                             assertEquals(null, em1.getValidationStatus());
                         }
                     }
@@ -240,6 +239,7 @@ public class EthernetMatchTest extends TestBase {
             "", "aa:bb:cc:dd:ee:ff:11", "00:11", "bad_address",
         };
 
+        Unmarshaller um = createUnmarshaller(EthernetMatch.class);
         try {
             for (String addr: badAddrs) {
                 for (String attr: new String[]{"src", "dst"}) {
@@ -247,10 +247,7 @@ public class EthernetMatchTest extends TestBase {
                     String xml = builder.append('<').append(XML_ROOT).
                         append(' ').append(attr).append("=\"").append(addr).
                         append("\" />").toString();
-                    ByteArrayInputStream in =
-                        new ByteArrayInputStream(xml.getBytes());
-                    EthernetMatch em =
-                        JAXB.unmarshal(in, EthernetMatch.class);
+                    EthernetMatch em = unmarshal(um, xml, EthernetMatch.class);
                     Status st = em.getValidationStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                 }

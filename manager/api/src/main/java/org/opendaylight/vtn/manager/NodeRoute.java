@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,7 +27,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * within the same physical switch.
  *
  * <p>
- *   An instance of {@code NodeRoute} instance represents two physical ports
+ *   An instance of {@code NodeRoute} represents two physical ports
  *   in the same physical switch. The route of the packet in the physical
  *   network from the source to the destination physical switch port is
  *   represented by a sequence of {@code NodeRoute} instances.

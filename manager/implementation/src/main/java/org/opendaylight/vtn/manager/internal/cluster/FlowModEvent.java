@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,7 +17,9 @@ import org.slf4j.Logger;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 
 import org.opendaylight.vtn.manager.internal.ClusterFlowModTask;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 
 /**
  * {@code FlowModEvent} describes an cluster event object which directs
@@ -33,7 +35,7 @@ public abstract class FlowModEvent extends ClusterEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3197194546736190157L;
+    private static final long serialVersionUID = 2722387487521737996L;
 
     /**
      * List of flow entries to be modified.
@@ -71,9 +73,19 @@ public abstract class FlowModEvent extends ClusterEvent {
     @Override
     protected final void eventReceived(VTNManagerImpl mgr, boolean local) {
         if (!local) {
-            for (FlowEntry fent: flowEntries) {
-                ClusterFlowModTask task = createTask(mgr, fent);
-                mgr.postAsync(task);
+            VTNManagerProvider provider = mgr.getVTNProvider();
+            if (provider == null) {
+                return;
+            }
+
+            TxContext ctx = provider.newTxContext();
+            try {
+                for (FlowEntry fent: flowEntries) {
+                    ClusterFlowModTask task = createTask(mgr, ctx, fent);
+                    mgr.postAsync(task);
+                }
+            } finally {
+                ctx.cancelTransaction();
             }
         }
     }
@@ -117,9 +129,11 @@ public abstract class FlowModEvent extends ClusterEvent {
      * Create a flow mod task to modify the given flow entry.
      *
      * @param mgr   VTN Manager service.
+     * @param ctx   MD-SAL datastore transaction context.
      * @param fent  A flow entry to be modified.
      * @return  A flow mod task to modify the given flow entry.
      */
     protected abstract ClusterFlowModTask createTask(VTNManagerImpl mgr,
+                                                     TxContext ctx,
                                                      FlowEntry fent);
 }

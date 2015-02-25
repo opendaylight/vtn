@@ -1,0 +1,103 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-topology {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:impl:topology";
+    prefix vtopo;
+
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+    import network-topology {
+        prefix topo;
+        revision-date 2013-10-21;
+    }
+
+    description
+      "The internal module for managing network topology.
+       Application other than VTN Manager must not use models defined in
+       this module.";
+
+    revision 2015-02-09 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-link-info {
+        description "Information about inter-switch link.";
+
+        leaf link-id {
+            description "The identifier of the inter-switch link.";
+            type topo:link-id;
+        }
+
+        leaf source {
+            description "The source switch port of the link.";
+            type inv:node-connector-id;
+        }
+
+        leaf destination {
+            description "The destination switch port of the link.";
+            type inv:node-connector-id;
+        }
+    }
+
+    container vtn-topology {
+        description
+          "The root container of all inter-switch links recognized by the
+           VTN Manager.";
+        config false;
+        presence
+          "Indicates that the inventory management is active.";
+
+        list vtn-link {
+            description
+              "A list of inter-switch links recognized by the VTN Manager.";
+            key "link-id";
+            uses vtn-link-info;
+        }
+    }
+
+    container ignored-links {
+        description
+          "The root container of inter-switch links ignored by the
+           VTN Manager.";
+        config false;
+        presence
+          "Indicates that the inventory management is active.";
+
+        list ignored-link {
+            description
+              "A list of inter-switch links ignored by the VTN Manager.";
+            key "link-id";
+            uses vtn-link-info;
+        }
+    }
+
+    notification routing-updated {
+        description
+          "A notification which indicates that the packet routing table
+           has been updated.";
+
+        list added-link {
+            description
+              "A list of inter-switch links added to the packet routing
+               table.";
+            uses vtn-link-info;
+        }
+
+        list removed-link {
+            description
+              "A list of inter-switch links removed from the packet routing
+               table.";
+            uses vtn-link-info;
+        }
+    }
+}

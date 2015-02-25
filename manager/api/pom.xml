@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -15,9 +15,9 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>manager.common</artifactId>
+    <artifactId>manager.common.java</artifactId>
     <version>0.3.0-SNAPSHOT</version>
-    <relativePath>../common</relativePath>
+    <relativePath>../common/java</relativePath>
   </parent>
 
   <artifactId>manager</artifactId>
@@ -66,11 +66,7 @@
         <configuration>
           <instructions>
             <Export-Package>
-              org.opendaylight.vtn.manager,
-              org.opendaylight.vtn.manager.flow,
-              org.opendaylight.vtn.manager.flow.action,
-              org.opendaylight.vtn.manager.flow.cond,
-              org.opendaylight.vtn.manager.flow.filter
+              org.opendaylight.vtn.manager*
             </Export-Package>
             <Import-Package>
               org.opendaylight.controller.hosttracker.hostAware,
@@ -80,6 +76,7 @@
               org.opendaylight.controller.sal.match,
               org.opendaylight.controller.sal.packet.address,
               org.opendaylight.controller.sal.utils,
+              org.opendaylight.yang.gen.v1.*,
               com.fasterxml.jackson.databind.annotation,
               javax.xml.bind.annotation,
               javax.xml.bind.annotation.adapters
@@ -91,6 +88,17 @@
   </build>
 
   <dependencies>
+    <!-- OpenDaylight YANG Tools -->
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>ietf-yang-types</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>ietf-inet-types</artifactId>
+    </dependency>
+
+    <!-- OpenDaylight AD-SAL -->
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
@@ -101,6 +109,7 @@
       <artifactId>hosttracker</artifactId>
     </dependency>
 
+    <!-- Jackson -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
@@ -38,8 +41,6 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 
 /**
@@ -315,7 +316,7 @@ public class MacAddressTable {
      *
      * <p>
      *   Note that {@code null} is always passed to
-     *   {@link PortFilter#accept(NodeConnector, PortProperty)} as port
+     *   {@link PortFilter#accept(NodeConnector, org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort)} as port
      *   property.
      * </p>
      */
@@ -353,7 +354,7 @@ public class MacAddressTable {
      *
      * <p>
      *   Note that {@code null} is always passed to
-     *   {@link PortFilter#accept(NodeConnector, PortProperty)} as port
+     *   {@link PortFilter#accept(NodeConnector, org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort)} as port
      *   property.
      * </p>
      */
@@ -506,7 +507,7 @@ public class MacAddressTable {
      * @return  A {@code Long} object which represents the given MAC address.
      */
     public static Long getTableKey(byte[] addr) {
-        long mac = NetUtils.byteArray6ToLong(addr);
+        long mac = EtherAddress.toLong(addr);
         return Long.valueOf(mac);
     }
 
@@ -522,8 +523,7 @@ public class MacAddressTable {
         bridgePath = path;
 
         // Register an aging task to the global timer.
-        IVTNResourceManager resMgr = mgr.getResourceManager();
-        Timer timer = resMgr.getTimer();
+        Timer timer = mgr.getVTNProvider().getTimer();
         installAging(timer, age);
     }
 
@@ -534,8 +534,7 @@ public class MacAddressTable {
      */
     public void setAgeInterval(int age) {
         if (age != ageInterval) {
-            IVTNResourceManager resMgr = vtnManager.getResourceManager();
-            Timer timer = resMgr.getTimer();
+            Timer timer = vtnManager.getVTNProvider().getTimer();
 
             synchronized (this) {
                 if (LOG.isDebugEnabled()) {
@@ -563,7 +562,7 @@ public class MacAddressTable {
      */
     public void add(PacketContext pctx, VBridgeNode bnode) {
         byte[] src = pctx.getSourceAddress();
-        if (!NetUtils.isUnicastMACAddr(src)) {
+        if (!EtherAddress.isUnicast(src)) {
             return;
         }
 
@@ -603,7 +602,7 @@ public class MacAddressTable {
                     StringBuilder builder =
                         new StringBuilder(getTableName());
                     builder.append(": Unable to create host: src=").
-                        append(HexEncode.bytesToHexStringFormat(src)).
+                        append(ByteUtils.toHexString(src)).
                         append(", ipaddr=").append(ipaddr).
                         append(", port=").append(port.toString()).
                         append(", vlan=").append((int)vlan);
@@ -918,7 +917,7 @@ public class MacAddressTable {
         // Cancel the aging task.
         agingTask.cancel();
         if (purge) {
-            vtnManager.getResourceManager().getTimer().purge();
+            vtnManager.getVTNProvider().getTimer().purge();
         }
     }
 
@@ -1136,9 +1135,8 @@ public class MacAddressTable {
             } catch (UnknownHostException e) {
                 // This should never happen.
                 LOG.error("{}: Invalid IP address: {}, ipaddr={}",
-                          getTableName(),
-                          pctx.getDescription(),
-                          HexEncode.bytesToHexStringFormat(sip));
+                          getTableName(), pctx.getDescription(),
+                          ByteUtils.toHexString(sip));
             }
         }
 

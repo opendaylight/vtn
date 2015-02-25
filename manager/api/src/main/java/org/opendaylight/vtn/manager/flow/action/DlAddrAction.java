@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,7 +18,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.controller.sal.utils.HexEncode;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -127,8 +129,7 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @XmlAttribute(name = "address", required = true)
     public final String getMacAddress() {
-        return (address == null)
-            ? null : HexEncode.bytesToHexStringFormat(address);
+        return ByteUtils.toHexString(address);
     }
 
     /**
@@ -142,15 +143,13 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @SuppressWarnings("unused")
     private void setMacAddress(String addr) {
-        if (addr != null) {
-            try {
-                address = HexEncode.bytesFromHexString(addr);
-            } catch (Exception e) {
-                StringBuilder builder = new StringBuilder("Invalid address: ");
-                builder.append(addr);
-                validationStatus =
-                    new Status(StatusCode.BADREQUEST, builder.toString());
-            }
+        try {
+            address = EtherAddress.toBytes(addr);
+        } catch (RuntimeException e) {
+            StringBuilder builder = new StringBuilder("Invalid address: ");
+            builder.append(addr);
+            validationStatus =
+                new Status(StatusCode.BADREQUEST, builder.toString());
         }
     }
 
@@ -193,8 +192,7 @@ public abstract class DlAddrAction extends FlowAction {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append('[');
         if (address != null) {
-            builder.append("addr=").
-                append(HexEncode.bytesToHexStringFormat(address));
+            builder.append("addr=").append(ByteUtils.toHexString(address));
         }
         builder.append(']');
 

@@ -92,7 +92,7 @@ public class PushVlanActionTest extends TestBase {
         EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
-            jaxbTest(act, "pushvlan");
+            jaxbTest(act, PushVlanAction.class, "pushvlan");
         }
     }
 

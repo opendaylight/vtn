@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -103,19 +103,22 @@ public class DataFlowListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link DataFlowList} is mapped to XML root element.
+     * Ensure that {@link DataFlowList} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
         // null list.
         DataFlowList dflowList = new DataFlowList(null);
         String rootName = "dataflows";
-        jaxbTest(dflowList, rootName);
+        jaxbTest(dflowList, DataFlowList.class, rootName);
+        jsonTest(dflowList, DataFlowList.class);
 
         // Empty list.
         List<DataFlow> list = new ArrayList<DataFlow>();
         dflowList = new DataFlowList(list);
-        jaxbTest(dflowList, rootName);
+        jaxbTest(dflowList, DataFlowList.class, rootName);
+        jsonTest(dflowList, DataFlowList.class);
         short ids = 123;
         long created = 14374808;
         short idle = 300;
@@ -138,9 +141,11 @@ public class DataFlowListTest extends TestBase {
         List<DataFlow> one = new ArrayList<DataFlow>();
         one.add(dataFlow);
         dflowList = new DataFlowList(one);
-        jaxbTest(dflowList, rootName);
+        jaxbTest(dflowList, DataFlowList.class, rootName);
+        jsonTest(dflowList, DataFlowList.class);
         list.add(dataFlow);
         dflowList = new DataFlowList(list);
-        jaxbTest(dflowList, rootName);
+        jaxbTest(dflowList, DataFlowList.class, rootName);
+        jsonTest(dflowList, DataFlowList.class);
     }
 }

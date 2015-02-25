@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,8 +13,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.L4Packet;
-import org.opendaylight.vtn.manager.internal.packet.PortProtoPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
+import org.opendaylight.vtn.manager.internal.packet.cache.PortProtoPacket;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
 

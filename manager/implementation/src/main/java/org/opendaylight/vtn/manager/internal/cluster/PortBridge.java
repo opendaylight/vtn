@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,24 +22,30 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.ActionList;
-import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
+import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.routing.RoutingEvent;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
 
-import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.core.Path;
-import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.PacketResult;
-import org.opendaylight.controller.sal.utils.NetUtils;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code PortBridge} class describes virtual bridge that contains
@@ -58,7 +64,7 @@ public abstract class PortBridge<T extends PortInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3262872639041471371L;
+    private static final long serialVersionUID = 7583382547288594923L;
 
     /**
      * Construct an abstract bridge node that can have port mappings.
@@ -96,6 +102,7 @@ public abstract class PortBridge<T extends PortInterface>
      * virtual interface.
      *
      * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param path    Path to the virtual interface.
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
@@ -104,13 +111,14 @@ public abstract class PortBridge<T extends PortInterface>
      *          was changed. Otherwise {@code false} is returned.
      * @throws VTNException  An error occurred.
      */
-    final boolean setPortMap(VTNManagerImpl mgr, VInterfacePath path,
-                             PortMapConfig pmconf) throws VTNException {
+    final boolean setPortMap(VTNManagerImpl mgr, TxContext ctx,
+                             VInterfacePath path, PortMapConfig pmconf)
+        throws VTNException {
         // Acquire write lock to serialize port mapping change.
         Lock wrlock = writeLock();
         try {
             T vif = getInterfaceImpl(path);
-            VNodeState ifState = vif.setPortMap(mgr, pmconf);
+            VNodeState ifState = vif.setPortMap(mgr, ctx, pmconf);
             if (ifState == null) {
                 // Unchanged.
                 return false;
@@ -131,19 +139,19 @@ public abstract class PortBridge<T extends PortInterface>
     }
 
     /**
-     * Invoked when a node is added, removed, or changed.
+     * Invoked when a node has been added or removed.
      *
-     * @param mgr   VTN Manager service.
-     * @param db    Virtual node state DB.
-     * @param node  Node being updated.
-     * @param type  Type of update.
+     * @param mgr  VTN Manager service.
+     * @param db   Virtual node state DB.
+     * @param ev   A {@link VtnNodeEvent} instance.
+     * @throws VTNException  An error occurred.
      */
     void notifyNode(VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-                    Node node, UpdateType type) {
+                    VtnNodeEvent ev) throws VTNException {
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNode(mgr, db, bst, node, type);
+            VNodeState state = notifyIfNode(mgr, db, bst, ev);
             setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
@@ -154,41 +162,18 @@ public abstract class PortBridge<T extends PortInterface>
      * This method is called when some properties of a node connector are
      * added/deleted/changed.
      *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param mgr  VTN Manager service.
+     * @param db   Virtual node state DB.
+     * @param ev   A {@link VtnPortEvent} instance.
+     * @throws VTNException  An error occurred.
      */
     void notifyNodeConnector(VTNManagerImpl mgr,
                              ConcurrentMap<VTenantPath, Object> db,
-                             NodeConnector nc, VNodeState pstate,
-                             UpdateType type) {
+                             VtnPortEvent ev) throws VTNException {
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNodeConnector(mgr, db, bst, nc, pstate,
-                                                     type);
-            setState(mgr, db, bst, state);
-        } finally {
-            wrlock.unlock();
-        }
-    }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     */
-    void edgeUpdate(VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-                    EdgeUpdateState estate) {
-        Lock wrlock = writeLock();
-        try {
-            BridgeState bst = getBridgeState(db);
-            VNodeState state = edgeIfUpdate(mgr, db, bst, estate);
+            VNodeState state = notifyIfNodeConnector(mgr, db, bst, ev);
             setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
@@ -214,7 +199,7 @@ public abstract class PortBridge<T extends PortInterface>
         NodeConnector nc = pctx.getOutgoingNodeConnector();
         assert nc != null;
         short vlan = pctx.getVlan();
-        long mac = NetUtils.byteArray6ToLong(pctx.getDestinationAddress());
+        long mac = EtherAddress.toLong(pctx.getDestinationAddress());
 
         Lock rdlock = readLock();
         try {
@@ -234,13 +219,14 @@ public abstract class PortBridge<T extends PortInterface>
                 return false;
             }
 
-            boolean ret = mgr.transmit(nc, pctx.getFrame());
-            if (ret && logger.isTraceEnabled()) {
-                logger.trace("{}:{}: Send ARP request for probing: {}",
+            if (logger.isTraceEnabled()) {
+                logger.trace("{}:{}: Sending ARP request for probing: {}",
                              getContainerName(), getNodePath(),
                              pctx.getDescription(nc));
             }
-            return ret;
+
+            mgr.transmit(nc, pctx.getFrame());
+            return true;
         } finally {
             rdlock.unlock();
         }
@@ -265,7 +251,7 @@ public abstract class PortBridge<T extends PortInterface>
         throws DropFlowException, RedirectFlowException {
         NodeConnector incoming = pctx.getIncomingNodeConnector();
         short vlan = pctx.getVlan();
-        long mac = NetUtils.byteArray6ToLong(pctx.getSourceAddress());
+        long mac = EtherAddress.toLong(pctx.getSourceAddress());
 
         // Writer lock is required because this method may change the state
         // of the bridge.
@@ -381,8 +367,9 @@ public abstract class PortBridge<T extends PortInterface>
      * Invoked when the recalculation of the all shortest path tree is done.
      *
      * @param mgr  VTN manager service.
+     * @param ev   A {@link RoutingEvent} instance.
      */
-    final void recalculateDone(VTNManagerImpl mgr) {
+    final void recalculateDone(VTNManagerImpl mgr, RoutingEvent ev) {
         // Writer lock is required because this method may change the state
         // of the bridge.
         Lock wrlock = writeLock();
@@ -398,7 +385,7 @@ public abstract class PortBridge<T extends PortInterface>
             // to determine only whether a packet is reachable from source to
             // destination.
             List<ObjectPair<Node, Node>> resolved =
-                bst.removeResolvedPath(mgr);
+                bst.removeResolvedPath(ev.getTxContext());
             Logger logger = getLogger();
             if (logger.isInfoEnabled()) {
                 VNodePath path = getNodePath();
@@ -462,24 +449,31 @@ public abstract class PortBridge<T extends PortInterface>
 
         // Ensure that the destination host is reachable.
         Logger logger = getLogger();
-        NodeConnector incoming = pctx.getIncomingNodeConnector();
-        Node snode = incoming.getNode();
-        Node dnode = outgoing.getNode();
-        Path path;
-        if (!snode.equals(dnode)) {
-            RouteResolver rr = pctx.getRouteResolver();
-            path = rr.getRoute(snode, dnode);
-            if (path == null) {
-                if (addFaultedPath(mgr, snode, dnode)) {
-                    logger.error("{}:{}: Path fault: {} -> {}",
-                                 getContainerName(), getNodePath(),
-                                 snode, dnode);
-                }
-                return;
-            }
-        } else {
-            path = null;
+        SalPort egress = SalPort.create(outgoing);
+        if (egress == null) {
+            // This should never happen.
+            logger.error("{}:{}: Ignore unsupported egress switch port: {}",
+                         getContainerName(), getNodePath(), outgoing);
+            return;
         }
+
+        SalPort ingress = pctx.getIngressPort();
+        SalNode snode = ingress.getSalNode();
+        SalNode dnode = egress.getSalNode();
+        RouteResolver rr = pctx.getRouteResolver();
+        InventoryReader reader = pctx.getTxContext().getInventoryReader();
+        List<LinkEdge> path = rr.getRoute(reader, snode, dnode);
+        if (path == null) {
+            if (addFaultedPath(mgr, snode, dnode)) {
+                logger.error("{}:{}: Path fault: {} -> {}",
+                             getContainerName(), getNodePath(),
+                             snode, dnode);
+            }
+            return;
+        }
+
+        logger.trace("{}: Packet route resolved: {} -> {} -> {}",
+                     rr.getPathPolicyId(), ingress, path, egress);
 
         // Forward the packet.
         Ethernet frame = pctx.createFrame(outVlan);
@@ -488,7 +482,7 @@ public abstract class PortBridge<T extends PortInterface>
                          getContainerName(), getNodePath(),
                          pctx.getDescription(frame, outgoing, outVlan));
         }
-        mgr.transmit(outgoing, frame);
+        mgr.transmit(egress, frame);
 
         // Install VTN flow.
         installFlow(mgr, pctx, outgoing, outVlan, path);
@@ -502,11 +496,13 @@ public abstract class PortBridge<T extends PortInterface>
      * @param outgoing  A {@link NodeConnector} corresponding to the outgoing
      *                  physical switch port.
      * @param outVlan   A VLAN ID to be set to the outgoing packet.
-     * @param path      Path to the destination address of the received packet.
+     * @param path      A list of {@link LinkEdge} instances which represents
+     *                  packet route to the destination address of the received
+     *                  packet.
      */
     protected final void installFlow(VTNManagerImpl mgr, PacketContext pctx,
                                      NodeConnector outgoing, short outVlan,
-                                     Path path) {
+                                     List<LinkEdge> path) {
         // Create flow entries.
         VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
         if (fdb == null) {
@@ -526,23 +522,21 @@ public abstract class PortBridge<T extends PortInterface>
         short vlan = pctx.getEtherPacket().getOriginalVlan();
         int pri = pctx.getFlowPriority(mgr);
         VTNFlow vflow = fdb.create(mgr);
-        Match match;
-        if (path != null) {
-            // Create flow entries except for egress flow.
-            for (Edge edge: path.getEdges()) {
-                match = pctx.createMatch(incoming);
-                NodeConnector port = edge.getTailNodeConnector();
-                ActionList actions = new ActionList(port.getNode(), vlan);
-                actions.addOutput(port);
-                vflow.addFlow(mgr, match, actions, pri);
-                incoming = edge.getHeadNodeConnector();
-            }
+
+        // Create flow entries except for egress flow.
+        for (LinkEdge le: path) {
+            Match match = pctx.createMatch(incoming);
+            NodeConnector port = le.getSourcePort().getAdNodeConnector();
+            ActionList actions = new ActionList(port.getNode(), vlan);
+            actions.addOutput(port);
+            vflow.addFlow(mgr, match, actions, pri);
+            incoming = le.getDestinationPort().getAdNodeConnector();
         }
 
         // Create egress flow entry.
         Node dnode = outgoing.getNode();
         assert incoming.getNode().equals(outgoing.getNode());
-        match = pctx.createMatch(incoming);
+        Match match = pctx.createMatch(incoming);
 
         // Note that flow action that modifies the VLAN tag has to be set
         // before other actions.
@@ -649,29 +643,31 @@ public abstract class PortBridge<T extends PortInterface>
      * @param mgr   VTN Manager service.
      * @param db    Virtual node state DB.
      * @param bst   Runtime state of the bridge.
-     * @param node  Node being updated.
-     * @param type  Type of update.
+     * @param ev    A {@link VtnNodeEvent} instance.
      * @return  New state of this node.
+     * @throws VTNException  An error occurred.
      */
     protected final VNodeState notifyIfNode(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        BridgeState bst, Node node, UpdateType type) {
-        if (type == UpdateType.REMOVED) {
+        BridgeState bst, VtnNodeEvent ev) throws VTNException {
+        if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
             // Remove faulted paths that contain removed node.
+            SalNode snode = ev.getSalNode();
+            Node node = snode.getAdNode();
             int removed = bst.removeFaultedPath(node);
             if (removed != 0) {
                 Logger logger = getLogger();
                 logger.info("{}:{}: Remove {} faulted path{} that contains " +
                             "removed node: {}", getContainerName(),
                             getNodePath(), removed, (removed > 1) ? "s" : "",
-                            node);
+                            snode);
             }
         }
 
         VNodeState state = (bst.getFaultedPathSize() == 0)
             ? VNodeState.UNKNOWN : VNodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
-            VNodeState s = vif.notifyNode(mgr, db, state, node, type);
+            VNodeState s = vif.notifyNode(mgr, db, state, ev);
             if (vif.isEnabled()) {
                 Logger logger = getLogger();
                 if (logger.isTraceEnabled()) {
@@ -693,76 +689,40 @@ public abstract class PortBridge<T extends PortInterface>
      *   Note that this method must be called with holding the bridge lock.
      * </p>
      *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param bst     Runtime state of the bridge.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param mgr  VTN Manager service.
+     * @param db   Virtual node state DB.
+     * @param bst  Runtime state of the bridge.
+     * @param ev   A {@link VtnPortEvent} instance.
      * @return  New state of this node.
+     * @throws VTNException  An error occurred.
      */
     protected final VNodeState notifyIfNodeConnector(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        BridgeState bst, NodeConnector nc, VNodeState pstate,
-        UpdateType type) {
-        if (type == UpdateType.REMOVED) {
+        BridgeState bst, VtnPortEvent ev) throws VTNException {
+        if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
             // Remove path faults that may be caused by removed node
             // connector. Even if removed paths are still broken, they will
             // be detected by succeeding PACKET_IN.
-            int removed = bst.removeFaultedPath(nc.getNode());
+            SalPort sport = ev.getSalPort();
+            Node node = sport.getAdNode();
+            int removed = bst.removeFaultedPath(node);
             if (removed != 0) {
                 Logger logger = getLogger();
                 logger.info("{}:{}: Remove {} faulted path{} that contains " +
                             "removed node connector: {}", getContainerName(),
                             getNodePath(), removed, (removed > 1) ? "s" : "",
-                            nc);
+                            sport);
             }
         }
 
         VNodeState state = (bst.getFaultedPathSize() == 0)
             ? VNodeState.UNKNOWN : VNodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
-            VNodeState s = vif.notifyNodeConnector(mgr, db, state, nc,
-                                                   pstate, type);
+            VNodeState s = vif.notifyNodeConnector(mgr, db, state, ev);
             if (vif.isEnabled()) {
                 Logger logger = getLogger();
                 if (logger.isTraceEnabled()) {
                     logger.trace("{}:{}: notifyNodeConnector(if:{}): {} -> {}",
-                                 getContainerName(), getNodePath(),
-                                 vif.getName(), state, s);
-                }
-                state = s;
-            }
-        }
-
-        return state;
-    }
-
-    /**
-     * Notify all virtual interfaces of edge changes.
-     *
-     * <p>
-     *   Note that this method must be called with holding the bridge lock.
-     * </p>
-     *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param bst     Runtime state of the bridge.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     * @return  New state of this node.
-     */
-    protected final VNodeState edgeIfUpdate(
-        VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        BridgeState bst, EdgeUpdateState estate) {
-        VNodeState state = (bst.getFaultedPathSize() == 0)
-            ? VNodeState.UNKNOWN : VNodeState.DOWN;
-        for (T vif: getInterfaceMap().values()) {
-            VNodeState s = vif.edgeUpdate(mgr, db, state, estate);
-            if (vif.isEnabled()) {
-                Logger logger = getLogger();
-                if (logger.isTraceEnabled()) {
-                    logger.trace("{}:{}: edgeUpdate(if:{}): {} -> {}",
                                  getContainerName(), getNodePath(),
                                  vif.getName(), state, s);
                 }

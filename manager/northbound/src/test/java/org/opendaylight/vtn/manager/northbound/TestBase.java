@@ -20,7 +20,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
@@ -773,33 +775,36 @@ public abstract class TestBase extends Assert {
      * Ensure that the given object is mapped to XML root element.
      *
      * @param o         An object to be tested.
+     * @param cls       The type of the given object.
      * @param rootName  The name of expected root element.
+     * @param <T>       The type of the given object.
      * @return  Deserialized object.
      */
-    protected static Object jaxbTest(Object o, String rootName) {
+    protected static <T> T jaxbTest(T o, Class<T> cls, String rootName) {
         // Ensure that the class of the given class has XmlRootElement
         // annotation.
-        Class<?> cl = o.getClass();
-        XmlRootElement xmlRoot = cl.getAnnotation(XmlRootElement.class);
+        XmlRootElement xmlRoot = cls.getAnnotation(XmlRootElement.class);
         assertNotNull(xmlRoot);
         assertEquals(rootName, xmlRoot.name());
 
         // Marshal the given object into XML.
-        byte[] bytes = null;
+        Marshaller m = createMarshaller(cls);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            JAXB.marshal(o, out);
-            bytes = out.toByteArray();
+            m.marshal(o, out);
         } catch (Exception e) {
             unexpected(e);
         }
+
+        byte[] bytes = out.toByteArray();
         assertTrue(bytes.length != 0);
 
         // Construct a new Java object from XML.
+        ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+        Unmarshaller um = createUnmarshaller(cls);
         Object newobj = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-            newobj = JAXB.unmarshal(in, cl);
+            newobj = um.unmarshal(in);
         } catch (Exception e) {
             unexpected(e);
         }
@@ -807,7 +812,44 @@ public abstract class TestBase extends Assert {
         assertNotSame(o, newobj);
         assertEquals(o, newobj);
 
-        return newobj;
+        assertTrue(cls.isInstance(newobj));
+        return cls.cast(newobj);
+    }
+
+    /**
+     * Create JAXB marshaller for the given JAXB class.
+     *
+     * @param cls  A class mapped to XML root element.
+     * @return  An JAXB marshaller.
+     */
+    protected static Marshaller createMarshaller(Class<?> cls) {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(cls);
+            Marshaller m = jc.createMarshaller();
+            m.setEventHandler(new TestXmlEventHandler());
+            return m;
+        } catch (Exception e) {
+            unexpected(e);
+            return null;
+        }
+    }
+
+    /**
+     * Create JAXB unmarshaller for the given JAXB class.
+     *
+     * @param cls  A class mapped to XML root element.
+     * @return  An JAXB unmarshaller.
+     */
+    protected static Unmarshaller createUnmarshaller(Class<?> cls) {
+        try {
+            JAXBContext jc = JAXBContext.newInstance(cls);
+            Unmarshaller um = jc.createUnmarshaller();
+            um.setEventHandler(new TestXmlEventHandler());
+            return um;
+        } catch (Exception e) {
+            unexpected(e);
+            return null;
+        }
     }
 
     /**

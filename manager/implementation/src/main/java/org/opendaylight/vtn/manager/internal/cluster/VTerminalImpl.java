@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,9 +31,12 @@ import org.opendaylight.vtn.manager.VTerminal;
 import org.opendaylight.vtn.manager.VTerminalConfig;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.LogProvider;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 
@@ -42,8 +45,6 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.PacketResult;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -59,7 +60,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4401735057418279006L;
+    private static final long serialVersionUID = 2406688533486021084L;
 
     /**
      * Logger instance.
@@ -224,11 +225,11 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      */
     private void notifyHost(VTNManagerImpl mgr, PacketContext pctx) {
         byte[] src = pctx.getSourceAddress();
-        if (!NetUtils.isUnicastMACAddr(src)) {
+        if (!EtherAddress.isUnicast(src)) {
             return;
         }
 
-        long mac = NetUtils.byteArray6ToLong(src);
+        long mac = EtherAddress.toLong(src);
         if (mac == 0L) {
             // Zero address should be ignored.
             LOG.warn("{}:{}: Ignore zero MAC address: {}",
@@ -248,8 +249,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
             // This should never happen.
             LOG.error("{}:{}: Invalid IP address: {}, ipaddr={}",
                       getContainerName(), getNodePath(),
-                      pctx.getDescription(),
-                      HexEncode.bytesToHexStringFormat(sip));
+                      pctx.getDescription(), ByteUtils.toHexString(sip));
             return;
         }
 
@@ -270,7 +270,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
                 StringBuilder builder = new StringBuilder(getContainerName());
                 builder.append(':').append(getNodePath()).
                     append(": Unable to create host: src=").
-                    append(HexEncode.bytesToHexStringFormat(src)).
+                    append(ByteUtils.toHexString(src)).
                     append(", ipaddr=").append(iaddr).
                     append(", port=").append(port.toString()).
                     append(", vlan=").append((int)vlan);
@@ -404,11 +404,13 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      * file.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    A runtime context for MD-SAL datastore transaction task.
      * @param state  Current state of this node.
      * @return  New state of this node.
      */
     @Override
-    protected VNodeState resuming(VTNManagerImpl mgr, VNodeState state) {
+    protected VNodeState resuming(VTNManagerImpl mgr, TxContext ctx,
+                                  VNodeState state) {
         // Nothing to do.
         return state;
     }

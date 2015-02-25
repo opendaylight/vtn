@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -89,16 +89,19 @@ public class MacHostSetTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link MacHostSet} is mapped to XML root element.
+     * Ensure that {@link MacHostSet} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
         String rootName = "machosts";
         MacHostSet mhset = new MacHostSet(null);
-        jaxbTest(mhset, rootName);
+        jaxbTest(mhset, MacHostSet.class, rootName);
+        jsonTest(mhset, MacHostSet.class);
 
         mhset = new MacHostSet(new HashSet<DataLinkHost>());
-        jaxbTest(mhset, rootName);
+        jaxbTest(mhset, MacHostSet.class, rootName);
+        jsonTest(mhset, MacHostSet.class);
 
         List<DataLinkHost> list = new ArrayList<DataLinkHost>();
         short[] vlans = {0, 1, 100, 1000, 4095};
@@ -107,7 +110,8 @@ public class MacHostSetTest extends TestBase {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);
                 list.add(dlhost);
                 mhset = new MacHostSet(list);
-                jaxbTest(mhset, rootName);
+                jaxbTest(mhset, MacHostSet.class, rootName);
+                jsonTest(mhset, MacHostSet.class);
             }
         }
     }

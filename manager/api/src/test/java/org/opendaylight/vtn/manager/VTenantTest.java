@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,9 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.util.HashSet;
 import java.util.List;
-import java.io.ByteArrayInputStream;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -160,7 +159,7 @@ public class VTenantTest extends TestBase {
                         VTenantConfig tconf =
                             createVTenantConfig(desc, iv, hv);
                         VTenant vtenant = new VTenant(name, tconf);
-                        jaxbTest(vtenant, XML_ROOT);
+                        jaxbTest(vtenant, VTenant.class, XML_ROOT);
                     }
                 }
 
@@ -203,10 +202,10 @@ public class VTenantTest extends TestBase {
 
 
         String xml = builder.append("/>").toString();
+        Unmarshaller um = createUnmarshaller(VTenant.class);
         VTenant vtenant = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            vtenant = JAXB.unmarshal(in, VTenant.class);
+            vtenant = unmarshal(um, xml, VTenant.class);
         } catch (Exception e) {
             unexpected(e);
         }

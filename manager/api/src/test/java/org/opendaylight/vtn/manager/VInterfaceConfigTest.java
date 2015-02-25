@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -102,7 +102,7 @@ public class VInterfaceConfigTest extends TestBase {
         for (String desc: createStrings("description")) {
             for (Boolean enabled: createBooleans()) {
                 VInterfaceConfig iconf = new VInterfaceConfig(desc, enabled);
-                jaxbTest(iconf, "interfaceconf");
+                jaxbTest(iconf, VInterfaceConfig.class, "interfaceconf");
             }
         }
     }

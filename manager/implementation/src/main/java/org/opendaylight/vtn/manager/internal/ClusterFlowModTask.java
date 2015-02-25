@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,11 +24,12 @@ public abstract class ClusterFlowModTask extends FlowEntryTask {
     /**
      * Construct a new task.
      *
-     * @param mgr    VTN Manager service.
-     * @param fent   A flow entry to be modified.
+     * @param mgr   VTN Manager service.
+     * @param ctx   MD-SAL datastore transaction context.
+     * @param fent  A flow entry to be modified.
      */
-    ClusterFlowModTask(VTNManagerImpl mgr, FlowEntry fent) {
-        super(mgr, fent);
+    ClusterFlowModTask(VTNManagerImpl mgr, TxContext ctx, FlowEntry fent) {
+        super(mgr, ctx, fent);
     }
 
     /**

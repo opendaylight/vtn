@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -100,19 +100,22 @@ public class VlanMapListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VlanMapList} is mapped to XML root element.
+     * Ensure that {@link VlanMapList} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
         // null list.
         VlanMapList vmList = new VlanMapList(null);
         String rootName = "vlanmaps";
-        jaxbTest(vmList, rootName);
+        jaxbTest(vmList, VlanMapList.class, rootName);
+        jsonTest(vmList, VlanMapList.class);
 
         // Empty list.
         List<VlanMap> list = new ArrayList<VlanMap>();
         vmList = new VlanMapList(list);
-        jaxbTest(vmList, rootName);
+        jaxbTest(vmList, VlanMapList.class, rootName);
+        jsonTest(vmList, VlanMapList.class);
 
         short[] vlans = {-5, 0, 3, 4095};
         for (String id: createStrings("map")) {
@@ -124,7 +127,8 @@ public class VlanMapListTest extends TestBase {
                     List<VlanMap> one = new ArrayList<VlanMap>();
                     one.add(vlmap);
                     vmList = new VlanMapList(one);
-                    jaxbTest(vmList, rootName);
+                    jaxbTest(vmList, VlanMapList.class, rootName);
+                    jsonTest(vmList, VlanMapList.class);
 
                     list.add(vlmap);
                 }
@@ -132,6 +136,7 @@ public class VlanMapListTest extends TestBase {
         }
 
         vmList = new VlanMapList(list);
-        jaxbTest(vmList, rootName);
+        jaxbTest(vmList, VlanMapList.class, rootName);
+        jsonTest(vmList, VlanMapList.class);
     }
 }

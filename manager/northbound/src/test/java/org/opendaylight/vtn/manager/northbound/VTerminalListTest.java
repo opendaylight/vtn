@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -111,19 +111,22 @@ public class VTerminalListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VTerminalList} is mapped to XML root element.
+     * Ensure that {@link VTerminalList} is mapped to both XML root element
+     * and JSON object.
      */
     @Test
     public void testJAXB() {
         // null list.
         VTerminalList vtList = new VTerminalList(null);
         String rootName = "vterminals";
-        jaxbTest(vtList, rootName);
+        jaxbTest(vtList, VTerminalList.class, rootName);
+        jsonTest(vtList, VTerminalList.class);
 
         // Empty list.
         List<VTerminal> list = new ArrayList<VTerminal>();
         vtList = new VTerminalList(list);
-        jaxbTest(vtList, rootName);
+        jaxbTest(vtList, VTerminalList.class, rootName);
+        jsonTest(vtList, VTerminalList.class);
 
         VNodeState[] states = VNodeState.values();
         for (String name: createStrings("vTerminal")) {
@@ -138,7 +141,8 @@ public class VTerminalListTest extends TestBase {
                         List<VTerminal> one = new ArrayList<VTerminal>();
                         one.add(vterm);
                         vtList = new VTerminalList(one);
-                        jaxbTest(vtList, rootName);
+                        jaxbTest(vtList, VTerminalList.class, rootName);
+                        jsonTest(vtList, VTerminalList.class);
 
                         list.add(vterm);
                     }
@@ -147,6 +151,7 @@ public class VTerminalListTest extends TestBase {
         }
 
         vtList = new VTerminalList(list);
-        jaxbTest(vtList, rootName);
+        jaxbTest(vtList, VTerminalList.class, rootName);
+        jsonTest(vtList, VTerminalList.class);
     }
 }

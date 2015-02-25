@@ -77,7 +77,8 @@ public class MacMapConfigInfoTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link MacMapConfigInfo} is mapped to XML root element.
+     * Ensure that {@link MacMapConfigInfo} is mapped to both XML root element
+     * and JSON object.
      */
     @Test
     public void testJAXB() {
@@ -85,7 +86,8 @@ public class MacMapConfigInfoTest extends TestBase {
             for (Set<EthernetHost> deny: createEthernetHostSet(10)) {
                 MacMapConfig mcconf = new MacMapConfig(allow, deny);
                 MacMapConfigInfo mci = new MacMapConfigInfo(mcconf);
-                jaxbTest(mci, "macmapconf");
+                jaxbTest(mci, MacMapConfigInfo.class, "macmapconf");
+                jsonTest(mci, MacMapConfigInfo.class);
             }
         }
     }

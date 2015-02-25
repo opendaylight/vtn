@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.TpPortAction;
 
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -48,7 +48,7 @@ public abstract class TpPortActionImpl extends FlowActionImpl {
         super(act);
 
         port = act.getPort();
-        if (!MiscUtils.isPortNumberValid(port)) {
+        if (!ProtocolUtils.isPortNumberValid(port)) {
             String msg = getErrorMessage(act, "Invalid port number: ", port);
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }

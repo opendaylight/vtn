@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,6 +23,8 @@ import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
@@ -30,7 +32,6 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * JUnit test for {@link MacTableEntry}
@@ -64,7 +65,7 @@ public class MacTableEntryTest extends TestBase {
             VBridgePath bpath = new VBridgePath(path.getTenantName(),
                                                 path.getBridgeName());
             for (EthernetAddress ea: createEthernetAddresses(false)) {
-                long mac = NetUtils.byteArray6ToLong(ea.getValue());
+                long mac = EtherAddress.toLong(ea.getValue());
                 for (NodeConnector nc: createNodeConnectors(3, false)) {
                     for (short vlan: vlans) {
                         for (Set<InetAddress> ips: createInetAddresses(false)) {
@@ -263,7 +264,7 @@ public class MacTableEntryTest extends TestBase {
 
         for (VBridgePath path: bridgePaths) {
             for (EthernetAddress ea: createEthernetAddresses(false)) {
-                long mac = NetUtils.byteArray6ToLong(ea.getValue());
+                long mac = EtherAddress.toLong(ea.getValue());
                 for (NodeConnector nc: createNodeConnectors(3, false)) {
                     for (short vlan: vlans) {
                         for (Set<InetAddress> ips: createInetAddresses(false)) {

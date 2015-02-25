@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,7 +25,7 @@ public class VTNException extends Exception {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3983343760793384085L;
+    private static final long serialVersionUID = -7988902574477146543L;
 
     /**
      * The {@link Status} object which indicates the result of the operation.
@@ -84,8 +84,29 @@ public class VTNException extends Exception {
     }
 
     /**
-     * Consturct a new {@code VTNException} object that internally stores
-     * the {@link Status} object created from {@code code} and {@code desc}.
+     * Consturct a new {@code VTNException} that indicates an internal error.
+     *
+     * <ul>
+     *   <li>
+     *     The {@link Status} object for a new exception is created from
+     *     {@link StatusCode#INTERNALERROR} and the message specified by
+     *     {@code message}.
+     *   </li>
+     *   <li>
+     *     A string specified by {@code message} will get configured in
+     *     the message of the exception.
+     *   </li>
+     * </ul>
+     *
+     * @param message  The detailed message.
+     * @since  Lithium
+     */
+    public VTNException(String message) {
+        this(new Status(StatusCode.INTERNALERROR, message));
+    }
+
+    /**
+     * Consturct a new {@code VTNException} that indicates an internal error.
      *
      * <ul>
      *   <li>

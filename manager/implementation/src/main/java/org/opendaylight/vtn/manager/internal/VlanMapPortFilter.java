@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,11 +14,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.internal.cluster.NodeVlan;
-import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 
 /**
  * {@link PortFilter} implementation which accepts {@link NodeConnector}
@@ -81,14 +82,14 @@ public abstract class VlanMapPortFilter implements PortFilter {
      * Test if the specified switch port is mapped by the specified
      * VLAN mapping.
      *
-     * @param port  A {@link NodeConnector} object corresponding to the
-     *              switch port to be tested.
-     * @param prop  Unused.
+     * @param port   A {@link NodeConnector} object corresponding to the
+     *               switch port to be tested.
+     * @param vport  Unused.
      * @return  {@code true} if the specified port is mapped by the
      *          VLAN mapping. Otherwise {@code false} is returned.
      */
     @Override
-    public final boolean accept(NodeConnector port, PortProperty prop) {
+    public final boolean accept(NodeConnector port, VtnPort vport) {
         PortVlan pvlan = new PortVlan(port, targetVlan);
         if (ignorePorts != null && ignorePorts.contains(pvlan)) {
             return false;

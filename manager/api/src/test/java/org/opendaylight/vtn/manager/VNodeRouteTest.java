@@ -9,12 +9,11 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -112,7 +111,7 @@ public class VNodeRouteTest extends TestBase {
         for (VNodePath path: createVNodePaths(10)) {
             for (VNodeRoute.Reason reason: createReasons()) {
                 VNodeRoute vnr = new VNodeRoute(path, reason);
-                jaxbTest(vnr, XML_ROOT);
+                jaxbTest(vnr, VNodeRoute.class, XML_ROOT);
             }
 
             // Specifying invalid reason.
@@ -224,10 +223,10 @@ public class VNodeRouteTest extends TestBase {
 
         String xml = builder.append("</").append(XML_ROOT).append('>').
             toString();
+        Unmarshaller um = createUnmarshaller(VNodeRoute.class);
         VNodeRoute vnr = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            vnr = JAXB.unmarshal(in, VNodeRoute.class);
+            vnr = unmarshal(um, xml, VNodeRoute.class);
         } catch (Exception e) {
             unexpected(e);
         }

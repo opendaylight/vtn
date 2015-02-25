@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,10 +11,13 @@ package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.SwitchPort;
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
-import org.opendaylight.vtn.manager.internal.util.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -75,10 +78,12 @@ public final class DataFlowFilterImpl {
     /**
      * Construct a new instance.
      *
-     * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param filter  A {@link DataFlowFilter} instance.
+     * @throws VTNException  An error occurred.
      */
-    public DataFlowFilterImpl(VTNManagerImpl mgr, DataFlowFilter filter) {
+    public DataFlowFilterImpl(TxContext ctx, DataFlowFilter filter)
+        throws VTNException {
         if (filter == null || filter.isEmpty()) {
             // Select all data flows.
             sourceHost = null;
@@ -98,15 +103,18 @@ public final class DataFlowFilterImpl {
             SwitchPort swport = filter.getSwitchPort();
             if (swport != null) {
                 // Determine the specified switch port.
-                nc = NodeUtils.findPort(mgr, nd, swport);
-                if (nc == null) {
+                InventoryReader reader = ctx.getInventoryReader();
+                SalPort sport = reader.findPort(nd, swport);
+                if (sport == null) {
                     // The specified port does not exist.
                     // Thus no data flow should be selected.
                     nm = true;
+                    nc = null;
                 } else {
                     // NodeConnector is used as index.
                     // Thus Node does not need to be checked.
                     nd = null;
+                    nc = sport.getAdNodeConnector();
                 }
             }
         }

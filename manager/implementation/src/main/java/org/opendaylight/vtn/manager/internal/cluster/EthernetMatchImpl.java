@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,13 +11,16 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.EtherPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -136,7 +139,7 @@ public final class EthernetMatchImpl implements PacketMatch {
             vlan = VLAN_ANY;
         } else {
             vlan = s.shortValue();
-            MiscUtils.checkVlan(vlan);
+            ProtocolUtils.checkVlan(vlan);
         }
 
         Byte b = match.getVlanPriority();
@@ -144,7 +147,7 @@ public final class EthernetMatchImpl implements PacketMatch {
             vlanPriority = VLANPRI_ANY;
         } else {
             vlanPriority = b.byteValue();
-            if (!MiscUtils.isVlanPriorityValid(vlanPriority)) {
+            if (!ProtocolUtils.isVlanPriorityValid(vlanPriority)) {
                 String msg = "Invalid VLAN priority: " + b;
                 throw new VTNException(StatusCode.BADREQUEST, msg);
             }
@@ -260,7 +263,7 @@ public final class EthernetMatchImpl implements PacketMatch {
         }
 
         byte[] raw = eaddr.getValue();
-        return NetUtils.byteArray6ToLong(raw);
+        return EtherAddress.toLong(raw);
     }
 
     /**
@@ -276,7 +279,7 @@ public final class EthernetMatchImpl implements PacketMatch {
             return null;
         }
 
-        byte[] b = NetUtils.longToByteArray6(mac);
+        byte[] b = EtherAddress.toBytes(mac);
         try {
             return new EthernetAddress(b);
         } catch (Exception e) {
@@ -317,8 +320,8 @@ public final class EthernetMatchImpl implements PacketMatch {
      */
     @Override
     public int hashCode() {
-        return MiscUtils.hashCode(sourceAddress) +
-            (MiscUtils.hashCode(destinationAddress) * 7) +
+        return NumberUtils.hashCode(sourceAddress) +
+            (NumberUtils.hashCode(destinationAddress) * 7) +
             (etherType * 13) + ((int)vlan * 17) * (vlanPriority * 31);
     }
 

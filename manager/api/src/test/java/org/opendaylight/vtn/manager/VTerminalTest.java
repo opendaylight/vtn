@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,9 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.util.HashSet;
 import java.util.List;
-import java.io.ByteArrayInputStream;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -149,7 +148,7 @@ public class VTerminalTest extends TestBase {
                 VTerminalConfig vtconf = new VTerminalConfig(desc);
                 for (VNodeState state: states) {
                     VTerminal vterm = new VTerminal(name, state, 0, vtconf);
-                    jaxbTest(vterm, XML_ROOT);
+                    jaxbTest(vterm, VTerminal.class, XML_ROOT);
 
                     // Ensure that "state" attribute is decoded as
                     // VNodeState.
@@ -205,10 +204,10 @@ public class VTerminalTest extends TestBase {
         }
 
         String xml = builder.append("/>").toString();
+        Unmarshaller um = createUnmarshaller(VTerminal.class);
         VTerminal vterm = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            vterm = JAXB.unmarshal(in, VTerminal.class);
+            vterm = unmarshal(um, xml, VTerminal.class);
         } catch (Exception e) {
             unexpected(e);
         }

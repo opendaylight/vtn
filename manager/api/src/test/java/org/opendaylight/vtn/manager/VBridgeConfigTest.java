@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,11 +9,10 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -114,7 +113,7 @@ public class VBridgeConfigTest extends TestBase {
         for (String desc: createStrings("description")) {
             for (Integer ival: createIntegers(-1, 20)) {
                 VBridgeConfig bconf = createVBridgeConfig(desc, ival);
-                jaxbTest(bconf, "vbridgeconf");
+                jaxbTest(bconf, VBridgeConfig.class, "vbridgeconf");
             }
         }
     }
@@ -137,10 +136,10 @@ public class VBridgeConfigTest extends TestBase {
         }
 
         String xml = builder.append(" />").toString();
+        Unmarshaller um = createUnmarshaller(VBridgeConfig.class);
         VBridgeConfig bconf = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            bconf = JAXB.unmarshal(in, VBridgeConfig.class);
+            bconf = unmarshal(um, xml, VBridgeConfig.class);
         } catch (Exception e) {
             unexpected(e);
         }

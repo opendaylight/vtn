@@ -9,11 +9,10 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -212,7 +211,7 @@ public class PathMapTest extends TestBase {
                         for (Integer hard: hards) {
                             PathMap pmap = createPathMap(idx, cond, policy,
                                                          idle, hard);
-                            jaxbTest(pmap, XML_ROOT);
+                            jaxbTest(pmap, PathMap.class, XML_ROOT);
                         }
                     }
                 }
@@ -276,10 +275,10 @@ public class PathMapTest extends TestBase {
         }
 
         String xml = builder.append(" />").toString();
+        Unmarshaller um = createUnmarshaller(PathMap.class);
         PathMap pmap = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            pmap = JAXB.unmarshal(in, PathMap.class);
+            pmap = unmarshal(um, xml, PathMap.class);
             assertEquals(index, pmap.getIndex());
             assertEquals(cond, pmap.getFlowConditionName());
             assertEquals(policy, pmap.getPathPolicyId());

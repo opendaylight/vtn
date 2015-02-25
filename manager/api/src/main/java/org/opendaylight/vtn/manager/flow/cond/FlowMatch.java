@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,12 +22,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * This class describes the condition to select packets by protocol header
@@ -495,7 +497,7 @@ public final class FlowMatch implements Serializable {
         field = match.getField(MatchType.DL_TYPE);
         if (field != null) {
             short sval = ((Short)field.getValue()).shortValue();
-            dltype = Integer.valueOf(NetUtils.getUnsignedShort(sval));
+            dltype = Integer.valueOf(NumberUtils.getUnsigned(sval));
             hasMatch = true;
         }
 
@@ -536,7 +538,7 @@ public final class FlowMatch implements Serializable {
         field = match.getField(MatchType.NW_PROTO);
         if (field != null) {
             byte bval = ((Byte)field.getValue()).byteValue();
-            int ival = NetUtils.getUnsignedByte(bval);
+            int ival = NumberUtils.getUnsigned(bval);
             nwproto = Short.valueOf((short)ival);
             hasMatch = true;
         }
@@ -546,7 +548,7 @@ public final class FlowMatch implements Serializable {
             nwsrc = (InetAddress)field.getValue();
             InetAddress mask = (InetAddress)field.getMask();
             if (mask != null) {
-                int len = NetUtils.getSubnetMaskLength(mask);
+                int len = Ip4Network.getPrefixLength(mask.getAddress());
                 nwsrcsuff = Short.valueOf((short)len);
             }
             hasMatch = true;
@@ -557,7 +559,7 @@ public final class FlowMatch implements Serializable {
             nwdst = (InetAddress)field.getValue();
             InetAddress mask = (InetAddress)field.getMask();
             if (mask != null) {
-                int len = NetUtils.getSubnetMaskLength(mask);
+                int len = Ip4Network.getPrefixLength(mask.getAddress());
                 nwdstsuff = Short.valueOf((short)len);
             }
             hasMatch = true;

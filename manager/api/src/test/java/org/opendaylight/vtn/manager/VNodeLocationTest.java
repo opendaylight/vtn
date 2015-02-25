@@ -9,10 +9,9 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -148,7 +147,7 @@ public class VNodeLocationTest extends TestBase {
                         for (String iname: ifNames) {
                             VNodeLocation vloc = createVNodeLocation(
                                 tname, bname, rname, tmname, iname);
-                            jaxbTest(vloc, XML_ROOT);
+                            jaxbTest(vloc, VNodeLocation.class, XML_ROOT);
                         }
                     }
                 }
@@ -214,10 +213,10 @@ public class VNodeLocationTest extends TestBase {
         }
 
         String xml = builder.append(" />").toString();
+        Unmarshaller um = createUnmarshaller(VNodeLocation.class);
         VNodeLocation vloc = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            vloc = JAXB.unmarshal(in, VNodeLocation.class);
+            vloc = unmarshal(um, xml, VNodeLocation.class);
             assertEquals(tname, vloc.getTenantName());
             assertEquals(bname, vloc.getBridgeName());
             assertEquals(rname, vloc.getRouterName());

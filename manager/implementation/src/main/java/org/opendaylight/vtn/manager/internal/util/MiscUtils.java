@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,34 +9,33 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
-import java.net.InetAddress;
 import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.util.Collection;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.opendaylight.vtn.manager.VTNException;
+import org.slf4j.Logger;
 
+import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
+import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.Packet;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * {@code MiscUtils} class is a collection of miscellaneous utility class
  * methods.
  */
 public final class MiscUtils {
-    /**
-     * A mask value which represents all bits in a byte value.
-     */
-    public static final int  MASK_BYTE = (1 << Byte.SIZE) - 1;
-
-    /**
-     * A mask value which represents all bits in a short value.
-     */
-    public static final int  MASK_SHORT = (1 << Short.SIZE) - 1;
-
     /**
      * Maximum length of the resource name.
      */
@@ -49,66 +48,9 @@ public final class MiscUtils {
         Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
 
     /**
-     * The number of bits in a valid VLAN ID.
-     */
-    public static final int  NBITS_VLAN_ID = 12;
-
-    /**
-     * Mask value which represents a VLAN ID bits in a long integer.
-     */
-    public static final long MASK_VLAN_ID = (1L << NBITS_VLAN_ID) - 1L;
-
-    /**
-     * A mask value which represents valid bits in an VLAN priority.
-     */
-    private static final byte  MASK_VLAN_PRI = 0x7;
-
-    /**
-     * A mask value which represents valid bits in an DSCP value for
-     * IP protocol.
-     */
-    private static final byte  MASK_IP_DSCP = 0x3f;
-
-    /**
-     * A mask value which represents valid bits in ICMP type and code.
-     */
-    private static final short  MASK_ICMP_VALUE = 0xff;
-
-    /**
-     * A mask value which represents valid bits in port number of transport
-     * layer protocol.
-     */
-    private static final int  MASK_TP_PORT = 0xffff;
-
-    /**
-     * The number of bits to be shifted to get the first octet in an integer.
-     */
-    private static final int  INT_SHIFT_OCTET1 = 24;
-
-    /**
-     * The number of bits to be shifted to get the second octet in an integer.
-     */
-    private static final int  INT_SHIFT_OCTET2 = 16;
-
-    /**
-     * The number of bits to be shifted to get the third octet in an integer.
-     */
-    private static final int  INT_SHIFT_OCTET3 = 8;
-
-    /**
      * Private constructor that protects this class from instantiating.
      */
     private MiscUtils() {}
-
-    /**
-     * Return a hash code of the given long integer value.
-     *
-     * @param value  A long integer value.
-     * @return  A hash code of the given value.
-     */
-    public static int hashCode(long value) {
-        return (int)(value ^ (value >>> Integer.SIZE));
-    }
 
     /**
      * Convert a long value which represents a MAC address into a string.
@@ -117,8 +59,7 @@ public final class MiscUtils {
      * @return  A string representation of MAC address.
      */
     public static String formatMacAddress(long mac) {
-        byte[] addr = NetUtils.longToByteArray6(mac);
-        return HexEncode.bytesToHexStringFormat(addr);
+        return new EtherAddress(mac).getText();
     }
 
     /**
@@ -131,83 +72,25 @@ public final class MiscUtils {
     public static void checkName(String desc, String name)
         throws VTNException {
         if (name == null) {
-            Status status = argumentIsNull(desc + " name");
-            throw new VTNException(status);
+            throw getNullArgumentException(desc + " name");
         }
 
         if (name.isEmpty()) {
-            Status status = new Status(StatusCode.BADREQUEST,
-                                       desc + " name cannot be empty");
-            throw new VTNException(status);
+            throw RpcException.getBadArgumentException(
+                desc + " name cannot be empty");
         }
 
         int len = name.length();
         if (len > RESOURCE_NAME_MAXLEN) {
-            Status status = new Status(StatusCode.BADREQUEST,
-                                       desc + " name is too long");
-            throw new VTNException(status);
+            throw RpcException.getBadArgumentException(
+                desc + " name is too long");
         }
 
         Matcher m = RESOURCE_NAME_REGEX.matcher(name);
         if (!m.matches()) {
-            Status status = new Status(StatusCode.BADREQUEST, desc +
-                                       " name contains invalid character");
-            throw new VTNException(status);
+            throw RpcException.getBadArgumentException(
+                desc + " name contains invalid character");
         }
-    }
-
-    /**
-     * Check the specified VLAN ID.
-     *
-     * @param vlan  VLAN ID.
-     * @throws VTNException  The specified VLAN ID is invalid.
-     */
-    public static void checkVlan(short vlan) throws VTNException {
-        if (((long)vlan & ~MASK_VLAN_ID) != 0L) {
-            String msg = "Invalid VLAN ID: " + vlan;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
-    }
-
-    /**
-     * Determine whether the specified VLAN priority value is valid or not.
-     *
-     * @param pri  A VLAN priority.
-     * @return  {@code true} only if the given VLAN priority is valid.
-     */
-    public static boolean isVlanPriorityValid(byte pri) {
-        return ((pri & ~MASK_VLAN_PRI) == 0);
-    }
-
-    /**
-     * Determine whether the specified IP DSCP value is valid or not.
-     *
-     * @param dscp  A DSCP value.
-     * @return  {@code true} only if the given DSCP value is valid.
-     */
-    public static boolean isDscpValid(byte dscp) {
-        return ((dscp & ~MASK_IP_DSCP) == 0);
-    }
-
-    /**
-     * Determine whether the specified ICMP type or code value is valid or not.
-     *
-     * @param value  An ICMP type or code.
-     * @return  {@code true} only if the given value is valid.
-     */
-    public static boolean isIcmpValueValid(short value) {
-        return ((value & ~MASK_ICMP_VALUE) == 0);
-    }
-
-    /**
-     * Determine whether the specified port number of transport layer protocol
-     * is valid or not.
-     *
-     * @param port  A port number.
-     * @return  {@code true} only if the given port number is valid.
-     */
-    public static boolean isPortNumberValid(int port) {
-        return ((port & ~MASK_TP_PORT) == 0);
     }
 
     /**
@@ -223,6 +106,18 @@ public final class MiscUtils {
     }
 
     /**
+     * Return a new {@link RpcException} which indicates a {@code null} is
+     * specified as argument unexpectedly.
+     *
+     * @param desc  Brief description of the argument.
+     * @return  An {@link RpcException}.
+     */
+    public static RpcException getNullArgumentException(String desc) {
+        Status st = argumentIsNull(desc);
+        return new RpcException(RpcErrorTag.MISSING_ELEMENT, st);
+    }
+
+    /**
      * Convert an integer into an IPv4 address.
      *
      * @param address  An integer value which represents an IPv4 address.
@@ -231,7 +126,7 @@ public final class MiscUtils {
      *    An error occurred.
      */
     public static InetAddress toInetAddress(int address) {
-        byte[] addr = NetUtils.intToByteArray4(address);
+        byte[] addr = NumberUtils.toBytes(address);
         try {
             return InetAddress.getByAddress(addr);
         } catch (Exception e) {
@@ -255,7 +150,7 @@ public final class MiscUtils {
     public static int toInteger(InetAddress addr) {
         if (addr instanceof Inet4Address) {
             byte[] bytes = addr.getAddress();
-            return NetUtils.byteArray4ToInt(bytes);
+            return NumberUtils.toInteger(bytes);
         }
 
         StringBuilder builder =
@@ -277,7 +172,7 @@ public final class MiscUtils {
     public static <T extends Packet> T copy(T src, T dst) throws VTNException {
         try {
             byte[] raw = src.serialize();
-            int nbits = raw.length * NetUtils.NumBitsInAByte;
+            int nbits = raw.length * Byte.SIZE;
             dst.deserialize(raw, 0, nbits);
             return dst;
         } catch (Exception e) {
@@ -287,30 +182,96 @@ public final class MiscUtils {
     }
 
     /**
-     * Set an integer value into the given byte array in network byte order.
+     * Ensure that the given value is not null.
      *
-     * @param array  A byte array.
-     * @param off    Index of {@code array} to store value.
-     * @param value  An integer value.
+     * @param obj   A reference to the object.
+     * @param log   A {@link Logger} instance used to record error message.
+     * @param msg   A error message.
+     * @param <T>   Type of {@code obj}.
+     * @return  {@code obj} is returned if it is not {@code null}.
+     * @throws IllegalStateException
+     *    {@code obj} is {@code null}.
      */
-    public static void setInt(byte[] array, int off, int value) {
-        int index = off;
-        array[index++] = (byte)(value >>> INT_SHIFT_OCTET1);
-        array[index++] = (byte)(value >>> INT_SHIFT_OCTET2);
-        array[index++] = (byte)(value >>> INT_SHIFT_OCTET3);
-        array[index] = (byte)value;
+    public static <T> T checkNotNull(T obj, Logger log, String msg) {
+        if (obj != null) {
+            return obj;
+        }
+
+        IllegalStateException e = new IllegalStateException(msg);
+        log.error(msg, e);
+        throw e;
     }
 
     /**
-     * Set a short integer value into the given byte array in network byte
-     * order.
+     * Stringify the given objects, and join them with inserting ": " as a
+     * separator.
      *
-     * @param array  A byte array.
-     * @param off    Index of {@code array} to store value.
-     * @param value  A short integer value.
+     * @param objs  Objects to be joined.
+     * @return  A joined string.
      */
-    public static void setShort(byte[] array, int off, short value) {
-        array[off] = (byte)(value >>> Byte.SIZE);
-        array[off + 1] = (byte)value;
+    public static String joinColon(Object ... objs) {
+        return join(": ", objs);
+    }
+
+    /**
+     * Stringify the given objects, and join them with inserting the given
+     * separator.
+     *
+     * @param separator  A separater to be inserted.
+     * @param objs       Objects to be joined.
+     * @return  A joined string.
+     */
+    public static String join(String separator, Object ... objs) {
+        StringBuilder builder = new StringBuilder();
+        String sep = "";
+        if (objs != null) {
+            for (Object o: objs) {
+                builder.append(sep).append(String.valueOf(o));
+                sep = separator;
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Stringify all the elements in the given collection, and join them with
+     * inserting the given separator.
+     *
+     * @param separator  A separater to be inserted.
+     * @param objs       A collection of objects to be joined.
+     * @return  A joined string.
+     */
+    public static String join(String separator, Collection<?> objs) {
+        StringBuilder builder = new StringBuilder();
+        String sep = "";
+        if (objs != null) {
+            for (Object o: objs) {
+                builder.append(sep).append(String.valueOf(o));
+                sep = separator;
+            }
+        }
+
+        return builder.toString();
+    }
+
+    /**
+     * Convert the given {@link VtnUpdateType} into {@link UpdateType}.
+     *
+     * @param vu  A {@link VtnUpdateType} instance.
+     * @return  A {@link UpdateType} instance.
+     */
+    public static UpdateType toUpdateType(VtnUpdateType vu) {
+        if (vu == null) {
+            return null;
+        }
+        if (vu.equals(VtnUpdateType.CREATED)) {
+            return UpdateType.ADDED;
+        }
+        if (vu.equals(VtnUpdateType.REMOVED)) {
+            return UpdateType.REMOVED;
+        }
+
+        return UpdateType.CHANGED;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,7 +22,7 @@ public class CacheRetryException extends VTNException {
      * Construct a new instance.
      */
     public CacheRetryException() {
-        super(null);
+        super((Status)null);
     }
 
     /**

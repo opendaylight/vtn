@@ -90,7 +90,7 @@ public class SetTpSrcActionTest extends TestBase {
         int[] ports = {Integer.MIN_VALUE, 0, 1, 100, 65535, Integer.MAX_VALUE};
         for (int port: ports) {
             SetTpSrcAction act = new SetTpSrcAction(port);
-            jaxbTest(act, "settpsrc");
+            jaxbTest(act, SetTpSrcAction.class, "settpsrc");
         }
     }
 

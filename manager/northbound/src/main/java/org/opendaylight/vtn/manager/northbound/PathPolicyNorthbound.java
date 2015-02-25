@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -70,9 +70,6 @@ import org.opendaylight.controller.sal.utils.Status;
  *   the packet route which minimizes the total cost of switch links.
  *   Flow condition feature is used to determine path policy to be applied
  *   for packet routing.
- * </p>
- * <p>
- *   Currently, only one path policy can be defined in a container.
  * </p>
  *
  * @since Helium
@@ -187,8 +184,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * @param policyId
      *   The identifier of the path policy.
      *   <p>
-     *     Currently only one path policy can be configured in the container.
-     *     So <strong>1</strong> must be passed to this parameter.
+     *     The range of value that can be specified is from
+     *     <strong>1</strong> to <strong>3</strong>.
      *   </p>
      * @param policy
      *   <strong>pathpolicy</strong> element specifies the configuration of

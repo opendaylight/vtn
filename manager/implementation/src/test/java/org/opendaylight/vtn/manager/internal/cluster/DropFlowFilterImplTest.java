@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,9 +21,13 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+
+import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
+import org.opendaylight.controller.sal.utils.NodeCreator;
 
 /**
  * JUnit test for {@link DropFlowFilterImpl}.
@@ -34,6 +38,13 @@ public class DropFlowFilterImplTest extends TestBase {
     */
     @Test
     public void testGetter() {
+        // Create 1 openflow node connector.
+        Node node = NodeCreator.createOFNode(Long.valueOf(1L));
+        assertNotNull(node);
+        NodeConnector nc = NodeConnectorCreator.
+            createOFNodeConnector(Short.valueOf((short)2), node);
+        assertNotNull(nc);
+
         DropFlowFilterImpl dropFlowFilterImpl = null;
         try {
             //Checking for all the scenarios for all the methods in  DropFlowFilterImpl.
@@ -47,7 +58,6 @@ public class DropFlowFilterImplTest extends TestBase {
                         assertNotNull(dropFlowFilterImpl.getFilterType());
 
                         VTNManagerImpl mgr = new VTNManagerImpl();
-                        List<NodeConnector> connectors = createNodeConnectors(2);
                         byte[] addr = {(byte)0x00, (byte)0x00, (byte)0x00,
                                        (byte)0x00, (byte)0x00, (byte)0x01};
                         EthernetAddress ea = new EthernetAddress(addr);
@@ -61,7 +71,7 @@ public class DropFlowFilterImplTest extends TestBase {
                         byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
 
                         PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                                                          (short)-1, connectors.get(0), ARP.REQUEST);
+                                                          (short)-1, nc, ARP.REQUEST);
                         String containerName = "default";
                         String description = "description";
 

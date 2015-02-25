@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,17 +9,26 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
-import java.net.InetAddress;
 import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.slf4j.Logger;
+
 import org.junit.Test;
 
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.VTNException;
+
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -37,34 +46,9 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
- * JUnit test for {@link MiscUtils}
+ * JUnit test for {@link MiscUtils}.
  */
 public class MiscUtilsTest extends TestBase {
-    /**
-     * Verify static constants.
-     */
-    @Test
-    public void testConstants() {
-        assertEquals(0xff, MiscUtils.MASK_BYTE);
-        assertEquals(0xffff, MiscUtils.MASK_SHORT);
-        assertEquals(12, MiscUtils.NBITS_VLAN_ID);
-        assertEquals(0xfffL, MiscUtils.MASK_VLAN_ID);
-    }
-
-    /**
-     * Test case for {@link MiscUtils#hashCode(long)}.
-     */
-    @Test
-    public void testHashCode() {
-        Random rand = new Random();
-        for (int i = 0; i < 50; i++) {
-            int hi = rand.nextInt();
-            int lo = rand.nextInt();
-            long l = ((long)hi << Integer.SIZE) | (long)(lo & 0xffffffffL);
-            assertEquals(hi ^ lo, MiscUtils.hashCode(l));
-        }
-    }
-
     /**
      * Test case for {@link MiscUtils#formatMacAddress(long mac)}.
      */
@@ -82,9 +66,11 @@ public class MiscUtilsTest extends TestBase {
 
     /**
      * Test case for {@link MiscUtils#checkName(String, String)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testCheckName() {
+    public void testCheckName() throws Exception {
         String[] descriptions = {"desc-1", "desc-2", "desc-3"};
 
         String[] good = {
@@ -152,8 +138,12 @@ public class MiscUtilsTest extends TestBase {
                 try {
                     MiscUtils.checkName(desc, name);
                     unexpected();
-                } catch (VTNException e) {
+                } catch (RpcException e) {
                     checkException(e, msg);
+                    RpcErrorTag tag = (name == null)
+                        ? RpcErrorTag.MISSING_ELEMENT
+                        : RpcErrorTag.BAD_ELEMENT;
+                    assertEquals(tag, e.getErrorTag());
                 }
             }
 
@@ -162,104 +152,11 @@ public class MiscUtilsTest extends TestBase {
                 try {
                     MiscUtils.checkName(desc, name);
                     unexpected();
-                } catch (VTNException e) {
+                } catch (RpcException e) {
                     checkException(e, msg);
+                    assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 }
             }
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#checkVlan(short)}.
-     */
-    @Test
-    public void testCheckVlan() {
-        for (short vid = 0; vid <= 4095; vid++) {
-            try {
-                MiscUtils.checkVlan(vid);
-            } catch (Exception e) {
-                unexpected(e);
-            }
-        }
-
-        short[] badVids = {
-            Short.MIN_VALUE, -30000, -20000, -10000, -5000, -100, -23, -2, -1,
-            4096, 4097, 6000, 8000, 10000, 15000, 20000, 30000, 32000,
-            Short.MAX_VALUE,
-        };
-        for (short vid: badVids) {
-            try {
-                MiscUtils.checkVlan(vid);
-                unexpected();
-            } catch (VTNException e) {
-                checkException(e, "Invalid VLAN ID: " + vid);
-            }
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#isVlanPriorityValid(byte)}.
-     */
-    @Test
-    public void testIsVlanPriorityValid() {
-        for (int i = 0; i <= 0xff; i++) {
-            byte pri = (byte)i;
-            assertEquals(pri >= 0 && pri <= 7,
-                         MiscUtils.isVlanPriorityValid(pri));
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#isDscpValid(byte)}.
-     */
-    @Test
-    public void testIsDscpValid() {
-        for (int i = 0; i <= 0xff; i++) {
-            byte dscp = (byte)i;
-            assertEquals(dscp >= 0 && dscp <= 63, MiscUtils.isDscpValid(dscp));
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#isIcmpValueValid(short)}.
-     */
-    @Test
-    public void testIsIcmpValueValid() {
-        for (short v = 0; v <= 0xff; v++) {
-            assertTrue(MiscUtils.isIcmpValueValid(v));
-        }
-
-        short[] badValues = {
-            Short.MIN_VALUE, -30000, -20000, -10000, -5000, -100, -14, -2, -1,
-            256, 257, 300, 2000, 8000, 12000, 28000, 30000, Short.MAX_VALUE,
-        };
-        for (short v: badValues) {
-            assertFalse(MiscUtils.isIcmpValueValid(v));
-        }
-    }
-
-    /**
-     * Test case for {@link MiscUtils#isPortNumberValid(int)}.
-     */
-    @Test
-    public void testIsPortNumberValid() {
-        int[] validPorts = {
-            0, 1, 44, 555, 1000, 4000, 10000, 13000, 20000, 30000, 40000,
-            50000, 65000, 65534, 65535,
-        };
-        for (int port: validPorts) {
-            assertTrue(MiscUtils.isPortNumberValid(port));
-        }
-
-        int[] badValues = {
-            Integer.MIN_VALUE, (int)0xfff00000, (int)0xf0000000, -10000,
-            -100, -3, -2, -1,
-            0x10000, 0x10001, 0x11000, 0x100000, 0x333333,
-            0x444444, 0x500000, 0x1000000, 0xa000000, 0x10000000,
-            0x50000000, 0x7f000000, Integer.MAX_VALUE,
-        };
-        for (int port: badValues) {
-            assertFalse(MiscUtils.isPortNumberValid(port));
         }
     }
 
@@ -583,45 +480,67 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MiscUtils#setInt(byte[], int, int)}.
+     * Test case for {@link MiscUtils#checkNotNull(Object, Logger, String)}.
      */
     @Test
-    public void testSetInt() {
-        int size = 32;
-        int value = 0xa1b2c3d4;
-        byte[] bytes = {(byte)0xa1, (byte)0xb2, (byte)0xc3, (byte)0xd4};
-        for (int off = 0; off <= size - 4; off++) {
-            byte[] buffer = new byte[size];
-            MiscUtils.setInt(buffer, off, value);
-            for (int i = 0; i < buffer.length; i++) {
-                if (i >= off && i < off + 4) {
-                    assertEquals(bytes[i - off], buffer[i]);
-                } else {
-                    assertEquals((byte)0, buffer[i]);
-                }
-            }
+    public void testCheckNotNull() {
+        Random r = new Random();
+        Logger logger = Mockito.mock(Logger.class);
+        String msg = "Error message";
+        assertSame(r, MiscUtils.checkNotNull(r, logger, msg));
+        Mockito.verify(logger, Mockito.never()).
+            error(Mockito.anyString(), Mockito.any(Throwable.class));
+
+        r = null;
+        try {
+            MiscUtils.checkNotNull(r, logger, msg);
+            unexpected();
+        } catch (IllegalStateException e) {
+            assertEquals(msg, e.getMessage());
+            Mockito.verify(logger, Mockito.times(1)).error(msg, e);
         }
     }
 
     /**
-     * Test case for {@link MiscUtils#setShort(byte[], int, short)}.
+     * Test case for string join methods.
+     *
+     * <ul>
+     *   <li>{@link MiscUtils#joinColon(Object[])}</li>
+     *   <li>{@link MiscUtils#join(String, Object[])}</li>
+     *   <li>{@link MiscUtils#join(String, Collection)}</li>
+     * </ul>
      */
     @Test
-    public void testSetShort() {
-        int size = 32;
-        short value = (short)0xa1b2;
-        byte[] bytes = {(byte)0xa1, (byte)0xb2};
-        for (int off = 0; off <= size - 2; off++) {
-            byte[] buffer = new byte[size];
-            MiscUtils.setShort(buffer, off, value);
-            for (int i = 0; i < buffer.length; i++) {
-                if (i >= off && i < off + 2) {
-                    assertEquals(bytes[i - off], buffer[i]);
-                } else {
-                    assertEquals((byte)0, buffer[i]);
-                }
-            }
-        }
+    public void testJoin() {
+        assertEquals("", MiscUtils.joinColon());
+        String s = "Test string";
+        assertEquals(s, MiscUtils.joinColon(s));
+        String expected = "This is a test: 1";
+        assertEquals(expected, MiscUtils.joinColon("This is a test", 1));
+        expected = "This is a test: 1: 2: 3";
+        assertEquals(expected, MiscUtils.joinColon("This is a test", 1, 2L,
+                                                   Short.valueOf((short)3)));
+
+        String sep = ",";
+        assertEquals("", MiscUtils.join(sep));
+        assertEquals(s, MiscUtils.join(sep, s));
+        expected = "This is a test,1";
+        assertEquals(expected, MiscUtils.join(sep, "This is a test", 1));
+        expected = "This is a test,1,2,3";
+        assertEquals(expected, MiscUtils.join(sep, "This is a test", 1, 2L,
+                                              Short.valueOf((short)3)));
+
+        assertEquals("", MiscUtils.join(sep, (Collection<?>)null));
+        assertEquals("", MiscUtils.join(sep, Collections.emptyList()));
+        assertEquals(s, MiscUtils.join(sep, Collections.singleton(s)));
+        List<Object> list = new ArrayList<>();
+        Collections.addAll(list, "This is a test", Integer.valueOf(1));
+        expected = "This is a test,1";
+        assertEquals(expected, MiscUtils.join(sep, list));
+        Collections.addAll(list, Integer.valueOf(2), Integer.valueOf(3));
+        expected = "This is a test,1,2,3";
+        assertEquals(expected, MiscUtils.join(sep, "This is a test", 1, 2L,
+                                              Short.valueOf((short)3)));
     }
 
     /**

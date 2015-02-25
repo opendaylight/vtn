@@ -90,7 +90,7 @@ public class SetTpDstActionTest extends TestBase {
         int[] ports = {Integer.MIN_VALUE, 0, 1, 100, 65535, Integer.MAX_VALUE};
         for (int port: ports) {
             SetTpDstAction act = new SetTpDstAction(port);
-            jaxbTest(act, "settpdst");
+            jaxbTest(act, SetTpDstAction.class, "settpdst");
         }
     }
 

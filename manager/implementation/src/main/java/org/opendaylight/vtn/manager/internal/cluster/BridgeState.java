@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,10 +18,14 @@ import java.util.Set;
 import java.util.HashSet;
 
 import org.opendaylight.vtn.manager.VNodeState;
+
 import org.opendaylight.vtn.manager.internal.RouteResolver;
+import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
 
 import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.Path;
 
 /**
  * {@code BridgeState} class keeps runtime state of the virtual bridge node.
@@ -41,7 +45,7 @@ public class BridgeState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7971444475789967102L;
+    private static final long serialVersionUID = -4935729463547757483L;
 
     /**
      * State of the bridge.
@@ -164,19 +168,27 @@ public class BridgeState implements Serializable {
      *   after the call of this method.
      * </p>
      *
-     * @param rr A {@link RouteResolver} instance.
+     * @param ctx  MD-SAL datastore transaction context.
      * @return  A list of resolved node paths.
      */
-    List<ObjectPair<Node, Node>> removeResolvedPath(RouteResolver rr) {
+    List<ObjectPair<Node, Node>> removeResolvedPath(TxContext ctx) {
         List<ObjectPair<Node, Node>> removed =
             new ArrayList<ObjectPair<Node, Node>>();
         if (faultedPaths != null) {
             for (Iterator<ObjectPair<Node, Node>> it = faultedPaths.iterator();
                  it.hasNext();) {
                 ObjectPair<Node, Node> npath = it.next();
-                Node snode = npath.getLeft();
-                Node dnode = npath.getRight();
-                Path path = rr.getRoute(snode, dnode);
+                SalNode snode = SalNode.create(npath.getLeft());
+                SalNode dnode = SalNode.create(npath.getRight());
+                if (snode == null || dnode == null) {
+                    // This should never happen.
+                    continue;
+                }
+
+                RouteResolver rr = ctx.getProvider().
+                    getRouteResolver(RouteResolver.ID_DEFAULT);
+                InventoryReader reader = ctx.getInventoryReader();
+                List<LinkEdge> path = rr.getRoute(reader, snode, dnode);
                 if (path != null) {
                     removed.add(npath);
                     it.remove();

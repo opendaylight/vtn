@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,9 +12,8 @@ package org.opendaylight.vtn.manager;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.ByteArrayInputStream;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -176,7 +175,7 @@ public class VInterfaceTest extends TestBase {
                     for (VNodeState estate: states) {
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
-                        jaxbTest(viface, XML_ROOT);
+                        jaxbTest(viface, VInterface.class, XML_ROOT);
                     }
                 }
             }
@@ -249,10 +248,10 @@ public class VInterfaceTest extends TestBase {
         }
 
         String xml = builder.append("/>").toString();
+        Unmarshaller um = createUnmarshaller(VInterface.class);
         VInterface viface = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            viface = JAXB.unmarshal(in, VInterface.class);
+            viface = unmarshal(um, xml, VInterface.class);
         } catch (Exception e) {
             unexpected(e);
         }

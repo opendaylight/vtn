@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,16 +10,17 @@
 package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.net.InetAddress;
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
@@ -31,7 +32,6 @@ import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.utils.EtherTypes;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -113,21 +113,19 @@ public class Inet4MatchImplTest extends TestBase {
         }
 
         // Specifying invalid MAC address via JAXB.
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
         String[] badAddrs = {
             "", "192.168.100.256", "::1", "bad_address",
         };
+        Unmarshaller um = createUnmarshaller(Inet4Match.class);
         for (String addr: badAddrs) {
             for (String attr: new String[]{"src", "dst"}) {
-                StringBuilder sb = new StringBuilder(xml);
-                sb.append("<inet4match ").append(attr).append("=\"").
-                    append(addr).append("\" />");
+                StringBuilder sb = new StringBuilder(XML_DECLARATION);
+                String xml = sb.append("<inet4match ").append(attr).
+                    append("=\"").append(addr).append("\" />").toString();
+
                 InetMatch im = null;
                 try {
-                    ByteArrayInputStream in =
-                        new ByteArrayInputStream(sb.toString().getBytes());
-                    im = JAXB.unmarshal(in, Inet4Match.class);
+                    im = unmarshal(um, xml, Inet4Match.class);
                 } catch (Exception e) {
                     unexpected(e);
                 }
@@ -379,7 +377,7 @@ public class Inet4MatchImplTest extends TestBase {
                 } else {
                     InetAddress iaddr = InetAddress.getByName(src);
                     InetAddress raddr =
-                        NetUtils.getSubnetPrefix(iaddr, (int)srcSuff);
+                        Ip4Network.getNetworkAddress(iaddr, (int)srcSuff);
                     s = "src=" + raddr.getHostAddress() + "/" + srcSuff;
                 }
                 for (String dst: dsts) {
@@ -393,8 +391,8 @@ public class Inet4MatchImplTest extends TestBase {
                             d = "dst=" + dst;
                         } else {
                             InetAddress iaddr = InetAddress.getByName(dst);
-                            InetAddress raddr =
-                                NetUtils.getSubnetPrefix(iaddr, (int)dstSuff);
+                            InetAddress raddr = Ip4Network.
+                                getNetworkAddress(iaddr, (int)dstSuff);
                             d = "dst=" + raddr.getHostAddress() + "/" +
                                 dstSuff;
                         }
@@ -868,7 +866,7 @@ final class Inet4MatchImplBuilder extends TestBase {
             // Source suffix should be ignored.
             srcSuff = null;
         } else if (srcSuff != null) {
-            src = NetUtils.getSubnetPrefix(src, srcSuff.intValue());
+            src = Ip4Network.getNetworkAddress(src, srcSuff.intValue());
         }
 
         InetAddress dst = destinationAddress;
@@ -877,7 +875,7 @@ final class Inet4MatchImplBuilder extends TestBase {
             // Destination suffix should be ignored.
             dstSuff = null;
         } else if (dstSuff != null) {
-            dst = NetUtils.getSubnetPrefix(dst, dstSuff.intValue());
+            dst = Ip4Network.getNetworkAddress(dst, dstSuff.intValue());
         }
 
         return new Inet4Match(src, srcSuff, dst, dstSuff, protocol, dscp);
@@ -975,7 +973,7 @@ final class Inet4MatchImplBuilder extends TestBase {
             return -1;
         }
 
-        InetAddress mask = NetUtils.getInetNetworkMask(suff.intValue(), false);
+        InetAddress mask = Ip4Network.getInetMask(suff.intValue());
         return MiscUtils.toInteger(mask);
     }
 }
@@ -1018,7 +1016,7 @@ final class Inet4Parser {
         packet = ipv4;
         sourceAddress = ipv4.getSourceAddress();
         destinationAddress = ipv4.getDestinationAddress();
-        protocol = (short)NetUtils.getUnsignedByte(ipv4.getProtocol());
+        protocol = (short)NumberUtils.getUnsigned(ipv4.getProtocol());
         diffServ = ipv4.getDiffServ();
     }
 

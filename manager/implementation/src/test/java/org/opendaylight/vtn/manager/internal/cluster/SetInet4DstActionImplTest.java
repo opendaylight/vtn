@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,12 +9,11 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.ByteArrayInputStream;
 import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -60,20 +59,18 @@ public class SetInet4DstActionImplTest extends TestBase {
             "Bad IP address",
         };
 
-        String xmlDef =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+        Unmarshaller um = createUnmarshaller(SetInet4DstAction.class);
         for (String addr: badAddrs) {
-            StringBuilder builder = new StringBuilder(xmlDef);
+            StringBuilder builder = new StringBuilder(XML_DECLARATION);
             if (addr == null) {
                 builder.append("<setinet4dst />");
             } else {
                 builder.append("<setinet4dst address=\"").append(addr).
                     append("\" />");
             }
-            ByteArrayInputStream in =
-                new ByteArrayInputStream(builder.toString().getBytes());
+            String xml = builder.toString();
             SetInet4DstAction act =
-                JAXB.unmarshal(in, SetInet4DstAction.class);
+                unmarshal(um, xml, SetInet4DstAction.class);
             try {
                 new SetInet4DstActionImpl(act);
                 unexpected();

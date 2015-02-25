@@ -131,7 +131,7 @@ public class FlowConditionTest extends TestBase {
         for (String name: createStrings("cond")) {
             for (List<FlowMatch> matches: createFlowMatchLists()) {
                 FlowCondition fc = new FlowCondition(name, matches);
-                jaxbTest(fc, "flowcondition");
+                jaxbTest(fc, FlowCondition.class, "flowcondition");
             }
         }
     }

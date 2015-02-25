@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,11 +13,11 @@ import java.util.Arrays;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.DlAddrAction;
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -63,25 +63,25 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
             throw new VTNException(st);
         }
 
-        if (addr.length != NetUtils.MACAddrLengthInBytes) {
+        if (addr.length != EtherAddress.SIZE) {
             String msg = getErrorMessage(
                 act, "Invalid MAC address length: ",
-                HexEncode.bytesToHexStringFormat(addr));
+                ByteUtils.toHexString(addr));
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
 
-        if (NetUtils.isBroadcastMACAddr(addr)) {
+        if (EtherAddress.isBroadcast(addr)) {
             String msg = getErrorMessage(
                 act, "Broadcast address cannot be specified");
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
-        if (!NetUtils.isUnicastMACAddr(addr)) {
+        if (!EtherAddress.isUnicast(addr)) {
             String msg = getErrorMessage(
                 act, "Multicast address cannot be specified: ",
-                HexEncode.bytesToHexStringFormat(addr));
+                ByteUtils.toHexString(addr));
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
-        if (NetUtils.byteArray6ToLong(addr) == 0) {
+        if (EtherAddress.toLong(addr) == 0) {
             String msg = getErrorMessage(act, "Zero cannot be specified");
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
@@ -136,7 +136,7 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         return builder.append("[addr=").
-            append(HexEncode.bytesToHexStringFormat(address)).
+            append(ByteUtils.toHexString(address)).
             append(']').toString();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -135,7 +135,7 @@ public class VlanMapConfigTest extends TestBase {
         for (Node node: createNodes(5)) {
             for (short vlan = -10; vlan <= 10; vlan++) {
                 VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-                jaxbTest(vlconf, "vlanmapconf");
+                jaxbTest(vlconf, VlanMapConfig.class, "vlanmapconf");
             }
         }
     }

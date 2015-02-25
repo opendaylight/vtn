@@ -630,7 +630,7 @@ public class DataFlowTest extends TestBase {
     @Test
     public void testJAXB() {
         for (DataFlow df: DATAFLOWS) {
-            jaxbTest(df, "dataflow");
+            jaxbTest(df, DataFlow.class, "dataflow");
         }
     }
 

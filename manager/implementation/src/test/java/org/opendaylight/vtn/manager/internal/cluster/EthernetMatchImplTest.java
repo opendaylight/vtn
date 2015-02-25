@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,15 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
@@ -28,7 +28,6 @@ import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -113,21 +112,18 @@ public class EthernetMatchImplTest extends TestBase {
         }
 
         // Specifying invalid MAC address via JAXB.
-        String xml =
-            "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
         String[] badAddrs = {
             "", "aa:bb:cc:dd:ee:ff:11", "00:11", "bad_address",
         };
+        Unmarshaller um = createUnmarshaller(EthernetMatch.class);
         for (String addr: badAddrs) {
             for (String attr: new String[]{"src", "dst"}) {
-                StringBuilder sb = new StringBuilder(xml);
-                sb.append("<ethermatch ").append(attr).append("=\"").
-                    append(addr).append("\" />");
+                StringBuilder sb = new StringBuilder(XML_DECLARATION);
+                String xml = sb.append("<ethermatch ").append(attr).
+                    append("=\"").append(addr).append("\" />").toString();
                 EthernetMatch em = null;
                 try {
-                    ByteArrayInputStream in =
-                        new ByteArrayInputStream(sb.toString().getBytes());
-                    em = JAXB.unmarshal(in, EthernetMatch.class);
+                    em = unmarshal(um, xml, EthernetMatch.class);
                 } catch (Exception e) {
                     unexpected(e);
                 }
@@ -820,12 +816,12 @@ final class EthernetParser {
             IEEE8021Q tag = (IEEE8021Q)pld;
             vlanId = tag.getVid();
             vlanPcp = tag.getPcp();
-            etherType = NetUtils.getUnsignedShort(tag.getEtherType());
+            etherType = NumberUtils.getUnsigned(tag.getEtherType());
             payload = tag.getPayload();
         } else {
             vlanId = MatchType.DL_VLAN_NONE;
             vlanPcp = -1;
-            etherType = NetUtils.getUnsignedShort(ether.getEtherType());
+            etherType = NumberUtils.getUnsigned(ether.getEtherType());
             payload = pld;
         }
     }

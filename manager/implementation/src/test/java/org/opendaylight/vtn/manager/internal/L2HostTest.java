@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,12 +14,13 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.utils.HexEncode;
-import org.opendaylight.controller.sal.utils.NetUtils;
 
 /**
  * JUnit test for {@link L2Host}.
@@ -34,9 +35,16 @@ public class L2HostTest extends TestBase {
         for (NodeConnector port: createNodeConnectors(10, false)) {
             for (short vlan : vlans) {
                 for (EthernetAddress ea : createEthernetAddresses()) {
-                    byte[] addr = (ea == null) ? null : ea.getValue();
+                    byte[] addr;
+                    long mac;
+                    if (ea == null) {
+                        addr = null;
+                        mac = 0;
+                    } else {
+                        addr = ea.getValue();
+                        mac = EtherAddress.toLong(addr);
+                    }
                     L2Host lh = new L2Host(addr, vlan, port);
-                    long mac = NetUtils.byteArray6ToLong(addr);
                     MacVlan mvlan = lh.getHost();
                     assertEquals(mac, mvlan.getMacAddress());
                     assertEquals(vlan, mvlan.getVlan());
@@ -108,14 +116,21 @@ public class L2HostTest extends TestBase {
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan: vlans) {
                 for (NodeConnector port: createNodeConnectors(10, false)) {
-                    byte[] addr = (ea == null) ? null : ea.getValue();
+                    byte[] addr;
+                    long mac;
+                    if (ea == null) {
+                        addr = null;
+                        mac = 0;
+                    } else {
+                        addr = ea.getValue();
+                        mac = EtherAddress.toLong(addr);
+                    }
                     L2Host lh = new L2Host(addr, vlan, port);
 
-                    long mac = NetUtils.byteArray6ToLong(addr);
                     StringBuilder builder = new StringBuilder("host={");
                     if (mac != MacVlan.UNDEFINED) {
                         builder.append("addr=").
-                            append(HexEncode.bytesToHexStringFormat(addr)).
+                            append(ByteUtils.toHexString(addr)).
                             append(',');
                     }
                     builder.append("vlan=").append((int)vlan).append('}');

@@ -132,7 +132,7 @@ public class RedirectFilterTest extends TestBase {
                 RedirectFilter rf = (path instanceof VBridgeIfPath)
                     ? new RedirectFilter((VBridgeIfPath)path, output)
                     : new RedirectFilter((VTerminalIfPath)path, output);
-                jaxbTest(rf, "redirect");
+                jaxbTest(rf, RedirectFilter.class, "redirect");
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -72,8 +72,9 @@ public class IpAddressTest extends TestBase {
         }
     }
 
-    /*
-     * Ensure that {@link IpAddress} is mapped to XML root element.
+    /**
+     * Ensure that {@link IpAddress} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
@@ -82,7 +83,8 @@ public class IpAddressTest extends TestBase {
             if (ipset != null && ipset.size() != 0) {
                 for (InetAddress iaddr: ipset) {
                     IpAddress ia = new IpAddress(iaddr);
-                    jaxbTest(ia, "inetAddress");
+                    jaxbTest(ia, IpAddress.class, "inetAddress");
+                    jsonTest(ia, IpAddress.class);
                 }
             }
         }

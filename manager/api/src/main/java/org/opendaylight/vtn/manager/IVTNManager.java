@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -3542,8 +3542,8 @@ public interface IVTNManager {
      * @param id
      *   The identifier of the path policy.
      *   <p style="margin-left: 1em;">
-     *     Currently only one path policy can be configured in the container.
-     *     So <strong>1</strong> must be specified to this parameter.
+     *     The range of value that can be specified is from
+     *     <strong>1</strong> to <strong>3</strong>.
      *   </p>
      * @param policy
      *   A {@link PathPolicy} instance which specifies the configuration of

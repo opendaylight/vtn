@@ -68,7 +68,7 @@ public class DropFilterTest extends TestBase {
     @Test
     public void testJAXB() {
         for (int i = 0; i < 10; i++) {
-            jaxbTest(new DropFilter(), "drop");
+            jaxbTest(new DropFilter(), DropFilter.class, "drop");
         }
     }
 

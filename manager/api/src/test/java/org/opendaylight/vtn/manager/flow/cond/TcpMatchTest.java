@@ -125,7 +125,7 @@ public class TcpMatchTest extends TestBase {
         for (PortMatch src: createPortMatches()) {
             for (PortMatch dst: createPortMatches()) {
                 TcpMatch tm = new TcpMatch(src, dst);
-                jaxbTest(tm, "tcpmatch");
+                jaxbTest(tm, TcpMatch.class, "tcpmatch");
             }
         }
     }

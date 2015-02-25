@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,10 +30,11 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
 
-import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -54,7 +55,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4218736868673085624L;
+    private static final long serialVersionUID = -2733358290698233177L;
 
     /**
      * Attached virtual interfaces.
@@ -124,6 +125,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * Change configuration of existing virtual interface.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx    MD-SAL datastore transaction context.
      * @param path   Path to the virtual interface.
      * @param iconf  Interface configuration.
      * @param all    If {@code true} is specified, all attributes of the
@@ -135,8 +137,9 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      *          actually changed.
      * @throws VTNException  An error occurred.
      */
-    final boolean modifyInterface(VTNManagerImpl mgr, VInterfacePath path,
-                                  VInterfaceConfig iconf, boolean all)
+    final boolean modifyInterface(VTNManagerImpl mgr, TxContext ctx,
+                                  VInterfacePath path, VInterfaceConfig iconf,
+                                  boolean all)
         throws VTNException {
         if (iconf == null) {
             Status status = MiscUtils.
@@ -149,7 +152,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         Lock wrlock = writeLock();
         try {
             T vif = getInterfaceImpl(path);
-            if (!vif.setVInterfaceConfig(mgr, iconf, all)) {
+            if (!vif.setVInterfaceConfig(mgr, ctx, iconf, all)) {
                 return false;
             }
             updateState(mgr);
@@ -239,9 +242,10 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      *   the configuration file.
      * </p>
      *
-     * @param mgr   VTN Manager service.
+     * @param mgr  VTN Manager service.
+     * @param ctx  A runtime context for MD-SAL datastore transaction task.
      */
-    final void resume(VTNManagerImpl mgr) {
+    final void resume(VTNManagerImpl mgr, TxContext ctx) {
         VNodeState state = VNodeState.UNKNOWN;
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         String containerName = getContainerName();
@@ -250,12 +254,12 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         try {
             // Resume virtual interfaces.
             for (T vif: vInterfaces.values()) {
-                VNodeState s = vif.resume(mgr, state);
+                VNodeState s = vif.resume(mgr, ctx, state);
                 if (vif.isEnabled()) {
                     state = s;
                 }
             }
-            state = resuming(mgr, state);
+            state = resuming(mgr, ctx, state);
 
             VNodePath path = getNodePath();
             BridgeState bst = getBridgeState(db);
@@ -386,11 +390,11 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      *          actually added to the faulted path set.
      *          {@code false} is returned if it already exists in the set.
      */
-    protected final boolean addFaultedPath(VTNManagerImpl mgr, Node snode,
-                                           Node dnode) {
+    protected final boolean addFaultedPath(VTNManagerImpl mgr, SalNode snode,
+                                           SalNode dnode) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         BridgeState bst = getBridgeState(db);
-        boolean ret = bst.addFaultedPath(snode, dnode);
+        boolean ret = bst.addFaultedPath(snode.getAdNode(), dnode.getAdNode());
         setState(mgr, db, bst, VNodeState.DOWN);
 
         return ret;
@@ -665,10 +669,11 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * file.
      *
      * @param mgr    VTN Manager service.
+     * @param ctx  A runtime context for MD-SAL datastore transaction task.
      * @param state  Current state of this node.
      * @return  New state of this node.
      */
-    protected abstract VNodeState resuming(VTNManagerImpl mgr,
+    protected abstract VNodeState resuming(VTNManagerImpl mgr, TxContext ctx,
                                            VNodeState state);
 
     /**

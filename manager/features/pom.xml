@@ -148,6 +148,18 @@
 
     <dependency>
       <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.config</artifactId>
+      <classifier>config</classifier>
+      <type>xml</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
+      <artifactId>manager.model</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opendaylight.vtn</groupId>
       <artifactId>manager.implementation</artifactId>
     </dependency>
 
@@ -162,6 +174,18 @@
     </dependency>
 
     <!-- feature dependencies -->
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>features-mdsal</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>features-restconf</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>features-nsf</artifactId>

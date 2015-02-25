@@ -89,7 +89,7 @@ public class SetVlanPcpActionTest extends TestBase {
         byte[] bytes = {Byte.MIN_VALUE, 0, 1, 7, 100, Byte.MAX_VALUE};
         for (byte b: bytes) {
             SetVlanPcpAction act = new SetVlanPcpAction(b);
-            jaxbTest(act, "setvlanpcp");
+            jaxbTest(act, SetVlanPcpAction.class, "setvlanpcp");
         }
     }
 

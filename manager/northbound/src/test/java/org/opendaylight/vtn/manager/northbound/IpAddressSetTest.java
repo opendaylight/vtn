@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -67,15 +67,16 @@ public class IpAddressSetTest extends TestBase {
         assertEquals(required, set.size());
     }
 
-    /*
-     * Ensure that {@link IpAddressSet} is mapped to XML root element.
+    /**
+     * Ensure that {@link IpAddressSet} is mapped to both XML root element.
      */
     @Test
     public void testJAXB() {
         List<Set<InetAddress>> ips = createInetAddresses(false);
         for (Set<InetAddress> ipset: ips) {
             IpAddressSet iaddrs = new IpAddressSet(ipset);
-            jaxbTest(iaddrs, "inetAddresses");
+            jaxbTest(iaddrs, IpAddressSet.class, "inetAddresses");
+            jsonTest(iaddrs, IpAddressSet.class);
         }
     }
 }

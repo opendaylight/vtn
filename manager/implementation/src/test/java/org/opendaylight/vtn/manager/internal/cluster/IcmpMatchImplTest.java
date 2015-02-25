@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -28,7 +29,6 @@ import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -525,8 +525,8 @@ final class IcmpParser implements L4Parser {
      */
     IcmpParser(ICMP icmp) {
         packet = icmp;
-        icmpType = NetUtils.getUnsignedByte(icmp.getType());
-        icmpCode = NetUtils.getUnsignedByte(icmp.getCode());
+        icmpType = NumberUtils.getUnsigned(icmp.getType());
+        icmpCode = NumberUtils.getUnsigned(icmp.getCode());
     }
 
     /**

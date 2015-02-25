@@ -105,7 +105,7 @@ public class PortLocationTest extends TestBase {
         for (Node node: createNodes(5)) {
             for (SwitchPort port: createSwitchPorts(10)) {
                 PortLocation ploc = new PortLocation(node, port);
-                jaxbTest(ploc, "portlocation");
+                jaxbTest(ploc, PortLocation.class, "portlocation");
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -43,9 +43,6 @@ import org.slf4j.LoggerFactory;
  * </p>
  */
 public class StatsReader extends TimerTask {
-
-    private Timer timer;
-
     /**
      * Logger instance.
      */
@@ -81,11 +78,13 @@ public class StatsReader extends TimerTask {
      * Construct a new instance.
      *
      * @param stMgr    Statistics manager service.
+     * @param vtnMgr   VTN Manager service.
+     * @param timer    A timer thread.
      */
-    public StatsReader(IStatisticsManager stMgr, VTNManagerImpl vtnMgr) {
+    public StatsReader(IStatisticsManager stMgr, VTNManagerImpl vtnMgr,
+                       Timer timer) {
         statsManager = stMgr;
         vtnManager = vtnMgr;
-        timer = new Timer(true);
         timer.scheduleAtFixedRate(this, 0, SECONDS.toMillis(STATS_INTERVAL));
     }
 
@@ -243,7 +242,9 @@ public class StatsReader extends TimerTask {
                     cache.put(node, nodeMap);
                 } else {
                     FlowOnNode fentStats = nodeCacheMap.get(fent);
-                    updateCache(fent, fentStats);
+                    if (fentStats != null) {
+                        updateCache(fent, fentStats);
+                    }
                 }
             }
         }

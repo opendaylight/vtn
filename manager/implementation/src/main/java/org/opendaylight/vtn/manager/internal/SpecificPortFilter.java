@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,9 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import org.opendaylight.vtn.manager.internal.cluster.PortProperty;
-
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 
 /**
  * {@link PortFilter} implementation which accepts {@link NodeConnector}
@@ -36,14 +36,14 @@ public class SpecificPortFilter implements PortFilter {
     /**
      * Test if the specified switch port is identical to the target port.
      *
-     * @param port  A {@link NodeConnector} object corresponding to the
-     *              switch port to be tested.
-     * @param prop  Unused.
+     * @param port   A {@link NodeConnector} object corresponding to the
+     *               switch port to be tested.
+     * @param vport  Unused.
      * @return  {@code true} if the specified port is identical to the
      *          target port. Otherwise {@code false} is returned.
      */
     @Override
-    public boolean accept(NodeConnector port, PortProperty prop) {
+    public boolean accept(NodeConnector port, VtnPort vport) {
         return targetPort.equals(port);
     }
 }

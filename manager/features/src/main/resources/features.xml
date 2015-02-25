@@ -15,6 +15,8 @@
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
+  <repository>mvn:org.opendaylight.controller/features-mdsal/${odl.mdsal.version}/xml/features</repository>
+  <repository>mvn:org.opendaylight.controller/features-restconf/${odl.mdsal.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.controller/features-nsf/${feature.nsf.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.ovsdb/features-ovsdb/${feature.ovsdb.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${feature.openflowplugin.version}/xml/features</repository>
@@ -34,9 +36,13 @@
       name='odl-vtn-manager-java-api'
       description="OpenDaylight :: VTN Manager :: Java API"
       version='${project.version}'>
+    <feature version="${odl.mdsal.version}">odl-mdsal-broker</feature>
+    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
     <feature version="${feature.nsf.version}">odl-nsf-all</feature>
     <bundle>mvn:org.opendaylight.vtn/manager/${project.version}</bundle>
+    <bundle>mvn:org.opendaylight.vtn/manager.model/${project.version}</bundle>
     <bundle>mvn:org.opendaylight.vtn/manager.implementation/${project.version}</bundle>
+    <configfile finalname="etc/opendaylight/karaf/80-vtn.xml">mvn:org.opendaylight.vtn/manager.config/${project.version}/xml/config</configfile>
   </feature>
 
   <feature
@@ -44,6 +50,7 @@
       description="OpenDaylight :: VTN Manager :: Northbound"
       version='${project.version}'>
     <feature version="${project.version}">odl-vtn-manager-java-api</feature>
+    <feature version="${odl.mdsal.version}">odl-restconf</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
   </feature>
 

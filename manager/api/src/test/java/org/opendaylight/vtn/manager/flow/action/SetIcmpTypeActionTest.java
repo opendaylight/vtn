@@ -90,7 +90,7 @@ public class SetIcmpTypeActionTest extends TestBase {
         short[] types = {Short.MIN_VALUE, 0, 1, 100, 255, Short.MAX_VALUE};
         for (short type: types) {
             SetIcmpTypeAction act = new SetIcmpTypeAction(type);
-            jaxbTest(act, "seticmptype");
+            jaxbTest(act, SetIcmpTypeAction.class, "seticmptype");
         }
     }
 

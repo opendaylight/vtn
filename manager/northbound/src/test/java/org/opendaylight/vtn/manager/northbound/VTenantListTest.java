@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -95,19 +95,22 @@ public class VTenantListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VTenantList} is mapped to XML root element.
+     * Ensure that {@link VTenantList} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
         // null list.
         VTenantList vtList = new VTenantList(null);
         String rootName = "vtns";
-        jaxbTest(vtList, rootName);
+        jaxbTest(vtList, VTenantList.class, rootName);
+        jsonTest(vtList, VTenantList.class);
 
         // Empty list.
         List<VTenant> list = new ArrayList<VTenant>();
         vtList = new VTenantList(list);
-        jaxbTest(vtList, rootName);
+        jaxbTest(vtList, VTenantList.class, rootName);
+        jsonTest(vtList, VTenantList.class);
 
         for (String name: createStrings("Tenant Name")) {
             for (String desc: createStrings("Description")) {
@@ -118,13 +121,15 @@ public class VTenantListTest extends TestBase {
                 List<VTenant> one = new ArrayList<VTenant>();
                 one.add(vtenant);
                 vtList = new VTenantList(one);
-                jaxbTest(vtList, rootName);
+                jaxbTest(vtList, VTenantList.class, rootName);
+                jsonTest(vtList, VTenantList.class);
 
                 list.add(vtenant);
             }
         }
 
         vtList = new VTenantList(list);
-        jaxbTest(vtList, rootName);
+        jaxbTest(vtList, VTenantList.class, rootName);
+        jsonTest(vtList, VTenantList.class);
     }
 }

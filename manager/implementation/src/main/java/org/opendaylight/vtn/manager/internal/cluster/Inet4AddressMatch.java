@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,9 +13,10 @@ import java.net.InetAddress;
 import java.io.Serializable;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
-import org.opendaylight.controller.sal.utils.NetUtils;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -78,7 +79,7 @@ public final class Inet4AddressMatch implements Serializable {
     public Inet4AddressMatch(InetAddress addr, Short suff)
         throws VTNException {
         mask = toNetMask(suff);
-        address = NetUtils.byteArray4ToInt(addr.getAddress()) & mask;
+        address = NumberUtils.toInteger(addr.getAddress()) & mask;
     }
 
     /**
@@ -205,10 +206,10 @@ public final class Inet4AddressMatch implements Serializable {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        byte[] addr = NetUtils.intToByteArray4(address);
+        byte[] addr = NumberUtils.toBytes(address);
         String sep = "";
         for (byte b: addr) {
-            int i = NetUtils.getUnsignedByte(b);
+            int i = NumberUtils.getUnsigned(b);
             builder.append(sep).append(i);
             sep = ".";
         }

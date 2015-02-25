@@ -12,9 +12,8 @@ package org.opendaylight.vtn.manager.flow.action;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.io.ByteArrayInputStream;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -22,11 +21,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.codehaus.jettison.json.JSONObject;
 
+import org.opendaylight.vtn.manager.util.ByteUtils;
+
 import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.HexEncode;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -92,7 +92,7 @@ public class SetDlDstActionTest extends TestBase {
             byte[] addr = act.getAddress();
             String a = (bytes == null)
                 ? null
-                : "addr=" + HexEncode.bytesToHexStringFormat(bytes);
+                : "addr=" + ByteUtils.toHexString(bytes);
             String required = joinStrings(prefix, suffix, ",", a);
             assertEquals(required, act.toString());
         }
@@ -118,7 +118,8 @@ public class SetDlDstActionTest extends TestBase {
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             byte[] bytes = (eaddr == null) ? null : eaddr.getValue();
             SetDlDstAction act = new SetDlDstAction(bytes);
-            SetDlDstAction newobj = (SetDlDstAction)jaxbTest(act, XML_ROOT);
+            SetDlDstAction newobj =
+                jaxbTest(act, SetDlDstAction.class, XML_ROOT);
             assertEquals(null, newobj.getValidationStatus());
         }
 
@@ -130,15 +131,14 @@ public class SetDlDstActionTest extends TestBase {
             "123456789012345",
         };
 
+        Unmarshaller um = createUnmarshaller(SetDlDstAction.class);
         try {
             for (String addr: invalidAddrs) {
                 StringBuilder builder = new StringBuilder(XML_DECLARATION);
                 String xml = builder.append('<').append(XML_ROOT).
                     append(" address=\"").append(addr).append("\" />").
                     toString();
-                ByteArrayInputStream in =
-                    new ByteArrayInputStream(xml.getBytes());
-                SetDlDstAction act = JAXB.unmarshal(in, SetDlDstAction.class);
+                SetDlDstAction act = unmarshal(um, xml, SetDlDstAction.class);
                 Status st = act.getValidationStatus();
                 assertEquals(StatusCode.BADREQUEST, st.getCode());
             }

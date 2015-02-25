@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.internal;
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
 
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VTNException;
@@ -379,28 +378,6 @@ public interface IVTNResourceManager {
      */
     boolean inactivateMacMap(VTNManagerImpl mgr, MacMapPath path,
                              PortFilter filter) throws VTNException;
-
-    /**
-     * Return the global timer.
-     *
-     * @return  The global timer.
-     */
-    Timer getTimer();
-
-    /**
-     * Run the given command asynchronously.
-     *
-     * <p>
-     *   Note that this method exucutes the given command using a thread pool
-     *   which has multiple threads. So the order of the command execution is
-     *   unspecified.
-     * </p>
-     *
-     * @param command  A task to be executed asynchronously.
-     * @return  {@code true} is returned if the specified task was submitted.
-     *          {@code false} is returned if the specified tas was rejected.
-     */
-    boolean executeAsync(Runnable command);
 
     /**
      * Return the IP address of the controller in the cluster.

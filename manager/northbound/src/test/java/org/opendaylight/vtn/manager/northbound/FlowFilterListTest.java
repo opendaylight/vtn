@@ -153,19 +153,22 @@ public class FlowFilterListTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link FlowFilterList} is mapped to XML root element.
+     * Ensure that {@link FlowFilterList} is mapped to both XML root element
+     * and JSON object.
      */
     @Test
     public void testJAXB() {
         // Null list.
         FlowFilterList fl = new FlowFilterList(null);
         String rootName = "flowfilters";
-        jaxbTest(fl, rootName);
+        jaxbTest(fl, FlowFilterList.class, rootName);
+        jsonTest(fl, FlowFilterList.class);
 
         // Empty list.
         List<FlowFilter> filters = new ArrayList<FlowFilter>();
         fl = new FlowFilterList(filters);
-        jaxbTest(fl, rootName);
+        jaxbTest(fl, FlowFilterList.class, rootName);
+        jsonTest(fl, FlowFilterList.class);
 
         int[] indices = {0, 1, 65535};
         String[] conditions = {null, "condition"};
@@ -181,42 +184,7 @@ public class FlowFilterListTest extends TestBase {
                         List<FlowFilter> list =
                             new ArrayList<FlowFilter>(filters);
                         fl = new FlowFilterList(list);
-                        jaxbTest(fl, rootName);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Ensure that {@link FlowFilterList} is mapped to JSON object.
-     */
-    @Test
-    public void testJSON() {
-        // Null list.
-        FlowFilterList fl = new FlowFilterList(null);
-        String rootName = "flowfilters";
-        jaxbTest(fl, rootName);
-
-        // Empty list.
-        List<FlowFilter> filters = new ArrayList<FlowFilter>();
-        fl = new FlowFilterList(filters);
-        jaxbTest(fl, rootName);
-
-        int[] indices = {0, 1, 65535};
-        String[] conditions = {null, "condition"};
-        for (int index: indices) {
-            for (String cond: conditions) {
-                for (FilterType type: createFilterTypes()) {
-                    for (List<FlowAction> actions: createActionLists()) {
-                        FlowFilter ff = (index == 0)
-                            ? new FlowFilter(cond, type, actions)
-                            : new FlowFilter(index, cond, type, actions);
-                        filters.add(ff);
-
-                        List<FlowFilter> list =
-                            new ArrayList<FlowFilter>(filters);
-                        fl = new FlowFilterList(list);
+                        jaxbTest(fl, FlowFilterList.class, rootName);
                         jsonTest(fl, FlowFilterList.class);
                     }
                 }

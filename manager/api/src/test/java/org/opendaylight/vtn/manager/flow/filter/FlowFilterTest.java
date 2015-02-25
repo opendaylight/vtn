@@ -197,7 +197,7 @@ public class FlowFilterTest extends TestBase {
                         FlowFilter ff = (index == 0)
                             ? new FlowFilter(cond, type, actions)
                             : new FlowFilter(index, cond, type, actions);
-                        jaxbTest(ff, "flowfilter");
+                        jaxbTest(ff, FlowFilter.class, "flowfilter");
                     }
                 }
             }

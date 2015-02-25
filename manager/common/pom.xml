@@ -78,7 +78,12 @@
     <branding.version>1.1.0-SNAPSHOT</branding.version>
 
     <!-- Exclude internal package from javadoc -->
-    <javadoc.exclude>*.internal</javadoc.exclude>
+    <javadoc.exclude>*.internal,*.impl,*.it</javadoc.exclude>
+
+    <!-- OpenDaylight artifacts -->
+    <odl.mdsal.version>1.2.0-SNAPSHOT</odl.mdsal.version>
+    <odl.config.version>0.3.0-SNAPSHOT</odl.config.version>
+    <odl.yangtools.version>0.7.0-SNAPSHOT</odl.yangtools.version>
   </properties>
 
   <profiles>
@@ -92,7 +97,36 @@
         <vtn.checkstyle.xml>vtn/checkstyle_strict.xml</vtn.checkstyle.xml>
       </properties>
     </profile>
+
+    <profile>
+      <!-- Pass lint option to the compiler if vtn.build.lint is defined -->
+      <id>lint</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>vtn.build.lint</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <compilerArgs>
+                <arg>-Xlint:${vtn.build.lint}</arg>
+              </compilerArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
+
+  <modules>
+    <module>java</module>
+    <module>yang</module>
+  </modules>
 
   <reporting>
     <excludeDefaults>true</excludeDefaults>
@@ -147,12 +181,6 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>${maven-javadoc.version}</version>
         <configuration>
-          <doclet>org.jboss.apiviz.APIviz</doclet>
-          <docletArtifact>
-            <groupId>org.jboss.apiviz</groupId>
-            <artifactId>apiviz</artifactId>
-            <version>${apiviz.version}</version>
-          </docletArtifact>
           <finalName>${project.artifactId}-${build.suffix}</finalName>
           <useStandardDocletOptions>true</useStandardDocletOptions>
           <charset>${project.reporting.outputEncoding}</charset>
@@ -232,7 +260,9 @@
           <consoleOutput>true</consoleOutput>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
           <sourceDirectory>${project.basedir}</sourceDirectory>
-          <includes>**\/*.java,**\/*.xml,**\/*.ini,**\/*.sh,**\/*.bat</includes>
+          <includes>
+            **\/*.java,**\/*.xml,**\/*.ini,**\/*.sh,**\/*.bat,**\/*.yang
+          </includes>
           <excludes>**\/target\/</excludes>
         </configuration>
       </plugin>
@@ -260,7 +290,7 @@
             <include>org.opendaylight.vtn.*</include>
           </includes>
           <excludes>
-            <exclude>org.opendaylight.vtn.manager.integrationtest.*</exclude>
+            <exclude>org.opendaylight.vtn.manager.it.*</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -400,12 +430,6 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${maven-javadoc.version}</version>
           <configuration>
-            <doclet>org.jboss.apiviz.APIviz</doclet>
-            <docletArtifact>
-              <groupId>org.jboss.apiviz</groupId>
-              <artifactId>apiviz</artifactId>
-              <version>${apiviz.version}</version>
-            </docletArtifact>
             <finalName>${project.artifactId}-${build.suffix}</finalName>
             <useStandardDocletOptions>true</useStandardDocletOptions>
             <charset>${project.reporting.outputEncoding}</charset>
@@ -458,6 +482,13 @@
             </execution>
           </executions>
         </plugin>
+
+        <!-- OpenDaylight YANG Tools -->
+        <plugin>
+          <groupId>org.opendaylight.yangtools</groupId>
+          <artifactId>yang-maven-plugin</artifactId>
+          <version>${odl.yangtools.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -468,6 +499,18 @@
       <dependency>
         <groupId>org.opendaylight.vtn</groupId>
         <artifactId>manager</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.config</artifactId>
+        <version>${project.version}</version>
+        <classifier>config</classifier>
+        <type>xml</type>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.vtn</groupId>
+        <artifactId>manager.model</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -738,6 +781,40 @@
         <version>2.0.1</version>
       </dependency>
 
+      <!-- OpenDaylight MD-SAL -->
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>mdsal-artifacts</artifactId>
+        <version>${odl.mdsal.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- sal-binding-it is required to build IT helper. -->
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>sal-binding-it</artifactId>
+        <version>${odl.mdsal.version}</version>
+      </dependency>
+
+      <!-- OpenDaylight config subsystem -->
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>config-artifacts</artifactId>
+        <version>${odl.config.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- OpenDaylight YANG Tools -->
+      <dependency>
+        <groupId>org.opendaylight.yangtools</groupId>
+        <artifactId>yangtools-artifacts</artifactId>
+        <version>${odl.yangtools.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
       <!-- OpenDaylight openflowjava -->
       <dependency>
         <groupId>org.opendaylight.openflowjava</groupId>
@@ -758,6 +835,45 @@
         <groupId>org.opendaylight.openflowjava</groupId>
         <artifactId>util</artifactId>
         <version>0.6.0-SNAPSHOT</version>
+      </dependency>
+
+      <!-- OpenDaylight openflowplugin -->
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.model</groupId>
+        <artifactId>model-flow-base</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.model</groupId>
+        <artifactId>model-flow-service</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.model</groupId>
+        <artifactId>model-flow-statistics</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.applications</groupId>
+        <artifactId>inventory-manager</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.applications</groupId>
+        <artifactId>topology-manager</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.applications</groupId>
+        <artifactId>forwardingrules-manager</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.openflowplugin.legacy</groupId>
+        <artifactId>sal-compatibility</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
       </dependency>
 
       <!-- OpenDaylight OVSDB project -->
@@ -812,6 +928,7 @@
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>
+
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>karaf.branding</artifactId>
@@ -822,6 +939,15 @@
         <artifactId>opendaylight-karaf-resources</artifactId>
         <version>${karaf.resources.version}</version>
       </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.controller</groupId>
+        <artifactId>features-restconf</artifactId>
+        <version>${odl.mdsal.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+      </dependency>
+
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>features-ovsdb</artifactId>
@@ -879,6 +1005,13 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Use Mockito in unit tests. -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
 

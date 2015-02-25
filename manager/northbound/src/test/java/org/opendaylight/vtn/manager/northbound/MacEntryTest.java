@@ -169,7 +169,8 @@ public class MacEntryTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link MacEntry} is mapped to XML root element.
+     * Ensure that {@link MacEntry} is mapped to both XML root element and
+     * JSON object.
      */
     @Test
     public void testJAXB() {
@@ -184,9 +185,11 @@ public class MacEntryTest extends TestBase {
             for (Set<InetAddress> ipset : ips) {
                 for (EthernetAddress ea : ethaddrs) {
                     for (short vlan : vlans) {
-                        MacAddressEntry mae = new MacAddressEntry(ea, vlan, nc, ipset);
+                        MacAddressEntry mae =
+                            new MacAddressEntry(ea, vlan, nc, ipset);
                         MacEntry me = new MacEntry(mae);
-                        jaxbTest(me, "macentry");
+                        jaxbTest(me, MacEntry.class, "macentry");
+                        jsonTest(me, MacEntry.class);
                     }
                 }
             }

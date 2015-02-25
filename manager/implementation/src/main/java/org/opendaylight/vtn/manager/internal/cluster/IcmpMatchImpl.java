@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,10 +12,12 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.IcmpMatch;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
+import org.opendaylight.vtn.manager.util.NumberUtils;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.packet.CachedPacket;
-import org.opendaylight.vtn.manager.internal.packet.IcmpPacket;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.packet.cache.CachedPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 
 import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.utils.IPProtocols;
@@ -103,7 +105,7 @@ public final class IcmpMatchImpl extends L4MatchImpl {
         }
 
         short value = s.shortValue();
-        if (!MiscUtils.isIcmpValueValid(value)) {
+        if (!ProtocolUtils.isIcmpValueValid(value)) {
             throw new VTNException(StatusCode.BADREQUEST,
                                    "Invalid value for " + desc + ": " + s);
         }
@@ -149,7 +151,7 @@ public final class IcmpMatchImpl extends L4MatchImpl {
     @Override
     public int hashCode() {
         return (int)(((int)type << Short.SIZE) |
-                     (int)(code & MiscUtils.MASK_SHORT));
+                     (int)(code & NumberUtils.MASK_SHORT));
     }
 
     // L4PacketMatch

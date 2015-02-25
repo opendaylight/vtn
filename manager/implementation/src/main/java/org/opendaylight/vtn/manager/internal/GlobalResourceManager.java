@@ -18,7 +18,6 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Timer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -109,23 +108,6 @@ public class GlobalResourceManager
     private static final String  CACHE_MACMAP_STATE = "vtn.macmap.state";
 
     /**
-     * The maximum number of threads in the thread pool for asynchronous tasks.
-     */
-    private static final int  THREAD_POOL_MAXSIZE = 8;
-
-    /**
-     * The number of milliseconds to keep threads in the thread pool for
-     * asynchronous tasks.
-     */
-    private static final int  THREAD_POOL_KEEPALIVE = 10000;
-
-    /**
-     * The number of milliseconds to wait for completion of thread pool
-     * shutdown.
-     */
-    private static final long  THREAD_POOL_SHUTDOWN = 5000;
-
-    /**
      * Initial revision number of the global configuration.
      */
     private static final int  CONFIG_REV_INIT = 0;
@@ -181,16 +163,6 @@ public class GlobalResourceManager
      * Cluster container service instance.
      */
     private IClusterGlobalServices  clusterService;
-
-    /**
-     * The global timer.
-     */
-    private Timer  globalTimer;
-
-    /**
-     * The global thread pool to execute commands.
-     */
-    private VTNThreadPool  asyncThreadPool;
 
     /**
      * The IP address of the controller in the cluster.
@@ -1097,33 +1069,6 @@ public class GlobalResourceManager
      */
     void init(Component c) {
         initCluster();
-
-        globalTimer = new Timer("VTN Global Timer");
-        asyncThreadPool =
-            new VTNThreadPool("VTN Async Thread", THREAD_POOL_MAXSIZE,
-                              THREAD_POOL_KEEPALIVE);
-    }
-
-    /**
-     * Function called by the dependency manager when at least one dependency
-     * become unsatisfied or when the component is shutting down because for
-     * example bundle is being stopped.
-     */
-    void destroy() {
-        if (globalTimer != null) {
-            globalTimer.cancel();
-            globalTimer = null;
-        }
-
-        if (asyncThreadPool != null) {
-            asyncThreadPool.shutdown();
-            if (!asyncThreadPool.join(THREAD_POOL_SHUTDOWN)) {
-                LOG.error("Async thread pool did not terminate within {} msec",
-                          THREAD_POOL_SHUTDOWN);
-                asyncThreadPool.terminate();
-            }
-            asyncThreadPool = null;
-        }
     }
 
     /**
@@ -2259,22 +2204,6 @@ public class GlobalResourceManager
      * {@inheritDoc}
      */
     @Override
-    public Timer getTimer() {
-        return globalTimer;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean executeAsync(Runnable command) {
-        return asyncThreadPool.execute(command);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public InetAddress getControllerAddress() {
         return controllerAddress;
     }
@@ -2307,8 +2236,9 @@ public class GlobalResourceManager
         LOG.trace("{}: Clean up resources", containerName);
 
         // Clean up caches in a cluster cache transaction.
-        String root = GlobalConstants.STARTUPHOME.toString();
-        VTNConfig config = new VTNConfig(root, containerName);
+        VTNManagerImpl mgr =
+            vtnManagers.get(GlobalConstants.DEFAULT.toString());
+        VTNConfig config = mgr.getVTNConfig();
         ConfigTrans<Object> xact = new ConfigTrans<Object>(config) {
             @Override
             protected Object update() {
@@ -2330,8 +2260,6 @@ public class GlobalResourceManager
             // Some FLOW_REMOVED notifications might be ignored when the
             // controller entered the container mode.
             // So we need to clean up them.
-            VTNManagerImpl mgr =
-                vtnManagers.get(GlobalConstants.DEFAULT.toString());
             mgr.cleanUpRemovedFlows();
         }
     }

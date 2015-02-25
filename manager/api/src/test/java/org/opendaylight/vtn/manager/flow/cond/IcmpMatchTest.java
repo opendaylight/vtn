@@ -136,7 +136,7 @@ public class IcmpMatchTest extends TestBase {
         for (Short type: types) {
             for (Short code: codes) {
                 IcmpMatch icm = new IcmpMatch(type, code);
-                jaxbTest(icm, "icmpmatch");
+                jaxbTest(icm, IcmpMatch.class, "icmpmatch");
             }
         }
     }

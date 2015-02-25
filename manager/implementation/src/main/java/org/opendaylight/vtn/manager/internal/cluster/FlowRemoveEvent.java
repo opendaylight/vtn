@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 
 import org.opendaylight.vtn.manager.internal.ClusterFlowModTask;
 import org.opendaylight.vtn.manager.internal.ClusterFlowRemoveTask;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 /**
@@ -31,7 +32,7 @@ public class FlowRemoveEvent extends FlowModEvent {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4133633144252779271L;
+    private static final long serialVersionUID = 4399299437795392192L;
 
     /**
      * Construct a new flow uninstall event.
@@ -46,11 +47,13 @@ public class FlowRemoveEvent extends FlowModEvent {
      * Create a flow mod task to modify the given flow entry.
      *
      * @param mgr   VTN Manager service.
+     * @param ctx   MD-SAL datastore transaction context.
      * @param fent  A flow entry to be modified.
      * @return  A flow mod task to remove the given flow entry.
      */
-    protected ClusterFlowModTask createTask(VTNManagerImpl mgr,
+    @Override
+    protected ClusterFlowModTask createTask(VTNManagerImpl mgr, TxContext ctx,
                                             FlowEntry fent) {
-        return new ClusterFlowRemoveTask(mgr, fent);
+        return new ClusterFlowRemoveTask(mgr, ctx, fent);
     }
 }

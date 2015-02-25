@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,14 +27,22 @@ import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 
-import org.opendaylight.vtn.manager.internal.EdgeUpdateState;
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
-import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
+import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -44,6 +52,8 @@ import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * Implementation of virtual interface that can have port mapping
@@ -60,7 +70,7 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6565790001865942120L;
+    private static final long serialVersionUID = 6806660789796486540L;
 
     /**
      * Port mapping configuration.
@@ -140,6 +150,7 @@ public abstract class PortInterface extends AbstractInterface
      * </p>
      *
      * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param pmconf  Port mapping configuration to be set.
      *                If {@code null} is specified, port mapping on the
      *                specified interface is destroyed.
@@ -148,7 +159,8 @@ public abstract class PortInterface extends AbstractInterface
      *          was not changed.
      * @throws VTNException  An error occurred.
      */
-    final VNodeState setPortMap(VTNManagerImpl mgr, PortMapConfig pmconf)
+    final VNodeState setPortMap(VTNManagerImpl mgr, TxContext ctx,
+                                PortMapConfig pmconf)
         throws VTNException {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VInterfaceState ist = getIfState(db);
@@ -168,7 +180,7 @@ public abstract class PortInterface extends AbstractInterface
         NodeUtils.checkNode(node);
 
         short vlan = pmconf.getVlan();
-        MiscUtils.checkVlan(vlan);
+        ProtocolUtils.checkVlan(vlan);
 
         SwitchPort port = pmconf.getPort();
         NodeUtils.checkSwitchPort(port, node);
@@ -177,9 +189,12 @@ public abstract class PortInterface extends AbstractInterface
         IVTNResourceManager resMgr = mgr.getResourceManager();
         PortVlan pvlan = null;
 
-        // Search for the node connector specified by the configuration.
-        NodeConnector nc = NodeUtils.findPort(mgr, node, port);
-        if (nc != null) {
+        // Search for the switch port specified by the configuration.
+        InventoryReader reader = ctx.getInventoryReader();
+        NodeConnector nc;
+        SalPort sport = reader.findPort(node, port);
+        if (sport != null) {
+            nc = sport.getAdNodeConnector();
             if (nc.equals(mapped) && oldconf.getVlan() == vlan) {
                 // No need to change switch port mapping.
                 portMapConfig = pmconf;
@@ -187,6 +202,8 @@ public abstract class PortInterface extends AbstractInterface
             }
 
             pvlan = new PortVlan(nc, vlan);
+        } else {
+            nc = null;
         }
 
         PortVlan rmlan = (mapped == null)
@@ -228,10 +245,10 @@ public abstract class PortInterface extends AbstractInterface
 
         VNodeState state;
         if (isEnabled()) {
-            state = getNewState(mgr, ist);
+            state = getNewState(reader, ist);
         } else {
             state = VNodeState.DOWN;
-            VNodeState pstate = getPortState(mgr, nc);
+            VNodeState pstate = getPortState(reader, sport);
             ist.setPortState(pstate);
         }
         ist.setState(state);
@@ -252,15 +269,13 @@ public abstract class PortInterface extends AbstractInterface
      * @param mgr     VTN Manager service.
      * @param db      Virtual node state DB.
      * @param prstate Current state of the parent node.
-     * @param node    Node being updated.
-     * @param type    Type of update.
+     * @param ev      A {@link VtnNodeEvent} instance.
      * @return  New state of the parent node.
      */
     final VNodeState notifyNode(VTNManagerImpl mgr,
                                 ConcurrentMap<VTenantPath, Object> db,
-                                VNodeState prstate, Node node,
-                                UpdateType type) {
-        VNodeState state = notifyNode(mgr, db, node, type);
+                                VNodeState prstate, VtnNodeEvent ev) {
+        VNodeState state = notifyNode(mgr, db, ev);
         return getParentState(state, prstate);
     }
 
@@ -271,33 +286,13 @@ public abstract class PortInterface extends AbstractInterface
      * @param mgr      VTN Manager service.
      * @param db       Virtual node state DB.
      * @param prstate  Current state of the parent node.
-     * @param nc       Node connector being updated.
-     * @param pstate   The state of the node connector.
-     * @param type     Type of update.
+     * @param ev       {@link VtnPortEvent} instance.
      * @return  New state of this virtual node.
      */
     final VNodeState notifyNodeConnector(VTNManagerImpl mgr,
                                          ConcurrentMap<VTenantPath, Object> db,
-                                         VNodeState prstate, NodeConnector nc,
-                                         VNodeState pstate, UpdateType type) {
-        VNodeState state = notifyNodeConnector(mgr, db, nc, pstate, type);
-        return getParentState(state, prstate);
-    }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr      VTN Manager service.
-     * @param db       Virtual node state DB.
-     * @param prstate  Current state of the parent node.
-     * @param estate   A {@link EdgeUpdateState} instance which contains
-     *                 information reported by the controller.
-     * @return  New state of this virtual node.
-     */
-    final VNodeState edgeUpdate(VTNManagerImpl mgr,
-                                ConcurrentMap<VTenantPath, Object> db,
-                                VNodeState prstate, EdgeUpdateState estate) {
-        VNodeState state = edgeUpdate(mgr, db, estate);
+                                         VNodeState prstate, VtnPortEvent ev) {
+        VNodeState state = notifyNodeConnector(mgr, db, ev);
         return getParentState(state, prstate);
     }
 
@@ -355,6 +350,11 @@ public abstract class PortInterface extends AbstractInterface
         if (mapped == null) {
             return;
         }
+        SalPort egress = SalPort.create(mapped);
+        if (egress == null) {
+            // This should never happen.
+            return;
+        }
 
         short vlan = pmconf.getVlan();
         PortVlan pvlan = new PortVlan(mapped, vlan);
@@ -387,7 +387,7 @@ public abstract class PortInterface extends AbstractInterface
                          pc.getDescription(frame, mapped, vlan));
         }
 
-        mgr.transmit(mapped, frame);
+        mgr.transmit(egress, frame);
     }
 
     /**
@@ -484,18 +484,26 @@ public abstract class PortInterface extends AbstractInterface
      *   in {@code ist}.
      * </p>
      *
-     * @param mgr  VTN Manager service.
+     * @param rdr  An {@link InventoryReader} instance.
      * @param ist  Runtime state of this node.
      * @return  New node state.
+     * @throws VTNException  An error occurred.
      */
-    private VNodeState getNewState(VTNManagerImpl mgr, VInterfaceState ist) {
+    private VNodeState getNewState(InventoryReader rdr, VInterfaceState ist)
+        throws VTNException {
         NodeConnector nc = ist.getMappedPort();
         if (nc == null) {
             return VNodeState.DOWN;
         }
 
-        VNodeState pstate = getPortState(mgr, nc);
-        return getNewState(mgr, ist, nc, pstate);
+        SalPort sport = SalPort.create(nc);
+        if (sport == null) {
+            // This should never happen.
+            return VNodeState.DOWN;
+        }
+
+        VtnPort vport = rdr.get(sport);
+        return getNewState(ist, vport);
     }
 
     /**
@@ -506,19 +514,17 @@ public abstract class PortInterface extends AbstractInterface
      *   port in {@code ist}.
      * </p>
      *
-     * @param mgr     VTN Manager service.
      * @param ist     Runtime state of this node.
-     * @param nc      Node connector associated with the switch port mapped to
-     *                this node.
-     * @param pstate  State of the switch port mapped to this node.
+     * @param vport   A {@link VtnPort} instance associated with the switch
+     *                port mapped to this node.
      * @return  New node state.
      */
-    private VNodeState getNewState(VTNManagerImpl mgr, VInterfaceState ist,
-                                   NodeConnector nc, VNodeState pstate) {
+    private VNodeState getNewState(VInterfaceState ist, VtnPort vport) {
         // Update the state of the mapped port.
+        VNodeState pstate = getPortState(vport);
         ist.setPortState(pstate);
 
-        if (pstate == VNodeState.UP && mgr.isEdgePort(nc)) {
+        if (pstate == VNodeState.UP && InventoryUtils.isEdge(vport)) {
             return VNodeState.UP;
         }
 
@@ -528,16 +534,36 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Get state of the switch port.
      *
-     * @param mgr  VTN Manager service.
-     * @param nc   Node connector mapped to this node.
-     * @return  New virtual node state.
+     * @param reader  A {@link InventoryReader} instance.
+     * @param sport   A {@link SalPort} instance.
+     * @return  A {@link VNodeState} instance which represents the state of
+     *          the specified switc port.
+     * @throws VTNException  An error occurred.
      */
-    private VNodeState getPortState(VTNManagerImpl mgr, NodeConnector nc) {
-        if (nc == null) {
+    private VNodeState getPortState(InventoryReader reader, SalPort sport)
+        throws VTNException {
+        if (sport == null) {
             return VNodeState.UNKNOWN;
         }
 
-        return (mgr.isEnabled(nc)) ? VNodeState.UP : VNodeState.DOWN;
+        VtnPort vport = reader.get(sport);
+        return getPortState(vport);
+    }
+
+    /**
+     * Get state of the switch port.
+     *
+     * @param vport   A {@link VtnPort} instance.
+     * @return  A {@link VNodeState} instance which represents the state of
+     *          the specified switc port.
+     */
+    private VNodeState getPortState(VtnPort vport) {
+        if (vport == null) {
+            return VNodeState.UNKNOWN;
+        }
+
+        return (InventoryUtils.isEnabled(vport))
+            ? VNodeState.UP : VNodeState.DOWN;
     }
 
     /**
@@ -578,22 +604,18 @@ public abstract class PortInterface extends AbstractInterface
      *
      * @param mgr     VTN Manager service.
      * @param pmconf  Port mapping configuration.
-     * @param nc      Node connector to be tested.
+     * @param sport   A {@link SalPort} instance.
+     * @param vport   A {@link VtnPort} instance.
      * @return  {@code true} is returned only if the given node connector
      *          satisfies the condition.
      */
     private boolean portMatch(VTNManagerImpl mgr, PortMapConfig pmconf,
-                              NodeConnector nc) {
-        PortProperty pp = mgr.getPortProperty(nc);
-        if (pp == null) {
-            // Non-physical port cannot be mapped.
-            return false;
-        }
-
+                              SalPort sport, VtnPort vport) {
         Node pnode = pmconf.getNode();
         SwitchPort port = pmconf.getPort();
         String type = port.getType();
         String id = port.getId();
+        NodeConnector nc = sport.getAdNodeConnector();
         if (type != null && id != null) {
             // This should never return null.
             NodeConnector target =
@@ -606,7 +628,7 @@ public abstract class PortInterface extends AbstractInterface
         }
 
         String name = port.getName();
-        return (name == null || name.equals(pp.getName()));
+        return (name == null || name.equals(vport.getName()));
     }
 
     /**
@@ -615,18 +637,19 @@ public abstract class PortInterface extends AbstractInterface
      * @param mgr       VTN Manager service.
      * @param db        Virtual node state DB.
      * @param ist       Runtime state of this node.
-     * @param nc        Node connector to be mapped.
+     * @param sport     A {@link SalPort} to be mapped.
      * @param resuming
      *     {@code true} if this method is called by
-     *     {@link #resuming(VTNManagerImpl, ConcurrentMap, VInterfaceState)}.
+     *     {@link #resuming(VTNManagerImpl, ConcurrentMap, TxContext, VInterfaceState)}.
      * @return  {@code true} is returned if the given port is successfully
      *          mapped. {@code false} is returned if a switch port is already
      *          mapped to this node.
      */
     private boolean mapPort(VTNManagerImpl mgr,
                             ConcurrentMap<VTenantPath, Object> db,
-                            VInterfaceState ist, NodeConnector nc,
+                            VInterfaceState ist, SalPort sport,
                             boolean resuming) {
+        NodeConnector nc = sport.getAdNodeConnector();
         short vlan = portMapConfig.getVlan();
         PortVlan pvlan = new PortVlan(nc, vlan);
         IVTNResourceManager resMgr = mgr.getResourceManager();
@@ -707,18 +730,17 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Invoked when a node is added, removed, or changed.
      *
-     * @param mgr   VTN Manager service.
-     * @param db    Virtual node state DB.
-     * @param node  Node being updated.
-     * @param type  Type of update.
+     * @param mgr  VTN Manager service.
+     * @param db   Virtual node state DB.
+     * @param ev   A {@link VtnNodeEvent} instance.
      * @return  New state of this interface.
      */
     private VNodeState notifyNode(VTNManagerImpl mgr,
                                   ConcurrentMap<VTenantPath, Object> db,
-                                  Node node, UpdateType type) {
+                                  VtnNodeEvent ev) {
         VInterfaceState ist = getIfState(db);
         VNodeState cur = ist.getState();
-        if (type != UpdateType.REMOVED) {
+        if (ev.getUpdateType() != VtnUpdateType.REMOVED) {
             return cur;
         }
 
@@ -732,8 +754,9 @@ public abstract class PortInterface extends AbstractInterface
             return cur;
         }
 
+        SalNode snode = ev.getSalNode();
         Node pnode = pmconf.getNode();
-        if (pnode.equals(node)) {
+        if (pnode.equals(snode.getAdNode())) {
             // No need to flush MAC address table entries and flow entries.
             // It will be done by the VTN Manager service.
             unmapPort(mgr, db, ist, true, false);
@@ -748,17 +771,14 @@ public abstract class PortInterface extends AbstractInterface
      * This method is called when some properties of a node connector are
      * added/deleted/changed.
      *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param nc      Node connector being updated.
-     * @param pstate  The state of the node connector.
-     * @param type    Type of update.
+     * @param mgr    VTN Manager service.
+     * @param db     Virtual node state DB.
+     * @param ev       {@link VtnPortEvent} instance.
      * @return  New state of this virtual interface.
      */
     private VNodeState notifyNodeConnector(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        NodeConnector nc, VNodeState pstate, UpdateType type) {
-
+        VtnPortEvent ev) {
         VInterfaceState ist = getIfState(db);
         VNodeState cur = ist.getState();
         PortMapConfig pmconf = portMapConfig;
@@ -768,17 +788,19 @@ public abstract class PortInterface extends AbstractInterface
 
         NodeConnector mapped = ist.getMappedPort();
         VNodeState state = VNodeState.UNKNOWN;
-        switch (type) {
-        case ADDED:
-            if (mapped != null || !portMatch(mgr, pmconf, nc)) {
+        SalPort sport = ev.getSalPort();
+        VtnPort vport = ev.getVtnPort();
+        switch (ev.getUpdateType()) {
+        case CREATED:
+            if (mapped != null || !portMatch(mgr, pmconf, sport, vport)) {
                 return cur;
             }
 
             // Try to establish port mapping.
-            if (!mapPort(mgr, db, ist, nc, false)) {
+            if (!mapPort(mgr, db, ist, sport, false)) {
                 return cur;
             }
-            state = getNewState(mgr, ist, nc, pstate);
+            state = getNewState(ist, vport);
             break;
 
         case CHANGED:
@@ -786,22 +808,22 @@ public abstract class PortInterface extends AbstractInterface
                 // Check whether the port name was changed.
                 // Map the port if its name matches the configuration.
                 if (pmconf.getPort().getName() == null ||
-                    !portMatch(mgr, pmconf, nc) ||
-                    !mapPort(mgr, db, ist, nc, false)) {
+                    !portMatch(mgr, pmconf, sport, vport) ||
+                    !mapPort(mgr, db, ist, sport, false)) {
                     return cur;
                 }
 
-                state = getNewState(mgr, ist, nc, pstate);
-            } else if (nc.equals(mapped)) {
+                state = getNewState(ist, vport);
+            } else if (sport.getAdNodeConnector().equals(mapped)) {
                 if (pmconf.getPort().getName() != null &&
-                    !portMatch(mgr, pmconf, nc)) {
+                    !portMatch(mgr, pmconf, sport, vport)) {
                     // This port should be unmapped because its name has been
                     // changed. In this case flow and MAC address table entries
                     // need to be purged.
                     unmapPort(mgr, db, ist, true, true);
                     state = VNodeState.DOWN;
                 } else {
-                    state = getNewState(mgr, ist, nc, pstate);
+                    state = getNewState(ist, vport);
                 }
             } else {
                 return cur;
@@ -809,7 +831,7 @@ public abstract class PortInterface extends AbstractInterface
             break;
 
         case REMOVED:
-            if (nc.equals(mapped)) {
+            if (sport.getAdNodeConnector().equals(mapped)) {
                 // No need to flush MAC address table entries and flow entries.
                 // It will be done by the VTN Manager service.
                 unmapPort(mgr, db, ist, true, false);
@@ -826,40 +848,6 @@ public abstract class PortInterface extends AbstractInterface
         setState(mgr, db, ist, state);
 
         return state;
-    }
-
-    /**
-     * This method is called when topology graph is changed.
-     *
-     * @param mgr     VTN Manager service.
-     * @param db      Virtual node state DB.
-     * @param estate  A {@link EdgeUpdateState} instance which contains
-     *                information reported by the controller.
-     * @return  New state of this virtual interface.
-     */
-    private VNodeState edgeUpdate(VTNManagerImpl mgr,
-                                  ConcurrentMap<VTenantPath, Object> db,
-                                  EdgeUpdateState estate) {
-        VInterfaceState ist = getIfState(db);
-        VNodeState cur = ist.getState();
-        PortMapConfig pmconf = portMapConfig;
-        if (pmconf != null) {
-            NodeConnector mapped = ist.getMappedPort();
-            Boolean changed = estate.getPortState(mapped);
-            if (changed != null) {
-                assert mapped != null;
-                VNodeState pstate = getPortState(mgr, mapped);
-                ist.setPortState(pstate);
-
-                VNodeState state =
-                    (pstate == VNodeState.UP && !changed.booleanValue())
-                    ? VNodeState.UP : VNodeState.DOWN;
-                setState(mgr, db, ist, state);
-                cur = state;
-            }
-        }
-
-        return cur;
     }
 
     /**
@@ -1043,6 +1031,7 @@ public abstract class PortInterface extends AbstractInterface
      * </p>
      *
      * @param mgr      VTN Manager service.
+     * @param ctx      MD-SAL datastore transaction context.
      * @param db       Virtual node state DB.
      * @param ist      Current runtime state of this interface.
      * @param enabled  {@code true} is passed if this interface has been
@@ -1053,14 +1042,23 @@ public abstract class PortInterface extends AbstractInterface
      */
     @Override
     protected final VNodeState changeEnableState(
-        VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
-        VInterfaceState ist, boolean enabled) {
+        VTNManagerImpl mgr, TxContext ctx,
+        ConcurrentMap<VTenantPath, Object> db, VInterfaceState ist,
+        boolean enabled) {
         VNodeState state;
         if (enabled) {
             // Determine new state by the state of mapped port.
-            state = (portMapConfig == null)
-                ? VNodeState.UNKNOWN
-                : getNewState(mgr, ist);
+            if (portMapConfig == null) {
+                state = VNodeState.UNKNOWN;
+            } else {
+                InventoryReader reader = ctx.getInventoryReader();
+                try {
+                    state = getNewState(reader, ist);
+                } catch (Exception e) {
+                    mgr.logException(getLogger(), getPath(), e);
+                    state = VNodeState.UNKNOWN;
+                }
+            }
         } else {
             // State of disabled interface must be DOWN.
             state = VNodeState.DOWN;
@@ -1087,13 +1085,14 @@ public abstract class PortInterface extends AbstractInterface
      *
      * @param mgr  VTN Manager service.
      * @param db   Virtual node state DB.
+     * @param ctx  A runtime context for MD-SAL datastore transaction task.
      * @param ist  Current state of this interface.
      * @return  New state of this interface.
      */
     @Override
     protected final VNodeState resuming(VTNManagerImpl mgr,
                                         ConcurrentMap<VTenantPath, Object> db,
-                                        VInterfaceState ist) {
+                                        TxContext ctx, VInterfaceState ist) {
         PortMapConfig pmconf = portMapConfig;
         if (pmconf == null) {
             return VNodeState.UNKNOWN;
@@ -1103,14 +1102,21 @@ public abstract class PortInterface extends AbstractInterface
         if (mapped == null) {
             // Try to establish port mapping.
             Node node = pmconf.getNode();
+            InventoryReader reader = ctx.getInventoryReader();
             SwitchPort port = pmconf.getPort();
-            NodeConnector nc = NodeUtils.findPort(mgr, node, port);
-            if (nc != null) {
-                mapPort(mgr, db, ist, nc, true);
+            try {
+                SalPort sport = reader.findPort(node, port);
+                if (sport != null) {
+                    mapPort(mgr, db, ist, sport, true);
+                }
+
+                return getNewState(reader, ist);
+            } catch (Exception e) {
+                mgr.logException(getLogger(), getPath(), e);
             }
         }
 
-        return getNewState(mgr, ist);
+        return VNodeState.UNKNOWN;
     }
 
     /**

@@ -9,11 +9,10 @@
 
 package org.opendaylight.vtn.manager;
 
-import java.io.ByteArrayInputStream;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -169,22 +168,22 @@ public class PathCostTest extends TestBase {
             for (SwitchPort port: createSwitchPorts(5)) {
                 PortLocation ploc = new PortLocation(node, port);
                 PathCost pc = createUndefiedCost(ploc);
-                jaxbTest(pc, XML_ROOT);
+                jaxbTest(pc, PathCost.class, XML_ROOT);
 
                 for (long c = 0; c <= 5; c++) {
                     pc = new PathCost(ploc, c);
-                    jaxbTest(pc, XML_ROOT);
+                    jaxbTest(pc, PathCost.class, XML_ROOT);
                 }
             }
         }
 
         for (long c = 0; c <= 5; c++) {
             PathCost pc = new PathCost(null, c);
-            jaxbTest(pc, XML_ROOT);
+            jaxbTest(pc, PathCost.class, XML_ROOT);
         }
 
         PathCost pc = createUndefiedCost(null);
-        jaxbTest(pc, XML_ROOT);
+        jaxbTest(pc, PathCost.class, XML_ROOT);
     }
 
     /**
@@ -262,10 +261,10 @@ public class PathCostTest extends TestBase {
         }
 
         PathCost pc = null;
+        Unmarshaller um = createUnmarshaller(PathCost.class);
         String xml = builder.toString();
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            pc = JAXB.unmarshal(in, PathCost.class);
+            pc = unmarshal(um, xml, PathCost.class);
         } catch (Exception e) {
             unexpected(e);
         }

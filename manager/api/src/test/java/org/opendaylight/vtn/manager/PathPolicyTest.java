@@ -49,6 +49,14 @@ public class PathPolicyTest extends TestBase {
                     l = policy.getPathCosts();
                     assertNotSame(l, costs);
                     assertEquals(l, costs);
+
+                    Integer pid = (id == 0) ? null : Integer.valueOf(id);
+                    policy = new PathPolicy(pid, def, costs);
+                    assertEquals(pid, policy.getPolicyId());
+                    assertEquals(def, policy.getDefaultCost());
+                    l = policy.getPathCosts();
+                    assertNotSame(l, costs);
+                    assertEquals(l, costs);
                 }
             }
         }
@@ -155,11 +163,11 @@ public class PathPolicyTest extends TestBase {
         for (long def: defCosts) {
             for (List<PathCost> costs: createPathCostLists()) {
                 PathPolicy policy = new PathPolicy(def, costs);
-                jaxbTest(policy, XML_ROOT);
+                jaxbTest(policy, PathPolicy.class, XML_ROOT);
 
                 for (int id: ids) {
                     policy = new PathPolicy(id, def, costs);
-                    jaxbTest(policy, XML_ROOT);
+                    jaxbTest(policy, PathPolicy.class, XML_ROOT);
                 }
             }
         }

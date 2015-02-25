@@ -28,7 +28,10 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.PortFilter;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.SalPort;
 
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
@@ -45,9 +48,8 @@ import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.ServiceHelper;
-import org.opendaylight.controller.switchmanager.ISwitchManager;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 
 /**
  * {@code VTNFlow} describes a flow in the virtual tenant.
@@ -65,7 +67,7 @@ public class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6914650561856231732L;
+    private static final long serialVersionUID = -7378977687865612389L;
 
     /**
      * The identifier of the flow group.
@@ -307,7 +309,7 @@ public class VTNFlow implements Serializable {
         String name = builder.toString();
         FlowEntry entry = new FlowEntry(gname, name, flow, node);
         flowEntries.add(entry);
-        updateIndex(mgr.getSwitchManager(), flow, node);
+        updateIndex(flow, node);
     }
 
     /**
@@ -497,7 +499,7 @@ public class VTNFlow implements Serializable {
      *   The network to be tested is specified by a pair of {@link PortFilter}
      *   instance and VLAN ID. This method passes a {@link NodeConnector}
      *   instance configured in the ingress flow to
-     *   {@link PortFilter#accept(NodeConnector, PortProperty)}, and
+     *   {@link PortFilter#accept(NodeConnector, VtnPort)}, and
      *   returns {@code false} if it returns {@code false}.
      *   Note that {@code null} is always passed as port property.
      * </p>
@@ -537,7 +539,7 @@ public class VTNFlow implements Serializable {
      *   The network to be tested is specified by a pair of {@link PortFilter}
      *   instance and VLAN ID. This method passes a {@link NodeConnector}
      *   instance configured in the ingress flow to
-     *   {@link PortFilter#accept(NodeConnector, PortProperty)}, and
+     *   {@link PortFilter#accept(NodeConnector, VtnPort)}, and
      *   returns {@code false} if it returns {@code false}.
      *   Note that {@code null} is always passed as port property.
      * </p>
@@ -583,13 +585,10 @@ public class VTNFlow implements Serializable {
     /**
      * Update indices of flow entries.
      *
-     * @param swMgr  Switch manager service. If a non-{@code null} value is
-     *               specified, this method eliminates pseudo ports from
-     *               port index.
      * @param flow   A SAL flow.
      * @param node   A node associated with the given flow.
      */
-    private void updateIndex(ISwitchManager swMgr, Flow flow, Node node) {
+    private void updateIndex(Flow flow, Node node) {
         flowNodes.add(node);
 
         // Determine incoming switch port.
@@ -609,12 +608,7 @@ public class VTNFlow implements Serializable {
                     assert node.equals(port.getNode());
                     port = out.getPort();
                     flowNodes.add(port.getNode());
-
-                    // Eliminate special port from port index in order to
-                    // reduce index size.
-                    if (swMgr == null || !swMgr.isSpecial(port)) {
-                        flowPorts.add(port);
-                    }
+                    flowPorts.add(port);
                 }
             }
         }
@@ -703,7 +697,7 @@ public class VTNFlow implements Serializable {
      * Return a {@link DataFlow} instance which represents information about
      * this VTN flow.
      *
-     * @param mgr     VTN Manager service.
+     * @param ctx     MD-SAL datastore transaction context.
      * @param detail  If {@code true} is specified, detailed information
      *                is set into a returned {@link DataFlow} instance.
      *                Otherwise summary of the data flow is set.
@@ -711,7 +705,7 @@ public class VTNFlow implements Serializable {
      *          {@code null} is returned if this VTN flow does not contain
      *          SAL flow.
      */
-    public DataFlow getDataFlow(VTNManagerImpl mgr, boolean detail) {
+    public DataFlow getDataFlow(TxContext ctx, boolean detail) {
         int sz = flowEntries.size();
         if (sz <= 0) {
             return null;
@@ -724,7 +718,7 @@ public class VTNFlow implements Serializable {
         MatchField mf = iflow.getMatch().getField(MatchType.IN_PORT);
         NodeConnector inPort = (NodeConnector)mf.getValue();
         PortLocation inLoc =
-            new PortLocation(inPort, mgr.getPortName(inPort));
+            new PortLocation(inPort, getPortName(ctx, inPort));
 
         // Flow timeout is configured only in the ingress flow.
         short idle = iflow.getIdleTimeout();
@@ -735,7 +729,7 @@ public class VTNFlow implements Serializable {
         NodeConnector outPort = getOutputPort(eflow.getActions());
         PortLocation outLoc = (outPort == null)
             ? null
-            : new PortLocation(outPort, mgr.getPortName(outPort));
+            : new PortLocation(outPort, getPortName(ctx, outPort));
 
         VNodePath inPath = getIngressPath();
         VNodePath outPath = getEgressPath();
@@ -751,7 +745,7 @@ public class VTNFlow implements Serializable {
 
             // Determine physical packet route of the data flow.
             for (FlowEntry fent: flowEntries) {
-                NodeRoute nroute = getNodeRoute(mgr, fent.getFlow());
+                NodeRoute nroute = getNodeRoute(ctx, fent.getFlow());
                 if (nroute == null) {
                     df.clearPhysicalRoute();
                     break;
@@ -796,13 +790,10 @@ public class VTNFlow implements Serializable {
         in.defaultReadObject();
 
         // Update indices for node and port.
-        ISwitchManager swMgr = (ISwitchManager)ServiceHelper.
-            getInstance(ISwitchManager.class,
-                        GlobalConstants.DEFAULT.toString(), this);
         flowNodes = new HashSet<Node>();
         flowPorts = new HashSet<NodeConnector>();
         for (FlowEntry fent: flowEntries) {
-            updateIndex(swMgr, fent.getFlow(), fent.getNode());
+            updateIndex(fent.getFlow(), fent.getNode());
         }
     }
 
@@ -893,13 +884,13 @@ public class VTNFlow implements Serializable {
      * Return a {@link NodeRoute} instance which represents the physical packet
      * routing configured by the given SAL flow.
      *
-     * @param mgr   VTN Manager service.
+     * @param ctx   MD-SAL datastore transaction context.
      * @param flow  A SAL flow.
      * @return  A {@link NodeRoute} instance.
      *          {@code null} is returned if the given SAL flow discards the
      *          packet.
      */
-    private NodeRoute getNodeRoute(VTNManagerImpl mgr, Flow flow) {
+    private NodeRoute getNodeRoute(TxContext ctx, Flow flow) {
         // Determine egress port.
         NodeConnector out = getOutputPort(flow.getActions());
         if (out == null) {
@@ -910,8 +901,8 @@ public class VTNFlow implements Serializable {
         // IN_PORT field should be contained in every flow entry.
         MatchField mf = flow.getMatch().getField(MatchType.IN_PORT);
         NodeConnector in = (NodeConnector)mf.getValue();
-        String inName = mgr.getPortName(in);
-        String outName = mgr.getPortName(out);
+        String inName = getPortName(ctx, in);
+        String outName = getPortName(ctx, out);
 
         return new NodeRoute(in, inName, out, outName);
     }
@@ -939,6 +930,31 @@ public class VTNFlow implements Serializable {
         }
 
         return new L2Host(vlan, inPort);
+    }
+
+    /**
+     * Return the name of the given switch port.
+     *
+     * @param ctx   MD-SAL datastore transaction context.
+     * @param port  A {@link NodeConnector} instance corresponding to a
+     *              switch port.
+     * @return  The name of the given port.
+     *          {@code null} if not available.
+     */
+    private String getPortName(TxContext ctx, NodeConnector port) {
+        SalPort sport = SalPort.create(port);
+        if (sport == null) {
+            // This should never happen.
+            return null;
+        }
+
+        InventoryReader reader = ctx.getInventoryReader();
+        try {
+            VtnPort vport = reader.get(sport);
+            return vport.getName();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

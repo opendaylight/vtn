@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,9 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.util.HashSet;
 import java.util.List;
-import java.io.ByteArrayInputStream;
 
-import javax.xml.bind.JAXB;
+import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
@@ -179,9 +178,9 @@ public class VBridgeTest extends TestBase {
                     for (VNodeState state: states) {
                         VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                         VBridge vbridge = new VBridge(name, state, 0, bconf);
-                        jaxbTest(vbridge, XML_ROOT);
+                        jaxbTest(vbridge, VBridge.class, XML_ROOT);
                         vbridge = new VBridge(name, state, 1, bconf);
-                        jaxbTest(vbridge, XML_ROOT);
+                        jaxbTest(vbridge, VBridge.class, XML_ROOT);
                     }
 
                     // Ensure that "state" attribute is decoded as VNodeState.
@@ -243,10 +242,10 @@ public class VBridgeTest extends TestBase {
         }
 
         String xml = builder.append("/>").toString();
+        Unmarshaller um = createUnmarshaller(VBridge.class);
         VBridge vbridge = null;
         try {
-            ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
-            vbridge = JAXB.unmarshal(in, VBridge.class);
+            vbridge = unmarshal(um, xml, VBridge.class);
         } catch (Exception e) {
             unexpected(e);
         }
