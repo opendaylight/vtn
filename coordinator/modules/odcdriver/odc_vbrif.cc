@@ -521,6 +521,7 @@ json_object* OdcVbrIfCommand::create_request_body(
   ODC_FUNC_TRACE;
   json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();
   int ret_val = 1;
+  bool true_flag = 1;
 
   if (UNC_VF_VALID == val_vbrif.val_vbrif.valid[UPLL_IDX_DESC_VBRI]) {
     char* description =
@@ -538,9 +539,11 @@ json_object* OdcVbrIfCommand::create_request_body(
   }
   if (UNC_VF_VALID == val_vbrif.val_vbrif.valid[UPLL_IDX_ADMIN_STATUS_VBRI]) {
     if (UPLL_ADMIN_ENABLE == val_vbrif.val_vbrif.admin_status) {
-      ret_val = unc::restjson::JsonBuildParse::build("enabled", "true", jobj);
+      ret_val = unc::restjson::JsonBuildParse::build("enabled",
+                                                     true_flag, jobj);
     } else if (UPLL_ADMIN_DISABLE == val_vbrif.val_vbrif.admin_status) {
-      ret_val = unc::restjson::JsonBuildParse::build("enabled", "false", jobj);
+      ret_val = unc::restjson::JsonBuildParse::build("enabled",
+                                                     !true_flag, jobj);
     }
     if (restjson::REST_OP_SUCCESS != ret_val) {
       return NULL;
