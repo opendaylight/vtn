@@ -28,7 +28,7 @@ public class MacHost {
      * vlan attribute for MacHost
      */
     @JsonElement(name = "vlan")
-    private String vlan = "";
+    private int vlan;
 
     public MacHost() {}
 
