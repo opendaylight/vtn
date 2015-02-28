@@ -15,9 +15,9 @@ import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
-import org.opendaylight.ovsdb.plugin.api.OvsdbInventoryListener;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbInventoryListener;
 
 import org.opendaylight.vtn.manager.IVTNManager;
 

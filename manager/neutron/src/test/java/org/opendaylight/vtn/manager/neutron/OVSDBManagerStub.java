@@ -23,9 +23,9 @@ import org.opendaylight.ovsdb.lib.notation.Row;
 import org.opendaylight.ovsdb.lib.notation.UUID;
 import org.opendaylight.ovsdb.lib.schema.GenericTableSchema;
 import org.opendaylight.ovsdb.lib.schema.typed.TypedBaseTable;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
-import org.opendaylight.ovsdb.plugin.api.StatusWithUuid;
-import org.opendaylight.ovsdb.plugin.error.OvsdbPluginException;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.StatusWithUuid;
+import org.opendaylight.ovsdb.compatibility.plugin.error.OvsdbPluginException;
 import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
 import org.opendaylight.ovsdb.schema.openvswitch.Interface;
 
@@ -33,7 +33,7 @@ import org.opendaylight.ovsdb.schema.openvswitch.Interface;
  * Stub class for unit tests.
  *
  * This stub provides APIs implemented in
- * org.opendaylight.ovsdb.plugin package.
+ * org.opendaylight.ovsdb.compatibility.plugin package.
  */
 public class OVSDBManagerStub extends TestBase implements OvsdbConfigurationService {
     /**

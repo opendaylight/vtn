@@ -278,7 +278,7 @@ public class VTNManagerIT extends TestBase {
 
                 //OVSDB Bundles
                 mavenBundle("org.opendaylight.ovsdb", "library").versionAsInProject(),
-                mavenBundle("org.opendaylight.ovsdb", "plugin").versionAsInProject(),
+                mavenBundle("org.opendaylight.ovsdb", "ovsdb-plugin-compatibility-layer").versionAsInProject(),
                 mavenBundle("org.opendaylight.ovsdb", "schema.openvswitch").versionAsInProject(),
                 mavenBundle("org.opendaylight.ovsdb", "schema.hardwarevtep").versionAsInProject(),
 
