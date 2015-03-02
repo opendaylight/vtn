@@ -153,6 +153,11 @@ public final class TestOption {
         "org.opendaylight.openflowplugin.legacy";
 
     /**
+     * Group ID for neutron bundles.
+     */
+    private static final String  NEUTRON = "org.opendaylight.neutron";
+
+    /**
      * Group ID for OVSDB bundles.
      */
     private static final String  OVSDB = "org.opendaylight.ovsdb";
@@ -231,7 +236,6 @@ public final class TestOption {
             mavenBundle(TestHelper.CONTROLLER, "statisticsmanager"),
             mavenBundle(TestHelper.CONTROLLER,
                         "statisticsmanager.implementation"),
-            mavenBundle(TestHelper.CONTROLLER, "networkconfig.neutron"),
 
             // hosttracker.implementation is not mandatory.
             mavenBundle(TestHelper.CONTROLLER, "hosttracker"),
@@ -380,9 +384,14 @@ public final class TestOption {
             mavenBundle(VTN, "manager.it.ofmock"),
             mavenBundle(VTN, "manager.it.util"),
 
+            // Neutron bundles.
+            mavenBundle(NEUTRON, "neutron-spi"),
+            mavenBundle(NEUTRON, "transcriber"),
+
             // OVSDB bundles.
             mavenBundle(OVSDB, "library"),
             mavenBundle(OVSDB, "plugin"),
+            mavenBundle(OVSDB, "ovsdb-plugin-compatibility-layer"),
             mavenBundle(OVSDB, "schema.openvswitch"),
             mavenBundle(OVSDB, "schema.hardwarevtep"),
 

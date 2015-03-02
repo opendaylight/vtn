@@ -194,6 +194,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.opendaylight.neutron</groupId>
+      <artifactId>features-neutron</artifactId>
+      <classifier>features</classifier>
+      <type>xml</type>
+    </dependency>
+
+    <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
       <artifactId>features-ovsdb</artifactId>
       <classifier>features</classifier>

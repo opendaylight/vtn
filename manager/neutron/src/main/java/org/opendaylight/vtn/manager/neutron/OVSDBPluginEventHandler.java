@@ -18,12 +18,21 @@ import java.util.Properties;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 
-import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
-import org.opendaylight.controller.networkconfig.neutron.NeutronPort;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.opendaylight.vtn.manager.SwitchPort;
+import org.opendaylight.vtn.manager.VBridgeIfPath;
+import org.opendaylight.vtn.manager.PortMapConfig;
+
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.neutron.spi.INeutronPortCRUD;
+import org.opendaylight.neutron.spi.NeutronPort;
+
 import org.opendaylight.ovsdb.lib.notation.OvsdbSet;
 import org.opendaylight.ovsdb.lib.notation.UUID;
 import org.opendaylight.ovsdb.lib.notation.Row;
@@ -31,15 +40,10 @@ import org.opendaylight.ovsdb.schema.openvswitch.Interface;
 import org.opendaylight.ovsdb.schema.openvswitch.Port;
 import org.opendaylight.ovsdb.schema.openvswitch.OpenVSwitch;
 import org.opendaylight.ovsdb.schema.openvswitch.Bridge;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
-import org.opendaylight.ovsdb.plugin.api.OvsdbInventoryListener;
-import org.opendaylight.ovsdb.plugin.api.StatusWithUuid;
-import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.VBridgeIfPath;
-import org.opendaylight.vtn.manager.PortMapConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbInventoryListener;
+import org.opendaylight.ovsdb.compatibility.plugin.api.StatusWithUuid;
 
 /**
  * Handle events from OVSDB Southbound plugin.

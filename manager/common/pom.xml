@@ -72,6 +72,7 @@
     <feature.nsf.version>0.5.0-SNAPSHOT</feature.nsf.version>
     <feature.ovsdb.version>1.1.0-SNAPSHOT</feature.ovsdb.version>
     <feature.openflowplugin.version>0.1.0-SNAPSHOT</feature.openflowplugin.version>
+    <feature.neutron.version>0.5.0-SNAPSHOT</feature.neutron.version>
     <feature.test.version>0.7.0-SNAPSHOT</feature.test.version>
 
     <!-- ODL Branding -->
@@ -712,41 +713,6 @@
       </dependency>
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
-        <artifactId>topology.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>forwarding.staticrouting.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>statistics.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>flowprogrammer.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>hosttracker.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>subnets.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>switchmanager.northbound</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
         <artifactId>bundlescanner</artifactId>
         <version>0.5.0-SNAPSHOT</version>
       </dependency>
@@ -759,12 +725,6 @@
       <dependency>
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>protocol_plugins.stub</artifactId>
-        <version>0.5.0-SNAPSHOT</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.opendaylight.controller</groupId>
-        <artifactId>networkconfig.neutron</artifactId>
         <version>0.5.0-SNAPSHOT</version>
       </dependency>
 
@@ -876,10 +836,27 @@
         <version>0.1.0-SNAPSHOT</version>
       </dependency>
 
+      <!-- OpenDaylight neutron project -->
+      <dependency>
+        <groupId>org.opendaylight.neutron</groupId>
+        <artifactId>neutron-spi</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.neutron</groupId>
+        <artifactId>transcriber</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
+      </dependency>
+
       <!-- OpenDaylight OVSDB project -->
       <dependency>
         <groupId>org.opendaylight.ovsdb</groupId>
         <artifactId>plugin</artifactId>
+        <version>1.1.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.opendaylight.ovsdb</groupId>
+        <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
         <version>1.1.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -944,6 +921,14 @@
         <groupId>org.opendaylight.controller</groupId>
         <artifactId>features-restconf</artifactId>
         <version>${odl.mdsal.version}</version>
+        <classifier>features</classifier>
+        <type>xml</type>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opendaylight.neutron</groupId>
+        <artifactId>features-neutron</artifactId>
+        <version>${feature.neutron.version}</version>
         <classifier>features</classifier>
         <type>xml</type>
       </dependency>

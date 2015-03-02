@@ -43,12 +43,13 @@
         <configuration>
           <instructions>
             <Import-Package>
-              org.opendaylight.controller.networkconfig.neutron,
               org.opendaylight.controller.sal.core,
               org.opendaylight.controller.sal.utils,
+              org.opendaylight.neutron.spi,
               org.opendaylight.ovsdb.lib.notation,
-              org.opendaylight.ovsdb.plugin,
               org.opendaylight.ovsdb.plugin.api,
+              org.opendaylight.ovsdb.compatibility.plugin,
+              org.opendaylight.ovsdb.compatibility.plugin.api,
               org.opendaylight.ovsdb.schema.openvswitch,
               org.opendaylight.ovsdb.lib.schema,
               org.opendaylight.vtn.manager,
@@ -66,8 +67,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>networkconfig.neutron</artifactId>
+      <groupId>org.opendaylight.neutron</groupId>
+      <artifactId>neutron-spi</artifactId>
     </dependency>
 
     <dependency>
@@ -77,7 +78,7 @@
 
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>
-      <artifactId>plugin</artifactId>
+      <artifactId>ovsdb-plugin-compatibility-layer</artifactId>
     </dependency>
     <dependency>
       <groupId>org.opendaylight.ovsdb</groupId>

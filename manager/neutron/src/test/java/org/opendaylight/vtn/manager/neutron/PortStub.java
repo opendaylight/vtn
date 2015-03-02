@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -22,7 +22,7 @@ import org.opendaylight.ovsdb.schema.openvswitch.Port;
  * Stub class for unit tests.
  *
  * This stub provides APIs implemented in
- * org.opendaylight.controller.networkconfig.neutron package.
+ * org.opendaylight.neutron.spi package.
  */
 
 public class PortStub implements Port{

@@ -12,11 +12,11 @@ package org.opendaylight.vtn.manager.neutron;
 import java.util.List;
 import java.util.Map;
 
+import org.opendaylight.controller.sal.core.Node;
+
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
 import org.opendaylight.ovsdb.plugin.api.Connection;
 import org.opendaylight.ovsdb.plugin.api.ConnectionConstants;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
-
-import org.opendaylight.controller.sal.core.Node;
 
 /**
  * Stub class for unit tests.

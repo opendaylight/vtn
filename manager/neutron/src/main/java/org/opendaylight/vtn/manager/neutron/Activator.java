@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,15 +11,17 @@ package org.opendaylight.vtn.manager.neutron;
 
 import org.apache.felix.dm.Component;
 
-import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
-import org.opendaylight.controller.networkconfig.neutron.INeutronPortAware;
-import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
-import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
-import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
-import org.opendaylight.ovsdb.plugin.api.OvsdbInventoryListener;
-
 import org.opendaylight.vtn.manager.IVTNManager;
+
+import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
+
+import org.opendaylight.neutron.spi.INeutronNetworkAware;
+import org.opendaylight.neutron.spi.INeutronPortAware;
+import org.opendaylight.neutron.spi.INeutronPortCRUD;
+
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
+import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbInventoryListener;
 
 /**
  * OSGi bundle activator for the VTN Neutron Interface.

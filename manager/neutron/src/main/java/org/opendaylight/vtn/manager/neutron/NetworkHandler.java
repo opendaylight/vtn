@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,8 +13,8 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Iterator;
 
-import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
-import org.opendaylight.controller.networkconfig.neutron.NeutronNetwork;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -26,10 +26,10 @@ import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.VlanMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.opendaylight.controller.sal.utils.Status;
+
+import org.opendaylight.neutron.spi.INeutronNetworkAware;
+import org.opendaylight.neutron.spi.NeutronNetwork;
 
 /**
  * Handle requests for Neutron Network.

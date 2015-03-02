@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,8 +13,9 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.junit.Test;
-import org.opendaylight.controller.networkconfig.neutron.NeutronPort;
-import org.opendaylight.controller.networkconfig.neutron.Neutron_IPs;
+
+import org.opendaylight.neutron.spi.NeutronPort;
+import org.opendaylight.neutron.spi.Neutron_IPs;
 
 /**
  * JUnit test for {@link PortHandler}
