@@ -9,7 +9,7 @@
 
 package org.opendaylight.vtn.manager.flow.action;
 
-import java.util.Arrays;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -18,8 +18,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.ByteUtils;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -43,7 +43,7 @@ public abstract class DlAddrAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -20707425482843213L;
+    private static final long serialVersionUID = 3002286640842096697L;
 
     /**
      * Status of JAXB binding validation.
@@ -57,7 +57,7 @@ public abstract class DlAddrAction extends FlowAction {
     /**
      * A data layer address.
      */
-    private byte[]  address;
+    private EtherAddress  address;
 
     /**
      * Dummy constructor only for JAXB and sub classes.
@@ -72,8 +72,22 @@ public abstract class DlAddrAction extends FlowAction {
      */
     DlAddrAction(byte[] addr) {
         if (addr != null) {
-            address = addr.clone();
+            try {
+                address = new EtherAddress(addr);
+            } catch (RuntimeException e) {
+                setInvalidAddress(ByteUtils.toHexString(addr));
+            }
         }
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param addr  An {@link EtherAddress} instance.
+     * @since  Lithium
+     */
+    DlAddrAction(EtherAddress addr) {
+        address = addr;
     }
 
     /**
@@ -83,7 +97,19 @@ public abstract class DlAddrAction extends FlowAction {
      *          {@code null} is returned if no address is configured.
      */
     public final byte[] getAddress() {
-        return (address == null) ? null : address.clone();
+        return (address == null) ? null : address.getBytes();
+    }
+
+    /**
+     * Return an {@link EtherAddress} instance configured in this instance.
+     *
+     * @return  An {@link EtherAddress} instance which represents a data
+     *          layer address.
+     *          {@code null} is returned if no address is configured.
+     * @since  Lithium
+     */
+    public final EtherAddress getEtherAddress() {
+        return address;
     }
 
     /**
@@ -129,7 +155,7 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @XmlAttribute(name = "address", required = true)
     public final String getMacAddress() {
-        return ByteUtils.toHexString(address);
+        return (address == null) ? null : address.getText();
     }
 
     /**
@@ -144,13 +170,23 @@ public abstract class DlAddrAction extends FlowAction {
     @SuppressWarnings("unused")
     private void setMacAddress(String addr) {
         try {
-            address = EtherAddress.toBytes(addr);
+            address = new EtherAddress(addr);
         } catch (RuntimeException e) {
-            StringBuilder builder = new StringBuilder("Invalid address: ");
-            builder.append(addr);
-            validationStatus =
-                new Status(StatusCode.BADREQUEST, builder.toString());
+            setInvalidAddress(addr);
         }
+    }
+
+    /**
+     * Keep an invalid status that indicates an invalid data layer address is
+     * specified.
+     *
+     * @param desc  A brief description about invalid address.
+     */
+    private void setInvalidAddress(String desc) {
+        StringBuilder builder = new StringBuilder("Invalid address: ");
+        builder.append(desc);
+        validationStatus =
+            new Status(StatusCode.BADREQUEST, builder.toString());
     }
 
     /**
@@ -169,7 +205,7 @@ public abstract class DlAddrAction extends FlowAction {
         }
 
         DlAddrAction dladdr = (DlAddrAction)o;
-        return Arrays.equals(address, dladdr.address);
+        return Objects.equals(address, dladdr.address);
     }
 
     /**
@@ -179,7 +215,12 @@ public abstract class DlAddrAction extends FlowAction {
      */
     @Override
     public final int hashCode() {
-        return super.hashCode() ^ Arrays.hashCode(address);
+        int hash = super.hashCode();
+        if (address != null) {
+            hash ^= address.hashCode();
+        }
+
+        return hash;
     }
 
     /**
@@ -192,7 +233,7 @@ public abstract class DlAddrAction extends FlowAction {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         builder.append('[');
         if (address != null) {
-            builder.append("addr=").append(ByteUtils.toHexString(address));
+            builder.append("addr=").append(address.getText());
         }
         builder.append(']');
 

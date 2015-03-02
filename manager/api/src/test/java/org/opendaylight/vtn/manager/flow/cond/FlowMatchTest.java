@@ -16,6 +16,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.TestBase;
@@ -107,6 +108,7 @@ public class FlowMatchTest extends TestBase {
         };
         EthernetAddress ethSrc = new EthernetAddress(srcMac);
         EthernetAddress ethDst = new EthernetAddress(dstMac);
+        EtherAddress nullMac = null;
         Integer ethType = Integer.valueOf(0x800);
         Short ethVlan = Short.valueOf((short)4095);
         Byte ethPri = Byte.valueOf((byte)7);
@@ -129,17 +131,17 @@ public class FlowMatchTest extends TestBase {
                 break;
 
             case DL_VLAN:
-                em = new EthernetMatch(null, null, null, ethVlan, null);
+                em = new EthernetMatch(nullMac, nullMac, null, ethVlan, null);
                 match.setField(mtype, ethVlan);
                 break;
 
             case DL_VLAN_PR:
-                em = new EthernetMatch(null, null, null, null, ethPri);
+                em = new EthernetMatch(nullMac, nullMac, null, null, ethPri);
                 match.setField(mtype, ethPri);
                 break;
 
             default:
-                em = new EthernetMatch(null, null, ethType, null, null);
+                em = new EthernetMatch(nullMac, nullMac, ethType, null, null);
                 match.setField(mtype, Short.valueOf(ethType.shortValue()));
                 break;
             }
@@ -607,8 +609,9 @@ public class FlowMatchTest extends TestBase {
      */
     private List<EthernetMatch> createEthernetMatches() {
         List<EthernetMatch> list = new ArrayList<EthernetMatch>();
+        EtherAddress nullMac = null;
         list.add(null);
-        list.add(new EthernetMatch(null, null, null, null, null));
+        list.add(new EthernetMatch(nullMac, nullMac, null, null, null));
 
         byte[] dstMac = {
             (byte)0x00, (byte)0x01, (byte)0x02,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,9 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 /**
  * This class describes a flow action that takes an IPv4 address as argument.
@@ -36,7 +39,7 @@ public abstract class Inet4AddressAction extends InetAddressAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7533646485946661001L;
+    private static final long serialVersionUID = -2967072189478447959L;
 
     /**
      * Dummy constructor only for JAXB and sub classes.
@@ -57,13 +60,38 @@ public abstract class Inet4AddressAction extends InetAddressAction {
     }
 
     /**
+     * Construct a new instance.
+     *
+     * @param addr  An {@link IpNetwork} instance which representse an
+     *              IP address.
+     * @throws IllegalArgumentException
+     *    An invalid IP address is specified to {@code addr}.
+     * @since  Lithium
+     */
+    Inet4AddressAction(IpNetwork addr) {
+        super(addr);
+    }
+
+    /**
      * Return a {@link Class} instance which represents the type of
      * IP address.
      *
      * @return  A {@link Class} instance which represents the type of
-     *          IP address.
+     *          IPv4 address.
      */
-    public final Class<? extends InetAddress> getAddressClass() {
+    public final Class<Inet4Address> getAddressClass() {
         return Inet4Address.class;
+    }
+
+    /**
+     * Return a {@link Class} instance which represents the type of
+     * IP network.
+     *
+     * @return  A {@link Class} instance which represents the type of
+     *          IPv4 network.
+     * @since   Lithium
+     */
+    public final Class<Ip4Network> getNetworkClass() {
+        return Ip4Network.class;
     }
 }

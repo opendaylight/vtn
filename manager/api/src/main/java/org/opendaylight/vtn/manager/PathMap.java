@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,6 +18,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 /**
  * {@code PathMap} class describes the configuration of path map.
@@ -76,11 +78,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "pathmap")
 @XmlAccessorType(XmlAccessType.NONE)
-public final class PathMap implements Serializable, Cloneable {
+public final class PathMap
+    implements Serializable, Cloneable, VTNIdentifiable<Integer> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3058175817752287230L;
+    private static final long serialVersionUID = -2728886905552705809L;
 
     /**
      * An index value assigned to this path map.
@@ -403,6 +406,8 @@ public final class PathMap implements Serializable, Cloneable {
         return hardTimeout;
     }
 
+    // Objects
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -481,5 +486,22 @@ public final class PathMap implements Serializable, Cloneable {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
         }
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This method returns the identifier of the path map.
+     * </p>
+     *
+     * @return  The identifier of the path map.
+     * @since   Lithium
+     */
+    @Override
+    public Integer getIdentifier() {
+        return mapIndex;
     }
 }

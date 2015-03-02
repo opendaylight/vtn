@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.flow.cond;
 
 import java.net.InetAddress;
 import java.net.Inet4Address;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
@@ -29,12 +31,12 @@ public final class FlowMatchBuilder {
     /**
      * Source MAC address to be specified to {@link EthernetMatch}.
      */
-    private EthernetAddress  sourceMacAddress;
+    private EtherAddress  sourceMacAddress;
 
     /**
      * Destination MAC address to be specified to {@link EthernetMatch}.
      */
-    private EthernetAddress  destinationMacAddress;
+    private EtherAddress  destinationMacAddress;
 
     /**
      * Ethernet type value to be specified to {@link EthernetMatch}.
@@ -152,7 +154,7 @@ public final class FlowMatchBuilder {
      * @return  This instance.
      */
     public FlowMatchBuilder setSourceMacAddress(EthernetAddress mac) {
-        sourceMacAddress = mac;
+        sourceMacAddress = EtherAddress.create(mac);
         return this;
     }
 
@@ -165,6 +167,33 @@ public final class FlowMatchBuilder {
      * @return  This instance.
      */
     public FlowMatchBuilder setDestinationMacAddress(EthernetAddress mac) {
+        destinationMacAddress = EtherAddress.create(mac);
+        return this;
+    }
+
+    /**
+     * Set the source MAC address to match against Ethernet header.
+     *
+     * @param mac  A {@link EtherAddress} instance which represents the
+     *             MAC address. {@code null} means that every source MAC
+     *             address should be matched.
+     * @return  This instance.
+     * @since  Lithium
+     */
+    public FlowMatchBuilder setSourceEtherAddress(EtherAddress mac) {
+        sourceMacAddress = mac;
+        return this;
+    }
+
+    /**
+     * Set the destination MAC address to match against Ethernet header.
+     *
+     * @param mac  A {@link EtherAddress} instance which represents the
+     *             MAC address. {@code null} means that every destination MAC
+     *             address should be matched.
+     * @return  This instance.
+     */
+    public FlowMatchBuilder setDestinationEtherAddress(EtherAddress mac) {
         destinationMacAddress = mac;
         return this;
     }

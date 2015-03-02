@@ -32,7 +32,6 @@ public final class UnknownIpNetwork extends IpNetwork {
     public UnknownIpNetwork() {
     }
 
-
     // IpNetwork
 
     /**

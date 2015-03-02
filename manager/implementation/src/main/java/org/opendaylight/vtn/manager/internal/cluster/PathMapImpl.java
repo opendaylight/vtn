@@ -15,6 +15,8 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
+
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
@@ -34,11 +36,12 @@ import org.opendaylight.controller.sal.utils.StatusCode;
  *   class.
  * </p>
  */
-public abstract class PathMapImpl implements Serializable {
+public abstract class PathMapImpl
+    implements Serializable, VTNIdentifiable<Integer> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8053791075634629385L;
+    // private static final long serialVersionUID = 8053791075634629385L;
 
     /**
      * The minimum value of index.
@@ -243,6 +246,8 @@ public abstract class PathMapImpl implements Serializable {
      */
     protected abstract String getLogPrefix();
 
+    // Object
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -293,5 +298,17 @@ public abstract class PathMapImpl implements Serializable {
         }
 
         return builder.append(']').toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier for this instance.
+     *
+     * @return  An index value assigned to this path map.
+     */
+    @Override
+    public final Integer getIdentifier() {
+        return Integer.valueOf(index);
     }
 }

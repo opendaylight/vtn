@@ -17,6 +17,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.cond.EthernetMatch;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -44,6 +45,8 @@ public class EthernetMatchImplTest extends TestBase {
         int[] types = {
             0, 1, 0x800, 0x806, 0x86dd,
         };
+
+        EtherAddress nullMac = null;
         for (int type: types) {
             EthernetMatchImpl emi = new EthernetMatchImpl(type);
             assertEquals(-1L, emi.getSourceAddress());
@@ -53,7 +56,8 @@ public class EthernetMatchImplTest extends TestBase {
             assertEquals((byte)-1, emi.getVlanPriority());
 
             Integer t = Integer.valueOf(type);
-            EthernetMatch em = new EthernetMatch(null, null, t, null, null);
+            EthernetMatch em =
+                new EthernetMatch(nullMac, nullMac, t, null, null);
             assertEquals(em, emi.getMatch());
         }
     }
@@ -145,8 +149,10 @@ public class EthernetMatchImplTest extends TestBase {
             Integer.valueOf(Integer.MIN_VALUE), Integer.valueOf(-1),
             Integer.valueOf(0x10000), Integer.valueOf(Integer.MAX_VALUE),
         };
+        EtherAddress nullMac = null;
         for (Integer type: badTypes) {
-            EthernetMatch em = new EthernetMatch(null, null, type, null, null);
+            EthernetMatch em =
+                new EthernetMatch(nullMac, nullMac, type, null, null);
             try {
                 new EthernetMatchImpl(em);
                 unexpected();
@@ -164,7 +170,8 @@ public class EthernetMatchImplTest extends TestBase {
             Short.valueOf((short)4096), Short.valueOf(Short.MAX_VALUE),
         };
         for (Short vlan: badVlans) {
-            EthernetMatch em = new EthernetMatch(null, null, null, vlan, null);
+            EthernetMatch em =
+                new EthernetMatch(nullMac, nullMac, null, vlan, null);
             try {
                 new EthernetMatchImpl(em);
                 unexpected();
@@ -182,8 +189,8 @@ public class EthernetMatchImplTest extends TestBase {
             Byte.valueOf((byte)8), Byte.valueOf(Byte.MAX_VALUE),
         };
         for (Byte pri: badPriorities) {
-            EthernetMatch em = new EthernetMatch(null, null, null, validVlan,
-                                                 pri);
+            EthernetMatch em =
+                new EthernetMatch(nullMac, nullMac, null, validVlan, pri);
             try {
                 new EthernetMatchImpl(em);
                 unexpected();
@@ -202,8 +209,8 @@ public class EthernetMatchImplTest extends TestBase {
         for (Short vlan: noVlans) {
             for (byte p = 0; p <= 7; p++) {
                 Byte pri = Byte.valueOf(p);
-                EthernetMatch em = new EthernetMatch(null, null, null, vlan,
-                                                     pri);
+                EthernetMatch em =
+                    new EthernetMatch(nullMac, nullMac, null, vlan, pri);
                 try {
                     new EthernetMatchImpl(em);
                     unexpected();
@@ -225,8 +232,10 @@ public class EthernetMatchImplTest extends TestBase {
         int[] types = {
             0, 1, 0x800, 0x806, 0x86dd,
         };
+        EtherAddress nullMac = null;
         for (int type: types) {
-            EthernetMatch em = new EthernetMatch(null, null, null, null, null);
+            EthernetMatch em =
+                new EthernetMatch(nullMac, nullMac, null, null, null);
             EthernetMatchImpl emi = null;
             try {
                 emi = new EthernetMatchImpl(em);

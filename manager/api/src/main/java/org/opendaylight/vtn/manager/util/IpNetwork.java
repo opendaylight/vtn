@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.util;
 
 import java.io.Serializable;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -21,10 +22,13 @@ import javax.xml.bind.annotation.XmlValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
 /**
  * {@code IpNetwork} describes an IP network.
  * IP network is specified by an IP address and prefix length.
+ *
+ * @since  Lithium
  */
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "ip-network")
@@ -34,7 +38,7 @@ public abstract class IpNetwork implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2052424244109273830L;
+    private static final long serialVersionUID = -2990530738095387571L;
 
     /**
      * A character that separates prefix length from IP address in CIDR
@@ -52,6 +56,70 @@ public abstract class IpNetwork implements Serializable {
      * Prefix length that specifies network range.
      */
     private int  prefixLength;
+
+    /**
+     * {@code InetAddressPrefix} describes a pair of IP address and prefix
+     * length.
+     */
+    private static final class InetAddressPrefix {
+        /**
+         * An IP address.
+         */
+        private InetAddress  address;
+
+        /**
+         * The length of network prefix.
+         */
+        private int  prefix;
+
+        /**
+         * Construct a new instance.
+         *
+         * @param cidr  A string representation of IP network in CIDR notation.
+         * @throws NullPointerException
+         *    {@code cidr} is {@code null}.
+         * @throws IllegalArgumentException
+         *    The given string is invalid.
+         */
+        private InetAddressPrefix(String cidr) {
+            String text = cidr.trim();
+            int pos = text.indexOf((int)CIDR_SEPARATOR);
+            String host;
+            if (pos < 0) {
+                host = text;
+                prefix = 0;
+            } else {
+                host = text.substring(0, pos);
+                try {
+                    String pstr = text.substring(pos + 1, text.length());
+                    prefix = Integer.parseInt(pstr);
+                } catch (RuntimeException e) {
+                    throw new IllegalArgumentException(
+                        "Invalid CIDR prefix: " + text, e);
+                }
+            }
+
+            address = getInetAddress(host);
+        }
+
+        /**
+         * Return the IP address configured in this instance.
+         *
+         * @return  The IP address.
+         */
+        private InetAddress getAddress() {
+            return address;
+        }
+
+        /**
+         * Return the prefix length configured in this instance.
+         *
+         * @return  The prefix length.
+         */
+        private int getPrefix() {
+            return prefix;
+        }
+    }
 
     /**
      * Create an {@link InetAddress} instance which represents the IP address
@@ -91,6 +159,98 @@ public abstract class IpNetwork implements Serializable {
         } catch (Exception e) {
             throw new IllegalArgumentException("Invalid IP address: " + text);
         }
+    }
+
+    /**
+     * Create an {@link IpNetwork} instance which represents the given IP
+     * address.
+     *
+     * @param iaddr  An {@link InetAddress} instance.
+     * @return  An {@link IpNetwork} instance which represents the given IP
+     *          address. Note that {@code null} is returned if {@code iaddr}
+     *          is {@code null}.
+     * @throws IllegalArgumentException
+     *    The given IP address is invalid.
+     */
+    public static final IpNetwork create(InetAddress iaddr) {
+        return create(iaddr, 0);
+    }
+
+    /**
+     * Create an {@link IpNetwork} instance which represents the IP network
+     * specified by a pair of IP address and CIDR prefix.
+     *
+     * @param iaddr  An {@link InetAddress} instance.
+     * @param prefix  Prefix length that specifies network range.
+     *                Note that zero means "no mask". So zero is treated as if
+     *                the maximum prefix length is specified.
+     * @return  An {@link IpNetwork} instance which represents the IP network
+     *          specified by the given IP address and CIDR prefix.
+     *          Note that {@code null} is returned if {@code iaddr} is
+     *          {@code null}.
+     * @throws IllegalArgumentException
+     *    The given IP address or prefix is invalid.
+     */
+    public static final IpNetwork create(InetAddress iaddr, int prefix) {
+        if (iaddr instanceof Inet4Address) {
+            return new Ip4Network(iaddr, prefix);
+        }
+        if (iaddr == null) {
+            return null;
+        }
+
+        throw new IllegalArgumentException("Unsupported IP address: " + iaddr);
+    }
+
+    /**
+     * Create an {@link IpNetwork} instance which represents the IP network
+     * specified by the given {@link IpPrefix} instance.
+     *
+     * @param ipp  An {@link IpPrefix} instance which represents the IP
+     *             network.
+     * @return  An {@link IpNetwork} instance which represents the IP network
+     *          specified by {@code ipp}. Note that {@code null} is returned
+     *          if {@code ipp} is {@code null} or it does not contain valid
+     *          value.
+     * @throws IllegalArgumentException
+     *    The given {@link IpPrefix} instance is invalid.
+     */
+    public static final IpNetwork create(IpPrefix ipp) {
+        if (ipp != null) {
+            Ipv4Prefix ipv4 = ipp.getIpv4Prefix();
+            if (ipv4 != null) {
+                return Ip4Network.create(ipv4.getValue());
+            }
+
+            if (ipp.getIpv6Prefix() != null) {
+                throw new IllegalArgumentException(
+                    "Unsupported IP prefix: " + ipp);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Create an {@link IpNetwork} instance which represents the IP network
+     * specified by CIDR notation.
+     *
+     * @param cidr  A string representation of the IP network in CIDR notation.
+     *              Note that zero prefix means "no mask". So zero prefix is
+     *              treated as if the maximum prefix length is specified.
+     * @return  An {@link IpNetwork} instance which represents the IP network
+     *          specified by {@code cidr}. Note that {@code null} is returned
+     *          if {@code cidr} is {@code null}.
+     * @throws IllegalArgumentException
+     *    The given network address is invalid.
+     */
+    public static final IpNetwork create(String cidr) {
+        if (cidr == null) {
+            return null;
+        }
+
+        InetAddressPrefix ipfx = new InetAddressPrefix(cidr);
+        return create(ipfx.getAddress(), ipfx.getPrefix());
     }
 
     /**
@@ -187,6 +347,17 @@ public abstract class IpNetwork implements Serializable {
     }
 
     /**
+     * Determine whether this instance represents an IP address or not.
+     *
+     * @return  {@code true} if this instance represents an IP address.
+     *          {@code false} if this instance represents an IP network
+     *          specified by a pair of network address and prefix length.
+     */
+    public final boolean isAddress() {
+        return (prefixLength == getMaxPrefix());
+    }
+
+    /**
      * Return the maximum length of the network prefix.
      *
      * @return  The maximum length of the network prefix.
@@ -273,34 +444,18 @@ public abstract class IpNetwork implements Serializable {
      *
      * @param cidr  A string representation of this network address.
      * @throws NullPointerException
-     *    {@code iaddr} is {@code null}.
+     *    {@code cidr} is {@code null}.
      * @throws IllegalArgumentException
      *    The given network address or prefix length is invalid.
      */
     private void setCidrValue(String cidr) {
-        String text = cidr.trim();
-        int pos = text.indexOf((int)CIDR_SEPARATOR);
-        String host;
-        int prefix;
-        if (pos < 0) {
-            host = text;
+        InetAddressPrefix ipfx = new InetAddressPrefix(cidr);
+        int prefix = ipfx.getPrefix();
+        if (prefix == 0) {
             prefix = getMaxPrefix();
-        } else {
-            host = text.substring(0, pos);
-            try {
-                String pstr = text.substring(pos + 1, text.length());
-                prefix = Integer.parseInt(pstr);
-            } catch (RuntimeException e) {
-                throw new IllegalArgumentException(
-                    "Invalid CIDR prefix: " + text, e);
-            }
-            if (prefix == 0) {
-                prefix = getMaxPrefix();
-            }
         }
 
-        InetAddress iaddr = getInetAddress(host);
-        inetAddress = init(iaddr, prefix);
+        inetAddress = init(ipfx.getAddress(), prefix);
         prefixLength = prefix;
     }
 

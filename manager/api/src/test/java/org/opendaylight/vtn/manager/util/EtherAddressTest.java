@@ -25,6 +25,11 @@ import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestination;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestinationBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetSource;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetSourceBuilder;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
@@ -299,6 +304,7 @@ public class EtherAddressTest extends TestBase {
      *   <li>{@link EtherAddress#create(byte[])}</li>
      *   <li>{@link EtherAddress#create(String)}</li>
      *   <li>{@link EtherAddress#create(MacAddress)}</li>
+     *   <li>{@link EtherAddress#create(MacAddressFilter)}</li>
      *   <li>{@link EtherAddress#create(EthernetAddress)}</li>
      *   <li>{@link EtherAddress#EtherAddress(long)}</li>
      *   <li>{@link EtherAddress#EtherAddress(byte[])}</li>
@@ -316,6 +322,7 @@ public class EtherAddressTest extends TestBase {
      */
     @Test
     public void testGetter() throws Exception {
+        MacAddress mask = new MacAddress("ff:ff:ff:00:00:00");
         byte[] bytes = new byte[6];
         for (int i = 0; i < 100; i++) {
             random.nextBytes(bytes);
@@ -335,7 +342,7 @@ public class EtherAddressTest extends TestBase {
             assertEquals(hex, ea.getText());
             EthernetAddress eaddr1 = ea.getEthernetAddress();
             assertEquals(eaddr, eaddr1);
-            assertSame(eaddr1, ea.getEthernetAddress());
+            assertNotSame(eaddr1, ea.getEthernetAddress());
 
             ea = new EtherAddress(addr);
             assertEquals(addr, ea.getAddress());
@@ -349,7 +356,7 @@ public class EtherAddressTest extends TestBase {
             assertEquals(hex, ea.getText());
             eaddr1 = ea.getEthernetAddress();
             assertEquals(eaddr, eaddr1);
-            assertSame(eaddr1, ea.getEthernetAddress());
+            assertNotSame(eaddr1, ea.getEthernetAddress());
 
             ea = new EtherAddress(hex);
             assertEquals(addr, ea.getAddress());
@@ -363,7 +370,7 @@ public class EtherAddressTest extends TestBase {
             assertEquals(hex, ea.getText());
             eaddr1 = ea.getEthernetAddress();
             assertEquals(eaddr, eaddr1);
-            assertSame(eaddr1, ea.getEthernetAddress());
+            assertNotSame(eaddr1, ea.getEthernetAddress());
 
             ea = EtherAddress.create(hex);
             assertEquals(addr, ea.getAddress());
@@ -377,7 +384,7 @@ public class EtherAddressTest extends TestBase {
             assertEquals(hex, ea.getText());
             eaddr1 = ea.getEthernetAddress();
             assertEquals(eaddr, eaddr1);
-            assertSame(eaddr1, ea.getEthernetAddress());
+            assertNotSame(eaddr1, ea.getEthernetAddress());
 
             ea = new EtherAddress(mac);
             assertEquals(addr, ea.getAddress());
@@ -389,7 +396,37 @@ public class EtherAddressTest extends TestBase {
             assertEquals(hex, ea.getText());
             eaddr1 = ea.getEthernetAddress();
             assertEquals(eaddr, eaddr1);
-            assertSame(eaddr1, ea.getEthernetAddress());
+            assertNotSame(eaddr1, ea.getEthernetAddress());
+
+            for (MacAddress m: new MacAddress[]{null, mask}) {
+                EthernetSource src = new EthernetSourceBuilder().
+                    setAddress(mac).setMask(m).build();
+                ea = EtherAddress.create(src);
+                assertEquals(addr, ea.getAddress());
+                b = ea.getBytes();
+                assertArrayEquals(bytes, b);
+                assertNotSame(bytes, b);
+                assertNotSame(b, ea.getBytes());
+                assertSame(mac, ea.getMacAddress());
+                assertEquals(hex, ea.getText());
+                eaddr1 = ea.getEthernetAddress();
+                assertEquals(eaddr, eaddr1);
+                assertNotSame(eaddr1, ea.getEthernetAddress());
+
+                EthernetDestination dst = new EthernetDestinationBuilder().
+                    setAddress(mac).setMask(m).build();
+                ea = EtherAddress.create(src);
+                assertEquals(addr, ea.getAddress());
+                b = ea.getBytes();
+                assertArrayEquals(bytes, b);
+                assertNotSame(bytes, b);
+                assertNotSame(b, ea.getBytes());
+                assertSame(mac, ea.getMacAddress());
+                assertEquals(hex, ea.getText());
+                eaddr1 = ea.getEthernetAddress();
+                assertEquals(eaddr, eaddr1);
+                assertNotSame(eaddr1, ea.getEthernetAddress());
+            }
 
             ea = EtherAddress.create(mac);
             assertEquals(addr, ea.getAddress());
@@ -401,7 +438,7 @@ public class EtherAddressTest extends TestBase {
             assertEquals(hex, ea.getText());
             eaddr1 = ea.getEthernetAddress();
             assertEquals(eaddr, eaddr1);
-            assertSame(eaddr1, ea.getEthernetAddress());
+            assertNotSame(eaddr1, ea.getEthernetAddress());
 
             ea = new EtherAddress(eaddr);
             assertEquals(addr, ea.getAddress());
@@ -441,7 +478,7 @@ public class EtherAddressTest extends TestBase {
                 assertEquals(hex, ea.getText());
                 eaddr1 = ea.getEthernetAddress();
                 assertEquals(eaddr, eaddr1);
-                assertSame(eaddr1, ea.getEthernetAddress());
+                assertNotSame(eaddr1, ea.getEthernetAddress());
 
                 MacAddress umac = new MacAddress(uhex);
                 ea = new EtherAddress(umac);
@@ -457,14 +494,58 @@ public class EtherAddressTest extends TestBase {
                 assertEquals(hex, ea.getText());
                 eaddr1 = ea.getEthernetAddress();
                 assertEquals(eaddr, eaddr1);
-                assertSame(eaddr1, ea.getEthernetAddress());
+                assertNotSame(eaddr1, ea.getEthernetAddress());
+
+                for (MacAddress m: new MacAddress[]{null, mask}) {
+                    EthernetSource src = new EthernetSourceBuilder().
+                        setAddress(umac).setMask(m).build();
+                    ea = EtherAddress.create(src);
+                    assertEquals(addr, ea.getAddress());
+                    b = ea.getBytes();
+                    assertArrayEquals(bytes, b);
+                    assertNotSame(bytes, b);
+                    assertNotSame(b, ea.getBytes());
+                    mac1 = ea.getMacAddress();
+                    assertEquals(mac, mac1);
+                    assertNotSame(umac, mac1);
+                    assertSame(mac1, ea.getMacAddress());
+                    assertEquals(hex, ea.getText());
+                    eaddr1 = ea.getEthernetAddress();
+                    assertEquals(eaddr, eaddr1);
+                    assertNotSame(eaddr1, ea.getEthernetAddress());
+
+                    EthernetDestination dst = new EthernetDestinationBuilder().
+                        setAddress(umac).setMask(m).build();
+                    ea = EtherAddress.create(dst);
+                    assertEquals(addr, ea.getAddress());
+                    b = ea.getBytes();
+                    assertArrayEquals(bytes, b);
+                    assertNotSame(bytes, b);
+                    assertNotSame(b, ea.getBytes());
+                    mac1 = ea.getMacAddress();
+                    assertEquals(mac, mac1);
+                    assertNotSame(umac, mac1);
+                    assertSame(mac1, ea.getMacAddress());
+                    assertEquals(hex, ea.getText());
+                    eaddr1 = ea.getEthernetAddress();
+                    assertEquals(eaddr, eaddr1);
+                    assertNotSame(eaddr1, ea.getEthernetAddress());
+                }
             }
         }
 
         assertEquals(null, EtherAddress.create((byte[])null));
         assertEquals(null, EtherAddress.create((String)null));
         assertEquals(null, EtherAddress.create((MacAddress)null));
+        assertEquals(null, EtherAddress.create((EthernetSource)null));
+        assertEquals(null, EtherAddress.create((EthernetDestination)null));
         assertEquals(null, EtherAddress.create((EthernetAddress)null));
+
+        EthernetSource src = new EthernetSourceBuilder().setMask(mask).build();
+        assertEquals(null, EtherAddress.create(src));
+        EthernetDestination dst = new EthernetDestinationBuilder().
+            setMask(mask).build();
+        assertEquals(null, EtherAddress.create(dst));
     }
 
     /**

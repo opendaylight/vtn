@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.codehaus.jettison.json.JSONObject;
 
 import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
 
@@ -46,16 +47,26 @@ public class SetDlDstActionTest extends TestBase {
     public void testGetter() {
         for (EthernetAddress eaddr: createEthernetAddresses()) {
             byte[] bytes = (eaddr == null) ? null : eaddr.getValue();
+            EtherAddress ea = (eaddr == null)
+                ? null : new EtherAddress(eaddr);
             SetDlDstAction act = new SetDlDstAction(bytes);
             byte[] addr = act.getAddress();
             assertTrue(Arrays.equals(bytes, addr));
             assertEquals(null, act.getValidationStatus());
+            assertEquals(ea, act.getEtherAddress());
+
+            act = new SetDlDstAction(ea);
+            addr = act.getAddress();
+            assertTrue(Arrays.equals(bytes, addr));
+            assertEquals(null, act.getValidationStatus());
+            assertEquals(ea, act.getEtherAddress());
 
             if (bytes != null) {
                 SetDlDst sact = new SetDlDst(bytes);
                 act = new SetDlDstAction(sact);
                 assertTrue(Arrays.equals(bytes, act.getAddress()));
                 assertEquals(null, act.getValidationStatus());
+                assertEquals(ea, act.getEtherAddress());
             }
         }
     }

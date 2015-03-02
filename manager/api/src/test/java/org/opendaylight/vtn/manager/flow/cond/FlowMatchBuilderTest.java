@@ -1,5 +1,5 @@
-/*/*
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,8 @@ package org.opendaylight.vtn.manager.flow.cond;
 import java.net.InetAddress;
 
 import org.junit.Test;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
 
@@ -69,6 +71,54 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
+     * Test case for
+     * {@link FlowMatchBuilder#setSourceEtherAddress(EtherAddress)}.
+     */
+    @Test
+    public void testSetSourceEtherAddress() {
+        FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
+        int index = 0;
+        for (EthernetAddress eaddr: createEthernetAddresses()) {
+            EtherAddress ea = EtherAddress.create(eaddr);
+            assertSame(fmbuilder, fmbuilder.setSourceEtherAddress(ea));
+            FlowMatch fm = fmbuilder.build(index);
+            EthernetMatch em = (eaddr == null)
+                ? null
+                : new EthernetMatch(eaddr, null, null, null, null);
+            assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+            index++;
+        }
+    }
+
+    /**
+     * Test case for
+     * {@link FlowMatchBuilder#setDestinationEtherAddress(EtherAddress)}.
+     */
+    @Test
+    public void testSetDestinationEtherAddress() {
+        FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
+        int index = 0;
+        for (EthernetAddress eaddr: createEthernetAddresses()) {
+            EtherAddress ea = EtherAddress.create(eaddr);
+            assertSame(fmbuilder, fmbuilder.setDestinationEtherAddress(ea));
+            FlowMatch fm = fmbuilder.build(index);
+            EthernetMatch em = (eaddr == null)
+                ? null
+                : new EthernetMatch(null, eaddr, null, null, null);
+            assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+            index++;
+        }
+    }
+
+    /**
      * Test case for {@link FlowMatchBuilder#setEtherType(int)}.
      */
     @Test
@@ -78,10 +128,12 @@ public class FlowMatchBuilderTest extends TestBase {
         int[] types = {
             0, 1, 0x800, 0x86dd,
         };
+        EtherAddress nullMac = null;
+
         for (int type: types) {
             assertSame(fmbuilder, fmbuilder.setEtherType(type));
             FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = new EthernetMatch(null, null,
+            EthernetMatch em = new EthernetMatch(nullMac, nullMac,
                                                  Integer.valueOf(type),
                                                  null, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
@@ -103,10 +155,12 @@ public class FlowMatchBuilderTest extends TestBase {
         short[] vlans = {
             0, 1, 100, 3000, 4095,
         };
+        EtherAddress nullMac = null;
+
         for (short vlan: vlans) {
             assertSame(fmbuilder, fmbuilder.setVlanId(vlan));
             FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = new EthernetMatch(null, null, null,
+            EthernetMatch em = new EthernetMatch(nullMac, nullMac, null,
                                                  Short.valueOf(vlan), null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
             assertEquals(em, fm.getEthernetMatch());
@@ -124,10 +178,12 @@ public class FlowMatchBuilderTest extends TestBase {
     public void testSetVlanPriority() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
+        EtherAddress nullMac = null;
+
         for (byte pri = 0; pri <= 7; pri++) {
             assertSame(fmbuilder, fmbuilder.setVlanPriority(pri));
             FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = new EthernetMatch(null, null, null, null,
+            EthernetMatch em = new EthernetMatch(nullMac, nullMac, null, null,
                                                  Byte.valueOf(pri));
             assertEquals(Integer.valueOf(index), fm.getIndex());
             assertEquals(em, fm.getEthernetMatch());
