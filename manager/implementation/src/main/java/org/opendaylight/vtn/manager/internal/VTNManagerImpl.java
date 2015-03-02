@@ -78,6 +78,7 @@ import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.VTNIdentifiableComparator;
 
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
@@ -3230,7 +3231,9 @@ public class VTNManagerImpl
             // Sort container path maps in ascending order of indices.
             ArrayList<ContainerPathMapImpl> list =
                 new ArrayList<ContainerPathMapImpl>(pathMapDB.values());
-            Collections.sort(list, new PathMapImplComparator());
+            VTNIdentifiableComparator<Integer> comparator =
+                new VTNIdentifiableComparator<>(Integer.class);
+            Collections.sort(list, comparator);
             for (ContainerPathMapImpl cpm: list) {
                 RouteResolver rr = cpm.evaluate(this, pctx);
                 if (rr != null) {
@@ -3714,7 +3717,9 @@ public class VTNManagerImpl
         }
 
         // Sort tenants by their name.
-        Collections.sort(list, new VTenantComparator());
+        VTNIdentifiableComparator<String> comparator =
+            new VTNIdentifiableComparator<>(String.class);
+        Collections.sort(list, comparator);
         return list;
     }
 
@@ -5103,7 +5108,9 @@ public class VTNManagerImpl
         }
 
         // Sort flow conditions by their name.
-        Collections.sort(list, new FlowConditionComparator());
+        VTNIdentifiableComparator<String> comparator =
+            new VTNIdentifiableComparator<>(String.class);
+        Collections.sort(list, comparator);
         return list;
     }
 
@@ -5725,7 +5732,9 @@ public class VTNManagerImpl
         }
 
         // Sort path maps by their indices.
-        Collections.sort(list, new PathMapComparator());
+        VTNIdentifiableComparator<Integer> comparator =
+            new VTNIdentifiableComparator<>(Integer.class);
+        Collections.sort(list, comparator);
         return list;
     }
 

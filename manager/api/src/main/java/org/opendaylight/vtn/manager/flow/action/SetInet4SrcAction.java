@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.controller.sal.action.SetNwSrc;
 
@@ -38,7 +40,7 @@ public final class SetInet4SrcAction extends Inet4AddressAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1328940598412071243L;
+    private static final long serialVersionUID = -5348967690083462053L;
 
     /**
      * Private constructor only for JAXB.
@@ -56,6 +58,19 @@ public final class SetInet4SrcAction extends Inet4AddressAction {
      *    An invalid IP address is specified to {@code addr}.
      */
     public SetInet4SrcAction(InetAddress addr) {
+        super(addr);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param addr  An {@link IpNetwork} instance which representse an
+     *              IP address.
+     * @throws IllegalArgumentException
+     *    An invalid IP address is specified to {@code addr}.
+     * @since  Lithium
+     */
+    public SetInet4SrcAction(IpNetwork addr) {
         super(addr);
     }
 

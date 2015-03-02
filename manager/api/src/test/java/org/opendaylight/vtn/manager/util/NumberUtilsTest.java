@@ -93,7 +93,7 @@ public class NumberUtilsTest extends TestBase {
      * {@link NumberUtils#toBytes(int)}.
      */
     @Test
-    public void testToInteger() {
+    public void testToIntegerBytes() {
         try {
             NumberUtils.toInteger((byte[])null);
             unexpected();
@@ -280,5 +280,144 @@ public class NumberUtilsTest extends TestBase {
             BigInteger expected = entry.getValue();
             assertEquals(expected, NumberUtils.getUnsigned(value));
         }
+    }
+
+    /**
+     * Test case for {@link NumberUtils#toByte(Number)}.
+     */
+    @Test
+    public void testToByte() {
+        byte b = Byte.MIN_VALUE;
+        do {
+            Byte expected = Byte.valueOf(b);
+            assertEquals(expected, NumberUtils.toByte(expected));
+            assertEquals(expected, NumberUtils.toByte((short)b));
+            assertEquals(expected, NumberUtils.toByte((int)b));
+            assertEquals(expected, NumberUtils.toByte((long)b));
+            b++;
+        } while (b != Byte.MIN_VALUE);
+
+        assertEquals(null, NumberUtils.toByte((Byte)null));
+        assertEquals(null, NumberUtils.toByte((Short)null));
+        assertEquals(null, NumberUtils.toByte((Integer)null));
+        assertEquals(null, NumberUtils.toByte((Long)null));
+    }
+
+    /**
+     * Test case for {@link NumberUtils#toShort(Number)}.
+     */
+    @Test
+    public void testToShort() {
+        int[] values = {
+            0, 1, 2, 3, 4, 5, 0x10, 0x123, 0x1234, 0x4567, 0x5678, 0x6789,
+            0x789a, 0x7fe0, 0x7ffe, 0x7fff,
+            0x8000, 0x8001, 0x8002, 0x8100, 0x8138, 0x9abc, 0xabcd, 0xbcde,
+            0xcdef, 0xdef0, 0xef01, 0xffe0, 0xfffa, 0xfffc, 0xfffe, 0xffff,
+        };
+        for (int value: values) {
+            short s = (short)(value & 0xff);
+            if ((value & 0x80) != 0) {
+                s |= 0xff00;
+            }
+            assertEquals(Short.valueOf(s), NumberUtils.toShort((byte)value));
+
+            Short expected = Short.valueOf((short)value);
+            assertEquals(expected, NumberUtils.toShort(expected));
+            assertEquals(expected, NumberUtils.toShort(value));
+            assertEquals(expected, NumberUtils.toShort((long)value));
+        }
+
+        assertEquals(null, NumberUtils.toShort((Byte)null));
+        assertEquals(null, NumberUtils.toShort((Short)null));
+        assertEquals(null, NumberUtils.toShort((Integer)null));
+        assertEquals(null, NumberUtils.toShort((Long)null));
+    }
+
+    /**
+     * Test case for {@link NumberUtils#toInteger(Number)}.
+     */
+    @Test
+    public void testToInteger() {
+        long[] values = {
+            0L, 1L, 2L, 3L, 4L, 5L, 0x10L, 0x123L, 0x1234L, 0x4567L, 0x5678L,
+            0x12345L, 0x123456L, 0x1234567L, 0x12345678L, 0x5abcdef0L,
+            0x70000000L, 0x7ffffff0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL,
+            0x80000000L, 0x80000001L, 0x80000002L, 0x81000000L, 0x81234567L,
+            0x9abcdef0L, 0xaabbccddL, 0xbbccddeeL, 0xccddeeffL, 0xddeeff11L,
+            0xe0000000L, 0xfff00000L, 0xfffca000L, 0xfffff000L, 0xfffff812L,
+            0xfffffff0L, 0xfffffffcL, 0xfffffffdL, 0xfffffffeL, 0xffffffffL,
+        };
+        for (long value: values) {
+            int i = (int)(value & 0xff);
+            if ((value & 0x80) != 0) {
+                i |= 0xffffff00;
+            }
+            assertEquals(Integer.valueOf(i),
+                         NumberUtils.toInteger((byte)value));
+
+            i = (int)(value & 0xffff);
+            if ((value & 0x8000) != 0) {
+                i |= 0xffff0000;
+            }
+            assertEquals(Integer.valueOf(i),
+                         NumberUtils.toInteger((short)value));
+
+            Integer expected = Integer.valueOf((int)value);
+            assertEquals(expected, NumberUtils.toInteger(expected));
+            assertEquals(expected, NumberUtils.toInteger(value));
+        }
+
+        assertEquals(null, NumberUtils.toInteger((Byte)null));
+        assertEquals(null, NumberUtils.toInteger((Short)null));
+        assertEquals(null, NumberUtils.toInteger((Integer)null));
+        assertEquals(null, NumberUtils.toInteger((Long)null));
+    }
+
+    /**
+     * Test case for {@link NumberUtils#toLong(Number)}.
+     */
+    @Test
+    public void testToLong() {
+        long[] values = {
+            0L, 1L, 2L, 3L, 4L, 5L, 0x10L, 0x123L, 0x1234L, 0x4567L,
+            0x1fffffffL, 0x7fffffffL, 0x80000000L, 0x80000001L, 0xaaaaaaaaL,
+            0xfffffff0L, 0xffffffffL, 0x100000000L, 0xabcdef0123456L,
+            0xfffffffffffffffL, 0x1000000000000000L, 0x5555555555555555L,
+            0x7000000000000000L, 0x7fffffffffffff00L, 0x7ffffffffffffff0L,
+            0x7ffffffffffffffdL, 0x7ffffffffffffffeL, 0x7fffffffffffffffL,
+            0x8000000000000000L, 0x8000000000000001L, 0x8000000000000002L,
+            0x80000000ffffffffL, 0x8000aaaabbbbccccL, 0xabcdef1234567890L,
+            0xbbccddeeff001122L, 0xccccdddd12345678L, 0xddddddddddddddddL,
+            0xe000f000a000b000L, 0xf000000000000000L, 0xffffaaaabcdef012L,
+            0xfffffffffffffffaL, 0xfffffffffffffffbL, 0xfffffffffffffffcL,
+            0xfffffffffffffffdL, 0xfffffffffffffffeL, 0xffffffffffffffffL,
+        };
+        for (long value: values) {
+            long l = (long)(value & 0xffL);
+            if ((value & 0x80L) != 0) {
+                l |= 0xffffffffffffff00L;
+            }
+            assertEquals(Long.valueOf(l), NumberUtils.toLong((byte)value));
+
+            l = (long)(value & 0xffffL);
+            if ((value & 0x8000L) != 0) {
+                l |= 0xffffffffffff0000L;
+            }
+            assertEquals(Long.valueOf(l), NumberUtils.toLong((short)value));
+
+            l = (long)(value & 0xffffffffL);
+            if ((value & 0x80000000L) != 0) {
+                l |= 0xffffffff00000000L;
+            }
+            assertEquals(Long.valueOf(l), NumberUtils.toLong((int)value));
+
+            Long expected = Long.valueOf(value);
+            assertEquals(expected, NumberUtils.toLong(expected));
+        }
+
+        assertEquals(null, NumberUtils.toLong((Byte)null));
+        assertEquals(null, NumberUtils.toLong((Short)null));
+        assertEquals(null, NumberUtils.toLong((Integer)null));
+        assertEquals(null, NumberUtils.toLong((Long)null));
     }
 }

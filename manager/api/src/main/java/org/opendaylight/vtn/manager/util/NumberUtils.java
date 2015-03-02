@@ -180,4 +180,48 @@ public final class NumberUtils {
 
         return bi;
     }
+
+    /**
+     * Convert the given number into a {@link Byte} instance.
+     *
+     * @param num  A {@link Number} instance.
+     * @return  A {@link Byte} instance equivalent to the given number.
+     *          {@code null} if {@code num} is {@code null}.
+     */
+    public static Byte toByte(Number num) {
+        return (num == null) ? null : Byte.valueOf(num.byteValue());
+    }
+
+    /**
+     * Convert the given number into a {@link Short} instance.
+     *
+     * @param num  A {@link Number} instance.
+     * @return  A {@link Short} instance equivalent to the given number.
+     *          {@code null} if {@code num} is {@code null}.
+     */
+    public static Short toShort(Number num) {
+        return (num == null) ? null : Short.valueOf(num.shortValue());
+    }
+
+    /**
+     * Convert the given number into a {@link Integer} instance.
+     *
+     * @param num  A {@link Number} instance.
+     * @return  An {@link Integer} instance equivalent to the given number.
+     *          {@code null} if {@code num} is {@code null}.
+     */
+    public static Integer toInteger(Number num) {
+        return (num == null) ? null : Integer.valueOf(num.intValue());
+    }
+
+    /**
+     * Convert the given number into a {@link Long} instance.
+     *
+     * @param num  A {@link Number} instance.
+     * @return  A {@link Long} instance equivalent to the given number.
+     *          {@code null} if {@code num} is {@code null}.
+     */
+    public static Long toLong(Number num) {
+        return (num == null) ? null : Long.valueOf(num.longValue());
+    }
 }

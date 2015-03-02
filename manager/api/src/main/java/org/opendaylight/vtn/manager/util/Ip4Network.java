@@ -33,7 +33,7 @@ public final class Ip4Network extends IpNetwork {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4866651970486658629L;
+    private static final long serialVersionUID = -7431660855016600442L;
 
     /**
      * The number of octets in an IPv4 address.
@@ -174,34 +174,21 @@ public final class Ip4Network extends IpNetwork {
     }
 
     /**
-     * Create a new {@link Ip4Network} instance.
+     * Ensure that the given {@link IpNetwork} instance represents an
+     * IPv4 address.
      *
-     * @param cidr  A string representation of the IP network in CIDR notation.
-     *              Note that zero prefix means "no mask". So zero prefix is
-     *              treated as if the maximum prefix length is specified.
-     * @return  {@link Ip4Network} instance if {@code cidr} is not
-     *          {@code null}. {@code null} if {@code cidr} is {@code null}.
+     * @param ipn  An {@link IpNetwork} instance.
+     * @return  {@code ipn} casted as {@link Ip4Network}.
+     * @throws IllegalArgumentException
+     *    The given {@link IpNetwork} instance does not represent an
+     *    IPv4 address.
      */
-    public static Ip4Network create(String cidr) {
-        return (cidr == null) ? null : new Ip4Network(cidr);
-    }
-
-    /**
-     * Create a new {@link IpPrefix} instance.
-     *
-     * @param ipp  An {@link IpPrefix} instance which represents the IPv4
-     *             network.
-     * @return  {@link Ip4Network} instance if {@code ipp} is not {@code null}.
-     *          {@code null} if {@code ipp} is {@code null} or it does not
-     *          contain valid value.
-     */
-    public static Ip4Network create(IpPrefix ipp) {
-        if (ipp == null) {
-            return null;
+    public static Ip4Network toIp4Address(IpNetwork ipn) {
+        if (ipn instanceof Ip4Network && ipn.isAddress()) {
+            return (Ip4Network)ipn;
         }
 
-        Ipv4Prefix ipv4 = ipp.getIpv4Prefix();
-        return (ipv4 == null) ? null : create(ipv4.getValue());
+        throw new IllegalArgumentException("Not an IPv4 address: " + ipn);
     }
 
     /**

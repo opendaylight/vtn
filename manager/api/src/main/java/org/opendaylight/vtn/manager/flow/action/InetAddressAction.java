@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -39,7 +41,7 @@ public abstract class InetAddressAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8930109178154173026L;
+    private static final long serialVersionUID = 7692735184395503423L;
 
     /**
      * Status of JAXB binding validation.
@@ -53,7 +55,7 @@ public abstract class InetAddressAction extends FlowAction {
     /**
      * An IP address.
      */
-    private InetAddress  address;
+    private IpNetwork  address;
 
     /**
      * Dummy constructor only for JAXB and sub classes.
@@ -73,7 +75,27 @@ public abstract class InetAddressAction extends FlowAction {
         if (addr != null) {
             Class<?> cls = getAddressClass();
             if (!cls.equals(addr.getClass())) {
-                String msg = unexpectedAddress(addr.toString(), cls);
+                String msg = unexpectedAddress(addr.toString());
+                throw new IllegalArgumentException(msg);
+            }
+            address = IpNetwork.create(addr);
+        }
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param addr  An {@link IpNetwork} instance which representse an
+     *              IP address.
+     * @throws IllegalArgumentException
+     *    An invalid IP address is specified to {@code addr}.
+     * @since  Lithium
+     */
+    InetAddressAction(IpNetwork addr) {
+        if (addr != null) {
+            Class<?> cls = getNetworkClass();
+            if (!cls.equals(addr.getClass()) || !addr.isAddress()) {
+                String msg = unexpectedAddress(addr.getText());
                 throw new IllegalArgumentException(msg);
             }
             address = addr;
@@ -87,6 +109,17 @@ public abstract class InetAddressAction extends FlowAction {
      *          {@code null} is returned if no address is configured.
      */
     public final InetAddress getAddress() {
+        return (address == null) ? null : address.getInetAddress();
+    }
+
+    /**
+     * Return an IP address configured in this instance.
+     *
+     * @return  An {@link IpNetwork} instance which represents an IP address.
+     *          {@code null} is returned if no address is configured.
+     * @since   Lithium
+     */
+    public final IpNetwork getIpNetwork() {
         return address;
     }
 
@@ -132,7 +165,7 @@ public abstract class InetAddressAction extends FlowAction {
      */
     @XmlAttribute(name = "address", required = true)
     public final String getInetAddress() {
-        return (address == null) ? null : address.getHostAddress();
+        return (address == null) ? null : address.getText();
     }
 
     /**
@@ -147,25 +180,16 @@ public abstract class InetAddressAction extends FlowAction {
     @SuppressWarnings("unused")
     private void setInetAddress(String addr) {
         if (addr != null) {
-            if (addr.length() == 0) {
-                StringBuilder builder =
-                    new StringBuilder(getClass().getSimpleName());
-                builder.append(": Address is empty.");
-                validationStatus =
-                    new Status(StatusCode.BADREQUEST, builder.toString());
-                return;
-            }
-
+            Class<?> cls = getNetworkClass();
             try {
-                InetAddress iaddr = InetAddress.getByName(addr);
-                Class<?> cls = getAddressClass();
-                if (!cls.equals(iaddr.getClass())) {
+                IpNetwork ipn = IpNetwork.create(addr);
+                if (!cls.equals(ipn.getClass())) {
                     validationStatus =
                         new Status(StatusCode.BADREQUEST,
-                                   unexpectedAddress(addr, cls));
+                                   unexpectedAddress(addr));
                 }
-                address = iaddr;
-            } catch (Exception e) {
+                address = ipn;
+            } catch (RuntimeException e) {
                 StringBuilder builder =
                     new StringBuilder(getClass().getSimpleName());
                 builder.append(": Invalid address: ").append(addr);
@@ -179,15 +203,11 @@ public abstract class InetAddressAction extends FlowAction {
      * Create a string which indicates unexpected IP address is specified.
      *
      * @param addr  A string representation of the IP address.
-     * @param cls   A {@link Class} instance associated with the IP address
-     *              class.
      * @return  A string which indicates unexpected IP address is specified.
      */
-    private String unexpectedAddress(String addr, Class<?> cls) {
-        StringBuilder builder =
-            new StringBuilder(getClass().getSimpleName());
-        builder.append(": Unexpected address type: addr=").append(addr).
-            append(", expected=").append(cls.getSimpleName());
+    private String unexpectedAddress(String addr) {
+        StringBuilder builder = new StringBuilder(getClass().getSimpleName()).
+            append(": Unexpected address: ").append(addr);
         return builder.toString();
     }
 
@@ -199,6 +219,16 @@ public abstract class InetAddressAction extends FlowAction {
      *          IP address.
      */
     public abstract Class<? extends InetAddress> getAddressClass();
+
+    /**
+     * Return a {@link Class} instance which represents the type of
+     * IP network.
+     *
+     * @return  A {@link Class} instance which represents the type of
+     *          IP network.
+     * @since   Lithium
+     */
+    public abstract Class<? extends IpNetwork> getNetworkClass();
 
     /**
      * Determine whether the given object is identical to this object.

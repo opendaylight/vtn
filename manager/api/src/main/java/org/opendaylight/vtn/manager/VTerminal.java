@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 /**
  * {@code VTerminal} class describes the vTerminal information.
@@ -41,11 +43,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vterminal")
 @XmlAccessorType(XmlAccessType.NONE)
-public class VTerminal extends VTerminalConfig {
+public class VTerminal extends VTerminalConfig
+    implements VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7908528804349069003L;
+    private static final long serialVersionUID = 4820420037223611567L;
 
     /**
      * The name of the vTerminal.
@@ -224,6 +227,8 @@ public class VTerminal extends VTerminalConfig {
         this.state = VNodeState.valueOf(st);
     }
 
+    // Object
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -311,5 +316,22 @@ public class VTerminal extends VTerminalConfig {
         return builder.append(prefix).append("faults=").append(faults).
             append(",state=").append(state.toString()).
             append("]").toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This class uses the name of the VTerminal as the identifier.
+     * </p>
+     *
+     * @return  The name of the VTerminal.
+     * @since   Lithium
+     */
+    @Override
+    public String getIdentifier() {
+        return name;
     }
 }

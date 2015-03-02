@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 /**
  * {@code VTenant} class describes the VTN (virtual tenant network)
@@ -41,11 +43,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vtn")
 @XmlAccessorType(XmlAccessType.NONE)
-public class VTenant extends VTenantConfig {
+public class VTenant extends VTenantConfig implements VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2091502158725895050L;
+    private static final long serialVersionUID = 1029988750868364500L;
 
     /**
      * The name of the VTN.
@@ -88,6 +90,8 @@ public class VTenant extends VTenantConfig {
     public String getName() {
         return name;
     }
+
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.
@@ -171,5 +175,22 @@ public class VTenant extends VTenantConfig {
 
         appendContents(builder, prefix).append(']');
         return builder.toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This class uses the name of the VTN as the identifier.
+     * </p>
+     *
+     * @return  The name of the VTN.
+     * @since   Lithium
+     */
+    @Override
+    public String getIdentifier() {
+        return name;
     }
 }

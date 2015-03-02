@@ -35,6 +35,7 @@ import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 /**
  * {@code FlowFilter} class describes configuration information about
@@ -72,11 +73,12 @@ import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "flowfilter")
 @XmlAccessorType(XmlAccessType.NONE)
-public final class FlowFilter implements Serializable {
+public final class FlowFilter
+    implements Serializable, VTNIdentifiable<Integer> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2789802133918528483L;
+    private static final long serialVersionUID = 3615448052561767816L;
 
     /**
      * An index value assigned to this flow filter.
@@ -429,6 +431,8 @@ public final class FlowFilter implements Serializable {
             : new ArrayList<FlowAction>(actions);
     }
 
+    // Objects
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -487,5 +491,22 @@ public final class FlowFilter implements Serializable {
         }
 
         return builder.append(']').toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This method returns the index of the flow filter.
+     * </p>
+     *
+     * @return  The index of the flow filter.
+     * @since   Lithium
+     */
+    @Override
+    public Integer getIdentifier() {
+        return index;
     }
 }

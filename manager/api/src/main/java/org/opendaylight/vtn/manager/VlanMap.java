@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 import org.opendaylight.controller.sal.core.Node;
 
@@ -45,11 +47,11 @@ import org.opendaylight.controller.sal.core.Node;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vlanmap")
 @XmlAccessorType(XmlAccessType.NONE)
-public class VlanMap extends VlanMapConfig {
+public class VlanMap extends VlanMapConfig implements VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7225775555870161356L;
+    private static final long serialVersionUID = 6332981215061576792L;
 
     /**
      * The identifier assigned to the VLAN mapping, which is unique in the
@@ -89,6 +91,8 @@ public class VlanMap extends VlanMapConfig {
     public String getId() {
         return id;
     }
+
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.
@@ -166,5 +170,22 @@ public class VlanMap extends VlanMapConfig {
 
         appendContents(builder).append(']');
         return builder.toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This method returns the identifier of the VLAN mapping.
+     * </p>
+     *
+     * @return  The identifier of the VLAN mapping.
+     * @since   Lithium
+     */
+    @Override
+    public String getIdentifier() {
+        return id;
     }
 }
