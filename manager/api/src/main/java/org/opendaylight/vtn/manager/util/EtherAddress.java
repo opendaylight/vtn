@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.MacAddressFilter;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
@@ -36,7 +38,7 @@ public final class EtherAddress implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -571393433950822684L;
+    private static final long serialVersionUID = -5338324896227836920L;
 
     /**
      * The number of octets in an ethernet address.
@@ -74,12 +76,6 @@ public final class EtherAddress implements Serializable {
      * A {@link MacAddress} instance which represents an ethernet address.
      */
     private MacAddress  macAddress;
-
-    /**
-     * An {@link EthernetAddress} instance which represents an ethernet
-     * address.
-     */
-    private EthernetAddress  ethernetAddress;
 
     /**
      * Convert the given byte array that represents an ethernet address into
@@ -250,6 +246,20 @@ public final class EtherAddress implements Serializable {
     /**
      * Create a new {@link EtherAddress} instance.
      *
+     * @param mf  A {@link MacAddressFilter} instance.
+     *            Note that MAC address mask is always ignored.
+     * @return  An {@link EtherAddress} instance if a valid MAC address is
+     *          configured in {@code mf}. Otherwise {@code null}.
+     * @throws IllegalArgumentException
+     *    The given instance contains an invalid value.
+     */
+    public static EtherAddress create(MacAddressFilter mf) {
+        return (mf == null) ? null : create(mf.getAddress());
+    }
+
+    /**
+     * Create a new {@link EtherAddress} instance.
+     *
      * @param eaddr  An {@link EthernetAddress} instance.
      * @return  An {@link EtherAddress} instance if {@code eaddr} is not
      *          {@code null}. {@code null} if {@code eaddr} is {@code null}.
@@ -353,7 +363,6 @@ public final class EtherAddress implements Serializable {
      */
     public EtherAddress(EthernetAddress eaddr) {
         this(eaddr.getValue());
-        ethernetAddress = eaddr;
     }
 
     /**
@@ -399,20 +408,16 @@ public final class EtherAddress implements Serializable {
      * @return  A {@link EthernetAddress} instance.
      */
     public EthernetAddress getEthernetAddress() {
-        EthernetAddress eaddr = ethernetAddress;
-        if (eaddr == null) {
-            byte[] bytes = getBytesImpl();
-            try {
-                eaddr = new EthernetAddress(bytes);
-            } catch (Exception e) {
-                // This should never happen.
-                String msg = "Failed to create EthernetAddress: " + getText();
-                throw new IllegalStateException(msg, e);
-            }
-            ethernetAddress = eaddr;
+        // EthernetAddress has a vulnerability that can corrupt internal byte
+        // array. So we don't cache it.
+        byte[] bytes = getBytesImpl();
+        try {
+            return new EthernetAddress(bytes);
+        } catch (Exception e) {
+            // This should never happen.
+            String msg = "Failed to create EthernetAddress: " + getText();
+            throw new IllegalStateException(msg, e);
         }
-
-        return eaddr;
     }
 
     /**

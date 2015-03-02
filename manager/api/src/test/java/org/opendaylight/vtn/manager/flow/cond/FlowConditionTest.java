@@ -16,6 +16,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
@@ -178,6 +180,7 @@ public class FlowConditionTest extends TestBase {
      */
     private List<FlowMatch> createFlowMatches() {
         List<FlowMatch> list = new ArrayList<FlowMatch>();
+        EtherAddress nullMac = null;
 
         try {
             byte[] srcMac = new byte[]{
@@ -201,7 +204,7 @@ public class FlowConditionTest extends TestBase {
 
             Integer index = Integer.valueOf(10);
             type = Integer.valueOf(0x800);
-            em = new EthernetMatch(null, null, type, null, null);
+            em = new EthernetMatch(nullMac, nullMac, type, null, null);
             InetAddress srcIp = InetAddress.getByName("192.168.100.204");
             InetAddress dstIp = InetAddress.getByName("10.123.234.0");
             Short dstsuff = Short.valueOf((short)24);

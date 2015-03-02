@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.controller.sal.action.SetDlDst;
 
@@ -36,7 +38,7 @@ public final class SetDlDstAction extends DlAddrAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1507985202035801583L;
+    private static final long serialVersionUID = 9071013098505276592L;
 
     /**
      * Private constructor only for JAXB.
@@ -63,5 +65,15 @@ public final class SetDlDstAction extends DlAddrAction {
      */
     public SetDlDstAction(SetDlDst act) {
         super(act.getDlAddress());
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param addr  An {@link EtherAddress} instance.
+     * @since  Lithium
+     */
+    public SetDlDstAction(EtherAddress addr) {
+        super(addr);
     }
 }

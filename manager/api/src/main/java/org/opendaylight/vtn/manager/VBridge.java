@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 /**
  * {@code VBridge} class describes the vBridge (virtual L2 bridge) information.
@@ -41,11 +43,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "vbridge")
 @XmlAccessorType(XmlAccessType.NONE)
-public class VBridge extends VBridgeConfig {
+public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4764377113298832645L;
+    private static final long serialVersionUID = -2155368684781669955L;
 
     /**
      * The name of the vBridge.
@@ -237,6 +239,8 @@ public class VBridge extends VBridgeConfig {
         this.state = VNodeState.valueOf(st);
     }
 
+    // Object
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -331,5 +335,22 @@ public class VBridge extends VBridgeConfig {
             append(",state=").append(state.toString()).append("]");
 
         return builder.toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This class uses the name of the VBridge as the identifier.
+     * </p>
+     *
+     * @return  The name of the VBridge.
+     * @since   Lithium
+     */
+    @Override
+    public String getIdentifier() {
+        return name;
     }
 }

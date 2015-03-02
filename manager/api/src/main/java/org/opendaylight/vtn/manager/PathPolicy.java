@@ -23,6 +23,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
+
 /**
  * {@link PathPolicy} class describes the configuration of path policy.
  *
@@ -82,11 +84,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "pathpolicy")
 @XmlAccessorType(XmlAccessType.NONE)
-public final class PathPolicy implements Serializable {
+public final class PathPolicy
+    implements Serializable, VTNIdentifiable<Integer> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7534290274507861993L;
+    private static final long serialVersionUID = -5554438805658814600L;
 
     /**
      * The pseudo cost value which represents the cost is not defined.
@@ -463,6 +466,8 @@ public final class PathPolicy implements Serializable {
             : new ArrayList<PathCost>(pathCosts);
     }
 
+    // Object
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -517,5 +522,22 @@ public final class PathPolicy implements Serializable {
         builder.append(']');
 
         return builder.toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This method returns the identifier of the path policy.
+     * </p>
+     *
+     * @return  The identifier of the path policy.
+     * @since   Lithium
+     */
+    @Override
+    public Integer getIdentifier() {
+        return policyId;
     }
 }

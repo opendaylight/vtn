@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.codehaus.jettison.json.JSONObject;
 
+import org.opendaylight.vtn.manager.util.IpNetwork;
+
 import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.action.SetNwDst;
@@ -38,12 +40,21 @@ public class SetInet4DstActionTest extends TestBase {
 
     /**
      * Test case for getter methods.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testGetter() {
+    public void testGetter() throws Exception {
         for (InetAddress iaddr: createInet4Addresses()) {
+            IpNetwork ipn = IpNetwork.create(iaddr);
             SetInet4DstAction act = new SetInet4DstAction(iaddr);
             assertEquals(iaddr, act.getAddress());
+            assertEquals(ipn, act.getIpNetwork());
+            assertEquals(null, act.getValidationStatus());
+
+            act = new SetInet4DstAction(ipn);
+            assertEquals(iaddr, act.getAddress());
+            assertEquals(ipn, act.getIpNetwork());
             assertEquals(null, act.getValidationStatus());
 
             if (iaddr != null) {
@@ -51,19 +62,29 @@ public class SetInet4DstActionTest extends TestBase {
                 act = new SetInet4DstAction(sact);
                 assertEquals(iaddr, act.getAddress());
                 assertEquals(null, act.getValidationStatus());
+
+                for (int prefix = 1; prefix <= 31; prefix++) {
+                    IpNetwork bad = IpNetwork.create(iaddr, prefix);
+                    try {
+                        new SetInet4DstAction(bad);
+                        unexpected();
+                    } catch (IllegalArgumentException e) {
+                        String msg = "SetInet4DstAction: Unexpected address: " +
+                            bad.getText();
+                        assertEquals(msg, e.getMessage());
+                    }
+                }
             }
         }
 
+        InetAddress v6addr =
+            InetAddress.getByName("2001:420:281:1004:e123:e688:d655:a1b0");
         try {
-            InetAddress v6addr =
-                InetAddress.getByName("2001:420:281:1004:e123:e688:d655:a1b0");
-            try {
-                new SetInet4DstAction(v6addr);
-                fail("An exception must be thrown.");
-            } catch (IllegalArgumentException e) {
-            }
-        } catch (Exception e) {
-            unexpected(e);
+            new SetInet4DstAction(v6addr);
+            unexpected();
+        } catch (IllegalArgumentException e) {
+            String msg = "SetInet4DstAction: Unexpected address: " + v6addr;
+            assertEquals(msg, e.getMessage());
         }
     }
 

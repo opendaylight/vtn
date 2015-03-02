@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchField;
@@ -69,11 +70,12 @@ import org.opendaylight.controller.sal.utils.IPProtocols;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "flowmatch")
 @XmlAccessorType(XmlAccessType.NONE)
-public final class FlowMatch implements Serializable {
+public final class FlowMatch
+    implements Serializable, VTNIdentifiable<Integer> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3885172577971031294L;
+    private static final long serialVersionUID = -8004852450253624440L;
 
     /**
      * This element describes the Ethernet header fields to match against
@@ -622,6 +624,8 @@ public final class FlowMatch implements Serializable {
         }
     }
 
+    // Objects
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -682,5 +686,22 @@ public final class FlowMatch implements Serializable {
         builder.append(']');
 
         return builder.toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This method returns the index of the flow match.
+     * </p>
+     *
+     * @return  The index of the flow match.
+     * @since   Lithium
+     */
+    @Override
+    public Integer getIdentifier() {
+        return matchIndex;
     }
 }

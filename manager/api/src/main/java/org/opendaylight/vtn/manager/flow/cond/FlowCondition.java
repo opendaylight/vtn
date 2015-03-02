@@ -23,6 +23,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
+
 /**
  * This class describes the flow condition, which specifies a list of
  * flow conditions to select packets.
@@ -78,11 +80,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "flowcondition")
 @XmlAccessorType(XmlAccessType.NONE)
-public final class FlowCondition implements Serializable {
+public final class FlowCondition
+    implements Serializable, VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6564163025280184358L;
+    private static final long serialVersionUID = 6250511924260021815L;
 
     /**
      * The name of the flow condition.
@@ -163,6 +166,8 @@ public final class FlowCondition implements Serializable {
             : new ArrayList<FlowMatch>(matches);
     }
 
+    // Object
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -212,5 +217,22 @@ public final class FlowCondition implements Serializable {
         builder.append(']');
 
         return builder.toString();
+    }
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This class uses the anme of the flow condition as the identifier.
+     * </p>
+     *
+     * @return  The name of the flow condition.
+     * @since   Lithium
+     */
+    @Override
+    public String getIdentifier() {
+        return name;
     }
 }

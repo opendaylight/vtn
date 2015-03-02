@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.codehaus.jettison.json.JSONObject;
 
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.TestBase;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
@@ -52,7 +54,9 @@ public class EthernetMatchTest extends TestBase {
         };
 
         for (EthernetAddress src: createEthernetAddresses(3, true)) {
+            EtherAddress srcAddr = EtherAddress.create(src);
             for (EthernetAddress dst: createEthernetAddresses(3, true)) {
+                EtherAddress dstAddr = EtherAddress.create(dst);
                 for (Integer type: types) {
                     for (Short vlan: vlans) {
                         for (Byte pri: priorities) {
@@ -71,6 +75,21 @@ public class EthernetMatchTest extends TestBase {
                             assertEquals(type, em.getType());
                             assertEquals(vlan, em.getVlan());
                             assertEquals(pri, em.getVlanPriority());
+                            assertEquals(srcAddr, em.getSourceEtherAddress());
+                            assertEquals(dstAddr,
+                                         em.getDestinationEtherAddress());
+                            assertEquals(null, em.getValidationStatus());
+
+                            EthernetMatch em1 = new EthernetMatch(
+                                srcAddr, dstAddr, type, vlan, pri);
+                            assertEquals(src, em.getSourceAddress());
+                            assertEquals(dst, em.getDestinationAddress());
+                            assertEquals(type, em.getType());
+                            assertEquals(vlan, em.getVlan());
+                            assertEquals(pri, em.getVlanPriority());
+                            assertEquals(srcAddr, em.getSourceEtherAddress());
+                            assertEquals(dstAddr,
+                                         em.getDestinationEtherAddress());
                             assertEquals(null, em.getValidationStatus());
                         }
                     }

@@ -19,7 +19,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.vtn.manager.util.ByteUtils;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
@@ -47,7 +47,7 @@ public final class EthernetMatch implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1414100045393097157L;
+    private static final long serialVersionUID = 3985178322341719720L;
 
     /**
      * Status of JAXB binding validation.
@@ -61,12 +61,12 @@ public final class EthernetMatch implements Serializable {
     /**
      * Source MAC address to match.
      */
-    private EthernetAddress  sourceAddress;
+    private EtherAddress  sourceAddress;
 
     /**
      * Destination MAC address to match.
      */
-    private EthernetAddress  destinationAddress;
+    private EtherAddress  destinationAddress;
 
     /**
      * An Ethernet type value to match against packets.
@@ -191,6 +191,74 @@ public final class EthernetMatch implements Serializable {
      */
     public EthernetMatch(EthernetAddress src, EthernetAddress dst,
                          Integer type, Short vlan, Byte pri) {
+        sourceAddress = EtherAddress.create(src);
+        destinationAddress = EtherAddress.create(dst);
+        this.type = type;
+        this.vlan = vlan;
+        priority = pri;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param src   An {@link EtherAddress} instance which represents
+     *              the source MAC address to match.
+     *              {@code null} means that every source MAC address should
+     *              be matched.
+     * @param dst   An {@link EtherAddress} instance which represents
+     *              the destination MAC address to match.
+     *              {@code null} means that every destination MAC address
+     *              should be matched.
+     * @param type
+     *   An {@link Integer} instance which represents the  Ethernet type value
+     *   to match against packets.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>65535</strong>.
+     *     </li>
+     *     <li>
+     *       {@code null} means that every Ethernet type should be matched.
+     *     </li>
+     *   </ul>
+     * @param vlan
+     *   A {@link Short} instance which represents the VLAN ID to match
+     *   against packets.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>4095</strong>.
+     *     </li>
+     *     <li>
+     *       <strong>0</strong> implies untagged Ethernet frame.
+     *     </li>
+     *     <li>
+     *       {@code null} means that every VLAN frame, including untagged
+     *       Ethernet frame, should be matched.
+     *     </li>
+     *   </ul>
+     * @param pri
+     *   A {@link Byte} instance which represents VLAN priority value to match
+     *   against packets.
+     *   <ul>
+     *     <li>
+     *       The range of value that can be specified is from
+     *       <strong>0</strong> to <strong>7</strong>.
+     *     </li>
+     *     <li>
+     *       If a valid priority is specified, a valid VLAN ID except for
+     *       zero must be specified to {@code vlan}.
+     *       {@code pri}.
+     *     </li>
+     *     <li>
+     *       {@code null} means that every VLAN priority, including untagged
+     *       Ethernet frame, should be matched.
+     *     </li>
+     *   </ul>
+     * @since  Lithium
+     */
+    public EthernetMatch(EtherAddress src, EtherAddress dst, Integer type,
+                         Short vlan, Byte pri) {
         sourceAddress = src;
         destinationAddress = dst;
         this.type = type;
@@ -207,7 +275,8 @@ public final class EthernetMatch implements Serializable {
      *          the source MAC address to match.
      */
     public EthernetAddress getSourceAddress() {
-        return clone(sourceAddress);
+        EtherAddress addr = sourceAddress;
+        return (addr == null) ? null : addr.getEthernetAddress();
     }
 
     /**
@@ -219,7 +288,34 @@ public final class EthernetMatch implements Serializable {
      *          the destination MAC address to match.
      */
     public EthernetAddress getDestinationAddress() {
-        return clone(destinationAddress);
+        EtherAddress addr = destinationAddress;
+        return (addr == null) ? null : addr.getEthernetAddress();
+    }
+
+    /**
+     * Return the source MAC address to match against packets.
+     *
+     * @return  An {@link EtherAddress} instance which represents the
+     *          source MAC address to match against packets.
+     *          {@code null} is returned if this instance does not describe
+     *          the source MAC address to match.
+     * @since  Lithium
+     */
+    public EtherAddress getSourceEtherAddress() {
+        return sourceAddress;
+    }
+
+    /**
+     * Return the destination MAC address to match against packets.
+     *
+     * @return  An {@link EtherAddress} instance which represents the
+     *          destination MAC address to match against packets.
+     *          {@code null} is returned if this instance does not describe
+     *          the destination MAC address to match.
+     * @since  Lithium
+     */
+    public EtherAddress getDestinationEtherAddress() {
+        return destinationAddress;
     }
 
     /**
@@ -320,7 +416,7 @@ public final class EthernetMatch implements Serializable {
      */
     @SuppressWarnings("unused")
     private void setSourceMacAddress(String mac) {
-        sourceAddress = toEthernetAddress(mac, "source");
+        sourceAddress = toEtherAddress(mac, "source");
     }
 
     /**
@@ -369,52 +465,38 @@ public final class EthernetMatch implements Serializable {
      */
     @SuppressWarnings("unused")
     private void setDestinationMacAddress(String mac) {
-        destinationAddress = toEthernetAddress(mac, "destination");
+        destinationAddress = toEtherAddress(mac, "destination");
     }
 
     /**
-     * Convert an {@link EthernetAddress} instance to a string.
+     * Convert an {@link EtherAddress} instance to a string.
      *
-     * @param addr  An {@link EthernetAddress} instance.
+     * @param addr  An {@link EtherAddress} instance.
      * @return  A string representation of the specified instance.
      *         {@code null} is returned if {@code null} is specified.
      */
-    private String toString(EthernetAddress addr) {
-        return (addr == null) ? null : addr.getMacAddress();
+    private String toString(EtherAddress addr) {
+        return (addr == null) ? null : addr.getText();
     }
 
     /**
-     * Convert the given string into an {@link EthernetAddress} instance.
+     * Convert the given string into an {@link EtherAddress} instance.
      *
      * @param mac   A string representation of the MAC address.
      * @param desc  A brief description about the value.
-     * @return  An {@link EthernetAddress} instance.
+     * @return  An {@link EtherAddress} instance.
      */
-    private EthernetAddress toEthernetAddress(String mac, String desc) {
-        if (mac != null) {
-            try {
-                byte[] b = ByteUtils.toBytes(mac);
-                return new EthernetAddress(b);
-            } catch (Exception e) {
-                StringBuilder builder = new StringBuilder("Invalid ");
-                builder.append(desc).append(" MAC address: ").append(mac);
-                validationStatus =
-                    new Status(StatusCode.BADREQUEST, builder.toString());
-            }
+    private EtherAddress toEtherAddress(String mac, String desc) {
+        try {
+            return EtherAddress.create(mac);
+        } catch (Exception e) {
+            StringBuilder builder = new StringBuilder("Invalid ");
+            builder.append(desc).append(" MAC address: ").append(mac);
+            validationStatus =
+                new Status(StatusCode.BADREQUEST, builder.toString());
         }
 
         return null;
-    }
-
-    /**
-     * Return a clone of the specified {@link EthernetAddress} instance.
-     *
-     * @param addr  A {@link EthernetAddress} instance to be copied.
-     * @return  A copy of {@link EthernetAddress} instance.
-     *          {@code null} is returned if {@code null} is specified.
-     */
-    private EthernetAddress clone(EthernetAddress addr) {
-        return (addr == null) ? null : addr.clone();
     }
 
     /**
@@ -461,12 +543,12 @@ public final class EthernetMatch implements Serializable {
         StringBuilder builder = new StringBuilder("EthernetMatch[");
         String sep = "";
         if (sourceAddress != null) {
-            builder.append("src=").append(sourceAddress.getMacAddress());
+            builder.append("src=").append(sourceAddress.getText());
             sep = ",";
         }
         if (destinationAddress != null) {
             builder.append(sep)
-                .append("dst=").append(destinationAddress.getMacAddress());
+                .append("dst=").append(destinationAddress.getText());
             sep = ",";
         }
         if (type != null) {

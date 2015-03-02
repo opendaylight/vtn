@@ -96,6 +96,7 @@ import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.cond.Inet4Match;
 import org.opendaylight.vtn.manager.flow.cond.TcpMatch;
 import org.opendaylight.vtn.manager.flow.cond.UdpMatch;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockLink;
@@ -5470,9 +5471,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                      vtnManager.setFlowCondition(cnameUdp, condUdp));
         assertEquals(null, vtnManager.setFlowCondition(cnameUdp, condUdp));
 
-        EthernetMatch em =
-            new EthernetMatch(null, null, EtherTypes.IPv4.intValue(), null,
-                              null);
+        EtherAddress nullMac = null;
+        EthernetMatch em = new EthernetMatch(
+            nullMac, nullMac, EtherTypes.IPv4.intValue(), null, null);
         Inet4Match im = new Inet4Match(null, null, null, null,
                                        IPProtocols.UDP.shortValue(), null);
         fm = new FlowMatch(1, em, im, udm);

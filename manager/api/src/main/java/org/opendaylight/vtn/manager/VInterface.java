@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
 /**
  * {@code VInterface} class describes the virtual interface information.
@@ -41,11 +43,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "interface")
 @XmlAccessorType(XmlAccessType.NONE)
-public class VInterface extends VInterfaceConfig {
+public class VInterface extends VInterfaceConfig
+    implements VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1875613942407419619L;
+    private static final long serialVersionUID = -7399114907471127284L;
 
     /**
      * The name of the virtual interface.
@@ -299,6 +302,8 @@ public class VInterface extends VInterfaceConfig {
         this.entityState = VNodeState.valueOf(st);
     }
 
+    // Object
+
     /**
      * Determine whether the given object is identical to this object.
      *
@@ -394,5 +399,23 @@ public class VInterface extends VInterfaceConfig {
             append(",entityState=").append(entityState.toString()).append(']');
 
         return builder.toString();
+    }
+
+
+    // VTNIdentifiable
+
+    /**
+     * Return the identifier of this instance.
+     *
+     * <p>
+     *   This class uses the name of the VInterface as the identifier.
+     * </p>
+     *
+     * @return  The name of the VInterface.
+     * @since   Lithium
+     */
+    @Override
+    public String getIdentifier() {
+        return name;
     }
 }
