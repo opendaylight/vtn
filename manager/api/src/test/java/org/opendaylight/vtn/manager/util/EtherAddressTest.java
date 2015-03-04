@@ -16,12 +16,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-import javax.xml.bind.UnmarshalException;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlValueType;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 
@@ -673,23 +673,8 @@ public class EtherAddressTest extends TestBase {
         assertEquals(addr, ea.getAddress());
         assertEquals(hex, ea.getText());
 
-        // Test case for broken MAC address.
-        String[] invalidAddrs = {
-            "", "bad address", "aabccddeeff", "00:11:22:33:44:55:66",
-            "00:11:222:33:44:55:66",
-        };
-
-        for (String badHex: invalidAddrs) {
-            builder = new StringBuilder(XML_DECLARATION);
-            builder.append('<').append(XML_ROOT).append('>').
-                append(badHex).append("</").append(XML_ROOT).append('>');
-            xml = builder.toString();
-            in = new ByteArrayInputStream(xml.getBytes());
-            try {
-                um.unmarshal(in);
-                unexpected();
-            } catch (UnmarshalException e) {
-            }
-        }
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(um, EtherAddress.class,
+                      new XmlValueType(XML_ROOT, EtherAddress.class));
     }
 }

@@ -217,6 +217,15 @@ public class PathMapTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(PathMap.class,
+                      new XmlAttributeType(XML_ROOT, "index", Integer.class),
+                      new XmlAttributeType(XML_ROOT, "policy", int.class),
+                      new XmlAttributeType(XML_ROOT, "idleTimeout",
+                                           Integer.class),
+                      new XmlAttributeType(XML_ROOT, "hardTimeout",
+                                           Integer.class));
     }
 
     /**

@@ -21,6 +21,11 @@ import org.opendaylight.controller.sal.core.Node;
  */
 public class VlanMapConfigTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VlanMapConfig} class.
+     */
+    private static final String  XML_ROOT = "vlanmapconf";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -135,8 +140,12 @@ public class VlanMapConfigTest extends TestBase {
         for (Node node: createNodes(5)) {
             for (short vlan = -10; vlan <= 10; vlan++) {
                 VlanMapConfig vlconf = new VlanMapConfig(node, vlan);
-                jaxbTest(vlconf, VlanMapConfig.class, "vlanmapconf");
+                jaxbTest(vlconf, VlanMapConfig.class, XML_ROOT);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VlanMapConfig.class,
+                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
     }
 }

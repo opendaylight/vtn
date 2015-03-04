@@ -32,11 +32,17 @@ import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 /**
  * JUnit test for {@link FlowFilter}.
  */
 public class FlowFilterTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link FlowFilter} class.
+     */
+    private static final String  XML_ROOT = "flowfilter";
+
     /**
      * A list of {@link FilterType} instances for test.
      */
@@ -197,11 +203,29 @@ public class FlowFilterTest extends TestBase {
                         FlowFilter ff = (index == 0)
                             ? new FlowFilter(cond, type, actions)
                             : new FlowFilter(index, cond, type, actions);
-                        jaxbTest(ff, FlowFilter.class, "flowfilter");
+                        jaxbTest(ff, FlowFilter.class, XML_ROOT);
                     }
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(FlowFilter.class,
+                      new XmlAttributeType(XML_ROOT, "index", Integer.class),
+
+                      // FlowAction
+                      new XmlAttributeType("vlanpcp", "priority", byte.class).
+                      add(XML_ROOT, "actions"),
+                      new XmlAttributeType("dscp", "dscp", byte.class).
+                      add(XML_ROOT, "actions"),
+                      new XmlAttributeType("tpsrc", "port", int.class).
+                      add(XML_ROOT, "actions"),
+                      new XmlAttributeType("tpdst", "port", int.class).
+                      add(XML_ROOT, "actions"),
+                      new XmlAttributeType("icmptype", "type", short.class).
+                      add(XML_ROOT, "actions"),
+                      new XmlAttributeType("icmpcode", "code", short.class).
+                      add(XML_ROOT, "actions"));
     }
 
     /**

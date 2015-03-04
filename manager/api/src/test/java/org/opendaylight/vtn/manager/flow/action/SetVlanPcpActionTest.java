@@ -14,6 +14,7 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.SetVlanPcp;
 
@@ -21,6 +22,11 @@ import org.opendaylight.controller.sal.action.SetVlanPcp;
  * JUnit test for {@link SetVlanPcpAction}.
  */
 public class SetVlanPcpActionTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link SetVlanPcpAction} class.
+     */
+    private static final String  XML_ROOT = "setvlanpcp";
+
     /**
      * Test case for getter methods.
      */
@@ -89,8 +95,12 @@ public class SetVlanPcpActionTest extends TestBase {
         byte[] bytes = {Byte.MIN_VALUE, 0, 1, 7, 100, Byte.MAX_VALUE};
         for (byte b: bytes) {
             SetVlanPcpAction act = new SetVlanPcpAction(b);
-            jaxbTest(act, SetVlanPcpAction.class, "setvlanpcp");
+            jaxbTest(act, SetVlanPcpAction.class, XML_ROOT);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(SetVlanPcpAction.class,
+                      new XmlAttributeType(XML_ROOT, "priority", byte.class));
     }
 
     /**

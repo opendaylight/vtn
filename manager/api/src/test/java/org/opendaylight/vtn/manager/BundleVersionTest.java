@@ -19,6 +19,11 @@ import org.junit.Test;
  */
 public class BundleVersionTest extends TestBase {
     /**
+     * Root XML element name associated with {@link BundleVersion} class.
+     */
+    private static final String  XML_ROOT = "bundleVersion";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -133,5 +138,11 @@ public class BundleVersionTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(BundleVersion.class,
+                      new XmlAttributeType(XML_ROOT, "major", int.class),
+                      new XmlAttributeType(XML_ROOT, "minor", int.class),
+                      new XmlAttributeType(XML_ROOT, "micro", int.class));
     }
 }

@@ -14,6 +14,7 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.SetTpSrc;
 
@@ -21,6 +22,11 @@ import org.opendaylight.controller.sal.action.SetTpSrc;
  * JUnit test for {@link SetIcmpTypeAction}.
  */
 public class SetIcmpTypeActionTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link SetIcmpTypeAction} class.
+     */
+    private static final String  XML_ROOT = "seticmptype";
+
     /**
      * Test case for getter methods.
      */
@@ -90,8 +96,12 @@ public class SetIcmpTypeActionTest extends TestBase {
         short[] types = {Short.MIN_VALUE, 0, 1, 100, 255, Short.MAX_VALUE};
         for (short type: types) {
             SetIcmpTypeAction act = new SetIcmpTypeAction(type);
-            jaxbTest(act, SetIcmpTypeAction.class, "seticmptype");
+            jaxbTest(act, SetIcmpTypeAction.class, XML_ROOT);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(SetIcmpTypeAction.class,
+                      new XmlAttributeType(XML_ROOT, "type", short.class));
     }
 
     /**

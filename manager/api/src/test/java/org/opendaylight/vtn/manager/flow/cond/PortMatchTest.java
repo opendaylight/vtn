@@ -1,4 +1,4 @@
-/*/*
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -14,11 +14,17 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 /**
  * JUnit test for {@link PortMatch}.
  */
 public class PortMatchTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link PortMatch} class.
+     */
+    private static final String  XML_ROOT = "portmatch";
+
     /**
      * Test case for getter methods.
      */
@@ -176,9 +182,14 @@ public class PortMatchTest extends TestBase {
         for (Integer from: fromPorts) {
             for (Integer to: toPorts) {
                 PortMatch pm = new PortMatch(from, to);
-                jaxbTest(pm, PortMatch.class, "portmatch");
+                jaxbTest(pm, PortMatch.class, XML_ROOT);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(PortMatch.class,
+                      new XmlAttributeType(XML_ROOT, "from", Integer.class),
+                      new XmlAttributeType(XML_ROOT, "to", Integer.class));
     }
 
     /**

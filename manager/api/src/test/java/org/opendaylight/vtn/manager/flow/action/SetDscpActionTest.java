@@ -14,6 +14,7 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.SetNwTos;
 
@@ -21,6 +22,11 @@ import org.opendaylight.controller.sal.action.SetNwTos;
  * JUnit test for {@link SetDscpAction}.
  */
 public class SetDscpActionTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link SetDscpAction} class.
+     */
+    private static final String  XML_ROOT = "setdscp";
+
     /**
      * Test case for getter methods.
      */
@@ -88,8 +94,12 @@ public class SetDscpActionTest extends TestBase {
         byte[] bytes = {Byte.MIN_VALUE, 0, 1, 30, 63, Byte.MAX_VALUE};
         for (byte b: bytes) {
             SetDscpAction act = new SetDscpAction(b);
-            jaxbTest(act, SetDscpAction.class, "setdscp");
+            jaxbTest(act, SetDscpAction.class, XML_ROOT);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(SetDscpAction.class,
+                      new XmlAttributeType(XML_ROOT, "dscp", byte.class));
     }
 
     /**

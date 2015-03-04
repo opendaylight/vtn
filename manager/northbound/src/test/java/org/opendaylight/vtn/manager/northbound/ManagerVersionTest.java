@@ -21,6 +21,11 @@ import org.opendaylight.vtn.manager.BundleVersion;
  */
 public class ManagerVersionTest extends TestBase {
     /**
+     * Root XML element name associated with {@link ManagerVersion} class.
+     */
+    private static final String  XML_ROOT = "version";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -68,10 +73,22 @@ public class ManagerVersionTest extends TestBase {
         for (int api = 0; api < 3; api++) {
             for (BundleVersion bv: createBundleVersions()) {
                 ManagerVersion mv = new ManagerVersion(api, bv);
-                jaxbTest(mv, ManagerVersion.class, "version");
+                jaxbTest(mv, ManagerVersion.class, XML_ROOT);
                 jsonTest(mv, ManagerVersion.class);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(ManagerVersion.class,
+                      new XmlAttributeType(XML_ROOT, "api", int.class),
+
+                      // BundleVersion
+                      new XmlAttributeType("bundle", "major", int.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("bundle", "minor", int.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("bundle", "micro", int.class).
+                      add(XML_ROOT));
     }
 
     /**

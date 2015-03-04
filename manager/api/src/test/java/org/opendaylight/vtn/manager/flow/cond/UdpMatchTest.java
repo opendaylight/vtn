@@ -15,11 +15,17 @@ import java.util.List;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 /**
  * JUnit test for {@link UdpMatch}.
  */
 public class UdpMatchTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link UdpMatch} class.
+     */
+    private static final String  XML_ROOT = "udpmatch";
+
     /**
      * Test case for getter methods.
      */
@@ -125,9 +131,20 @@ public class UdpMatchTest extends TestBase {
         for (PortMatch src: createPortMatches()) {
             for (PortMatch dst: createPortMatches()) {
                 UdpMatch um = new UdpMatch(src, dst);
-                jaxbTest(um, UdpMatch.class, "udpmatch");
+                jaxbTest(um, UdpMatch.class, XML_ROOT);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(UdpMatch.class,
+                      new XmlAttributeType("src", "from", Integer.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("src", "to", Integer.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dst", "from", Integer.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dst", "to", Integer.class).
+                      add(XML_ROOT));
     }
 
     /**

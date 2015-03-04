@@ -206,6 +206,13 @@ public class VBridgeTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VBridge.class,
+                      new XmlAttributeType(XML_ROOT, "faults", int.class),
+                      new XmlAttributeType(XML_ROOT, "state", int.class),
+                      new XmlAttributeType(XML_ROOT, "ageInterval",
+                                           Integer.class));
     }
 
     /**

@@ -14,6 +14,7 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.utils.EtherTypes;
@@ -22,6 +23,11 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
  * JUnit test for {@link PushVlanAction}.
  */
 public class PushVlanActionTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link PushVlanAction} class.
+     */
+    private static final String  XML_ROOT = "pushvlan";
+
     /**
      * Test case for getter methods.
      */
@@ -92,8 +98,12 @@ public class PushVlanActionTest extends TestBase {
         EtherTypes[] types = {EtherTypes.VLANTAGGED, EtherTypes.QINQ};
         for (EtherTypes type: types) {
             PushVlanAction act = new PushVlanAction(type);
-            jaxbTest(act, PushVlanAction.class, "pushvlan");
+            jaxbTest(act, PushVlanAction.class, XML_ROOT);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(PushVlanAction.class,
+                      new XmlAttributeType(XML_ROOT, "type", int.class));
     }
 
     /**

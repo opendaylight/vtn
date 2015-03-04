@@ -15,12 +15,13 @@ import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.Random;
 
-import javax.xml.bind.UnmarshalException;
 import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlDataType;
+import org.opendaylight.vtn.manager.XmlValueType;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
@@ -780,33 +781,10 @@ public class Ip4NetworkTest extends TestBase {
         assertEquals(host, ip4.getHostAddress());
         assertEquals(29, ip4.getPrefixLength());
 
-        // Test case for broken network address.
-        String[] invalidAddrs = {
-            "Bad IP address",
-            "Bad IP address/3",
-            "123.456.789.abc",
-            "123.456.789.abc/12",
-            "abc::ddee::123",
-            "abc::ddee::123/45",
-            "::1",
-            "::1/32",
-            "10.1.2.3/",
-            "10.1.2.3/0x123",
-            "10.1.2.3/3.141592",
-            "10.1.2.3/1/2/3",
-        };
-
-        for (String addr: invalidAddrs) {
-            builder = new StringBuilder(XML_DECLARATION);
-            builder.append('<').append(XML_ROOT).append('>').
-                append(addr).append("</").append(XML_ROOT).append('>');
-            xml = builder.toString();
-            in = new ByteArrayInputStream(xml.getBytes());
-            try {
-                um.unmarshal(in);
-                unexpected();
-            } catch (UnmarshalException e) {
-            }
-        }
+        // Ensure that broken values in XML can be detected.
+        XmlDataType dtype = new XmlValueType(XML_ROOT, Ip4Network.class);
+        jaxbErrorTest(um, Ip4Network.class, dtype);
+        jaxbErrorTest(createUnmarshaller(IpNetwork.class), Ip4Network.class,
+                      dtype);
     }
 }

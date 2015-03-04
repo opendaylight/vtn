@@ -15,11 +15,17 @@ import java.util.List;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 /**
  * JUnit test for {@link TcpMatch}.
  */
 public class TcpMatchTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link TcpMatch} class.
+     */
+    private static final String  XML_ROOT = "tcpmatch";
+
     /**
      * Test case for getter methods.
      */
@@ -125,9 +131,20 @@ public class TcpMatchTest extends TestBase {
         for (PortMatch src: createPortMatches()) {
             for (PortMatch dst: createPortMatches()) {
                 TcpMatch tm = new TcpMatch(src, dst);
-                jaxbTest(tm, TcpMatch.class, "tcpmatch");
+                jaxbTest(tm, TcpMatch.class, XML_ROOT);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(TcpMatch.class,
+                      new XmlAttributeType("src", "from", Integer.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("src", "to", Integer.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dst", "from", Integer.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dst", "to", Integer.class).
+                      add(XML_ROOT));
     }
 
     /**

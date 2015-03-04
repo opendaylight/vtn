@@ -23,6 +23,7 @@ import java.util.HashSet;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.UnmarshalException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -1623,6 +1624,59 @@ public abstract class TestBase extends Assert {
         Object o = um.unmarshal(in);
         assertTrue(cls.isInstance(o));
         return cls.cast(o);
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
+     * @param type    A class which indicates the type of object.
+     * @param dtypes  An array of {@link XmlDataType} instances that creates
+     *                invalid XML text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Class<T> type,
+                                            XmlDataType ... dtypes) {
+        jaxbErrorTest(createUnmarshaller(type), type, dtypes);
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
+     * @param um      An {@link Unmarshaller} instance.
+     * @param type    A class which indicates the type of object.
+     * @param dtypes  An array of {@link XmlDataType} instances that creates
+     *                invalid XML text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Unmarshaller um, Class<T> type,
+                                            XmlDataType ... dtypes) {
+        for (XmlDataType dtype: dtypes) {
+            for (XmlNode xn: dtype.createInvalidNodes()) {
+                try {
+                    unmarshal(um, xn.toString(), type);
+                    fail("Broken XML has been unmarshalled: " + xn);
+                } catch (UnmarshalException e) {
+                    Throwable rootCause = null;
+                    Throwable cause = e.getCause();
+                    if (cause != null) {
+                        while (true) {
+                            Throwable c = cause.getCause();
+                            if (c == null) {
+                                rootCause = cause;
+                                break;
+                            }
+                            cause = c;
+                        }
+                    }
+                    if (!(rootCause instanceof IllegalArgumentException)) {
+                        fail("Unexpected exception: " + e + ", cause=" +
+                             rootCause + ", xml=" + xn);
+                    }
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+            }
+        }
     }
 
     /**

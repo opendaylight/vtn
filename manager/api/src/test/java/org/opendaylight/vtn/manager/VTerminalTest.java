@@ -175,6 +175,11 @@ public class VTerminalTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VTerminal.class,
+                      new XmlAttributeType(XML_ROOT, "faults", int.class),
+                      new XmlAttributeType(XML_ROOT, "state", int.class));
     }
 
     /**

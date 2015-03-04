@@ -25,6 +25,7 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.XmlValueType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
@@ -1152,5 +1153,26 @@ public class VTNConfigImplTest extends TestBase {
             } catch (UnmarshalException e) {
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VTNConfigImpl.class,
+                      new XmlValueType("controller-mac-address",
+                                       EtherAddress.class).add(XML_ROOT),
+                      new XmlValueType("node-edge-wait", Integer.class).
+                      add(XML_ROOT),
+                      new XmlValueType("l2-flow-priority", Integer.class).
+                      add(XML_ROOT),
+                      new XmlValueType("flow-mod-timeout", Integer.class).
+                      add(XML_ROOT),
+                      new XmlValueType("remote-flow-mod-timeout",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("bulk-flow-mod-timeout", Integer.class).
+                      add(XML_ROOT),
+                      new XmlValueType("init-timeout", Integer.class).
+                      add(XML_ROOT),
+                      new XmlValueType("cache-transaction-timeout",
+                                       Integer.class).add(XML_ROOT),
+                      new XmlValueType("max-redirections", Integer.class).
+                      add(XML_ROOT));
     }
 }

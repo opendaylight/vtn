@@ -23,6 +23,11 @@ import org.opendaylight.vtn.manager.VNodeState;
  */
 public class VBridgeListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VBridgeList} class.
+     */
+    private static final String  XML_ROOT = "vbridges";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -117,14 +122,13 @@ public class VBridgeListTest extends TestBase {
     public void testJAXB() {
         // null list.
         VBridgeList vbList = new VBridgeList(null);
-        String rootName = "vbridges";
-        jaxbTest(vbList, VBridgeList.class, rootName);
+        jaxbTest(vbList, VBridgeList.class, XML_ROOT);
         jsonTest(vbList, VBridgeList.class);
 
         // Empty list.
         List<VBridge> list = new ArrayList<VBridge>();
         vbList = new VBridgeList(list);
-        jaxbTest(vbList, VBridgeList.class, rootName);
+        jaxbTest(vbList, VBridgeList.class, XML_ROOT);
         jsonTest(vbList, VBridgeList.class);
 
         VNodeState[] states = VNodeState.values();
@@ -139,7 +143,7 @@ public class VBridgeListTest extends TestBase {
                         List<VBridge> one = new ArrayList<VBridge>();
                         one.add(vbridge);
                         vbList = new VBridgeList(one);
-                        jaxbTest(vbList, VBridgeList.class, rootName);
+                        jaxbTest(vbList, VBridgeList.class, XML_ROOT);
                         jsonTest(vbList, VBridgeList.class);
 
                         list.add(vbridge);
@@ -149,7 +153,16 @@ public class VBridgeListTest extends TestBase {
         }
 
         vbList = new VBridgeList(list);
-        jaxbTest(vbList, VBridgeList.class, rootName);
+        jaxbTest(vbList, VBridgeList.class, XML_ROOT);
         jsonTest(vbList, VBridgeList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VBridgeList.class,
+                      new XmlAttributeType("vbridge", "faults", int.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("vbridge", "state", int.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("vbridge", "ageInterval",
+                                           Integer.class).add(XML_ROOT));
     }
 }

@@ -24,6 +24,10 @@ import org.opendaylight.vtn.manager.MacAddressEntry;
  * JUnit test for {@link MacEntryList}
  */
 public class MacEntryListTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link MacEntryList} class.
+     */
+    private static final String  XML_ROOT = "macentries";
 
     /**
      * test case for {@link MacEntryList#MacEntryList(java.util.List)} and
@@ -127,7 +131,6 @@ public class MacEntryListTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        String rootName = "macentries";
         short[] vlans = {-10, 0, 1, 100, 4095};
         List<Set<InetAddress>> ips = createInetAddresses();
         List<EthernetAddress> ethaddrs = createEthernetAddresses(false);
@@ -137,12 +140,12 @@ public class MacEntryListTest extends TestBase {
 
         // null list.
         meList = new MacEntryList(null);
-        jaxbTest(meList, MacEntryList.class, rootName);
+        jaxbTest(meList, MacEntryList.class, XML_ROOT);
         jsonTest(meList, MacEntryList.class);
 
         // Empty list should be treated as null list.
         meList = new MacEntryList(list);
-        jaxbTest(meList, MacEntryList.class, rootName);
+        jaxbTest(meList, MacEntryList.class, XML_ROOT);
         jsonTest(meList, MacEntryList.class);
 
         // use a combination of NodeConnectors, InetAddresses,
@@ -157,7 +160,7 @@ public class MacEntryListTest extends TestBase {
                             new ArrayList<MacAddressEntry>();
                         one.add(mae);
                         meList = new MacEntryList(one);
-                        jaxbTest(meList, MacEntryList.class, rootName);
+                        jaxbTest(meList, MacEntryList.class, XML_ROOT);
                         jsonTest(meList, MacEntryList.class);
 
                         list.add(mae);
@@ -167,7 +170,12 @@ public class MacEntryListTest extends TestBase {
         }
 
         meList = new MacEntryList(list);
-        jaxbTest(meList, MacEntryList.class, rootName);
+        jaxbTest(meList, MacEntryList.class, XML_ROOT);
         jsonTest(meList, MacEntryList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(MacEntryList.class,
+                      new XmlAttributeType("macentry", "vlan", short.class).
+                      add(XML_ROOT));
     }
 }

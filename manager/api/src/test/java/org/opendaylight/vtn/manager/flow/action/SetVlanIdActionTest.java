@@ -14,6 +14,7 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.SetVlanId;
 
@@ -21,6 +22,11 @@ import org.opendaylight.controller.sal.action.SetVlanId;
  * JUnit test for {@link SetVlanIdAction}.
  */
 public class SetVlanIdActionTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link SetVlanIdAction} class.
+     */
+    private static final String  XML_ROOT = "setvlanid";
+
     /**
      * Test case for getter methods.
      */
@@ -90,8 +96,12 @@ public class SetVlanIdActionTest extends TestBase {
         short[] vlans = {Short.MIN_VALUE, 0, 1, 100, 4095, Short.MAX_VALUE};
         for (short vlan: vlans) {
             SetVlanIdAction act = new SetVlanIdAction(vlan);
-            jaxbTest(act, SetVlanIdAction.class, "setvlanid");
+            jaxbTest(act, SetVlanIdAction.class, XML_ROOT);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(SetVlanIdAction.class,
+                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
     }
 
     /**

@@ -23,6 +23,11 @@ import org.opendaylight.vtn.manager.VNodeState;
  */
 public class VTerminalListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VTerminalList} class.
+     */
+    private static final String  XML_ROOT = "vterminals";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -118,14 +123,13 @@ public class VTerminalListTest extends TestBase {
     public void testJAXB() {
         // null list.
         VTerminalList vtList = new VTerminalList(null);
-        String rootName = "vterminals";
-        jaxbTest(vtList, VTerminalList.class, rootName);
+        jaxbTest(vtList, VTerminalList.class, XML_ROOT);
         jsonTest(vtList, VTerminalList.class);
 
         // Empty list.
         List<VTerminal> list = new ArrayList<VTerminal>();
         vtList = new VTerminalList(list);
-        jaxbTest(vtList, VTerminalList.class, rootName);
+        jaxbTest(vtList, VTerminalList.class, XML_ROOT);
         jsonTest(vtList, VTerminalList.class);
 
         VNodeState[] states = VNodeState.values();
@@ -141,7 +145,7 @@ public class VTerminalListTest extends TestBase {
                         List<VTerminal> one = new ArrayList<VTerminal>();
                         one.add(vterm);
                         vtList = new VTerminalList(one);
-                        jaxbTest(vtList, VTerminalList.class, rootName);
+                        jaxbTest(vtList, VTerminalList.class, XML_ROOT);
                         jsonTest(vtList, VTerminalList.class);
 
                         list.add(vterm);
@@ -151,7 +155,14 @@ public class VTerminalListTest extends TestBase {
         }
 
         vtList = new VTerminalList(list);
-        jaxbTest(vtList, VTerminalList.class, rootName);
+        jaxbTest(vtList, VTerminalList.class, XML_ROOT);
         jsonTest(vtList, VTerminalList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VTerminalList.class,
+                      new XmlAttributeType("vterminal", "faults", int.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("vterminal", "state", int.class).
+                      add(XML_ROOT));
     }
 }

@@ -27,6 +27,11 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
  */
 public class MacHostTest extends TestBase {
     /**
+     * Root XML element name associated with {@link MacHost} class.
+     */
+    private static final String  XML_ROOT = "machost";
+
+    /**
      * Test case for {@link MacHost#MacHost(DataLinkHost)} and getter methods.
      */
     @Test
@@ -91,9 +96,13 @@ public class MacHostTest extends TestBase {
             for (short vlan : vlans) {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);
                 MacHost host = new MacHost(dlhost);
-                jaxbTest(host, MacHost.class, "machost");
+                jaxbTest(host, MacHost.class, XML_ROOT);
                 jsonTest(host, MacHost.class);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(MacHost.class,
+                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
     }
 }

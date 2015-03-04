@@ -181,7 +181,6 @@ public class VInterfaceTest extends TestBase {
             }
         }
 
-
         // Ensure that "state" attribute is decoded as VNodeState.
         String name = "name";
         String desc = "description";
@@ -211,6 +210,11 @@ public class VInterfaceTest extends TestBase {
             jaxbStateTest(name, desc, enabled, 1, new Integer(st),
                           VNodeState.UP, VNodeState.UNKNOWN);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VInterface.class,
+                      new XmlAttributeType(XML_ROOT, "state", int.class),
+                      new XmlAttributeType(XML_ROOT, "entityState", int.class));
     }
 
     /**

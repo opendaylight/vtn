@@ -116,6 +116,11 @@ public class VBridgeConfigTest extends TestBase {
                 jaxbTest(bconf, VBridgeConfig.class, "vbridgeconf");
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VBridgeConfig.class,
+                      new XmlAttributeType(XML_ROOT, "ageInterval",
+                                           Integer.class));
     }
 
     /**

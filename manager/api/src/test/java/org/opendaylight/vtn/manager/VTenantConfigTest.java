@@ -144,6 +144,13 @@ public class VTenantConfigTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VTenantConfig.class,
+                      new XmlAttributeType(XML_ROOT, "idleTimeout",
+                                           Integer.class),
+                      new XmlAttributeType(XML_ROOT, "hardTimeout",
+                                           Integer.class));
     }
 
     /**

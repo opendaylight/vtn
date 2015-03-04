@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Set;
 
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
+import javax.xml.bind.UnmarshalException;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -46,6 +48,12 @@ import org.junit.Assert;
  * Abstract base class for JUnit tests.
  */
 public abstract class TestBase extends Assert {
+    /**
+     * XML declaration.
+     */
+    public static final String  XML_DECLARATION =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>";
+
     /**
      * Throw an error which indicates an unexpected throwable is caught.
      *
@@ -849,6 +857,77 @@ public abstract class TestBase extends Assert {
         } catch (Exception e) {
             unexpected(e);
             return null;
+        }
+    }
+
+    /**
+     * Unmarshal the given XML using the given unmarshaller.
+     *
+     * @param um   An {@link Unmarshaller} instance.
+     * @param xml  A XML text.
+     * @param cls  A class which indicates the type of object.
+     * @param <T>  The type of the object to be deserialized.
+     * @return  The deserialized object.
+     * @throws JAXBException  Failed to unmarshal.
+     */
+    protected static <T> T unmarshal(Unmarshaller um, String xml,
+                                     Class<T> cls) throws JAXBException {
+        ByteArrayInputStream in = new ByteArrayInputStream(xml.getBytes());
+        Object o = um.unmarshal(in);
+        assertTrue(cls.isInstance(o));
+        return cls.cast(o);
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
+     * @param type    A class which indicates the type of object.
+     * @param dtypes  An array of {@link XmlDataType} instances that creates
+     *                invalid XML text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Class<T> type,
+                                            XmlDataType ... dtypes) {
+        jaxbErrorTest(createUnmarshaller(type), type, dtypes);
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
+     * @param um      An {@link Unmarshaller} instance.
+     * @param type    A class which indicates the type of object.
+     * @param dtypes  An array of {@link XmlDataType} instances that creates
+     *                invalid XML text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Unmarshaller um, Class<T> type,
+                                            XmlDataType ... dtypes) {
+        for (XmlDataType dtype: dtypes) {
+            for (XmlNode xn: dtype.createInvalidNodes()) {
+                try {
+                    unmarshal(um, xn.toString(), type);
+                    fail("Broken XML has been unmarshalled: " + xn);
+                } catch (UnmarshalException e) {
+                    Throwable rootCause = null;
+                    Throwable cause = e.getCause();
+                    if (cause != null) {
+                        while (true) {
+                            Throwable c = cause.getCause();
+                            if (c == null) {
+                                rootCause = cause;
+                                break;
+                            }
+                            cause = c;
+                        }
+                    }
+                    if (!(rootCause instanceof IllegalArgumentException)) {
+                        fail("Unexpected exception: " + e + ", cause=" +
+                             rootCause + ", xml=" + xn);
+                    }
+                } catch (Exception e) {
+                    unexpected(e);
+                }
+            }
         }
     }
 

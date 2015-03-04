@@ -23,6 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.codehaus.jettison.json.JSONObject;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
+import org.opendaylight.vtn.manager.XmlDataType;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -297,6 +299,18 @@ public class Inet4MatchTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        XmlDataType[] attrs = {
+            new XmlAttributeType(XML_ROOT, "srcsuffix", Short.class),
+            new XmlAttributeType(XML_ROOT, "dstsuffix", Short.class),
+            new XmlAttributeType(XML_ROOT, "protocol", Short.class),
+            new XmlAttributeType(XML_ROOT, "dscp", Byte.class),
+        };
+
+        jaxbErrorTest(um, Inet4Match.class, attrs);
+        jaxbErrorTest(createUnmarshaller(InetMatch.class), Inet4Match.class,
+                      attrs);
     }
 
     /**

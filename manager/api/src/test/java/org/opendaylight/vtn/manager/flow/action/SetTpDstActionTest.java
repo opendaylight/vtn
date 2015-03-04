@@ -14,6 +14,7 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
 
@@ -21,6 +22,11 @@ import org.opendaylight.controller.sal.action.SetTpDst;
  * JUnit test for {@link SetTpDstAction}.
  */
 public class SetTpDstActionTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link SetTpDstAction} class.
+     */
+    private static final String  XML_ROOT = "settpdst";
+
     /**
      * Test case for getter methods.
      */
@@ -90,8 +96,12 @@ public class SetTpDstActionTest extends TestBase {
         int[] ports = {Integer.MIN_VALUE, 0, 1, 100, 65535, Integer.MAX_VALUE};
         for (int port: ports) {
             SetTpDstAction act = new SetTpDstAction(port);
-            jaxbTest(act, SetTpDstAction.class, "settpdst");
+            jaxbTest(act, SetTpDstAction.class, XML_ROOT);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(SetTpSrcAction.class,
+                      new XmlAttributeType(XML_ROOT, "port", int.class));
     }
 
     /**

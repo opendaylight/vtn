@@ -41,6 +41,11 @@ import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
  */
 public class FlowFilterListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link FlowFilterList} class.
+     */
+    private static final String  XML_ROOT = "flowfilters";
+
+    /**
      * A list of {@link FilterType} instances for test.
      */
     private List<FilterType>  filterTypes;
@@ -160,14 +165,13 @@ public class FlowFilterListTest extends TestBase {
     public void testJAXB() {
         // Null list.
         FlowFilterList fl = new FlowFilterList(null);
-        String rootName = "flowfilters";
-        jaxbTest(fl, FlowFilterList.class, rootName);
+        jaxbTest(fl, FlowFilterList.class, XML_ROOT);
         jsonTest(fl, FlowFilterList.class);
 
         // Empty list.
         List<FlowFilter> filters = new ArrayList<FlowFilter>();
         fl = new FlowFilterList(filters);
-        jaxbTest(fl, FlowFilterList.class, rootName);
+        jaxbTest(fl, FlowFilterList.class, XML_ROOT);
         jsonTest(fl, FlowFilterList.class);
 
         int[] indices = {0, 1, 65535};
@@ -184,12 +188,32 @@ public class FlowFilterListTest extends TestBase {
                         List<FlowFilter> list =
                             new ArrayList<FlowFilter>(filters);
                         fl = new FlowFilterList(list);
-                        jaxbTest(fl, FlowFilterList.class, rootName);
+                        jaxbTest(fl, FlowFilterList.class, XML_ROOT);
                         jsonTest(fl, FlowFilterList.class);
                     }
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(FlowFilterList.class,
+                      // FlowFilter
+                      new XmlAttributeType("flowfilter", "index",
+                                           Integer.class).add(XML_ROOT),
+
+                      // FlowAction
+                      new XmlAttributeType("vlanpcp", "priority", byte.class).
+                      add(XML_ROOT, "flowfilter", "actions"),
+                      new XmlAttributeType("dscp", "dscp", byte.class).
+                      add(XML_ROOT, "flowfilter", "actions"),
+                      new XmlAttributeType("tpsrc", "port", int.class).
+                      add(XML_ROOT, "flowfilter", "actions"),
+                      new XmlAttributeType("tpdst", "port", int.class).
+                      add(XML_ROOT, "flowfilter", "actions"),
+                      new XmlAttributeType("icmptype", "type", short.class).
+                      add(XML_ROOT, "flowfilter", "actions"),
+                      new XmlAttributeType("icmpcode", "code", short.class).
+                      add(XML_ROOT, "flowfilter", "actions"));
     }
 
     /**

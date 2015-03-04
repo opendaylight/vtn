@@ -171,6 +171,13 @@ public class PathPolicyTest extends TestBase {
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(PathPolicy.class,
+                      new XmlAttributeType(XML_ROOT, "id", Integer.class),
+                      new XmlAttributeType(XML_ROOT, "default", long.class),
+                      new XmlAttributeType("cost", "cost", Long.class).
+                      add(XML_ROOT, "costs"));
     }
 
     /**

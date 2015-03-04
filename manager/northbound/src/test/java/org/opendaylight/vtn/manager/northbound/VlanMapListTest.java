@@ -22,6 +22,11 @@ import org.opendaylight.vtn.manager.VlanMap;
  */
 public class VlanMapListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VlanMapList} class.
+     */
+    private static final String  XML_ROOT = "vlanmaps";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -107,14 +112,13 @@ public class VlanMapListTest extends TestBase {
     public void testJAXB() {
         // null list.
         VlanMapList vmList = new VlanMapList(null);
-        String rootName = "vlanmaps";
-        jaxbTest(vmList, VlanMapList.class, rootName);
+        jaxbTest(vmList, VlanMapList.class, XML_ROOT);
         jsonTest(vmList, VlanMapList.class);
 
         // Empty list.
         List<VlanMap> list = new ArrayList<VlanMap>();
         vmList = new VlanMapList(list);
-        jaxbTest(vmList, VlanMapList.class, rootName);
+        jaxbTest(vmList, VlanMapList.class, XML_ROOT);
         jsonTest(vmList, VlanMapList.class);
 
         short[] vlans = {-5, 0, 3, 4095};
@@ -127,7 +131,7 @@ public class VlanMapListTest extends TestBase {
                     List<VlanMap> one = new ArrayList<VlanMap>();
                     one.add(vlmap);
                     vmList = new VlanMapList(one);
-                    jaxbTest(vmList, VlanMapList.class, rootName);
+                    jaxbTest(vmList, VlanMapList.class, XML_ROOT);
                     jsonTest(vmList, VlanMapList.class);
 
                     list.add(vlmap);
@@ -136,7 +140,12 @@ public class VlanMapListTest extends TestBase {
         }
 
         vmList = new VlanMapList(list);
-        jaxbTest(vmList, VlanMapList.class, rootName);
+        jaxbTest(vmList, VlanMapList.class, XML_ROOT);
         jsonTest(vmList, VlanMapList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VlanMapList.class,
+                      new XmlAttributeType("vlanmap", "vlan", short.class).
+                      add(XML_ROOT));
     }
 }

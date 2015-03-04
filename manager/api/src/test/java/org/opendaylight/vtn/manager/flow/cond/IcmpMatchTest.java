@@ -14,11 +14,17 @@ import java.util.HashSet;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 /**
  * JUnit test for {@link IcmpMatch}.
  */
 public class IcmpMatchTest extends TestBase {
+    /**
+     * Root XML element name associated with {@link IcmpMatch} class.
+     */
+    private static final String  XML_ROOT = "icmpmatch";
+
     /**
      * Test case for getter methods.
      */
@@ -136,9 +142,14 @@ public class IcmpMatchTest extends TestBase {
         for (Short type: types) {
             for (Short code: codes) {
                 IcmpMatch icm = new IcmpMatch(type, code);
-                jaxbTest(icm, IcmpMatch.class, "icmpmatch");
+                jaxbTest(icm, IcmpMatch.class, XML_ROOT);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(IcmpMatch.class,
+                      new XmlAttributeType(XML_ROOT, "type", Short.class),
+                      new XmlAttributeType(XML_ROOT, "code", Short.class));
     }
 
     /**

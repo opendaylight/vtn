@@ -27,6 +27,11 @@ import org.opendaylight.vtn.manager.SwitchPort;
  */
 public class MacEntryTest extends TestBase {
     /**
+     * Root XML element name associated with {@link MacEntry} class.
+     */
+    private static final String  XML_ROOT = "macentry";
+
+    /**
      * Test case for {@link MacEntry#MacEntry(MacAddressEntry)} and getter
      * method
      */
@@ -188,11 +193,15 @@ public class MacEntryTest extends TestBase {
                         MacAddressEntry mae =
                             new MacAddressEntry(ea, vlan, nc, ipset);
                         MacEntry me = new MacEntry(mae);
-                        jaxbTest(me, MacEntry.class, "macentry");
+                        jaxbTest(me, MacEntry.class, XML_ROOT);
                         jsonTest(me, MacEntry.class);
                     }
                 }
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(MacEntry.class,
+                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
     }
 }

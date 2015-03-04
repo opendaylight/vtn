@@ -23,6 +23,11 @@ import org.opendaylight.vtn.manager.VNodeState;
  */
 public class VInterfaceListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VInterfaceList} class.
+     */
+    private static final String  XML_ROOT = "interfaces";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -135,14 +140,13 @@ public class VInterfaceListTest extends TestBase {
     public void testJAXB() {
         // null list.
         VInterfaceList ifList = new VInterfaceList(null);
-        String rootName = "interfaces";
-        jaxbTest(ifList, VInterfaceList.class, rootName);
+        jaxbTest(ifList, VInterfaceList.class, XML_ROOT);
         jsonTest(ifList, VInterfaceList.class);
 
         // Empty list.
         List<VInterface> list = new ArrayList<VInterface>();
         ifList = new VInterfaceList(list);
-        jaxbTest(ifList, VInterfaceList.class, rootName);
+        jaxbTest(ifList, VInterfaceList.class, XML_ROOT);
         jsonTest(ifList, VInterfaceList.class);
 
         VNodeState[] states = VNodeState.values();
@@ -157,7 +161,7 @@ public class VInterfaceListTest extends TestBase {
                         List<VInterface> one = new ArrayList<VInterface>();
                         one.add(viface);
                         ifList = new VInterfaceList(one);
-                        jaxbTest(ifList, VInterfaceList.class, rootName);
+                        jaxbTest(ifList, VInterfaceList.class, XML_ROOT);
                         jsonTest(ifList, VInterfaceList.class);
 
                         list.add(viface);
@@ -167,8 +171,15 @@ public class VInterfaceListTest extends TestBase {
         }
 
         ifList = new VInterfaceList(list);
-        jaxbTest(ifList, VInterfaceList.class, rootName);
+        jaxbTest(ifList, VInterfaceList.class, XML_ROOT);
         jsonTest(ifList, VInterfaceList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VInterfaceList.class,
+                      new XmlAttributeType("interface", "state", int.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("interface", "entityState",
+                                           int.class).add(XML_ROOT));
     }
 
     /**

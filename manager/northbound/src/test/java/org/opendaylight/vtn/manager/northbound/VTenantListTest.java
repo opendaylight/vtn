@@ -22,6 +22,11 @@ import org.opendaylight.vtn.manager.VTenantConfig;
  */
 public class VTenantListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link VTenantList} class.
+     */
+    private static final String  XML_ROOT = "vtns";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -102,14 +107,13 @@ public class VTenantListTest extends TestBase {
     public void testJAXB() {
         // null list.
         VTenantList vtList = new VTenantList(null);
-        String rootName = "vtns";
-        jaxbTest(vtList, VTenantList.class, rootName);
+        jaxbTest(vtList, VTenantList.class, XML_ROOT);
         jsonTest(vtList, VTenantList.class);
 
         // Empty list.
         List<VTenant> list = new ArrayList<VTenant>();
         vtList = new VTenantList(list);
-        jaxbTest(vtList, VTenantList.class, rootName);
+        jaxbTest(vtList, VTenantList.class, XML_ROOT);
         jsonTest(vtList, VTenantList.class);
 
         for (String name: createStrings("Tenant Name")) {
@@ -121,7 +125,7 @@ public class VTenantListTest extends TestBase {
                 List<VTenant> one = new ArrayList<VTenant>();
                 one.add(vtenant);
                 vtList = new VTenantList(one);
-                jaxbTest(vtList, VTenantList.class, rootName);
+                jaxbTest(vtList, VTenantList.class, XML_ROOT);
                 jsonTest(vtList, VTenantList.class);
 
                 list.add(vtenant);
@@ -129,7 +133,14 @@ public class VTenantListTest extends TestBase {
         }
 
         vtList = new VTenantList(list);
-        jaxbTest(vtList, VTenantList.class, rootName);
+        jaxbTest(vtList, VTenantList.class, XML_ROOT);
         jsonTest(vtList, VTenantList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(VTenantList.class,
+                      new XmlAttributeType("vtn", "idleTimeout",
+                                           Integer.class).add(XML_ROOT),
+                      new XmlAttributeType("vtn", "hardTimeout",
+                                           Integer.class).add(XML_ROOT));
     }
 }

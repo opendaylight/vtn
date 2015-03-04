@@ -29,6 +29,11 @@ import org.opendaylight.controller.sal.utils.NodeCreator;
  */
 public class DataFlowListTest extends TestBase {
     /**
+     * Root XML element name associated with {@link DataFlowList} class.
+     */
+    private static final String  XML_ROOT = "dataflows";
+
+    /**
      * Test case for getter methods.
      */
     @Test
@@ -147,5 +152,76 @@ public class DataFlowListTest extends TestBase {
         dflowList = new DataFlowList(list);
         jaxbTest(dflowList, DataFlowList.class, rootName);
         jsonTest(dflowList, DataFlowList.class);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(DataFlowList.class,
+                      // DataFlow
+                      new XmlAttributeType("dataflow", "id", long.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dataflow", "creationTime",
+                                           long.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dataflow", "idleTimeout",
+                                           short.class).
+                      add(XML_ROOT),
+                      new XmlAttributeType("dataflow", "hardTimeout",
+                                           short.class).
+                      add(XML_ROOT),
+
+                      // FlowMatch
+                      new XmlAttributeType("match", "index", Integer.class).
+                      add(XML_ROOT, "dataflow"),
+                      new XmlAttributeType("ethernet", "type", Integer.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("ethernet", "vlan", Short.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("ethernet", "vlanpri", Byte.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("inet4", "srcsuffix", Short.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("inet4", "dstsuffix", Short.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("inet4", "protocol", Short.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("inet4", "dscp", Byte.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("src", "from", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "tcp"),
+                      new XmlAttributeType("src", "to", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "tcp"),
+                      new XmlAttributeType("dst", "from", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "tcp"),
+                      new XmlAttributeType("dst", "to", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "tcp"),
+                      new XmlAttributeType("src", "from", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "udp"),
+                      new XmlAttributeType("src", "to", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "udp"),
+                      new XmlAttributeType("dst", "from", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "udp"),
+                      new XmlAttributeType("dst", "to", Integer.class).
+                      add(XML_ROOT, "dataflow", "match", "udp"),
+                      new XmlAttributeType("icmp", "type", Short.class).
+                      add(XML_ROOT, "dataflow", "match"),
+                      new XmlAttributeType("icmp", "code", Short.class).
+                      add(XML_ROOT, "dataflow", "match"),
+
+                      // FlowAction
+                      new XmlAttributeType("pushvlan", "type", int.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("vlanid", "vlan", short.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("vlanpcp", "priority", byte.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("dscp", "dscp", byte.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("tpsrc", "port", int.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("tpdst", "port", int.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("icmptype", "type", short.class).
+                      add(XML_ROOT, "dataflow", "actions"),
+                      new XmlAttributeType("icmpcode", "code", short.class).
+                      add(XML_ROOT, "dataflow", "actions"));
     }
 }

@@ -26,6 +26,11 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
  */
 public class MacHostSetTest extends TestBase {
     /**
+     * Root XML element name associated with {@link MacHostSet} class.
+     */
+    private static final String  XML_ROOT = "machosts";
+
+    /**
      * test case for {@link MacHostSet#MacHostSet(java.util.Collection)} and
      * {@link MacHostSet#getHosts()}
      */
@@ -94,13 +99,12 @@ public class MacHostSetTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        String rootName = "machosts";
         MacHostSet mhset = new MacHostSet(null);
-        jaxbTest(mhset, MacHostSet.class, rootName);
+        jaxbTest(mhset, MacHostSet.class, XML_ROOT);
         jsonTest(mhset, MacHostSet.class);
 
         mhset = new MacHostSet(new HashSet<DataLinkHost>());
-        jaxbTest(mhset, MacHostSet.class, rootName);
+        jaxbTest(mhset, MacHostSet.class, XML_ROOT);
         jsonTest(mhset, MacHostSet.class);
 
         List<DataLinkHost> list = new ArrayList<DataLinkHost>();
@@ -110,9 +114,14 @@ public class MacHostSetTest extends TestBase {
                 DataLinkHost dlhost = new EthernetHost(eaddr, vlan);
                 list.add(dlhost);
                 mhset = new MacHostSet(list);
-                jaxbTest(mhset, MacHostSet.class, rootName);
+                jaxbTest(mhset, MacHostSet.class, XML_ROOT);
                 jsonTest(mhset, MacHostSet.class);
             }
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(MacHostSet.class,
+                      new XmlAttributeType("machost", "vlan", short.class).
+                      add(XML_ROOT));
     }
 }

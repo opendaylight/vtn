@@ -184,6 +184,10 @@ public class PathCostTest extends TestBase {
 
         PathCost pc = createUndefiedCost(null);
         jaxbTest(pc, PathCost.class, XML_ROOT);
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(PathCost.class,
+                      new XmlAttributeType(XML_ROOT, "cost", Long.class));
     }
 
     /**

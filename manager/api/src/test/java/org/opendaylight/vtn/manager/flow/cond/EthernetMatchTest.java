@@ -23,6 +23,7 @@ import org.codehaus.jettison.json.JSONObject;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
@@ -274,6 +275,12 @@ public class EthernetMatchTest extends TestBase {
         } catch (Exception e) {
             unexpected(e);
         }
+
+        // Ensure that broken values in XML can be detected.
+        jaxbErrorTest(EthernetMatch.class,
+                      new XmlAttributeType(XML_ROOT, "type", Integer.class),
+                      new XmlAttributeType(XML_ROOT, "vlan", Short.class),
+                      new XmlAttributeType(XML_ROOT, "vlanpri", Byte.class));
     }
 
     /**
