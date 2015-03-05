@@ -63,6 +63,7 @@
     <feature version='${feature.neutron.version}'>odl-neutron-spi</feature>
     <feature version='${feature.neutron.version}'>odl-neutron-transcriber</feature>
     <feature version='${feature.ovsdb.version}'>odl-ovsdb-all</feature>
+    <feature version='${feature.ovsdb.version}'>odl-ovsdb-compatibility-layer</feature>
     <feature version="${project.version}">odl-vtn-manager-java-api</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
   </feature>
