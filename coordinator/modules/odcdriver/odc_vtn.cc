@@ -14,9 +14,7 @@ namespace odcdriver {
 
 // Constructor
 OdcVtnCommand::OdcVtnCommand(unc::restjson::ConfFileValues_t conf_values)
-: idle_timeout_(DEFAULT_IDLE_TIME_OUT),
-  hard_timeout_(DEFAULT_HARD_TIME_OUT),
-  conf_file_values_(conf_values) {
+: conf_file_values_(conf_values) {
   ODC_FUNC_TRACE;
 }
 
@@ -76,7 +74,7 @@ UncRespCode OdcVtnCommand::create_cmd(key_vtn_t& key_vtn,
 // Creates Request Body
 json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
   ODC_FUNC_TRACE;
-  //unc::restjson::JsonBuildParse json_obj;
+  // unc::restjson::JsonBuildParse json_obj;
   const char* description = reinterpret_cast<const char*>(val_vtn.description);
   json_object *jobj = unc::restjson::JsonBuildParse::create_json_obj();
   int ret_val = 1;
@@ -90,27 +88,6 @@ json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
         return NULL;
       }
     }
-  }
-  std::ostringstream hard_timeout_str_format;
-  hard_timeout_str_format << hard_timeout_;
-  std::ostringstream idle_timeout_str_format;
-  idle_timeout_str_format << idle_timeout_;
-  std::string idle_time_out = idle_timeout_str_format.str();
-  ret_val = unc::restjson::JsonBuildParse::build("idleTimeout",
-                                                 idle_timeout_str_format.str(),
-                                                 jobj);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
-    json_object_put(jobj);
-    return NULL;
-  }
-  ret_val = unc::restjson::JsonBuildParse::build("hardTimeout",
-                                                 hard_timeout_str_format.str(),
-                                                 jobj);
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error("Error occured in request body build %s", PFC_FUNCNAME);
-    json_object_put(jobj);
-    return NULL;
   }
   return jobj;
 }
