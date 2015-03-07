@@ -140,8 +140,6 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
       std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
  private:
-  uint32_t idle_timeout_;
-  uint32_t hard_timeout_;
   unc::restjson::ConfFileValues_t conf_file_values_;
 };
 }  // namespace odcdriver
