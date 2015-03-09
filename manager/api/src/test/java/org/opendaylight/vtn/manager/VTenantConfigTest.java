@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -24,6 +26,25 @@ public class VTenantConfigTest extends TestBase {
      * Root XML element name associated with {@link VTenantConfig} class.
      */
     private static final String  XML_ROOT = "vtnconf";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link VTenantConfig} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        Collections.addAll(dlist,
+                           new XmlAttributeType(name, "idleTimeout",
+                                                Integer.class).add(parent),
+                           new XmlAttributeType(name, "hardTimeout",
+                                                Integer.class).add(parent));
+        return dlist;
+    }
 
     /**
      * Test case for getter methods.
@@ -146,11 +167,7 @@ public class VTenantConfigTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(VTenantConfig.class,
-                      new XmlAttributeType(XML_ROOT, "idleTimeout",
-                                           Integer.class),
-                      new XmlAttributeType(XML_ROOT, "hardTimeout",
-                                           Integer.class));
+        jaxbErrorTest(VTenantConfig.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**

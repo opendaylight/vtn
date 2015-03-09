@@ -9,11 +9,14 @@
 
 package org.opendaylight.vtn.manager.flow.action;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
+import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
 
 import org.opendaylight.controller.sal.action.SetTpSrc;
@@ -26,6 +29,21 @@ public class SetTpSrcActionTest extends TestBase {
      * Root XML element name associated with {@link SetTpSrcAction} class.
      */
     private static final String  XML_ROOT = "settpsrc";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link SetTpSrcAction} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlAttributeType(name, "port", int.class).add(parent));
+        return dlist;
+    }
 
     /**
      * Test case for getter methods.
@@ -100,8 +118,7 @@ public class SetTpSrcActionTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(SetTpSrcAction.class,
-                      new XmlAttributeType(XML_ROOT, "port", int.class));
+        jaxbErrorTest(SetTpSrcAction.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**

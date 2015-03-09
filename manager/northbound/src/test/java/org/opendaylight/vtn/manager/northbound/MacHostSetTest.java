@@ -121,7 +121,6 @@ public class MacHostSetTest extends TestBase {
 
         // Ensure that broken values in XML can be detected.
         jaxbErrorTest(MacHostSet.class,
-                      new XmlAttributeType("machost", "vlan", short.class).
-                      add(XML_ROOT));
+                      MacHostTest.getXmlDataTypes("machost", XML_ROOT));
     }
 }

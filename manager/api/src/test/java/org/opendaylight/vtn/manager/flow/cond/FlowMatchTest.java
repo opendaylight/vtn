@@ -1,4 +1,4 @@
-/*/*
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -21,6 +21,7 @@ import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlAttributeType;
+import org.opendaylight.vtn.manager.XmlDataType;
 
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchType;
@@ -35,6 +36,28 @@ public class FlowMatchTest extends TestBase {
      * Root XML element name associated with {@link FlowMatch} class.
      */
     private static final String  XML_ROOT = "flowmatch";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link FlowMatch} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        String[] p = XmlDataType.addPath(name, parent);
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlAttributeType(name, "index", Integer.class).
+                  add(parent));
+        dlist.addAll(EthernetMatchTest.getXmlDataTypes("ethernet", p));
+        dlist.addAll(Inet4MatchTest.getXmlDataTypes("inet4", p));
+        dlist.addAll(TcpMatchTest.getXmlDataTypes("tcp", p));
+        dlist.addAll(UdpMatchTest.getXmlDataTypes("udp", p));
+        dlist.addAll(IcmpMatchTest.getXmlDataTypes("icmp", p));
+        return dlist;
+    }
 
     /**
      * Test case for getter methods and {@link FlowMatch#assignIndex(int)}.
@@ -584,42 +607,7 @@ public class FlowMatchTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(FlowMatch.class,
-                      new XmlAttributeType(XML_ROOT, "index", Integer.class),
-                      new XmlAttributeType("ethernet", "type", Integer.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("ethernet", "vlan", Short.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("ethernet", "vlanpri", Byte.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("inet4", "srcsuffix", Short.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("inet4", "dstsuffix", Short.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("inet4", "protocol", Short.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("inet4", "dscp", Byte.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("src", "from", Integer.class).
-                      add(XML_ROOT, "tcp"),
-                      new XmlAttributeType("src", "to", Integer.class).
-                      add(XML_ROOT, "tcp"),
-                      new XmlAttributeType("dst", "from", Integer.class).
-                      add(XML_ROOT, "tcp"),
-                      new XmlAttributeType("dst", "to", Integer.class).
-                      add(XML_ROOT, "tcp"),
-                      new XmlAttributeType("src", "from", Integer.class).
-                      add(XML_ROOT, "udp"),
-                      new XmlAttributeType("src", "to", Integer.class).
-                      add(XML_ROOT, "udp"),
-                      new XmlAttributeType("dst", "from", Integer.class).
-                      add(XML_ROOT, "udp"),
-                      new XmlAttributeType("dst", "to", Integer.class).
-                      add(XML_ROOT, "udp"),
-                      new XmlAttributeType("icmp", "type", Short.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("icmp", "code", Short.class).
-                      add(XML_ROOT));
+        jaxbErrorTest(FlowMatch.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**

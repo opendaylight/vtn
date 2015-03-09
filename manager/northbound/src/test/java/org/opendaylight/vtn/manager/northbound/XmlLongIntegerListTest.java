@@ -95,6 +95,6 @@ public class XmlLongIntegerListTest extends TestBase {
 
         // Ensure that broken values in XML can be detected.
         jaxbErrorTest(XmlLongIntegerList.class,
-                      new XmlValueType("integer", Long.class).add(XML_ROOT));
+                      XmlLongIntegerTest.getXmlDataTypes("integer", XML_ROOT));
     }
 }

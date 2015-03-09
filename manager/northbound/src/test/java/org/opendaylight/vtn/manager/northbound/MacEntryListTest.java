@@ -175,7 +175,6 @@ public class MacEntryListTest extends TestBase {
 
         // Ensure that broken values in XML can be detected.
         jaxbErrorTest(MacEntryList.class,
-                      new XmlAttributeType("macentry", "vlan", short.class).
-                      add(XML_ROOT));
+                      MacEntryTest.getXmlDataTypes("macentry", XML_ROOT));
     }
 }

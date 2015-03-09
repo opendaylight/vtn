@@ -1,4 +1,4 @@
-/*/*
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -9,8 +9,10 @@
 
 package org.opendaylight.vtn.manager.flow.cond;
 
-import java.net.InetAddress;
 import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -37,6 +39,26 @@ public class Inet4MatchTest extends TestBase {
      * Root XML element name associated with {@link Inet4Match} class.
      */
     private static final String  XML_ROOT = "inet4match";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link Inet4Match} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        Collections.addAll(
+            dlist,
+            new XmlAttributeType(name, "srcsuffix", Short.class).add(parent),
+            new XmlAttributeType(name, "dstsuffix", Short.class).add(parent),
+            new XmlAttributeType(name, "protocol", Short.class).add(parent),
+            new XmlAttributeType(name, "dscp", Byte.class).add(parent));
+        return dlist;
+    }
 
     /**
      * Test case for getter methods.
@@ -301,16 +323,10 @@ public class Inet4MatchTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        XmlDataType[] attrs = {
-            new XmlAttributeType(XML_ROOT, "srcsuffix", Short.class),
-            new XmlAttributeType(XML_ROOT, "dstsuffix", Short.class),
-            new XmlAttributeType(XML_ROOT, "protocol", Short.class),
-            new XmlAttributeType(XML_ROOT, "dscp", Byte.class),
-        };
-
-        jaxbErrorTest(um, Inet4Match.class, attrs);
+        List<XmlDataType> dlist = getXmlDataTypes(XML_ROOT);
+        jaxbErrorTest(um, Inet4Match.class, dlist);
         jaxbErrorTest(createUnmarshaller(InetMatch.class), Inet4Match.class,
-                      attrs);
+                      dlist);
     }
 
     /**

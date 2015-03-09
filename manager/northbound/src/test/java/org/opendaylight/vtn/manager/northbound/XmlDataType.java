@@ -12,7 +12,10 @@ package org.opendaylight.vtn.manager.northbound;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -122,7 +125,7 @@ public abstract class XmlDataType {
     /**
      * Path to the paremt XML node.
      */
-    private final List<String>  parentPath = new ArrayList<>();
+    private final Deque<String>  parentPath = new LinkedList<>();
 
     /**
      * The name of the target node.
@@ -133,6 +136,20 @@ public abstract class XmlDataType {
      * A class which represents the type of data.
      */
     private final Class<?>  dataType;
+
+    /**
+     * Construct a node path by appending the given node name to the node path.
+     *
+     * @param name  The node name to be appended.
+     * @param path  The node path.
+     * @return  A new node path.
+     */
+    public static final String[] addPath(String name, String ... path) {
+        String[] newPath = new String[path.length + 1];
+        System.arraycopy(path, 0, newPath, 0, path.length);
+        newPath[path.length] = name;
+        return newPath;
+    }
 
     /**
      * Construct a new instance.
@@ -152,10 +169,20 @@ public abstract class XmlDataType {
      * @return  This instance.
      */
     public final XmlDataType add(String ... nodes) {
-        for (String node: nodes) {
-            parentPath.add(node);
-        }
+        Collections.addAll(parentPath, nodes);
+        return this;
+    }
 
+    /**
+     * Prepend the given node to the parent node path.
+     *
+     * @param nodes  An array of XML node names.
+     * @return  This instance.
+     */
+    public final XmlDataType prepend(String ... nodes) {
+        for (int i = nodes.length - 1; i >= 0; i--) {
+            parentPath.addFirst(nodes[i]);
+        }
         return this;
     }
 

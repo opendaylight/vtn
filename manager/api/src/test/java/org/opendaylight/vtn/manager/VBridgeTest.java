@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -208,11 +209,11 @@ public class VBridgeTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(VBridge.class,
-                      new XmlAttributeType(XML_ROOT, "faults", int.class),
-                      new XmlAttributeType(XML_ROOT, "state", int.class),
-                      new XmlAttributeType(XML_ROOT, "ageInterval",
-                                           Integer.class));
+        List<XmlDataType> dlist = VBridgeConfigTest.getXmlDataTypes(XML_ROOT);
+        Collections.addAll(dlist,
+                           new XmlAttributeType(XML_ROOT, "faults", int.class),
+                           new XmlAttributeType(XML_ROOT, "state", int.class));
+        jaxbErrorTest(VBridge.class, dlist);
     }
 
     /**

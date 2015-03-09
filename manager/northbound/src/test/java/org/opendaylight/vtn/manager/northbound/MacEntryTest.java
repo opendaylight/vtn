@@ -32,6 +32,22 @@ public class MacEntryTest extends TestBase {
     private static final String  XML_ROOT = "macentry";
 
     /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link MacEntry} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlAttributeType(name, "vlan", short.class).
+                  add(parent));
+        return dlist;
+    }
+
+    /**
      * Test case for {@link MacEntry#MacEntry(MacAddressEntry)} and getter
      * method
      */
@@ -201,7 +217,6 @@ public class MacEntryTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(MacEntry.class,
-                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
+        jaxbErrorTest(MacEntry.class, getXmlDataTypes(XML_ROOT));
     }
 }

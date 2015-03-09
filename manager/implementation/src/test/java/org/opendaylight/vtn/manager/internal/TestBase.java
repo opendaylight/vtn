@@ -1722,6 +1722,19 @@ public abstract class TestBase extends Assert {
     /**
      * Ensure that broken values in XML can be detected by validation event.
      *
+     * @param type    A class which indicates the type of object.
+     * @param dtypes  A list of {@link XmlDataType} instances that creates
+     *                invalid XML text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Class<T> type,
+                                            List<XmlDataType> dtypes) {
+        jaxbErrorTest(createUnmarshaller(type), type, dtypes);
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
      * @param um      An {@link Unmarshaller} instance.
      * @param type    A class which indicates the type of object.
      * @param dtypes  An array of {@link XmlDataType} instances that creates
@@ -1731,30 +1744,60 @@ public abstract class TestBase extends Assert {
     protected static <T> void jaxbErrorTest(Unmarshaller um, Class<T> type,
                                             XmlDataType ... dtypes) {
         for (XmlDataType dtype: dtypes) {
-            for (XmlNode xn: dtype.createInvalidNodes()) {
-                try {
-                    unmarshal(um, xn.toString(), type);
-                    fail("Broken XML has been unmarshalled: " + xn);
-                } catch (UnmarshalException e) {
-                    Throwable rootCause = null;
-                    Throwable cause = e.getCause();
-                    if (cause != null) {
-                        while (true) {
-                            Throwable c = cause.getCause();
-                            if (c == null) {
-                                rootCause = cause;
-                                break;
-                            }
-                            cause = c;
+            jaxbErrorTest(um, type, dtype);
+        }
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
+     * @param um      An {@link Unmarshaller} instance.
+     * @param type    A class which indicates the type of object.
+     * @param dtypes  A list of {@link XmlDataType} instances that creates
+     *                invalid XML text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Unmarshaller um, Class<T> type,
+                                            List<XmlDataType> dtypes) {
+        for (XmlDataType dtype: dtypes) {
+            jaxbErrorTest(um, type, dtype);
+        }
+    }
+
+    /**
+     * Ensure that broken values in XML can be detected by validation event.
+     *
+     * @param um     An {@link Unmarshaller} instance.
+     * @param type   A class which indicates the type of object.
+     * @param dtype  A {@link XmlDataType} instance that creates invalid XML
+     *               text.
+     * @param <T>  The type of the object to be deserialized.
+     */
+    protected static <T> void jaxbErrorTest(Unmarshaller um, Class<T> type,
+                                            XmlDataType dtype) {
+        for (XmlNode xn: dtype.createInvalidNodes()) {
+            try {
+                unmarshal(um, xn.toString(), type);
+                fail("Broken XML has been unmarshalled: " + xn);
+            } catch (UnmarshalException e) {
+                Throwable rootCause = null;
+                Throwable cause = e.getCause();
+                if (cause != null) {
+                    while (true) {
+                        Throwable c = cause.getCause();
+                        if (c == null) {
+                            rootCause = cause;
+                            break;
                         }
+                        cause = c;
                     }
-                    if (!(rootCause instanceof IllegalArgumentException)) {
-                        fail("Unexpected exception: " + e + ", cause=" +
-                             rootCause + ", xml=" + xn);
-                    }
-                } catch (Exception e) {
-                    unexpected(e);
                 }
+                if (!(rootCause instanceof IllegalArgumentException)) {
+                    fail("Unexpected exception: " + e + ", cause=" +
+                         rootCause + ", xml=" + xn);
+                }
+            } catch (Exception e) {
+                unexpected(e);
             }
         }
     }

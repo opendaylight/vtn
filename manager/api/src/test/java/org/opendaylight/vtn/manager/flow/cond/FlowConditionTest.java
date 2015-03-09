@@ -1,4 +1,4 @@
-/*/*
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -19,7 +19,7 @@ import org.junit.Test;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
-import org.opendaylight.vtn.manager.XmlAttributeType;
+import org.opendaylight.vtn.manager.XmlDataType;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.IPProtocols;
@@ -32,6 +32,21 @@ public class FlowConditionTest extends TestBase {
      * Root XML element name associated with {@link FlowCondition} class.
      */
     private static final String  XML_ROOT = "flowcondition";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link FlowCondition} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        String[] p = XmlDataType.addPath(
+            "matches", XmlDataType.addPath(name, parent));
+        return FlowMatchTest.getXmlDataTypes("match", p);
+    }
 
     /**
      * Test case for getter methods.
@@ -144,43 +159,7 @@ public class FlowConditionTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(FlowCondition.class,
-                      new XmlAttributeType("match", "index", Integer.class).
-                      add(XML_ROOT, "matches"),
-                      new XmlAttributeType("ethernet", "type", Integer.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("ethernet", "vlan", Short.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("ethernet", "vlanpri", Byte.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("inet4", "srcsuffix", Short.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("inet4", "dstsuffix", Short.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("inet4", "protocol", Short.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("inet4", "dscp", Byte.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("src", "from", Integer.class).
-                      add(XML_ROOT, "matches", "match", "tcp"),
-                      new XmlAttributeType("src", "to", Integer.class).
-                      add(XML_ROOT, "matches", "match", "tcp"),
-                      new XmlAttributeType("dst", "from", Integer.class).
-                      add(XML_ROOT, "matches", "match", "tcp"),
-                      new XmlAttributeType("dst", "to", Integer.class).
-                      add(XML_ROOT, "matches", "match", "tcp"),
-                      new XmlAttributeType("src", "from", Integer.class).
-                      add(XML_ROOT, "matches", "match", "udp"),
-                      new XmlAttributeType("src", "to", Integer.class).
-                      add(XML_ROOT, "matches", "match", "udp"),
-                      new XmlAttributeType("dst", "from", Integer.class).
-                      add(XML_ROOT, "matches", "match", "udp"),
-                      new XmlAttributeType("dst", "to", Integer.class).
-                      add(XML_ROOT, "matches", "match", "udp"),
-                      new XmlAttributeType("icmp", "type", Short.class).
-                      add(XML_ROOT, "matches", "match"),
-                      new XmlAttributeType("icmp", "code", Short.class).
-                      add(XML_ROOT, "matches", "match"));
+        jaxbErrorTest(FlowCondition.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**

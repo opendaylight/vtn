@@ -125,6 +125,6 @@ public class VlanMapTest extends TestBase {
 
         // Ensure that broken values in XML can be detected.
         jaxbErrorTest(VlanMap.class,
-                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
+                      VlanMapConfigTest.getXmlDataTypes(XML_ROOT));
     }
 }

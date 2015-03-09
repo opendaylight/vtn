@@ -1,4 +1,4 @@
-/*/*
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.flow.cond;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -24,6 +26,7 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlAttributeType;
+import org.opendaylight.vtn.manager.XmlDataType;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
@@ -37,6 +40,25 @@ public class EthernetMatchTest extends TestBase {
      * Root XML element name associated with {@link EthernetMatch} class.
      */
     private static final String  XML_ROOT = "ethermatch";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link EthernetMatch} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        Collections.addAll(
+            dlist,
+            new XmlAttributeType(name, "type", Integer.class).add(parent),
+            new XmlAttributeType(name, "vlan", Short.class).add(parent),
+            new XmlAttributeType(name, "vlanpri", Byte.class).add(parent));
+        return dlist;
+    }
 
     /**
      * Test case for getter methods.
@@ -277,10 +299,7 @@ public class EthernetMatchTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(EthernetMatch.class,
-                      new XmlAttributeType(XML_ROOT, "type", Integer.class),
-                      new XmlAttributeType(XML_ROOT, "vlan", Short.class),
-                      new XmlAttributeType(XML_ROOT, "vlanpri", Byte.class));
+        jaxbErrorTest(EthernetMatch.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**

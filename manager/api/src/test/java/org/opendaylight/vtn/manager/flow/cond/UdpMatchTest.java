@@ -1,4 +1,4 @@
-/*/*
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -15,7 +15,7 @@ import java.util.List;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
-import org.opendaylight.vtn.manager.XmlAttributeType;
+import org.opendaylight.vtn.manager.XmlDataType;
 
 /**
  * JUnit test for {@link UdpMatch}.
@@ -25,6 +25,19 @@ public class UdpMatchTest extends TestBase {
      * Root XML element name associated with {@link UdpMatch} class.
      */
     private static final String  XML_ROOT = "udpmatch";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link UdpMatch} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        return TcpMatchTest.getXmlDataTypes(name, parent);
+    }
 
     /**
      * Test case for getter methods.
@@ -136,15 +149,7 @@ public class UdpMatchTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(UdpMatch.class,
-                      new XmlAttributeType("src", "from", Integer.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("src", "to", Integer.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("dst", "from", Integer.class).
-                      add(XML_ROOT),
-                      new XmlAttributeType("dst", "to", Integer.class).
-                      add(XML_ROOT));
+        jaxbErrorTest(UdpMatch.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**

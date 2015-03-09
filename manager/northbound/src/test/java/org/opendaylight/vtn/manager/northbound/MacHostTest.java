@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -30,6 +31,22 @@ public class MacHostTest extends TestBase {
      * Root XML element name associated with {@link MacHost} class.
      */
     private static final String  XML_ROOT = "machost";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link MacHost} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlAttributeType(name, "vlan", short.class).
+                  add(parent));
+        return dlist;
+    }
 
     /**
      * Test case for {@link MacHost#MacHost(DataLinkHost)} and getter methods.
@@ -102,7 +119,6 @@ public class MacHostTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(MacHost.class,
-                      new XmlAttributeType(XML_ROOT, "vlan", short.class));
+        jaxbErrorTest(MacHost.class, getXmlDataTypes(XML_ROOT));
     }
 }

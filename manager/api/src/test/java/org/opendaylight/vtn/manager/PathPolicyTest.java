@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
@@ -173,11 +174,13 @@ public class PathPolicyTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(PathPolicy.class,
-                      new XmlAttributeType(XML_ROOT, "id", Integer.class),
-                      new XmlAttributeType(XML_ROOT, "default", long.class),
-                      new XmlAttributeType("cost", "cost", Long.class).
-                      add(XML_ROOT, "costs"));
+        List<XmlDataType> dlist = PathCostTest.
+            getXmlDataTypes("cost", XML_ROOT, "costs");
+        Collections.addAll(dlist,
+                           new XmlAttributeType(XML_ROOT, "id", Integer.class),
+                           new XmlAttributeType(XML_ROOT, "default",
+                                                long.class));
+        jaxbErrorTest(PathPolicy.class, dlist);
     }
 
     /**

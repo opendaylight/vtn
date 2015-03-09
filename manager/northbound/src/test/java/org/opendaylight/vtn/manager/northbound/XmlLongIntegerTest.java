@@ -9,7 +9,9 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -21,6 +23,21 @@ public class XmlLongIntegerTest extends TestBase {
      * Root XML element name associated with {@link XmlLongInteger} class.
      */
     private static final String  XML_ROOT = "integer";
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link XmlLongInteger} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlValueType(name, Long.class).add(parent));
+        return dlist;
+    }
 
     /**
      * Test case for all instance methods.
@@ -48,7 +65,7 @@ public class XmlLongIntegerTest extends TestBase {
     }
 
     /**
-     * Ensure that {@link VlanMap} is mapped to XML root element.
+     * Ensure that {@link XmlLongInteger} is mapped to XML root element.
      */
     @Test
     public void testJAXB() {
@@ -65,7 +82,6 @@ public class XmlLongIntegerTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(XmlLongInteger.class,
-                      new XmlValueType(XML_ROOT, Long.class));
+        jaxbErrorTest(XmlLongInteger.class, getXmlDataTypes(XML_ROOT));
     }
 }

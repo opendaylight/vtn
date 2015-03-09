@@ -33,6 +33,13 @@ import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 
 import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlAttributeType;
+import org.opendaylight.vtn.manager.XmlDataType;
+import org.opendaylight.vtn.manager.flow.action.SetDscpActionTest;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeActionTest;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeActionTest;
+import org.opendaylight.vtn.manager.flow.action.SetTpDstActionTest;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcActionTest;
+import org.opendaylight.vtn.manager.flow.action.SetVlanPcpActionTest;
 
 /**
  * JUnit test for {@link FlowFilter}.
@@ -52,6 +59,30 @@ public class FlowFilterTest extends TestBase {
      * A list of {@link FlowAction} instance lists for test.
      */
     private List<List<FlowAction>>  actionLists;
+
+    /**
+     * Return a list of {@link XmlDataType} instances that specifies XML node
+     * types mapped to a {@link FlowFilter} instance.
+     *
+     * @param name    The name of the target node.
+     * @param parent  Path to the parent node.
+     * @return  A list of {@link XmlDataType} instances.
+     */
+    public static List<XmlDataType> getXmlDataTypes(String name,
+                                                    String ... parent) {
+        String[] p = XmlDataType.addPath(
+            "actions", XmlDataType.addPath(name, parent));
+        ArrayList<XmlDataType> dlist = new ArrayList<>();
+        dlist.add(new XmlAttributeType(name, "index", Integer.class).
+                  add(parent));
+        dlist.addAll(SetVlanPcpActionTest.getXmlDataTypes("vlanpcp", p));
+        dlist.addAll(SetDscpActionTest.getXmlDataTypes("dscp", p));
+        dlist.addAll(SetTpSrcActionTest.getXmlDataTypes("tpsrc", p));
+        dlist.addAll(SetTpDstActionTest.getXmlDataTypes("tpdst", p));
+        dlist.addAll(SetIcmpTypeActionTest.getXmlDataTypes("icmptype", p));
+        dlist.addAll(SetIcmpCodeActionTest.getXmlDataTypes("icmpcode", p));
+        return dlist;
+    }
 
     /**
      * Test case for getter methods.
@@ -210,22 +241,7 @@ public class FlowFilterTest extends TestBase {
         }
 
         // Ensure that broken values in XML can be detected.
-        jaxbErrorTest(FlowFilter.class,
-                      new XmlAttributeType(XML_ROOT, "index", Integer.class),
-
-                      // FlowAction
-                      new XmlAttributeType("vlanpcp", "priority", byte.class).
-                      add(XML_ROOT, "actions"),
-                      new XmlAttributeType("dscp", "dscp", byte.class).
-                      add(XML_ROOT, "actions"),
-                      new XmlAttributeType("tpsrc", "port", int.class).
-                      add(XML_ROOT, "actions"),
-                      new XmlAttributeType("tpdst", "port", int.class).
-                      add(XML_ROOT, "actions"),
-                      new XmlAttributeType("icmptype", "type", short.class).
-                      add(XML_ROOT, "actions"),
-                      new XmlAttributeType("icmpcode", "code", short.class).
-                      add(XML_ROOT, "actions"));
+        jaxbErrorTest(FlowFilter.class, getXmlDataTypes(XML_ROOT));
     }
 
     /**
