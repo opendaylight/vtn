@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5a93c517_f4acd08e",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 5
+      },
+      "lineNbr": 7,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-03-11T23:22:38Z",
+      "side": 1,
+      "message": "That should be \"idleTimeout\". (\"ideal\" should be idle\".)\n\nAnd, I think the first line of commit message should be 50 chars or less.\nThe following page explains about it.\nhttp://git-scm.com/book/ch5-2.html#Commit-Guidelines",
+      "range": {
+        "startLine": 7,
+        "startChar": 32,
+        "endLine": 7,
+        "endChar": 44
+      },
+      "revId": "5317a8b35b3f1a3ecaefa64a0453618d6f8b15d5",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
