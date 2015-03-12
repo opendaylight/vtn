@@ -257,6 +257,16 @@ public final class OfPort {
     }
 
     /**
+     * Get the link state of this port.
+     *
+     * @return  {@code true} if this port is in up state.
+     *          {@code false} if this port is in down state.
+     */
+    public boolean isUp() {
+        return linkUp;
+    }
+
+    /**
      * Set the link state of this port.
      *
      * @param provider  The ofmock provider service.
@@ -330,6 +340,24 @@ public final class OfPort {
      */
     public synchronized void clearTransmittedPacket() {
         transmittedPackets.clear();
+    }
+
+    /**
+     * Publish notification that notifies this switch port.
+     *
+     * @param provider  The ofmock provider service.
+     */
+    public void publish(OfMockProvider provider) {
+        provider.publish(getNodeConnectorUpdated());
+    }
+
+    /**
+     * Publish notification that notifies the inter-switch link.
+     *
+     * @param provider  The ofmock provider service.
+     */
+    public void publishLink(OfMockProvider provider) {
+        notifyLinkDiscovered(provider, peerIdentifier);
     }
 
     /**

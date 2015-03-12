@@ -130,6 +130,18 @@
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>sal.connection</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>switchmanager</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>connectionmanager</artifactId>
+    </dependency>
 
     <!-- OpenDaylight openflowplugin -->
     <dependency>

@@ -134,14 +134,30 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
     /**
      * Wait for the given port to be created.
      *
+     * @param pid      The port identifier.
+     * @param timeout  The number of milliseconds to wait/
+     * @return  {@code true} if the given port has been created.
+     *          Otherwise {@code false}.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    public boolean awaitCreated(String pid, long timeout)
+        throws InterruptedException {
+        return await(pid, new PortCreated(), timeout);
+    }
+
+    /**
+     * Wait for the given port to be created.
+     *
      * @param pid  The port identifier.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
     public void awaitCreated(String pid) throws InterruptedException {
-        if (!await(pid, new PortCreated())) {
-            throw new IllegalStateException(
-                "The port was not created: " + pid);
+        if (!await(pid, new PortCreated(), OfMockProvider.TASK_TIMEOUT)) {
+            String msg = "The port was not created: " + pid;
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -153,9 +169,10 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
      *    The calling thread was interrupted.
      */
     public void awaitRemoved(String pid) throws InterruptedException {
-        if (!await(pid, new PortRemoved())) {
-            throw new IllegalStateException(
-                "The port was not removed: " + pid);
+        if (!await(pid, new PortRemoved(), OfMockProvider.TASK_TIMEOUT)) {
+            String msg = "The port was not removed: " + pid;
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -169,11 +186,13 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
      */
     public void awaitLinkState(String pid, boolean up)
         throws InterruptedException {
-        if (!await(pid, new LinkState(up))) {
+        if (!await(pid, new LinkState(up), OfMockProvider.TASK_TIMEOUT)) {
             StringBuilder builder =
                 new StringBuilder("The link state was not changed: ");
             builder.append(pid).append(", ").append(up);
-            throw new IllegalStateException(builder.toString());
+            String msg = builder.toString();
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -186,8 +205,9 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
     private String getIdentifier(InstanceIdentifier<?> path) {
         VtnPortKey key = path.firstKeyOf(VtnPort.class, VtnPortKey.class);
         if (key == null) {
-            throw new IllegalArgumentException(
-                "Unexpected VtnPort path: " + path);
+            String msg = "Unexpected VtnPort path: " + path;
+            LOG.error(msg);
+            throw new IllegalArgumentException(msg);
         }
 
         return key.getId().getValue();
@@ -196,28 +216,30 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
     /**
      * Wait for the given port to meet the given condition.
      *
-     * @param pid   The target port identifier.
-     * @param cond  A {@link PortState} instance.
+     * @param pid      The target port identifier.
+     * @param cond     A {@link PortState} instance.
+     * @param timeout  The number of milliseconds to wait.
      * @return  {@code true} only if the given port has satisfied the given
      *          condition.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    private synchronized boolean await(String pid, PortState cond)
+    private synchronized boolean await(String pid, PortState cond,
+                                       long timeout)
         throws InterruptedException {
         if (cond.check(physicalPorts.get(pid))) {
             return true;
         }
 
-        long timeout = OfMockProvider.TASK_TIMEOUT;
+        long tm = timeout;
         long deadline = System.currentTimeMillis() + timeout;
         do {
-            wait(timeout);
+            wait(tm);
             if (cond.check(physicalPorts.get(pid))) {
                 return true;
             }
-            timeout = deadline - System.currentTimeMillis();
-        } while (timeout > 0);
+            tm = deadline - System.currentTimeMillis();
+        } while (tm > 0);
 
         return cond.check(physicalPorts.get(pid));
     }

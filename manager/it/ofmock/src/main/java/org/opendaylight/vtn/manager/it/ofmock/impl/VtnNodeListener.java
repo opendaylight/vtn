@@ -100,14 +100,30 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
     /**
      * Wait for the given node to be created.
      *
+     * @param nid      The node identifier.
+     * @param timeout  The number of milliseconds to wait.
+     * @return  {@code true} if the given node has been created.
+     *          Otherwise {@code false}.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    public boolean awaitCreated(String nid, long timeout)
+        throws InterruptedException {
+        return await(nid, new NodeCreated(), timeout);
+    }
+
+    /**
+     * Wait for the given node to be created.
+     *
      * @param nid  The node identifier.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
     public void awaitCreated(String nid) throws InterruptedException {
-        if (!await(nid, new NodeCreated())) {
-            throw new IllegalStateException(
-                "The node was not created: " + nid);
+        if (!await(nid, new NodeCreated(), OfMockProvider.TASK_TIMEOUT)) {
+            String msg = "The node was not created: " + nid;
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -119,9 +135,10 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
      *    The calling thread was interrupted.
      */
     public void awaitRemoved(String nid) throws InterruptedException {
-        if (!await(nid, new NodeRemoved())) {
-            throw new IllegalStateException(
-                "The node was not removed: " + nid);
+        if (!await(nid, new NodeRemoved(), OfMockProvider.TASK_TIMEOUT)) {
+            String msg = "The node was not removed: " + nid;
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
     }
 
@@ -134,8 +151,9 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
     private String getIdentifier(InstanceIdentifier<?> path) {
         VtnNodeKey key = path.firstKeyOf(VtnNode.class, VtnNodeKey.class);
         if (key == null) {
-            throw new IllegalArgumentException(
-                "Unexpected VtnNode path: " + path);
+            String msg = "Unexpected VtnNode path: " + path;
+            LOG.error(msg);
+            throw new IllegalArgumentException(msg);
         }
 
         return key.getId().getValue();
@@ -144,28 +162,30 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
     /**
      * Wait for the given node to meet the given condition.
      *
-     * @param nid   The target node identifier.
-     * @param cond  A {@link NodeState} instance.
+     * @param nid      The target node identifier.
+     * @param cond     A {@link NodeState} instance.
+     * @param timeout  The number of milliseconds to wait.
      * @return  {@code true} only if the given node has satisfied the given
      *          condition.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    private synchronized boolean await(String nid, NodeState cond)
+    private synchronized boolean await(String nid, NodeState cond,
+                                       long timeout)
         throws InterruptedException {
         if (cond.check(switches.contains(nid))) {
             return true;
         }
 
-        long timeout = OfMockProvider.TASK_TIMEOUT;
+        long tm = timeout;
         long deadline = System.currentTimeMillis() + timeout;
         do {
-            wait(timeout);
+            wait(tm);
             if (cond.check(switches.contains(nid))) {
                 return true;
             }
-            timeout = deadline - System.currentTimeMillis();
-        } while (timeout > 0);
+            tm = deadline - System.currentTimeMillis();
+        } while (tm > 0);
 
         return cond.check(switches.contains(nid));
     }

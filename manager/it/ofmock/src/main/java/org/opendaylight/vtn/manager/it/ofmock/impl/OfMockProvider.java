@@ -88,6 +88,16 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     static final long  TASK_TIMEOUT = 10000L;
 
     /**
+     * The number of milliseconds to wait for inventories to be initialized.
+     */
+    private static final long  INV_INIT_TIMEOUT = 1000L;
+
+    /**
+     * The number of attempts to initialize inventory information.
+     */
+    private static final int  INV_INIT_MAXTRY = 10;
+
+    /**
      * Data broker service.
      */
     private final DataBroker  dataBroker;
@@ -148,6 +158,16 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * Global configuration for VTN Manager.
      */
     private VtnConfig  vtnConfig;
+
+    /**
+     * Keep {@code true} if inventory information is not yet initialized.
+     */
+    private boolean  firstRun = true;
+
+    /**
+     * AD-SAL inventory manager.
+     */
+    private AdSalInventory  adSalInventory;
 
     /**
      * Construct a new instance.
@@ -342,6 +362,141 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         return vcfg;
     }
 
+    /**
+     * Invoked when inventory information has been initialized on the first
+     * run.
+     *
+     * @param allPorts  A list of {@link OfPort} instances which represents
+     *                  all the physical ports present in the test environment.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    private void initInventory(List<OfPort> allPorts)
+        throws InterruptedException {
+        if (!firstRun) {
+            for (OfPort port: allPorts) {
+                String src = port.getPortIdentifier();
+                String peer = port.getPeerIdentifier();
+                if (peer == null) {
+                    portListener.awaitCreated(src);
+                } else {
+                    routingTable.awaitLink(src, peer, true);
+                }
+            }
+
+            return;
+        }
+
+        firstRun = false;
+
+        // OpenFlow application, such as topology manager, may not be started.
+        // So we need to resend inventory and topology notifications for
+        // missing inventories.
+        for (OfNode node: switches.values()) {
+            verify(node);
+            adSalInventory.awaitNode(node.getNodeIdentifier());
+        }
+
+        List<OfPort> isl = new ArrayList<>();
+        for (OfPort port: allPorts) {
+            verify(port);
+            adSalInventory.awaitPort(port.getPortIdentifier());
+
+            String peer = port.getPeerIdentifier();
+            if (peer != null && port.isUp()) {
+                isl.add(port);
+            }
+        }
+
+        for (OfPort port: isl) {
+            verifyLink(port);
+        }
+    }
+
+    /**
+     * Ensure that the given node is present.
+     *
+     * @param node  An {@link OfNode} instance.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    private void verify(OfNode node) throws InterruptedException {
+        String nid = node.getNodeIdentifier();
+        LOG.trace("Verifying node: {}", nid);
+
+        for (int i = 0; i < INV_INIT_MAXTRY; i++) {
+            if (nodeListener.awaitCreated(nid, INV_INIT_TIMEOUT)) {
+                LOG.trace("Node has been created: {}", nid);
+                return;
+            }
+
+            LOG.trace("Resending notification for node {}", nid);
+            node.publish();
+        }
+
+        String msg = "Node was not created: " + nid;
+        LOG.error(msg);
+        throw new IllegalStateException(msg);
+    }
+
+    /**
+     * Ensure that the given switch port is present.
+     *
+     * @param port  An {@link OfPort} instance.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    private void verify(OfPort port) throws InterruptedException  {
+        String pid = port.getPortIdentifier();
+        LOG.trace("Verifying port: {}", pid);
+
+        for (int i = 0; i < INV_INIT_MAXTRY; i++) {
+            if (portListener.awaitCreated(pid, INV_INIT_TIMEOUT)) {
+                LOG.trace("Port has been created: {}", pid);
+                return;
+            }
+
+            LOG.trace("Resending notification for port {}", pid);
+            port.publish(this);
+        }
+
+        String msg = "Port was not created: " + pid;
+        LOG.error(msg);
+        throw new IllegalStateException(msg);
+    }
+
+    /**
+     * Ensure that the given inter-switch link is present.
+     *
+     * @param port  An {@link OfPort} instance.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     */
+    private void verifyLink(OfPort port) throws InterruptedException {
+        String pid = port.getPortIdentifier();
+        String peer = port.getPeerIdentifier();
+        LOG.trace("Verifying inter-switch link: {} -> {}", pid, peer);
+
+        for (int i = 0; i < INV_INIT_MAXTRY; i++) {
+            if (routingTable.awaitLinkUp(pid, peer, INV_INIT_TIMEOUT)) {
+                LOG.trace("Inter-swtich link has been established: {} -> {}",
+                          pid, peer);
+                return;
+            }
+
+            LOG.trace("Resending notification for inter-switch link: {} -> {}",
+                      pid, peer);
+            port.publishLink(this);
+        }
+
+        StringBuilder builder = new StringBuilder(
+            "Inter-swtich link was not established: ").
+            append(pid).append(" -> ").append(peer);
+        String msg = builder.toString();
+        LOG.error(msg);
+        throw new IllegalStateException(msg);
+    }
+
     // AutoCloseable
 
     /**
@@ -349,6 +504,10 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void close() {
+        if (adSalInventory != null) {
+            adSalInventory.close();
+        }
+
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
@@ -403,6 +562,17 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void initialize() throws InterruptedException {
+        if (adSalInventory == null) {
+            try {
+                adSalInventory = new AdSalInventory();
+            } catch (RuntimeException e) {
+                String msg = "Failed to initialize AD-SAL inventory: " +
+                    e.getMessage();
+                LOG.error(msg, e);
+                throw e;
+            }
+        }
+
         boolean done = false;
         List<OfPort> allPorts = new ArrayList<>();
         Lock wrlock = rwLock.writeLock();
@@ -454,15 +624,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         }
 
         // Ensure that all inventory events have been notified.
-        for (OfPort port: allPorts) {
-            String src = port.getPortIdentifier();
-            String peer = port.getPeerIdentifier();
-            if (peer == null) {
-                portListener.awaitCreated(src);
-            } else {
-                routingTable.awaitLink(src, peer, true);
-            }
-        }
+        initInventory(allPorts);
 
         LOG.debug("Test environment has been initialized.");
     }
@@ -577,6 +739,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
 
         if (sync) {
             nodeListener.awaitCreated(nid);
+            adSalInventory.awaitNode(nid);
         }
 
         return nid;
@@ -587,7 +750,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void removeNode(String nid) throws InterruptedException {
-        if (initialSwitches.remove(nid)) {
+        if (initialSwitches.contains(nid)) {
             throw new IllegalArgumentException(
                 "Initial node cannot be removed: " + nid);
         }
@@ -639,6 +802,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
 
         if (sync) {
             portListener.awaitCreated(pid);
+            adSalInventory.awaitPort(pid);
         }
 
         return pid;
@@ -650,6 +814,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     @Override
     public void awaitPortCreated(String pid) throws InterruptedException {
         portListener.awaitCreated(pid);
+        adSalInventory.awaitPort(pid);
     }
 
     /**
@@ -859,14 +1024,33 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * {@inheritDoc}
      */
     @Override
-    public void sendPacketIn(String ingress, byte[] payload) {
+    public void sendPacketIn(String ingress, byte[] payload)
+        throws InterruptedException {
         if (ingress == null) {
             throw new IllegalArgumentException("Ingress port cannot be null.");
         }
         if (payload == null || payload.length == 0) {
             throw new IllegalArgumentException("Payload cannot be empty.");
         }
-        checkPort(ingress);
+
+        Lock rdlock = rwLock.readLock();
+        rdlock.lock();
+        try {
+            checkPort(ingress);
+
+            // Synchronize AD-SAL inventory information only for AD-SAL FRM.
+            for (OfNode node: switches.values()) {
+                String nid = node.getNodeIdentifier();
+                adSalInventory.awaitNode(nid);
+
+                for (OfPort port: node.getOfPorts()) {
+                    String pid = port.getPortIdentifier();
+                    adSalInventory.awaitPort(pid);
+                }
+            }
+        } finally {
+            rdlock.unlock();
+        }
 
         InstanceIdentifier<NodeConnector> path =
             OfMockUtils.getPortPath(ingress);

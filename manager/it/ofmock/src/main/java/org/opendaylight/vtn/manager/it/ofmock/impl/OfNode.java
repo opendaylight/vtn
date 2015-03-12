@@ -314,7 +314,7 @@ public final class OfNode
         register(rpcReg, OpendaylightFlowTableStatisticsService.class, this);
 
         LOG.debug("Node has been created: {}", nodeIdentifier);
-        ofMockProvider.publish(createNodeUpdated());
+        publish();
     }
 
     /**
@@ -336,7 +336,7 @@ public final class OfNode
             throw new IllegalArgumentException(msg);
         }
 
-        ofMockProvider.publish(port.getNodeConnectorUpdated());
+        port.publish(ofMockProvider);
         return port;
     }
 
@@ -395,6 +395,19 @@ public final class OfNode
         }
 
         return ports;
+    }
+
+    /**
+     * Return a list of all the physical ports.
+     *
+     * <p>
+     *   This method must be called with holding the global lock.
+     * </p>
+     *
+     * @return  A list of {@link OfPort} instances.
+     */
+    public List<OfPort> getOfPorts() {
+        return new ArrayList<OfPort>(physicalPorts.values());
     }
 
     /**
@@ -557,6 +570,13 @@ public final class OfNode
      */
     public synchronized int getFlowCount() {
         return flowEntries.size();
+    }
+
+    /**
+     * Publish a node updated notification.
+     */
+    public void publish() {
+        ofMockProvider.publish(createNodeUpdated());
     }
 
     /**

@@ -136,7 +136,7 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
      */
     public void awaitLink(String src, String dst, boolean state)
         throws InterruptedException {
-        if (!awaitLinkImpl(src, dst, state)) {
+        if (!awaitLinkImpl(src, dst, state, OfMockProvider.TASK_TIMEOUT)) {
             StringBuilder builder = new StringBuilder("The link was not ");
             if (state) {
                 builder.append("created");
@@ -144,8 +144,30 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
                 builder.append("removed");
             }
             builder.append(": ").append(src).append(" -> ").append(dst);
-            throw new IllegalStateException(builder.toString());
+            String msg = builder.toString();
+            LOG.error(msg);
+            throw new IllegalStateException(msg);
         }
+    }
+
+    /**
+     * Wait for the given inter-switch link to be created.
+     *
+     * @param src      The source port identifier of the inter-switch link.
+     * @param dst      The destination port identifier of the inter-switch
+     *                 link.
+     *                 {@code null} matches any ports.
+     * @param timeout  The number of milliseconds to wait.
+     * @return  {@code true} if the given inter-switch link has been created.
+     *          Otherwise {@code false}.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
+     * @throws IllegalStateException
+     *    The specified link did not created or removed.
+     */
+    public boolean awaitLinkUp(String src, String dst, long timeout)
+        throws InterruptedException {
+        return awaitLinkImpl(src, dst, true, timeout);
     }
 
     /**
@@ -291,35 +313,37 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
     /**
      * Wait for the given inter-switch link to be created or removed.
      *
-     * @param src    The source port identifier of the inter-switch link.
-     * @param dst    The destination port identifier of the inter-switch link.
-     *               {@code null} matches any ports.
-     * @param state  If {@code true}, this method waits for the specified
-     *               link to be created.
-     *               If {@code false}, this method waits for the specified
-     *               link to be removed.
+     * @param src      The source port identifier of the inter-switch link.
+     * @param dst      The destination port identifier of the inter-switch
+     *                 link.
+     *                 {@code null} matches any ports.
+     * @param state    If {@code true}, this method waits for the specified
+     *                 link to be created.
+     *                 If {@code false}, this method waits for the specified
+     *                 link to be removed.
+     * @param timeout  The number of milliseconds to wait.
      * @return  {@code true} if the given link has been created or removed.
      *          {@code false} if the given link did not created or removed.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
     private synchronized boolean awaitLinkImpl(String src, String dst,
-                                               boolean state)
+                                               boolean state, long timeout)
         throws InterruptedException {
         OfMockLink link = new OfMockLink(src, dst);
         if (containsEdge(link) == state) {
             return true;
         }
 
-        long timeout = OfMockProvider.TASK_TIMEOUT;
+        long tm = timeout;
         long deadline = System.currentTimeMillis() + timeout;
         do {
-            wait(timeout);
+            wait(tm);
             if (containsEdge(link) == state) {
                 return true;
             }
-            timeout = deadline - System.currentTimeMillis();
-        } while (timeout > 0);
+            tm = deadline - System.currentTimeMillis();
+        } while (tm > 0);
 
         return (containsEdge(link) == state);
     }
@@ -353,6 +377,7 @@ public final class RoutingTable extends SparseMultigraph<String, OfMockLink>
      */
     @Override
     public void onRoutingUpdated(RoutingUpdated notification) {
+        LOG.trace("onRoutingUpdated: {}", notification);
         if (notification == null) {
             return;
         }

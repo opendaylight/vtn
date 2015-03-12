@@ -305,8 +305,11 @@ public interface OfMockService {
      *
      * @param ingress  The port identifier which specifies the ingress port.
      * @param payload  A byte array which represents the packet image.
+     * @throws InterruptedException
+     *    The calling thread was interrupted.
      */
-    void sendPacketIn(String ingress, byte[] payload);
+    void sendPacketIn(String ingress, byte[] payload)
+        throws InterruptedException;
 
     /**
      * Dequeue a packet from the packet transmission queue in the given
