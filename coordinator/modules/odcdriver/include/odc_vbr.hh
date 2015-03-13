@@ -12,166 +12,224 @@
 
 #include <rest_util.hh>
 #include <driver/driver_command.hh>
-#include <json_build_parse.hh>
-#include <vtn_conf_data_element_op.hh>
-#include <unc/upll_ipc_enum.h>
-#include <unc/pfcdriver_ipc_enum.h>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
+#include <odc_flowfilter_template.hh>
+#include <odc_rest.hh>
 #include <odc_vtn.hh>
+#include <odl_vbr.hh>
+#include <unc/upll_ipc_enum.h>
+#include <vtn_conf_data_element_op.hh>
 #include <tclib_module.hh>
-#include <string>
 #include <vector>
+#include <string>
 #include <sstream>
 
 namespace unc {
 namespace odcdriver {
 
-class OdcVbrCommand: public unc::driver::vtn_driver_command
-                     <key_vbr_t, val_vbr_t> {
- public:
-  /**
-   * @brief                         - Parametrised Constructor
-   * @param[in]                     - conf file values
-   */
-  explicit OdcVbrCommand(unc::restjson::ConfFileValues_t conf_values);
-
-  /**
-   * @brief Default Destructor
-   */
-  ~OdcVbrCommand();
-
-  /**
-   * @brief                          - Constructs VBR command and send it to
-   *                                   rest interface
-   * @param[in] key_vbr              - key structure of VBR
-   * @param[in] val_vbr              - value structure of VBR
-   * @param[in] ctr                  - Controller pointrt
-   * @return drv_resp_t              - returns UNC_RC_SUCCESS on creating vbr successfully
-   *                                   /returns UNC_DRV_RC_ERR_GENERIC on failure
-   */
-
-  UncRespCode create_cmd(key_vbr_t& key_vbr,
-                         val_vbr_t& val_vbr,
-                         unc::driver::controller *ctr);
-
-  /**
-   * @brief                           - Constructs VBR update command and send
-   *                                    it to rest interface
-   * @param[in] key_vbr               - key structure of VBR
-   * @param[in] val_vbr               - value structure of VBR
-   * @param[in] ctr                   - Controller pointer
-   * @return UncRespCode              - returns UNC_RC_SUCCESS on updating vbr successfully
-   *                                    /returns UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode update_cmd(key_vbr_t& key_vbr,
-                         val_vbr_t& val_vbr,
-                         unc::driver::controller* ctr);
-
-  /**
-   * @brief                           - Constructs VBR Delete command and send
-   *                                    it to rest interface
-   * @param[in] key_vbr               - key structure of VBR
-   * @param[in] val_vbr               - value structure of VBR
-   * @param[in] ctr                   - Controller pointer
-   * @return  UncRespCode             - returns UNC_RC_SUCCESS on deleting a vbr
-   *                                    / returns UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode delete_cmd(key_vbr_t& key_vbr,
-                         val_vbr_t& val_vbr,
-                         unc::driver::controller *ctr);
-
-  /**
-   * @brief                          - get vbr list - gets all the vbridge
-   *                                   under particular vtn
-   * @param[in]                      - vtn name
-   * @param[in] ctr                  - Controller pointer
-   * @param[out] cfg_node_vector     - cfg_node_vector out parameter contains
-   *                                   list of vbridge present for specified vtn
-   *                                   in controller
-   * @return UncRespCode             - returns UNC_RC_SUCCESS on
-   *                                   retrieving the vtn child successfully/
-   *                                   returns UNC_DRV_RC_ERR_GENERIC on fail
-   */
-  UncRespCode get_vbr_list(
-      std::string vtnname,
-      unc::driver::controller* ctr,
-      std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
-
-  private:
-  /**
-   * @brief               - gets the vbr url
-   * @param[in] key_vbr   - vbr key structure
-   * @return std::string  - returns the url string of vbr
-   */
-  std::string get_vbr_url(key_vbr_t& key_vbr);
-
-  /**
-   * @brief               - Creates the Request Body
-   * @param[in] val_vtn   - VTN value structure val_vtn_t
-   * @return const char*  - returns the request body formed
-   */
-  json_object* create_request_body(const val_vbr_t& val_vtn);
-
-  /**
-   * @brief                      - parse the vbr response data
-   * @param[in] data             - data which is the response from controller
-   * @param[in] vtn_name         - vtn name
-   * @param[out] cfg_node_vector - vector to which the resp to be pushed
-   * @return UncRespCode         - returns UNC_RC_SUCCESS on parsing vbr
-   *                               reponse data successfully/returns
-   *                               UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode parse_vbr_response(
-      char *data,
-      std::string vtn_name,
-      unc::driver::controller* ctr,
-      std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
-
-  /**
-   * @brief                          - parse vbr information and append to the vector
-   * @param[in] ctr                  - controller pointer
-   * @param[in] json_obj_vbr         - json object which is to be parsed
-   * @param[in] arr_idx              - array index in int specifies the array
-   *                                   index  -1 denotes no array
-   * @param[out] cfg_node_vector     - vector to which config node needs
-   *                                   to be pushed
-   * @return UncRespCode             - returns UNC_RC_SUCCESS on
-   *                                   parsing vbr and appending to vector
-   *                                   successfully/returns
-   *                                   UNC_DRV_RC_ERR_GENERIC on failure
-   */
-  UncRespCode fill_config_node_vector(
-      unc::driver::controller* ctr,
-      json_object *json_obj_vbr,
-      std::string vtn_name,
-      uint32_t arr_idx,
-      std::vector< unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
-
-  /**
-   * @brief                      - read port map
-   * @param[in] ctr              - controller pointer
-   * @param[in] url              - url to send the request
-   * @return json_object pointer - returns the response from controller
-   */
-  json_object* read_portmap(unc::driver::controller* ctr, std::string url);
-
-  /**
-   * @brief      - Method to fetch child configurations for the parent kt
-   * @param[in]  - controller pointer
-   * @param[in]  - parent key type pointer
-   * @param[out] - list of configurations
-   * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
-   */
-  UncRespCode fetch_config(
-      unc::driver::controller* ctr,
-      void* parent_key,
-      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
-
-  private:
+class OdcVbrCommand : public unc::driver::vtn_driver_command
+  <key_vbr_t, val_vbr_t>, public VbrParser {
+private:
+  unc::restjson::ConfFileValues_t conf_values_;
   uint32_t age_interval_;
-  unc::restjson::ConfFileValues_t conf_file_values_;
+  std::string vtn_name_, controller_name_;
+
+
+public:
+  OdcVbrCommand(unc::restjson::ConfFileValues_t conf_values):
+    conf_values_(conf_values), age_interval_(DEFAULT_AGE_INTERVAL){}
+
+  UncRespCode
+  create_cmd(key_vbr_t& key, val_vbr_t& val,
+             unc::driver::controller *ctr_ptr) {
+    ODC_FUNC_TRACE;
+    PFC_ASSERT(ctr_ptr!= NULL);
+    std::string url = "";
+    url.append(get_base_url());
+    url.append(get_url_tail(key, val));
+
+    json_object *jobj_req_body = unc::restjson::JsonBuildParse::create_json_obj();
+    pfc_log_debug("calling function create_vbr_request");
+    int retval = create_vbr_request(jobj_req_body, key, val);
+    pfc_log_debug("returned fron create");
+    if (retval != UNC_RC_SUCCESS)
+      return UNC_DRV_RC_ERR_GENERIC; 
+    
+    pfc_log_debug("Request body:%s", unc::restjson::JsonBuildParse::get_json_string(jobj_req_body));
+    //unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(), ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+   // unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(url, HTTP_METHOD_POST, NULL, conf_values_);
+
+    int resp_code = send_httprequest(ctr_ptr, url, conf_values_,HTTP_METHOD_POST, jobj_req_body);
+    pfc_log_debug("response code returned in create vbr is %d", resp_code);
+    if (HTTP_201_RESP_CREATED != resp_code) {
+      pfc_log_debug("check if vtn is stand-alone");
+    //  check if vtn is stand-alone
+      UncRespCode ret_code = UNC_DRV_RC_ERR_GENERIC;
+      std::vector<unc::vtndrvcache::ConfigNode*> child_list;
+      child_list.clear();
+      std::string vtn_name = reinterpret_cast<const char*>
+             (key.vtn_key.vtn_name);
+      pfc_log_debug("VTN name str:%s", vtn_name.c_str());
+      void *parent_key = &key;
+      ret_code = fetch_config(ctr_ptr, parent_key, child_list);
+      int vtn_child_size = static_cast<int> (child_list.size());
+      pfc_log_debug("VTN child_list... size: %d", vtn_child_size);
+
+      if (ret_code == UNC_RC_SUCCESS) {
+        if (vtn_child_size == 0) {
+          pfc_log_debug("delete stand-alone vtn");
+        //  delete stand-alone vtn
+          key_vtn_t key_vtn;
+          val_vtn_t val_vtn;
+          memset(&key_vtn, 0, sizeof(key_vtn_t));
+          memset(&val_vtn, 0, sizeof(val_vtn_t));
+          memcpy(key_vtn.vtn_name, key.vtn_key.vtn_name,
+                 sizeof(key.vtn_key.vtn_name));
+          pfc_log_debug("VTN name:%s", key_vtn.vtn_name);
+          OdcVtnCommand vtn_obj(conf_values_);
+          vtn_obj.delete_cmd(key_vtn, val_vtn, ctr_ptr);
+         }
+      }
+        return UNC_DRV_RC_ERR_GENERIC;
+    }
+    return UNC_RC_SUCCESS;
+  }
+
+  UncRespCode
+  update_cmd(key_vbr_t& key, val_vbr_t& val,
+             unc::driver::controller *ctr_ptr) {
+    ODC_FUNC_TRACE;
+    PFC_ASSERT(ctr_ptr!= NULL);
+    std::string url = "";
+    url.append(get_base_url());
+    url.append(get_url_tail(key, val));
+   
+    std::string vbridge_name = reinterpret_cast<char *>(key.vbridge_name);
+    if (0 == strlen(vbridge_name.c_str()))
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    vtn_name_ = reinterpret_cast<char *>(key.vtn_key.vtn_name);
+    if (0 == strlen(vtn_name_.c_str()))
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    json_object *jobj_req_body = unc::restjson::JsonBuildParse::create_json_obj();
+    pfc_log_debug("calling function create_vbr_request");
+    int retval = create_vbr_request(jobj_req_body, key, val);
+    pfc_log_debug("update create return");
+    if (retval != UNC_RC_SUCCESS)
+      return UNC_DRV_RC_ERR_GENERIC; 
+
+    pfc_log_debug("Request body:%s", unc::restjson::JsonBuildParse::get_json_string(jobj_req_body));
+    //unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(), ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+    //unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(url, HTTP_METHOD_PUT, NULL, conf_values_);
+
+    int resp_code = send_httprequest(ctr_ptr, url, conf_values_, HTTP_METHOD_PUT, jobj_req_body );
+    pfc_log_debug("Response code from Ctl for vbr update cmd : %d ", resp_code);
+    if (HTTP_200_RESP_OK != resp_code) {
+      pfc_log_error("vbr is not updated , resp_code is : %d", resp_code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    return UNC_RC_SUCCESS;
+  }
+
+  UncRespCode
+  delete_cmd(key_vbr_t& key, val_vbr_t& val,
+             unc::driver::controller *ctr_ptr) {
+    ODC_FUNC_TRACE;
+    pfc_log_debug("VBR_DELETE_CMD");
+    PFC_ASSERT(ctr_ptr!= NULL);
+    std::string url = "";
+    url.append(get_base_url());
+    url.append(get_url_tail(key, val));
+    
+    std::string vbridge_name = reinterpret_cast<char *>(key.vbridge_name);
+     if (0 == strlen(vbridge_name.c_str()))
+       return UNC_DRV_RC_ERR_GENERIC;
+
+    vtn_name_ = reinterpret_cast<char *>(key.vtn_key.vtn_name);
+     if (0 == strlen(vtn_name_.c_str()))
+       return UNC_DRV_RC_ERR_GENERIC;
+    //unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(), ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+    //unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(url, HTTP_METHOD_DELETE, NULL, conf_values_);
+
+    int resp_code = send_httprequest(ctr_ptr, url, conf_values_,HTTP_METHOD_DELETE, NULL);
+    pfc_log_debug("Response code from Ctl for delete vbr : %d ", resp_code);
+    if (HTTP_200_RESP_OK != resp_code) {
+      pfc_log_error("vbr delete is not success , resp_code id: %d", resp_code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    return UNC_RC_SUCCESS;
+  }
+
+  std::string get_url_tail(key_vbr_t &key_in,
+                           val_vbr_t &val_in) {
+    std::string url(reinterpret_cast<char*>(key_in.vtn_key.vtn_name));
+    url.append("/vbridges/");
+    url.append(reinterpret_cast<char*>(key_in.vbridge_name));
+    return url;
+  }
+
+  std::string get_base_url() {
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    return url;
+  }
+
+  UncRespCode fetch_config(
+    unc::driver::controller* ctr_ptr,
+    void* parent_key,
+    std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector){
+    key_vbr_t key;
+    val_vbr_t val;
+    std::string controller_name_ = ctr_ptr->get_controller_id();
+    std::string domain_name;
+    key_vtn_t* parent_vtn = reinterpret_cast<key_vtn_t*> (parent_key);
+    vtn_name_ = reinterpret_cast<const char*>
+                     (parent_vtn->vtn_name);
+    pfc_log_debug("%s:vtn_name", vtn_name_.c_str());
+    std::string url = get_base_url();
+    url.append(vtn_name_);
+    url.append("/vbridges");
+    pfc_log_debug("url:%s", url.c_str());
+
+   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(), ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+   unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request( url, HTTP_METHOD_GET, NULL, conf_values_);
+    pfc_log_debug("url:%s", url.c_str());
+
+
+    if (HTTP_200_RESP_OK != response->code) {
+      pfc_log_error("%d error resp ", response->code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    char *data = NULL;
+    if (NULL != response->write_data) {
+     if (NULL != response->write_data->memory) {
+       data = response->write_data->memory;
+       pfc_log_debug("vtns present : %s", data);
+     }
+    }
+
+    json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
+    if (json_object_is_type(jobj, json_type_null)) {
+      pfc_log_error("json_object_is_type error");
+      json_object_put(jobj);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    VbrParser obj(vtn_name_, controller_name_, domain_name);
+    pfc_log_debug("calling vbr_response");
+    int ret_val = obj.parse_vbr_response(jobj, ctr_ptr, conf_values_,key, val, cfgnode_vector);
+    pfc_log_debug("leaving vbr_response");
+    if (restjson::REST_OP_SUCCESS != ret_val)
+          return UNC_DRV_RC_ERR_GENERIC;
+      return UNC_RC_SUCCESS;
+
+  }
 };
-}  // namespace odcdriver
-}  // namespace unc
+
+}
+}
 #endif

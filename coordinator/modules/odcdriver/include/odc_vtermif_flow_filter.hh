@@ -14,17 +14,14 @@
 #include <list>
 #include <algorithm>
 #include <odc_kt_utils.hh>
-
+#include <odc_vterm_if_flowfilter_entry_final.hh>
 namespace unc {
 namespace odcdriver {
 
 class OdcVTermIfFlowFilterCmd : public unc::driver::vtn_driver_command
-  <key_vterm_if_flowfilter,val_flowfilter>,
-public OdcFlowFilterCmd<key_vterm_if_flowfilter,
-  val_flowfilter>
-
-{
+  <key_vterm_if_flowfilter,val_flowfilter>,public ParseVtermIfFlowfilter {
 private:
+ unc::restjson::ConfFileValues_t conf_values_; 
   std::string parent_vtn_name_;
   std::string parent_vterm_name_;
   std::string parent_vtermif_name_;
@@ -32,11 +29,9 @@ private:
 
 public:
   OdcVTermIfFlowFilterCmd (unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowFilterCmd<key_vterm_if_flowfilter,val_flowfilter>(conf_values),
-    parent_vtn_name_(""),
-    parent_vterm_name_(""),
-    parent_vtermif_name_(""),
-    is_out(PFC_FALSE) {}
+      conf_values_(conf_values) {}
+
+
   UncRespCode
   create_cmd(key_vterm_if_flowfilter& key, val_flowfilter& val,
              unc::driver::controller *ctr) {
@@ -52,61 +47,107 @@ public:
   UncRespCode
   delete_cmd(key_vterm_if_flowfilter& key, val_flowfilter& val,
              unc::driver::controller *ctr) {
-    return run_command(key,val,ctr,
-                       unc::odcdriver::CONFIG_DELETE);
+  ODC_FUNC_TRACE;
+  if ( key.direction == UPLL_FLOWFILTER_DIR_OUT)
+          return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+
+  std::string url = "";
+  url.append(BASE_URL);
+  url.append(CONTAINER_NAME);
+  url.append(VTNS);
+  url.append("/");
+  url.append(get_url_tail(key, val));
+
+  pfc_log_trace("the url formed is :%s:",url.c_str());
+
+        /*unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                      ctr->get_user_name(), ctr->get_pass_word());
+
+        unc::restjson::HttpResponse_t* response =
+             rest_util_obj.send_http_request(
+             url, restjson::HTTP_METHOD_DELETE, NULL,
+             conf_values_);*/
+  int resp_code = send_httprequest(ctr, url, conf_values_,  restjson::HTTP_METHOD_DELETE, NULL);
+
+  if (0 == resp_code) {
+     pfc_log_error("Error Occured while getting httpresponse");
+     return UNC_DRV_RC_ERR_GENERIC;
+  }
+        //int resp_code = response->code;
+  pfc_log_debug("response code returned in create vtermif is %d", resp_code);
+  if (HTTP_200_RESP_OK != resp_code)
+    return UNC_DRV_RC_ERR_GENERIC;
+
+
+  return UNC_RC_SUCCESS;
   }
 
   UncRespCode fetch_config(
     unc::driver::controller* ctr,
     void* parent_key,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-
-    key_vterm_if_t* parent_vtermif = reinterpret_cast<key_vterm_if_t*> (parent_key);
+    std::string redirect_node_;
+    key_vterm_if_flowfilter_entry key;
+    val_flowfilter_entry val;
+    pfc_log_trace("fetch_config_entering");
+    key_vterm_if_flowfilter_t* parent_vtermif = reinterpret_cast<key_vterm_if_flowfilter_t*> (parent_key);
     std::string url("");
     url.append(BASE_URL);
     url.append(CONTAINER_NAME);
     url.append(VTNS);
     url.append("/");
-    url.append(reinterpret_cast<char*>(parent_vtermif->vterm_key.vtn_key.vtn_name));
+    url.append(reinterpret_cast<char*>(parent_vtermif->if_key.vterm_key.vtn_key.vtn_name));
     url.append("/");
     url.append("vterminals");
     url.append("/");
-    url.append(reinterpret_cast<char*>(parent_vtermif->vterm_key.vterminal_name));
+    url.append(reinterpret_cast<char*>(parent_vtermif->if_key.vterm_key.vterminal_name));
     url.append("/");
     url.append("interfaces");
     url.append("/");
-    url.append(reinterpret_cast<char*>(parent_vtermif->if_name));
+    url.append(reinterpret_cast<char*>(parent_vtermif->if_key.if_name));
     url.append("/");
     url.append("flowfilters");
     url.append("/");
     url.append("in");
-    parent_vtn_name_.assign(reinterpret_cast<char*>(parent_vtermif->vterm_key.vtn_key.vtn_name));
-    parent_vterm_name_.assign(reinterpret_cast<char*>(parent_vtermif->vterm_key.vterminal_name));
-    parent_vtermif_name_.assign(reinterpret_cast<char*>(parent_vtermif->if_name));
-    if (odl_flow_filter_read_all(ctr,cfgnode_vector,url) != UNC_RC_SUCCESS )
+    parent_vtn_name_.assign(reinterpret_cast<char*>(parent_vtermif->if_key.vterm_key.vtn_key.vtn_name));
+    parent_vterm_name_.assign(reinterpret_cast<char*>(parent_vtermif->if_key.vterm_key.vterminal_name));
+
+    pfc_log_trace("vtermif url is %s", url.c_str());
+
+    parent_vtermif_name_.assign(reinterpret_cast<char*>(parent_vtermif->if_key.if_name));
+    if ((0 == strlen(parent_vtn_name_.c_str()))||(0 == strlen(parent_vterm_name_.c_str()))||(0 == strlen(parent_vtermif_name_.c_str()))) {
+       pfc_log_debug("empty vtn/vbr/vtermif");
+       return UNC_DRV_RC_ERR_GENERIC;
+    }
+    unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+    unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                  url, restjson::HTTP_METHOD_GET, NULL, conf_values_);
+
+    if (NULL == response) {
+      pfc_log_error("Error Occured while getting httpresponse -- ");
       return UNC_DRV_RC_ERR_GENERIC;
-    url.clear();
-    url.append(BASE_URL);
-    url.append(CONTAINER_NAME);
-    url.append(VTNS);
-    url.append("/");
-    url.append(reinterpret_cast<char*>(parent_vtermif->vterm_key.vtn_key.vtn_name));
-    url.append("/");
-    url.append("vterminals");
-    url.append("/");
-    url.append(reinterpret_cast<char*>(parent_vtermif->vterm_key.vterminal_name));
-    url.append("/");
-    url.append("interfaces");
-    url.append("/");
-    url.append(reinterpret_cast<char*>(parent_vtermif->if_name));
-    url.append("/");
-    url.append("flowfilters");
-    url.append("/");
-    url.append("out");
-    parent_vtn_name_.assign(reinterpret_cast<char*>(parent_vtermif->vterm_key.vtn_key.vtn_name));
-    is_out=PFC_TRUE;
-    if (odl_flow_filter_read_all(ctr,cfgnode_vector,url) != UNC_RC_SUCCESS )
+    }
+    int resp_code = response->code;
+    pfc_log_trace("resp_code:%d", resp_code);
+    if (HTTP_200_RESP_OK != resp_code) {
+      pfc_log_error("%d error resp ", resp_code);
       return UNC_DRV_RC_ERR_GENERIC;
+    }
+    if (NULL != response->write_data) {
+      if (NULL != response->write_data->memory) {
+        char *data = response->write_data->memory;
+        pfc_log_debug("vterm flowfilter present : %s", data);
+        pfc_log_debug("vterm flowfilter parent_name : %s", parent_vterm_name_.c_str());
+        pfc_log_debug("vterm flowfilter parent_vtermif_name:%s",parent_vtermif_name_.c_str());
+        json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
+        pfc_log_debug("entering in to parse_vterm_if_flowfilter_response");
+        ParseVtermIfFlowfilter obj(parent_vtn_name_, parent_vterm_name_,parent_vtermif_name_,redirect_node_);
+        UncRespCode ret_val = obj.parse_vterm_if_flowfilter_response(jobj,key,val, cfgnode_vector);
+        pfc_log_debug("returned from parse_vterm_if_flowfilter_response");
+        return ret_val;
+      }
+    }
     return UNC_RC_SUCCESS;
   }
 
@@ -135,7 +176,7 @@ public:
   }
 
 
-  void copy(flowfilter *out, key_vterm_if_flowfilter &key_in,
+/*  void copy(flowfilter *out, key_vterm_if_flowfilter &key_in,
             val_flowfilter &value_in) {
     // Do Nothing as No Request Body is REquired
   }
@@ -280,14 +321,13 @@ public:
     }
     return UNC_RC_SUCCESS;
   }
-
+*/
 };
 
 class OdcVTermIfFlowFilterEntryCmd : public unc::driver::vtn_driver_command
-  <key_vterm_if_flowfilter_entry,val_flowfilter_entry>,
-public OdcFlowFilterCmd<key_vterm_if_flowfilter_entry,
-  val_flowfilter_entry>
-{
+  <key_vterm_if_flowfilter_entry,val_flowfilter_entry>, public ParseVtermIfFlowfilter {
+//public OdcFlowFilterCmd<key_vterm_if_flowfilter_entry,
+  //val_flowfilter_entry>
 private:
   unc::restjson::ConfFileValues_t conf_values_;
   std::set <std::string> bridges_;
@@ -295,7 +335,7 @@ private:
 
 public:
   OdcVTermIfFlowFilterEntryCmd(unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowFilterCmd<key_vterm_if_flowfilter_entry,val_flowfilter_entry>(conf_values),
+    //OdcFlowFilterCmd<key_vterm_if_flowfilter_entry,val_flowfilter_entry>(conf_values),
     conf_values_(conf_values) {}
 
 
@@ -303,39 +343,92 @@ public:
   create_cmd(key_vterm_if_flowfilter_entry& key, val_flowfilter_entry& val,
              unc::driver::controller *ctr) {
     std::string vtn_name(reinterpret_cast<char*>(key.flowfilter_key.if_key.vterm_key.vtn_key.vtn_name));
-    unc::odcdriver::odlutils::get_vbridge_names(ctr,
-        conf_values_,
-        vtn_name,
-        &bridges_);
+    if (val.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID) {
+      unc::odcdriver::odlutils::get_vterm_names(ctr,
+                                                  conf_values_,
+                                                  vtn_name,
+                                                  &terminals_);
+    std::string  redirect_node(reinterpret_cast<char *>(val.redirect_node));
+    std::set <std::string>::iterator find_iter;
+    find_iter = std::find (bridges_.begin(),bridges_.end(),redirect_node);
+    }
+   json_object *jobj_req_body = unc::restjson::JsonBuildParse::create_json_obj();
+   pfc_log_debug("calling create_vtermif_flowfilter");
+   int retval = create_vterm_if_flowfilter_request(jobj_req_body, key, val);
+   pfc_log_debug("returned from create_vterm_if_flow_filter");
+   if (retval != UNC_RC_SUCCESS)
+     return UNC_DRV_RC_ERR_GENERIC;
 
-    unc::odcdriver::odlutils::get_vterm_names(ctr,
-        conf_values_,
-        vtn_name,
-        &terminals_);
+    std::string url("");
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    url.append(get_url_tail(key,val));
 
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_UPDATE);
-  }
+ /*unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+    unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                  url, restjson::HTTP_METHOD_PUT,unc::restjson::JsonBuildParse::get_json_string(jobj_req_body), conf_values_);
+    json_object_put(jobj_req_body);*/
+
+    int resp_code = send_httprequest(ctr, url, conf_values_,  restjson::HTTP_METHOD_PUT, jobj_req_body);
+   
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse -- ");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_trace("response code returned in create vtermif flowfilter %d", resp_code);
+    if (HTTP_201_RESP_CREATED != resp_code) {
+      pfc_log_error("%d error resp ", resp_code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+   return UNC_RC_SUCCESS;
+}
 
   UncRespCode
   update_cmd(key_vterm_if_flowfilter_entry& key, val_flowfilter_entry& val,
              unc::driver::controller *ctr) {
-    std::string vtn_name(reinterpret_cast<char*>(key.flowfilter_key.if_key.vterm_key.vtn_key.vtn_name));
-    unc::odcdriver::odlutils::get_vbridge_names(ctr,
-        conf_values_,
-        vtn_name,
-        &bridges_);
-
-    unc::odcdriver::odlutils::get_vterm_names(ctr,
-        conf_values_,
-        vtn_name,
-        &terminals_);
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_UPDATE);
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode
   delete_cmd(key_vterm_if_flowfilter_entry& key, val_flowfilter_entry& val,
              unc::driver::controller *ctr) {
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_DELETE);
+
+  ODC_FUNC_TRACE;
+  if ( key.flowfilter_key.direction == UPLL_FLOWFILTER_DIR_OUT)
+     return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
+  std::string url = "";
+  url.append(BASE_URL);
+  url.append(CONTAINER_NAME);
+  url.append(VTNS);
+  url.append("/");
+  url.append(get_url_tail(key, val));
+        
+  pfc_log_trace("the url formed is :%s:",url.c_str());
+
+     /* unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                      ctr->get_user_name(), ctr->get_pass_word());
+
+        unc::restjson::HttpResponse_t* response =
+             rest_util_obj.send_http_request(
+             url, restjson::HTTP_METHOD_DELETE, NULL,
+             conf_values_);*/
+
+  int resp_code = send_httprequest(ctr, url, conf_values_,  restjson::HTTP_METHOD_DELETE, NULL);
+
+  if (0 == resp_code) {
+     pfc_log_error("Error Occured while getting httpresponse");
+     return UNC_DRV_RC_ERR_GENERIC;
+   }
+        //int resp_code = response->code;
+  pfc_log_debug("response code returned in create  is %d", resp_code);
+  if (HTTP_200_RESP_OK != resp_code)
+    return UNC_DRV_RC_ERR_GENERIC;
+
+  return UNC_RC_SUCCESS;
   }
 
   UncRespCode fetch_config(
@@ -373,7 +466,7 @@ public:
     return url;
   }
 
-  void copy(flowfilter *out, key_vterm_if_flowfilter_entry &key_in,
+/*  void copy(flowfilter *out, key_vterm_if_flowfilter_entry &key_in,
             val_flowfilter_entry &value_in) {
 
     ODC_FUNC_TRACE;
@@ -457,7 +550,7 @@ public:
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
     //Never Invoked as FectConfig is not implemented!!
     return UNC_RC_SUCCESS;
-  }
+  }*/
 };
 
 }

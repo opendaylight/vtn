@@ -14,9 +14,10 @@
 #include <driver/driver_command.hh>
 #include <odc_driver_common_defs.hh>
 #include <odc_controller.hh>
-#include <odc_flow_conditions.hh>
 #include <odc_util.hh>
 #include <odc_rest.hh>
+#include <odl_flowlist.hh>
+#include <odl_flowlist_entry.hh>
 #include <unc/upll_ipc_enum.h>
 #include <vtn_conf_data_element_op.hh>
 #include <tclib_module.hh>
@@ -27,223 +28,19 @@
 namespace unc {
 namespace odcdriver {
 
-
-class odl_flowlist_http_request: public odl_http_rest_intf {
-
-public:
-  odl_flowlist_http_request(flowcondition *value, std::string url,
-                            flowConditions *read_value, pfc_bool_t entry):
-    url_(url),
-    flow_condition_(value),
-    flow_conditions_(read_value),
-    is_entry_(entry) {}
-
-  // Is multiple requests need to be sent to handle the request?
-  pfc_bool_t is_multiple_requests(unc::odcdriver::OdcDriverOps Op) {
-    return PFC_FALSE;
-  }
-
-// Provide a list of request indicators for multiple request scenario.
-  UncRespCode get_multi_request_indicator(
-    unc::odcdriver::OdcDriverOps Op,
-    std::set<std::string> *arg_list) {
-    ODC_FUNC_TRACE;
-    return UNC_RC_SUCCESS;
-  }
-
-// Construct the URL for the operation
-// The request indicator will ne SINGLE as default
-  UncRespCode construct_url(unc::odcdriver::OdcDriverOps Op,
-                            std::string &request_indicator,
-                            std::string &url) {
-    ODC_FUNC_TRACE;
-    url=url_;
-    return UNC_RC_SUCCESS;
-  }
-
-// Construct Request body for the operation
-  UncRespCode construct_request_body(unc::odcdriver::OdcDriverOps Op,
-                                     std::string &request_indicator,
-                                     json_object *object) {
-    ODC_FUNC_TRACE;
-    if ( Op != unc::odcdriver::CONFIG_READ &&
-        Op != unc::odcdriver::CONFIG_DELETE ) {
-      unc::odcdriver::flowConditionsUtil util_;
-      if ( is_entry_ == PFC_FALSE ) {
-        UncRespCode ret(util_.SetValue(object,flow_condition_));
-        if ( ret != UNC_RC_SUCCESS ) {
-          pfc_log_error("Failed to Copy from flowcondtion to json!!");
-          return ret;
-        }
-      } else {
-        std::list <match*>::iterator iter_;
-        iter_ = flow_condition_->match_.begin();
-        if ( iter_ != flow_condition_->match_.end() && (*iter_ == NULL) ) {
-          pfc_log_error("No Contents in match");
-        } else {
-          UncRespCode ret(util_.SetValue(object,*iter_));
-          if ( ret != UNC_RC_SUCCESS ) {
-            pfc_log_error("Failed to Copy from flowcondtion to json!!");
-            return ret;
-          }
-        }
-      }
-    } else {
-      pfc_log_info("READ or delete");
-    }
-    return UNC_RC_SUCCESS;
-  }
-// Return the HTTP operation intended
-  restjson::HttpMethod get_http_method(
-    unc::odcdriver::OdcDriverOps Op,
-    std::string &request_indicator) {
-
-    ODC_FUNC_TRACE;
-    if ( Op == unc::odcdriver::CONFIG_READ )
-      return unc::restjson::HTTP_METHOD_GET;
-    if ( Op == unc::odcdriver::CONFIG_CREATE )
-      return unc::restjson::HTTP_METHOD_POST;
-    if ( Op == unc::odcdriver::CONFIG_DELETE)
-      return unc::restjson::HTTP_METHOD_DELETE;
-    if ( Op == unc::odcdriver::CONFIG_UPDATE)
-      return unc::restjson::HTTP_METHOD_PUT;
-    return unc::restjson::HTTP_METHOD_GET;
-  }
-
-// Validate the response code handed
-  UncRespCode validate_response_code(unc::odcdriver::OdcDriverOps Op,
-                                     std::string &request_indicator,
-                                     int resp_code) {
-    ODC_FUNC_TRACE;
-
-    pfc_log_info("the Response code is %d",resp_code);
-    if (HTTP_200_RESP_OK != resp_code &&
-        HTTP_201_RESP_CREATED != resp_code &&
-        HTTP_204_NO_CONTENT != resp_code) {
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-    return UNC_RC_SUCCESS;
-  }
-
-// Read the response of the http request from data
-  UncRespCode handle_response(unc::odcdriver::OdcDriverOps Op,
-                              std::string &request_indicator,
-                              char* data) {
-    ODC_FUNC_TRACE;
-    if ( Op == unc::odcdriver::CONFIG_READ ) {
-      unc::odcdriver::flowConditionsUtil util_;
-      json_object *parse(unc::restjson::JsonBuildParse::get_json_object(data));
-      if ( parse != NULL ) {
-        // Clear memory when variable(parse) is out of scope
-        unc::restjson::json_obj_destroy_util delete_obj(parse);
-        UncRespCode ret(util_.GetValue( parse, flow_conditions_));
-        if ( ret != UNC_RC_SUCCESS )
-          return ret;
-      } else {
-        return UNC_DRV_RC_ERR_GENERIC;
-      }
-    }
-    return UNC_RC_SUCCESS;
-  }
-
-private:
-  std::string url_;
-  flowcondition* flow_condition_;
-  flowConditions* flow_conditions_;
-  pfc_bool_t is_entry_;
-};
-
-template <typename key,typename value>
-class OdcFlowConditionCmd {
-
-private:
-  unc::restjson::ConfFileValues_t conf_values_;
-  pfc_bool_t is_entry_;
-
-public:
-  OdcFlowConditionCmd(unc::restjson::ConfFileValues_t conf_values,
-                      pfc_bool_t is_entry):
-    conf_values_(conf_values),
-    is_entry_(is_entry) {}
-
-  ~OdcFlowConditionCmd() {}
-
-  virtual std::string get_url_tail(key &key_in,value &val_in)=0;
-
-  // Copy from Key Value Structure to FlowConditions Structure
-  virtual void copy(flowcondition *out, key &key_in, value &value_in)=0;
-
-  // Copy from FlowConditions List and send to platform
-  virtual UncRespCode r_copy(flowConditions *in,
-                             std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) =0;
-
-  UncRespCode run_command(key& key_in,
-                          value& val_in,
-                          unc::driver::controller *ctr,
-                          unc::odcdriver::OdcDriverOps Op) {
-    ODC_FUNC_TRACE;
-    flowcondition command_;
-    //Copy Contents from key and val
-    copy(&command_,key_in,val_in);
-
-    std::string url = "";
-    url.append(BASE_URL);
-    url.append(CONTAINER_NAME);
-    url.append("/");
-    url.append("flowconditions");
-    url.append("/");
-    url.append(get_url_tail(key_in,val_in));
-
-    pfc_log_info("The Flow list URL: %s",url.c_str());
-
-    odl_flowlist_http_request flow_cond_request(&command_,url, NULL, is_entry_);
-
-    odl_http_request odl_fc_create;
-    return odl_fc_create.handle_request(ctr,
-                                        Op,
-                                        &flow_cond_request,
-                                        conf_values_);
-  }
-
-  UncRespCode odl_flow_condition_read_all( unc::driver::controller *ctr,
-      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-    ODC_FUNC_TRACE;
-    flowConditions read_all_;
-    std::string url = "";
-    url.append(BASE_URL);
-    url.append(CONTAINER_NAME);
-    url.append("/");
-    url.append("flowconditions");
-    pfc_log_info("The Flow list URL: %s",url.c_str());
-
-    odl_flowlist_http_request flow_cond_request(NULL,url,&read_all_,is_entry_);
-    odl_http_request odl_fc_create;
-    UncRespCode ret (odl_fc_create.handle_request(ctr,
-                     unc::odcdriver::CONFIG_READ,
-                     &flow_cond_request,
-                     conf_values_));
-    if ( ret != UNC_RC_SUCCESS )
-      return ret;
-
-    return r_copy(&read_all_,cfgnode_vector);
-  }
-
-};
-
-
 class OdcFlowListCommand: public
   unc::driver::vtn_driver_command <key_flowlist, val_flowlist>,
-  unc::odcdriver::OdcFlowConditionCmd<key_flowlist,val_flowlist>
-
+  public FlowlistParser 
 {
 public:
   /**
    * @brief                          - Parametrised Constructor
    * @param[in]                      - conf file values
    */
-  explicit OdcFlowListCommand(unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowConditionCmd<key_flowlist,val_flowlist>(conf_values,PFC_FALSE),
-    conf_file_values_(conf_values) {}
+  OdcFlowListCommand(unc::restjson::ConfFileValues_t conf_values):
+    conf_values_(conf_values) {
+    pfc_log_trace("Flowlist Cons");
+  }
 
   /**
    * @brief Default Destructor
@@ -251,32 +48,83 @@ public:
   ~OdcFlowListCommand() {}
 
   UncRespCode create_cmd(key_flowlist &key_in, val_flowlist &val_in,
-                         unc::driver::controller *ctr) {
+                         unc::driver::controller *ctr_ptr) {
     ODC_FUNC_TRACE;
-    return run_command(key_in,
-                       val_in,
-                       ctr,
-                       unc::odcdriver::CONFIG_UPDATE);
+    pfc_log_trace("In function create_cmd of flowlist");
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    url.append("/");
+    url.append(get_url_tail(key_in, val_in));
+
+    json_object *jobj_req_body = unc::restjson::JsonBuildParse::create_json_obj();
+    pfc_log_debug("entering in to create flowlist request.....");
+    int retval = create_flowlist_request(jobj_req_body, key_in, val_in);
+    pfc_log_debug("leaving from create flowlist request////");
+    if (retval != UNC_RC_SUCCESS)
+      return UNC_DRV_RC_ERR_GENERIC;
+
+   pfc_log_trace("flowlist req_body:%s", unc::restjson::JsonBuildParse::get_json_string(jobj_req_body));
+    
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_PUT,
+         unc::restjson::JsonBuildParse::get_json_string(jobj_req_body),
+         conf_values_);*/
+   //FlowlistParser obj;
+   int resp_code = send_httprequest(ctr_ptr,url,conf_values_,restjson::HTTP_METHOD_PUT,jobj_req_body);
+    json_object_put(jobj_req_body);
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_debug("response code returned in create  is %d", resp_code);
+    if (HTTP_201_RESP_CREATED != resp_code)
+      return UNC_DRV_RC_ERR_GENERIC;
     return UNC_RC_SUCCESS;
   }
 
   UncRespCode delete_cmd(key_flowlist &key_in, val_flowlist &val_in,
-                         unc::driver::controller *ctr) {
+                         unc::driver::controller *ctr_ptr) {
     ODC_FUNC_TRACE;
-    return run_command(key_in,
-                       val_in,
-                       ctr,
-                       unc::odcdriver::CONFIG_DELETE);
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    url.append("/");
+    url.append(get_url_tail(key_in, val_in));
+
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_DELETE, NULL,
+         conf_values_);*/
+   int resp_code = send_httprequest(ctr_ptr,url,conf_values_,restjson::HTTP_METHOD_DELETE,NULL);
+
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_debug("response code returned in create vtn is %d", resp_code);
+    if (HTTP_200_RESP_OK != resp_code)
+      return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
 
   UncRespCode update_cmd(key_flowlist &key_in, val_flowlist &val_in,
-                         unc::driver::controller *ctr) {
+                         unc::driver::controller *ctr_ptr) {
     ODC_FUNC_TRACE;
-    return run_command(key_in,
-                       val_in,
-                       ctr,
-                       unc::odcdriver::CONFIG_UPDATE);
     return UNC_RC_SUCCESS;
   }
   /**
@@ -290,40 +138,90 @@ public:
     unc::driver::controller* ctr,
     void* parent_key,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-
     ODC_FUNC_TRACE;
-    return odl_flow_condition_read_all(ctr,cfgnode_vector);
+    std::string parent_flowlist_name = "flowlist1";
+    key_flowlist key_in;
+    val_flowlist val_in;
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    pfc_log_info("The Flow list URL: %s",url.c_str());
+ 
+    unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+    unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                  url, restjson::HTTP_METHOD_GET, NULL,  conf_values_);
+
+    if (NULL == response) {
+      pfc_log_error("Error Occured while getting httpresponse -- ");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    int resp_code = response->code;
+    if (HTTP_200_RESP_OK != resp_code) {
+      pfc_log_error("%d error resp ", resp_code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    if (NULL != response->write_data) {
+      if (NULL != response->write_data->memory) {
+        char *data = response->write_data->memory;
+        pfc_log_debug("flowlist present : %s", data);
+        json_object* jobj1 = restjson::JsonBuildParse::get_json_object(data);
+        json_object* jobj2 = restjson::JsonBuildParse::get_json_object(data);
+        pfc_log_debug("entering in to parse_flowlist_response");
+        UncRespCode ret_val = parse_flowlist_response(jobj1,key_in,val_in, cfgnode_vector);
+        pfc_log_debug("leaving from parse_flowlist_response");
+        if (ret_val != UNC_RC_SUCCESS)
+         {
+           pfc_log_debug("error in parsing");
+           return UNC_DRV_RC_ERR_GENERIC;
+         }
+        key_flowlist_entry key;
+        val_flowlist_entry val;
+        /*key_flowlist_entry_t * parent_flowlist_key = reinterpret_cast<key_flowlist_entry_t*> (parent_key);
+        parent_flowlist_name.assign(reinterpret_cast<char*>(parent_flowlist_key->flowlist_key.flowlist_name));*/
+        pfc_log_debug("entering in to parse_flowlist_entry_response");
+        FlowlistEntryParser obj;
+        pfc_log_debug("json_obj_after flowlist call:%s", unc::restjson::JsonBuildParse::get_json_string(jobj2));
+        //FlowlistEntryParser obj(parent_flowlist_name);
+        UncRespCode retval = obj.parse_flowlist_entry_response(jobj2,key,val,cfgnode_vector);
+        pfc_log_debug("leaving from parse_flowlist_entry_response");
+        if (retval != UNC_RC_SUCCESS)
+        {
+        pfc_log_debug("error in parsing");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      }
+    }
+    return UNC_RC_SUCCESS;
   }
 
-  void copy (flowcondition* out,
-             key_flowlist& in_key,
-             val_flowlist& in_val);
-
-  UncRespCode r_copy (flowConditions *in,
-                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
-
-  std::string get_url_tail(key_flowlist& in_key,
-                           val_flowlist& in_val);
+std::string get_url_tail(key_flowlist& key,
+                                 val_flowlist& val) {
+  ODC_FUNC_TRACE;
+  char *flowlist_name=reinterpret_cast <char *>(key.flowlist_name);
+  std::string url_string (flowlist_name);
+  return url_string;
+}
 
 private:
-  unc::restjson::ConfFileValues_t conf_file_values_;
+  unc::restjson::ConfFileValues_t conf_values_;
 };
 
 class OdcFlowListEntryCommand: public
   unc::driver::vtn_driver_command <key_flowlist_entry,
-  val_flowlist_entry>,
-  unc::odcdriver::OdcFlowConditionCmd<key_flowlist_entry,
-  val_flowlist_entry>
-
+  val_flowlist_entry>, public FlowlistEntryParser
 {
 public:
   /**
    * @brief                          - Parametrised Constructor
    * @param[in]                      - conf file values
    */
-  explicit OdcFlowListEntryCommand(unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowConditionCmd<key_flowlist_entry, val_flowlist_entry>(conf_values, PFC_TRUE),
-    conf_file_values_(conf_values) {}
+  OdcFlowListEntryCommand(unc::restjson::ConfFileValues_t conf_values):
+    conf_values_(conf_values) {
+    pfc_log_trace("Flowlistentry Cons");
+}
 
   /**
    * @brief Default Destructor
@@ -332,28 +230,85 @@ public:
 
   UncRespCode create_cmd(key_flowlist_entry &key_in,
                          val_flowlist_entry &val_in,
-                         unc::driver::controller *ctr) {
+                         unc::driver::controller *ctr_ptr) {
     ODC_FUNC_TRACE;
-    return run_command(key_in,
-                       val_in,
-                       ctr,
-                       unc::odcdriver::CONFIG_UPDATE);
+    pfc_log_trace("In flowlistentry create_cmd");
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    url.append("/");
+    url.append(get_url_tail(key_in, val_in));
+    
+    json_object *jobj_req_body = unc::restjson::JsonBuildParse::create_json_obj();
+    pfc_log_debug("create.........create");
+    int retval = create_flowlist_entry_request(jobj_req_body, key_in, val_in);
+    pfc_log_debug("create .....returned");
+    if (retval != UNC_RC_SUCCESS)
+      return UNC_DRV_RC_ERR_GENERIC;
+    pfc_log_debug("url.append:%s",url.c_str());
+   
+    pfc_log_trace("flowlist req_body:%s", unc::restjson::JsonBuildParse::get_json_string(jobj_req_body));
+    
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_PUT,
+         unc::restjson::JsonBuildParse::get_json_string(jobj_req_body),
+         conf_values_);*/
+    int resp_code = send_httprequest(ctr_ptr,url,conf_values_,restjson::HTTP_METHOD_PUT, jobj_req_body);
+
+    json_object_put(jobj_req_body);
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_debug("response code returned in create  is %d", resp_code);
+    if (HTTP_201_RESP_CREATED!= resp_code)
+      return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode delete_cmd(key_flowlist_entry &key_in,
                          val_flowlist_entry &val_in,
-                         unc::driver::controller *ctr) {
+                         unc::driver::controller *ctr_ptr) {
     ODC_FUNC_TRACE;
-    return run_command(key_in,
-                       val_in,
-                       ctr,
-                       unc::odcdriver::CONFIG_DELETE);
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    url.append("/");
+    url.append(get_url_tail(key_in, val_in));
+    
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_DELETE, NULL,
+         conf_values_);*/
+   int resp_code = send_httprequest(ctr_ptr,url,conf_values_,restjson::HTTP_METHOD_DELETE,NULL);
+
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_debug("response code returned in delete is %d", resp_code);
+    if (HTTP_200_RESP_OK != resp_code)
+      return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
 
   UncRespCode update_cmd(key_flowlist_entry &key_in,
                          val_flowlist_entry &val_in,
-                         unc::driver::controller *ctr) {
+                         unc::driver::controller *ctr_ptr) {
     ODC_FUNC_TRACE;
     return UNC_RC_SUCCESS;
   }
@@ -365,28 +320,83 @@ public:
    * @retval     - UNC_RC_SUCCESS / UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode fetch_config(
-    unc::driver::controller* ctr,
+    unc::driver::controller* ctr_ptr,
     void* parent_key,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
     ODC_FUNC_TRACE;
+/*    unc::driver::controller* ctr,
+    void* parent_key,
+    std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
+    ODC_FUNC_TRACE;
+    key_flowlist key_in;
+    val_flowlist val_in;
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    url.append(get_url_tail);
+    pfc_log_info("The Flow list URL: %s",url.c_str());
+ 
+    unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+    unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                  url, restjson::HTTP_METHOD_GET, NULL, conf_values_);
 
+    if (NULL == response) {
+      pfc_log_error("Error Occured while getting httpresponse -- ");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    int resp_code = response->code;
+    if (HTTP_200_RESP_OK != resp_code) {
+      pfc_log_error("%d error resp ", resp_code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    if (NULL != response->write_data) {
+      if (NULL != response->write_data->memory) {
+        char *data = response->write_data->memory;
+        pfc_log_debug("flowlist present : %s", data);
+        json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
+       pfc_log_debug("entering in to parse_flowlist_response");
+        UncRespCode ret_val = parse_flowlist_response(jobj,key_in,val_in, cfgnode_vector);
+        pfc_log_debug("leaving from parse_flowlist_response");
+        if (ret_val != UNC_RC_SUCCESS)
+         {
+           pfc_log_debug("error in parsing");
+           return UNC_DRV_RC_ERR_GENERIC;
+     }
+        key_flowlist_entry key;
+        val_flowlist_entry val;
+        pfc_log_debug("entering in to parse_flowlist_entry_response");
+        FlowlistEntryParser obj;
+        UncRespCode retval = obj.parse_flowlist_entry_response(jobj,key,val, cfgnode_vector);
+        pfc_log_debug("leaving from parse_flowlist_entry_response");
+        if (retval != UNC_RC_SUCCESS)
+         {
+          pfc_log_debug("error in parsing");
+          return UNC_DRV_RC_ERR_GENERIC;
+      }
+      }
+    } */
     return UNC_RC_SUCCESS;
   }
 
-  void copy (flowcondition* out,
-             key_flowlist_entry& in_key,
-             val_flowlist_entry& in_val);
 
-  UncRespCode r_copy (flowConditions *in,
-                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-    return UNC_RC_SUCCESS;
-  }
-
-  std::string get_url_tail(key_flowlist_entry& in_key,
-                           val_flowlist_entry& in_val);
+std::string get_url_tail(key_flowlist_entry& key,
+                                      val_flowlist_entry& val) {
+     ODC_FUNC_TRACE;
+     char *flowlist_name=reinterpret_cast <char *>(key.flowlist_key.flowlist_name);
+     std::string url_string ("");
+     url_string.append(flowlist_name);
+     url_string.append("/");
+     char sequence_no[10];
+     sprintf(sequence_no,"%d",key.sequence_num);
+     url_string.append(sequence_no);
+     return url_string;
+}
 
 private:
-  unc::restjson::ConfFileValues_t conf_file_values_;
+  unc::restjson::ConfFileValues_t conf_values_;
 };
 
 }  // namespace odcdriver

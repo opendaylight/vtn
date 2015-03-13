@@ -9,26 +9,31 @@
 #ifndef __VTN_FLOWFILTER_HH__
 #define __VTN_FLOWFILTER_HH__
 
-#include <odc_flowfilter_template.hh>
-#include <string>
-#include <list>
+#include <rest_util.hh>
+#include <driver/driver_command.hh>
+#include <odc_driver_common_defs.hh>
+#include <odc_controller.hh>
+#include <odc_util.hh>
+#include <odc_rest.hh>
+#include <unc/upll_ipc_enum.h>
+#include <unc/pfcdriver_ipc_enum.h>
+#include <vtn_conf_data_element_op.hh>
+#include <tclib_module.hh>
+#include <odl_vtn_flowfilter.hh>
 
 namespace unc {
 namespace odcdriver {
 
 class OdcVtnFlowFilterCmd : public unc::driver::vtn_driver_command
-  <key_vtn_flowfilter,val_flowfilter>,
-public OdcFlowFilterCmd<key_vtn_flowfilter,
-  val_flowfilter>
-
+  <key_vtn_flowfilter,val_flowfilter>, public VtnFlowfilterParser
 {
 private:
   std::string parent_vtn_name_;
+  unc::restjson::ConfFileValues_t conf_values_;
 
 public:
   OdcVtnFlowFilterCmd (unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowFilterCmd<key_vtn_flowfilter,val_flowfilter>(conf_values),
-    parent_vtn_name_("") {}
+    parent_vtn_name_(""), conf_values_(conf_values){}
   UncRespCode
   create_cmd(key_vtn_flowfilter& key, val_flowfilter& val,
              unc::driver::controller *ctr) {
@@ -47,18 +52,42 @@ public:
 
   UncRespCode
   delete_cmd(key_vtn_flowfilter& key, val_flowfilter& val,
-             unc::driver::controller *ctr) {
+             unc::driver::controller *ctr_ptr) {
     if ( key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
       return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-    return run_command(key,val,ctr,
-                       unc::odcdriver::CONFIG_DELETE);
+    
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    url.append(get_url_tail(key, val));
+    
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_DELETE, NULL,
+         conf_values_);*/
+    int resp_code = send_httprequest(ctr_ptr, url,conf_values_,  restjson::HTTP_METHOD_DELETE,NULL);
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_debug("response code returned in create vtn is %d", resp_code);
+    if (HTTP_200_RESP_OK != resp_code)
+      return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode fetch_config(
     unc::driver::controller* ctr,
     void* parent_key,
     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-
+    key_vtn_flowfilter_entry key;
+    val_vtn_flowfilter_entry val;
     key_vtn_t* parent_vtn = reinterpret_cast<key_vtn_t*> (parent_key);
     std::string url("");
     url.append(BASE_URL);
@@ -69,7 +98,33 @@ public:
     url.append("/");
     url.append("flowfilters");
     parent_vtn_name_.assign(reinterpret_cast<char*>(parent_vtn->vtn_name));
-    return odl_flow_filter_read_all(ctr,cfgnode_vector,url);
+    
+    unc::restjson::RestUtil rest_util_obj(ctr->get_host_address(),
+                          ctr->get_user_name(), ctr->get_pass_word());
+    unc::restjson::HttpResponse_t* response = rest_util_obj.send_http_request(
+                  url, restjson::HTTP_METHOD_GET, NULL, conf_values_);
+
+    if (NULL == response) {
+      pfc_log_error("Error Occured while getting httpresponse -- ");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    int resp_code = response->code;
+    if (HTTP_200_RESP_OK != resp_code) {
+      pfc_log_error("%d error resp ", resp_code);
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    if (NULL != response->write_data) {
+      if (NULL != response->write_data->memory) {
+        char *data = response->write_data->memory;
+        pfc_log_debug("vtn flowfilter present : %s", data);
+        pfc_log_debug("vtn flowfilter parent_name : %s", parent_vtn_name_.c_str());
+        json_object* jobj = restjson::JsonBuildParse::get_json_object(data);
+        VtnFlowfilterParser obj(parent_vtn_name_);
+        UncRespCode ret_val = obj.parse_vtn_flowfilter_response(jobj,key,val,cfgnode_vector);
+        return ret_val;
+      }
+    }
+    return UNC_RC_SUCCESS;
   }
 
   std::string get_url_tail(key_vtn_flowfilter &key_in,
@@ -79,128 +134,60 @@ public:
     url.append("flowfilters");
     return url;
   }
-
-
-  void copy(flowfilter *out, key_vtn_flowfilter &key_in,
-            val_flowfilter &value_in) {
-    // Do Nothing as No Request Body is REquired
-  }
-
-  UncRespCode r_copy(flowfilterlist* in,
-                     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-
-    ODC_FUNC_TRACE;
-    //Create both and FlowFilter and Entries and add to cache
-
-    if ( in == NULL )
-      return UNC_DRV_RC_ERR_GENERIC;
-
-    if ( in->flowfilter_.size() == 0 ) {
-      pfc_log_info("No Flow Entries");
-      return UNC_RC_SUCCESS;
-    }
-
-    key_vtn_flowfilter key_filter;
-    val_flowfilter val_filter;
-    memset ( &key_filter, 0, sizeof(key_vtn_flowfilter));
-    memset ( &val_filter, 0, sizeof(val_flowfilter));
-    strncpy(reinterpret_cast<char*> (key_filter.vtn_key.vtn_name),
-            parent_vtn_name_.c_str(), sizeof(key_filter.vtn_key.vtn_name)-1);
-    key_filter.input_direction=UPLL_FLOWFILTER_DIR_IN;
-
-    //Add to Cache
-    unc::vtndrvcache::ConfigNode *filter_cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn_flowfilter, val_flowfilter, uint32_t>
-    (&key_filter,&val_filter,uint32_t(UNC_OP_READ));
-
-    cfgnode_vector.push_back(filter_cfgptr);
-
-    std::list<flowfilter*>::iterator entry_iter = in->flowfilter_.begin();
-
-    while ( entry_iter != in->flowfilter_.end() ) {
-      flowfilter *entry (*entry_iter);
-      PFC_ASSERT( entry != NULL );
-      key_vtn_flowfilter_entry key_entry;
-      val_vtn_flowfilter_entry val_entry;
-
-      memset(&key_entry,0,sizeof(key_vtn_flowfilter_entry));
-      memset(&val_entry,0,sizeof(val_vtn_flowfilter_entry));
-
-      // Key VTN Flow Filter Entry
-      key_entry.sequence_num=entry->index_;
-      memcpy(&key_entry.flowfilter_key,&key_filter,
-             sizeof(key_vtn_flowfilter));
-
-      // VAL VTN Flow Filter Entry
-      strncpy(reinterpret_cast<char*> (val_entry.flowlist_name),
-              entry->condition_.c_str(),sizeof(val_entry.flowlist_name) - 1);
-      val_entry.valid[UPLL_IDX_SEQ_NUM_FFES] = UNC_VF_VALID;
-
-      if ( entry->filterType_ == NULL )
-        return UNC_DRV_RC_ERR_GENERIC;
-
-      if ( entry->filterType_->pass_ ) {
-        val_entry.action=UPLL_FLOWFILTER_ACT_PASS;
-        val_entry.valid[UPLL_IDX_ACTION_VFFE] = UNC_VF_VALID;
-      } else if ( entry->filterType_->drop_ ) {
-        val_entry.action=UPLL_FLOWFILTER_ACT_DROP;
-        val_entry.valid[UPLL_IDX_ACTION_VFFE] = UNC_VF_VALID;
-      } else if ( entry->filterType_->redirect_) {
-        val_entry.action=UPLL_FLOWFILTER_ACT_REDIRECT;
-        val_entry.valid[UPLL_IDX_ACTION_VFFE] = UNC_VF_VALID;
-      }
-
-      std::list<action*>::iterator action_iter = entry->action_.begin();
-
-      while ( action_iter != entry->action_.end() ) {
-
-        //For Every action, check if dscp or vlanpcp
-
-        action *act_entry(*action_iter);
-        if ( act_entry->dscp_ ) {
-          if ( act_entry->dscp_->dscp_ != -1 ) {
-            val_entry.dscp=act_entry->dscp_->dscp_;
-            val_entry.valid[UPLL_IDX_DSCP_VFFE]=UNC_VF_VALID;
-          }
-        } else if ( act_entry->vlanpcp_ ) {
-          if ( act_entry->vlanpcp_->priority_ != -1 ) {
-            val_entry.priority=act_entry->vlanpcp_->priority_;
-            val_entry.valid[UPLL_IDX_PRIORITY_VFFE]=UNC_VF_VALID;
-          }
-        }
-        action_iter++;
-      }
-      unc::vtndrvcache::ConfigNode *entry_cfgptr=
-        new unc::vtndrvcache::CacheElementUtil<key_vtn_flowfilter_entry, val_vtn_flowfilter_entry, uint32_t>
-      (&key_entry,&val_entry,uint32_t(UNC_OP_READ));
-      cfgnode_vector.push_back(entry_cfgptr);
-      entry_iter++;
-    }
-    return UNC_RC_SUCCESS;
-  }
-
 };
 
+
 class OdcVtnFlowFilterEntryCmd : public unc::driver::vtn_driver_command
-  <key_vtn_flowfilter_entry,val_vtn_flowfilter_entry>,
-public OdcFlowFilterCmd<key_vtn_flowfilter_entry,
-  val_vtn_flowfilter_entry>
-{
+  <key_vtn_flowfilter_entry,val_vtn_flowfilter_entry>, public VtnFlowfilterParser {
 private:
   unc::restjson::ConfFileValues_t conf_values_;
 
 public:
   OdcVtnFlowFilterEntryCmd(unc::restjson::ConfFileValues_t conf_values):
-    OdcFlowFilterCmd<key_vtn_flowfilter_entry,val_vtn_flowfilter_entry>(conf_values),
     conf_values_(conf_values) {}
-
 
   UncRespCode
   create_cmd(key_vtn_flowfilter_entry& key, val_vtn_flowfilter_entry& val,
-             unc::driver::controller *ctr) {
+             unc::driver::controller *ctr_ptr) {
     if ( key.flowfilter_key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
       return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_UPDATE);
+
+    json_object *jobj_req_body = unc::restjson::JsonBuildParse::create_json_obj();
+    pfc_log_debug("entering in to create_vtn_flowfilter_request");
+    int retval = create_vtn_flowfilter_request(jobj_req_body, key, val);
+    pfc_log_debug("leaving from create_vtn_flowfilter_request");
+    if (retval != UNC_RC_SUCCESS)
+      return UNC_DRV_RC_ERR_GENERIC;
+
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    url.append(get_url_tail(key, val));
+ 
+    
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_PUT,
+         unc::restjson::JsonBuildParse::get_json_string(jobj_req_body),
+         conf_values_);*/
+    int resp_code = send_httprequest(ctr_ptr, url, conf_values_, restjson::HTTP_METHOD_PUT, jobj_req_body);
+    pfc_log_debug("the url is:%s",url.c_str());
+    json_object_put(jobj_req_body);
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+   // int resp_code = response->code;
+    pfc_log_debug("response code returned in create vtn flowfilter is %d", resp_code);
+    if (HTTP_201_RESP_CREATED != resp_code) {
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode
@@ -208,15 +195,39 @@ public:
              unc::driver::controller *ctr) {
     if ( key.flowfilter_key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
       return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_UPDATE);
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode
   delete_cmd(key_vtn_flowfilter_entry& key, val_vtn_flowfilter_entry& val,
-             unc::driver::controller *ctr) {
+             unc::driver::controller *ctr_ptr) {
     if ( key.flowfilter_key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
       return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_DELETE);
+   
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    url.append(get_url_tail(key, val));
+    
+    /*unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
+                  ctr_ptr->get_user_name(), ctr_ptr->get_pass_word());
+
+    unc::restjson::HttpResponse_t* response =
+         rest_util_obj.send_http_request(
+         url, restjson::HTTP_METHOD_DELETE, NULL,
+         conf_values_);*/
+    int resp_code = send_httprequest(ctr_ptr,url,conf_values_,restjson::HTTP_METHOD_DELETE,NULL);
+    if (0 == resp_code) {
+      pfc_log_error("Error Occured while getting httpresponse");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    //int resp_code = response->code;
+    pfc_log_debug("response code returned in delete vtn is %d", resp_code);
+    if (HTTP_200_RESP_OK != resp_code)
+      return UNC_DRV_RC_ERR_GENERIC;
+    return UNC_RC_SUCCESS;
   }
 
   UncRespCode fetch_config(
@@ -233,54 +244,16 @@ public:
     url.append("/");
     url.append("flowfilters");
     url.append("/");
+    /*if ( key_in.flowfilter_key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
+     url.append("out");
+    else
+     url.append("in");
+    url.append("/");*/
     sprintf(index,"%d",key_in.sequence_num);
     url.append(index);
     return url;
   }
 
-  void copy(flowfilter *out, key_vtn_flowfilter_entry &key_in,
-            val_vtn_flowfilter_entry &value_in) {
-
-    ODC_FUNC_TRACE;
-    PFC_ASSERT(out != NULL);
-
-    out->index_=key_in.sequence_num;
-
-    out->condition_.assign(reinterpret_cast<char*>(value_in.flowlist_name));
-
-    if ( value_in.valid[UPLL_IDX_ACTION_VFFE] == UNC_VF_VALID ) {
-      out->filterType_=new filterType();
-      if ( value_in.action == UPLL_FLOWFILTER_ACT_PASS ) {
-        out->filterType_->pass_=new pass();
-      } else if ( value_in.action == UPLL_FLOWFILTER_ACT_DROP ) {
-        out->filterType_->drop_=new drop();
-      }
-    } else {
-      //Make FilterType as pass by default
-      out->filterType_=new filterType();
-      out->filterType_->pass_=new pass();
-    }
-
-
-    if ( value_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID ) {
-      action *new_action = new action();
-      new_action->dscp_ = new dscp();
-      new_action->dscp_->dscp_=value_in.dscp;
-      out->action_.push_back(new_action);
-    }
-    if ( value_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_VALID ) {
-      action *new_action = new action();
-      new_action->vlanpcp_ = new vlanpcp();
-      new_action->vlanpcp_->priority_ = value_in.priority;
-      out->action_.push_back(new_action);
-    }
-  }
-
-  UncRespCode r_copy(flowfilterlist* in,
-                     std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
-    //Never Invoked as FectConfig is not implemented!!
-    return UNC_RC_SUCCESS;
-  }
 };
 
 }
