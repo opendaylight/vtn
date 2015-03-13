@@ -23,9 +23,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorUpdatedBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.topology.discovery.rev130819.LinkDiscoveredBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.topology.discovery.rev130819.LinkRemovedBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.CommonPort.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortFeatures;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortNumberUni;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.flow.capable.port.StateBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
@@ -198,7 +198,7 @@ public final class OfPort {
             setMaximumSpeed(SPEED_KBPS).setAdvertisedFeatures(FEATURES_EMPTY).
             setPeerFeatures(FEATURES_EMPTY).setSupported(FEATURES_CURRENT).
             setCurrentFeature(FEATURES_CURRENT).setConfiguration(PORT_CONFIG).
-            setPortNumber(new PortNumber(Long.valueOf(portNumber)));
+            setPortNumber(new PortNumberUni(Long.valueOf(portNumber)));
 
         builder.addAugmentation(FlowCapableNodeConnectorUpdated.class,
                                 fcBuilder.build());
