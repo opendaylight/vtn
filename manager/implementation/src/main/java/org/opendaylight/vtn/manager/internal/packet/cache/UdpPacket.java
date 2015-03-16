@@ -12,13 +12,16 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
 
 import org.opendaylight.controller.sal.packet.UDP;
 
 /**
  * {@code UdpPacket} class implements a cache for a {@link UDP} instance.
  */
-public final class UdpPacket extends PortProtoPacket<UDP> {
+public final class UdpPacket extends PortProtoPacket<UDP>
+    implements UdpHeader {
     /**
      * Byte offset to the checksum field in UDP header.
      */
@@ -106,6 +109,36 @@ public final class UdpPacket extends PortProtoPacket<UDP> {
         }
 
         return pkt;
+    }
+
+    /**
+     * Return the name of the protocol.
+     *
+     * @return  {@code "UDP"}.
+     */
+    @Override
+    protected String getProtocolName() {
+        return "UDP";
+    }
+
+    /**
+     * Return a flow match type corresponding to the source port.
+     *
+     * @return  {@link FlowMatchType#UDP_SRC}.
+     */
+    @Override
+    public FlowMatchType getSourceMatchType() {
+        return FlowMatchType.UDP_SRC;
+    }
+
+    /**
+     * Return a flow match type corresponding to the destination port.
+     *
+     * @return  {@link FlowMatchType#UDP_DST}.
+     */
+    @Override
+    public FlowMatchType getDestinationMatchType() {
+        return FlowMatchType.UDP_DST;
     }
 
     // L4Packet

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -26,6 +26,8 @@ import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -210,8 +212,8 @@ public abstract class FlowFilterImpl implements Serializable {
         throws DropFlowException, RedirectFlowException {
         boolean ret = false;
         try {
-            FlowCondImpl fc = getCondition(mgr, pctx);
-            if (fc.match(mgr, pctx)) {
+            VTNFlowCondition vfcond = getCondition(pctx);
+            if (vfcond.match(pctx)) {
                 // Apply this flow filter.
                 if (needFlowAction()) {
                     applyFlowActions(pctx, ffmap);
@@ -355,7 +357,7 @@ public abstract class FlowFilterImpl implements Serializable {
     }
 
     /**
-     * Return a {@link FlowCondImpl} instance which determines whether this
+     * Return a {@link VTNFlowCondition} instance which determines whether this
      * flow filter needs to be applied to the given packet.
      *
      * <p>
@@ -363,13 +365,12 @@ public abstract class FlowFilterImpl implements Serializable {
      *   the given packet or not.
      * </p>
      *
-     * @param mgr   VTN Manager service.
      * @param pctx  A packet context which contains the packet.
-     * @return  A {@link FlowCondImpl} instance which selects the packet.
+     * @return  A {@link VTNFlowCondition} instance which selects the packet.
      * @throws UnsupportedPacketException
      *    This flow filter does not support the given packet.
      */
-    private FlowCondImpl getCondition(VTNManagerImpl mgr, PacketContext pctx)
+    private VTNFlowCondition getCondition(PacketContext pctx)
         throws UnsupportedPacketException {
         if (!pctx.isUnicast() && !isMulticastSupported()) {
             throw new UnsupportedPacketException(
@@ -381,12 +382,13 @@ public abstract class FlowFilterImpl implements Serializable {
                 "flooding packet is not supported");
         }
 
-        FlowCondImpl fc = mgr.getFlowCondDB().get(condition);
-        if (fc == null) {
-            throw new UnsupportedPacketException("flow condition not found");
+        FlowCondReader reader = pctx.getTxContext().getFlowCondReader();
+        VTNFlowCondition vfcond = reader.get(condition);
+        if (vfcond == null) {
+            throw new UnsupportedPacketException("Flow condition not found");
         }
 
-        return fc;
+        return vfcond;
     }
 
     /**

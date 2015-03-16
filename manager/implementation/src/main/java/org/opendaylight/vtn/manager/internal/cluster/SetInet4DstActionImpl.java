@@ -9,10 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.net.InetAddress;
-
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.Inet4Packet;
@@ -63,9 +62,9 @@ public final class SetInet4DstActionImpl extends InetAddressActionImpl {
     public boolean apply(PacketContext pctx) {
         Inet4Packet ipv4 = pctx.getInet4Packet();
         if (ipv4 != null) {
-            InetAddress iaddr = getAddress();
-            ipv4.setDestinationAddress(iaddr);
-            pctx.addFilterAction(new SetNwDst(iaddr));
+            IpNetwork ipn = getAddress();
+            ipv4.setDestinationAddress(ipn);
+            pctx.addFilterAction(new SetNwDst(ipn.getInetAddress()));
             return true;
         }
 

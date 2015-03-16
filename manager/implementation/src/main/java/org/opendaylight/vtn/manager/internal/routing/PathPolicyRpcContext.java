@@ -9,7 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowMatch;
+import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 
 /**
  * {@code PathPolicyRpcContext} describes a runtime context for updating
@@ -69,12 +69,12 @@ final class PathPolicyRpcContext {
     }
 
     /**
-     * Return a {@link PathPolicyFlowMatch} instance that selects flow entries
-     * corresponding to the target path policy.
+     * Return a {@link PathPolicyFlowSelector} instance that selects flow
+     * entries corresponding to the target path policy.
      *
-     * @return  A {@link PathPolicyFlowMatch} instance.
+     * @return  A {@link PathPolicyFlowSelector} instance.
      */
-    PathPolicyFlowMatch getFlowMatch() {
-        return new PathPolicyFlowMatch(policyId.intValue());
+    PathPolicyFlowSelector getFlowSelector() {
+        return new PathPolicyFlowSelector(policyId.intValue());
     }
 }

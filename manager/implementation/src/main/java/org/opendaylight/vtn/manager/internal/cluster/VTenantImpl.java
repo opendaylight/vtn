@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.internal.cluster;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -56,6 +55,7 @@ import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.ContainerConfig;
 import org.opendaylight.vtn.manager.internal.LockStack;
@@ -2350,10 +2350,9 @@ public final class VTenantImpl implements FlowFilterNode {
      *          controller. Otherwise {@code false} is returned.
      */
     private boolean isToController(VTNManagerImpl mgr, PacketContext pctx) {
-        byte[] ctlrMac = mgr.getVTNConfig().
-            getControllerMacAddress().getBytes();
-        byte[] dst = pctx.getDestinationAddress();
-        return Arrays.equals(ctlrMac, dst);
+        EtherAddress ctlrMac = mgr.getVTNConfig().getControllerMacAddress();
+        EtherAddress dst = pctx.getDestinationAddress();
+        return (ctlrMac.getAddress() == dst.getAddress());
     }
 
     /**

@@ -45,10 +45,7 @@ public class SetDlDstActionImplTest extends TestBase {
             try {
                 SetDlDstActionImpl impl = new SetDlDstActionImpl(act);
                 assertEquals(act, impl.getFlowAction());
-
-                // Ensure that MAC address bytes are copied.
-                assertNotSame(bytes, impl.getAddress());
-                assertArrayEquals(bytes, impl.getAddress());
+                assertArrayEquals(bytes, impl.getAddress().getBytes());
             } catch (Exception e) {
                 unexpected(e);
             }

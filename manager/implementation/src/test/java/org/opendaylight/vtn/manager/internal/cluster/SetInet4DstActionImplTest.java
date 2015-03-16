@@ -19,6 +19,7 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -36,10 +37,11 @@ public class SetInet4DstActionImplTest extends TestBase {
     @Test
     public void testGetter() throws Exception {
         for (InetAddress iaddr: createInet4Addresses(false)) {
+            IpNetwork ipn = IpNetwork.create(iaddr);
             SetInet4DstAction act = new SetInet4DstAction(iaddr);
             SetInet4DstActionImpl impl = new SetInet4DstActionImpl(act);
             assertEquals(act, impl.getFlowAction());
-            assertEquals(iaddr, impl.getAddress());
+            assertEquals(ipn, impl.getAddress());
         }
 
         // null action.

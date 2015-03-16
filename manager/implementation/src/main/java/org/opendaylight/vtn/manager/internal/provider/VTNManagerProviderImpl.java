@@ -25,19 +25,19 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.FlowSelector;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNConfig;
-import org.opendaylight.vtn.manager.internal.VTNFlowMatch;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
 import org.opendaylight.vtn.manager.internal.config.VTNConfigManager;
+import org.opendaylight.vtn.manager.internal.flow.cond.FlowCondManager;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryManager;
 import org.opendaylight.vtn.manager.internal.packet.VTNPacketService;
 import org.opendaylight.vtn.manager.internal.routing.VTNRoutingManager;
-import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.SalPort;
 import org.opendaylight.vtn.manager.internal.util.concurrent.CanceledFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCallbackTask;
@@ -112,11 +112,6 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     private final AtomicReference<VTNInventoryManager>  inventoryManager;
 
     /**
-     * VTN packet routing manager.
-     */
-    private final AtomicReference<VTNRoutingManager>  routingManager;
-
-    /**
      * VTN packet service.
      */
     private final AtomicReference<VTNPacketService>  packetService;
@@ -137,10 +132,9 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     private final AtomicReference<Timer>  globalTimer;
 
     /**
-     * Registrations of RPC services provided by the VTN Manager.
+     * Registry for internal subsystems.
      */
-    private final CompositeAutoCloseable  rpcServices =
-        new CompositeAutoCloseable(LOG);
+    private final SubSystemRegistry  subSystems = new SubSystemRegistry();
 
     /**
      * AD-SAL VTN Manager service.
@@ -171,20 +165,27 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         globalQueue = new AtomicReference<TxQueueImpl>(globq);
         VTNConfigManager cfm = new VTNConfigManager(this);
         configManager = new AtomicReference<VTNConfigManager>(cfm);
-        boolean configProvider = cfm.isConfigProvider();
+        boolean master = cfm.isConfigProvider();
 
         VTNInventoryManager vim = new VTNInventoryManager(this);
         inventoryManager = new AtomicReference<VTNInventoryManager>(vim);
 
-        List<VTNFuture<?>> futures = new ArrayList<>();
-        VTNRoutingManager rtm = new VTNRoutingManager(this);
-        routingManager = new AtomicReference<VTNRoutingManager>(rtm);
-        futures.add(rtm.initConfig(configProvider));
+        // Initialize internal subsystems.
+        try {
+            subSystems.add(new VTNRoutingManager(this)).
+                add(new FlowCondManager(this));
+        } catch (RuntimeException e) {
+            LOG.error("Failed to initialize subsystem.", e);
+            subSystems.close();
+            throw e;
+        }
+
+        // Resume configurations.
+        List<VTNFuture<?>> futures = subSystems.initConfig(master);
 
         VTNPacketService psv = new VTNPacketService(this, nsv);
         vim.addListener(psv);
         packetService = new AtomicReference<VTNPacketService>(psv);
-
         globq.start();
 
         // Wait for completion of initialization.
@@ -195,14 +196,16 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         } catch (Exception e) {
             String msg = "Failed to initialize VTN Manager provider.";
             LOG.error(msg, e);
+            subSystems.close();
             throw new IllegalStateException(msg, e);
         }
 
         // Register RPC services.
         try {
-            rtm.initRpcServices(rpcReg, rpcServices);
+            subSystems.initRpcServices(rpcReg);
         } catch (RuntimeException e) {
-            rpcServices.close();
+            LOG.error("Failed to initialize RPC service.", e);
+            subSystems.close();
             throw e;
         }
 
@@ -232,7 +235,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             return false;
         }
 
-        if (rpcServices.isClosed()) {
+        if (subSystems.isClosed()) {
             return false;
         }
 
@@ -251,7 +254,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             vim.addListener(mgr);
         }
 
-        VTNRoutingManager rtm = routingManager.get();
+        VTNRoutingManager rtm = subSystems.get(VTNRoutingManager.class);
         if (rtm != null) {
             rtm.addListener(mgr);
         }
@@ -280,6 +283,9 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         if (vim != null) {
             vim.shutdown();
         }
+
+        // Stop RPC services.
+        subSystems.closeRpc();
     }
 
     /**
@@ -368,7 +374,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      */
     @Override
     public RouteResolver getRouteResolver(int id) {
-        VTNRoutingManager rtm = routingManager.get();
+        VTNRoutingManager rtm = subSystems.get(VTNRoutingManager.class);
         return (rtm == null) ? null : rtm.getRouteResolver(id);
     }
 
@@ -376,15 +382,29 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      * {@inheritDoc}
      */
     @Override
-    public List<VTNFuture<?>> removeFlows(VTNFlowMatch fmatch) {
+    public List<VTNFuture<?>> removeFlows(FlowSelector selector) {
         VTNManagerImpl mgr = vtnManager.get();
         if (mgr != null) {
             List<VTNFuture<?>> list = new ArrayList<>();
-            list.addAll(mgr.removeFlows(fmatch));
+            list.addAll(mgr.removeFlows(selector));
             return list;
         }
 
         return Collections.<VTNFuture<?>>emptyList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNFuture<?> removeFlows(String tname, FlowSelector selector) {
+        VTNFuture<?> task = null;
+        VTNManagerImpl mgr = vtnManager.get();
+        if (mgr != null) {
+            task = mgr.removeFlows(tname, selector);
+        }
+
+        return task;
     }
 
     /**
@@ -409,7 +429,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     @Override
     public <T extends RpcService> T getVtnRpcService(Class<T> type)
         throws VTNException {
-        if (rpcServices.isClosed()) {
+        if (subSystems.isRpcClosed()) {
             String msg = "VTN service is already closed.";
             throw new VTNException(StatusCode.NOSERVICE, msg);
         }
@@ -450,13 +470,9 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     @Override
     public void close() {
         shutdown();
-        rpcServices.close();
         globalExecutor.shutdown();
 
-        VTNRoutingManager rtm = routingManager.getAndSet(null);
-        if (rtm != null) {
-            rtm.close();
-
+        if (subSystems.close()) {
             VTNInventoryManager vim = inventoryManager.getAndSet(null);
             if (vim != null) {
                 vim.close();

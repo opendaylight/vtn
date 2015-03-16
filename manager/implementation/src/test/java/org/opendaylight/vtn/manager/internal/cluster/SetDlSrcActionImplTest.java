@@ -45,10 +45,7 @@ public class SetDlSrcActionImplTest extends TestBase {
             try {
                 SetDlSrcActionImpl impl = new SetDlSrcActionImpl(act);
                 assertEquals(act, impl.getFlowAction());
-
-                // Ensure that MAC address bytes are copied.
-                assertNotSame(bytes, impl.getAddress());
-                assertArrayEquals(bytes, impl.getAddress());
+                assertArrayEquals(bytes, impl.getAddress().getBytes());
             } catch (Exception e) {
                 unexpected(e);
             }

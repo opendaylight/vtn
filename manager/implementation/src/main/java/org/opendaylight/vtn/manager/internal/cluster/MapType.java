@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 
-import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
 /**
  * {@code MapType} class represents types of mappings between virtual and
@@ -26,7 +26,7 @@ public enum MapType {
     /**
      * MAC mapping.
      */
-    MAC(1 << 1, Reason.MACMAPPED, MatchType.DL_SRC),
+    MAC(1 << 1, Reason.MACMAPPED, FlowMatchType.DL_SRC),
 
     /**
      * VLAN mapping.
@@ -50,10 +50,10 @@ public enum MapType {
     private final Reason  reason;
 
     /**
-     * A {@link MatchType} instance which represents flow match field
+     * A {@link FlowMatchType} instance which represents flow match field
      * to be specfied in the ingress flow entry.
      */
-    private final MatchType  matchType;
+    private final FlowMatchType  matchType;
 
     /**
      * Construct a new mapping type.
@@ -81,10 +81,10 @@ public enum MapType {
      * @param mask    A bitmask which identifies the mapping type.
      * @param reason  A {@link Reason} instance associated with the mapping
      *                type.
-     * @param mtype   A {@link MatchType} instance which represents flow match
-     *                fields to specify the packet.
+     * @param mtype   A {@link FlowMatchType} instance which represents flow
+     *                match fields to specify the packet.
      */
-    private MapType(int mask, Reason reason, MatchType mtype) {
+    private MapType(int mask, Reason reason, FlowMatchType mtype) {
         this.mask = mask;
         this.reason = reason;
         matchType = mtype;
@@ -112,14 +112,14 @@ public enum MapType {
     }
 
     /**
-     * Return a {@link MatchType} instance which represents the flow match
+     * Return a {@link FlowMatchType} instance which represents the flow match
      * field to be specified in the ingress flow entry.
      *
-     * @return  A {@link MatchType} instance.
+     * @return  A {@link FlowMatchType} instance.
      *          {@code null} is returned if no additional match field is
      *          required.
      */
-    public MatchType getMatchType() {
+    public FlowMatchType getMatchType() {
         return matchType;
     }
 }

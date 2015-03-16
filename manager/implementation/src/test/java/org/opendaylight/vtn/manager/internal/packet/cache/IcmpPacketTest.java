@@ -20,6 +20,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -76,8 +77,8 @@ public class IcmpPacketTest extends TestBase {
             for (short code: codes) {
                 ICMP pkt = createICMP(type, code);
                 IcmpPacket icmp = new IcmpPacket(pkt);
-                assertEquals(type, icmp.getType());
-                assertEquals(code, icmp.getCode());
+                assertEquals(type, icmp.getIcmpType());
+                assertEquals(code, icmp.getIcmpCode());
 
                 // commit() should return false.
                 Ethernet ether = createEthernet(pkt);
@@ -85,7 +86,7 @@ public class IcmpPacketTest extends TestBase {
                     ether, EtherPacketTest.NODE_CONNECTOR);
                 assertFalse(icmp.commit(pctx));
                 assertEquals(null, pctx.getFilterActions());
-                for (MatchType mtype: MatchType.values()) {
+                for (FlowMatchType mtype: FlowMatchType.values()) {
                     assertFalse(pctx.hasMatchField(mtype));
                 }
             }
@@ -133,17 +134,17 @@ public class IcmpPacketTest extends TestBase {
 
             if ((flags & ICMP_TYPE) != 0) {
                 // Modify ICMP type.
-                icmp1.setType(type1);
+                icmp1.setIcmpType(type1);
                 type = type1;
             }
             if ((flags & ICMP_CODE) != 0) {
                 // Modify ICMP code.
-                icmp1.setCode(code1);
+                icmp1.setIcmpCode(code1);
                 code = code1;
             }
 
-            assertEquals(type, icmp1.getType());
-            assertEquals(code, icmp1.getCode());
+            assertEquals(type, icmp1.getIcmpType());
+            assertEquals(code, icmp1.getIcmpCode());
 
             // The packet should not be modified until commit() is called.
             assertSame(pkt, icmp1.getPacket());
@@ -162,8 +163,8 @@ public class IcmpPacketTest extends TestBase {
             assertEquals(identifier, pkt.getIdentifier());
             assertEquals(sequenceNumber, pkt.getSequenceNumber());
 
-            assertTrue(pctx.hasMatchField(MatchType.DL_TYPE));
-            assertTrue(pctx.hasMatchField(MatchType.NW_PROTO));
+            assertTrue(pctx.hasMatchField(FlowMatchType.DL_TYPE));
+            assertTrue(pctx.hasMatchField(FlowMatchType.IP_PROTO));
 
             // updateChecksum() must return false.
             assertFalse(icmp.updateChecksum(null));
@@ -184,7 +185,7 @@ public class IcmpPacketTest extends TestBase {
             }
 
             pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
-            for (MatchType mt: MatchType.values()) {
+            for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
             for (Action act: salActions.values()) {
@@ -196,8 +197,8 @@ public class IcmpPacketTest extends TestBase {
             assertEquals(actions, filterActions);
 
             // The original packet should not be affected.
-            assertEquals(type0, icmp.getType());
-            assertEquals(code0, icmp.getCode());
+            assertEquals(type0, icmp.getIcmpType());
+            assertEquals(code0, icmp.getIcmpCode());
             assertSame(pkt, icmp.getPacket());
 
             assertEquals((byte)type0, pkt.getType());
@@ -207,24 +208,24 @@ public class IcmpPacketTest extends TestBase {
             assertEquals(sequenceNumber, pkt.getSequenceNumber());
 
             // Set values in the original packet.
-            icmp1.setType(type0);
-            icmp1.setCode(code0);
+            icmp1.setIcmpType(type0);
+            icmp1.setIcmpCode(code0);
             assertEquals(false, icmp1.commit(pctx));
-            assertEquals(type0, icmp1.getType());
-            assertEquals(code0, icmp1.getCode());
+            assertEquals(type0, icmp1.getIcmpType());
+            assertEquals(code0, icmp1.getIcmpCode());
 
             // Ensure that a set of modified values is deeply cloned.
             IcmpPacket icmp2 = icmp1.clone();
-            assertEquals(type0, icmp1.getType());
-            assertEquals(code0, icmp1.getCode());
-            assertEquals(type0, icmp2.getType());
-            assertEquals(code0, icmp2.getCode());
-            icmp2.setType(type1);
-            icmp2.setCode(code1);
-            assertEquals(type0, icmp1.getType());
-            assertEquals(code0, icmp1.getCode());
-            assertEquals(type1, icmp2.getType());
-            assertEquals(code1, icmp2.getCode());
+            assertEquals(type0, icmp1.getIcmpType());
+            assertEquals(code0, icmp1.getIcmpCode());
+            assertEquals(type0, icmp2.getIcmpType());
+            assertEquals(code0, icmp2.getIcmpCode());
+            icmp2.setIcmpType(type1);
+            icmp2.setIcmpCode(code1);
+            assertEquals(type0, icmp1.getIcmpType());
+            assertEquals(code0, icmp1.getIcmpCode());
+            assertEquals(type1, icmp2.getIcmpType());
+            assertEquals(code1, icmp2.getIcmpCode());
         }
     }
 
@@ -235,10 +236,11 @@ public class IcmpPacketTest extends TestBase {
     public void testSetMatch() {
         short type = 33;
         short code = 66;
-        Map<MatchType, MatchField> tpFields =
-            new HashMap<MatchType, MatchField>();
-        tpFields.put(MatchType.TP_SRC, new MatchField(MatchType.TP_SRC, type));
-        tpFields.put(MatchType.TP_DST, new MatchField(MatchType.TP_DST, code));
+        Map<FlowMatchType, MatchField> tpFields = new HashMap<>();
+        tpFields.put(FlowMatchType.ICMP_TYPE,
+                     new MatchField(MatchType.TP_SRC, type));
+        tpFields.put(FlowMatchType.ICMP_CODE,
+                     new MatchField(MatchType.TP_DST, code));
 
         short type1 = 29;
         short code1 = 1;
@@ -246,17 +248,18 @@ public class IcmpPacketTest extends TestBase {
         IcmpPacket icmp = new IcmpPacket(pkt);
 
         Match match = new Match();
-        Set<MatchType> fields = EnumSet.noneOf(MatchType.class);
+        Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
         icmp.setMatch(match, fields);
         List<MatchType> matches = match.getMatchesList();
         assertEquals(0, matches.size());
 
-        for (Map.Entry<MatchType, MatchField> entry: tpFields.entrySet()) {
-            MatchType mtype = entry.getKey();
+        for (Map.Entry<FlowMatchType, MatchField> entry: tpFields.entrySet()) {
+            FlowMatchType fmtype = entry.getKey();
             MatchField mfield = entry.getValue();
+            MatchType mtype = mfield.getType();
 
             match = new Match();
-            fields = EnumSet.of(mtype);
+            fields = EnumSet.of(fmtype);
             icmp.setMatch(match, fields);
             matches = match.getMatchesList();
             assertEquals(1, matches.size());
@@ -264,17 +267,16 @@ public class IcmpPacketTest extends TestBase {
         }
 
         // setMatch() always has to see the original.
-        icmp.setType(type1);
-        icmp.setCode(code1);
-        fields = EnumSet.noneOf(MatchType.class);
+        icmp.setIcmpType(type1);
+        icmp.setIcmpCode(code1);
+        fields = EnumSet.noneOf(FlowMatchType.class);
         fields.addAll(tpFields.keySet());
         match = new Match();
         icmp.setMatch(match, fields);
         matches = match.getMatchesList();
         assertEquals(tpFields.size(), matches.size());
-        for (Map.Entry<MatchType, MatchField> entry: tpFields.entrySet()) {
-            MatchType mtype = entry.getKey();
-            MatchField mfield = entry.getValue();
+        for (MatchField mfield: tpFields.values()) {
+            MatchType mtype = mfield.getType();
             assertEquals(mfield, match.getField(mtype));
         }
     }

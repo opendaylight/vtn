@@ -55,7 +55,6 @@ import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
-import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.PassFilter;
 import org.opendaylight.vtn.manager.util.EtherAddress;
@@ -2128,28 +2127,6 @@ public abstract class TestBase extends Assert {
                 pathList.add(vpath);
             }
             return pathList;
-        } catch (Exception ex) {
-            return null;
-        }
-    }
-
-    /**
-     * Common Method to create FlowCondition.
-     *  @return FlowCondition list object.
-     */
-    public List<FlowCondition> createFlowConditions() {
-        List<FlowCondition> flowConditionList = new ArrayList<FlowCondition>();
-
-        try {
-            FlowCondition flowCondition = null;
-            flowConditionList.add(null);
-            flowConditionList.add(flowCondition);
-
-            for (String conditionName : FLOW_CONDITION_NAME) {
-                flowCondition = new FlowCondition(conditionName, null);
-                flowConditionList.add(flowCondition);
-            }
-            return flowConditionList;
         } catch (Exception ex) {
             return null;
         }

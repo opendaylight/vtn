@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,7 +30,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * MAC mapping.
  */
 public final class MacMapCleaner
-    implements MapCleaner, VTNFlowMatch, MacTableEntryFilter {
+    implements MapCleaner, FlowSelector, MacTableEntryFilter {
     /**
      * A global resource manager instance.
      */
@@ -199,7 +199,7 @@ public final class MacMapCleaner
         return mapped;
     }
 
-    // VTNFlowMatch
+    // FlowSelector
 
     /**
      * {@inheritDoc}

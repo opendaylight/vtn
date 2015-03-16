@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
@@ -60,9 +61,9 @@ public final class SetDlSrcActionImpl extends DlAddrActionImpl {
     @Override
     public boolean apply(PacketContext pctx) {
         EtherPacket ether = pctx.getEtherPacket();
-        byte[] addr = getAddress();
+        EtherAddress addr = getAddress();
         ether.setSourceAddress(addr);
-        pctx.addFilterAction(new SetDlSrc(addr));
+        pctx.addFilterAction(new SetDlSrc(addr.getBytes()));
         return true;
     }
 }

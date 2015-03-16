@@ -22,6 +22,8 @@ import org.junit.Test;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -101,7 +103,7 @@ public class EtherPacketTest extends TestBase {
     /**
      * VLAN priority for test.
      */
-    private byte  vlanPcp;
+    private short  vlanPcp;
 
     /**
      * Test case for getter methods.
@@ -112,59 +114,40 @@ public class EtherPacketTest extends TestBase {
             (byte)0x00, (byte)0x0a, (byte)0x7f, (byte)0x88, (byte)0xff,
         };
         int[] types = {0x0001, 0x0815, 0x9999};
-        short[] vlans = {0, 1, 2, 4095};
-        boolean arrayFirst = true;
+        int[] vlans = {0, 1, 2, 4095};
         ARP arp = createArp();
         for (byte src: bytes) {
             byte[] srcAddr = {
                 (byte)0x00, (byte)0x11, (byte)0x22,
                 (byte)0x33, (byte)0x44, src,
             };
-            long srcMac = EtherAddress.toLong(srcAddr);
+            EtherAddress srcMac = new EtherAddress(srcAddr);
             for (byte dst: bytes) {
                 byte[] dstAddr = {
                     (byte)0xf0, (byte)0xf1, (byte)0xf2,
                     (byte)0xf3, (byte)0xf4, dst,
                 };
-                long dstMac = EtherAddress.toLong(dstAddr);
+                EtherAddress dstMac = new EtherAddress(dstAddr);
                 for (int type: types) {
-                    for (short vlan: vlans) {
+                    for (int vlan: vlans) {
                         // Create Ethernet frame using ARP packet.
                         Ethernet pkt = createEthernet(srcAddr, dstAddr, type,
-                                                      vlan, arp);
+                                                      (short)vlan, arp);
                         EtherPacket ether = new EtherPacket(pkt);
-                        if (arrayFirst) {
-                            assertArrayEquals(srcAddr,
-                                              ether.getSourceAddress());
-                            assertArrayEquals(dstAddr,
-                                              ether.getDestinationAddress());
-                            assertEquals(srcMac, ether.getSourceMacAddress());
-                            assertEquals(dstMac,
-                                         ether.getDestinationMacAddress());
-                            arrayFirst = false;
-                        } else {
-                            assertEquals(srcMac, ether.getSourceMacAddress());
-                            assertEquals(dstMac,
-                                         ether.getDestinationMacAddress());
-                            assertArrayEquals(srcAddr,
-                                              ether.getSourceAddress());
-                            assertArrayEquals(dstAddr,
-                                              ether.getDestinationAddress());
-                            arrayFirst = true;
-                        }
-
+                        assertEquals(srcMac, ether.getSourceAddress());
+                        assertEquals(dstMac, ether.getDestinationAddress());
                         assertEquals(type, ether.getEtherType());
                         assertEquals(vlan, ether.getOriginalVlan());
-                        assertEquals(vlan, ether.getVlan());
+                        assertEquals(vlan, ether.getVlanId());
                         IEEE8021Q vlanTag;
-                        if (vlan == MatchType.DL_VLAN_NONE) {
+                        if (vlan == EtherHeader.VLAN_NONE) {
                             assertTrue(ether.getVlanPriority() < 0);
                             vlanTag = null;
                         } else {
                             assertEquals(vlanPcp, ether.getVlanPriority());
                             vlanTag = new IEEE8021Q();
-                            vlanTag.setCfi((byte)0).setPcp(vlanPcp).
-                                setVid(vlan).setEtherType((short)type);
+                            vlanTag.setCfi((byte)0).setPcp((byte)vlanPcp).
+                                setVid((short)vlan).setEtherType((short)type);
                         }
                         assertEquals(vlanTag, ether.getVlanTag());
                         assertEquals(arp, ether.getPayload());
@@ -175,21 +158,18 @@ public class EtherPacketTest extends TestBase {
                         pkt = createEthernet(srcAddr, dstAddr, type, vlan,
                                              RAW_PAYLOAD);
                         ether = new EtherPacket(pkt);
-                        assertArrayEquals(srcAddr, ether.getSourceAddress());
-                        assertArrayEquals(dstAddr,
-                                          ether.getDestinationAddress());
-                        assertEquals(srcMac, ether.getSourceMacAddress());
-                        assertEquals(dstMac, ether.getDestinationMacAddress());
+                        assertEquals(srcMac, ether.getSourceAddress());
+                        assertEquals(dstMac, ether.getDestinationAddress());
                         assertEquals(type, ether.getEtherType());
                         assertEquals(vlan, ether.getOriginalVlan());
-                        if (vlan == MatchType.DL_VLAN_NONE) {
+                        if (vlan == EtherHeader.VLAN_NONE) {
                             assertTrue(ether.getVlanPriority() < 0);
                             vlanTag = null;
                         } else {
                             assertEquals(vlanPcp, ether.getVlanPriority());
                             vlanTag = new IEEE8021Q();
-                            vlanTag.setCfi((byte)0).setPcp(vlanPcp).
-                                setVid(vlan).setEtherType((short)type);
+                            vlanTag.setCfi((byte)0).setPcp((byte)vlanPcp).
+                                setVid((short)vlan).setEtherType((short)type);
                         }
                         assertEquals(vlanTag, ether.getVlanTag());
                         assertEquals(null, ether.getPayload());
@@ -202,7 +182,7 @@ public class EtherPacketTest extends TestBase {
                         assertFalse(ether.commit(pctx));
                         assertEquals(null, pctx.getFilterActions());
 
-                        for (MatchType mtype: MatchType.values()) {
+                        for (FlowMatchType mtype: FlowMatchType.values()) {
                             assertFalse(pctx.hasMatchField(mtype));
                         }
                     }
@@ -217,30 +197,30 @@ public class EtherPacketTest extends TestBase {
     @Test
     public void testSetter() {
         int type = 0x0806;
-        short[] vids = {MatchType.DL_VLAN_NONE, (short)1, (short)4095};
+        short[] vids = {EtherHeader.VLAN_NONE, (short)1, (short)4095};
         short vid1 = (short)1000;
 
         byte[] src0 = {
             (byte)0x10, (byte)0x20, (byte)0x30,
             (byte)0x40, (byte)0x50, (byte)0x60,
         };
-        long srcMac0 = EtherAddress.toLong(src0);
+        EtherAddress srcMac0 = new EtherAddress(src0);
         byte[] dst0 = {
             (byte)0xf0, (byte)0xf1, (byte)0xf2,
             (byte)0xfa, (byte)0xfb, (byte)0xfc,
         };
-        long dstMac0 = EtherAddress.toLong(dst0);
+        EtherAddress dstMac0 = new EtherAddress(dst0);
 
         byte[] src1 = {
             (byte)0xf0, (byte)0xf1, (byte)0xf2,
             (byte)0xf3, (byte)0xf4, (byte)0xf5,
         };
-        long srcMac1 = EtherAddress.toLong(src1);
+        EtherAddress srcMac1 = new EtherAddress(src1);
         byte[] dst1 = {
             (byte)0xa0, (byte)0xbc, (byte)0xde,
             (byte)0xf1, (byte)0x23, (byte)0x45,
         };
-        long dstMac1 = EtherAddress.toLong(dst1);
+        EtherAddress dstMac1 = new EtherAddress(dst1);
 
         byte[] src2 = {
             (byte)0xe0, (byte)0xe1, (byte)0xe2,
@@ -271,10 +251,10 @@ public class EtherPacketTest extends TestBase {
 
                     byte[] src = src0;
                     byte[] dst = dst0;
-                    long srcMac = srcMac0;
-                    long dstMac = dstMac0;
-                    short vlan = vid;
-                    byte pcp = vlanPcp;
+                    EtherAddress srcMac = srcMac0;
+                    EtherAddress dstMac = dstMac0;
+                    int vlan = vid;
+                    short pcp = vlanPcp;
                     boolean setPcp = false;
                     boolean mod = false;
 
@@ -288,21 +268,21 @@ public class EtherPacketTest extends TestBase {
 
                     if ((flags & ETH_SRC) != 0) {
                         // Modify source address.
-                        ether1.setSourceAddress(src1);
+                        ether1.setSourceAddress(srcMac1);
                         src = src1;
                         srcMac = srcMac1;
                         mod = true;
                     }
                     if ((flags & ETH_DST) != 0) {
                         // Modify destination address.
-                        ether1.setDestinationAddress(dst1);
+                        ether1.setDestinationAddress(dstMac1);
                         dst = dst1;
                         dstMac = dstMac1;
                         mod = true;
                     }
                     if ((flags & ETH_VLAN_VID) != 0) {
                         // Modify VLAN ID.
-                        ether1.setVlan(outVid);
+                        ether1.setVlanId(outVid);
                         vlan = outVid;
                     }
                     if ((flags & ETH_VLAN_PCP) != 0) {
@@ -310,21 +290,19 @@ public class EtherPacketTest extends TestBase {
                         pcp = (byte)((pcp + 1) & 0x7);
                         ether1.setVlanPriority(pcp);
                         setPcp = true;
-                        if (vlan != MatchType.DL_VLAN_NONE) {
+                        if (vlan != EtherHeader.VLAN_NONE) {
                             mod = true;
                         }
                     }
                     ether1.setPayload(anotherArp);
                     assertSame(anotherArp, ether1.getPayload());
 
-                    assertArrayEquals(src, ether1.getSourceAddress());
-                    assertEquals(srcMac, ether1.getSourceMacAddress());
-                    assertArrayEquals(dst, ether1.getDestinationAddress());
-                    assertEquals(dstMac, ether1.getDestinationMacAddress());
+                    assertEquals(srcMac, ether1.getSourceAddress());
+                    assertEquals(dstMac, ether1.getDestinationAddress());
                     assertEquals(type, ether1.getEtherType());
-                    assertEquals(vlan, ether1.getVlan());
+                    assertEquals(vlan, ether1.getVlanId());
                     assertEquals(vid, ether1.getOriginalVlan());
-                    if (vid == MatchType.DL_VLAN_NONE && !setPcp) {
+                    if (vid == EtherHeader.VLAN_NONE && !setPcp) {
                         assertTrue(ether1.getVlanPriority() < 0);
                     } else {
                         assertEquals(pcp, ether1.getVlanPriority());
@@ -334,7 +312,7 @@ public class EtherPacketTest extends TestBase {
                     // not configured in outgoing packet.
                     List<Action> actions = new ArrayList<Action>();
                     for (Action act: salActions.values()) {
-                        if (!(vlan == MatchType.DL_VLAN_NONE &&
+                        if (!(vlan == EtherHeader.VLAN_NONE &&
                               SetVlanPcp.class.isInstance(act))) {
                             actions.add(act);
                         }
@@ -354,11 +332,11 @@ public class EtherPacketTest extends TestBase {
                     if ((flags & ETH_DST) != 0) {
                         actions.add(salActions.get(SetDlDst.class));
                     }
-                    if (vlan != MatchType.DL_VLAN_NONE &&
+                    if (vlan != EtherHeader.VLAN_NONE &&
                         (flags & ETH_VLAN_PCP) != 0) {
                         actions.add(salActions.get(SetVlanPcp.class));
                     }
-                    for (MatchType mt: MatchType.values()) {
+                    for (FlowMatchType mt: FlowMatchType.values()) {
                         pctx.addMatchField(mt);
                     }
 
@@ -371,7 +349,7 @@ public class EtherPacketTest extends TestBase {
                     assertSame(pkt, ether1.getPacket());
                     assertArrayEquals(src0, pkt.getSourceMACAddress());
                     assertArrayEquals(dst0, pkt.getDestinationMACAddress());
-                    if (vid == MatchType.DL_VLAN_NONE) {
+                    if (vid == EtherHeader.VLAN_NONE) {
                         assertEquals((short)type, pkt.getEtherType());
                         assertSame(arp, pkt.getPayload());
                     } else {
@@ -384,64 +362,52 @@ public class EtherPacketTest extends TestBase {
                     }
 
                     // The original packet should not be affected.
-                    assertArrayEquals(src0, ether.getSourceAddress());
-                    assertEquals(srcMac0, ether.getSourceMacAddress());
-                    assertArrayEquals(dst0, ether.getDestinationAddress());
-                    assertEquals(dstMac0, ether.getDestinationMacAddress());
+                    assertEquals(srcMac0, ether.getSourceAddress());
+                    assertEquals(dstMac0, ether.getDestinationAddress());
                     assertEquals(type, ether.getEtherType());
                     assertSame(arp, ether.getPayload());
-                    if (vid == MatchType.DL_VLAN_NONE) {
+                    if (vid == EtherHeader.VLAN_NONE) {
                         assertTrue(ether.getVlanPriority() < 0);
                     } else {
                         assertEquals(vlanPcp, ether.getVlanPriority());
                     }
 
                     // Set values in the original packet.
-                    ether1.setSourceAddress(src0);
-                    ether1.setDestinationAddress(dst0);
-                    ether1.setVlan(vid);
+                    ether1.setSourceAddress(srcMac0);
+                    ether1.setDestinationAddress(dstMac0);
+                    ether1.setVlanId(vid);
                     ether1.setVlanPriority(vlanPcp);
                     assertEquals(false, ether1.commit(pctx));
-                    assertArrayEquals(src0, ether1.getSourceAddress());
-                    assertEquals(srcMac0, ether1.getSourceMacAddress());
-                    assertArrayEquals(dst0, ether1.getDestinationAddress());
-                    assertEquals(dstMac0, ether1.getDestinationMacAddress());
-                    assertEquals(vid, ether1.getVlan());
+                    assertEquals(srcMac0, ether1.getSourceAddress());
+                    assertEquals(dstMac0, ether1.getDestinationAddress());
+                    assertEquals(vid, ether1.getVlanId());
                     assertEquals(vlanPcp, ether1.getVlanPriority());
                     assertEquals(type, ether1.getEtherType());
 
                     // Ensure that a set of modified values is deeply cloned.
                     EtherPacket ether2 = ether1.clone();
-                    assertArrayEquals(src0, ether1.getSourceAddress());
-                    assertEquals(srcMac0, ether1.getSourceMacAddress());
-                    assertArrayEquals(dst0, ether1.getDestinationAddress());
-                    assertEquals(dstMac0, ether1.getDestinationMacAddress());
-                    assertEquals(vid, ether1.getVlan());
+                    assertEquals(srcMac0, ether1.getSourceAddress());
+                    assertEquals(dstMac0, ether1.getDestinationAddress());
+                    assertEquals(vid, ether1.getVlanId());
                     assertEquals(vlanPcp, ether1.getVlanPriority());
                     assertEquals(type, ether1.getEtherType());
-                    assertArrayEquals(src0, ether2.getSourceAddress());
-                    assertEquals(srcMac0, ether2.getSourceMacAddress());
-                    assertArrayEquals(dst0, ether2.getDestinationAddress());
-                    assertEquals(dstMac0, ether2.getDestinationMacAddress());
-                    assertEquals(vid, ether2.getVlan());
+                    assertEquals(srcMac0, ether2.getSourceAddress());
+                    assertEquals(dstMac0, ether2.getDestinationAddress());
+                    assertEquals(vid, ether2.getVlanId());
                     assertEquals(vlanPcp, ether2.getVlanPriority());
                     assertEquals(type, ether2.getEtherType());
-                    ether2.setSourceAddress(src1);
-                    ether2.setDestinationAddress(dst1);
-                    ether2.setVlan(vid1);
+                    ether2.setSourceAddress(srcMac1);
+                    ether2.setDestinationAddress(dstMac1);
+                    ether2.setVlanId(vid1);
                     ether2.setVlanPriority(pcp);
-                    assertArrayEquals(src0, ether1.getSourceAddress());
-                    assertEquals(srcMac0, ether1.getSourceMacAddress());
-                    assertArrayEquals(dst0, ether1.getDestinationAddress());
-                    assertEquals(dstMac0, ether1.getDestinationMacAddress());
-                    assertEquals(vid, ether1.getVlan());
+                    assertEquals(srcMac0, ether1.getSourceAddress());
+                    assertEquals(dstMac0, ether1.getDestinationAddress());
+                    assertEquals(vid, ether1.getVlanId());
                     assertEquals(vlanPcp, ether1.getVlanPriority());
                     assertEquals(type, ether1.getEtherType());
-                    assertArrayEquals(src1, ether2.getSourceAddress());
-                    assertEquals(srcMac1, ether2.getSourceMacAddress());
-                    assertArrayEquals(dst1, ether2.getDestinationAddress());
-                    assertEquals(dstMac1, ether2.getDestinationMacAddress());
-                    assertEquals(vid1, ether2.getVlan());
+                    assertEquals(srcMac1, ether2.getSourceAddress());
+                    assertEquals(dstMac1, ether2.getDestinationAddress());
+                    assertEquals(vid1, ether2.getVlanId());
                     assertEquals(pcp, ether2.getVlanPriority());
                     assertEquals(type, ether2.getEtherType());
                 }
@@ -463,12 +429,13 @@ public class EtherPacketTest extends TestBase {
             (byte)0xfa, (byte)0xfb, (byte)0xfc,
         };
         int type = 0x0806;
-        short[] vids = {MatchType.DL_VLAN_NONE, (short)1, (short)4095};
-        Map<MatchType, MatchField> dlFields =
-            new HashMap<MatchType, MatchField>();
-        dlFields.put(MatchType.DL_SRC, new MatchField(MatchType.DL_SRC, src));
-        dlFields.put(MatchType.DL_DST, new MatchField(MatchType.DL_DST, dst));
-        dlFields.put(MatchType.DL_TYPE,
+        short[] vids = {EtherHeader.VLAN_NONE, (short)1, (short)4095};
+        Map<FlowMatchType, MatchField> dlFields = new HashMap<>();
+        dlFields.put(FlowMatchType.DL_SRC,
+                     new MatchField(MatchType.DL_SRC, src));
+        dlFields.put(FlowMatchType.DL_DST,
+                     new MatchField(MatchType.DL_DST, dst));
+        dlFields.put(FlowMatchType.DL_TYPE,
                      new MatchField(MatchType.DL_TYPE,
                                     Short.valueOf((short)type)));
 
@@ -490,31 +457,33 @@ public class EtherPacketTest extends TestBase {
             // VLAN ID must be configured even if the type set is empty.
             MatchField vlanVid =
                 new MatchField(MatchType.DL_VLAN, Short.valueOf(vid));
-            dlFields.put(MatchType.DL_VLAN_PR,
+            dlFields.put(FlowMatchType.DL_VLAN_PCP,
                          new MatchField(MatchType.DL_VLAN_PR,
-                                        Byte.valueOf(vlanPcp)));
+                                        Byte.valueOf((byte)vlanPcp)));
 
             Match match = new Match();
-            Set<MatchType> fields = EnumSet.noneOf(MatchType.class);
+            Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
             ether.setMatch(match, fields);
             List<MatchType> matches = match.getMatchesList();
             assertEquals(1, matches.size());
             assertEquals(vlanVid, match.getField(MatchType.DL_VLAN));
 
-            for (Map.Entry<MatchType, MatchField> entry: dlFields.entrySet()) {
-                MatchType mtype = entry.getKey();
+            for (Map.Entry<FlowMatchType, MatchField> entry:
+                     dlFields.entrySet()) {
+                FlowMatchType fmtype = entry.getKey();
+                MatchField mfield = entry.getValue();
+                MatchType mtype = mfield.getType();
 
                 match = new Match();
-                fields = EnumSet.of(mtype);
+                fields = EnumSet.of(fmtype);
                 ether.setMatch(match, fields);
                 matches = match.getMatchesList();
                 assertEquals(vlanVid, match.getField(MatchType.DL_VLAN));
-                if (vid == MatchType.DL_VLAN_NONE &&
-                    mtype == MatchType.DL_VLAN_PR) {
+                if (vid == EtherHeader.VLAN_NONE &&
+                    fmtype == FlowMatchType.DL_VLAN_PCP) {
                     assertEquals(1, matches.size());
                     assertEquals(null, match.getField(mtype));
                 } else {
-                    MatchField mfield = entry.getValue();
                     assertEquals(2, matches.size());
                     assertEquals(mfield, match.getField(mtype));
                 }
@@ -522,26 +491,24 @@ public class EtherPacketTest extends TestBase {
 
             // setMatch() always has to see the original.
             byte pri = (byte)((vlanPcp + 1) & 0x7);
-            ether.setSourceAddress(src1);
-            ether.setDestinationAddress(dst1);
-            ether.setVlan((short)((vid + 1) & 0xfff));
+            ether.setSourceAddress(new EtherAddress(src1));
+            ether.setDestinationAddress(new EtherAddress(dst1));
+            ether.setVlanId((vid + 1) & 0xfff);
             ether.setVlanPriority(vlanPcp);
-            fields = EnumSet.noneOf(MatchType.class);
+            fields = EnumSet.noneOf(FlowMatchType.class);
             fields.addAll(dlFields.keySet());
-            fields.add(MatchType.DL_VLAN);
+            fields.add(FlowMatchType.DL_VLAN);
             match = new Match();
             ether.setMatch(match, fields);
             matches = match.getMatchesList();
             assertEquals(vlanVid, match.getField(MatchType.DL_VLAN));
-            if (vid == MatchType.DL_VLAN_NONE) {
+            if (vid == EtherHeader.VLAN_NONE) {
                 assertEquals(dlFields.size(), matches.size());
                 assertEquals(null, match.getField(MatchType.DL_VLAN_PR));
             } else {
                 assertEquals(dlFields.size() + 1, matches.size());
-                for (Map.Entry<MatchType, MatchField> entry:
-                         dlFields.entrySet()) {
-                    MatchType mtype = entry.getKey();
-                    MatchField mfield = entry.getValue();
+                for (MatchField mfield: dlFields.values()) {
+                    MatchType mtype = mfield.getType();
                     assertEquals(mfield, match.getField(mtype));
                 }
             }
@@ -559,16 +526,16 @@ public class EtherPacketTest extends TestBase {
      * @return  An {@link Ethernet} instance.
      */
     private Ethernet createEthernet(byte[] src, byte[] dst, int type,
-                                    short vid, Packet payload) {
-        byte pcp;
-        if (vid == MatchType.DL_VLAN_NONE) {
+                                    int vid, Packet payload) {
+        short pcp;
+        if (vid == EtherHeader.VLAN_NONE) {
             pcp = 0;
         } else {
-            pcp = (byte)((vlanPcp + 1) & 7);
+            pcp = (short)((vlanPcp + 1) & 7);
             vlanPcp = pcp;
         }
 
-        return createEthernet(src, dst, type, vid, pcp, payload);
+        return createEthernet(src, dst, type, (short)vid, (byte)pcp, payload);
     }
 
     /**
@@ -582,16 +549,16 @@ public class EtherPacketTest extends TestBase {
      * @return  An {@link Ethernet} instance.
      */
     private Ethernet createEthernet(byte[] src, byte[] dst, int type,
-                                    short vid, byte[] raw) {
-        byte pcp;
-        if (vid == MatchType.DL_VLAN_NONE) {
+                                    int vid, byte[] raw) {
+        short pcp;
+        if (vid == EtherHeader.VLAN_NONE) {
             pcp = 0;
         } else {
-            pcp = (byte)((vlanPcp + 1) & 7);
+            pcp = (short)((vlanPcp + 1) & 7);
             vlanPcp = pcp;
         }
 
-        return createEthernet(src, dst, type, vid, pcp, raw);
+        return createEthernet(src, dst, type, (short)vid, (byte)pcp, raw);
     }
 
     /**

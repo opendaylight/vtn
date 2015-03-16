@@ -119,7 +119,7 @@ public final class SetIcmpCodeActionImpl extends FlowActionImpl {
         L4Packet packet = pctx.getL4Packet();
         if (packet instanceof IcmpPacket) {
             IcmpPacket icmp = (IcmpPacket)packet;
-            icmp.setCode(code);
+            icmp.setIcmpCode(code);
             pctx.addFilterAction(new SetTpDst((int)code));
             return true;
         }

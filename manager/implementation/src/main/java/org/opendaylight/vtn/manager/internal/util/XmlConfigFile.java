@@ -61,9 +61,14 @@ public final class XmlConfigFile {
         CONFIG,
 
         /**
-         * Indicates the path policy configuration.
+         * Indicates the configuration for the path policy.
          */
-        PATHPOLICY;
+        PATHPOLICY,
+
+        /**
+         * Indicates the configuration for the flow condition.
+         */
+        FLOWCOND;
     }
 
     /**

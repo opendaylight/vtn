@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,9 +13,9 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 
-import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
-import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
  * JUnit test for {@link MapType}.
@@ -35,7 +35,7 @@ public class MapTypeTest extends TestBase {
 
             case MAC:
                 assertEquals(Reason.MACMAPPED, type.getReason());
-                assertEquals(MatchType.DL_SRC, type.getMatchType());
+                assertEquals(FlowMatchType.DL_SRC, type.getMatchType());
                 break;
 
             case VLAN:

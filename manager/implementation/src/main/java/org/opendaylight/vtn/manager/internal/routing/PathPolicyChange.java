@@ -18,7 +18,6 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.PathPolicy;
 
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
@@ -26,7 +25,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 
 /**
  * {@code PathPolicyChange} describes changes to the path policy configuration.
- * path policy.
  *
  * <p>
  *   Note that this class is not synchronized.
@@ -70,12 +68,10 @@ final class PathPolicyChange {
     /**
      * Apply changes to the path policy configuration.
      *
-     * @param provider  A VTN Manager provider service.
-     * @param topo      A {@link TopologyGraph} instance.
-     * @param logger    A {@link Logger} instance.
+     * @param topo    A {@link TopologyGraph} instance.
+     * @param logger  A {@link Logger} instance.
      */
-    public void apply(VTNManagerProvider provider, TopologyGraph topo,
-                      Logger logger) {
+    public void apply(TopologyGraph topo, Logger logger) {
         XmlConfigFile.Type ftype = XmlConfigFile.Type.PATHPOLICY;
         for (Map.Entry<Integer, VtnPathPolicy> entry:
                  updatedPolicies.entrySet()) {

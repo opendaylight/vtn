@@ -810,14 +810,14 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
                                          PacketContext pctx,
                                          MacAddressTable table)
         throws DropFlowException, RedirectFlowException, VTNException {
-        byte[] dst = pctx.getDestinationAddress();
-        if (!EtherAddress.isUnicast(dst)) {
+        EtherAddress dst = pctx.getDestinationAddress();
+        if (!dst.isUnicast()) {
             // Flood the non-unicast packet.
             flood(mgr, pctx);
             return null;
         }
 
-        Long key = MacAddressTable.getTableKey(dst);
+        Long key = Long.valueOf(dst.getAddress());
         MacTableEntry tent = table.get(key);
         if (tent == null) {
             // Flood the received packet.

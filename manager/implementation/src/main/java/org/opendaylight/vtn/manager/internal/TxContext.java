@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -41,6 +42,13 @@ public interface TxContext {
      * @return  An {@link InventoryReader} instance.
      */
     InventoryReader getInventoryReader();
+
+    /**
+     * Return flow condition reader that uses current transaction.
+     *
+     * @return  A {@link FlowCondReader} instance.
+     */
+    FlowCondReader getFlowCondReader();
 
     /**
      * Cancel current transaction for MD-SAL datastore.

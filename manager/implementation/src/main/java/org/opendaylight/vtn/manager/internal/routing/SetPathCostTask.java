@@ -17,7 +17,7 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowMatch;
+import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathCostConfigBuilder;
@@ -135,8 +135,8 @@ public final class SetPathCostTask
         for (VtnUpdateType status: result) {
             if (status != null) {
                 // Remove all flow entries affected by the target path policy.
-                PathPolicyFlowMatch fmatch = context.getFlowMatch();
-                addBackgroundTasks(provider.removeFlows(fmatch));
+                PathPolicyFlowSelector selector = context.getFlowSelector();
+                addBackgroundTasks(provider.removeFlows(selector));
 
                 context.onUpdated();
                 break;

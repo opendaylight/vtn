@@ -639,8 +639,8 @@ public class VTNFlowDatabase {
      *          entry to be removed.
      */
     public FlowRemoveTask removeFlows(VTNManagerImpl mgr, VTenantPath path) {
-        PathFlowMatch fmatch = new PathFlowMatch(path);
-        return removeFlows(mgr, fmatch);
+        PathFlowSelector selector = new PathFlowSelector(path);
+        return removeFlows(mgr, selector);
     }
 
     /**
@@ -733,7 +733,7 @@ public class VTNFlowDatabase {
     }
 
     /**
-     * Remove all VTN flows accepted by the specified {@link VTNFlowMatch}
+     * Remove all VTN flows accepted by the specified {@link FlowSelector}
      * instance.
      *
      * <p>
@@ -742,16 +742,16 @@ public class VTNFlowDatabase {
      *   returned {@link FlowRemoveTask} object.
      * </p>
      *
-     * @param mgr     VTN Manager service.
-     * @param fmatch  A {@link VTNFlowMatch} instance which determines VTN
-     *                flows to be removed.
-     *                Specifying {@code null} results in undefined behavior.
+     * @param mgr       VTN Manager service.
+     * @param selector  A {@link FlowSelector} instance which determines VTN
+     *                  flows to be removed.
+     *                  Specifying {@code null} results in undefined behavior.
      * @return  A {@link FlowRemoveTask} object that will execute the actual
      *          work is returned. {@code null} is returned if there is no flow
      *          entry to be removed.
      */
     public synchronized FlowRemoveTask removeFlows(VTNManagerImpl mgr,
-                                                   VTNFlowMatch fmatch) {
+                                                   FlowSelector selector) {
         VTNManagerProvider provider = mgr.getVTNProvider();
         if (provider == null) {
             return null;
@@ -761,12 +761,12 @@ public class VTNFlowDatabase {
         for (Iterator<VTNFlow> it = vtnFlows.values().iterator();
              it.hasNext();) {
             VTNFlow vflow = it.next();
-            if (fmatch.accept(vflow)) {
+            if (selector.accept(vflow)) {
                 FlowGroupId gid = vflow.getGroupId();
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("{}:{}: Remove VTN flow accepted by filter" +
                               "({}): group={}", mgr.getContainerName(),
-                              tenantName, fmatch.getDescription(), gid);
+                              tenantName, selector.getDescription(), gid);
                 }
 
                 // Remove this VTN flow from the database.

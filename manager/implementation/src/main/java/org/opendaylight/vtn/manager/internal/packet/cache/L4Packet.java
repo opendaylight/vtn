@@ -11,11 +11,13 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
+
 /**
  * {@code L4Packet} defines interfaces that implements cache for layer 4
  * protocol header.
  */
-public interface L4Packet extends CachedPacket {
+public interface L4Packet extends CachedPacket, Layer4Header {
     /**
      * Calculate the checksum of the packet, and set the computed checksum
      * into a {@link org.opendaylight.controller.sal.packet.Packet} instance

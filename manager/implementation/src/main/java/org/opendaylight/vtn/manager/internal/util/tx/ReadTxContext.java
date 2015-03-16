@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal.util.tx;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
@@ -39,6 +40,11 @@ public final class ReadTxContext implements TxContext {
      * A VTN inventory reader.
      */
     private InventoryReader  inventoryReader;
+
+    /**
+     * A flow condition reader.
+     */
+    private FlowCondReader  flowCondReader;
 
     /**
      * Construct a new instance.
@@ -84,6 +90,20 @@ public final class ReadTxContext implements TxContext {
         if (reader == null) {
             reader = new InventoryReader(getTransaction());
             inventoryReader = reader;
+        }
+
+        return reader;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public FlowCondReader getFlowCondReader() {
+        FlowCondReader reader = flowCondReader;
+        if (reader == null) {
+            reader = new FlowCondReader(getTransaction());
+            flowCondReader = reader;
         }
 
         return reader;

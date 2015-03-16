@@ -9,11 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.util.Arrays;
+import java.util.Objects;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.DlAddrAction;
-import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
@@ -39,7 +38,7 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
     /**
      * MAC address to be set.
      */
-    private final byte[]  address;
+    private final EtherAddress  address;
 
     /**
      * Construct a new instance.
@@ -56,45 +55,37 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
             throw new VTNException(st);
         }
 
-        byte[] addr = act.getAddress();
-        if (addr == null) {
+        address = act.getEtherAddress();
+        if (address == null) {
             String msg = getErrorMessage(act, "MAC address");
             st = MiscUtils.argumentIsNull(msg);
             throw new VTNException(st);
         }
 
-        if (addr.length != EtherAddress.SIZE) {
-            String msg = getErrorMessage(
-                act, "Invalid MAC address length: ",
-                ByteUtils.toHexString(addr));
-            throw new VTNException(StatusCode.BADREQUEST, msg);
-        }
-
-        if (EtherAddress.isBroadcast(addr)) {
+        if (address.isBroadcast()) {
             String msg = getErrorMessage(
                 act, "Broadcast address cannot be specified");
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
-        if (!EtherAddress.isUnicast(addr)) {
+        if (!address.isUnicast()) {
             String msg = getErrorMessage(
                 act, "Multicast address cannot be specified: ",
-                ByteUtils.toHexString(addr));
+                address.getText());
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
-        if (EtherAddress.toLong(addr) == 0) {
+        if (address.getAddress() == 0L) {
             String msg = getErrorMessage(act, "Zero cannot be specified");
             throw new VTNException(StatusCode.BADREQUEST, msg);
         }
-
-        address = addr.clone();
     }
 
     /**
      * Return a raw bytes of MAC address.
      *
-     * @return  An array of bytes which represents a MAC address.
+     * @return  An {@link EtherAddress} instance which represents
+     *          a MAC address.
      */
-    protected final byte[] getAddress() {
+    protected final EtherAddress getAddress() {
         return address;
     }
 
@@ -114,7 +105,7 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
         }
 
         DlAddrActionImpl act = (DlAddrActionImpl)o;
-        return Arrays.equals(address, act.address);
+        return Objects.equals(address, act.address);
     }
 
     /**
@@ -124,7 +115,12 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
      */
     @Override
     public final int hashCode() {
-        return super.hashCode() ^ Arrays.hashCode(address);
+        int hash = super.hashCode();
+        if (address != null) {
+            hash ^= address.hashCode();
+        }
+
+        return hash;
     }
 
     /**
@@ -136,7 +132,6 @@ public abstract class DlAddrActionImpl extends FlowActionImpl {
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
         return builder.append("[addr=").
-            append(ByteUtils.toHexString(address)).
-            append(']').toString();
+            append(address.getText()).append(']').toString();
     }
 }
