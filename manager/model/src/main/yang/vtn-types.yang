@@ -12,6 +12,7 @@ module vtn-types {
     namespace "urn:opendaylight:vtn:types";
     prefix vtype;
 
+    /* OpenDaylight controller */
     import opendaylight-inventory {
         prefix inv;
         revision-date 2013-08-19;
@@ -22,6 +23,14 @@ module vtn-types {
 
     revision 2015-02-09 {
         description "Initial revision.";
+    }
+
+    typedef vnode-name {
+        description "The name of the virtual node.";
+        type string {
+            length "1 .. 31";
+            pattern "[a-zA-Z0-9][a-zA-Z0-9_]*";
+        }
     }
 
     typedef vtn-update-type {
@@ -167,6 +176,23 @@ module vtn-types {
            the physical switch port.";
         type string {
             pattern ".+,.*,.*";
+        }
+    }
+
+    grouping vtn-index {
+        description
+          "Describes an int32 fields named `index' that determines the
+           order of elements in a list.
+           Unlike `ordered-list', a value for `index' field is limited from
+           1 to 65535.";
+
+        leaf index {
+            description
+              "The index value that determines the order of elements in a
+               list.";
+            type int32 {
+                range "1 .. 65535";
+            }
         }
     }
 }

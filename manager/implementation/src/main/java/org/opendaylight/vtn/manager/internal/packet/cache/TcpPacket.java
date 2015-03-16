@@ -12,13 +12,16 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
 
 import org.opendaylight.controller.sal.packet.TCP;
 
 /**
  * {@code TcpPacket} class implements a cache for a {@link TCP} instance.
  */
-public final class TcpPacket extends PortProtoPacket<TCP> {
+public final class TcpPacket extends PortProtoPacket<TCP>
+    implements TcpHeader {
     /**
      * Byte offset to the checksum field in TCP header.
      */
@@ -103,6 +106,36 @@ public final class TcpPacket extends PortProtoPacket<TCP> {
         }
 
         return pkt;
+    }
+
+    /**
+     * Return the name of the protocol.
+     *
+     * @return  {@code "TCP"}.
+     */
+    @Override
+    protected String getProtocolName() {
+        return "TCP";
+    }
+
+    /**
+     * Return a flow match type corresponding to the source port.
+     *
+     * @return  {@link FlowMatchType#TCP_SRC}.
+     */
+    @Override
+    public FlowMatchType getSourceMatchType() {
+        return FlowMatchType.TCP_SRC;
+    }
+
+    /**
+     * Return a flow match type corresponding to the destination port.
+     *
+     * @return  {@link FlowMatchType#TCP_DST}.
+     */
+    @Override
+    public FlowMatchType getDestinationMatchType() {
+        return FlowMatchType.TCP_DST;
     }
 
     // L4Packet

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -171,7 +171,7 @@ public final class VTNThreadData {
     }
 
     /**
-     * Remove all VTN flows accepted by the specified {@link VTNFlowMatch}
+     * Remove all VTN flows accepted by the specified {@link FlowSelector}
      * instance.
      *
      * <p>
@@ -183,22 +183,22 @@ public final class VTNThreadData {
      *
      * @param mgr         VTN Manager service.
      * @param tenantName  The name of the virtual tenant.
-     * @param fmatch      A {@link VTNFlowMatch} instance which determines
+     * @param selector    A {@link FlowSelector} instance which determines
      *                    VTN flows to be removed.
      *                    Specifying {@code null} results in undefined
      *                    behavior.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, VTNFlowMatch)
+     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, FlowSelector)
      */
     public static void removeFlows(VTNManagerImpl mgr, String tenantName,
-                                   VTNFlowMatch fmatch) {
+                                   FlowSelector selector) {
         VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
         if (fdb != null) {
-            addTask(fdb.removeFlows(mgr, fmatch));
+            addTask(fdb.removeFlows(mgr, selector));
         }
     }
 
     /**
-     * Remove all VTN flows accepted by the specified {@link VTNFlowMatch}
+     * Remove all VTN flows accepted by the specified {@link FlowSelector}
      * instance.
      *
      * <p>
@@ -208,17 +208,18 @@ public final class VTNThreadData {
      *   when {@link #cleanUp(VTNManagerImpl)} is called.
      * </p>
      *
-     * @param mgr         VTN Manager service.
-     * @param fdb  VTN flow database object associated with the virtual tenant.
-     * @param fmatch      A {@link VTNFlowMatch} instance which determines
-     *                    VTN flows to be removed.
-     *                    Specifying {@code null} results in undefined
-     *                    behavior.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, VTNFlowMatch)
+     * @param mgr       VTN Manager service.
+     * @param fdb       VTN flow database object associated with the virtual
+     *                  tenant.
+     * @param selector  A {@link FlowSelector} instance which determines
+     *                  VTN flows to be removed.
+     *                  Specifying {@code null} results in undefined
+     *                  behavior.
+     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, FlowSelector)
      */
     public static void removeFlows(VTNManagerImpl mgr, VTNFlowDatabase fdb,
-                                   VTNFlowMatch fmatch) {
-        addTask(fdb.removeFlows(mgr, fmatch));
+                                   FlowSelector selector) {
+        addTask(fdb.removeFlows(mgr, selector));
     }
 
     /**

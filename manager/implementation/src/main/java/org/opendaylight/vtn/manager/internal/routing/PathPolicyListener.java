@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,14 +59,14 @@ final class PathPolicyListener
         LoggerFactory.getLogger(PathPolicyListener.class);
 
     /**
-     * VTN Manager provider service.
-     */
-    private final VTNManagerProvider  vtnProvider;
-
-    /**
      * A graph that keeps network topology.
      */
     private final TopologyGraph  topology;
+
+    /**
+     * A set of path policy IDs laoded by {@link PathPolicyLoadTask}.
+     */
+    private Set<Integer>  loadedPolicies;
 
     /**
      * MD-SAL transaction task to load path policy configuration.
@@ -80,17 +81,21 @@ final class PathPolicyListener
          */
         @Override
         public VtnPathPolicies execute(TxContext ctx) throws VTNException {
+            loadedPolicies = null;
+            Set<Integer> loaded = new ConcurrentSkipListSet<>();
+
             // Load configuration from file.
             XmlConfigFile.Type ftype = XmlConfigFile.Type.PATHPOLICY;
             List<VtnPathPolicy> vlist = new ArrayList<>();
             for (String key: XmlConfigFile.getKeys(ftype)) {
                 PathPolicy pp = XmlConfigFile.load(
-                    XmlConfigFile.Type.PATHPOLICY, key, PathPolicy.class);
+                    ftype, key, PathPolicy.class);
                 if (pp != null) {
                     try {
                         VtnPathPolicy vpp = new PathPolicyConfigBuilder.Data().
                             set(pp).getBuilder().build();
                         vlist.add(vpp);
+                        loaded.add(pp.getPolicyId());
                     } catch (VTNException e) {
                         String msg = MiscUtils.joinColon(
                             "Ignore invalid path policy configuration",
@@ -99,6 +104,7 @@ final class PathPolicyListener
                     }
                 }
             }
+
             VtnPathPoliciesBuilder builder = new VtnPathPoliciesBuilder();
             if (!vlist.isEmpty()) {
                 builder.setVtnPathPolicy(vlist);
@@ -113,6 +119,9 @@ final class PathPolicyListener
 
             VtnPathPolicies policies = builder.build();
             tx.put(oper, path, policies, true);
+            if (!loaded.isEmpty()) {
+                loadedPolicies = loaded;
+            }
 
             return policies;
         }
@@ -174,6 +183,7 @@ final class PathPolicyListener
                 VtnPathPoliciesBuilder builder = new VtnPathPoliciesBuilder();
                 policies = builder.build();
                 tx.put(oper, path, builder.build(), true);
+                created = true;
             } else {
                 List<VtnPathPolicy> vlist = policies.getVtnPathPolicy();
                 if (vlist != null) {
@@ -220,7 +230,6 @@ final class PathPolicyListener
      */
     PathPolicyListener(VTNManagerProvider provider, TopologyGraph topo) {
         super(VtnPathPolicy.class);
-        vtnProvider = provider;
         topology = topo;
         registerListener(provider.getDataBroker(),
                          LogicalDatastoreType.OPERATIONAL,
@@ -230,14 +239,15 @@ final class PathPolicyListener
     /**
      * Post a MD-SAL transaction task to initialize configuration.
      *
-     * @param master  {@code true} if the local node is the configuration
-     *                provider.
+     * @param provider  VTN Manager provider service.
+     * @param master    {@code true} if the local node is the configuration
+     *                  provider.
      * @return  A {@link VTNFuture} instance.
      */
-    VTNFuture<?> initConfig(boolean master) {
+    VTNFuture<?> initConfig(VTNManagerProvider provider, boolean master) {
         TxTask<?> task = (master)
             ? new PathPolicyLoadTask() : new PathPolicySaveTask();
-        return vtnProvider.post(task);
+        return provider.post(task);
     }
 
     /**
@@ -273,7 +283,7 @@ final class PathPolicyListener
      */
     @Override
     protected void exitEvent(PathPolicyChange ectx) {
-        ectx.apply(vtnProvider, topology, LOG);
+        ectx.apply(topology, LOG);
     }
 
     /**
@@ -288,7 +298,15 @@ final class PathPolicyListener
             LOG.warn("Ignore broken creation event: path={}, value={}",
                      key, value);
         } else {
-            ectx.addUpdated(id, value);
+            // Do nothing if the specified event was caused by the initial
+            // setup.
+            Set<Integer> loaded = loadedPolicies;
+            if (loaded == null || !loaded.remove(id)) {
+                ectx.addUpdated(id, value);
+            } else if (loaded.isEmpty()) {
+                LOG.debug("All loaded path policies have been notified.");
+                loadedPolicies = null;
+            }
         }
     }
 

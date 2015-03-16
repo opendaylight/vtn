@@ -14,9 +14,9 @@ import java.util.Set;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
 import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Packet;
 
 /**
@@ -45,10 +45,10 @@ public interface CachedPacket extends Cloneable {
      * </p>
      *
      * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link MatchType} instances corresponding to
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
      *                match fields to be tested.
      */
-    void setMatch(Match match, Set<MatchType> fields);
+    void setMatch(Match match, Set<FlowMatchType> fields);
 
     /**
      * Finalize modification to the packet.

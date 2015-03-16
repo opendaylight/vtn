@@ -17,6 +17,8 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.action.SetTpSrc;
@@ -27,7 +29,7 @@ import org.opendaylight.controller.sal.packet.ICMP;
 /**
  * {@code IcmpPacket} class implements a cache for an {@link ICMP} instance.
  */
-public final class IcmpPacket implements L4Packet {
+public final class IcmpPacket implements L4Packet, IcmpHeader {
     /**
      * A pseudo short value which indicates the byte value is not specified.
      */
@@ -179,58 +181,6 @@ public final class IcmpPacket implements L4Packet {
     }
 
     /**
-     * Return the ICMP type.
-     *
-     * @return  A short integer value which indicates the ICMP type.
-     */
-    public short getType() {
-        Values v = getValues();
-        short type = v.getType();
-        if (type == VALUE_NONE) {
-            byte b = packet.getType();
-            type = v.setType(b);
-        }
-
-        return type;
-    }
-
-    /**
-     * Set the ICMP type.
-     *
-     * @param type  A short integer value which indicates the ICMP type.
-     */
-    public void setType(short type) {
-        Values v = getModifiedValues();
-        v.setType(type);
-    }
-
-    /**
-     * Return the ICMP code.
-     *
-     * @return  A short integer value which indicates the ICMP code.
-     */
-    public short getCode() {
-        Values v = getValues();
-        short code = v.getCode();
-        if (code == VALUE_NONE) {
-            byte b = packet.getCode();
-            code = v.setCode(b);
-        }
-
-        return code;
-    }
-
-    /**
-     * Set the ICMP code.
-     *
-     * @param code  A short integer value which indicates the ICMP code.
-     */
-    public void setCode(short code) {
-        Values v = getModifiedValues();
-        v.setCode(code);
-    }
-
-    /**
      * Return a {@link Values} instance that keeps current values for
      * ICMP header fields.
      *
@@ -298,24 +248,22 @@ public final class IcmpPacket implements L4Packet {
      * </p>
      *
      * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link MatchType} instances corresponding to
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
      *                match fields to be tested.
      */
     @Override
-    public void setMatch(Match match, Set<MatchType> fields) {
+    public void setMatch(Match match, Set<FlowMatchType> fields) {
         Values v = values;
         v.fill(packet);
 
-        MatchType mt = MatchType.TP_SRC;
-        if (fields.contains(mt)) {
+        if (fields.contains(FlowMatchType.ICMP_TYPE)) {
             // Test ICMP type.
-            match.setField(mt, v.getType());
+            match.setField(MatchType.TP_SRC, v.getType());
         }
 
-        mt = MatchType.TP_DST;
-        if (fields.contains(mt)) {
+        if (fields.contains(FlowMatchType.ICMP_CODE)) {
             // Test ICMP code.
-            match.setField(mt, v.getCode());
+            match.setField(MatchType.TP_DST, v.getCode());
         }
     }
 
@@ -329,8 +277,8 @@ public final class IcmpPacket implements L4Packet {
         if (modifiedValues != null) {
             // At least one flow action that modifies ICMP header is
             // configured.
-            pctx.addMatchField(MatchType.DL_TYPE);
-            pctx.addMatchField(MatchType.NW_PROTO);
+            pctx.addMatchField(FlowMatchType.DL_TYPE);
+            pctx.addMatchField(FlowMatchType.IP_PROTO);
 
             short type = modifiedValues.getType();
             if (values.getType() != type) {
@@ -338,7 +286,7 @@ public final class IcmpPacket implements L4Packet {
                 icmp = getPacketForWrite();
                 icmp.setType((byte)type);
                 mod = true;
-            } else if (pctx.hasMatchField(MatchType.TP_SRC)) {
+            } else if (pctx.hasMatchField(FlowMatchType.ICMP_TYPE)) {
                 // ICMP type in the original packet is unchanged and it will be
                 // specified in flow match. So we don't need to configure
                 // SET_TP_SRC action.
@@ -353,7 +301,7 @@ public final class IcmpPacket implements L4Packet {
                 }
                 icmp.setCode((byte)code);
                 mod = true;
-            } else if (pctx.hasMatchField(MatchType.TP_DST)) {
+            } else if (pctx.hasMatchField(FlowMatchType.ICMP_CODE)) {
                 // ICMP code in the original packet is unchanged and it will be
                 // specified in flow match. So we don't need to configure
                 // SET_TP_DST action.
@@ -403,5 +351,69 @@ public final class IcmpPacket implements L4Packet {
     @Override
     public boolean updateChecksum(Inet4Packet ipv4) {
         return false;
+    }
+
+    // IcmpHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public short getIcmpType() {
+        Values v = getValues();
+        short type = v.getType();
+        if (type == VALUE_NONE) {
+            byte b = packet.getType();
+            type = v.setType(b);
+        }
+
+        return type;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setIcmpType(short type) {
+        Values v = getModifiedValues();
+        v.setType(type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public short getIcmpCode() {
+        Values v = getValues();
+        short code = v.getCode();
+        if (code == VALUE_NONE) {
+            byte b = packet.getCode();
+            code = v.setCode(b);
+        }
+
+        return code;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setIcmpCode(short code) {
+        Values v = getModifiedValues();
+        v.setCode(code);
+    }
+
+
+    // ProtocolHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setDescription(StringBuilder builder) {
+        int type = (int)getIcmpType();
+        int code = (int)getIcmpCode();
+        builder.append("ICMP[type=").append(type).
+            append(",code=").append(code).append(']');
     }
 }

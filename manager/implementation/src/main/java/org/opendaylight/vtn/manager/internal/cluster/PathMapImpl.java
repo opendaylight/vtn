@@ -21,6 +21,8 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -199,9 +201,10 @@ public abstract class PathMapImpl
      *          packet. Otherwise {@code null}.
      */
     public RouteResolver evaluate(VTNManagerImpl mgr, PacketContext pctx) {
-        FlowCondImpl fc = mgr.getFlowCondDB().get(condition);
+        FlowCondReader reader = pctx.getTxContext().getFlowCondReader();
+        VTNFlowCondition vfcond = reader.get(condition);
         Logger logger = getLogger();
-        if (fc == null) {
+        if (vfcond == null) {
             logger.debug("{}{}: Ignore path map: condition not found: {}",
                          mgr.getContainerName(), getLogPrefix(), condition);
             return null;
@@ -214,7 +217,7 @@ public abstract class PathMapImpl
             return null;
         }
 
-        if (fc.match(mgr, pctx)) {
+        if (vfcond.match(pctx)) {
             if (idleTimeout >= 0) {
                 // Set flow timeout.
                 pctx.setFlowTimeout(idleTimeout, hardTimeout);

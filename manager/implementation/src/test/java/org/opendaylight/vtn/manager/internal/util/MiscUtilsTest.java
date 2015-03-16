@@ -45,6 +45,8 @@ import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+
 /**
  * JUnit test for {@link MiscUtils}.
  */
@@ -87,8 +89,8 @@ public class MiscUtilsTest extends TestBase {
         badRequests.put(null, "%s name cannot be null");
         badRequests.put("", "%s name cannot be empty");
         badRequests.put("12345678901234567890123456789012",
-                        "%s name is too long");
-        badRequests.put("_name", "%s name contains invalid character");
+                        "%s name is invalid");
+        badRequests.put("_name", "%s name is invalid");
 
         List<Character> badCharacters = new ArrayList<Character>();
         for (char c = 0; c < 0x80; c++) {
@@ -124,11 +126,8 @@ public class MiscUtilsTest extends TestBase {
 
         for (String desc: descriptions) {
             for (String name: good) {
-                try {
-                    MiscUtils.checkName(desc, name);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
+                VnodeName vname = MiscUtils.checkName(desc, name);
+                assertEquals(name, vname.getValue());
             }
 
             for (Map.Entry<String, String> entry: badRequests.entrySet()) {
@@ -147,7 +146,7 @@ public class MiscUtilsTest extends TestBase {
                 }
             }
 
-            String msg = desc + " name contains invalid character";
+            String msg = desc + " name is invalid";
             for (String name: badNames) {
                 try {
                     MiscUtils.checkName(desc, name);

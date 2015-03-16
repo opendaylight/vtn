@@ -15,6 +15,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
 
 import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.action.SetTpSrc;
@@ -28,7 +30,8 @@ import org.opendaylight.controller.sal.packet.Packet;
  *
  * @param <T>  Type of packet.
  */
-public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
+public abstract class PortProtoPacket<T extends Packet>
+    implements L4Packet, Layer4PortHeader {
     /**
      * A pseudo port number which indicates the port number is not specified.
      */
@@ -281,58 +284,6 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
     }
 
     /**
-     * Return the source port number.
-     *
-     * @return  An integer value which represents the source port number.
-     */
-    public final int getSourcePort() {
-        Values v = getValues();
-        int port = v.getSourcePort();
-        if (port == PORT_NONE) {
-            short p = getRawSourcePort();
-            port = v.setSourcePort(p);
-        }
-
-        return port;
-    }
-
-    /**
-     * Set the source port number.
-     *
-     * @param port  An integer value which indicates the source port.
-     */
-    public final void setSourcePort(int port) {
-        Values v = getModifiedValues();
-        v.setSourcePort(port);
-    }
-
-    /**
-     * Return the destination port number.
-     *
-     * @return  An integer value which represents the destination port number.
-     */
-    public final int getDestinationPort() {
-        Values v = getValues();
-        int port = v.getDestinationPort();
-        if (port == PORT_NONE) {
-            short p = getRawDestinationPort();
-            port = v.setDestinationPort(p);
-        }
-
-        return port;
-    }
-
-    /**
-     * Set the destination port number.
-     *
-     * @param port  An integer value which indicates the destination port.
-     */
-    public final void setDestinationPort(int port) {
-        Values v = getModifiedValues();
-        v.setDestinationPort(port);
-    }
-
-    /**
      * Return a {@link Packet} instance to set modified values.
      *
      * @return  A {@link Packet} instance.
@@ -388,6 +339,27 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
     protected abstract T getPacketForWrite(boolean doCopy) throws VTNException;
 
     /**
+     * Return the name of the protocol.
+     *
+     * @return  The protocol name.
+     */
+    protected abstract String getProtocolName();
+
+    /**
+     * Return a flow match type corresponding to the source port.
+     *
+     * @return  A {@link FlowMatchType} instance.
+     */
+    public abstract FlowMatchType getSourceMatchType();
+
+    /**
+     * Return a flow match type corresponding to the destination port.
+     *
+     * @return  A {@link FlowMatchType} instance.
+     */
+    public abstract FlowMatchType getDestinationMatchType();
+
+    /**
      * Return a {@link Values} instance that keeps current values for
      * protocol header fields.
      *
@@ -423,24 +395,22 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
      * </p>
      *
      * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link MatchType} instances corresponding to
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
      *                match fields to be tested.
      */
     @Override
-    public final void setMatch(Match match, Set<MatchType> fields) {
+    public final void setMatch(Match match, Set<FlowMatchType> fields) {
         Values v = values;
         v.fill(this);
 
-        MatchType type = MatchType.TP_SRC;
-        if (fields.contains(type)) {
+        if (fields.contains(getSourceMatchType())) {
             // Test source port number.
-            match.setField(type, (short)v.getSourcePort());
+            match.setField(MatchType.TP_SRC, (short)v.getSourcePort());
         }
 
-        type = MatchType.TP_DST;
-        if (fields.contains(type)) {
+        if (fields.contains(getDestinationMatchType())) {
             // Test destination port number.
-            match.setField(type, (short)v.getDestinationPort());
+            match.setField(MatchType.TP_DST, (short)v.getDestinationPort());
         }
     }
 
@@ -454,8 +424,8 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
         if (modifiedValues != null) {
             // At least one flow action that modifies TCP or UDP header is
             // configured.
-            pctx.addMatchField(MatchType.DL_TYPE);
-            pctx.addMatchField(MatchType.NW_PROTO);
+            pctx.addMatchField(FlowMatchType.DL_TYPE);
+            pctx.addMatchField(FlowMatchType.IP_PROTO);
 
             int src = modifiedValues.getSourcePort();
             if (values.getSourcePort() != src) {
@@ -463,7 +433,7 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
                 pkt = getPacketForWrite();
                 setRawSourcePort(pkt, (short)src);
                 mod = true;
-            } else if (pctx.hasMatchField(MatchType.TP_SRC)) {
+            } else if (pctx.hasMatchField(getSourceMatchType())) {
                 // Source port in the original packet is unchanged and it will
                 // be specified in flow match. So we don't need to configure
                 // SET_TP_SRC action.
@@ -478,7 +448,7 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
                 }
                 setRawDestinationPort(pkt, (short)dst);
                 mod = true;
-            } else if (pctx.hasMatchField(MatchType.TP_DST)) {
+            } else if (pctx.hasMatchField(getDestinationMatchType())) {
                 // Destination port in the original packet is unchanged and
                 // it will be specified in flow match. So we don't need to
                 // configure SET_TP_DST action.
@@ -510,5 +480,69 @@ public abstract class PortProtoPacket<T extends Packet> implements L4Packet {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
         }
+    }
+
+    // Layer4PortHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final int getSourcePort() {
+        Values v = getValues();
+        int port = v.getSourcePort();
+        if (port == PORT_NONE) {
+            short p = getRawSourcePort();
+            port = v.setSourcePort(p);
+        }
+
+        return port;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final void setSourcePort(int port) {
+        Values v = getModifiedValues();
+        v.setSourcePort(port);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final int getDestinationPort() {
+        Values v = getValues();
+        int port = v.getDestinationPort();
+        if (port == PORT_NONE) {
+            short p = getRawDestinationPort();
+            port = v.setDestinationPort(p);
+        }
+
+        return port;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final void setDestinationPort(int port) {
+        Values v = getModifiedValues();
+        v.setDestinationPort(port);
+    }
+
+    // ProtocolHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setDescription(StringBuilder builder) {
+        int src = getSourcePort();
+        int dst = getDestinationPort();
+        builder.append(getProtocolName()).
+            append("[src=").append(src).
+            append(",dst=").append(dst).append(']');
     }
 }

@@ -23,6 +23,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.VTNSubSystem;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
@@ -63,7 +64,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  */
 public final class VTNRoutingManager
     extends DataStoreListener<VtnLink, TopologyEventContext>
-    implements VtnPathPolicyService {
+    implements VTNSubSystem, VtnPathPolicyService {
     /**
      * Logger instance.
      */
@@ -128,30 +129,6 @@ public final class VTNRoutingManager
             close();
             throw e;
         }
-    }
-
-    /**
-     * Post a MD-SAL transaction task to initialize configuration.
-     *
-     * @param master  {@code true} if the local node is the configuration
-     *                provider.
-     * @return  A {@link VTNFuture} instance.
-     */
-    public VTNFuture<?> initConfig(boolean master) {
-        return pathPolicyListener.initConfig(master);
-    }
-
-    /**
-     * Create RPC implementations.
-     *
-     * @param rpcReg  A {@link RpcProviderRegistry} service instance.
-     * @param regs    A {@link CompositeAutoCloseable} instance to store
-     *                RPC registration.
-     */
-    public void initRpcServices(RpcProviderRegistry rpcReg,
-                                CompositeAutoCloseable regs) {
-        regs.add(rpcReg.
-                 addRpcImplementation(VtnPathPolicyService.class, this));
     }
 
     /**
@@ -315,6 +292,26 @@ public final class VTNRoutingManager
     @Override
     protected Set<VtnUpdateType> getRequiredEvents() {
         return REQUIRED_EVENTS;
+    }
+
+    // VTNConfigProvider
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNFuture<?> initConfig(boolean master) {
+        return pathPolicyListener.initConfig(vtnProvider, master);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void initRpcServices(RpcProviderRegistry rpcReg,
+                                CompositeAutoCloseable regs) {
+        regs.add(rpcReg.
+                 addRpcImplementation(VtnPathPolicyService.class, this));
     }
 
     // VtnPathPolicyService

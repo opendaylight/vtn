@@ -131,13 +131,30 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
      *   Note that this method affects all VTNs.
      * </p>
      *
-     * @param fmatch  A {@link VTNFlowMatch} instance.
-     *                All flow entries are removed if {@code null} is
-     *                specified.
+     * @param selector  A {@link FlowSelector} instance.
+     *                  All flow entries are removed if {@code null} is
+     *                  specified.
      * @return  A list of {@link VTNFuture} instances associated with flow
      *          removal tasks.
      */
-    List<VTNFuture<?>> removeFlows(VTNFlowMatch fmatch);
+    List<VTNFuture<?>> removeFlows(FlowSelector selector);
+
+    /**
+     * Remove flow entries that match the given condition.
+     *
+     * <p>
+     *   Note that this method removes flow entries present in the specified
+     *   VTN.
+     * </p>
+     *
+     * @param tname     The name of the VTN.
+     * @param selector  A {@link FlowSelector} instance.
+     *                  All flow entries are removed if {@code null} is
+     *                  specified.
+     * @return  A {@link VTNFuture} instance associated with flow removal task.
+     *          {@code null} if no flow entry is removed.
+     */
+    VTNFuture<?> removeFlows(String tname, FlowSelector selector);
 
     /**
      * Return an implementation of the specified RPC service.

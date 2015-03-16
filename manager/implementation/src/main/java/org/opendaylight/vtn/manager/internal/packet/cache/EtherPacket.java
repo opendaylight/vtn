@@ -15,6 +15,8 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 
 import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.action.SetDlSrc;
@@ -29,17 +31,12 @@ import org.opendaylight.controller.sal.packet.Packet;
  * {@code EtherPacket} class implements a cache for a {@link Ethernet}
  * instance including VLAN tag.
  */
-public final class EtherPacket implements CachedPacket {
-    /**
-     * A pseudo MAC address which represents the MAC address is not specified.
-     */
-    private static final long  MAC_NONE = -1L;
-
+public final class EtherPacket implements CachedPacket, EtherHeader {
     /**
      * A pseudo VLAN priority which represents the VLAN priority is not
      * specified.
      */
-    private static final byte VLANPRI_NONE = -1;
+    private static final short VLANPRI_NONE = -1;
 
     /**
      * An {@link Ethernet} instance.
@@ -81,34 +78,24 @@ public final class EtherPacket implements CachedPacket {
      */
     private static final class Values implements Cloneable {
         /**
-         * A byte array which represents the source MAC address.
+         * The source MAC address.
          */
-        private byte[]  sourceAddress;
+        private EtherAddress  sourceAddress;
 
         /**
-         * A byte array which represents the destination MAC address.
+         * The destination MAC address.
          */
-        private byte[]  destinationAddress;
-
-        /**
-         * A long value which represents the source MAC address.
-         */
-        private long  sourceMac = MAC_NONE;
-
-        /**
-         * A long value which represents the destination MAC address.
-         */
-        private long  destinationMac = MAC_NONE;
+        private EtherAddress  destinationAddress;
 
         /**
          * The VLAN ID.
          */
-        private short  vlan;
+        private int  vlan;
 
         /**
          * The VLAN priority.
          */
-        private byte  vlanPriority = VLANPRI_NONE;
+        private short  vlanPriority = VLANPRI_NONE;
 
         /**
          * Constructor.
@@ -120,64 +107,41 @@ public final class EtherPacket implements CachedPacket {
         }
 
         /**
-         * Return the source MAC address as a byte array.
+         * Return the source MAC address .
          *
-         * @return  The source MAC address.
+         * @return  An {@link EtherAddress} instance.
          *          {@code null} is returned if not configured.
          */
-        private byte[] getSourceAddress() {
+        private EtherAddress getSourceAddress() {
             return sourceAddress;
         }
 
         /**
          * Set the source MAC address.
          *
-         * @param addr  A byte array that represents the source MAC address.
+         * @param addr  An {@link EtherAddress} instance.
          */
-        private void setSourceAddress(byte[] addr) {
-            sourceAddress = addr.clone();
-            sourceMac = EtherAddress.toLong(sourceAddress);
+        private void setSourceAddress(EtherAddress addr) {
+            sourceAddress = addr;
         }
 
         /**
-         * Return the destination MAC address as a byte array.
+         * Return the destination MAC address.
          *
-         * @return  The destination MAC address.
+         * @return  An {@link EtherAddress} instance.
          *          {@code null} is returned if not configured.
          */
-        private byte[] getDestinationAddress() {
+        private EtherAddress getDestinationAddress() {
             return destinationAddress;
         }
 
         /**
          * Set the destination MAC address.
          *
-         * @param addr  A byte array that represents the destination
-         *              MAC address.
+         * @param addr  An {@link EtherAddress} instance.
          */
-        private void setDestinationAddress(byte[] addr) {
-            destinationAddress = addr.clone();
-            destinationMac = EtherAddress.toLong(destinationAddress);
-        }
-
-        /**
-         * Return the source MAC address as a long integer.
-         *
-         * @return  The source MAC address.
-         *          {@link EtherPacket#MAC_NONE} is returned if not configured.
-         */
-        private long getSourceMacAddress() {
-            return sourceMac;
-        }
-
-        /**
-         * Return the destination MAC address as a long integer.
-         *
-         * @return  The destination MAC address.
-         *          {@link EtherPacket#MAC_NONE} is returned if not configured.
-         */
-        private long getDestinationMacAddress() {
-            return destinationMac;
+        private void setDestinationAddress(EtherAddress addr) {
+            destinationAddress = addr;
         }
 
         /**
@@ -185,7 +149,7 @@ public final class EtherPacket implements CachedPacket {
          *
          * @return  A VLAN ID.
          */
-        private short getVlan() {
+        private int getVlan() {
             return vlan;
         }
 
@@ -194,7 +158,7 @@ public final class EtherPacket implements CachedPacket {
          *
          * @param vid  A VLAN ID.
          */
-        private void setVlan(short vid) {
+        private void setVlan(int vid) {
             vlan = vid;
         }
 
@@ -205,7 +169,7 @@ public final class EtherPacket implements CachedPacket {
          *          {@link EtherPacket#VLANPRI_NONE} is returned if not
          *          configured.
          */
-        private byte getVlanPriority() {
+        private short getVlanPriority() {
             return vlanPriority;
         }
 
@@ -214,7 +178,7 @@ public final class EtherPacket implements CachedPacket {
          *
          * @param pri  A VLAN priority.
          */
-        private void setVlanPriority(byte pri) {
+        private void setVlanPriority(short pri) {
             vlanPriority = pri;
         }
 
@@ -230,13 +194,14 @@ public final class EtherPacket implements CachedPacket {
          */
         private void fill(Ethernet ether, IEEE8021Q tag) {
             if (sourceAddress == null) {
-                setSourceAddress(ether.getSourceMACAddress());
+                sourceAddress = new EtherAddress(ether.getSourceMACAddress());
             }
             if (destinationAddress == null) {
-                setDestinationAddress(ether.getDestinationMACAddress());
+                destinationAddress =
+                    new EtherAddress(ether.getDestinationMACAddress());
             }
             if (vlanPriority == VLANPRI_NONE && tag != null) {
-                vlanPriority = tag.getPcp();
+                vlanPriority = (short)NumberUtils.getUnsigned(tag.getPcp());
             }
         }
 
@@ -278,7 +243,7 @@ public final class EtherPacket implements CachedPacket {
         } else {
             ethType = ether.getEtherType();
             vlanTag = null;
-            vid = MatchType.DL_VLAN_NONE;
+            vid = VLAN_NONE;
         }
 
         values = new Values(vid);
@@ -288,156 +253,14 @@ public final class EtherPacket implements CachedPacket {
     }
 
     /**
-     * Return the source MAC address as a byte array.
-     *
-     * @return  The source MAC address.
-     */
-    public byte[] getSourceAddress() {
-        Values v = getValues();
-        byte[] addr = v.getSourceAddress();
-        if (addr == null) {
-            addr = packet.getSourceMACAddress();
-            v.setSourceAddress(addr);
-        }
-
-        return addr;
-    }
-
-    /**
-     * Set the source MAC address.
-     *
-     * @param addr  A byte array that represents the source MAC address.
-     */
-    public void setSourceAddress(byte[] addr) {
-        getModifiedValues().setSourceAddress(addr);
-    }
-
-    /**
-     * Return the destination MAC address as a byte array.
-     *
-     * @return  The destination MAC address.
-     */
-    public byte[] getDestinationAddress() {
-        Values v = getValues();
-        byte[] addr = v.getDestinationAddress();
-        if (addr == null) {
-            addr = packet.getDestinationMACAddress();
-            v.setDestinationAddress(addr);
-        }
-
-        return addr;
-    }
-
-    /**
-     * Set the source MAC address.
-     *
-     * @param addr  A byte array that represents the source MAC address.
-     */
-    public void setDestinationAddress(byte[] addr) {
-        getModifiedValues().setDestinationAddress(addr);
-    }
-
-    /**
-     * Return the source MAC address as a long integer.
-     *
-     * @return  The source MAC address.
-     */
-    public long getSourceMacAddress() {
-        Values v = getValues();
-        long mac = v.getSourceMacAddress();
-        if (v.getSourceAddress() == null) {
-            byte[] addr = packet.getSourceMACAddress();
-            v.setSourceAddress(addr);
-            mac = v.getSourceMacAddress();
-        }
-
-        return mac;
-    }
-
-    /**
-     * Return the destination MAC address as a long integer.
-     *
-     * @return  The destination MAC address.
-     */
-    public long getDestinationMacAddress() {
-        Values v = getValues();
-        long mac = v.getDestinationMacAddress();
-        if (v.getDestinationAddress() == null) {
-            byte[] addr = packet.getDestinationMACAddress();
-            v.setDestinationAddress(addr);
-            mac = v.getDestinationMacAddress();
-        }
-
-        return mac;
-    }
-
-    /**
-     * Return the Ethernet type.
-     *
-     * @return  An integer value which represents the Ethernet type.
-     */
-    public int getEtherType() {
-        return etherType;
-    }
-
-    /**
      * Return the VLAN ID in the original Ethernet frame.
      *
      * @return  A short value which represents the VLAN ID.
      *          Zero is returned if no VLAN tag was found in the original
      *          Ethernet frame.
      */
-    public short getOriginalVlan() {
+    public int getOriginalVlan() {
         return values.getVlan();
-    }
-
-    /**
-     * Return the VLAN ID.
-     *
-     * @return  A short value which represents the VLAN ID.
-     *          Zero is returned if no VLAN tag was found in the Ethernet
-     *          frame.
-     */
-    public short getVlan() {
-        // VLAN ID is always cached.
-        return getValues().getVlan();
-    }
-
-    /**
-     * Set the VLAN ID.
-     *
-     * @param vid  A VLAN ID.
-     */
-    public void setVlan(short vid) {
-        getModifiedValues().setVlan(vid);
-    }
-
-    /**
-     * Return the VLAN priority.
-     *
-     * @return  A byte value which represents the VLAN priority.
-     *          A negative value is returned if no VLAN tag was found in
-     *          the Ethernet frame and no VLAN priority is set by the call of
-     *          {@link #setVlanPriority(byte)}.
-     */
-    public byte getVlanPriority() {
-        Values v = getValues();
-        byte pri = v.getVlanPriority();
-        if (pri == VLANPRI_NONE && vlanTag != null) {
-            pri = vlanTag.getPcp();
-            v.setVlanPriority(pri);
-        }
-
-        return pri;
-    }
-
-    /**
-     * Set the VLAN priority.
-     *
-     * @param pri  A VLAN priority.
-     */
-    public void setVlanPriority(byte pri) {
-        getModifiedValues().setVlanPriority(pri);
     }
 
     /**
@@ -537,43 +360,41 @@ public final class EtherPacket implements CachedPacket {
      * </p>
      *
      * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link MatchType} instances corresponding to
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
      *                match fields to be tested.
      */
     @Override
-    public void setMatch(Match match, Set<MatchType> fields) {
+    public void setMatch(Match match, Set<FlowMatchType> fields) {
         Values v = values;
         v.fill(packet, vlanTag);
 
         // VLAN ID field is mandatory.
         // Note that this code expects MatchType.DL_VLAN_NONE is zero.
-        short vid = v.getVlan();
-        match.setField(MatchType.DL_VLAN, vid);
+        int vid = v.getVlan();
+        match.setField(MatchType.DL_VLAN, (short)vid);
 
-        MatchType type = MatchType.DL_SRC;
-        if (fields.contains(type)) {
+        if (fields.contains(FlowMatchType.DL_SRC)) {
             // Test source MAC address.
-            match.setField(type, v.getSourceAddress());
+            match.setField(MatchType.DL_SRC, v.getSourceAddress().getBytes());
         }
 
-        type = MatchType.DL_DST;
-        if (fields.contains(type)) {
+        if (fields.contains(FlowMatchType.DL_DST)) {
             // Test destination MAC address.
-            match.setField(type, v.getDestinationAddress());
+            match.setField(MatchType.DL_DST,
+                           v.getDestinationAddress().getBytes());
         }
 
         // Test VLAN priority only if this packet has a VLAN tag.
-        if (vid != MatchType.DL_VLAN_NONE) {
-            type = MatchType.DL_VLAN_PR;
-            if (fields.contains(type)) {
-                match.setField(type, v.getVlanPriority());
+        if (vid != VLAN_NONE) {
+            if (fields.contains(FlowMatchType.DL_VLAN_PCP)) {
+                match.setField(MatchType.DL_VLAN_PR,
+                               (byte)v.getVlanPriority());
             }
         }
 
-        type = MatchType.DL_TYPE;
-        if (fields.contains(type)) {
+        if (fields.contains(FlowMatchType.DL_TYPE)) {
             // Test Ethernet type.
-            match.setField(type, (short)etherType);
+            match.setField(MatchType.DL_TYPE, (short)etherType);
         }
     }
 
@@ -587,38 +408,38 @@ public final class EtherPacket implements CachedPacket {
         // VLAN tag from scratch.
         boolean mod = false;
         if (modifiedValues != null) {
-            if (values.getSourceMacAddress() !=
-                modifiedValues.getSourceMacAddress()) {
+            EtherAddress src = modifiedValues.getSourceAddress();
+            if (!src.equals(values.getSourceAddress())) {
                 // Source MAC address was modified.
                 mod = true;
-            } else if (pctx.hasMatchField(MatchType.DL_SRC)) {
+            } else if (pctx.hasMatchField(FlowMatchType.DL_SRC)) {
                 // Source MAC address is not modified, and it will be specified
                 // in flow match. So we don't need to configure SET_DL_SRC
                 // action.
                 pctx.removeFilterAction(SetDlSrc.class);
             }
 
-            if (values.getDestinationMacAddress() !=
-                modifiedValues.getDestinationMacAddress()) {
+            EtherAddress dst = modifiedValues.getDestinationAddress();
+            if (!dst.equals(values.getDestinationAddress())) {
                 // Destination MAC address was modified.
                 mod = true;
-            } else if (pctx.hasMatchField(MatchType.DL_DST)) {
+            } else if (pctx.hasMatchField(FlowMatchType.DL_DST)) {
                 // Destination MAC address is not modified, and it will be
                 // specified in flow match. So we don't need to configure
                 // SET_DL_DST action.
                 pctx.removeFilterAction(SetDlDst.class);
             }
 
-            short vlan = modifiedValues.getVlan();
-            if (vlan == MatchType.DL_VLAN_NONE) {
+            int vlan = modifiedValues.getVlan();
+            if (vlan == VLAN_NONE) {
                 // SET_VLAN_PCP should never be applied to untagged frame.
                 pctx.removeFilterAction(SetVlanPcp.class);
             } else {
-                byte pri = modifiedValues.getVlanPriority();
+                short pri = modifiedValues.getVlanPriority();
                 if (values.getVlanPriority() != pri) {
                     // VLAN priority was modified.
                     mod = true;
-                } else if (pctx.hasMatchField(MatchType.DL_VLAN_PR)) {
+                } else if (pctx.hasMatchField(FlowMatchType.DL_VLAN_PCP)) {
                     // VLAN priority is not modified, and it will be specified
                     // in flow match. So we don't need to configure
                     // SET_VLAN_PCP action.
@@ -657,5 +478,122 @@ public final class EtherPacket implements CachedPacket {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
         }
+    }
+
+    // EtherHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public EtherAddress getSourceAddress() {
+        Values v = getValues();
+        EtherAddress addr = v.getSourceAddress();
+        if (addr == null) {
+            addr = new EtherAddress(packet.getSourceMACAddress());
+            v.setSourceAddress(addr);
+        }
+
+        return addr;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setSourceAddress(EtherAddress mac) {
+        getModifiedValues().setSourceAddress(mac);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public EtherAddress getDestinationAddress() {
+        Values v = getValues();
+        EtherAddress addr = v.getDestinationAddress();
+        if (addr == null) {
+            addr = new EtherAddress(packet.getDestinationMACAddress());
+            v.setDestinationAddress(addr);
+        }
+
+        return addr;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setDestinationAddress(EtherAddress mac) {
+        getModifiedValues().setDestinationAddress(mac);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getEtherType() {
+        return etherType;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int getVlanId() {
+        // VLAN ID is always cached.
+        return getValues().getVlan();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setVlanId(int vid) {
+        getModifiedValues().setVlan(vid);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public short getVlanPriority() {
+        Values v = getValues();
+        short pri = v.getVlanPriority();
+        if (pri == VLANPRI_NONE && vlanTag != null) {
+            pri = (short)NumberUtils.getUnsigned(vlanTag.getPcp());
+            v.setVlanPriority(pri);
+        }
+
+        return pri;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setVlanPriority(short pcp) {
+        getModifiedValues().setVlanPriority(pcp);
+    }
+
+    // ProtocolHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setDescription(StringBuilder builder) {
+        EtherAddress src = getSourceAddress();
+        EtherAddress dst = getDestinationAddress();
+        builder.append("Ether[src=").append(src.getText()).
+            append(",dst=").append(dst.getText()).
+            append(",type=0x").append(Integer.toHexString(etherType));
+
+        int vid = getVlanId();
+        if (vid != VLAN_NONE) {
+            builder.append(",vlan={id=").append(vid).
+                append(",pcp=").append((int)getVlanPriority()).append('}');
+        }
+        builder.append(']');
     }
 }

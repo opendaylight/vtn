@@ -36,6 +36,10 @@
           level="ERROR"/>
   <logger name="org.opendaylight.vtn.manager.internal.util.XmlConfigFile"
           level="OFF"/>
+  <logger name="org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader"
+          level="ERROR"/>
+  <logger name="org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition"
+          level="OFF"/>
 
   <logger name="org.opendaylight.controller.sal.utils.ServiceHelper"
           level="OFF"/>

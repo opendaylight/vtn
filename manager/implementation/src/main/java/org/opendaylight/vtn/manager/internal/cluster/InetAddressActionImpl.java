@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,10 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.net.InetAddress;
-
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.InetAddressAction;
+import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
@@ -36,7 +35,7 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
     /**
      * IP address to be set.
      */
-    private final InetAddress  address;
+    private final IpNetwork  address;
 
     /**
      * Construct a new instance.
@@ -54,7 +53,7 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
             throw new VTNException(st);
         }
 
-        address = act.getAddress();
+        address = act.getIpNetwork();
         if (address == null) {
             String msg = getErrorMessage(act, "IP address");
             st = MiscUtils.argumentIsNull(msg);
@@ -65,9 +64,9 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
     /**
      * Return an IP address to be set.
      *
-     * @return  An {@link InetAddress} instance.
+     * @return  An {@link IpNetwork} instance.
      */
-    protected final InetAddress getAddress() {
+    protected final IpNetwork getAddress() {
         return address;
     }
 
@@ -108,7 +107,7 @@ public abstract class InetAddressActionImpl extends FlowActionImpl {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName());
-        return builder.append("[addr=").append(address.getHostAddress()).
+        return builder.append("[addr=").append(address.getText()).
             append(']').toString();
     }
 }

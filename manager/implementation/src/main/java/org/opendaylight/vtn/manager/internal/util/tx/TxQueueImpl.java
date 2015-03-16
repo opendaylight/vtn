@@ -28,6 +28,7 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
@@ -107,6 +108,11 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
          * A VTN inventory reader.
          */
         private InventoryReader  inventoryReader;
+
+        /**
+         * A flow condition reader.
+         */
+        private FlowCondReader  flowCondReader;
 
         /**
          * Construct a new instance.
@@ -249,6 +255,20 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             if (reader == null) {
                 reader = new InventoryReader(getReadWriteTransaction());
                 inventoryReader = reader;
+            }
+
+            return reader;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public FlowCondReader getFlowCondReader() {
+            FlowCondReader reader = flowCondReader;
+            if (reader == null) {
+                reader = new FlowCondReader(getReadWriteTransaction());
+                flowCondReader = reader;
             }
 
             return reader;

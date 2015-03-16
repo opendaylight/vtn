@@ -64,11 +64,6 @@ public final class ContainerConfig implements IObjectReader {
         TENANT,
 
         /**
-         * Indicates the configuration of the flow condition.
-         */
-        FLOWCOND,
-
-        /**
          * Indicates the configuration of the container path map list.
          */
         PATHMAP;

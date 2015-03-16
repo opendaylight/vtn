@@ -9,10 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -84,8 +82,8 @@ import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
-import org.opendaylight.vtn.manager.internal.packet.VTNPacketListener;
 import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
+import org.opendaylight.vtn.manager.internal.packet.VTNPacketListener;
 import org.opendaylight.vtn.manager.internal.routing.RoutingEvent;
 import org.opendaylight.vtn.manager.internal.routing.VTNRoutingListener;
 import org.opendaylight.vtn.manager.internal.util.InventoryReader;
@@ -96,6 +94,10 @@ import org.opendaylight.vtn.manager.internal.util.SalNode;
 import org.opendaylight.vtn.manager.internal.util.SalPort;
 import org.opendaylight.vtn.manager.internal.util.concurrent.AbstractVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
+import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowMatch;
+import org.opendaylight.vtn.manager.internal.util.packet.ArpPacketBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathCostConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
@@ -105,11 +107,8 @@ import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ContainerPathMapImpl;
-import org.opendaylight.vtn.manager.internal.cluster.FlowCondImpl;
-import org.opendaylight.vtn.manager.internal.cluster.FlowConditionEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowFilterMap;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
-import org.opendaylight.vtn.manager.internal.cluster.FlowMatchImpl;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
@@ -146,13 +145,8 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
-import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.IEEE8021Q;
-import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -161,6 +155,20 @@ import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 import org.opendaylight.yangtools.yang.common.RpcError;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionMatchInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionMatchInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionMatchOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.SetFlowConditionOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnFlowConditionService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.remove.flow.condition.match.output.RemoveMatchResult;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.set.flow.condition.match.input.FlowMatchList;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.set.flow.condition.match.output.SetMatchResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathCostInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathCostInputBuilder;
@@ -207,11 +215,6 @@ public class VTNManagerImpl
     private static final long  RPC_TIMEOUT = 60L;
 
     /**
-     * The number of bytes in an IPv4 address.
-     */
-    static final int  IPV4_ADDRLEN = 4;
-
-    /**
      * Cluster cache name associated with {@link #tenantDB}.
      */
     static final String  CACHE_TENANT = "vtn.tenant";
@@ -220,11 +223,6 @@ public class VTNManagerImpl
      * Cluster cache name associated with {@link #stateDB}.
      */
     static final String  CACHE_STATE = "vtn.state";
-
-    /**
-     * The name of the cluster cache which keeps flow conditions.
-     */
-    static final String CACHE_FLOWCOND = "vtn.flowcond";
 
     /**
      * The name of the cluster cache which keeps container path maps.
@@ -276,11 +274,6 @@ public class VTNManagerImpl
      * VTN flow database.
      */
     private ConcurrentMap<FlowGroupId, VTNFlow>  flowDB;
-
-    /**
-     * Keeps flow conditions configured in this container.
-     */
-    private ConcurrentMap<String, FlowCondImpl>  flowCondDB;
 
     /**
      * Keeps container path maps configured in this container.
@@ -792,7 +785,6 @@ public class VTNManagerImpl
             clusterEvent =
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
             flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
-            flowCondDB = new ConcurrentHashMap<String, FlowCondImpl>();
             pathMapDB = new ConcurrentHashMap<Integer, ContainerPathMapImpl>();
             macAddressDB = null;
             return;
@@ -804,15 +796,12 @@ public class VTNManagerImpl
                        IClusterServices.cacheMode.SYNC);
         createCache(cluster, CACHE_TENANT, cmode);
         createCache(cluster, CACHE_STATE, cmode);
-        createCache(cluster, CACHE_FLOWCOND, cmode);
         createCache(cluster, CACHE_PATHMAP, cmode);
 
         tenantDB = (ConcurrentMap<String, VTenantImpl>)
             getCache(cluster, CACHE_TENANT);
         stateDB = (ConcurrentMap<VTenantPath, Object>)
             getCache(cluster, CACHE_STATE);
-        flowCondDB = (ConcurrentMap<String, FlowCondImpl>)
-            getCache(cluster, CACHE_FLOWCOND);
         pathMapDB = (ConcurrentMap<Integer, ContainerPathMapImpl>)
             getCache(cluster, CACHE_PATHMAP);
 
@@ -914,7 +903,6 @@ public class VTNManagerImpl
         if (cluster != null) {
             cluster.destroyCache(CACHE_TENANT);
             cluster.destroyCache(CACHE_STATE);
-            cluster.destroyCache(CACHE_FLOWCOND);
             cluster.destroyCache(CACHE_PATHMAP);
             cluster.destroyCache(CACHE_EVENT);
             cluster.destroyCache(CACHE_FLOWS);
@@ -1337,15 +1325,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Return the flow condition DB.
-     *
-     * @return  The flow condition DB.
-     */
-    public ConcurrentMap<String, FlowCondImpl> getFlowCondDB() {
-        return flowCondDB;
-    }
-
-    /**
      * Let the specified VTN visible to other controllers in the cluster.
      *
      * @param vtn  A virtual tenant.
@@ -1601,9 +1580,10 @@ public class VTNManagerImpl
      */
     public void cleanUpRemovedFlows() {
         if (clusterService.amICoordinator()) {
-            RemovedFlowMatch fmatch = new RemovedFlowMatch(fwRuleManager);
+            RemovedFlowSelector selector =
+                new RemovedFlowSelector(fwRuleManager);
             for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                fdb.removeFlows(this, fmatch);
+                fdb.removeFlows(this, selector);
             }
         }
     }
@@ -1637,118 +1617,6 @@ public class VTNManagerImpl
                 vtnProvider.transmit(egress, ether);
             }
         }
-    }
-
-    /**
-     * Create an ethernet frame which contains an ARP request message.
-     *
-     * <p>
-     *   Controller's MAC address is used as source MAC adddress, and zero
-     *   is used as sender protocol address.
-     * </p>
-     *
-     * @param dst   Destination MAC address.
-     * @param addr  Target IP address.
-     * @return  An ethernet frame. {@code null} is returned if {@code addr}
-     *          is invalid.
-     */
-    public Ethernet createArpRequest(byte[] dst, InetAddress addr) {
-        return createArpRequest(dst, addr, (short)0);
-    }
-
-    /**
-     * Create an ethernet frame which contains an ARP request message.
-     *
-     * <p>
-     *   Controller's MAC address is used as source MAC adddress, and zero
-     *   is used as sender protocol address.
-     * </p>
-     *
-     * @param dst   Destination MAC address.
-     * @param addr  Target IP address.
-     * @param vlan  VLAN ID. Zero means VLAN tag should not be added.
-     * @return  An ethernet frame. {@code null} is returned if {@code addr}
-     *          is invalid.
-     */
-    public Ethernet createArpRequest(byte[] dst, InetAddress addr,
-                                     short vlan) {
-        // IP address must be an IPv4 address.
-        if (addr instanceof Inet4Address) {
-            return createArpRequest(dst, addr.getAddress(), vlan);
-        }
-        return null;
-    }
-
-    /**
-     * Create an ethernet frame which contains an ARP request message.
-     *
-     * <p>
-     *   Controller's MAC address is used as source MAC adddress, and zero
-     *   is used as sender protocol address.
-     * </p>
-     *
-     * @param dst     Destination MAC address.
-     * @param target  Target IP address.
-     * @param vlan    VLAN ID. Zero means VLAN tag should not be added.
-     * @return  An ethernet frame.
-     */
-    public Ethernet createArpRequest(byte[] dst, byte[] target, short vlan) {
-        // Set controller's MAC address to source MAC address.
-        byte[] src = getVTNConfig().getControllerMacAddress().getBytes();
-
-        // Create an ARP request message.
-        // Set zero to sender protocol address.
-        byte[] sender = new byte[]{0, 0, 0, 0};
-        return createArp(ARP.REQUEST, src, dst, sender, target, vlan);
-    }
-
-    /**
-     * Create an ethernet frame which contains an ARP message.
-     *
-     * @param op      Operation code defined by ARP.
-     * @param src     Source MAC address.
-     * @param dst     Destination MAC address.
-     * @param sender  Sender IP address.
-     * @param target  Target IP address.
-     * @param vlan    VLAN ID. Zero means VLAN tag should not be added.
-     * @return  An ethernet frame.
-     */
-    public Ethernet createArp(short op, byte[] src, byte[] dst, byte[] sender,
-                              byte[] target, short vlan) {
-        assert src.length == EthernetAddress.SIZE &&
-            dst.length == EthernetAddress.SIZE &&
-            sender.length == IPV4_ADDRLEN && target.length == IPV4_ADDRLEN;
-
-        byte[] tha = (EtherAddress.isBroadcast(dst))
-            ? new byte[]{0, 0, 0, 0, 0, 0} : dst;
-
-        // Create an ARP request message.
-        ARP arp = new ARP();
-        arp.setHardwareType(ARP.HW_TYPE_ETHERNET).
-            setProtocolType(EtherTypes.IPv4.shortValue()).
-            setHardwareAddressLength((byte)EthernetAddress.SIZE).
-            setProtocolAddressLength((byte)target.length).
-            setOpCode(op).
-            setSenderHardwareAddress(src).setSenderProtocolAddress(sender).
-            setTargetHardwareAddress(tha).setTargetProtocolAddress(target);
-
-        short ethType = EtherTypes.ARP.shortValue();
-        Packet payload = arp;
-        if (vlan != 0) {
-            // Add a VLAN tag.
-            IEEE8021Q tag = new IEEE8021Q();
-            tag.setCfi((byte)0).setPcp((byte)0).setVid(vlan).
-                setEtherType(ethType).setPayload(arp);
-            ethType = EtherTypes.VLANTAGGED.shortValue();
-            payload = tag;
-        }
-
-        // Create an ethernet frame.
-        Ethernet ether = new Ethernet();
-        ether.setSourceMACAddress(src).setDestinationMACAddress(dst).
-            setEtherType(ethType).setPayload(payload);
-
-        return ether;
     }
 
     /**
@@ -1888,11 +1756,6 @@ public class VTNManagerImpl
                 loadTenantConfig(ctx, cfg, name);
             }
 
-            // Load flow conditions.
-            for (String name: cfg.getKeys(ContainerConfig.Type.FLOWCOND)) {
-                loadFlowCondition(cfg, name);
-            }
-
             // Load container path maps.
             for (String name: cfg.getKeys(ContainerConfig.Type.PATHMAP)) {
                 loadContainerPathMap(cfg, name);
@@ -1916,16 +1779,6 @@ public class VTNManagerImpl
 
             // Remove configuration files for obsolete tenants.
             cfg.deleteAll(ContainerConfig.Type.TENANT, names);
-
-            // Update configuration files for flow conditions.
-            names.clear();
-            for (FlowCondImpl fc: flowCondDB.values()) {
-                fc.saveConfig(this);
-                names.add(fc.getName());
-            }
-
-            // Remove configuration files for obsolete flow conditions.
-            cfg.deleteAll(ContainerConfig.Type.FLOWCOND, names);
 
             // Update configuration files for container path maps.
             names.clear();
@@ -1961,29 +1814,6 @@ public class VTNManagerImpl
                 vtn = newvtn;
             }
             vtn.resume(this, ctx);
-        }
-    }
-
-    /**
-     * Load the specified flow condition from the file.
-     *
-     * @param cfg   A {@link ContainerConfig} instance.
-     * @param name  The name of the flow condition.
-     */
-    private void loadFlowCondition(ContainerConfig cfg, String name) {
-        FlowCondImpl newfc = (FlowCondImpl)
-            cfg.load(ContainerConfig.Type.FLOWCOND, name);
-        if (newfc != null) {
-            FlowCondImpl fc = flowCondDB.putIfAbsent(name, newfc);
-            if (fc == null) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}: Flow condition was loaded.",
-                              containerName);
-                } else {
-                    LOG.info("{}: Flow condition was loaded: {}",
-                             containerName, name);
-                }
-            }
         }
     }
 
@@ -2077,18 +1907,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Return a failure status that indicates the specified flow condition
-     * does not exist.
-     *
-     * @param name  The name of the flow condition.
-     * @return  A failure status.
-     */
-    private Status flowConditionNotFound(String name) {
-        String msg = name + ": Flow condition does not exist";
-        return new Status(StatusCode.NOTFOUND, msg);
-    }
-
-    /**
      * Return the name of the virtual tenant in the given tenant path.
      *
      * @param path  Path to the virtual tenant.
@@ -2148,59 +1966,6 @@ public class VTNManagerImpl
         }
 
         return vtn;
-    }
-
-    /**
-     * Ensure that the specified flow condition name is not null.
-     *
-     * @param name  The name of the flow condition.
-     * @throws VTNException  An error occurred.
-     */
-    private void checkFlowConditionName(String name) throws VTNException {
-        if (name == null) {
-            throw new VTNException(MiscUtils.
-                                   argumentIsNull("Flow condition name"));
-        }
-    }
-
-    /**
-     * Return the flow condition instance associated with the given name.
-     *
-     * <p>
-     *   This method must be called with the VTN Manager lock.
-     * </p>
-     *
-     * @param name  The name of the flow condition.
-     * @return  A flow condition associated with the specified name.
-     * @throws VTNException  An error occurred.
-     */
-    private FlowCondImpl getFlowCondImpl(String name) throws VTNException {
-        FlowCondImpl fc = flowCondDB.get(name);
-        if (fc == null) {
-            throw new VTNException(flowConditionNotFound(name));
-        }
-
-        return fc;
-    }
-
-    /**
-     * Return the flow condition instance associated with the given name.
-     *
-     * <ul>
-     *   <li>
-     *     This method ensures that the specified name is not {@code null}.
-     *   </li>
-     *   <li>This method must be called with the VTN Manager lock.</li>
-     * </ul>
-     *
-     * @param name  The name of the flow condition.
-     * @return  A flow condition associated with the specified name.
-     * @throws VTNException  An error occurred.
-     */
-    private FlowCondImpl getFlowCondImplCheck(String name)
-        throws VTNException {
-        checkFlowConditionName(name);
-        return getFlowCondImpl(name);
     }
 
     /**
@@ -3050,74 +2815,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Called when a flow condition was added, removed, or changed by
-     * remote cluster node.
-     *
-     * @param name   The name of the flow condition.
-     * @param index  The match index which specifies the flow match condition
-     *               in the flow condition. A negative value is specified if
-     *               the target is flow condition itself.
-     * @param type   {@code ADDED} if added.
-     *               {@code REMOVED} if removed.
-     *               {@code CHANGED} if changed.
-     */
-    public void updateFlowCondition(String name, int index, UpdateType type) {
-        ContainerConfig cfg = new ContainerConfig(containerName);
-        final ContainerConfig.Type cfgType = ContainerConfig.Type.FLOWCOND;
-
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            if (type == UpdateType.REMOVED && index < 0) {
-                // Delete the configuration file for the flow condition.
-                cfg.delete(cfgType, name);
-
-                if (index < 0) {
-                    LOG.info("{}:{}: Flow condition was removed.",
-                             containerName, name);
-                } else {
-                    LOG.info("{}:{}.{}: Flow match condition was removed.",
-                             containerName, name, index);
-                }
-
-                return;
-            }
-
-            // Save the configuration for the flow condition.
-            FlowCondImpl fc = flowCondDB.get(name);
-            if (fc == null) {
-                LOG.debug("{}:{}: Ignore phantom event of the " +
-                          "flow condition: index={}", containerName,
-                          name, index);
-                return;
-            }
-
-            fc.saveConfig(this);
-            if (!LOG.isTraceEnabled()) {
-                // Record a simple informational log.
-                if (index < 0) {
-                    LOG.info("{}:{}: Flow condition was {}.",
-                             containerName, name, type.getName());
-                } else {
-                    LOG.info("{}:{}.{}: Flow match condition was {}.",
-                             containerName, name, index, type.getName());
-                }
-                return;
-            }
-
-            if (index < 0) {
-                LOG.trace("{}:{}: Flow condition was {}: {}",
-                          containerName, name, type.getName(), fc);
-            } else {
-                LOG.trace("{}:{}.{}: Flow match condition was {}: {}",
-                          containerName, name, index, type.getName(), fc);
-            }
-        } finally {
-            rdlock.unlock();
-        }
-    }
-
-    /**
      * Called when a container path map was added, removed, or changed by
      * remote cluster node.
      *
@@ -3246,17 +2943,17 @@ public class VTNManagerImpl
     }
 
     /**
-     * Remove all flows accepted by the specified {@link VTNFlowMatch}
+     * Remove all flows accepted by the specified {@link FlowSelector}
      * instance.
      *
-     * @param fmatch  A {@link VTNFlowMatch} instance which determines VTN
-     *                All flow entries are removed if {@code null} is
-     *                specified.
+     * @param selector  A {@link FlowSelector} instance which determines VTN
+     *                  All flow entries are removed if {@code null} is
+     *                  specified.
      * @return  A list of {@link FlowRemoveTask} instances.
      */
-    public List<FlowRemoveTask> removeFlows(VTNFlowMatch fmatch) {
+    public List<FlowRemoveTask> removeFlows(FlowSelector selector) {
         List<FlowRemoveTask> list = new ArrayList<>();
-        if (fmatch == null) {
+        if (selector == null) {
             for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
                 FlowRemoveTask task = fdb.clear(this);
                 if (task != null) {
@@ -3265,7 +2962,7 @@ public class VTNManagerImpl
             }
         } else {
             for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                FlowRemoveTask task = fdb.removeFlows(this, fmatch);
+                FlowRemoveTask task = fdb.removeFlows(this, selector);
                 if (task != null) {
                     list.add(task);
                 }
@@ -3273,6 +2970,28 @@ public class VTNManagerImpl
         }
 
         return list;
+    }
+
+    /**
+     * Remove all flows accepted by the specified {@link FlowSelector}
+     * instance.
+     *
+     * @param tname     The name of the VTN.
+     * @param selector  A {@link FlowSelector} instance which determines VTN
+     *                  All flow entries are removed if {@code null} is
+     *                  specified.
+     * @return  A list of {@link FlowRemoveTask} instances.
+     */
+    public FlowRemoveTask removeFlows(String tname, FlowSelector selector) {
+        VTNFlowDatabase fdb = getTenantFlowDB(tname);
+        FlowRemoveTask task = null;
+        if (fdb != null) {
+            task = (selector == null)
+                ? fdb.clear(this)
+                : fdb.removeFlows(this, selector);
+        }
+
+        return task;
     }
 
     /**
@@ -4742,8 +4461,8 @@ public class VTNManagerImpl
         }
 
         // Create an ARP request with specifying broadcast address.
-        byte[] bcast = EtherAddress.BROADCAST.getBytes();
-        Ethernet ether = createArpRequest(bcast, addr);
+        Ethernet ether = new ArpPacketBuilder().
+            build(getVTNConfig().getControllerMacAddress(), addr);
         if (ether == null) {
             return;
         }
@@ -4829,7 +4548,9 @@ public class VTNManagerImpl
         }
 
         short vlan = host.getVlan();
-        Ethernet ether = createArpRequest(dst, target, vlan);
+        Ethernet ether = new ArpPacketBuilder((int)vlan).
+            build(getVTNConfig().getControllerMacAddress(),
+                  new EtherAddress(dst), target);
         if (ether == null) {
             LOG.debug("{}: probeHost: Ignore request for {}: " +
                       "Invalid IP address", containerName, host);
@@ -5095,22 +4816,25 @@ public class VTNManagerImpl
      */
     @Override
     public List<FlowCondition> getFlowConditions() throws VTNException {
-        ArrayList<FlowCondition> list;
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        ArrayList<FlowCondition> list = new ArrayList<>();
+        VTNManagerProvider provider = checkService();
+        TxContext ctx = provider.newTxContext();
         try {
-            list = new ArrayList<FlowCondition>(flowCondDB.size());
-            for (FlowCondImpl fc: flowCondDB.values()) {
-                list.add(fc.getFlowCondition());
+            ReadTransaction rtx = ctx.getTransaction();
+            List<VTNFlowCondition> vlist =
+                FlowCondUtils.readFlowConditions(rtx);
+            for (VTNFlowCondition vfcond: vlist) {
+                list.add(vfcond.toFlowCondition());
             }
         } finally {
-            rdlock.unlock();
+            ctx.cancelTransaction();
         }
 
         // Sort flow conditions by their name.
         VTNIdentifiableComparator<String> comparator =
             new VTNIdentifiableComparator<>(String.class);
         Collections.sort(list, comparator);
+
         return list;
     }
 
@@ -5124,13 +4848,15 @@ public class VTNManagerImpl
      */
     @Override
     public FlowCondition getFlowCondition(String name) throws VTNException {
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNManagerProvider provider = checkService();
+        TxContext ctx = provider.newTxContext();
         try {
-            FlowCondImpl fc = getFlowCondImplCheck(name);
-            return fc.getFlowCondition();
+            ReadTransaction rtx = ctx.getTransaction();
+            VTNFlowCondition vfcond =
+                FlowCondUtils.readFlowCondition(rtx, name);
+            return vfcond.toFlowCondition();
         } finally {
-            rdlock.unlock();
+            ctx.cancelTransaction();
         }
     }
 
@@ -5147,63 +4873,22 @@ public class VTNManagerImpl
     @Override
     public UpdateType setFlowCondition(String name, FlowCondition fcond)
         throws VTNException {
-        MiscUtils.checkName("Flow condition", name);
+        VTNManagerProvider provider = checkUpdate();
 
-        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
-        try {
-            checkUpdate();
+        // Construct an RPC input that replaces the flow condition specified
+        // by the given name.
+        VTNFlowCondition vfcond = new VTNFlowCondition(name, fcond);
+        SetFlowConditionInput input = vfcond.toSetFlowConditionInputBuilder().
+            setOperation(VtnUpdateOperationType.SET).build();
 
-            UpdateType result;
-            FlowCondImpl fc;
-            while (true) {
-                FlowCondImpl oldfc = flowCondDB.get(name);
-                if (oldfc == null) {
-                    // Create a new flow condition.
-                    fc = new FlowCondImpl(name, fcond);
-                    if (flowCondDB.putIfAbsent(name, fc) == null) {
-                        result = UpdateType.ADDED;
-                        break;
-                    }
-                } else {
-                    // Update existing flow condition.
-                    fc = oldfc.clone();
-                    List<FlowMatch> matches = (fcond == null)
-                        ? null : fcond.getMatches();
-                    if (!fc.setMatches(matches)) {
-                        // No change was made to flow condition.
-                        return null;
-                    }
+        // Invoke RPC and await its completion.
+        VtnFlowConditionService rpc =
+            provider.getVtnRpcService(VtnFlowConditionService.class);
+        SetFlowConditionOutput output =
+            getRpcOutput(rpc.setFlowCondition(input));
 
-                    if (flowCondDB.replace(name, oldfc, fc)) {
-                        result = UpdateType.CHANGED;
-                        break;
-                    }
-                }
-            }
-
-            // REVISIT: Select flow entries affected by the change.
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb);
-            }
-
-            Status status = fc.saveConfig(this);
-            if (!status.isSuccess()) {
-                throw new VTNException(status);
-            }
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}: Flow condition was {}: {}",
-                          containerName, name, result.getName(), fcond);
-            } else {
-                LOG.info("{}:{}: Flow condition was {}.",
-                         containerName, name, result.getName());
-            }
-            FlowConditionEvent.raise(this, name, result);
-
-            return result;
-        } finally {
-            data.cleanUp(this);
-        }
+        // Convert the result.
+        return MiscUtils.toUpdateType(output.getStatus());
     }
 
     /**
@@ -5215,35 +4900,17 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeFlowCondition(String name) {
-        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkFlowConditionName(name);
-            checkUpdate();
+            VTNManagerProvider provider = checkUpdate();
+            RemoveFlowConditionInput input =
+                new RemoveFlowConditionInputBuilder().setName(name).build();
 
-            FlowCondImpl fc = flowCondDB.remove(name);
-            if (fc == null) {
-                return flowConditionNotFound(name);
-            }
-
-            // REVISIT: Select flow entries affected by the change.
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb);
-            }
-
-            fc.destroy(this);
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}: Flow condition was removed: {}",
-                          containerName, name, fc.getFlowCondition());
-            } else {
-                LOG.info("{}:{}: Flow condition was removed.",
-                         containerName, name);
-            }
-            FlowConditionEvent.raise(this, name, UpdateType.REMOVED);
+            // Invoke RPC and await its completion.
+            VtnFlowConditionService rpc =
+                provider.getVtnRpcService(VtnFlowConditionService.class);
+            getRpcOutput(rpc.removeFlowCondition(input), true);
         } catch (VTNException e) {
             return e.getStatus();
-        } finally {
-            data.cleanUp(this);
         }
 
         return new Status(StatusCode.SUCCESS, null);
@@ -5265,13 +4932,15 @@ public class VTNManagerImpl
     @Override
     public FlowMatch getFlowConditionMatch(String name, int index)
         throws VTNException {
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
+        VTNManagerProvider provider = checkService();
+        TxContext ctx = provider.newTxContext();
         try {
-            FlowCondImpl fc = getFlowCondImplCheck(name);
-            return fc.getMatch(index);
+            ReadTransaction rtx = ctx.getTransaction();
+            VTNFlowMatch vfmatch =
+                FlowCondUtils.readFlowMatch(rtx, name, index);
+            return (vfmatch == null) ? null : vfmatch.toFlowMatch();
         } finally {
-            rdlock.unlock();
+            ctx.cancelTransaction();
         }
     }
 
@@ -5292,7 +4961,7 @@ public class VTNManagerImpl
     public UpdateType setFlowConditionMatch(String name, int index,
                                             FlowMatch match)
         throws VTNException {
-        checkFlowConditionName(name);
+        VTNManagerProvider provider = checkUpdate();
 
         // Complete FlowMatch instance.
         FlowMatch mt;
@@ -5304,46 +4973,30 @@ public class VTNManagerImpl
             mt = match.assignIndex(index);
         }
 
-        // Acquire writer lock in order to block notifyPacket().
-        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
-        try {
-            checkUpdate();
+        VTNFlowMatch vfmatch = new VTNFlowMatch(mt);
+        List<FlowMatchList> fml =
+            Collections.singletonList(vfmatch.toFlowMatchListBuilder().build());
 
-            UpdateType result;
-            FlowCondImpl fc, oldfc;
-            do {
-                oldfc = getFlowCondImpl(name);
-                fc = oldfc.clone();
-                result = fc.setMatch(mt);
-                if (result == null) {
-                    // No change was made to flow condition.
-                    return null;
-                }
-            } while (!flowCondDB.replace(name, oldfc, fc));
+        // Construct an RPC input that adds the given flow match configuration
+        // to the specified flow condition.
+        SetFlowConditionMatchInput input = new SetFlowConditionMatchInputBuilder().
+            setName(name).setFlowMatchList(fml).build();
 
-            // REVISIT: Select flow entries affected by the change.
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb);
-            }
-
-            Status status = fc.saveConfig(this);
-            if (!status.isSuccess()) {
-                throw new VTNException(status);
-            }
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}.{}: Flow match condition was {}: {}",
-                          containerName, name, index, result.getName(), mt);
-            } else {
-                LOG.info("{}:{}.{}: Flow match condition was {}.",
-                         containerName, name, index, result.getName());
-            }
-            FlowConditionEvent.raise(this, name, index, result);
-
-            return result;
-        } finally {
-            data.cleanUp(this);
+        // Invoke RPC and await its completion.
+        VtnFlowConditionService rpc =
+            provider.getVtnRpcService(VtnFlowConditionService.class);
+        SetFlowConditionMatchOutput output =
+            getRpcOutput(rpc.setFlowConditionMatch(input));
+        SetMatchResult result =
+            getRpcOutput(output.getSetMatchResult(), 0, false);
+        Integer idx = vfmatch.getIdentifier();
+        if (!idx.equals(result.getIndex())) {
+            throw new VTNException("Unexpected match index in RPC output: " +
+                                   output.getSetMatchResult());
         }
+
+        // Convert the result.
+        return MiscUtils.toUpdateType(result.getStatus());
     }
 
     /**
@@ -5358,50 +5011,37 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeFlowConditionMatch(String name, int index) {
-        // Acquire writer lock in order to block notifyPacket().
-        VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        Integer idx = Integer.valueOf(index);
         try {
-            checkFlowConditionName(name);
-            checkUpdate();
+            VTNManagerProvider provider = checkUpdate();
 
-            FlowCondImpl fc, oldfc;
-            FlowMatchImpl fm;
-            do {
-                oldfc = getFlowCondImpl(name);
-                fc = oldfc.clone();
-                fm = fc.removeMatch(index);
-                if (fm == null) {
-                    // No change was made to flow condition.
-                    return null;
-                }
-            } while (!flowCondDB.replace(name, oldfc, fc));
+            // Construct an RPC input that removes the flow match associated
+            // with the given index in the flow condition.
+            RemoveFlowConditionMatchInput input = new RemoveFlowConditionMatchInputBuilder().
+                setName(name).setMatchIndex(Collections.singletonList(idx)).
+                build();
 
-            // REVISIT: Select flow entries affected by the change.
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                VTNThreadData.removeFlows(this, fdb);
+            // Invoke RPC and await its completion.
+            VtnFlowConditionService rpc =
+                provider.getVtnRpcService(VtnFlowConditionService.class);
+            RemoveFlowConditionMatchOutput output =
+                getRpcOutput(rpc.removeFlowConditionMatch(input));
+            RemoveMatchResult result =
+                getRpcOutput(output.getRemoveMatchResult(), 0, false);
+            if (!idx.equals(result.getIndex())) {
+                throw new VTNException(
+                    "Unexpected match index in RPC output: " +
+                    output.getRemoveMatchResult());
             }
-
-            Status status = fc.saveConfig(this);
-            if (status.isSuccess()) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("{}:{}.{}: " +
-                              "Flow match condition was removed: {}",
-                              containerName, name, index, fm);
-                } else {
-                    LOG.info("{}:{}.{}: Flow match condition was removed.",
-                             containerName, name, index);
-                }
-
-                FlowConditionEvent.raise(this, name, index,
-                                         UpdateType.REMOVED);
+            if (result.getStatus() == null) {
+                // The specified match index was not found.
+                return null;
             }
-
-            return status;
         } catch (VTNException e) {
             return e.getStatus();
-        } finally {
-            data.cleanUp(this);
         }
+
+        return new Status(StatusCode.SUCCESS, null);
     }
 
     /**
@@ -5686,9 +5326,6 @@ public class VTNManagerImpl
                 getRpcOutput(rpc.removePathCost(input));
             RemovePathCostResult result =
                 getRpcOutput(output.getRemovePathCostResult(), 0, false);
-            if (result == null) {
-                throw new VTNException("RPC set null as result.");
-            }
             if (!vdesc.equals(result.getPortDesc())) {
                 throw new VTNException("Unexpected port desc in RPC output: " +
                                        output.getRemovePathCostResult());
@@ -5697,8 +5334,6 @@ public class VTNManagerImpl
                 // The specified path cost configuration did not exist.
                 return null;
             }
-
-            return new Status(StatusCode.SUCCESS, null);
         } catch (VTNException e) {
             return e.getStatus();
         } finally {
@@ -5706,6 +5341,8 @@ public class VTNManagerImpl
                 ctx.cancelTransaction();
             }
         }
+
+        return new Status(StatusCode.SUCCESS, null);
     }
 
     /**
@@ -6343,14 +5980,6 @@ public class VTNManagerImpl
                 }
             }
 
-            // Save flow condition configurations.
-            for (FlowCondImpl fc: flowCondDB.values()) {
-                Status st = fc.saveConfig(this);
-                if (!st.isSuccess()) {
-                    status = st;
-                }
-            }
-
             return status;
         } finally {
             unlock(rdlock);
@@ -6538,9 +6167,9 @@ public class VTNManagerImpl
         // Create a packet context.
         PacketContext pctx = new PacketContext(ev);
 
-        byte[] src = pctx.getSourceAddress();
-        byte[] ctlrMac = getVTNConfig().getControllerMacAddress().getBytes();
-        if (Arrays.equals(src, ctlrMac)) {
+        EtherAddress src = pctx.getSourceAddress();
+        EtherAddress ctlrMac = getVTNConfig().getControllerMacAddress();
+        if (src.equals(ctlrMac)) {
             if (LOG.isTraceEnabled()) {
                 NodeConnector nc = ev.getIngressPort().getAdNodeConnector();
                 LOG.trace("{}: Ignore self-originated packet: {}",
@@ -6574,8 +6203,10 @@ public class VTNManagerImpl
             }
 
             // Determine virtual network mapping that maps the packet.
-            short vlan = pctx.getVlan();
-            MapReference ref = resourceManager.getMapReference(src, nc, vlan);
+            short vlan = (short)pctx.getVlan();
+            byte[] srcMac = src.getBytes();
+            MapReference ref =
+                resourceManager.getMapReference(srcMac, nc, vlan);
             if (ref != null && containerName.equals(ref.getContainerName())) {
                 pctx.setMapReference(ref);
                 VNodePath path = ref.getPath();

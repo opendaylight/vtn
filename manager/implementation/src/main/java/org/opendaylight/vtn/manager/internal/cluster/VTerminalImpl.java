@@ -39,11 +39,11 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -224,12 +224,12 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      * @param pctx   The context of the received packet.
      */
     private void notifyHost(VTNManagerImpl mgr, PacketContext pctx) {
-        byte[] src = pctx.getSourceAddress();
-        if (!EtherAddress.isUnicast(src)) {
+        EtherAddress src = pctx.getSourceAddress();
+        if (!src.isUnicast()) {
             return;
         }
 
-        long mac = EtherAddress.toLong(src);
+        long mac = src.getAddress();
         if (mac == 0L) {
             // Zero address should be ignored.
             LOG.warn("{}:{}: Ignore zero MAC address: {}",
@@ -254,11 +254,11 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
         }
 
         NodeConnector port = pctx.getIncomingNodeConnector();
-        short vlan = pctx.getVlan();
+        short vlan = (short)pctx.getVlan();
 
         try {
             HostNodeConnector host =
-                new HostNodeConnector(src, iaddr, port, vlan);
+                new HostNodeConnector(src.getBytes(), iaddr, port, vlan);
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{}:{}: Notify new host: ipaddr={}, host={}",
                           getContainerName(), getNodePath(),
@@ -270,7 +270,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
                 StringBuilder builder = new StringBuilder(getContainerName());
                 builder.append(':').append(getNodePath()).
                     append(": Unable to create host: src=").
-                    append(ByteUtils.toHexString(src)).
+                    append(src.getText()).
                     append(", ipaddr=").append(iaddr).
                     append(", port=").append(port.toString()).
                     append(", vlan=").append((int)vlan);
@@ -498,8 +498,8 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
                     // In that case we should specify multicast address in a
                     // drop flow entry, or it may discard packets to be
                     // filtered by flow filter.
-                    pctx.addMatchField(MatchType.DL_TYPE);
-                    pctx.addMatchField(MatchType.DL_DST);
+                    pctx.addMatchField(FlowMatchType.DL_TYPE);
+                    pctx.addMatchField(FlowMatchType.DL_DST);
                 }
 
                 LogProvider lp = new LogProvider() {

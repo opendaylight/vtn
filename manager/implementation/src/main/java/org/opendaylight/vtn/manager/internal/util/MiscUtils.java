@@ -12,8 +12,6 @@ package org.opendaylight.vtn.manager.internal.util;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 
@@ -29,6 +27,7 @@ import org.opendaylight.controller.sal.packet.Packet;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -36,17 +35,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * methods.
  */
 public final class MiscUtils {
-    /**
-     * Maximum length of the resource name.
-     */
-    private static final int RESOURCE_NAME_MAXLEN = 31;
-
-    /**
-     * Regular expression that matches valid resource name.
-     */
-    private static final Pattern RESOURCE_NAME_REGEX =
-        Pattern.compile("^\\p{Alnum}[\\p{Alnum}_]*$");
-
     /**
      * Private constructor that protects this class from instantiating.
      */
@@ -67,10 +55,11 @@ public final class MiscUtils {
      *
      * @param desc  Brief description of the resource.
      * @param name  The name of the resource.
-     * @throws VTNException  The specified name is invalid.
+     * @return  A {@link VnodeName} instance that contains the given name.
+     * @throws RpcException  The specified name is invalid.
      */
-    public static void checkName(String desc, String name)
-        throws VTNException {
+    public static VnodeName checkName(String desc, String name)
+        throws RpcException {
         if (name == null) {
             throw getNullArgumentException(desc + " name");
         }
@@ -80,17 +69,29 @@ public final class MiscUtils {
                 desc + " name cannot be empty");
         }
 
-        int len = name.length();
-        if (len > RESOURCE_NAME_MAXLEN) {
-            throw RpcException.getBadArgumentException(
-                desc + " name is too long");
+        try {
+            return new VnodeName(name);
+        } catch (RuntimeException e) {
+            String msg = desc + " name is invalid";
+            RpcException re = RpcException.getBadArgumentException(msg);
+            re.initCause(e);
+            throw re;
         }
+    }
 
-        Matcher m = RESOURCE_NAME_REGEX.matcher(name);
-        if (!m.matches()) {
-            throw RpcException.getBadArgumentException(
-                desc + " name contains invalid character");
-        }
+    /**
+     * Check the specified resource name.
+     *
+     * @param desc   Brief description of the resource.
+     * @param vname  A {@link VnodeName} instance.
+     * @return  Return the string configured in {@code vname}.
+     * @throws RpcException  The specified name is invalid.
+     */
+    public static String checkName(String desc, VnodeName vname)
+        throws RpcException {
+        String name = (vname == null) ? null : vname.getValue();
+        checkName(desc, name);
+        return name;
     }
 
     /**

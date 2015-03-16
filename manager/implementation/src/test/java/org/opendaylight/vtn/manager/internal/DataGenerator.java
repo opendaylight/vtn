@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -146,5 +146,14 @@ public final class DataGenerator {
         }
 
         return port;
+    }
+
+    /**
+     * Return ICMP type/code value for test.
+     *
+     * @return  A short value for ICMP type/code test.
+     */
+    public Short getIcmpValue() {
+        return Short.valueOf((short)(getPort() & 0xff));
     }
 }

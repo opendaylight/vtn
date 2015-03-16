@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -27,8 +26,8 @@ import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
@@ -46,6 +45,12 @@ import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
 import org.opendaylight.vtn.manager.internal.packet.cache.TcpPacket;
 import org.opendaylight.vtn.manager.internal.packet.cache.UdpPacket;
 import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.packet.ArpPacketBuilder;
+import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
+import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
+import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -69,7 +74,7 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
  *   This class is designed to be used by a single thread.
  * </p>
  */
-public class PacketContext implements Cloneable {
+public class PacketContext implements Cloneable, FlowMatchContext {
     /**
      * Logger instance.
      */
@@ -80,14 +85,6 @@ public class PacketContext implements Cloneable {
      * Bitmask which represents valid ethernet type.
      */
     private static final int  ETHER_TYPE_MASK = 0xffff;
-
-    /**
-     * Flow match fields to be configured in an unicast flow entry.
-     */
-    private static final MatchType[] UNICAST_MATCHES = {
-        MatchType.DL_SRC,
-        MatchType.DL_DST,
-    };
 
     /**
      * A received raw packet.
@@ -131,11 +128,11 @@ public class PacketContext implements Cloneable {
     private List<VNodeRoute>  virtualRoute = new ArrayList<VNodeRoute>();
 
     /**
-     * A set of {@link MatchType} instances which represents match fields
+     * A set of {@link FlowMatchType} instances which represents match fields
      * to be configured.
      */
-    private EnumSet<MatchType>  matchFields =
-        EnumSet.noneOf(MatchType.class);
+    private EnumSet<FlowMatchType>  matchFields =
+        EnumSet.noneOf(FlowMatchType.class);
 
     /**
      * A {@link VNodeRoute} instance which represents the hop to the egress
@@ -277,7 +274,7 @@ public class PacketContext implements Cloneable {
      *
      * @return  The source MAC address.
      */
-    public byte[] getSourceAddress() {
+    public EtherAddress getSourceAddress() {
         return etherFrame.getSourceAddress();
     }
 
@@ -286,7 +283,7 @@ public class PacketContext implements Cloneable {
      *
      * @return  The destination MAC address.
      */
-    public byte[] getDestinationAddress() {
+    public EtherAddress getDestinationAddress() {
         return etherFrame.getDestinationAddress();
     }
 
@@ -373,7 +370,7 @@ public class PacketContext implements Cloneable {
         }
 
         NodeConnector nc = rawPacket.getIncomingNodeConnector();
-        return new PortVlan(nc, etherFrame.getOriginalVlan());
+        return new PortVlan(nc, (short)etherFrame.getOriginalVlan());
     }
 
     /**
@@ -392,8 +389,8 @@ public class PacketContext implements Cloneable {
      * @return  VLAN ID. Zero is returned if no VLAN tag was found in the
      *          packet.
      */
-    public short getVlan() {
-        return etherFrame.getVlan();
+    public int getVlan() {
+        return etherFrame.getVlanId();
     }
 
     /**
@@ -401,8 +398,8 @@ public class PacketContext implements Cloneable {
      *
      * @param vid  A VLAN ID.
      */
-    public void setVlan(short vid) {
-        etherFrame.setVlan(vid);
+    public void setVlan(int vid) {
+        etherFrame.setVlanId(vid);
     }
 
     /**
@@ -414,27 +411,30 @@ public class PacketContext implements Cloneable {
      * @throws VTNException
      *    Failed to commit packet modification.
      */
-    public Ethernet createFrame(short vlan) throws VTNException {
+    public Ethernet createFrame(int vlan) throws VTNException {
         // Configure VLAN ID for outgoing packet. It is used to determine
         // flow actions to be configured.
-        etherFrame.setVlan(vlan);
+        etherFrame.setVlanId(vlan);
 
         // Commit changes made by flow filters to the packet.
         commit();
 
+        EtherAddress src = etherFrame.getSourceAddress();
+        EtherAddress dst = etherFrame.getDestinationAddress();
         Ethernet ether = new Ethernet();
-        ether.setSourceMACAddress(etherFrame.getSourceAddress()).
-            setDestinationMACAddress(etherFrame.getDestinationAddress());
+        ether.setSourceMACAddress(src.getBytes()).
+            setDestinationMACAddress(dst.getBytes());
 
         short ethType = (short)etherFrame.getEtherType();
         IEEE8021Q vlanTag = etherFrame.getVlanTag();
         Packet payload = etherFrame.getPayload();
-        if (vlan != 0 || (vlanTag != null && vlanTag.getVid() == 0)) {
+        if (vlan != EtherHeader.VLAN_NONE ||
+            (vlanTag != null && vlanTag.getVid() == EtherHeader.VLAN_NONE)) {
             // Add a VLAN tag.
             // We don't strip VLAN tag with zero VLAN ID because PCP field
             // in the VLAN tag should affect even if the VLAN ID is zero.
             IEEE8021Q tag = new IEEE8021Q();
-            byte pcp = etherFrame.getVlanPriority();
+            byte pcp = (byte)etherFrame.getVlanPriority();
             if (pcp < 0) {
                 pcp = (byte)0;
             }
@@ -445,7 +445,8 @@ public class PacketContext implements Cloneable {
             } else {
                 cfi = (byte)0;
             }
-            tag.setCfi(cfi).setPcp(pcp).setVid(vlan).setEtherType(ethType);
+            tag.setCfi(cfi).setPcp(pcp).setVid((short)vlan).
+                setEtherType(ethType);
             ether.setEtherType(EtherTypes.VLANTAGGED.shortValue());
 
             // Set payload to IEEE 802.1Q header.
@@ -549,7 +550,7 @@ public class PacketContext implements Cloneable {
         return getDescription(etherFrame.getSourceAddress(),
                               etherFrame.getDestinationAddress(),
                               etherFrame.getEtherType(), port,
-                              etherFrame.getVlan());
+                              etherFrame.getVlanId());
     }
 
     /**
@@ -561,9 +562,10 @@ public class PacketContext implements Cloneable {
      * @return  A brief description of the specified ethernet frame.
      */
     public String getDescription(Ethernet ether, NodeConnector port,
-                                 short vlan) {
-        return getDescription(ether.getSourceMACAddress(),
-                              ether.getDestinationMACAddress(),
+                                 int vlan) {
+        EtherAddress src = new EtherAddress(ether.getSourceMACAddress());
+        EtherAddress dst = new EtherAddress(ether.getDestinationMACAddress());
+        return getDescription(src, dst,
                               (int)ether.getEtherType() & ETHER_TYPE_MASK,
                               port, vlan);
     }
@@ -578,19 +580,16 @@ public class PacketContext implements Cloneable {
      * @param vlan   VLAN ID.
      * @return  A brief description of the specified ethernet frame.
      */
-    public String getDescription(byte[] src, byte[] dst, int type,
-                                 NodeConnector port, short vlan) {
-        String srcmac = ByteUtils.toHexString(src);
-        String dstmac = ByteUtils.toHexString(dst);
-
+    public String getDescription(EtherAddress src, EtherAddress dst, int type,
+                                 NodeConnector port, int vlan) {
         StringBuilder builder = new StringBuilder("src=");
-        builder.append(srcmac).
-            append(", dst=").append(dstmac);
+        builder.append(src.getText()).
+            append(", dst=").append(dst.getText());
         if (port != null) {
             builder.append(", port=").append(port);
         }
         builder.append(", type=0x").append(Integer.toHexString(type)).
-            append(", vlan=").append((int)vlan);
+            append(", vlan=").append(vlan);
 
         return builder.toString();
     }
@@ -654,8 +653,7 @@ public class PacketContext implements Cloneable {
      *          packet.
      */
     public boolean isUnicast() {
-        byte[] dst = etherFrame.getDestinationAddress();
-        return EtherAddress.isUnicast(dst);
+        return etherFrame.getDestinationAddress().isUnicast();
     }
 
     /**
@@ -666,7 +664,7 @@ public class PacketContext implements Cloneable {
      */
     public void setMapReference(MapReference ref) {
         mapReference = ref;
-        MatchType mtype = ref.getMapType().getMatchType();
+        FlowMatchType mtype = ref.getMapType().getMatchType();
         if (mtype != null) {
             matchFields.add(mtype);
         }
@@ -674,69 +672,29 @@ public class PacketContext implements Cloneable {
 
     /**
      * Try to probe IP address of the source address of this packet.
-     *
-     * @param mgr  VTN Manager service.
      */
-    public void probeInetAddress(VTNManagerImpl mgr) {
+    public void probeInetAddress() {
         Inet4Packet ipv4 = getInet4Packet();
         if (ipv4 != null) {
             // Send an ARP request to the source address of this packet.
-            int srcIp = ipv4.getSourceAddress();
-            byte[] dst = etherFrame.getSourceAddress();
-            byte[] tpa = NumberUtils.toBytes(srcIp);
-            short vlan = etherFrame.getOriginalVlan();
-            Ethernet ether = mgr.createArpRequest(dst, tpa, vlan);
+            VTNManagerProvider provider = txContext.getProvider();
+            Ip4Network tpa = ipv4.getSourceAddress();
+            EtherAddress src =
+                provider.getVTNConfig().getControllerMacAddress();
+            EtherAddress dst = etherFrame.getSourceAddress();
+            int vlan = etherFrame.getOriginalVlan();
+            Ethernet ether = new ArpPacketBuilder(vlan).build(src, dst, tpa);
             SalPort sport = getIngressPort();
 
             if (LOG.isTraceEnabled()) {
-                String dstmac = ByteUtils.toHexString(dst);
-                String target;
-                try {
-                    InetAddress ia = InetAddress.getByAddress(tpa);
-                    target = ia.getHostAddress();
-                } catch (Exception e) {
-                    target = ByteUtils.toHexString(tpa);
-                }
-                LOG.trace("{}: Send an ARP request to detect IP address: " +
+                String dstmac = dst.getText();
+                String target = tpa.getText();
+                LOG.trace("Send an ARP request to detect IP address: " +
                           "dst={}, tpa={}, vlan={}, port={}",
-                          mgr.getContainerName(), dstmac, target, vlan, sport);
+                          dstmac, target, vlan, sport);
             }
 
-            mgr.transmit(sport, ether);
-        }
-    }
-
-    /**
-     * Add a match field to be configured into a flow entry.
-     *
-     * @param type  A match type to be added.
-     */
-    public void addMatchField(MatchType type) {
-        if (!flooding) {
-            matchFields.add(type);
-        }
-    }
-
-    /**
-     * Determine whether the given match field will be configured in a flow
-     * entry or not.
-     *
-     * @param type  A match type to be tested.
-     * @return  {@code true} only if the given match type will be configured
-     *          in a flow entry.
-     */
-    public boolean hasMatchField(MatchType type) {
-        return matchFields.contains(type);
-    }
-
-    /**
-     * Add match fields to be configured into an unicast flow entry.
-     */
-    public void addUnicastMatchFields() {
-        if (!flooding) {
-            for (MatchType type: UNICAST_MATCHES) {
-                matchFields.add(type);
-            }
+            provider.transmit(sport, ether);
         }
     }
 
@@ -905,18 +863,13 @@ public class PacketContext implements Cloneable {
     /**
      * Return a priority value for flow entries.
      *
-     * @param mgr  VTN Manager service.
      * @return  A flow priority value.
      */
-    public int getFlowPriority(VTNManagerImpl mgr) {
-        int pri = mgr.getVTNConfig().getL2FlowPriority();
-        int nmatches = matchFields.size();
-        for (MatchType type: UNICAST_MATCHES) {
-            if (matchFields.contains(type)) {
-                nmatches--;
-            }
-        }
-
+    public int getFlowPriority() {
+        VTNManagerProvider provider = txContext.getProvider();
+        int pri = provider.getVTNConfig().getL2FlowPriority();
+        int nmatches = matchFields.size() -
+            FlowMatchType.getUnicastTypeCount(matchFields);
         return (pri + nmatches);
     }
 
@@ -950,7 +903,7 @@ public class PacketContext implements Cloneable {
         // Create a flow entry that discards the given packet.
         NodeConnector incoming = getIncomingNodeConnector();
         Match match = createMatch(incoming);
-        int pri = getFlowPriority(mgr);
+        int pri = getFlowPriority();
         VTNFlow vflow = fdb.create(mgr);
         vflow.addFlow(mgr, match, pri);
 
@@ -1225,5 +1178,83 @@ public class PacketContext implements Cloneable {
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
         }
+    }
+
+    // FlowMatchContext
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addMatchField(FlowMatchType type) {
+        if (!flooding) {
+            matchFields.add(type);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasMatchField(FlowMatchType type) {
+        return matchFields.contains(type);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void addUnicastMatchFields() {
+        if (!flooding) {
+            FlowMatchType.addUnicastTypes(matchFields);
+        }
+    }
+
+    // PacketHeader
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public EtherHeader getEtherHeader() {
+        return etherFrame;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public InetHeader getInetHeader() {
+        return getInet4Packet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Layer4Header getLayer4Header() {
+        return getL4Packet();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getHeaderDescription() {
+        StringBuilder builder = new StringBuilder();
+        getEtherHeader().setDescription(builder);
+
+        InetHeader inet = getInetHeader();
+        if (inet != null) {
+            builder.append(',');
+            inet.setDescription(builder);
+            Layer4Header l4 = getLayer4Header();
+            if (l4 != null) {
+                builder.append(',');
+                l4.setDescription(builder);
+            }
+        }
+
+        return builder.toString();
     }
 }

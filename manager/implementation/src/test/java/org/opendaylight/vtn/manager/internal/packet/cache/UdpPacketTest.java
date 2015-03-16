@@ -21,8 +21,10 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -84,7 +86,7 @@ public class UdpPacketTest extends TestBase {
                     ether, EtherPacketTest.NODE_CONNECTOR);
                 assertFalse(udp.commit(pctx));
                 assertEquals(null, pctx.getFilterActions());
-                for (MatchType mtype: MatchType.values()) {
+                for (FlowMatchType mtype: FlowMatchType.values()) {
                     assertFalse(pctx.hasMatchField(mtype));
                 }
             }
@@ -156,8 +158,8 @@ public class UdpPacketTest extends TestBase {
             assertEquals((short)dst0, pkt.getDestinationPort());
             assertEquals(original, pkt);
 
-            assertTrue(pctx.hasMatchField(MatchType.DL_TYPE));
-            assertTrue(pctx.hasMatchField(MatchType.NW_PROTO));
+            assertTrue(pctx.hasMatchField(FlowMatchType.DL_TYPE));
+            assertTrue(pctx.hasMatchField(FlowMatchType.IP_PROTO));
 
             List<Action> filterActions =
                 new ArrayList<Action>(pctx.getFilterActions());
@@ -175,7 +177,7 @@ public class UdpPacketTest extends TestBase {
             }
 
             pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
-            for (MatchType mt: MatchType.values()) {
+            for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
             for (Action act: salActions.values()) {
@@ -222,12 +224,11 @@ public class UdpPacketTest extends TestBase {
     public void testSetMatch() {
         int src = 34567;
         int dst = 4321;
-        Map<MatchType, MatchField> tpFields =
-            new HashMap<MatchType, MatchField>();
-        tpFields.put(MatchType.TP_SRC,
+        Map<FlowMatchType, MatchField> tpFields = new HashMap<>();
+        tpFields.put(FlowMatchType.UDP_SRC,
                      new MatchField(MatchType.TP_SRC,
                                     Short.valueOf((short)src)));
-        tpFields.put(MatchType.TP_DST,
+        tpFields.put(FlowMatchType.UDP_DST,
                      new MatchField(MatchType.TP_DST,
                                     Short.valueOf((short)dst)));
 
@@ -237,17 +238,18 @@ public class UdpPacketTest extends TestBase {
         UdpPacket udp = new UdpPacket(pkt);
 
         Match match = new Match();
-        Set<MatchType> fields = EnumSet.noneOf(MatchType.class);
+        Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
         udp.setMatch(match, fields);
         List<MatchType> matches = match.getMatchesList();
         assertEquals(0, matches.size());
 
-        for (Map.Entry<MatchType, MatchField> entry: tpFields.entrySet()) {
-            MatchType mtype = entry.getKey();
+        for (Map.Entry<FlowMatchType, MatchField> entry: tpFields.entrySet()) {
+            FlowMatchType fmtype = entry.getKey();
             MatchField mfield = entry.getValue();
+            MatchType mtype = mfield.getType();
 
             match = new Match();
-            fields = EnumSet.of(mtype);
+            fields = EnumSet.of(fmtype);
             udp.setMatch(match, fields);
             matches = match.getMatchesList();
             assertEquals(1, matches.size());
@@ -257,15 +259,14 @@ public class UdpPacketTest extends TestBase {
         // setMatch() always has to see the original.
         udp.setSourcePort(src1);
         udp.setDestinationPort(dst1);
-        fields = EnumSet.noneOf(MatchType.class);
+        fields = EnumSet.noneOf(FlowMatchType.class);
         fields.addAll(tpFields.keySet());
         match = new Match();
         udp.setMatch(match, fields);
         matches = match.getMatchesList();
         assertEquals(tpFields.size(), matches.size());
-        for (Map.Entry<MatchType, MatchField> entry: tpFields.entrySet()) {
-            MatchType mtype = entry.getKey();
-            MatchField mfield = entry.getValue();
+        for (MatchField mfield: tpFields.values()) {
+            MatchType mtype = mfield.getType();
             assertEquals(mfield, match.getField(mtype));
         }
     }
@@ -378,9 +379,9 @@ public class UdpPacketTest extends TestBase {
         pkt.setRawPayload(empty);
         srcIp = new byte[]{(byte)123, (byte)89, (byte)118, (byte)91};
         dstIp = new byte[]{(byte)100, (byte)200, (byte)73, (byte)183};
-        inet4.setSourceAddress(createInetAddress(srcIp));
+        inet4.setSourceAddress(new Ip4Network(srcIp));
         assertTrue(inet4.isAddressModified());
-        inet4.setDestinationAddress(createInetAddress(dstIp));
+        inet4.setDestinationAddress(new Ip4Network(dstIp));
         assertTrue(inet4.isAddressModified());
 
         list.clear();

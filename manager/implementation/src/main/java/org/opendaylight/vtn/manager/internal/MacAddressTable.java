@@ -561,13 +561,14 @@ public class MacAddressTable {
      * @param bnode  A {@link VBridgeNode} which maps the incoming packet.
      */
     public void add(PacketContext pctx, VBridgeNode bnode) {
-        byte[] src = pctx.getSourceAddress();
-        if (!EtherAddress.isUnicast(src)) {
+        EtherAddress src = pctx.getSourceAddress();
+        if (!src.isUnicast()) {
             return;
         }
 
         // Determine attributes of a new MAC address table entry.
-        Long key = getTableKey(src);
+        byte[] srcMac = src.getBytes();
+        Long key = Long.valueOf(src.getAddress());
         if (key.longValue() == 0L) {
             // Zero address should be ignored.
             LOG.warn("{}: Ignore zero MAC address: {}",
@@ -576,7 +577,7 @@ public class MacAddressTable {
         }
 
         NodeConnector port = pctx.getIncomingNodeConnector();
-        short vlan = pctx.getVlan();
+        short vlan = (short)pctx.getVlan();
         InetAddress ipaddr = getSourceInetAddress(pctx);
 
         // Add a MAC address table entry.
@@ -591,7 +592,7 @@ public class MacAddressTable {
         if (ipaddr != null) {
             try {
                 HostNodeConnector host =
-                    new HostNodeConnector(src, ipaddr, port, vlan);
+                    new HostNodeConnector(srcMac, ipaddr, port, vlan);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}: Notify new host: ipaddr={}, host={}",
                               getTableName(), ipaddr.getHostAddress(), host);
@@ -602,7 +603,7 @@ public class MacAddressTable {
                     StringBuilder builder =
                         new StringBuilder(getTableName());
                     builder.append(": Unable to create host: src=").
-                        append(ByteUtils.toHexString(src)).
+                        append(src.getText()).
                         append(", ipaddr=").append(ipaddr).
                         append(", port=").append(port.toString()).
                         append(", vlan=").append((int)vlan);
@@ -611,7 +612,7 @@ public class MacAddressTable {
             }
         } else if (pctx.isIPv4() && tent.isProbeNeeded()) {
             // Try to detect IP address of the host.
-            pctx.probeInetAddress(vtnManager);
+            pctx.probeInetAddress();
         }
     }
 

@@ -1,0 +1,467 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-flow-condition {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:flow:cond";
+    prefix vfcond;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    /* OpenDaylight yangtools */
+    import opendaylight-l2-types {
+        prefix l2;
+        revision-date 2013-08-27;
+    }
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+    import ietf-inet-types {
+        prefix inet;
+        revision-date 2010-09-24;
+    }
+
+    description
+      "The module that describes the flow condition to match against packets.";
+
+    revision 2015-03-13 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-ether-match-fields {
+        description
+          "Describes the ethernet header and IEEE 802.1Q VLAN tag fields
+           to match against packets.";
+
+        leaf source-address {
+            description "The source MAC address.";
+            type yang:mac-address;
+        }
+
+        leaf destination-address {
+            description "The destination MAC address.";
+            type yang:mac-address;
+        }
+
+        leaf ether-type {
+            description "The ethernet type.";
+            type l2:ether-type;
+        }
+
+        leaf vlan-id {
+            description
+              "The VLAN ID in VLAN tag.
+               Zero means untagged ethernet frame.";
+            type l2:vlan-id;
+        }
+
+        leaf vlan-pcp {
+            description "The VLAN priority in VLAN tag.";
+            type l2:vlan-pcp;
+        }
+    }
+
+    grouping vtn-inet-match-fields {
+        description
+          "Describes the IP header fields to match against packets.";
+
+        leaf source-network {
+            description
+              "The IP network to match the source IP address.
+               Currently, it is possible to configure only an IPv4 address.";
+            type inet:ip-prefix;
+        }
+
+        leaf destination-network {
+            description
+              "The IP network to match the destination IP address.
+               Currently, it is possible to configure only an IPv4 address.";
+            type inet:ip-prefix;
+        }
+
+        leaf protocol {
+            description  "The IP protocol number.";
+            type uint8;
+        }
+
+        leaf dscp {
+            description  "The IP DSCP field value.";
+            type inet:dscp;
+        }
+    }
+
+    grouping vtn-port-range {
+        description
+          "Describes the range of IP transport layer protocol such as TCP.";
+
+        leaf port-from {
+            description
+              "The minimum value (inclusive) in the range of port numbers
+               to match against packets.";
+            type inet:port-number;
+            mandatory true;
+        }
+
+        leaf port-to {
+            description
+              "The maximum value (inclusive) in the range of port numbers
+               to match against packets.
+               The value must be greater than or equal to the value specified
+               to `port-from' field. If this field is omitted, it will be
+               treated as the port number specified to `port-from' field is
+               specified.";
+            type inet:port-number;
+        }
+    }
+
+    grouping vtn-tcp-match-fields {
+        description "Describes the range of TCP port numbers.";
+
+        container tcp-source-range {
+            description "The range of TCP source port number.";
+            uses vtn-port-range;
+        }
+
+        container tcp-destination-range {
+            description "The range of TCP destination port number.";
+            uses vtn-port-range;
+        }
+    }
+
+    grouping vtn-udp-match-fields {
+        description "Describes the range of UDP port numbers.";
+
+        container udp-source-range {
+            description "The range of UDP source port number.";
+            uses vtn-port-range;
+        }
+
+        container udp-destination-range {
+            description "The range of UDP destination port number.";
+            uses vtn-port-range;
+        }
+    }
+
+    grouping vtn-icmp-match-fields {
+        description
+          "Describes the ICMP header fields to match against packets.";
+
+        leaf type {
+            description "The ICMP type.";
+            type uint8;
+        }
+
+        leaf code {
+            description "The ICMP code.";
+            type uint8;
+        }
+    }
+
+    grouping vtn-match-fields {
+        description
+          "Describes the configuration for a VTN flow match that specifies
+           the condition to match against packets.";
+
+        container vtn-ether-match {
+            description
+              "The flow condition to match against Ethernet header.";
+            uses vtn-ether-match-fields;
+        }
+
+        container vtn-inet-match {
+            description
+              "The flow condition to match against IP header.";
+            uses vtn-inet-match-fields;
+        }
+
+        choice vtn-layer4-match {
+            description
+              "The flow condition to match layer 4 protocol header.";
+
+            case vtn-tcp-match {
+                uses vtn-tcp-match-fields;
+            }
+            case vtn-udp-match {
+                uses vtn-udp-match-fields;
+            }
+            case vtn-icmp-match {
+                uses vtn-icmp-match-fields;
+            }
+        }
+    }
+
+    grouping vtn-flow-match-config {
+        description
+          "Describes the configuration for a VTN flow match in a VTN flow
+           condition.";
+
+        uses vtype:vtn-index;
+        uses vtn-match-fields;
+    }
+
+    grouping vtn-flow-cond-config {
+        description
+          "Describes the configuration for a VTN flow condition.";
+
+        leaf name {
+            description "The name of the flow condition.";
+            type vtype:vnode-name;
+        }
+
+        list vtn-flow-match {
+            description
+              "A list of conditions to match against packets.
+               Each element in this list needs to have a unique index value
+               in `index' field. If more than one match elements are
+               configured, they are evaluated against packets in ascending
+               order of `index' value in each match element. Packets which
+               matches the condition described by at least one match element
+               are selected by this flow condition.
+
+               Every packet is selected if this element is omitted or empty.";
+            key "index";
+            uses vtn-flow-match-config;
+        }
+    }
+
+    container vtn-flow-conditions {
+        description
+          "The root container of all the flow condition configuratins.
+           Note that the flow condition configuration must be modified by RPC.
+           Do not edit this container directly.";
+        config false;
+        presence
+          "Indicates that the flow condition management is active.";
+
+        list vtn-flow-condition {
+            description
+              "A list of flow conditions shared with all VTNs.";
+            key "name";
+            uses vtn-flow-cond-config;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    grouping vtn-flow-match-result {
+        description
+          "Describes a pair of VTN flow match index and `vtn-update-type'.
+
+           This grouping is used as output of RPC that modifies the VTN flow
+           match configuration in a flow condition.";
+
+        uses vtype:vtn-index;
+        uses vtype:vtn-rpc-result;
+    }
+
+    rpc set-flow-condition {
+        description
+          "Create or modify the flow condition.
+
+           If the flow condition specified by the name does not exist, a new
+           flow condition will be associated with the specified name.
+           If the flow condition specifie dby the name already exists,
+           it will be modified as specified the RPC input.
+
+           `status' in RPC output descripts the result of the operation.
+
+           CREATED indicates that the specified flow condition has been newly
+           created.
+
+           CHANGED indicates that existing flow condition configuraiton has
+           been successfully changed.
+
+           Null indicates that existing flow condition configuration has not
+           been changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if true is set to `present' field in the RPC
+           input and the target flow condition is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            uses vtn-flow-cond-config;
+
+            leaf operation {
+                description
+                  "Describes how to update the specified flow condition if it
+                   already exists.
+
+                   If SET is specified, the given flow condition configuration
+                   will be applied as specified. In other words, existing
+                   flow condition configuration will be removed, and the given
+                   flow condition will be created.
+
+                   If ADD is specified, the given flow condition configuration
+                   will be merged with existing configuration. The target
+                   flow condition will be created if it is not present.
+
+                   Null will be treated as if ADD is specified.
+
+                   Note that the operation will fail if true is set to
+                   `present' field and the target flow condition is not
+                   present.";
+                type vtype:vtn-update-operation-type;
+            }
+
+            leaf present {
+                description
+                  "If true is set, the opration will fail unless the target
+                   flow condition is present.
+                  Null will be treated as if false is specified.";
+                type boolean;
+            }
+        }
+
+        output {
+            uses vtype:vtn-rpc-result;
+        }
+    }
+
+    rpc remove-flow-condition {
+        description
+          "Remove the flow condition specified by the name.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified flow condition is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf name {
+                description "The name of the flow condition to be removed.";
+                type string;
+            }
+        }
+    }
+
+    rpc set-flow-condition-match {
+        description
+          "Configure a flow match condition into the flow condition specified
+           by the flow condition name and match index.
+
+           This operation takes a list of `vtn-flow-match-config', and
+           put all configurations in that list into the specified flow
+           condition.
+
+           Match indices specified in the RPC input will be copied to the
+           RPC output, and `status' field in `vtn-flow-match-result' describes
+           the result of the operation.
+
+           CREATED indicates that the flow match configuration specified by
+           the index value has been newly created.
+
+           CHANGED indicates that the flow match configuration specified by
+           the index value has been successfully changed.
+
+           Null indicates that the flow match configuration specified by
+           the index value was not changed.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified flow condition is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+        input {
+            leaf name {
+                description "The name of the target flow condition.";
+                type string;
+            }
+
+            list flow-match-list {
+                description
+                  "A list of `vtn-flow-match-config' to be applied to the
+                   flow condition specified by `name' field. Note that a
+                   duplicate match index in this list will cause a
+                   `BADREQUEST' error.";
+                uses vtn-flow-match-config;
+            }
+        }
+
+        output {
+            list set-match-result {
+                description
+                  "Describes pairs of match indices passed to the RPC input
+                   and results.";
+                uses vtn-flow-match-result;
+            }
+        }
+    }
+
+    rpc remove-flow-condition-match {
+        description
+          "Remove the flow match condition specified by the flow condition
+           name and match index.
+
+           Values passed to `match-index' list will be copied to the RPC
+           output, and `status' field in `vtn-flow-match-result' describes
+           the result of the operation.
+
+           REMOVED indicates that the flow match associated with the match
+           index has been successfully removed.
+
+           Null indicates that the flow match is not associated with the
+           match index in the specified flow condition.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified flow condition is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf name {
+                description "The name of the flow condition to be removed.";
+                type string;
+            }
+
+            leaf-list match-index {
+                description
+                  "A list of match indices to be removed from the flow
+                   condition specified by the `name' field.
+                   Duplicates in this list will be eliminated automatically.";
+                type int32;
+            }
+        }
+
+        output {
+            list remove-match-result {
+                description
+                  "Describes pairs of match indices passed to the RPC input
+                   and results.";
+                uses vtn-flow-match-result;
+            }
+        }
+    }
+}

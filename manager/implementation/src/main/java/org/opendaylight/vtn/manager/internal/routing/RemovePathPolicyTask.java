@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal.routing;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowMatch;
+import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
@@ -100,8 +100,8 @@ public final class RemovePathPolicyTask extends DeleteDataTask<VtnPathPolicy>
     @Override
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         // Remove all flow entries affected by the target path policy.
-        PathPolicyFlowMatch fmatch = context.getFlowMatch();
-        addBackgroundTasks(provider.removeFlows(fmatch));
+        PathPolicyFlowSelector selector = context.getFlowSelector();
+        addBackgroundTasks(provider.removeFlows(selector));
 
         context.onUpdated();
     }

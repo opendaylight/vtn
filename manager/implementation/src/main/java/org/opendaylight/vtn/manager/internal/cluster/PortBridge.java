@@ -22,7 +22,6 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.LockStack;
@@ -198,8 +197,8 @@ public abstract class PortBridge<T extends PortInterface>
                             PacketContext pctx) throws VTNException {
         NodeConnector nc = pctx.getOutgoingNodeConnector();
         assert nc != null;
-        short vlan = pctx.getVlan();
-        long mac = EtherAddress.toLong(pctx.getDestinationAddress());
+        short vlan = (short)pctx.getVlan();
+        long mac = pctx.getDestinationAddress().getAddress();
 
         Lock rdlock = readLock();
         try {
@@ -250,8 +249,8 @@ public abstract class PortBridge<T extends PortInterface>
                                PacketContext pctx)
         throws DropFlowException, RedirectFlowException {
         NodeConnector incoming = pctx.getIncomingNodeConnector();
-        short vlan = pctx.getVlan();
-        long mac = EtherAddress.toLong(pctx.getSourceAddress());
+        short vlan = (short)pctx.getVlan();
+        long mac = pctx.getSourceAddress().getAddress();
 
         // Writer lock is required because this method may change the state
         // of the bridge.
@@ -519,8 +518,8 @@ public abstract class PortBridge<T extends PortInterface>
         pctx.addUnicastMatchFields();
 
         NodeConnector incoming = pctx.getIncomingNodeConnector();
-        short vlan = pctx.getEtherPacket().getOriginalVlan();
-        int pri = pctx.getFlowPriority(mgr);
+        short vlan = (short)pctx.getEtherPacket().getOriginalVlan();
+        int pri = pctx.getFlowPriority();
         VTNFlow vflow = fdb.create(mgr);
 
         // Create flow entries except for egress flow.

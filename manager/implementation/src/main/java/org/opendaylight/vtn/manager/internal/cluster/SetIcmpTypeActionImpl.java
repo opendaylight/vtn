@@ -119,7 +119,7 @@ public final class SetIcmpTypeActionImpl extends FlowActionImpl {
         L4Packet packet = pctx.getL4Packet();
         if (packet instanceof IcmpPacket) {
             IcmpPacket icmp = (IcmpPacket)packet;
-            icmp.setType(type);
+            icmp.setIcmpType(type);
             pctx.addFilterAction(new SetTpSrc((int)type));
             return true;
         }

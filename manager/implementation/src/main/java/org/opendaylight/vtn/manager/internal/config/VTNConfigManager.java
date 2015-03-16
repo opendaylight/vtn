@@ -65,11 +65,6 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
     private final AtomicReference<VTNConfigImpl>  current;
 
     /**
-     * VTN Manager provider service.
-     */
-    private final VTNManagerProvider  vtnProvider;
-
-    /**
      * A MD-SAL datastore transaction queue for the global configuration.
      */
     private final AtomicReference<TxQueueImpl>  configQueue =
@@ -287,7 +282,6 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
      * @param provider  A VTN Manager provider service.
      */
     public VTNConfigManager(VTNManagerProvider provider) {
-        vtnProvider = provider;
         XmlConfigFile.init();
 
         // Determine MAC address of the local node.

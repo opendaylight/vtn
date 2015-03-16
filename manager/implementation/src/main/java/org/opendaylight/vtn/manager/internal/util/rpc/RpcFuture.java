@@ -48,11 +48,6 @@ public final class RpcFuture<I, O>
         LoggerFactory.getLogger(RpcFuture.class);
 
     /**
-     * A {@link VTNFuture} instance associated with this RPC request.
-     */
-    private final VTNFuture<I>  mainTask;
-
-    /**
      * RPC output generator.
      */
     private final RpcOutputGenerator<I, O>  generator;
@@ -65,7 +60,6 @@ public final class RpcFuture<I, O>
      * @param gen  RPC output generator.
      */
     public RpcFuture(VTNFuture<I> f, RpcOutputGenerator<I, O> gen) {
-        mainTask = f;
         generator = gen;
         Futures.addCallback(f, this);
     }

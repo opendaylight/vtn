@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal.routing;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowMatch;
+import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
@@ -53,7 +53,6 @@ public final class SetPathPolicyTask extends PutDataTask<VtnPathPolicy>
 
     /**
      * Set {@code true} if the target path policy is required to be present.
-     * be present.
      */
     private final boolean  present;
 
@@ -134,8 +133,6 @@ public final class SetPathPolicyTask extends PutDataTask<VtnPathPolicy>
         return true;
     }
 
-    // PutDataTask
-
     /**
      * {@inheritDoc}
      */
@@ -158,18 +155,18 @@ public final class SetPathPolicyTask extends PutDataTask<VtnPathPolicy>
     @Override
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         if (result != null) {
-            PathPolicyFlowMatch fmatch;
+            PathPolicyFlowSelector selector;
             if (VtnUpdateType.CREATED.equals(result)) {
                 // We need to remove all flow entries because a new path policy
                 // may affect existing flow entries.
-                fmatch = null;
+                selector = null;
             } else {
                 // Remove all flow entries affected by the target path policy.
-                fmatch = context.getFlowMatch();
+                selector = context.getFlowSelector();
             }
 
             // Remove flow entries affected by the update.
-            addBackgroundTasks(provider.removeFlows(fmatch));
+            addBackgroundTasks(provider.removeFlows(selector));
 
             context.onUpdated();
         }
