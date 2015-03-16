@@ -41,7 +41,7 @@ public abstract class PathMapImpl
     /**
      * Version number for serialization.
      */
-    // private static final long serialVersionUID = 8053791075634629385L;
+    private static final long serialVersionUID = -4419131797937236258L;
 
     /**
      * The minimum value of index.
@@ -115,7 +115,9 @@ public abstract class PathMapImpl
 
         // Use PathPolicyConfigBuilder for verifying path policy ID.
         policyId = ptmap.getPathPolicyId();
-        new PathPolicyConfigBuilder.Data().setId(Integer.valueOf(policyId));
+        if (policyId != RouteResolver.ID_DEFAULT) {
+            new PathPolicyConfigBuilder.Data().setId(Integer.valueOf(policyId));
+        }
 
         idleTimeout = getTimeout(ptmap.getIdleTimeout(), "idle");
         hardTimeout = getTimeout(ptmap.getHardTimeout(), "hard");
