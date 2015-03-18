@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal.packet;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
 
 import org.opendaylight.controller.sal.core.ConstructionException;

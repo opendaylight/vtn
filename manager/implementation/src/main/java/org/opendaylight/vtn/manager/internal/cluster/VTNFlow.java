@@ -30,8 +30,8 @@ import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;

@@ -18,8 +18,8 @@ import com.google.common.util.concurrent.FutureCallback;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.util.SalPort;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 

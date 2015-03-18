@@ -35,12 +35,12 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
-import org.opendaylight.vtn.manager.internal.util.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 

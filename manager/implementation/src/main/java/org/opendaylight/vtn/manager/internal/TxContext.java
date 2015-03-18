@@ -9,8 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;

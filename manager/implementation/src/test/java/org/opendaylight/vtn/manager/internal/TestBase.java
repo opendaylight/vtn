@@ -66,7 +66,7 @@ import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 

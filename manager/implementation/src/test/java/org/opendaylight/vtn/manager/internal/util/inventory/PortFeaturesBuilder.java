@@ -7,7 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util;
+package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.port.rev130925.PortFeatures;
 

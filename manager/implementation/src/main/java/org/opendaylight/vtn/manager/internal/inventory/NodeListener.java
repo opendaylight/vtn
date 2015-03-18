@@ -26,9 +26,9 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;

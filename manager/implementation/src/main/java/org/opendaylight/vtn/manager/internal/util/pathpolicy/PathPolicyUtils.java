@@ -20,7 +20,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;

@@ -29,11 +29,11 @@ import org.apache.commons.collections15.Transformer;
 
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.LinkEdge;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 

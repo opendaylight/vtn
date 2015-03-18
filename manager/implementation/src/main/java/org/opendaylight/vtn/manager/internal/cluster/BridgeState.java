@@ -21,9 +21,9 @@ import org.opendaylight.vtn.manager.VNodeState;
 
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.LinkEdge;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.controller.sal.core.Node;
 

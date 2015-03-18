@@ -25,10 +25,10 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;

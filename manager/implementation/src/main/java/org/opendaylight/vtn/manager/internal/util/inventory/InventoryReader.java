@@ -7,7 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util;
+package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,6 +24,7 @@ import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.PortFilter;
+import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;

@@ -19,10 +19,9 @@ import org.junit.Test;
 
 import org.mockito.Mockito;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-
-import org.opendaylight.vtn.manager.internal.util.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 

@@ -11,7 +11,7 @@ package org.opendaylight.vtn.manager.internal.inventory;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;

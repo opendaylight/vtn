@@ -21,6 +21,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.vtn.manager.internal.TestBase;

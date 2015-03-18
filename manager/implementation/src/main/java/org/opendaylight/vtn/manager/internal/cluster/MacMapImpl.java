@@ -48,11 +48,11 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
-import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.Ethernet;

@@ -30,10 +30,11 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;

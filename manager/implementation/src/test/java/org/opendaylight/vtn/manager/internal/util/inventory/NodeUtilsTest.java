@@ -7,7 +7,7 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util;
+package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,10 +30,8 @@ import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
-import static
-    org.opendaylight.vtn.manager.internal.util.NodeUtils.checkNodeType;
-import static
-    org.opendaylight.vtn.manager.internal.util.NodeUtils.checkNodeConnectorType;
+import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.checkNodeType;
+import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.checkNodeConnectorType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;

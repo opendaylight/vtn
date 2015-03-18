@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
-import org.opendaylight.vtn.manager.internal.util.InventoryUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;

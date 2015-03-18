@@ -28,9 +28,9 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.sal.core.Node;

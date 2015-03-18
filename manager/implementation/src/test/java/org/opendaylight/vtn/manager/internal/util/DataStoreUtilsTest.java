@@ -21,6 +21,8 @@ import com.google.common.util.concurrent.CheckedFuture;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;

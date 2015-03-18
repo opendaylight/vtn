@@ -17,11 +17,11 @@ import org.slf4j.Logger;
 
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
 import org.opendaylight.vtn.manager.internal.util.concurrent.AbstractVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;

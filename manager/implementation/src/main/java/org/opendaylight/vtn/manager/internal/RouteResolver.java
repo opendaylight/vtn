@@ -11,9 +11,9 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.List;
 
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.LinkEdge;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 /**
  * {@code RouteResolver} provides interfaces to be implemented by classes

@@ -7,11 +7,12 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-package org.opendaylight.vtn.manager.internal.util;
+package org.opendaylight.vtn.manager.internal.util.inventory;
 
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
 
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.Node;

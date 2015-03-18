@@ -20,10 +20,10 @@ import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
-import org.opendaylight.vtn.manager.internal.util.LinkEdge;
-import org.opendaylight.vtn.manager.internal.util.NodeUtils;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;

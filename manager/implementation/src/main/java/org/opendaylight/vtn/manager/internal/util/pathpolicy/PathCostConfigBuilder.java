@@ -12,7 +12,7 @@ package org.opendaylight.vtn.manager.internal.util.pathpolicy;
 import org.opendaylight.vtn.manager.PathCost;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
-import org.opendaylight.vtn.manager.internal.util.NodeUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.VtnPathCostConfig;

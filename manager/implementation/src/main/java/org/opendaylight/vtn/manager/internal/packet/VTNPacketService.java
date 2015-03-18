@@ -24,10 +24,10 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
-import org.opendaylight.vtn.manager.internal.util.SalNode;
 import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureErrorCallback;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.binding.api.NotificationService;
 

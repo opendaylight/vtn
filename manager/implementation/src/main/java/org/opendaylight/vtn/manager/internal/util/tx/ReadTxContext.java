@@ -11,8 +11,8 @@ package org.opendaylight.vtn.manager.internal.util.tx;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondReader;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadOnlyTransaction;
 import org.opendaylight.controller.md.sal.binding.api.ReadTransaction;

@@ -22,8 +22,8 @@ import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.SwitchPort;
 
-import org.opendaylight.vtn.manager.internal.util.SalNode;
-import org.opendaylight.vtn.manager.internal.util.SalPort;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
