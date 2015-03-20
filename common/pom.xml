@@ -19,7 +19,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>common</artifactId>
-  <version>0.2.3-SNAPSHOT</version>
+  <version>0.2.3-Helium-SR3</version>
   <packaging>pom</packaging>
 
   <scm>
