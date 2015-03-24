@@ -94,7 +94,7 @@ public final class VtnNodeListener extends DataStoreListener<VtnNode, Void> {
     public VtnNodeListener(DataBroker broker) {
         super(VtnNode.class);
         registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.BASE);
+                         DataChangeScope.ONE);
     }
 
     /**

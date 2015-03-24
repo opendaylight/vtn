@@ -564,7 +564,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     public void initialize() throws InterruptedException {
         if (adSalInventory == null) {
             try {
-                adSalInventory = new AdSalInventory();
+                adSalInventory = new AdSalInventory(dataBroker);
             } catch (RuntimeException e) {
                 String msg = "Failed to initialize AD-SAL inventory: " +
                     e.getMessage();

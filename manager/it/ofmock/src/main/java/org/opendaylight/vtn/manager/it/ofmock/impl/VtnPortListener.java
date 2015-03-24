@@ -128,7 +128,7 @@ public final class VtnPortListener extends DataStoreListener<VtnPort, Void> {
     public VtnPortListener(DataBroker broker) {
         super(VtnPort.class);
         registerListener(broker, LogicalDatastoreType.OPERATIONAL,
-                         DataChangeScope.BASE);
+                         DataChangeScope.SUBTREE);
     }
 
     /**

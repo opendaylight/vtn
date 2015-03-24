@@ -11,9 +11,7 @@ package org.opendaylight.vtn.manager.internal.inventory;
 
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -25,8 +23,8 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
-import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
@@ -43,8 +41,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.IgnoredLinksBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.VtnTopology;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.VtnTopologyBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.ignored.links.IgnoredLink;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
@@ -58,7 +54,7 @@ import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.
  * Listener class that listens the change of MD-SAL topology datastore.
  */
 public final class TopologyListener
-    extends InventoryMaintainer<Link, TopologyEventContext> {
+    extends InventoryMaintainer<Link, LinkUpdateTask> {
     /**
      * Logger instance.
      */
@@ -80,16 +76,18 @@ public final class TopologyListener
     /**
      * MD-SAL transaction task that initializes the VTN topology tree.
      */
-    private class TopologyInitTask extends AbstractTxTask<Void> {
+    private static class TopologyInitTask extends AbstractTxTask<Void> {
         /**
          * Initialize VTN network topology.
          *
          * @param tx        A {@link ReadWriteTransaction} instance.
+         * @param reader    An {@link InventoryReader} instance.
          * @param topology  MD-SAL network topology.
          * @throws VTNException
          *    An error occurred.
          */
-        private void initLinks(ReadWriteTransaction tx, Topology topology)
+        private void initLinks(ReadWriteTransaction tx, InventoryReader reader,
+                               Topology topology)
             throws VTNException {
             if (topology == null) {
                 return;
@@ -110,7 +108,7 @@ public final class TopologyListener
                 }
 
                 LinkId lid = link.getLinkId();
-                if (!addVtnLink(tx, lid, src, dst)) {
+                if (!InventoryUtils.addVtnLink(tx, reader, lid, src, dst)) {
                     LOG.warn("Ignore inter-switch link: {}: {} -> {}",
                              lid.getValue(), src, dst);
                 }
@@ -141,7 +139,7 @@ public final class TopologyListener
             tx.delete(oper, igPath);
             tx.merge(oper, vtPath, new VtnTopologyBuilder().build(), true);
             tx.merge(oper, igPath, new IgnoredLinksBuilder().build(), true);
-            initLinks(tx, topology);
+            initLinks(tx, ctx.getInventoryReader(), topology);
 
             return null;
         }
@@ -152,118 +150,6 @@ public final class TopologyListener
         @Override
         public void onFailure(VTNManagerProvider provider, Throwable t) {
             LOG.warn("Failed to initialize VTN topology datastore.", t);
-        }
-    }
-
-    /**
-     * MD-SAL transaction task that updates the VTN link.
-     */
-    private class LinkUpdatedTask extends AbstractTxTask<Void>
-        implements TopologyEventContext {
-        /**
-         * A map that keeps created links.
-         */
-        private final Map<LinkId, LinkEdge>  created = new HashMap<>();
-
-        /**
-         * A map that keeps removed links.
-         */
-        private final Map<LinkId, LinkEdge>  removed = new HashMap<>();
-
-        /**
-         * Remove the given link from the VTN network topology.
-         *
-         * @param tx   A {@link ReadWriteTransaction} instance.
-         * @param lid  A {@link LinkId} instance.
-         * @param le   A {@link LinkEdge} instance.
-         * @throws VTNException  An error occurred.
-         */
-        private void remove(ReadWriteTransaction tx, LinkId lid, LinkEdge le)
-            throws VTNException {
-            // Remove the link from vtn-topology list.
-            SalPort src = le.getSourcePort();
-            SalPort dst = le.getDestinationPort();
-            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-            InstanceIdentifier<VtnLink> lpath =
-                InventoryUtils.toVtnLinkIdentifier(lid);
-            if (DataStoreUtils.read(tx, oper, lpath).isPresent()) {
-                tx.delete(oper, lpath);
-
-                // Remove port links.
-                removePortLink(tx, src, lid);
-                removePortLink(tx, dst, lid);
-            } else {
-                // Remove the link from ignored-links list.
-                InstanceIdentifier<IgnoredLink> ipath =
-                    InventoryUtils.toIgnoredLinkIdentifier(lid);
-                DataStoreUtils.delete(tx, oper, ipath);
-            }
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public Void execute(TxContext ctx) throws VTNException {
-            // Process link deletion events.
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            for (Map.Entry<LinkId, LinkEdge> entry: removed.entrySet()) {
-                LinkId lid = entry.getKey();
-                LinkEdge le = entry.getValue();
-                remove(tx, lid, le);
-            }
-
-            // Process link creation events.
-            for (Map.Entry<LinkId, LinkEdge> entry: created.entrySet()) {
-                LinkId lid = entry.getKey();
-                LinkEdge le = entry.getValue();
-                SalPort src = le.getSourcePort();
-                SalPort dst = le.getDestinationPort();
-                if (!addVtnLink(tx, lid, src, dst)) {
-                    LOG.warn("onCreated: Ignore inter-switch link: {}: " +
-                             "{} -> {}", lid.getValue(), src, dst);
-                }
-            }
-
-            return null;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onFailure(VTNManagerProvider provider, Throwable t) {
-            LOG.error("Failed to update VTN link.", t);
-        }
-
-        // TopologyEventContext
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void addCreated(Link link) {
-            LinkId lid = link.getLinkId();
-            LinkEdge le = new LinkEdge(link);
-            created.put(lid, le);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void addRemoved(Link link) {
-            LinkId lid = link.getLinkId();
-            LinkEdge le = new LinkEdge(link);
-            removed.put(lid, le);
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean hasLink() {
-            return !(created.isEmpty() && removed.isEmpty());
         }
     }
 
@@ -285,17 +171,17 @@ public final class TopologyListener
      * {@inheritDoc}
      */
     @Override
-    protected TopologyEventContext enterEvent(
+    protected LinkUpdateTask enterEvent(
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        return new LinkUpdatedTask();
+        return new LinkUpdateTask(LOG);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void exitEvent(TopologyEventContext ectx) {
-        if (ectx.hasLink()) {
+    protected void exitEvent(LinkUpdateTask ectx) {
+        if (ectx.hasUpdates()) {
             submit(ectx);
         }
     }
@@ -304,23 +190,17 @@ public final class TopologyListener
      * {@inheritDoc}
      */
     @Override
-    protected void onCreated(TopologyEventContext ectx,
-                             InstanceIdentifier<Link> key, Link value) {
-        try {
-            ectx.addCreated(value);
-        } catch (IllegalArgumentException e) {
-            LOG.debug("Ignore unsupported inter-switch link creation: " +
-                      value, e);
-        }
+    protected void onCreated(LinkUpdateTask ectx, InstanceIdentifier<Link> key,
+                             Link value) {
+        ectx.addUpdated(key);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onUpdated(TopologyEventContext ectx,
-                             InstanceIdentifier<Link> key, Link oldValue,
-                             Link newValue) {
+    protected void onUpdated(LinkUpdateTask ectx, InstanceIdentifier<Link> key,
+                             Link oldValue, Link newValue) {
         throw new IllegalStateException("Should never be called.");
     }
 
@@ -328,14 +208,9 @@ public final class TopologyListener
      * {@inheritDoc}
      */
     @Override
-    protected void onRemoved(TopologyEventContext ectx,
-                             InstanceIdentifier<Link> key, Link value) {
-        try {
-            ectx.addRemoved(value);
-        } catch (IllegalArgumentException e) {
-            LOG.debug("Ignore unsupported inter-switch link deletion: " +
-                      value, e);
-        }
+    protected void onRemoved(LinkUpdateTask ectx, InstanceIdentifier<Link> key,
+                             Link value) {
+        ectx.addUpdated(key);
     }
 
     /**
