@@ -12,9 +12,7 @@ package org.opendaylight.vtn.manager.internal.inventory;
 import java.util.Collections;
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -26,7 +24,6 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
-import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -45,6 +42,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
@@ -53,7 +51,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
  * Listener class that listens the change of MD-SAL nodes.
  */
 public final class NodeListener
-    extends InventoryMaintainer<Node, NodeEventContext> {
+    extends InventoryMaintainer<FlowCapableNode, NodeUpdateTask> {
     /**
      * Logger instance.
      */
@@ -138,149 +136,6 @@ public final class NodeListener
     }
 
     /**
-     * MD-SAL transaction task that creates the VTN node.
-     */
-    private class NodeUpdatedTask extends AbstractTxTask<Void>
-        implements NodeEventContext {
-        /**
-         * A map that keeps created MD-SAL nodes.
-         */
-        private final Map<InstanceIdentifier<Node>, SalNode>  created =
-            new HashMap<>();
-
-        /**
-         * A map that keeps removed list of removed MD-SAL nodes.
-         */
-        private final Map<InstanceIdentifier<Node>, SalNode>  removed =
-            new HashMap<>();
-
-        /**
-         * Add the given node to the VTN inventory datastore.
-         *
-         * @param ctx    A MD-SAL datastore transaction context.
-         * @param tx     A {@link ReadWriteTransaction} instance.
-         * @param path   Instance identifier of the created MD-SAL node.
-         * @param snode  A {@link SalNode} instance corresponding to the
-         *               created MD-SAL node.
-         * @throws VTNException  An error occurred.
-         */
-        private void add(TxContext ctx, ReadWriteTransaction tx,
-                         InstanceIdentifier<Node> path, SalNode snode)
-            throws VTNException {
-            // Read MD-SAL node from the datastore.
-            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-            Node node = DataStoreUtils.read(tx, oper, path).orNull();
-            if (node == null) {
-                LOG.debug("Ignore bogus creation event: {}", snode);
-            } else {
-                // Create a VTN node.
-                VtnNode vnode = InventoryUtils.toVtnNodeBuilder(node).build();
-                tx.merge(oper, snode.getVtnNodeIdentifier(), vnode, true);
-
-                // Cache this node into the inventory reader.
-                InventoryReader reader = ctx.getInventoryReader();
-                reader.prefetch(snode, vnode);
-            }
-        }
-
-        /**
-         * Remove the given node from the VTN inventory datastore.
-         *
-         * @param tx     A {@link ReadWriteTransaction} instance.
-         * @param path   Instance identifier of the removed MD-SAL node.
-         * @param snode  A {@link SalNode} instance corresponding to the
-         *               removed MD-SAL node.
-         * @throws VTNException  An error occurred.
-         */
-        private void remove(ReadWriteTransaction tx,
-                            InstanceIdentifier<Node> path, SalNode snode)
-            throws VTNException {
-            // Remove VTN links affected by the removed node.
-            removeVtnLink(tx, snode);
-
-            // Delete a VTN node associated with the given MD-SAL node.
-            DataStoreUtils.delete(tx, LogicalDatastoreType.OPERATIONAL,
-                                  snode.getVtnNodeIdentifier());
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public Void execute(TxContext ctx) throws VTNException {
-            // Process node deletion events.
-            ReadWriteTransaction tx = ctx.getReadWriteTransaction();
-            for (Map.Entry<InstanceIdentifier<Node>, SalNode> entry:
-                     removed.entrySet()) {
-                InstanceIdentifier<Node> path = entry.getKey();
-                SalNode snode = entry.getValue();
-                remove(tx, path, snode);
-            }
-
-            // Process node creation events.
-            for (Map.Entry<InstanceIdentifier<Node>, SalNode> entry:
-                     created.entrySet()) {
-                InstanceIdentifier<Node> path = entry.getKey();
-                SalNode snode = entry.getValue();
-                add(ctx, tx, path, snode);
-            }
-
-            if (!created.isEmpty()) {
-                // Try to resolve ignored inter-switch links.
-                resolveIgnoredLinks(ctx, LOG);
-            }
-
-            return null;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void onFailure(VTNManagerProvider provider, Throwable t) {
-            LOG.error("Failed to update VTN node information.", t);
-        }
-
-        // NodeEventContext
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void addCreated(InstanceIdentifier<Node> path, Node node) {
-            NodeId id = node.getId();
-            SalNode snode = SalNode.create(id);
-            if (snode == null) {
-                LOG.debug("Ignore unsupported node creation: {}", id);
-            } else {
-                created.put(path, snode);
-            }
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public void addRemoved(InstanceIdentifier<Node> path, Node node) {
-            NodeId id = node.getId();
-            SalNode snode = SalNode.create(id);
-            if (snode == null) {
-                LOG.debug("Ignore unsupported node deletion: {}", id);
-            } else {
-                removed.put(path, snode);
-            }
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public boolean hasNode() {
-            return !(created.isEmpty() && removed.isEmpty());
-        }
-    }
-
-    /**
      * Construct a new instance.
      *
      * @param queue   A {@link TxQueue} instance used to update the
@@ -288,8 +143,28 @@ public final class NodeListener
      * @param broker  A {@link DataBroker} service instance.
      */
     public NodeListener(TxQueue queue, DataBroker broker) {
-        super(queue, broker, Node.class, DataChangeScope.BASE);
+        super(queue, broker, FlowCapableNode.class, DataChangeScope.SUBTREE);
         submitInitial(new NodesInitTask());
+    }
+
+    /**
+     * Add the given node information to the node update task.
+     *
+     * @param ectx  A {@link NodeUpdateTask} instance.
+     * @param path  Path to the flow-capable-node.
+     * @param type  A {@link VtnUpdateType} instance which indicates the type
+     *              of event.
+     */
+    private void addUpdated(NodeUpdateTask ectx,
+                            InstanceIdentifier<FlowCapableNode> path,
+                            VtnUpdateType type) {
+        NodeId nid = InventoryUtils.getNodeId(path);
+        SalNode snode = SalNode.create(nid);
+        if (snode == null) {
+            LOG.debug("{}: Ignore unsupported node event: {}", type, path);
+        } else {
+            ectx.addUpdated(path, snode);
+        }
     }
 
     // DataStoreListener
@@ -298,17 +173,17 @@ public final class NodeListener
      * {@inheritDoc}
      */
     @Override
-    protected NodeEventContext enterEvent(
+    protected NodeUpdateTask enterEvent(
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        return new NodeUpdatedTask();
+        return new NodeUpdateTask(LOG);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void exitEvent(NodeEventContext ectx) {
-        if (ectx.hasNode()) {
+    protected void exitEvent(NodeUpdateTask ectx) {
+        if (ectx.hasUpdates()) {
             submit(ectx);
         }
     }
@@ -317,18 +192,20 @@ public final class NodeListener
      * {@inheritDoc}
      */
     @Override
-    protected void onCreated(NodeEventContext ectx,
-                             InstanceIdentifier<Node> key, Node value) {
-        ectx.addCreated(key, value);
+    protected void onCreated(NodeUpdateTask ectx,
+                             InstanceIdentifier<FlowCapableNode> key,
+                             FlowCapableNode value) {
+        addUpdated(ectx, key, VtnUpdateType.CREATED);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onUpdated(NodeEventContext ectx,
-                             InstanceIdentifier<Node> key, Node oldValue,
-                             Node newValue) {
+    protected void onUpdated(NodeUpdateTask ectx,
+                             InstanceIdentifier<FlowCapableNode> key,
+                             FlowCapableNode oldValue,
+                             FlowCapableNode newValue) {
         throw new IllegalStateException("Should never be called.");
     }
 
@@ -336,18 +213,19 @@ public final class NodeListener
      * {@inheritDoc}
      */
     @Override
-    protected void onRemoved(NodeEventContext ectx,
-                             InstanceIdentifier<Node> key, Node value) {
-        ectx.addRemoved(key, value);
+    protected void onRemoved(NodeUpdateTask ectx,
+                             InstanceIdentifier<FlowCapableNode> key,
+                             FlowCapableNode value) {
+        addUpdated(ectx, key, VtnUpdateType.REMOVED);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected InstanceIdentifier<Node> getWildcardPath() {
+    protected InstanceIdentifier<FlowCapableNode> getWildcardPath() {
         return InstanceIdentifier.builder(Nodes.class).child(Node.class).
-            build();
+            augmentation(FlowCapableNode.class).build();
     }
 
     /**

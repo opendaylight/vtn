@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.inventory;
 
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.network.topology.topology.Link;
@@ -120,7 +122,8 @@ public final class LinkEdge {
      */
     @Override
     public int hashCode() {
-        return sourcePort.hashCode() + destinationPort.hashCode() * 31;
+        return sourcePort.hashCode() +
+            destinationPort.hashCode() * MiscUtils.HASH_PRIME;
     }
 
     /**

@@ -14,6 +14,7 @@ import java.net.InetAddress;
 import java.util.Collection;
 
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
@@ -35,6 +36,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * methods.
  */
 public final class MiscUtils {
+    /**
+     * A logger for extra verbose logging.
+     */
+    public static final Logger  VERBOSE_LOG =
+        LoggerFactory.getLogger("ODL-VTN-Manager-verbose");
+
+    /**
+     * A prime number used to calculate hash code.
+     */
+    public static final int  HASH_PRIME = 31;
+
     /**
      * Private constructor that protects this class from instantiating.
      */

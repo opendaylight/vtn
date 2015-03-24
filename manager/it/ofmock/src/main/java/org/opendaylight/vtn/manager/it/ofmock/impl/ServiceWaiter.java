@@ -10,7 +10,9 @@
 package org.opendaylight.vtn.manager.it.ofmock.impl;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,18 @@ public final class ServiceWaiter<T> implements ServiceListener {
     static final String  PROP_CONTAINER = "containerName";
 
     /**
+     * The name of the OSGi service property which specifies the scope of the
+     * service.
+     */
+    static final String  PROP_SCOPE = "scope";
+
+    /**
+     * The value of the OSGi service property which specifies the global scope.
+     * service.
+     */
+    static final String  SCOPE_GLOBAL = "Global";
+
+    /**
      * An OSGi bundle context for this OSGi bundle.
      */
     private final BundleContext  bundleContext;
@@ -51,9 +65,9 @@ public final class ServiceWaiter<T> implements ServiceListener {
     private final Class<T>  serviceType;
 
     /**
-     * OSGi service filter for retrieving.
+     * A set of OSGi service filters for retrieving.
      */
-    private final String  serviceFilter;
+    private final Map<String, String>  serviceFilters = new HashMap<>();
 
     /**
      * OSGI service implementation to be returned.
@@ -83,22 +97,24 @@ public final class ServiceWaiter<T> implements ServiceListener {
     public ServiceWaiter(BundleContext bc, Class<T> type, String cname) {
         bundleContext = bc;
         serviceType = type;
+        setFilter(Constants.OBJECTCLASS, type.getName()).
+            setFilter(PROP_CONTAINER, cname);
+    }
 
-        // Construct a OSGi service filter.
-        String objFilter = new StringBuilder("(").
-            append(Constants.OBJECTCLASS).append('=').append(type.getName()).
-            append(')').toString();
-        if (cname == null) {
-            serviceFilter = objFilter;
+    /**
+     * Set OSGi service filters for retrieving.
+     *
+     * @param name   The name of the filter.
+     * @param value  The value to be associated with the given filter name.
+     * @return  This instance.
+     */
+    public ServiceWaiter<T> setFilter(String name, String value) {
+        if (value == null) {
+            serviceFilters.remove(name);
         } else {
-            StringBuilder builder = new StringBuilder("(&").
-                append(objFilter).append('(').append(PROP_CONTAINER).
-                append('=').append(cname).append("))");
-            serviceFilter = builder.toString();
+            serviceFilters.put(name, value);
         }
-
-        // Try to get service instance.
-        getService();
+        return this;
     }
 
     /**
@@ -109,24 +125,31 @@ public final class ServiceWaiter<T> implements ServiceListener {
      *    The calling thread was interrupted.
      */
     public T await() throws InterruptedException {
-        synchronized (this) {
-            if (serviceInstance != null) {
-                return serviceInstance;
-            }
+        // Construct a OSGi service filter.
+        StringBuilder builder = new StringBuilder("(&");
+        for (Map.Entry<String, String> entry: serviceFilters.entrySet()) {
+            builder.append('(').append(entry.getKey()).append('=').
+                append(entry.getValue()).append(')');
         }
 
+        String filter = builder.append(')').toString();
+        LOG.trace("Searching for {} service: filter={}",
+                  serviceType.getSimpleName(), filter);
+
         try {
-            bundleContext.addServiceListener(this, serviceFilter);
+            bundleContext.addServiceListener(this, filter);
         } catch (Exception e) {
             throw new IllegalStateException(
                 "Failed to add OSGi service listener.", e);
         }
 
         try {
-            // We need to check the service again in order to avoid race
-            // condition with service event.
-            T impl = getService();
+            // We need to check the service in order to avoid race condition
+            // with service event.
+            T impl = getService(filter);
             if (impl == null) {
+                LOG.trace("Waiting for {} service to be registered: filter={}",
+                          serviceType.getSimpleName(), filter);
                 impl = awaitImpl();
             }
 
@@ -144,9 +167,6 @@ public final class ServiceWaiter<T> implements ServiceListener {
      *    The calling thread was interrupted.
      */
     private synchronized T awaitImpl() throws InterruptedException {
-        LOG.trace("Waiting for {} service to be registered.",
-                  serviceType.getSimpleName());
-
         long timeout = OfMockProvider.TASK_TIMEOUT;
         long deadline = System.currentTimeMillis() + timeout;
         do {
@@ -165,10 +185,11 @@ public final class ServiceWaiter<T> implements ServiceListener {
     /**
      * Search for the target OSGi service implementation.
      *
+     * @param filter  An OSGi service filter.
      * @return  An implementation of the target OSGi service on success.
      *          {@code null} on failure.
      */
-    private T getService() {
+    private T getService(String filter) {
         synchronized (this) {
             if (serviceInstance != null) {
                 return serviceInstance;
@@ -177,7 +198,7 @@ public final class ServiceWaiter<T> implements ServiceListener {
 
         Collection<ServiceReference<T>> c;
         try {
-            c = bundleContext.getServiceReferences(serviceType, serviceFilter);
+            c = bundleContext.getServiceReferences(serviceType, filter);
         } catch (Exception e) {
             String msg = "Failed to get OSGi service reference: " +
                 serviceType.getSimpleName();
