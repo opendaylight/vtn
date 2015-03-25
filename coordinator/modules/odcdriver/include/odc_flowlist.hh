@@ -355,6 +355,10 @@ public:
                          val_flowlist_entry &val_in,
                          unc::driver::controller *ctr) {
     ODC_FUNC_TRACE;
+    return run_command(key_in,
+                       val_in,
+                       ctr,
+                       unc::odcdriver::CONFIG_UPDATE);
     return UNC_RC_SUCCESS;
   }
   /**
