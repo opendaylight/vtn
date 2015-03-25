@@ -798,7 +798,9 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             bridgeobj.setName(bridgeName);
             StatusWithUuid statusWithUuid = ovsdbConfigService.insertRow(node, bridgeobj.getSchema().getName(), null, bridgeobj.getRow());
             LOG.trace("Successfully inserted Bridge.NAME.getName() {} statusWithUuid ={}", bridgeobj.getSchema().getName(), statusWithUuid);
-            if (!statusWithUuid.isSuccess()) { return statusWithUuid; }
+            if (!statusWithUuid.isSuccess()) {
+                return statusWithUuid;
+            }
             bridgeUUID = statusWithUuid.getUuid().toString();
 
             Port port = ovsdbConfigService.createTypedRow(node, Port.class);
