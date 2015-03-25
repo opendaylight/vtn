@@ -273,10 +273,6 @@ public:
   UncRespCode update_cmd(key_flowlist &key_in, val_flowlist &val_in,
                          unc::driver::controller *ctr) {
     ODC_FUNC_TRACE;
-    return run_command(key_in,
-                       val_in,
-                       ctr,
-                       unc::odcdriver::CONFIG_UPDATE);
     return UNC_RC_SUCCESS;
   }
   /**
@@ -355,7 +351,10 @@ public:
                          val_flowlist_entry &val_in,
                          unc::driver::controller *ctr) {
     ODC_FUNC_TRACE;
-    return UNC_RC_SUCCESS;
+    return run_command(key_in,
+                       val_in,
+                       ctr,
+                       unc::odcdriver::CONFIG_UPDATE);
   }
   /**
    * @brief      - Method to fetch child configurations for the parent kt
