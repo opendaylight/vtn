@@ -768,12 +768,6 @@ KtRequestHandler<key, val>::execute_cmd(
       return resp_code_;
   }
 
-  // Revoke the commit with triggring audit for any failed Operation
-  if (resp_code_ != UNC_RC_SUCCESS) {
-    pfc_log_debug("Revoke the commit with triggring audit");
-    config_cmd_ptr->revoke(conn);
-  }
-
   pfc_log_debug("deleted config_cmd_ptr");
   delete config_cmd_ptr;
   config_cmd_ptr = NULL;
