@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,7 +14,7 @@ import java.util.List;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.MacEntryList;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.MacMapNorthBound;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VlanNorthBoundList;
-
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeFlowFilterList;
 /**
  *VBridgeBean  - bean which helps to map the response as java object.
  */
@@ -59,6 +59,11 @@ public class VBridgeBean {
      * VBridge interface attached to the Vbridge.
      */
     private List<VBridgeInterfaceBean> vbrInterface = null;
+
+    /*
+     * VBridge flowfilter list
+     */
+    private VBridgeFlowFilterList vbrFlowFilter = null;
 
     /**
      * Mac Address details attached to the VBridge.
@@ -214,6 +219,25 @@ public class VBridgeBean {
      */
     public void setVbrInterface(List<VBridgeInterfaceBean> vbrInterface) {
         this.vbrInterface = vbrInterface;
+    }
+
+
+
+
+     /**
+     * getVbrFlowFilter function to get the VBridgeFlowFilterList  value for this object.
+     * @return {@link VBridgeFlowFilterList}
+     */
+    public VBridgeFlowFilterList  getVbrFlowFilter() {
+        return vbrFlowFilter;
+    }
+
+    /**
+     * setVbrFlowFilter function to set the VBridgeFlowFilterList value for this object.
+     * @param vbrFlowFilter
+     */
+    public void setVbrFlowFilter(VBridgeFlowFilterList  vbrFlowFilter) {
+        this.vbrFlowFilter = vbrFlowFilter;
     }
 
     /**

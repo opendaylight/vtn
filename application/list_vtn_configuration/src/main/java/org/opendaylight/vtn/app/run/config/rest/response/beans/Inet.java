@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -33,7 +33,7 @@ public class Inet {
      * protocol values for the Inet.
      */
     @JsonElement(name = "protocol")
-    private String protocol = null;
+    private int protocol;
     /**
      * Inet - Constructor with arguments.
      * @param src - Source values for the Inet.
@@ -41,7 +41,7 @@ public class Inet {
      * @param protocol - protocol values for the Inet.
      */
 
-    public Inet(String src, String dst, String protocol) {
+    public Inet(String src, String dst, int protocol) {
         this.src = src;
         this.dst = dst;
         this.protocol = protocol;
@@ -89,9 +89,9 @@ public class Inet {
     /**
      * getProtocol - function to get the protocol values for this object.
      *
-     * @return {@link String}
+     * @return {@link int}
      */
-    public String getProtocol() {
+    public int getProtocol() {
         return protocol;
     }
 
@@ -100,7 +100,7 @@ public class Inet {
      *
      * @param protocol
      */
-    public void setProtocol(String protocol) {
+    public void setProtocol(int protocol) {
         this.protocol = protocol;
     }
 

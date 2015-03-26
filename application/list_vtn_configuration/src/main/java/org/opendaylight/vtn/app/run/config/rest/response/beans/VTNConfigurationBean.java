@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,7 @@ package org.opendaylight.vtn.app.run.config.rest.response.beans;
 import java.util.List;
 
 import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VBridgeBean;
+import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VTerminalBean;
 
 /**
  * VTNConfigurationBean - Bean Representaion for VTNConfiguration object from
@@ -19,6 +20,7 @@ import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VBridgeBean;
  *
  */
 public class VTNConfigurationBean {
+
     /**
      * name for vtn configuration.
      */
@@ -45,9 +47,15 @@ public class VTNConfigurationBean {
     private List<VBridgeBean> vbridge = null;
 
     /**
+     * vTerminal list for vtn configuration.
+     */
+    private List<VTerminalBean> vterminal = null;
+
+    /**
      * DataFlowList for vtn configuration.
      */
     private DataFlowList dataflow = null;
+
     /**
      * Default Constructor.
      */
@@ -75,12 +83,11 @@ public class VTNConfigurationBean {
     /**
      * getPath - function to get the list .
      *
-     * @return {@link List<FlowFilter> }
+     * @return {@link List<VBridgeBean> }
      */
     public List<VBridgeBean> getVbridge() {
         return vbridge;
     }
-
 
     /**
      * setVbridge - function to set the list .
@@ -94,7 +101,25 @@ public class VTNConfigurationBean {
     /**
      * getPath - function to get the list .
      *
-     * @return {@link List<FlowFilter> }
+     * @return {@link List<VTerminalBean> }
+     */
+    public List<VTerminalBean> getVTerminal() {
+        return vterminal;
+    }
+
+    /**
+     * setVTerminal - function to set the list .
+     *
+     * @param vterminal
+     */
+    public void setVTerminal(List<VTerminalBean> vterminal) {
+        this.vterminal = vterminal;
+    }
+
+    /**
+     * getPath - function to get the name .
+     *
+     * @return {@link String }
      */
     public String getName() {
         return name;
@@ -148,7 +173,7 @@ public class VTNConfigurationBean {
     /**
      * getHardTimeout - function to get the hardTimeout .
      *
-     * @return {@link List<FlowFilter> }
+     * @return {@link int }
      */
     public int getHardTimeout() {
         return hardTimeout;
@@ -169,7 +194,8 @@ public class VTNConfigurationBean {
     @Override
     public String toString() {
         return "VTN RUN CONFIG [name:" + name + ",description:" + description
-                + ",idleTimeout:" + idleTimeout + ",hardTimeout:" + hardTimeout
-                + "]";
+              + ",idleTimeout:" + idleTimeout + ",hardTimeout:" + hardTimeout
+              + "]";
     }
 }
+
