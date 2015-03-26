@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,24 +17,29 @@ import org.opendaylight.vtn.app.run.config.json.annotations.JsonArray;
 import org.opendaylight.vtn.app.run.config.json.annotations.JsonObject;
 import org.opendaylight.vtn.app.run.config.rest.enumgroups.RestURL;
 
-@RestURL(vtnMgrUrl = "controller/nb/v2/vtn/ {containerName}/vtns/ {tenantName}/vbridges/ {bridgeName}/flowfilters/ {listType}")
+/**
+ * VBridgeIfFlowFilterNorthboundList - Bean Representaion for VBridge flowfilter object from the JSON Response.
+ *
+ */
+@RestURL(vtnMgrUrl = "controller/nb/v2/vtn/ {containerName}/vtns/ {tenantName}/vbridges/ {bridgeName}/interfaces/ {ifName}/flowfilters/ {listType}")
 @JsonObject
-public class VBridgeFlowFilterList implements Cloneable, Serializable {
+public class VBridgeIfFlowFilterNorthboundList implements Cloneable, Serializable {
 
     /**
      * Serialized id for this class.
      */
-    private static final long serialVersionUID = -5489169108073387630L;
+    private static final long serialVersionUID = 847469108068987630L;
 
     /**
      * Array of flowfilter objects.
      */
     @JsonArray(name = "flowfilter")
     private List<FlowFilter> flowfilter = new ArrayList<FlowFilter>();
+
     /**
-     * Constructor.
+     * Default Constructor.
      */
-    public VBridgeFlowFilterList() {
+    public VBridgeIfFlowFilterNorthboundList() {
     }
 
     /**
@@ -42,14 +47,14 @@ public class VBridgeFlowFilterList implements Cloneable, Serializable {
      *
      * @return {@link List<FlowFilter>}
      */
-    public List<FlowFilter> getFlowfilter() {
+    public List<FlowFilter> getFlowfilters() {
         return flowfilter;
     }
 
     /**
-     * setFlowfilter - function to set the list of flowfilter value for this object.
+     *  setFlowfilter - function to set the list of flowfilter value for this object.
      *
-     * @param flowfilter
+     *  @param flowfilters
      */
     public void setFlowfilter(List<FlowFilter> flowfilter) {
         this.flowfilter = flowfilter;
@@ -61,6 +66,7 @@ public class VBridgeFlowFilterList implements Cloneable, Serializable {
      */
     @Override
     public String toString() {
-        return "[flowfilter:" + flowfilter + "]";
+        return "[flowfilter" + flowfilter + "]";
     }
 }
+

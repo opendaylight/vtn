@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,25 +20,25 @@ import org.opendaylight.vtn.app.run.config.json.annotations.JsonObject;
 public class VTerminalNorthBound {
 
     /**
-     * name for the termainal.
+     * name for the terminal.
      */
     @JsonElement(name = "name")
     private String name = null;
 
     /**
-     * description for the termainal.
+     * description for the terminal.
      */
     @JsonElement(name = "description")
     private String description = null;
 
     /**
-     * faults for the termainal.
+     * faults for the terminal.
      */
     @JsonElement(name = "faults")
     private int faults = 0;
 
     /**
-     * state for the termainal.
+     * state for the terminal.
      */
     @JsonElement(name = "state")
     private int state = 0;
@@ -52,7 +52,7 @@ public class VTerminalNorthBound {
      * @param name,description,faults
      */
     public VTerminalNorthBound(String name, String description, int faults,
-            int state) {
+        int state) {
         this.name = name;
         this.description = description;
         this.faults = faults;
@@ -138,6 +138,6 @@ public class VTerminalNorthBound {
     @Override
     public String toString() {
         return "VTERMINAL [name:" + name + ",description:" + description
-                + ",faults:" + faults + ",state:" + state + "]";
+              + ",faults:" + faults + ",state:" + state + "]";
     }
 }

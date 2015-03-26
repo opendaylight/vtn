@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2014 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,52 +9,52 @@
 
 package org.opendaylight.vtn.app.run.config.rest.output.format.beans;
 
-import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeIfFlowFilterNorthboundList;
-import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgePortMap;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalIfFlowFilterNorthboundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalPortMap;
 
 /**
- * VBridgeInterfaceBean - Bean which helps to map the responses as java object
+ * VTerminalInterfaceBean - Bean which helps to map the responses as java object
  *
  */
-public class VBridgeInterfaceBean {
+public class VTerminalInterfaceBean {
 
     /**
-     * Name of the vBridge.
+     * Name of the VTerminal.
      */
     private String name = null;
 
     /**
-     * State of the VBridge.
+     * State of the VTerminal.
      */
     private int state = 0;
 
     /**
-     * EntityState of the VBridge.
+     * EntityState of the VTerminal.
      */
     private int entityState = 0;
 
     /**
-     * Description of the vbridge.
+     * Description of the VTerminal.
      */
     private String description = null;
 
     /**
-     * ENable or disable vbridge.
+     * ENable or disable VTerminal.
      */
     private boolean enabled = false;
 
     /**
-     * Map for Vbrigeports created.
+     * Map for VTerminal ports created.
      */
-    private VBridgePortMap portmap = null;
+    private VTerminalPortMap portmap = null;
 
     /**
-     *  Flowfilter of the VBridge
+     *  Flowfilter of the VTerminal
      */
-    private VBridgeIfFlowFilterNorthboundList flowfilters = null;
+    private VTerminalIfFlowFilterNorthboundList flowfilters = null;
 
     /**
-     * get the name of the VBridge.
+     * get the name of the VTermainal.
      *
      * @return {@link String}
      */
@@ -63,27 +63,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * get the ports of the VBridge.
-     *
-     * @return {@link VBridgePortMap}
-     */
-    public VBridgePortMap getPortmap() {
-        return portmap;
-    }
-
-    /**
-     * set the ports of the VBridge.
-     *
-     * @param portmap
-     *        {@link VBridgePortMap}
-     */
-
-    public void setPortmap(VBridgePortMap portmap) {
-        this.portmap = portmap;
-    }
-
-    /**
-     * set the name of the VBridge.
+     * set the name of the VTermainal.
      *
      * @param name
      *        {@link String}
@@ -93,7 +73,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * get the state of the VBridge.
+     * get the state of the VTermainal.
      *
      * @return {@link int}
      */
@@ -102,7 +82,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * set the state of the VBridge.
+     * set the state of the VTermainal.
      *
      * @param name
      *        {@link int}
@@ -112,7 +92,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * get the Entitystate of the VBridge.
+     * get the Entitystate of the VTermainal.
      *
      * @return {@link int}
      */
@@ -121,7 +101,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * set the Entitystate of the VBridge.
+     * set the Entitystate of the VTermainal.
      *
      * @param entityState
      *        {@link int}
@@ -131,7 +111,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * get the Description of the VBridge.
+     * get the Description of the VTermainal.
      *
      * @param description
      *        {@link String}
@@ -141,7 +121,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * set the Description of the VBridge.
+     * set the Description of the VTermainal.
      *
      * @param description
      *        {@link String}
@@ -151,7 +131,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * Check if VBridge isEnabled
+     * Check if VTermainal isEnabled
      *
      * @return {@link boolean}
      */
@@ -160,7 +140,7 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * Enable or Disable VBridge
+     * Enable or Disable VTermainal
      *
      * @param enabled
      *        {@link boolean}
@@ -170,15 +150,42 @@ public class VBridgeInterfaceBean {
     }
 
     /**
-     * @return the flowfilters
+     * get the ports of the VTerminal.
+     *
+     * @return {@link VTerminalPortMap}
      */
-    public VBridgeIfFlowFilterNorthboundList getFlowfilters() {
+    public VTerminalPortMap getPortmap() {
+        return portmap;
+    }
+
+    /**
+     * set the ports of the VTerminal.
+     *
+     * @param portmap
+     *        {@link VTerminalPortMap}
+     */
+
+    public void setPortmap(VTerminalPortMap portmap) {
+        this.portmap = portmap;
+    }
+
+    /**
+     * get the VTermainal flowfilter
+     *
+     * @return {@link VTerminalIfFlowFilterNorthboundList}
+     */
+    public VTerminalIfFlowFilterNorthboundList getVtflowfilter() {
         return flowfilters;
     }
+
     /**
-     * @param flowfilters the flowfilters to set
+     * set the flowfilter of the VTermainal.
+     *
+     * @param flowfilter
+     *        {@link VTerminalIfFlowFilterNorthboundList}
      */
-    public void setFlowfilters(VBridgeIfFlowFilterNorthboundList flowfilters) {
+    public void setVtFlowfilter(VTerminalIfFlowFilterNorthboundList flowfilters) {
         this.flowfilters = flowfilters;
     }
+
 }
