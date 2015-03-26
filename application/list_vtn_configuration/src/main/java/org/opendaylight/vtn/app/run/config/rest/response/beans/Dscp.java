@@ -1,36 +1,51 @@
 /**
- * Copyright (c) 2014-2015 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.app.run.config.rest.response.beans;
 
 import org.opendaylight.vtn.app.run.config.json.annotations.JsonElement;
 import org.opendaylight.vtn.app.run.config.json.annotations.JsonObject;
 
 /**
- * MacHost - Bean Representaion for MacHost object from the JSON Response.
+ * Dscp - Bean Representaion for dscp object from the JSON Response.
  *
  */
 @JsonObject
-public class MacHost {
+public class Dscp {
 
     /**
-     * address attribute for MacHost
+     * priority for dscp
      */
-    @JsonElement(name = "address")
-    private String address = "";
+    @JsonElement(name = "dscp")
+    private int dscp = 0;
+    /**
+     * Default Constructor
+     */
+    public Dscp() {}
 
     /**
-     * vlan attribute for MacHost
+     * getDscp - function to get the dscp value for this object.
+     *
+     * @return {@link int}
      */
-    @JsonElement(name = "vlan")
-    private int vlan;
+    public int getDscp() {
+        return dscp;
+    }
 
-    public MacHost() {}
+    /**
+     * setDscp - function to set the dscp value for this object.
+     *
+     * @param dscp
+     */
+    public void setDscp(int dscp) {
+        this.dscp = dscp;
+    }
 
     /**
      * String representation of the object.
@@ -38,6 +53,6 @@ public class MacHost {
      */
     @Override
     public String toString() {
-        return "address:" + address + ",vlan:" + vlan;
+        return "dscp:" + dscp;
     }
 }

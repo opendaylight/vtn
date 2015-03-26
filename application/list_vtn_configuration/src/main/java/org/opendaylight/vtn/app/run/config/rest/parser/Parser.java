@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -39,6 +39,43 @@ public class Parser {
     public Parser() {}
 
     /**
+     * Type conversion of parsed json object.
+     *
+     * @param obj
+     * @param json
+     *
+     */
+    private void parseToRespectiveObject(Object object, Field field,
+            String fieldValue) {
+        try {
+            String fieldTypeName = field.getType().getName();
+            if ((field != null) && (field.getType().isPrimitive())) {
+                if (fieldTypeName.equals("long")) {
+                    field.set(object, Long.parseLong(fieldValue));
+                } else if (fieldTypeName.equals("double")) {
+                    field.set(object, Double.parseDouble(fieldValue));
+                } else if (fieldTypeName.equals("float")) {
+                    field.set(object, Float.parseFloat(fieldValue));
+                } else if (fieldTypeName.equals("int")) {
+                    field.set(object, Integer.parseInt(fieldValue));
+                } else if (fieldTypeName.equals("short")) {
+                    field.set(object, Short.parseShort(fieldValue));
+                } else if (fieldTypeName.equals("byte")) {
+                    field.set(object, Byte.parseByte(fieldValue));
+                } else if (fieldTypeName.equals("boolean")) {
+                    field.set(object, Boolean.parseBoolean(fieldValue));
+                }
+            } else if (fieldTypeName.equals("java.lang.String")) {
+                field.set(object, fieldValue);
+            }
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
      * Parase the reseived Json Object.
      * @param obj
      * @param json
@@ -61,7 +98,11 @@ public class Parser {
 
                     if (jsonElement != null) {
                         if (json.has(jsonElement.name())) {
-                            field.set(obj, json.get(jsonElement.name()));
+                            if (!field.getType().getName().equals(json.get(jsonElement.name()).getClass().getName())) {
+                                parseToRespectiveObject(obj, field, String.valueOf(json.get(jsonElement.name())));
+                            } else {
+                                field.set(obj, json.get(jsonElement.name()));
+                            }
                         }
 
                     } else if (jsonList != null) {

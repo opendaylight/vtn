@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -39,7 +39,7 @@ public class VBridgeNorthBound {
     /**
      * Interval duration for vbridge.
      */
-    @JsonElement(name = "ageinterval")
+    @JsonElement(name = "ageInterval")
     private int ageInterval = 0;
 
     /**

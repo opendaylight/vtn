@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,13 +11,14 @@ package org.opendaylight.vtn.app.run.config.rest.response.beans;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.opendaylight.vtn.app.run.config.json.annotations.JsonArray;
+import org.opendaylight.vtn.app.run.config.json.annotations.JsonObject;
 
 /**
  * Deny - Bean Representaion for Deny object from the JSON Response.
  *
  */
+@JsonObject
 public class Deny {
 
     /**

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -48,6 +48,7 @@ import org.opendaylight.vtn.app.run.config.rest.response.beans.PathPoliciesIndex
 import org.opendaylight.vtn.app.run.config.rest.response.beans.PathPolicy;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeInterface;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeInterfaceList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeIfFlowFilterNorthboundList;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeNorthBound;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeNorthBoundList;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgePortMap;
@@ -57,6 +58,16 @@ import org.opendaylight.vtn.app.run.config.rest.response.beans.VTNManagerVersion
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VTenantNorthBound;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VTenantNorthBoundList;
 import org.opendaylight.vtn.app.run.config.rest.response.beans.VlanNorthBoundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalIfFlowFilterNorthboundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalInterfaceNorthboundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalNorthBound;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalNorthBoundList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalInterfaceNorthbound;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTerminalPortMap;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VBridgeFlowFilterList;
+import org.opendaylight.vtn.app.run.config.rest.response.beans.VTenantFlowFilterList;
+import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VTerminalBean;
+import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VTerminalInterfaceBean;
 
 /**
  * RESTClient - Client main class helps to perform all the CRUD Operations.
@@ -142,9 +153,9 @@ public class RESTClient {
      * @throws VTNClientException
      */
     public Object get(Object restObject) throws Exception,
-    JSONException, IllegalArgumentException,
-    IllegalAccessException, InstantiationException, ConnectException,
-    VTNClientException {
+            JSONException, IllegalArgumentException,
+            IllegalAccessException, InstantiationException, ConnectException,
+            VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         Map<String, Object> headers = new HashMap<String, Object>();
         return this.get(restObject, paramMap, headers);
@@ -164,7 +175,7 @@ public class RESTClient {
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers)
-        throws Exception,  JSONException,
+        throws Exception, JSONException,
             IllegalArgumentException, IllegalAccessException,
             InstantiationException, ConnectException,
             VTNClientException {
@@ -288,11 +299,11 @@ public class RESTClient {
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers,
-            String param1, String value1, String param2, String value2)
+        String param1, String value1, String param2, String value2)
         throws JSONException, Exception,
-                    IllegalArgumentException, IllegalAccessException,
-                    InstantiationException, ConnectException,
-                    VTNClientException {
+            IllegalArgumentException, IllegalAccessException,
+            InstantiationException, ConnectException,
+            VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         paramMap.put(param1, value1);
         paramMap.put(param2, value2);
@@ -346,14 +357,14 @@ public class RESTClient {
      * Get the request object for an object annotated with 'RestURL'
      *
      * @param obj
-     *            Rest object
+     *        Rest object
      * @param paramMap
-     *            Parameter map
+     *        Parameter map
      * @return Rest REquest object
      *
      * @throws VTNClientException
-     *             Throws VTNClientException if unable to construct the Rest
-     *             Request
+     *         Throws VTNClientException if unable to construct the Rest
+     *         Request
      */
     @SuppressWarnings("unused")
     public RestRequest getRestRequest(Object obj, Map<String, String> paramMap)
@@ -400,7 +411,6 @@ public class RESTClient {
     private Object parseResponse(Object target, RestRequest request)
         throws JSONException, IllegalArgumentException,
             IllegalAccessException, InstantiationException, VTNClientException {
-
         if (request.getResponse() != null && !request.getResponse().equals("")
                 && !request.getResponse().equals("null")) {
             LOG.debug(request.getResponse());
@@ -458,9 +468,9 @@ public class RESTClient {
     private static boolean validateIP(final String ip) {
         String ipAddressPattern =
                 "^([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
-                "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
+                        "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+                        "([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\." +
+                        "([01]?\\d\\d?|2[0-4]\\d|25[0-5])$";
 
         Pattern pattern = Pattern.compile(ipAddressPattern);
         Matcher matcher = pattern.matcher(ip);
@@ -535,8 +545,12 @@ public class RESTClient {
             MacEntryList mc = null;
             VlanNorthBoundList vlan = null;
             VBridgeInterfaceList vbrIf = null;
+            VBridgeIfFlowFilterNorthboundList vbrIfFlowfilterListIn = null, vbrIfFlowfilterListOut = null;
             VBridgePortMap  vbrPort = null;
-
+            VTerminalPortMap vtPort = null;
+            VTerminalIfFlowFilterNorthboundList vtFlowfilterList = null, vtFlowfilter = null;
+            VTerminalInterfaceNorthboundList vtInterface = null;
+            VBridgeFlowFilterList vbrFlowFilterOut = null, vbrFlowFilterIn = null;
             if (vtnList.getVtns().size() > 0) {
                 for (VTenantNorthBound vtn : vtnList.getVtns()) {
                     String vtnName = vtn.getVtnName();
@@ -544,9 +558,11 @@ public class RESTClient {
                     LOG.debug(" == == == == == == == == == == == == == == = RUNNING CONFIGURATION STARTED == == == == == == == == == == == == == == == == == == == == == == == == =  = ");
                     VTNConfigurationBean runConfig = new VTNConfigurationBean();
                     List<VBridgeBean> vbrBean = new ArrayList<VBridgeBean>();
+                    List<VTerminalBean> vterminalBean = new ArrayList<VTerminalBean>();
 
                     DataFlowList dflow = (DataFlowList)handler.get(new DataFlowList(), "containerName", container, "tenantName", vtnName);
 
+                    VTenantFlowFilterList vtnFlowFilter = (VTenantFlowFilterList)handler.get(new VTenantFlowFilterList(), "containerName", container, "tenantName", vtnName);
                     VBridgeNorthBoundList vb = (VBridgeNorthBoundList)handler.get(new VBridgeNorthBoundList(), "containerName", container, "tenantName", vtnName);
 
                     if (vb.getVbridge().size() > 0) {
@@ -559,21 +575,45 @@ public class RESTClient {
                             vbean.setFaults(vbn.getFaults());
                             vbean.setState(vbn.getState());
 
-                            Map<String, String> paramMap = new HashMap<String, String>();
-                            paramMap.put("containerName", "default");
-                            paramMap.put("tenantName", vtnName);
-                            paramMap.put("bridgeName", vbn.getName());
+                            Map<String, String> vbridgeMap = new HashMap<String, String>();
+                            vbridgeMap.put("containerName", "default");
+                            vbridgeMap.put("tenantName", vtnName);
+                            vbridgeMap.put("bridgeName", vbn.getName());
 
-                            MacMapNorthBound macMap = (MacMapNorthBound)handler.get(new MacMapNorthBound(), paramMap, null);
+                            MacMapNorthBound macMap = (MacMapNorthBound)handler.get(new MacMapNorthBound(), vbridgeMap, null);
                             vbean.setMacMap(macMap);
 
-                            mc = (MacEntryList)handler.get(new MacEntryList(), paramMap, null);
+                            mc = (MacEntryList)handler.get(new MacEntryList(), vbridgeMap, null);
                             vbean.setMacentry(mc);
 
-                            vlan = (VlanNorthBoundList)handler.get(new VlanNorthBoundList(), paramMap, null);
+                            vlan = (VlanNorthBoundList)handler.get(new VlanNorthBoundList(), vbridgeMap, null);
                             vbean.setBrvlan(vlan);
 
-                            vbrIf = (VBridgeInterfaceList)handler.get(new VBridgeInterfaceList(), paramMap, null);
+                            Map<String, String> vbrFlowfilterInMap = new HashMap<String, String>();
+                            vbrFlowfilterInMap.put("containerName", "default");
+                            vbrFlowfilterInMap.put("tenantName", vtnName);
+                            vbrFlowfilterInMap.put("bridgeName", vbn.getName());
+                            vbrFlowfilterInMap.put("listType", "in");
+
+                            vbrFlowFilterIn = (VBridgeFlowFilterList)handler.get(new VBridgeFlowFilterList(), vbrFlowfilterInMap, null);
+
+                            Map<String, String> vbrFlowfilterOutMap = new HashMap<String, String>();
+                            vbrFlowfilterOutMap.put("containerName", "default");
+                            vbrFlowfilterOutMap.put("tenantName", vtnName);
+                            vbrFlowfilterOutMap.put("bridgeName", vbn.getName());
+                            vbrFlowfilterOutMap.put("listType", "out");
+                            vbrFlowFilterOut = (VBridgeFlowFilterList)handler.get(new VBridgeFlowFilterList(), vbrFlowfilterOutMap, null);
+
+                            if (vbrFlowFilterIn.getFlowfilter().size() > 0) {
+                                if (vbrFlowFilterOut.getFlowfilter().size() > 0) {
+                                    vbrFlowFilterIn.getFlowfilter().addAll(vbrFlowFilterOut.getFlowfilter());
+                                }
+                                vbean.setVbrFlowFilter(vbrFlowFilterIn);
+                            } else if (vbrFlowFilterOut.getFlowfilter().size() > 0) {
+                                vbean.setVbrFlowFilter(vbrFlowFilterOut);
+                            }
+
+                            vbrIf = (VBridgeInterfaceList)handler.get(new VBridgeInterfaceList(), vbridgeMap, null);
 
                             if (vbrIf.getInterfaces().size() > 0) {
                                 List<VBridgeInterfaceBean> interfaces = new ArrayList<VBridgeInterfaceBean>();
@@ -586,30 +626,118 @@ public class RESTClient {
                                     iBean.setEntityState(vbrInter.getEntityState());
                                     iBean.setState(vbrInter.getState());
 
-                                    Map<String, String> pamMap = new HashMap<String, String>();
-                                    pamMap.put("containerName", "default");
-                                    pamMap.put("tenantName", vtnName);
-                                    pamMap.put("bridgeName", vbn.getName());
-                                    pamMap.put("ifName", vbrInter.getName());
+                                    Map<String, String> vbrInterfaceMap = new HashMap<String, String>();
+                                    vbrInterfaceMap.put("containerName", "default");
+                                    vbrInterfaceMap.put("tenantName", vtnName);
+                                    vbrInterfaceMap.put("bridgeName", vbn.getName());
+                                    vbrInterfaceMap.put("ifName", vbrInter.getName());
 
-                                    vbrPort = (VBridgePortMap)handler.get(new VBridgePortMap(), pamMap, null);
+                                    vbrPort = (VBridgePortMap)handler.get(new VBridgePortMap(), vbrInterfaceMap, null);
                                     iBean.setPortmap(vbrPort);
+
+                                    Map<String, String> vbrInterflowfilterInMap = new HashMap<String, String>();
+                                    vbrInterflowfilterInMap.put("containerName", "default");
+                                    vbrInterflowfilterInMap.put("tenantName", vtnName);
+                                    vbrInterflowfilterInMap.put("bridgeName", vbn.getName());
+                                    vbrInterflowfilterInMap.put("ifName", vbrInter.getName());
+                                    vbrInterflowfilterInMap.put("listType", "in");
+                                    vbrIfFlowfilterListIn = (VBridgeIfFlowFilterNorthboundList)handler.get(new VBridgeIfFlowFilterNorthboundList(), vbrInterflowfilterInMap , null);
+
+                                    Map<String, String> vbrInterflowfilterOutMap = new HashMap<String, String>();
+                                    vbrInterflowfilterOutMap.put("containerName", "default");
+                                    vbrInterflowfilterOutMap.put("tenantName", vtnName);
+                                    vbrInterflowfilterOutMap.put("bridgeName", vbn.getName());
+                                    vbrInterflowfilterOutMap.put("ifName", vbrInter.getName());
+                                    vbrInterflowfilterOutMap.put("listType", "out");
+                                    vbrIfFlowfilterListOut = (VBridgeIfFlowFilterNorthboundList)handler.get(new VBridgeIfFlowFilterNorthboundList(), vbrInterflowfilterOutMap, null);
+
+                                    if (vbrIfFlowfilterListIn.getFlowfilters().size() > 0) {
+                                        if (vbrIfFlowfilterListOut.getFlowfilters().size() > 0) {
+                                            vbrIfFlowfilterListIn.getFlowfilters().addAll(vbrIfFlowfilterListOut.getFlowfilters());
+                                        }
+                                        iBean.setFlowfilters(vbrIfFlowfilterListIn);
+                                    } else if (vbrIfFlowfilterListOut.getFlowfilters().size() > 0) {
+                                        iBean.setFlowfilters(vbrIfFlowfilterListOut);
+                                    }
                                     interfaces.add(iBean);
                                 }
                                 vbean.setVbrInterface(interfaces);
                             }
-
                             vbrBean.add(vbean);
                         }
                     }
+                    VTerminalNorthBoundList vTerminal = (VTerminalNorthBoundList)handler.get(new VTerminalNorthBoundList(), "containerName", container, "tenantName", vtnName);
+                    if (vTerminal.getVterm().size() > 0) {
+                        for (VTerminalNorthBound vTerminalNorthBound : vTerminal.getVterm()) {
+                            VTerminalBean vtbean = new VTerminalBean();
+                            vtbean.setName(vTerminalNorthBound.getName());
+                            vtbean.setFaults(vTerminalNorthBound.getFaults());
+                            vtbean.setDescription(vTerminalNorthBound.getDescription());
+                            vtbean.setState(vTerminalNorthBound.getState());
 
+                            Map<String, String> vterminalMap = new HashMap<String, String>();
+                            vterminalMap.put("containerName", "default");
+                            vterminalMap.put("tenantName", vtnName);
+                            vterminalMap.put("terminalName", vTerminalNorthBound.getName());
+                            vtInterface = (VTerminalInterfaceNorthboundList)handler.get(new VTerminalInterfaceNorthboundList(), vterminalMap, null);
+                            if (vtInterface.getInterfaces().size() > 0) {
+                                List<VTerminalInterfaceBean> vtinterfaces = new ArrayList<VTerminalInterfaceBean>();
+                                for (VTerminalInterfaceNorthbound vtInter : vtInterface.getInterfaces()) {
+
+                                    VTerminalInterfaceBean vtInterfaceBean = new VTerminalInterfaceBean();
+                                    vtInterfaceBean.setDescription(vtInter.getDescription());
+                                    vtInterfaceBean.setName(vtInter.getName());
+                                    vtInterfaceBean.setEnabled(vtInter.getEnabled());
+                                    vtInterfaceBean.setEntityState(vtInter.getEntityState());
+                                    vtInterfaceBean.setState(vtInter.getState());
+
+                                    Map<String, String> vInterfaceMap = new HashMap<String, String>();
+                                    vInterfaceMap.put("containerName", "default");
+                                    vInterfaceMap.put("tenantName", vtnName);
+                                    vInterfaceMap.put("terminalName", vTerminalNorthBound.getName());
+                                    vInterfaceMap.put("ifName", vtInter.getName());
+                                    vtPort = (VTerminalPortMap)handler.get(new VTerminalPortMap(), vInterfaceMap, null);
+                                    vtInterfaceBean.setPortmap(vtPort);
+
+                                    Map<String, String> vInterflowfilterInMap = new HashMap<String, String>();
+                                    vInterflowfilterInMap.put("containerName", "default");
+                                    vInterflowfilterInMap.put("tenantName", vtnName);
+                                    vInterflowfilterInMap.put("terminalName", vTerminalNorthBound.getName());
+                                    vInterflowfilterInMap.put("ifName", vtInter.getName());
+                                    vInterflowfilterInMap.put("listType", "in");
+                                    vtFlowfilterList = (VTerminalIfFlowFilterNorthboundList)handler.get(new VTerminalIfFlowFilterNorthboundList(), vInterflowfilterInMap , null);
+
+                                    Map<String, String> vInterflowfilterOutMap = new HashMap<String, String>();
+                                    vInterflowfilterOutMap.put("containerName", "default");
+                                    vInterflowfilterOutMap.put("tenantName", vtnName);
+                                    vInterflowfilterOutMap.put("terminalName", vTerminalNorthBound.getName());
+                                    vInterflowfilterOutMap.put("ifName", vtInter.getName());
+                                    vInterflowfilterOutMap.put("listType", "out");
+                                    vtFlowfilter = (VTerminalIfFlowFilterNorthboundList)handler.get(new VTerminalIfFlowFilterNorthboundList(), vInterflowfilterOutMap, null);
+
+                                    if (vtFlowfilterList.getFlowfilters().size() > 0) {
+                                        if (vtFlowfilter.getFlowfilters().size() > 0) {
+                                            vtFlowfilterList.getFlowfilters().addAll(vtFlowfilter.getFlowfilters());
+                                        }
+                                        vtInterfaceBean.setVtFlowfilter(vtFlowfilterList);
+                                    } else if (vtFlowfilter.getFlowfilters().size() > 0) {
+                                        vtInterfaceBean.setVtFlowfilter(vtFlowfilter);
+                                    }
+                                    vtinterfaces.add(vtInterfaceBean);
+                                }
+                                vtbean.setVInterface(vtinterfaces);
+                            }
+                            vterminalBean.add(vtbean);
+                        }
+                    }
                     runConfig.setName(vtn.getVtnName());
                     runConfig.setDescription(vtn.getVtnDesc());
                     runConfig.setIdleTimeout(vtn.getIdleTimeout());
                     runConfig.setHardTimeout(vtn.getHardTimeout());
                     runConfig.setDataflow(dflow);
-
+                    runConfig.setVtnFlowfilter(vtnFlowFilter);
                     runConfig.setVbridge(vbrBean);
+                    runConfig.setVTerminal(vterminalBean);
                     bean.add(runConfig);
                     LOG.debug(" == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == == = ");
                 }
@@ -632,7 +760,6 @@ public class RESTClient {
             conf.setPathmap(pathmap);
             conf.setPathPolicies(pathPolicy);
             conf.setVtn(bean);
-
             if (handler.jsonFormating(conf)) {
                 System.out.println("Finished");
             }
