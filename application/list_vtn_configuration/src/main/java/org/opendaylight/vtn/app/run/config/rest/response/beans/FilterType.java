@@ -26,6 +26,18 @@ public class FilterType {
     private Redirect redirect = new Redirect();
 
     /**
+     * The Pass value for this object.
+     */
+    @JsonObjectRef(name = "Pass")
+    private Pass pass = new Pass();
+
+    /**
+     * The Drop value for this object.
+     */
+    @JsonObjectRef(name = "Drop")
+    private Drop drop = new Drop();
+
+    /**
      * getRedirect - function to get the redirect for this object.
      *
      * @return {@link String}

@@ -39,7 +39,7 @@ public class VBridgeNorthBound {
     /**
      * Interval duration for vbridge.
      */
-    @JsonElement(name = "ageinterval")
+    @JsonElement(name = "ageInterval")
     private int ageInterval = 0;
 
     /**
