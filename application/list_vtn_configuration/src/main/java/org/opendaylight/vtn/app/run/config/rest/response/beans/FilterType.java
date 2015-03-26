@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,6 +24,18 @@ public class FilterType {
      */
     @JsonObjectRef(name = "redirect")
     private Redirect redirect = new Redirect();
+
+    /**
+     * The Pass value for this object.
+     */
+    @JsonObjectRef(name = "Pass")
+    private Pass pass = new Pass();
+
+    /**
+     * The Drop value for this object.
+     */
+    @JsonObjectRef(name = "Drop")
+    private Drop drop = new Drop();
 
     /**
      * getRedirect - function to get the redirect for this object.
