@@ -3331,6 +3331,34 @@ public interface IVTNManager {
     Status removeFlowCondition(String name);
 
     /**
+     * Remove all the flow conditions.
+     *
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object if at least one flow condition was removed.
+     *     {@code null} is returned if no flow condition is present.
+     *     Otherwise a {@code StatusCode} which indicates the cause of error
+     *     is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Lithium
+     */
+    Status clearFlowCondition();
+
+    /**
      * Return a {@link FlowMatch} instance configured in the flow condition
      * specified by the flow condition name and match index.
      *
@@ -3637,6 +3665,34 @@ public interface IVTNManager {
      * @since  Helium
      */
     Status removePathPolicy(int id);
+
+    /**
+     * Remove all the path policies.
+     *
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object if at least one path policy was removed.
+     *     {@code null} is returned if no path policy is present.
+     *     Otherwise a {@code StatusCode} which indicates the cause of error
+     *     is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Lithium
+     */
+    Status clearPathPolicy();
 
     /**
      * Return the default link cost configured in the specified path policy.
@@ -4007,6 +4063,35 @@ public interface IVTNManager {
     Status removePathMap(int index);
 
     /**
+     * Remove all the container path maps.
+     *
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object if at least one container path map was removed.
+     *     {@code null} is returned if no path map is present in the container
+     *     path map list.
+     *     Otherwise a {@code StatusCode} which indicates the cause of error
+     *     is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Lithium
+     */
+    Status clearPathMap();
+
+    /**
      * Return a list of VTN path maps configured in the VTN.
      *
      * @param path  A {@link VTenantPath} object that specifies the position
@@ -4219,6 +4304,50 @@ public interface IVTNManager {
      * @since  Helium
      */
     Status removePathMap(VTenantPath path, int index);
+
+    /**
+     * Remove all the VTN path maps configured in the specified VTN.
+     *
+     * @param path   A {@link VTenantPath} object that specifies the position
+     *               of the VTN.
+     * @return
+     *   A {@link Status} object which represents the result of the operation
+     *   is returned.
+     *   <p>
+     *     <strong>{@code StatusCode.SUCCESS}</strong> is set in a returned
+     *     object if at least one VTN path map was removed.
+     *     {@code null} is returned if no path map is present in the VTN
+     *     path map list.
+     *     Otherwise a {@code StatusCode} which indicates the cause of error
+     *     is set in a returned {@link Status} object.
+     *     The following are the main {@code StatusCode} configured in
+     *     {@link Status}.
+     *   </p>
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.BADREQUEST}
+     *     <dd>
+     *       <ul style="padding-left: 1em;">
+     *         <li>{@code null} is passed to {@code path}.</li>
+     *         <li>
+     *           {@code null} is configured in {@code path} for the
+     *           {@linkplain VTenantPath#getTenantName() VTN name}.
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
+     *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with the default container, and
+     *       a container other than the default container is present.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
+     *     <dd>Fatal internal error occurred in the VTN Manager.
+     *   </dl>
+     * @since  Lithium
+     */
+    Status clearPathMap(VTenantPath path);
 
     /**
      * Return a list of

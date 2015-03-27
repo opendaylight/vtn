@@ -9,7 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -37,7 +38,7 @@ public final class CompositeAutoCloseable implements AutoCloseable {
      */
     public CompositeAutoCloseable(Logger log) {
         logger = log;
-        closeables.set(new HashSet<AutoCloseable>());
+        closeables.set(new LinkedHashSet<AutoCloseable>());
     }
 
     /**
@@ -70,7 +71,10 @@ public final class CompositeAutoCloseable implements AutoCloseable {
     public void close() {
         Set<AutoCloseable> set = closeables.getAndSet(null);
         if (set != null) {
-            for (AutoCloseable ac: set) {
+            // Close all closeables in reverse order.
+            LinkedList<AutoCloseable> list = new LinkedList<>(set);
+            while (!list.isEmpty()) {
+                AutoCloseable ac = list.removeLast();
                 try {
                     ac.close();
                 } catch (Exception e) {

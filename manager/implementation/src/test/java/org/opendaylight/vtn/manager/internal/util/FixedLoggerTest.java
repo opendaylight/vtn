@@ -40,7 +40,7 @@ public class FixedLoggerTest extends TestBase {
 
         // log(Throwable, String, Object[])
         Mockito.when(mock.isErrorEnabled()).thenReturn(true).thenReturn(true).
-            thenReturn(false).thenReturn(false);
+            thenReturn(false).thenReturn(false).thenReturn(true);
         IllegalArgumentException iae = new IllegalArgumentException();
         String msg = "Illegal argument";
         logger.log(iae, msg);
@@ -61,6 +61,13 @@ public class FixedLoggerTest extends TestBase {
         Mockito.verify(mock, Mockito.times(4)).isErrorEnabled();
         Mockito.verify(mock).error(msg, iae);
         Mockito.verify(mock).error(formatted, iae);
+
+        String msg1 = "Another message";
+        logger.log((Throwable)null, msg1, (Object[])null);
+        Mockito.verify(mock, Mockito.times(5)).isErrorEnabled();
+        Mockito.verify(mock).error(msg, iae);
+        Mockito.verify(mock).error(formatted, iae);
+        Mockito.verify(mock).error(msg1);
         Mockito.reset(mock);
 
         // log(String)
@@ -101,7 +108,7 @@ public class FixedLoggerTest extends TestBase {
 
         // log(Throwable, String, Object[])
         Mockito.when(mock.isWarnEnabled()).thenReturn(true).thenReturn(true).
-            thenReturn(false).thenReturn(false);
+            thenReturn(false).thenReturn(false).thenReturn(true);
         IllegalArgumentException iae = new IllegalArgumentException();
         String msg = "Illegal argument";
         logger.log(iae, msg);
@@ -122,6 +129,13 @@ public class FixedLoggerTest extends TestBase {
         Mockito.verify(mock, Mockito.times(4)).isWarnEnabled();
         Mockito.verify(mock).warn(msg, iae);
         Mockito.verify(mock).warn(formatted, iae);
+
+        String msg1 = "Another message";
+        logger.log((Throwable)null, msg1, (Object[])null);
+        Mockito.verify(mock, Mockito.times(5)).isWarnEnabled();
+        Mockito.verify(mock).warn(msg, iae);
+        Mockito.verify(mock).warn(formatted, iae);
+        Mockito.verify(mock).warn(msg1);
         Mockito.reset(mock);
 
         // log(String)
@@ -162,7 +176,7 @@ public class FixedLoggerTest extends TestBase {
 
         // log(Throwable, String, Object[])
         Mockito.when(mock.isInfoEnabled()).thenReturn(true).thenReturn(true).
-            thenReturn(false).thenReturn(false);
+            thenReturn(false).thenReturn(false).thenReturn(true);
         IllegalArgumentException iae = new IllegalArgumentException();
         String msg = "Illegal argument";
         logger.log(iae, msg);
@@ -183,6 +197,13 @@ public class FixedLoggerTest extends TestBase {
         Mockito.verify(mock, Mockito.times(4)).isInfoEnabled();
         Mockito.verify(mock).info(msg, iae);
         Mockito.verify(mock).info(formatted, iae);
+
+        String msg1 = "Another message";
+        logger.log((Throwable)null, msg1, (Object[])null);
+        Mockito.verify(mock, Mockito.times(5)).isInfoEnabled();
+        Mockito.verify(mock).info(msg, iae);
+        Mockito.verify(mock).info(formatted, iae);
+        Mockito.verify(mock).info(msg1);
         Mockito.reset(mock);
 
         // log(String)
@@ -223,7 +244,7 @@ public class FixedLoggerTest extends TestBase {
 
         // log(Throwable, String, Object[])
         Mockito.when(mock.isDebugEnabled()).thenReturn(true).thenReturn(true).
-            thenReturn(false).thenReturn(false);
+            thenReturn(false).thenReturn(false).thenReturn(true);
         IllegalArgumentException iae = new IllegalArgumentException();
         String msg = "Illegal argument";
         logger.log(iae, msg);
@@ -244,6 +265,13 @@ public class FixedLoggerTest extends TestBase {
         Mockito.verify(mock, Mockito.times(4)).isDebugEnabled();
         Mockito.verify(mock).debug(msg, iae);
         Mockito.verify(mock).debug(formatted, iae);
+
+        String msg1 = "Another message";
+        logger.log((Throwable)null, msg1, (Object[])null);
+        Mockito.verify(mock, Mockito.times(5)).isDebugEnabled();
+        Mockito.verify(mock).debug(msg, iae);
+        Mockito.verify(mock).debug(formatted, iae);
+        Mockito.verify(mock).debug(msg1);
         Mockito.reset(mock);
 
         // log(String)
@@ -284,7 +312,7 @@ public class FixedLoggerTest extends TestBase {
 
         // log(Throwable, String, Object[])
         Mockito.when(mock.isTraceEnabled()).thenReturn(true).thenReturn(true).
-            thenReturn(false).thenReturn(false);
+            thenReturn(false).thenReturn(false).thenReturn(true);
         IllegalArgumentException iae = new IllegalArgumentException();
         String msg = "Illegal argument";
         logger.log(iae, msg);
@@ -305,6 +333,13 @@ public class FixedLoggerTest extends TestBase {
         Mockito.verify(mock, Mockito.times(4)).isTraceEnabled();
         Mockito.verify(mock).trace(msg, iae);
         Mockito.verify(mock).trace(formatted, iae);
+
+        String msg1 = "Another message";
+        logger.log((Throwable)null, msg1, (Object[])null);
+        Mockito.verify(mock, Mockito.times(5)).isTraceEnabled();
+        Mockito.verify(mock).trace(msg, iae);
+        Mockito.verify(mock).trace(formatted, iae);
+        Mockito.verify(mock).trace(msg1);
         Mockito.reset(mock);
 
         // log(String)

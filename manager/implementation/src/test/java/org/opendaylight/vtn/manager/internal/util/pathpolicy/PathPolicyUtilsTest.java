@@ -61,12 +61,12 @@ public class PathPolicyUtilsTest extends TestBase {
     /**
      * The minimum value of the path policy identifier.
      */
-    private static final int  PATH_POLICY_MIN = 1;
+    public static final int  PATH_POLICY_MIN = 1;
 
     /**
      * The maximum value of the path policy identifier.
      */
-    private static final int  PATH_POLICY_MAX = 3;
+    public static final int  PATH_POLICY_MAX = 3;
 
     /**
      * Test case for utility methods that return an exception.

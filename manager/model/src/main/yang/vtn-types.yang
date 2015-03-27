@@ -195,4 +195,23 @@ module vtn-types {
             }
         }
     }
+
+    grouping vtn-flow-timeout-config {
+        description
+          "Describes configurations for flow entry timeout.";
+
+        leaf idle-timeout {
+            description
+                "The number of seconds to be set to `idle-timeout' field
+                 in flow entries. Zero means an infinite time.";
+            type uint16;
+        }
+
+        leaf hard-timeout {
+            description
+                "The number of seconds to be set to `hard-timeout' field
+                 in flow entries. Zero means an infinite time.";
+            type uint16;
+        }
+    }
 }

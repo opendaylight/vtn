@@ -23,7 +23,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -151,13 +153,14 @@ public final class NodeListener
      * Add the given node information to the node update task.
      *
      * @param ectx  A {@link NodeUpdateTask} instance.
-     * @param path  Path to the flow-capable-node.
+     * @param data  An {@link IdentifiedData} instance.
      * @param type  A {@link VtnUpdateType} instance which indicates the type
      *              of event.
      */
     private void addUpdated(NodeUpdateTask ectx,
-                            InstanceIdentifier<FlowCapableNode> path,
+                            IdentifiedData<FlowCapableNode> data,
                             VtnUpdateType type) {
+        InstanceIdentifier<FlowCapableNode> path = data.getIdentifier();
         NodeId nid = InventoryUtils.getNodeId(path);
         SalNode snode = SalNode.create(nid);
         if (snode == null) {
@@ -193,9 +196,8 @@ public final class NodeListener
      */
     @Override
     protected void onCreated(NodeUpdateTask ectx,
-                             InstanceIdentifier<FlowCapableNode> key,
-                             FlowCapableNode value) {
-        addUpdated(ectx, key, VtnUpdateType.CREATED);
+                             IdentifiedData<FlowCapableNode> data) {
+        addUpdated(ectx, data, VtnUpdateType.CREATED);
     }
 
     /**
@@ -203,9 +205,7 @@ public final class NodeListener
      */
     @Override
     protected void onUpdated(NodeUpdateTask ectx,
-                             InstanceIdentifier<FlowCapableNode> key,
-                             FlowCapableNode oldValue,
-                             FlowCapableNode newValue) {
+                             ChangedData<FlowCapableNode> data) {
         throw new IllegalStateException("Should never be called.");
     }
 
@@ -214,9 +214,8 @@ public final class NodeListener
      */
     @Override
     protected void onRemoved(NodeUpdateTask ectx,
-                             InstanceIdentifier<FlowCapableNode> key,
-                             FlowCapableNode value) {
-        addUpdated(ectx, key, VtnUpdateType.REMOVED);
+                             IdentifiedData<FlowCapableNode> data) {
+        addUpdated(ectx, data, VtnUpdateType.REMOVED);
     }
 
     /**
@@ -237,7 +236,10 @@ public final class NodeListener
     }
 
     /**
-     * {@inheritDoc}
+     * Return a set of {@link VtnUpdateType} instances that specifies
+     * event types to be listened.
+     *
+     * @return  A set of {@link VtnUpdateType} instances.
      */
     @Override
     protected Set<VtnUpdateType> getRequiredEvents() {

@@ -116,13 +116,22 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
     void transmit(SalPort egress, Packet packet);
 
     /**
+     * Return the packet route resolver associated with the system default
+     * routing policy.
+     *
+     * @return  A {@link RouteResolver} instance on success.
+     *          {@code null} if the routing management is already closed.
+     */
+    RouteResolver getRouteResolver();
+
+    /**
      * Return a packet route resolver.
      *
      * @param id  The identifier of the path policy.
      * @return  A {@link RouteResolver} instance if found.
      *          {@code null} if not fonud.
      */
-    RouteResolver getRouteResolver(int id);
+    RouteResolver getRouteResolver(Integer id);
 
     /**
      * Remove flow entries that match the given condition.
@@ -147,14 +156,15 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
      *   VTN.
      * </p>
      *
-     * @param tname     The name of the VTN.
+     * @param tname     The name of the VTN. All existing VTNs will be targeted
+     *                  if {@code null} is specified.
      * @param selector  A {@link FlowSelector} instance.
      *                  All flow entries are removed if {@code null} is
      *                  specified.
-     * @return  A {@link VTNFuture} instance associated with flow removal task.
-     *          {@code null} if no flow entry is removed.
+     * @return  A list of {@link VTNFuture} instances associated with flow
+     *          removal tasks.
      */
-    VTNFuture<?> removeFlows(String tname, FlowSelector selector);
+    List<VTNFuture<?>> removeFlows(String tname, FlowSelector selector);
 
     /**
      * Return an implementation of the specified RPC service.

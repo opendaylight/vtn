@@ -745,7 +745,7 @@ public class InventoryUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link InventoryUtils#getOpenflowVersion(NodeConnector)}.
+     * Test case for {@link InventoryUtils#getOpenflowVersion(FlowCapableNodeConnector)}.
      */
     @Test
     public void testGetOpenflowVersion() {
@@ -1006,7 +1006,7 @@ public class InventoryUtilsTest extends TestBase {
          * A map that keeps paths to {@link VtnLink} instances.
          *
          * <p>
-         *   {@link Boolean.TRUE} means the VTN link to be removed.
+         *   {@link Boolean#TRUE} means the VTN link to be removed.
          * </p>
          */
         private Map<InstanceIdentifier<VtnLink>, Boolean> vtnLinkPaths;
@@ -1015,7 +1015,7 @@ public class InventoryUtilsTest extends TestBase {
          * A map that keeps paths to {@link PortLink} intances.
          *
          * <p>
-         *   {@link Boolean.TRUE} means the port link to be removed.
+         *   {@link Boolean#TRUE} means the port link to be removed.
          * </p>
          */
         private Map<InstanceIdentifier<PortLink>, Boolean>  portLinkPaths;
@@ -1024,7 +1024,7 @@ public class InventoryUtilsTest extends TestBase {
          * A map that keeps paths to {@link IgnoredLink} instances.
          *
          * <p>
-         *   {@link Boolean.TRUE} means the ignored link to be removed.
+         *   {@link Boolean#TRUE} means the ignored link to be removed.
          * </p>
          */
         private Map<InstanceIdentifier<IgnoredLink>, Boolean> ignoredLinkPaths;

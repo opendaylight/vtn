@@ -9,8 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.config;
 
-import java.util.Set;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,8 +18,10 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -35,7 +35,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * VTN configuration listener for configuration view.
@@ -192,9 +191,9 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected void onCreated(Void ectx, InstanceIdentifier<VtnConfig> path,
-                             VtnConfig data) {
-        ConfigUpdateTask task = new ConfigUpdateTask(data, localMacAddress);
+    protected void onCreated(Void ectx, IdentifiedData<VtnConfig> data) {
+        VtnConfig vcfg = data.getValue();
+        ConfigUpdateTask task = new ConfigUpdateTask(vcfg, localMacAddress);
         txQueue.post(task);
     }
 
@@ -202,18 +201,15 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
      * {@inheritDoc}
      */
     @Override
-    protected void onUpdated(Void ectx, InstanceIdentifier<VtnConfig> path,
-                             VtnConfig oldData, VtnConfig newData) {
-        ConfigUpdateTask task = new ConfigUpdateTask(newData, localMacAddress);
-        txQueue.post(task);
+    protected void onUpdated(Void ectx, ChangedData<VtnConfig> data) {
+        onCreated(ectx, data);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onRemoved(Void ectx, InstanceIdentifier<VtnConfig> path,
-                             VtnConfig data) {
+    protected void onRemoved(Void ectx, IdentifiedData<VtnConfig> data) {
         ConfigRemoveTask task = new ConfigRemoveTask(localMacAddress);
         txQueue.post(task);
     }
@@ -232,13 +228,5 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
     }
 }

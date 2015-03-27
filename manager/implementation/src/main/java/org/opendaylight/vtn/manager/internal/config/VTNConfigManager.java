@@ -252,7 +252,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
 
                 EtherAddress ea = new EtherAddress(mac);
                 if (nif.isUp()) {
-                    LOG.debug("Use HW address of {} as local address: ",
+                    LOG.debug("Use HW address of {} as local address: {}",
                               nif.getName(), ea.getText());
                     return ea;
                 }

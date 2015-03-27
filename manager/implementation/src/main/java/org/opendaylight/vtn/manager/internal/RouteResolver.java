@@ -21,12 +21,6 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
  */
 public interface RouteResolver {
     /**
-     * Pseudo route resolver identifier which indicates the system default
-     * route resolver.
-     */
-    int  ID_DEFAULT = 0;
-
-    /**
      * Return the packet route from the source to the destination switch.
      *
      * @param rdr  A {@link InventoryReader} instance which contains active

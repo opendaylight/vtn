@@ -48,14 +48,18 @@ public abstract class FixedLogger {
      *   {@link String#format(String, Object[])}.
      * </p>
      *
-     * @param t       A {@link Throwable} to be logger.
+     * @param t       A {@link Throwable} to be logged.
      * @param format  A format string used to construct log message.
      * @param args    An object array used to construct log message.
      */
     public final void log(Throwable t, String format, Object ... args) {
         if (isEnabled()) {
-            String msg = String.format(format, args);
-            log(msg, t);
+            String msg = (args == null) ? format : String.format(format, args);
+            if (t == null) {
+                log(msg);
+            } else {
+                log(msg, t);
+            }
         }
     }
 
@@ -85,7 +89,7 @@ public abstract class FixedLogger {
      * Log the specified message and exception.
      *
      * @param msg  A message to be logged.
-     * @param t    A {@link Throwable} to be logger.
+     * @param t    A {@link Throwable} to be logged.
      */
     public abstract void log(String msg, Throwable t);
 

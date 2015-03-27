@@ -32,7 +32,6 @@ import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
 import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
-import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.UpdateOperation;
@@ -64,11 +63,10 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.PortFilter;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
-import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
+import org.opendaylight.vtn.manager.internal.routing.PathMapEvaluator;
 import org.opendaylight.vtn.manager.internal.routing.RoutingEvent;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
@@ -92,7 +90,7 @@ public final class VTenantImpl implements FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7256680315416381512L;
+    private static final long serialVersionUID = -5991620686397130068L;
 
     /**
      * Logger instance.
@@ -146,12 +144,6 @@ public final class VTenantImpl implements FlowFilterNode {
      */
     private transient Map<String, VTerminalImpl> vTerminals =
         new TreeMap<String, VTerminalImpl>();
-
-    /**
-     * VTN path maps configured in this tenant.
-     */
-    private transient Map<Integer, VTenantPathMapImpl> pathMaps =
-        new TreeMap<Integer, VTenantPathMapImpl>();
 
     /**
      * Flow filters configured in this tenant.
@@ -1551,7 +1543,7 @@ public final class VTenantImpl implements FlowFilterNode {
             }
 
             // Evaluate path maps.
-            RouteResolver rr = evalPathMap(mgr, pctx);
+            RouteResolver rr = new PathMapEvaluator(pctx).evaluate(tenantName);
             pctx.setRouteResolver(rr);
 
             // Evaluate VTN flow filters.
@@ -1660,141 +1652,6 @@ public final class VTenantImpl implements FlowFilterNode {
     }
 
     /**
-     * Return a list of VTN path maps configured in this VTN.
-     *
-     * @return  A list of {@link PathMap} instances.
-     */
-    public List<PathMap> getPathMaps() {
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            List<PathMap> list = new ArrayList<PathMap>(pathMaps.size());
-            for (VTenantPathMapImpl vpm: pathMaps.values()) {
-                list.add(vpm.getPathMap());
-            }
-
-            return list;
-        } finally {
-            rdlock.unlock();
-        }
-    }
-
-    /**
-     * Return the VTN path map associated with the specified index number
-     * in this VTN.
-     *
-     * @param index  The index number of the VTN path map.
-     * @return  A {@link PathMap} instance if found.
-     *          {@code null} if not found.
-     */
-    public PathMap getPathMap(int index) {
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            VTenantPathMapImpl vpm = pathMaps.get(index);
-            return (vpm == null) ? null : vpm.getPathMap();
-        } finally {
-            rdlock.unlock();
-        }
-    }
-
-    /**
-     * Create or modify the VTN path map specified by the index number.
-     *
-     * @param mgr    VTN Manager service.
-     * @param index  The index number of the VTN path map.
-     * @param pmap   A {@link PathMap} instance which specifies the
-     *               configuration of the path map.
-     * @return  A {@link UpdateType} object which represents the result of the
-     *          operation is returned.
-     * @throws VTNException  An error occurred.
-     */
-    public UpdateType setPathMap(VTNManagerImpl mgr, int index, PathMap pmap)
-        throws VTNException {
-        VTenantPathMapImpl vpm = new VTenantPathMapImpl(this, index, pmap);
-        Integer key = Integer.valueOf(index);
-
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
-        try {
-            UpdateType result;
-            VTenantPathMapImpl oldvpm = pathMaps.put(key, vpm);
-            if (oldvpm == null) {
-                result = UpdateType.ADDED;
-            } else if (oldvpm.equals(vpm)) {
-                // No change was made to path map.
-                return null;
-            } else {
-                result = UpdateType.CHANGED;
-            }
-
-            // REVISIT: Select flow entries affected by the change.
-            VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-            VTNThreadData.removeFlows(mgr, fdb);
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}.{}: VTN path map was {}: {}",
-                          containerName, tenantName, key, result.getName(),
-                          pmap);
-            } else {
-                LOG.info("{}:{}.{}: VTN path map was {}.",
-                         containerName, tenantName, key, result.getName());
-            }
-            VTenantPathMapEvent.raise(mgr, tenantName, index, result);
-
-            mgr.export(this);
-            Status status = saveConfig(null);
-            if (!status.isSuccess()) {
-                throw new VTNException(status);
-            }
-
-            return result;
-        } finally {
-            wrlock.unlock();
-        }
-    }
-
-    /**
-     * Remove the VTN path map specified by the index number.
-     *
-     * @param mgr    VTN Manager service.
-     * @param index  The index number of the VTN path map.
-     * @return  A {@link Status} object which represents the result of the
-     *          operation is returned.
-     */
-    public Status removePathMap(VTNManagerImpl mgr, int index) {
-        Integer key = Integer.valueOf(index);
-
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
-        try {
-            VTenantPathMapImpl vpm = pathMaps.remove(key);
-            if (vpm == null) {
-                return null;
-            }
-
-            // REVISIT: Select flow entries affected by the change.
-            VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-            VTNThreadData.removeFlows(mgr, fdb);
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}:{}.{}: VTN path map was removed: {}",
-                          containerName, tenantName, key, vpm.getPathMap());
-            } else {
-                LOG.info("{}:{}.{}: VTN path map was removed.",
-                         containerName, tenantName, key);
-            }
-            VTenantPathMapEvent.raise(mgr, tenantName, index,
-                                      UpdateType.REMOVED);
-
-            mgr.export(this);
-            return saveConfig(null);
-        } finally {
-            wrlock.unlock();
-        }
-    }
-
-    /**
      * Return the flow filter instance specified by the flow filter identifier.
      *
      * @param lstack  A {@link LockStack} instance to hold acquired locks.
@@ -1867,7 +1724,6 @@ public final class VTenantImpl implements FlowFilterNode {
         // Use copy of maps in order to avoid deadlock.
         Map<String, VBridgeImpl> otherBridges;
         Map<String, VTerminalImpl> otherTerminals;
-        Map<Integer, VTenantPathMapImpl> otherPathMaps;
         FlowFilterMap otherFilters;
 
         Lock rdlock = vtn.rwLock.readLock();
@@ -1877,8 +1733,6 @@ public final class VTenantImpl implements FlowFilterNode {
                 ((TreeMap<String, VBridgeImpl>)vtn.vBridges).clone();
             otherTerminals = (Map<String, VTerminalImpl>)
                 ((TreeMap<String, VTerminalImpl>)vtn.vTerminals).clone();
-            otherPathMaps = (Map<Integer, VTenantPathMapImpl>)
-                ((TreeMap<Integer, VTenantPathMapImpl>)vtn.pathMaps).clone();
             otherFilters = vtn.flowFilters.clone();
         } finally {
             rdlock.unlock();
@@ -1888,7 +1742,6 @@ public final class VTenantImpl implements FlowFilterNode {
         try {
             return (vBridges.equals(otherBridges) &&
                     vTerminals.equals(otherTerminals) &&
-                    pathMaps.equals(otherPathMaps) &&
                     flowFilters.equals(otherFilters));
         } finally {
             rdlock.unlock();
@@ -1909,7 +1762,7 @@ public final class VTenantImpl implements FlowFilterNode {
         rdlock.lock();
         try {
             h += (vBridges.hashCode() * 17) + (vTerminals.hashCode() * 19) +
-                (pathMaps.hashCode() * 31) + (flowFilters.hashCode() * 47);
+                (flowFilters.hashCode() * 47);
         } finally {
             rdlock.unlock();
         }
@@ -2099,20 +1952,6 @@ public final class VTenantImpl implements FlowFilterNode {
             vTerminals.put(name, vtm);
         }
 
-        // Read the number of VTN path maps.
-        size = in.readInt();
-
-        // Read VTN path maps.
-        pathMaps = new TreeMap<Integer, VTenantPathMapImpl>();
-        for (int i = 0; i < size; i++) {
-            VTenantPathMapImpl vpm = (VTenantPathMapImpl)in.readObject();
-            Integer key = Integer.valueOf(vpm.getIndex());
-
-            // Set this tenant as parent of this path map.
-            vpm.setVTenant(this);
-            pathMaps.put(key, vpm);
-        }
-
         // Read flow filters.
         flowFilters = (FlowFilterMap)in.readObject();
         flowFilters.setParent(this);
@@ -2150,14 +1989,6 @@ public final class VTenantImpl implements FlowFilterNode {
                      vTerminals.entrySet()) {
                 out.writeObject(entry.getKey());
                 out.writeObject(entry.getValue());
-            }
-
-            // Write the number of VTN path maps.
-            out.writeInt(pathMaps.size());
-
-            // Write VTN path maps.
-            for (VTenantPathMapImpl vpm: pathMaps.values()) {
-                out.writeObject(vpm);
             }
 
             // Write flow filters.
@@ -2311,34 +2142,6 @@ public final class VTenantImpl implements FlowFilterNode {
         String msg = "Failed to save tenant configuration";
         LOG.error("{}:{}: {}: {}", containerName, tenantName, msg, status);
         return new Status(StatusCode.INTERNALERROR, msg);
-    }
-
-    /**
-     * Evaluate the VTN path map list against the specified packet.
-     *
-     * <p>
-     *   This method must be called with holding the VTN Manager lock and
-     *   the tenant lock in order.
-     * </p>
-     *
-     * @param mgr   VTN Manager service.
-     * @param pctx  The context of the ARP packet to send.
-     * @return  A {@link RouteResolver} instance is returned if a path map in
-     *          the container path map list matched the packet.
-     *          The default route resolver is returned if no container path
-     *          map patched the packet.
-     */
-    private RouteResolver evalPathMap(VTNManagerImpl mgr, PacketContext pctx) {
-        // Evaluate VTN path map list.
-        for (VTenantPathMapImpl vpm: pathMaps.values()) {
-            RouteResolver rr = vpm.evaluate(mgr, pctx);
-            if (rr != null) {
-                return rr;
-            }
-        }
-
-        // Evaluate container path map list.
-        return mgr.evalPathMap(pctx, tenantConfig);
     }
 
     /**

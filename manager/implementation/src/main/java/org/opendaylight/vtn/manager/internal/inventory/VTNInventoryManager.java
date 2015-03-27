@@ -9,27 +9,22 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.MultiDataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
@@ -47,7 +42,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * Internal inventory manager.
  */
 public final class VTNInventoryManager
-    implements AutoCloseable, DataChangeListener {
+    extends MultiDataStoreListener<VtnNode, Void> {
     /**
      * Logger instance.
      */
@@ -59,43 +54,16 @@ public final class VTNInventoryManager
      * the order of data change event processing.
      *
      * <p>
-     *   This comparator associates {@link VtnNode} class with the order
-     *   smaller than {@link VtnPort}.
+     *   This comparator associates {@link VtnPort} class with the order
+     *   smaller than {@link VtnNode}.
      * </p>
      */
     private static final IdentifierTargetComparator  PATH_COMPARATOR;
 
     /**
-     * Internal state that represents the service is alive.
-     */
-    private static final int  STATE_ALIVE = 0;
-
-    /**
-     * Internal state that represents the service is shut down.
-     */
-    private static final int  STATE_SHUTDOWN = 1;
-
-    /**
-     * Internal state that represents the service is closed.
-     */
-    private static final int  STATE_CLOSED = 2;
-
-    /**
      * VTN Manager provider service.
      */
     private final VTNManagerProvider  vtnProvider;
-
-    /**
-     * Transaction submit queue for the VTN inventory model.
-     */
-    private final TxQueueImpl  inventoryQueue;
-
-    /**
-     * MD-SAL datastore listeners that listens MD-SAL inventory and topology
-     * models.
-     */
-    private final CompositeAutoCloseable  dataListeners =
-        new CompositeAutoCloseable(LOG);
 
     /**
      * A list of VTN inventory listeners.
@@ -106,15 +74,15 @@ public final class VTNInventoryManager
     /**
      * Internal state.
      */
-    private final AtomicInteger  serviceState = new AtomicInteger(STATE_ALIVE);
+    private final AtomicBoolean  serviceState = new AtomicBoolean(true);
 
     /**
      * Initialize static fields.
      */
     static {
         PATH_COMPARATOR = new IdentifierTargetComparator().
-            setOrder(VtnNode.class, 1).
-            setOrder(VtnPort.class, 2);
+            setOrder(VtnPort.class, 1).
+            setOrder(VtnNode.class, 2);
     }
 
     /**
@@ -123,30 +91,26 @@ public final class VTNInventoryManager
      * @param provider  A VTN Manager provider service.
      */
     public VTNInventoryManager(VTNManagerProvider provider) {
+        super(VtnNode.class);
         vtnProvider = provider;
         TxQueueImpl queue = new TxQueueImpl("VTN Inventory", provider);
-        inventoryQueue = queue;
+        addCloseable(queue);
 
         // Initialize MD-SAL inventory listeners.
         DataBroker broker = provider.getDataBroker();
-        InstanceIdentifier<VtnNode> path =
-            InstanceIdentifier.builder(VtnNodes.class).child(VtnNode.class).
-            build();
         try {
-            dataListeners.add(new NodeListener(queue, broker));
-            dataListeners.add(new NodeConnectorListener(queue, broker));
-            dataListeners.add(new TopologyListener(queue, broker));
-            inventoryQueue.start();
+            addCloseable(new NodeListener(queue, broker));
+            addCloseable(new NodeConnectorListener(queue, broker));
+            addCloseable(new TopologyListener(queue, broker));
+            queue.start();
 
             // Register VTN inventory listener.
-            dataListeners.add(broker.registerDataChangeListener(
-                                  LogicalDatastoreType.OPERATIONAL, path, this,
-                                  DataChangeScope.SUBTREE));
+            registerListener(broker, LogicalDatastoreType.OPERATIONAL,
+                             DataChangeScope.SUBTREE);
         } catch (Exception e) {
             String msg = "Failed to initialize inventory service.";
             LOG.error(msg, e);
-            dataListeners.close();
-            inventoryQueue.close();
+            close();
             throw new IllegalStateException(msg, e);
         }
     }
@@ -166,151 +130,51 @@ public final class VTNInventoryManager
      * @return  {@code true} only if the VTN inventory service is alive.
      */
     public boolean isAlive() {
-        return (serviceState.get() == STATE_ALIVE);
+        return serviceState.get();
     }
 
     /**
      * Shutdown listener service.
      */
     public void shutdown() {
-        serviceState.set(STATE_SHUTDOWN);
+        serviceState.set(false);
         vtnListeners.clear();
-    }
-
-    /**
-     * Verify an instance identifier notified by a data change event.
-     *
-     * @param path  An instance identifier that specifies data.
-     * @param type  A {@link VtnUpdateType} instance.
-     * @return  {@code true} only if a given instance identifier  is valid.
-     */
-    private boolean checkPath(InstanceIdentifier<?> path, VtnUpdateType type) {
-        if (path == null) {
-            LOG.warn("{}: Null instance identifier.", type);
-            return false;
-        }
-        if (path.isWildcarded()) {
-            LOG.trace("{}: Ignore wildcard path: {}", type, path);
-            return false;
-        }
-
-        Class<?> target = path.getTargetType();
-        if (PATH_COMPARATOR.getOrder(target) == null) {
-            LOG.trace("{}: Ignore unwanted path: {}", type, path);
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Sort instance identifiers in the given set.
-     *
-     * <p>
-     *   This method is used to determine order of data change event
-     *   processing.
-     * </p>
-     *
-     * @param set   A set of {@link InstanceIdentifier} instances.
-     * @param type  A {@link VtnUpdateType} instance which specifies the type
-     *              of data change event.
-     * @param asc   If {@code true}, instance identifiers are sorted in
-     *              ascending order. This means that all node events should be
-     *              processed prior to port events.
-     *              If {@code false}, instance identifiers are sorted in
-     *              descending order. This means that all port events should be
-     *              processed prior to node events.
-     * @return  A sorted list of {@link InstanceIdentifier} instances.
-     */
-    private List<InstanceIdentifier<?>> sortPath(
-        Set<InstanceIdentifier<?>> set, VtnUpdateType type, boolean asc) {
-        List<InstanceIdentifier<?>> list = new ArrayList<>(set.size());
-        Comparator<InstanceIdentifier<?>> comp = (asc)
-            ? PATH_COMPARATOR
-            : Collections.reverseOrder(PATH_COMPARATOR);
-
-        // Eliminate unwanted paths.
-        for (InstanceIdentifier<?> path: set) {
-            if (checkPath(path, type)) {
-                list.add(path);
-            }
-        }
-        Collections.sort(list, comp);
-
-        return list;
     }
 
     /**
      * Handle inventory creation or removal event.
      *
-     * @param path  An instance identifier that specifies data.
      * @param data  A created or removed data object.
      * @param type  {@link VtnUpdateType#CREATED} on added,
      *              {@link VtnUpdateType#REMOVED} on removed.
      */
-    private void onCreatedOrRemoved(InstanceIdentifier<?> path,
-                                    DataObject data, VtnUpdateType type) {
+    private void onCreatedOrRemoved(IdentifiedData<?> data,
+                                    VtnUpdateType type) {
         String unexpected = null;
-        Class<?> target = path.getTargetType();
-        if (VtnNode.class.equals(target)) {
-            if (data instanceof VtnNode) {
-                VtnNode vnode = (VtnNode)data;
-                LOG.info("Node has been {}: id={}, proto={}",
-                         type.name().toLowerCase(Locale.ENGLISH),
-                         vnode.getId().getValue(), vnode.getOpenflowVersion());
-                postVtnNodeEvent(vnode, type);
-                return;
-            }
-            unexpected = "node";
-        } else if (VtnPort.class.equals(target)) {
-            if (data instanceof VtnPort) {
-                VtnPort vport = (VtnPort)data;
-                Boolean isl = Boolean.valueOf(
-                    InventoryUtils.hasPortLink(vport));
-                LOG.info("Port has been {}: {}",
-                         type.name().toLowerCase(Locale.ENGLISH),
-                         InventoryUtils.toString(vport));
-                postVtnPortEvent(vport, isl, type);
-                return;
-            }
-            unexpected = "port";
+        IdentifiedData<VtnNode> nodeData = data.checkType(VtnNode.class);
+        if (nodeData != null) {
+            VtnNode vnode = nodeData.getValue();
+            LOG.info("Node has been {}: id={}, proto={}",
+                     MiscUtils.toLowerCase(type.name()),
+                     vnode.getId().getValue(), vnode.getOpenflowVersion());
+            postVtnNodeEvent(vnode, type);
+            return;
         }
 
-        if (unexpected != null) {
-            LOG.warn("{}: Unexpected VTN {}: path={}, data={}",
-                     type, unexpected, path, data);
-        }
-    }
-
-    /**
-     * Handle inventory change event.
-     *
-     * @param path     An instance identifier that specifies data.
-     * @param oldData  A data object prior to the change.
-     * @param newData  A changed data object.
-     */
-    private void onChanged(InstanceIdentifier<?> path, DataObject oldData,
-                           DataObject newData) {
-        String unexpected = null;
-        Class<?> target = path.getTargetType();
-        if (VtnNode.class.equals(target)) {
-            if ((oldData instanceof VtnNode) && (newData instanceof VtnNode)) {
-                onChanged((VtnNode)oldData, (VtnNode)newData);
-                return;
-            }
-            unexpected = "node";
-        } else if (VtnPort.class.equals(target)) {
-            if ((oldData instanceof VtnPort) && (newData instanceof VtnPort)) {
-                onChanged((VtnPort)oldData, (VtnPort)newData);
-                return;
-            }
-            unexpected = "port";
+        IdentifiedData<VtnPort> portData = data.checkType(VtnPort.class);
+        if (portData != null) {
+            VtnPort vport = portData.getValue();
+            Boolean isl = Boolean.valueOf(InventoryUtils.hasPortLink(vport));
+            LOG.info("Port has been {}: {}",
+                     MiscUtils.toLowerCase(type.name()),
+                     InventoryUtils.toString(vport));
+            postVtnPortEvent(vport, isl, type);
+            return;
         }
 
-        if (unexpected != null) {
-            LOG.warn("onChanged: Unexpected VTN {}: path={}, old={}, new={}",
-                     unexpected, path, oldData, newData);
-        }
+        // This should never happen.
+        LOG.warn("{}: Unexpected event: path={}, data={}",
+                 type, data.getIdentifier(), data.getValue());
     }
 
     /**
@@ -387,68 +251,101 @@ public final class VTNInventoryManager
      */
     @Override
     public void close() {
-        if (serviceState.getAndSet(STATE_CLOSED) != STATE_CLOSED) {
-            vtnListeners.clear();
-            dataListeners.close();
-            inventoryQueue.close();
-        }
+        shutdown();
+        super.close();
     }
 
-    // DataChangeListener
+    // MultiDataStoreListener
 
     /**
-     * Invoked when VTN inventory data has been changed.
-     *
-     * @param ev  An {@link AsyncDataChangeEvent} instance.
+     * {@inheritDoc}
      */
     @Override
-    public void onDataChanged(
+    protected IdentifierTargetComparator getComparator() {
+        return PATH_COMPARATOR;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected boolean getOrder(VtnUpdateType type) {
+        // Creation events should be processed from outer to inner.
+        // Other events should be processed from inner to outer.
+        return (type != VtnUpdateType.CREATED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Void enterEvent(
         AsyncDataChangeEvent<InstanceIdentifier<?>, DataObject> ev) {
-        if (ev == null) {
-            LOG.warn("Null data change event.");
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void exitEvent(Void ectx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onCreated(Void ectx, IdentifiedData<?> data) {
+        onCreatedOrRemoved(data, VtnUpdateType.CREATED);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onUpdated(Void ectx, ChangedData<?> data) {
+        String unexpected = null;
+        ChangedData<VtnNode> nodeData = data.checkType(VtnNode.class);
+        if (nodeData != null) {
+            onChanged(nodeData.getOldValue(), nodeData.getValue());
             return;
         }
 
-        Map<InstanceIdentifier<?>, DataObject> created = ev.getCreatedData();
-        if (created != null) {
-            // Process creation events.
-            // VtnNode events should be processed before VtnPort events.
-            VtnUpdateType type = VtnUpdateType.CREATED;
-            for (InstanceIdentifier<?> path:
-                     sortPath(created.keySet(), type, true)) {
-                DataObject value = created.get(path);
-                onCreatedOrRemoved(path, value, type);
-            }
+        ChangedData<VtnPort> portData = data.checkType(VtnPort.class);
+        if (portData != null) {
+            onChanged(portData.getOldValue(), portData.getValue());
+            return;
         }
 
-        Map<InstanceIdentifier<?>, DataObject> original = ev.getOriginalData();
-        if (original == null) {
-            original = Collections.
-                <InstanceIdentifier<?>, DataObject>emptyMap();
-        }
+        // This should never happen.
+        LOG.warn("CHANGED: Unexpected event: path={}, old={}, new={}",
+                 data.getIdentifier(), data.getOldValue(), data.getValue());
+    }
 
-        Map<InstanceIdentifier<?>, DataObject> updated = ev.getUpdatedData();
-        if (updated != null) {
-            // Process change events.
-            // VtnNode events should be processed before VtnPort events.
-            VtnUpdateType type = VtnUpdateType.CHANGED;
-            for (InstanceIdentifier<?> path:
-                     sortPath(updated.keySet(), type, true)) {
-                DataObject value = updated.get(path);
-                DataObject org = original.get(path);
-                onChanged(path, org, value);
-            }
-        }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected void onRemoved(Void ectx, IdentifiedData<?> data) {
+        onCreatedOrRemoved(data, VtnUpdateType.REMOVED);
+    }
 
-        Set<InstanceIdentifier<?>> removed = ev.getRemovedPaths();
-        if (removed != null) {
-            // Process removal events.
-            // VtnPort events should be processed before VtnNode events.
-            VtnUpdateType type = VtnUpdateType.REMOVED;
-            for (InstanceIdentifier<?> path: sortPath(removed, type, false)) {
-                DataObject value = original.get(path);
-                onCreatedOrRemoved(path, value, type);
-            }
-        }
+    // AbstractDataChangeListener
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected InstanceIdentifier<VtnNode> getWildcardPath() {
+        return InstanceIdentifier.builder(VtnNodes.class).
+            child(VtnNode.class).build();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Logger getLogger() {
+        return LOG;
     }
 }

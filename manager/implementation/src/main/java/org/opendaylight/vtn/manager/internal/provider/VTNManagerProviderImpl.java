@@ -37,6 +37,7 @@ import org.opendaylight.vtn.manager.internal.config.VTNConfigManager;
 import org.opendaylight.vtn.manager.internal.flow.cond.FlowCondManager;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryManager;
 import org.opendaylight.vtn.manager.internal.packet.VTNPacketService;
+import org.opendaylight.vtn.manager.internal.routing.PathMapManager;
 import org.opendaylight.vtn.manager.internal.routing.VTNRoutingManager;
 import org.opendaylight.vtn.manager.internal.util.concurrent.CanceledFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCallbackTask;
@@ -44,9 +45,11 @@ import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCanceller;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.ReadTxContext;
 import org.opendaylight.vtn.manager.internal.util.tx.TxQueueImpl;
 import org.opendaylight.vtn.manager.internal.util.tx.TxSyncFuture;
+import org.opendaylight.vtn.manager.internal.vnode.VTenantManager;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.sal.binding.api.NotificationProviderService;
@@ -172,8 +175,10 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
 
         // Initialize internal subsystems.
         try {
-            subSystems.add(new VTNRoutingManager(this)).
-                add(new FlowCondManager(this));
+            subSystems.add(new VTenantManager(this)).
+                add(new VTNRoutingManager(this)).
+                add(new FlowCondManager(this)).
+                add(new PathMapManager(this));
         } catch (RuntimeException e) {
             LOG.error("Failed to initialize subsystem.", e);
             subSystems.close();
@@ -373,7 +378,15 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      * {@inheritDoc}
      */
     @Override
-    public RouteResolver getRouteResolver(int id) {
+    public RouteResolver getRouteResolver() {
+        return getRouteResolver(PathPolicyUtils.DEFAULT_POLICY);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public RouteResolver getRouteResolver(Integer id) {
         VTNRoutingManager rtm = subSystems.get(VTNRoutingManager.class);
         return (rtm == null) ? null : rtm.getRouteResolver(id);
     }
@@ -397,14 +410,20 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      * {@inheritDoc}
      */
     @Override
-    public VTNFuture<?> removeFlows(String tname, FlowSelector selector) {
-        VTNFuture<?> task = null;
-        VTNManagerImpl mgr = vtnManager.get();
-        if (mgr != null) {
-            task = mgr.removeFlows(tname, selector);
+    public List<VTNFuture<?>> removeFlows(String tname, FlowSelector selector) {
+        if (tname == null) {
+            return removeFlows(selector);
         }
 
-        return task;
+        VTNManagerImpl mgr = vtnManager.get();
+        if (mgr != null) {
+            VTNFuture<?> task = mgr.removeFlows(tname, selector);
+            if (task != null) {
+                return Collections.<VTNFuture<?>>singletonList(task);
+            }
+        }
+
+        return Collections.<VTNFuture<?>>emptyList();
     }
 
     /**

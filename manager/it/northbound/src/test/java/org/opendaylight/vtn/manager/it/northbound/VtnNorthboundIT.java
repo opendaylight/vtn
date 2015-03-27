@@ -32,6 +32,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -527,42 +528,27 @@ public final class VtnNorthboundIT extends TestBase {
             }
 
             // Remove all path policies.
-            String base = createURI("default", RES_PATHPOLICIES);
-            json = getJSONObject(base);
-            array = json.getJSONArray("integer");
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject pp = array.getJSONObject(i);
-                String id = pp.getString("value");
-                LOG.debug("Clean up path policy: {}", id);
-                uri = createRelativeURI(base, id);
-                getJsonResult(uri, HTTP_DELETE);
-                assertResponse(HTTP_OK);
+            uri = createURI("default", RES_PATHPOLICIES);
+            getJsonResult(uri, HTTP_DELETE);
+            int resp = httpResponseCode.intValue();
+            if (resp != HTTP_NO_CONTENT) {
+                assertEquals(HTTP_OK, resp);
             }
 
             // Remove all flow conditions.
-            base = createURI("default", RES_FLOWCONDITIONS);
-            json = getJSONObject(base);
-            array = json.getJSONArray("flowcondition");
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject fc = array.getJSONObject(i);
-                String name = fc.getString("name");
-                LOG.debug("Clean up flow condition: {}", name);
-                uri = createRelativeURI(base, name);
-                getJsonResult(uri, HTTP_DELETE);
-                assertResponse(HTTP_OK);
+            uri = createURI("default", RES_FLOWCONDITIONS);
+            getJsonResult(uri, HTTP_DELETE);
+            resp = httpResponseCode.intValue();
+            if (resp != HTTP_NO_CONTENT) {
+                assertEquals(HTTP_OK, resp);
             }
 
             // Remove all global path maps.
-            base = createURI("default", RES_PATHMAPS);
-            json = getJSONObject(base);
-            array = json.getJSONArray("pathmap");
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject pmap = array.getJSONObject(i);
-                String index = pmap.getString("index");
-                LOG.debug("Clean up global path map: {}", index);
-                uri = createRelativeURI(base, index);
-                getJsonResult(uri, HTTP_DELETE);
-                assertResponse(HTTP_OK);
+            uri = createURI("default", RES_PATHMAPS);
+            getJsonResult(uri, HTTP_DELETE);
+            resp = httpResponseCode.intValue();
+            if (resp != HTTP_NO_CONTENT) {
+                assertEquals(HTTP_OK, resp);
             }
         } catch (Exception e) {
             unexpected(e);
@@ -5175,11 +5161,10 @@ public final class VtnNorthboundIT extends TestBase {
 
         // Get all path policy IDs.
         String base = createURI("default", RES_PATHPOLICIES);
-        JSONObject json = getJSONObject(base);
-        JSONArray array = json.getJSONArray("integer");
-        assertEquals(0, array.length());
+        JSONObject expected = new JSONObject().put("integer", new JSONArray());
+        assertEquals(expected, getJSONObject(base));
 
-        Map<Integer, JSONObject> pathPolicies = new HashMap<>();
+        Map<Integer, JSONObject> pathPolicies = new TreeMap<>();
         for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
             JSONObject pp = testPathPolicyAPI(id);
             assertNotNull(pp);
@@ -5195,7 +5180,7 @@ public final class VtnNorthboundIT extends TestBase {
         badIds.add("bad_ID");
         badIds.add("1111111111111111111111111111111111111");
 
-        json = new JSONObject();
+        JSONObject json = new JSONObject();
         json.put("default", 100);
         String body = json.toString();
 
@@ -5258,6 +5243,32 @@ public final class VtnNorthboundIT extends TestBase {
 
             testPathPolicyError(id, null);
         }
+
+        // Restore path policies.
+        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
+            JSONObject pp = pathPolicies.get(id);
+            String uri = createRelativeURI(base, String.valueOf(id));
+            getJsonResult(uri, HTTP_PUT, pp.toString());
+            assertResponse(HTTP_CREATED);
+            assertEquals(uri, httpLocation);
+            assertEquals(pp, getJSONObject(uri));
+        }
+
+        expected = toXmlLongIntegerList(pathPolicies.keySet());
+
+        // Remove all path policies at once.
+        getJsonResult(base, HTTP_DELETE);
+        assertResponse(HTTP_OK);
+        getJsonResult(base, HTTP_DELETE);
+        assertResponse(HTTP_NO_CONTENT);
+        for (int id = PATH_POLICY_MIN; id <= PATH_POLICY_MAX; id++) {
+            String uri = createRelativeURI(base, String.valueOf(id));
+            getJsonResult(uri);
+            assertResponse(HTTP_NOT_FOUND);
+        }
+
+        expected = new JSONObject().put("integer", new JSONArray());
+        assertEquals(expected, getJSONObject(base));
     }
 
     /**
@@ -6167,7 +6178,8 @@ public final class VtnNorthboundIT extends TestBase {
             pmaps.put(index, pmap);
         }
 
-        for (Iterator<JSONObject> it = pmaps.values().iterator();
+        Map<Integer, JSONObject> pmaps1 = new TreeMap<>(pmaps);
+        for (Iterator<JSONObject> it = pmaps1.values().iterator();
              it.hasNext();) {
             JSONObject pmap = it.next();
             String uri = createRelativeURI(base, pmap.getString("index"));
@@ -6180,14 +6192,33 @@ public final class VtnNorthboundIT extends TestBase {
             assertResponse(HTTP_NO_CONTENT);
             it.remove();
 
-            JSONArray modified = new JSONArray();
-            for (JSONObject pm: pmaps.values()) {
-                modified.put(pm);
-            }
+            JSONArray modified = new JSONArray(pmaps1.values());
             JSONObject all = new JSONObject().
                 put("pathmap", modified);
             assertEquals(all, getJSONObject(base));
         }
+
+        // Restore path maps.
+        for (JSONObject pmap: pmaps.values()) {
+            String uri = createRelativeURI(base, pmap.getString("index"));
+            getJsonResult(uri, HTTP_PUT, pmap.toString());
+            assertResponse(HTTP_CREATED);
+            assertEquals(uri, httpLocation);
+            assertEquals(pmap, getJSONObject(uri));
+        }
+
+        JSONObject expected = new JSONObject().
+            put("pathmap", new JSONArray(pmaps.values()));
+        assertEquals(expected, getJSONObject(base));
+
+        // Remove all path maps at once.
+        getJsonResult(base, HTTP_DELETE);
+        assertResponse(HTTP_OK);
+
+        expected = new JSONObject().put("pathmap", new JSONArray());
+        assertEquals(expected, getJSONObject(base));
+        getJsonResult(base, HTTP_DELETE);
+        assertResponse(HTTP_NO_CONTENT);
     }
 
     /**
@@ -6343,7 +6374,10 @@ public final class VtnNorthboundIT extends TestBase {
         // Empty match can be omitted.
         JsonFlowMatchComparator comp = new JsonFlowMatchComparator();
         jsonComparator.addCustomComparator(comp, "match",
-                                           JSONComparator.KEY_ARRAY);
+                                           JSONComparator.KEY_ARRAY).
+            addCustomComparator(comp,
+                                "flowcondition", JSONComparator.KEY_ARRAY,
+                                "match", JSONComparator.KEY_ARRAY);
 
         // Get all flow conditions.
         String base = createURI("default", RES_FLOWCONDITIONS);
@@ -6370,8 +6404,8 @@ public final class VtnNorthboundIT extends TestBase {
             array = json.getJSONArray("flowcondition");
             assertEquals(fcmap.size(), array.length());
             int idx = 0;
-            for (JSONObject expected: fcmap.values()) {
-                assertEquals(expected, array.getJSONObject(idx));
+            for (JSONObject exp: fcmap.values()) {
+                assertEquals(exp, array.getJSONObject(idx));
                 idx++;
             }
         }
@@ -6399,10 +6433,11 @@ public final class VtnNorthboundIT extends TestBase {
         }
 
         // Remove flow conditions.
+        Map<String, JSONObject> current = new TreeMap<>(fcmap);
         for (int i = names.length - 1; i >= 0; i--) {
             String name = names[i];
             String uri = createRelativeURI(base, name);
-            JSONObject fc = fcmap.remove(name);
+            JSONObject fc = current.remove(name);
             assertEquals(fc, getJSONObject(uri));
             getJsonResult(uri, HTTP_DELETE);
             assertResponse(HTTP_OK);
@@ -6411,19 +6446,34 @@ public final class VtnNorthboundIT extends TestBase {
             getJsonResult(uri, HTTP_GET);
             assertResponse(HTTP_NOT_FOUND);
 
-            json = getJSONObject(base);
-            array = json.getJSONArray("flowcondition");
-            assertEquals(fcmap.size(), array.length());
-            int idx = 0;
-            for (JSONObject expected: fcmap.values()) {
-                assertEquals(expected, array.getJSONObject(idx));
-                idx++;
-            }
+            JSONObject expected = new JSONObject().
+                put("flowcondition", new JSONArray(current.values()));
+            assertEquals(expected, getJSONObject(base));
         }
 
-        json = getJSONObject(base);
-        array = json.getJSONArray("flowcondition");
-        assertEquals(0, array.length());
+        // Restore flow conditions.
+        for (JSONObject fc: fcmap.values()) {
+            String name = fc.getString("name");
+            String uri = createRelativeURI(base, name);
+            getJsonResult(uri, HTTP_PUT, fc.toString());
+            assertResponse(HTTP_CREATED);
+            assertEquals(uri, httpLocation);
+            assertEquals(fc, getJSONObject(uri));
+        }
+
+        JSONObject expected = new JSONObject().
+            put("flowcondition", new JSONArray(fcmap.values()));
+        assertEquals(expected, getJSONObject(base));
+
+        // Remove all flow conditions at once.
+        getJsonResult(base, HTTP_DELETE);
+        assertResponse(HTTP_OK);
+
+        expected = new JSONObject().put("flowcondition", new JSONArray());
+        assertEquals(expected, getJSONObject(base));
+
+        getJsonResult(base, HTTP_DELETE);
+        assertResponse(HTTP_NO_CONTENT);
     }
 
     /**
@@ -6468,13 +6518,15 @@ public final class VtnNorthboundIT extends TestBase {
         getJsonResult(base, HTTP_PUT, fc.toString());
         assertResponse(HTTP_NO_CONTENT);
 
-        // Index range check should be skipped on GET method.
+        // Index range check should be skipped on GET and DELETE method.
         int[] invalidIndices = {
             Integer.MIN_VALUE, -1, 0, 65536, 65537, 100000, Integer.MAX_VALUE,
         };
         for (int idx: invalidIndices) {
             uri = createRelativeURI(base, Integer.toString(idx));
             getJsonResult(uri);
+            assertResponse(HTTP_NO_CONTENT);
+            getJsonResult(uri, HTTP_DELETE);
             assertResponse(HTTP_NO_CONTENT);
         }
         int[] validIndices = {
@@ -6992,5 +7044,23 @@ public final class VtnNorthboundIT extends TestBase {
         String type = getJsonString(jobj, "type");
         String id = getJsonString(jobj, "id");
         return new SwitchPort(name, type, id);
+    }
+
+    /**
+     * Convert the given numbers into a {@link JSONObject} instance which
+     * represents a {@code XmlLongIntegerList} instance.
+     *
+     * @param numbers  A collection of numbers.
+     * @return  A {@link JSONObject} instance.
+     * @throws JSONException  An error occurred.
+     */
+    private JSONObject toXmlLongIntegerList(
+        Collection<? extends Number> numbers) throws JSONException {
+        JSONArray array = new JSONArray();
+        for (Number num: numbers) {
+            array.put(new JSONObject().put("value", num.longValue()));
+        }
+
+        return new JSONObject().put("integer", array);
     }
 }

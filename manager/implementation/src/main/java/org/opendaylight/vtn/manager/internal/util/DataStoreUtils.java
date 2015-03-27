@@ -121,4 +121,25 @@ public final class DataStoreUtils {
 
         return ret;
     }
+
+    /**
+     * Cast the given instance identifier for the given target type.
+     *
+     * @param type  A class which indicates the target type.
+     * @param path  An {@link InstanceIdentifier} instance.
+     * @param <T>   The type of the data targeted by the instance identifier.
+     * @return  An {@link InstanceIdentifier} instance on sucecss.
+     *          {@code null} on failure.
+     */
+    public static <T extends DataObject> InstanceIdentifier<T> cast(
+        Class<T> type, InstanceIdentifier<?> path) {
+        Class<?> target = path.getTargetType();
+        if (target.equals(type)) {
+            @SuppressWarnings("unchecked")
+            InstanceIdentifier<T> ret = (InstanceIdentifier<T>)path;
+            return ret;
+        }
+
+        return null;
+    }
 }

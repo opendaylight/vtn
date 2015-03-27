@@ -185,8 +185,7 @@ public class BridgeState implements Serializable {
                     continue;
                 }
 
-                RouteResolver rr = ctx.getProvider().
-                    getRouteResolver(RouteResolver.ID_DEFAULT);
+                RouteResolver rr = ctx.getProvider().getRouteResolver();
                 InventoryReader reader = ctx.getInventoryReader();
                 List<LinkEdge> path = rr.getRoute(reader, snode, dnode);
                 if (path != null) {

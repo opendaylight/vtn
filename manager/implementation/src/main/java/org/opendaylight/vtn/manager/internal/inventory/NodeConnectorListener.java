@@ -9,12 +9,13 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
-import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.internal.TxQueue;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -61,13 +62,15 @@ public final class NodeConnectorListener
      * Add the given node connector information to the port update task.
      *
      * @param ectx  A {@link PortUpdateTask} instance.
-     * @param path  Path to the flow-capable-node-connector.
+     * @param data  An {@link IdentifiedData} instance.
      * @param type  A {@link VtnUpdateType} instance which indicates the type
      *              of event.
      */
     private void addUpdated(PortUpdateTask ectx,
-                            InstanceIdentifier<FlowCapableNodeConnector> path,
+                            IdentifiedData<FlowCapableNodeConnector> data,
                             VtnUpdateType type) {
+        InstanceIdentifier<FlowCapableNodeConnector> path =
+            data.getIdentifier();
         NodeConnectorId id = InventoryUtils.getNodeConnectorId(path);
         SalPort sport = SalPort.create(id);
 
@@ -109,9 +112,8 @@ public final class NodeConnectorListener
      */
     @Override
     protected void onCreated(PortUpdateTask ectx,
-                             InstanceIdentifier<FlowCapableNodeConnector> key,
-                             FlowCapableNodeConnector value) {
-        addUpdated(ectx, key, VtnUpdateType.CREATED);
+                             IdentifiedData<FlowCapableNodeConnector> data) {
+        addUpdated(ectx, data, VtnUpdateType.CREATED);
     }
 
     /**
@@ -119,10 +121,8 @@ public final class NodeConnectorListener
      */
     @Override
     protected void onUpdated(PortUpdateTask ectx,
-                             InstanceIdentifier<FlowCapableNodeConnector> key,
-                             FlowCapableNodeConnector oldValue,
-                             FlowCapableNodeConnector newValue) {
-        addUpdated(ectx, key, VtnUpdateType.CHANGED);
+                             ChangedData<FlowCapableNodeConnector> data) {
+        addUpdated(ectx, data, VtnUpdateType.CHANGED);
     }
 
     /**
@@ -130,9 +130,8 @@ public final class NodeConnectorListener
      */
     @Override
     protected void onRemoved(PortUpdateTask ectx,
-                             InstanceIdentifier<FlowCapableNodeConnector> key,
-                             FlowCapableNodeConnector value) {
-        addUpdated(ectx, key, VtnUpdateType.REMOVED);
+                             IdentifiedData<FlowCapableNodeConnector> data) {
+        addUpdated(ectx, data, VtnUpdateType.REMOVED);
     }
 
     /**
@@ -151,13 +150,5 @@ public final class NodeConnectorListener
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
     }
 }

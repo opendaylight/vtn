@@ -9,89 +9,23 @@
 
 package org.opendaylight.vtn.manager.internal.flow.cond;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.slf4j.Logger;
-
+import org.opendaylight.vtn.manager.internal.util.ConfigFileUpdater;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
 
 /**
- * {@code FlowCondChange} describes changes to the flow condition
- * configuration.
+ * {@code FlowCondChange} describes changes to the flow condition to be applied
+ * to the configuration file.
  *
  * <p>
  *   Note that this class is not synchronized.
  * </p>
  */
-final class FlowCondChange {
+final class FlowCondChange extends ConfigFileUpdater<String, VTNFlowCondition> {
     /**
-     * A map that keeps updated flow conditions.
+     * Construct a new instance.
      */
-    private final Map<String, VTNFlowCondition>  updatedConditions =
-        new HashMap<>();
-
-    /**
-     * A map that keeps names for created flow conditions.
-     */
-    private final Set<String>  createdConditions = new HashSet<>();
-
-    /**
-     * A set of removed flow condition names.
-     */
-    private final Set<String>  removedConditions = new HashSet<>();
-
-    /**
-     * Add the updated flow condition.
-     *
-     * @param vfcond   A {@link VTNFlowCondition} instance.
-     * @param created  {@code true} means that the given flow condition has
-     *                 been newly created.
-     */
-    public void addUpdated(VTNFlowCondition vfcond, boolean created) {
-        String name = vfcond.getIdentifier();
-        if (!removedConditions.contains(name)) {
-            updatedConditions.put(name, vfcond);
-            if (created) {
-                createdConditions.add(name);
-            }
-        }
-    }
-
-    /**
-     * Add the removed flow condition.
-     *
-     * @param name  The name of the flow condition that has been removed.
-     */
-    public void addRemoved(String name) {
-        if (removedConditions.add(name)) {
-            updatedConditions.remove(name);
-            createdConditions.remove(name);
-        }
-    }
-
-    /**
-     * Apply changes to the flow condition configuration.
-     *
-     * @param logger  A {@link Logger} instance.
-     */
-    public void apply(Logger logger) {
-        XmlConfigFile.Type ftype = XmlConfigFile.Type.FLOWCOND;
-        for (VTNFlowCondition vfcond: updatedConditions.values()) {
-            // Save configuration into file.
-            String name = vfcond.getIdentifier();
-            XmlConfigFile.save(ftype, name, vfcond);
-            logger.info("{}: Flow condition has been {}.", name,
-                        (createdConditions.contains(name))
-                        ? "created" : "updated");
-        }
-        for (String name: removedConditions) {
-            // Remove configuration file.
-            XmlConfigFile.delete(ftype, name);
-            logger.info("{}: Path policy has been removed.", name);
-        }
+    FlowCondChange() {
+        super(XmlConfigFile.Type.FLOWCOND, "Flow condition");
     }
 }

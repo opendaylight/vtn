@@ -47,7 +47,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeNa
  */
 public class FlowCondUtilsTest extends TestBase {
     /**
-     * Test case for thw following methods.
+     * Test case for the following methods.
      *
      * <ul>
      *   <li>{@link FlowCondUtils#getNotFoundException(String)}</li>
@@ -91,7 +91,7 @@ public class FlowCondUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for thw following methods.
+     * Test case for the following methods.
      *
      * <ul>
      *   <li>{@link FlowCondUtils#checkName(String)}</li>
@@ -425,7 +425,7 @@ public class FlowCondUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for thw following methods.
+     * Test case for the following methods.
      *
      * <ul>
      *   <li>{@link FlowCondUtils#verifyMatchIndex(Set, Integer)}</li>
@@ -497,6 +497,26 @@ public class FlowCondUtilsTest extends TestBase {
                 assertEquals(null, e.getCause());
             }
         }
+    }
+
+    /**
+     * Test case for {@link FlowCondUtils#isEmpty(VtnFlowConditions)}.
+     */
+    @Test
+    public void testIsEmpty() {
+        VtnFlowConditions root = null;
+        assertEquals(true, FlowCondUtils.isEmpty(root));
+
+        root = new VtnFlowConditionsBuilder().build();
+        assertEquals(true, FlowCondUtils.isEmpty(root));
+
+        List<VtnFlowCondition> vlist = new ArrayList<>();
+        root = new VtnFlowConditionsBuilder().
+            setVtnFlowCondition(vlist).build();
+        assertEquals(true, FlowCondUtils.isEmpty(root));
+
+        vlist.add(new VtnFlowConditionBuilder().build());
+        assertEquals(false, FlowCondUtils.isEmpty(root));
     }
 
     /**
@@ -664,7 +684,7 @@ public class FlowCondUtilsTest extends TestBase {
         }
         Mockito.verify(rtx, Mockito.never()).
             read(Mockito.any(LogicalDatastoreType.class),
-                 Mockito.any(InstanceIdentifier.class));
+                 (InstanceIdentifier<?>)Mockito.any(InstanceIdentifier.class));
 
         // Flow condition is not present.
         VtnFlowCondition vfc = null;
@@ -752,7 +772,7 @@ public class FlowCondUtilsTest extends TestBase {
         }
         Mockito.verify(rtx, Mockito.never()).
             read(Mockito.any(LogicalDatastoreType.class),
-                 Mockito.any(InstanceIdentifier.class));
+                 (InstanceIdentifier<?>)Mockito.any(InstanceIdentifier.class));
 
         VtnFlowCondition vfc = new VtnFlowConditionBuilder().build();
         VtnFlowCondition vfcNull = null;

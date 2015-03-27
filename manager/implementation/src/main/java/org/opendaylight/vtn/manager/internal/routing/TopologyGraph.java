@@ -34,6 +34,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 
@@ -212,7 +213,7 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
         vtnProvider = provider;
 
         // Create the default route resolver.
-        int id = RouteResolver.ID_DEFAULT;
+        int id = PathPolicyUtils.DEFAULT_POLICY;
         DijkstraResolver resolver = new DijkstraResolver(id);
         resolvers.put(Integer.valueOf(id), resolver);
     }
@@ -244,7 +245,7 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
      */
     synchronized boolean updateResolver(Integer index) {
         int id = index.intValue();
-        if (id == RouteResolver.ID_DEFAULT) {
+        if (id == PathPolicyUtils.DEFAULT_POLICY) {
             // This should never happen.
             LOG.debug("Default resolver is always present.");
             return false;
@@ -278,7 +279,7 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
      */
     synchronized boolean removeResolver(Integer index) {
         int id = index.intValue();
-        if (id == RouteResolver.ID_DEFAULT) {
+        if (id == PathPolicyUtils.DEFAULT_POLICY) {
             // This should never happen.
             LOG.warn("Default resolver cannot be removed.");
             return false;

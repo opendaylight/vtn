@@ -226,20 +226,20 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         }
 
         // Remove all global path maps.
-        for (PathMap pmap: vtnManager.getPathMaps()) {
-            Status st = vtnManager.removePathMap(pmap.getIndex().intValue());
+        Status st = vtnManager.clearPathMap();
+        if (st != null) {
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
         // Remove all flow conditions.
-        for (FlowCondition fcond: vtnManager.getFlowConditions()) {
-            Status st = vtnManager.removeFlowCondition(fcond.getName());
+        st = vtnManager.clearFlowCondition();
+        if (st != null) {
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
         // Remove all path policies.
-        for (Integer id: vtnManager.getPathPolicyIds()) {
-            Status st = vtnManager.removePathPolicy(id.intValue());
+        st = vtnManager.clearPathPolicy();
+        if (st != null) {
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
@@ -248,7 +248,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             String name = vtn.getName();
             LOG.debug("Clean up VTN: {}", name);
             VTenantPath path = new VTenantPath(name);
-            Status st = vtnManager.removeTenant(path);
+            st = vtnManager.removeTenant(path);
             assertEquals(StatusCode.SUCCESS, st.getCode());
         }
 
@@ -5882,24 +5882,29 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertEquals(null, vtnManager.removePathMap(1));
 
         // Clean up.
+        st = vtnManager.clearFlowCondition();
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        assertEquals(null, vtnManager.clearFlowCondition());
+
         for (String cond: new String[]{cnameUdp, cnameDscp}) {
-            st = vtnManager.removeFlowCondition(cond);
-            assertEquals(StatusCode.SUCCESS, st.getCode());
             st = vtnManager.removeFlowCondition(cond);
             assertEquals(StatusCode.NOTFOUND, st.getCode());
         }
+
+        st = vtnManager.clearPathPolicy();
+        assertEquals(StatusCode.SUCCESS, st.getCode());
+        assertEquals(null, vtnManager.clearPathPolicy());
         for (int i = 1; i <= 3; i++) {
-            if (i != 2) {
-                st = vtnManager.removePathPolicy(i);
-                assertEquals(StatusCode.SUCCESS, st.getCode());
-            }
             st = vtnManager.removePathPolicy(i);
             assertEquals(StatusCode.NOTFOUND, st.getCode());
         }
 
-        st = vtnManager.removePathMap(tpath, 1);
+        st = vtnManager.clearPathMap(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        assertEquals(null, vtnManager.removePathMap(tpath, 1));
+        assertEquals(null, vtnManager.clearPathMap(tpath));
+        for (int i = 1; i <= 2; i++) {
+            assertEquals(null, vtnManager.removePathMap(tpath, i));
+        }
 
         st = vtnManager.removeTenant(tpath);
         assertEquals(StatusCode.SUCCESS, st.getCode());

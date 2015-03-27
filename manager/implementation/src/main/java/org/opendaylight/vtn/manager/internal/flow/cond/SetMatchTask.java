@@ -19,7 +19,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 
 /**
  * {@code SetMatchTask} describes the MD-SAL datastore transaction task that
- * associated the flow match with the specified index in a flow condition.
+ * associates the flow match with the specified index in a flow condition.
  *
  * <p>
  *   A task corresponding to this task is used as a sub task for

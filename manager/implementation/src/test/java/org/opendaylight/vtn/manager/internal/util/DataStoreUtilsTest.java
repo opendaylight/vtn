@@ -9,6 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -33,9 +36,14 @@ import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.conditions.VtnFlowCondition;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.vtn.path.map.list.VtnPathMap;
 
 /**
  * JUnit test for {@link DataStoreUtils}.
@@ -226,6 +234,25 @@ public class DataStoreUtilsTest extends TestBase {
         Mockito.verify(tx, Mockito.times(1)).read(oper, path);
         Mockito.verify(tx, Mockito.never()).delete(oper, path);
         verifyFutureMock(f);
+    }
+
+    /**
+     * Test case for {@link DataStoreUtils#cast(Class,InstanceIdentifier)}.
+     */
+    @Test
+    public void testCast() {
+        SalPort sport = new SalPort(1L, 10L);
+        InstanceIdentifier<?> path = sport.getVtnPortIdentifier();
+        InstanceIdentifier<VtnPort> portPath =
+            DataStoreUtils.cast(VtnPort.class, path);
+        assertEquals(path, portPath);
+
+        List<Class<? extends DataObject>> bad = new ArrayList<>();
+        Collections.addAll(bad, VtnFlowMatch.class, VtnFlowCondition.class,
+                           VtnNode.class, VtnPathMap.class);
+        for (Class<? extends DataObject> cls: bad) {
+            assertEquals(null, DataStoreUtils.cast(cls, path));
+        }
     }
 
     /**

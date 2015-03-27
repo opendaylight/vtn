@@ -269,11 +269,27 @@ public final class FlowCondUtils {
     }
 
     /**
+     * Determine whether the given flow condition container is empty or not.
+     *
+     * @param root  A {@link VtnFlowConditions} instance.
+     * @return  {@code true} only if the given flow condition container is
+     *          empty.
+     */
+    public static boolean isEmpty(VtnFlowConditions root) {
+        if (root == null) {
+            return true;
+        }
+
+        List<VtnFlowCondition> vlist = root.getVtnFlowCondition();
+        return (vlist == null || vlist.isEmpty());
+    }
+
+    /**
      * Determine whether the specified flow condition is present or not.
      *
      * @param rtx    A {@link ReadTransaction} instance associated with the
      *               read transaction for the MD-SAL datastore.
-     * @param vname  A {@lnk VnodeName} instance that contains the name of the
+     * @param vname  A {@link VnodeName} instance that contains the name of the
      *               target flow condition.
      * @throws RpcException
      *    The specified flow condition is not present.

@@ -9,6 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import java.util.Collections;
+import java.util.Set;
+
 import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 
 /**
@@ -17,9 +20,9 @@ import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
  */
 public class PathPolicyFlowSelector implements FlowSelector {
     /**
-     * The identifier of the path policy.
+     * A set of path policy identifiers.
      */
-    private final int  policyId;
+    private final Set<Integer>  policyIds;
 
     /**
      * Construct a new instance.
@@ -27,7 +30,16 @@ public class PathPolicyFlowSelector implements FlowSelector {
      * @param id  The identifier of the path policy.
      */
     public PathPolicyFlowSelector(int id) {
-        policyId = id;
+        policyIds = Collections.singleton(Integer.valueOf(id));
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param set  A set of path policy identifiers.
+     */
+    public PathPolicyFlowSelector(Set<Integer> set) {
+        policyIds = Collections.unmodifiableSet(set);
     }
 
     // FlowSelector
@@ -37,7 +49,7 @@ public class PathPolicyFlowSelector implements FlowSelector {
      */
     @Override
     public boolean accept(VTNFlow vflow) {
-        return (vflow.getPathPolicy() == policyId);
+        return policyIds.contains(vflow.getPathPolicy());
     }
 
     /**
@@ -46,6 +58,6 @@ public class PathPolicyFlowSelector implements FlowSelector {
     @Override
     public String getDescription() {
         StringBuilder builder = new StringBuilder("path-policy=");
-        return builder.append(policyId).toString();
+        return builder.append(policyIds).toString();
     }
 }

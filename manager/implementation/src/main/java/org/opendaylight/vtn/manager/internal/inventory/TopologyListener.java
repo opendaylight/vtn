@@ -22,7 +22,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -190,17 +192,15 @@ public final class TopologyListener
      * {@inheritDoc}
      */
     @Override
-    protected void onCreated(LinkUpdateTask ectx, InstanceIdentifier<Link> key,
-                             Link value) {
-        ectx.addUpdated(key);
+    protected void onCreated(LinkUpdateTask ectx, IdentifiedData<Link> data) {
+        ectx.addUpdated(data.getIdentifier());
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onUpdated(LinkUpdateTask ectx, InstanceIdentifier<Link> key,
-                             Link oldValue, Link newValue) {
+    protected void onUpdated(LinkUpdateTask ectx, ChangedData<Link> data) {
         throw new IllegalStateException("Should never be called.");
     }
 
@@ -208,9 +208,8 @@ public final class TopologyListener
      * {@inheritDoc}
      */
     @Override
-    protected void onRemoved(LinkUpdateTask ectx, InstanceIdentifier<Link> key,
-                             Link value) {
-        ectx.addUpdated(key);
+    protected void onRemoved(LinkUpdateTask ectx, IdentifiedData<Link> data) {
+        ectx.addUpdated(data.getIdentifier());
     }
 
     /**
@@ -232,7 +231,10 @@ public final class TopologyListener
     }
 
     /**
-     * {@inheritDoc}
+     * Return a set of {@link VtnUpdateType} instances that specifies
+     * event types to be listened.
+     *
+     * @return  A set of {@link VtnUpdateType} instances.
      */
     @Override
     protected Set<VtnUpdateType> getRequiredEvents() {

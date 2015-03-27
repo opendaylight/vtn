@@ -31,9 +31,20 @@ public class CompositeAutoCloseableTest extends TestBase {
      */
     private static class CloseCounter implements AutoCloseable {
         /**
+         * An {@link AtomicInteger} that assigns a sequence number of the
+         * {@link #close()} call.
+         */
+        private static final AtomicInteger  SEQUENCE = new AtomicInteger();
+
+        /**
          * The number of {@link #close()} calls.
          */
         private final AtomicInteger  closed = new AtomicInteger();
+
+        /**
+         * The sequence number.
+         */
+        private int  sequence;
 
         /**
          * Close this instance.
@@ -41,6 +52,7 @@ public class CompositeAutoCloseableTest extends TestBase {
         @Override
         public void close() {
             closed.getAndIncrement();
+            sequence = SEQUENCE.incrementAndGet();
         }
 
         /**
@@ -50,6 +62,15 @@ public class CompositeAutoCloseableTest extends TestBase {
          */
         private int getClosedCount() {
             return closed.get();
+        }
+
+        /**
+         * Return the sequence number of {@link #close()} call.
+         *
+         * @return  A sequence number.
+         */
+        private int getSequence() {
+            return sequence;
         }
     }
 
@@ -110,8 +131,13 @@ public class CompositeAutoCloseableTest extends TestBase {
 
         cc.close();
         assertEquals(true, cc.isClosed());
+        int sequence = counters.size();
         for (CloseCounter counter: counters) {
             assertEquals(1, counter.getClosedCount());
+
+            // Closeables should be closed in reverse order of addition.
+            assertEquals(sequence, counter.getSequence());
+            sequence--;
         }
 
         Mockito.verify(logger).error("Failed to close instance: " + bad, e);
@@ -134,8 +160,11 @@ public class CompositeAutoCloseableTest extends TestBase {
             cc.close();
         }
 
+        sequence = counters.size();
         for (CloseCounter counter: counters) {
             assertEquals(1, counter.getClosedCount());
+            assertEquals(sequence, counter.getSequence());
+            sequence--;
         }
         for (CloseCounter counter: ignored) {
             assertEquals(0, counter.getClosedCount());

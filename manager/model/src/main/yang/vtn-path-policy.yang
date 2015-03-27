@@ -93,12 +93,10 @@ module vtn-path-policy {
            Note that the path policy configuration must be modified by RPC.
            Do not edit this container directly.";
         config false;
-        presence
-          "Indicates that the path policy management is active.";
+        presence "Indicates that the path policy management is active.";
 
         list vtn-path-policy {
-            description
-              "A list of path policies shared with all VTNs.";
+            description "A list of path policies shared with all VTNs.";
             key "id";
             uses vtn-path-policy-config;
         }
@@ -321,6 +319,27 @@ module vtn-path-policy {
                    RPC input and results.";
                 uses vtn-port-desc-result;
             }
+        }
+    }
+
+    rpc clear-path-policy {
+        description
+          "Remove all the path policies.
+
+           `status' in RPC output descripts the result of the operation.
+
+           REMOVED indicates that at least one path policy has been removed.
+
+           Null indicates that no path policy is present.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        output {
+            uses vtype:vtn-rpc-result;
         }
     }
 }

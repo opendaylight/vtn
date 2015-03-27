@@ -543,6 +543,54 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
+     * Test case for {@link MiscUtils#cast(Class,Object)} and
+     * {@link MiscUtils#checkedCast(Class,Object)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testCast() throws Exception {
+        Object num = Integer.valueOf(0);
+        List<Class<?>> good = new ArrayList<>();
+        Collections.addAll(good, Integer.class, Number.class);
+        for (Class<?> cls: good) {
+            assertEquals(num, MiscUtils.cast(cls, num));
+            assertEquals(num, MiscUtils.checkedCast(cls, num));
+        }
+
+        List<Class<?>> bad = new ArrayList<>();
+        Collections.addAll(bad, Byte.class, Short.class, Long.class,
+                           Float.class, Double.class, MiscUtils.class);
+        for (Class<?> cls: bad) {
+            assertEquals(null, MiscUtils.cast(cls, num));
+            try {
+                MiscUtils.checkedCast(cls, num);
+                unexpected();
+            } catch (DataTypeMismatchException e) {
+                assertEquals(cls, e.getTargetType());
+                assertSame(num, e.getObject());
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#toLowerCase(String)}.
+     */
+    @Test
+    public void testToLowerCase() {
+        Map<String, String> cases = new HashMap<>();
+        cases.put("", "");
+        cases.put("This is a test.", "this is a test.");
+        cases.put("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789;:'\"-_=+\\|`~",
+                  "abcdefghijklmnopqrstuvwxyz0123456789;:'\"-_=+\\|`~");
+        for (Map.Entry<String, String> entry: cases.entrySet()) {
+            String str = entry.getKey();
+            String expected = entry.getValue();
+            assertEquals(expected, MiscUtils.toLowerCase(str));
+        }
+    }
+
+    /**
      * Verify the contents of the given {@link VTNException}.
      *
      * <p>

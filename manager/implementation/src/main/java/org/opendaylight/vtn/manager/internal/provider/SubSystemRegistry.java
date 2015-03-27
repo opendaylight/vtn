@@ -54,6 +54,9 @@ public final class SubSystemRegistry {
     private final CompositeAutoCloseable  rpcServices =
         new CompositeAutoCloseable(LOG);
 
+    /**
+     * Construct a new instance.
+     */
     public SubSystemRegistry() {
         Map<Class<? extends VTNSubSystem>, VTNSubSystem> map =
             new LinkedHashMap<>();

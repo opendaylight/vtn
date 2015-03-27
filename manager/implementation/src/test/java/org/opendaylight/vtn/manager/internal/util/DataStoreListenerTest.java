@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.internal.util;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -89,6 +90,24 @@ public class DataStoreListenerTest extends TestBase {
         }
 
         /**
+         * Construct a new instance.
+         *
+         * @param data  An {@link IdentifiedData} object.
+         */
+        private NotifiedEvent(IdentifiedData<?> data) {
+            this(data.getIdentifier(), data.getValue(), null);
+        }
+
+        /**
+         * Construct a new instance.
+         *
+         * @param data  A {@link ChangedData} object.
+         */
+        private NotifiedEvent(ChangedData<?> data) {
+            this(data.getIdentifier(), data.getValue(), data.getOldValue());
+        }
+
+        /**
          * Return the path to the data object.
          *
          * @return  Path to the data object.
@@ -145,6 +164,19 @@ public class DataStoreListenerTest extends TestBase {
         public int hashCode() {
             return Objects.hash(path, newObject, oldObject);
         }
+
+        /**
+         * Return a string representation of this instance.
+         *
+         * @return  A string representation of this instance.
+         */
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder("NotifiedEvent[path=").
+                append(path).append(", new=").append(newObject).
+                append(", old=").append(oldObject).append(']');
+            return builder.toString();
+        }
     }
 
     /**
@@ -155,7 +187,7 @@ public class DataStoreListenerTest extends TestBase {
         /**
          * Logger instance.
          */
-        private final Logger  logger = Mockito.mock(Logger.class);
+        private Logger  logger;
 
         /**
          * A wildcard path.
@@ -295,9 +327,8 @@ public class DataStoreListenerTest extends TestBase {
          * {@inheritDoc}
          */
         @Override
-        protected void onCreated(Object ectx, InstanceIdentifier<VtnPort> path,
-                                 VtnPort data) {
-            NotifiedEvent nev = new NotifiedEvent(path, data, null);
+        protected void onCreated(Object ectx, IdentifiedData<VtnPort> data) {
+            NotifiedEvent nev = new NotifiedEvent(data);
             creationEvents.add(nev);
         }
 
@@ -305,9 +336,8 @@ public class DataStoreListenerTest extends TestBase {
          * {@inheritDoc}
          */
         @Override
-        protected void onUpdated(Object ectx, InstanceIdentifier<VtnPort> path,
-                                 VtnPort oldData, VtnPort newData) {
-            NotifiedEvent nev = new NotifiedEvent(path, newData, oldData);
+        protected void onUpdated(Object ectx, ChangedData<VtnPort> data) {
+            NotifiedEvent nev = new NotifiedEvent(data);
             updateEvents.add(nev);
         }
 
@@ -315,9 +345,8 @@ public class DataStoreListenerTest extends TestBase {
          * {@inheritDoc}
          */
         @Override
-        protected void onRemoved(Object ectx, InstanceIdentifier<VtnPort> path,
-                                 VtnPort data) {
-            NotifiedEvent nev = new NotifiedEvent(path, null, data);
+        protected void onRemoved(Object ectx, IdentifiedData<VtnPort> data) {
+            NotifiedEvent nev = new NotifiedEvent(data);
             removalEvents.add(nev);
         }
 
@@ -334,7 +363,12 @@ public class DataStoreListenerTest extends TestBase {
          */
         @Override
         protected Logger getLogger() {
-            return logger;
+            Logger log = logger;
+            if (log == null) {
+                log = Mockito.mock(Logger.class);
+                logger = log;
+            }
+            return log;
         }
 
         /**
@@ -350,8 +384,8 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for registration and unregistration.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope)}</li>
-     *   <li>{@link DataStoreListener#close()}</li>
+     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope)}</li>
+     *   <li>{@link AbstractDataChangeListener#close()}</li>
      * </ul>
      */
     @Test
@@ -393,7 +427,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for registration failure.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope)}</li>
+     *   <li>{@link AbstractDataChangeListener#registerListener(DataBroker, LogicalDatastoreType, AsyncDataBroker.DataChangeScope)}</li>
      * </ul>
      */
     @Test
@@ -415,7 +449,7 @@ public class DataStoreListenerTest extends TestBase {
             listener.registerListener(broker, store, scope);
             unexpected();
         } catch (IllegalStateException e) {
-            msg = "Failed to register data change listener for " +
+            msg = "Failed to register data change listener: " +
                 VtnPort.class.getName();
             assertEquals(iae, e.getCause());
             assertEquals(msg, e.getMessage());
@@ -440,7 +474,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for close error.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#close()}</li>
+     *   <li>{@link AbstractDataChangeListener#close()}</li>
      * </ul>
      */
     @Test
@@ -466,8 +500,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
 
         // Unregister a listener.
-        String msg = "Failed to unregister data change listener for " +
-            VtnPort.class.getName();
+        String msg = "Failed to close instance: " + reg;
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
         Mockito.doThrow(iae).when(reg).close();
@@ -486,7 +519,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for null event.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
      * </ul>
      */
     @Test
@@ -504,7 +537,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for unexpected exception.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
      * </ul>
      */
     @Test
@@ -536,7 +569,7 @@ public class DataStoreListenerTest extends TestBase {
      * Test case for an empty event.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
      * </ul>
      */
     @Test
@@ -566,7 +599,10 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that broken objects are ignored.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
+     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
+     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
      * </ul>
      */
     @Test
@@ -589,7 +625,7 @@ public class DataStoreListenerTest extends TestBase {
         createdArg.add(nev);
         nev = new NotifiedEvent(wild2, dummy, dummy);
         updatedArg.add(nev);
-        nev = new NotifiedEvent(wild3, null, dummy);
+        nev = new NotifiedEvent(wild3, dummy, null);
         removedArg.add(nev);
 
         // Null identifier should be ignored.
@@ -607,7 +643,7 @@ public class DataStoreListenerTest extends TestBase {
         createdArg.add(nev);
         nev = new NotifiedEvent(pp2, dummy, dummy);
         updatedArg.add(nev);
-        nev = new NotifiedEvent(pp3, null, dummy);
+        nev = new NotifiedEvent(pp3, dummy, null);
         removedArg.add(nev);
 
         // Invalid type of object should be ignored.
@@ -638,7 +674,7 @@ public class DataStoreListenerTest extends TestBase {
         dpid++;
         InstanceIdentifier<?> badPath4 = sport.getVtnPortIdentifier();
         VtnNode bad4 = new VtnNodeBuilder().setId(sport.getNodeId()).build();
-        nev = new NotifiedEvent(badPath4, null, bad4);
+        nev = new NotifiedEvent(badPath4, bad4, null);
         removedArg.add(nev);
 
         // Null object should be ignored.
@@ -714,40 +750,42 @@ public class DataStoreListenerTest extends TestBase {
         assertEquals(removed, listener.getRemovalEvents());
 
         // Verify that broken events were logged.
+        // Wildcard paths and unwanted type of instance identifiers cannot be
+        // detected because they are logged by verbose logger.
         String nullMsg = "{}: Null instance identifier.";
-        Mockito.verify(logger).warn(nullMsg, "onCreated");
-        Mockito.verify(logger).warn(nullMsg, "onUpdated");
-        Mockito.verify(logger).warn(nullMsg, "onRemoved");
-
-        String wildMsg = "{}: Ignore wildcard path: {}";
-        Mockito.verify(logger).trace(wildMsg, "onCreated", wild1);
-        Mockito.verify(logger).trace(wildMsg, "onUpdated", wild2);
-        Mockito.verify(logger).trace(wildMsg, "onRemoved", wild3);
-
-        String pathTypeMsg =
-            "{}: Unwanted target type in instance identifier: {}";
-        Mockito.verify(logger).trace(pathTypeMsg, "onCreated", pp1);
-        Mockito.verify(logger).trace(pathTypeMsg, "onUpdated", pp2);
-        Mockito.verify(logger).trace(pathTypeMsg, "onRemoved", pp3);
+        Mockito.verify(logger).warn(nullMsg, VtnUpdateType.CREATED);
+        Mockito.verify(logger).warn(nullMsg, VtnUpdateType.CHANGED);
+        Mockito.verify(logger).warn(nullMsg, VtnUpdateType.REMOVED);
 
         String dataTypeMsg =
-            "{}: Unexpected data is associated: key={}, value={}";
-        Mockito.verify(logger).warn(dataTypeMsg, "onCreated", badPath1, bad1);
-        Mockito.verify(logger).warn(dataTypeMsg, "onUpdated", badPath2, bad2);
-        Mockito.verify(logger).warn(dataTypeMsg, "onUpdated", badPath3, bad3);
-        Mockito.verify(logger).warn(dataTypeMsg, "onRemoved", badPath4, bad4);
+            "{}: Unexpected data is associated: path={}, value={}";
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.CREATED, badPath1, bad1);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.CHANGED, badPath2, bad2);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.CHANGED, badPath3, bad3);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.REMOVED, badPath4, bad4);
 
-        Mockito.verify(logger).warn(dataTypeMsg, "onCreated", null1, null);
-        Mockito.verify(logger).warn(dataTypeMsg, "onUpdated", null2, null);
-        Mockito.verify(logger).warn(dataTypeMsg, "onUpdated", null3, null);
-        Mockito.verify(logger).warn(dataTypeMsg, "onRemoved", null4, null);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.CREATED, null1, null);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.CHANGED, null2, null);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.CHANGED, null3, null);
+        Mockito.verify(logger).
+            warn(dataTypeMsg, VtnUpdateType.REMOVED, null4, null);
     }
 
     /**
-     * Ensure that all event types can be listener.
+     * Ensure that all event types can be listened.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
+     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
+     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
      * </ul>
      */
     @Test
@@ -806,7 +844,8 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only creation event can be listened.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
      * </ul>
      */
     @Test
@@ -851,7 +890,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
         Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
 
-        List<NotifiedEvent> empty = new ArrayList<>();
+        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
@@ -862,7 +901,8 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only update event can be listened.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
      * </ul>
      */
     @Test
@@ -907,7 +947,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
         Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
 
-        List<NotifiedEvent> empty = new ArrayList<>();
+        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
@@ -918,7 +958,8 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only removal event can be listened.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
      * </ul>
      */
     @Test
@@ -963,7 +1004,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
         Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
 
-        List<NotifiedEvent> empty = new ArrayList<>();
+        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
@@ -974,7 +1015,9 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only creation event can be filtered out.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
+     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
      * </ul>
      */
     @Test
@@ -1020,7 +1063,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
         Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
 
-        List<NotifiedEvent> empty = new ArrayList<>();
+        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(empty, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
@@ -1031,7 +1074,9 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only update event can be filtered out.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
+     *   <li>{@link DataStoreListener#onRemoved(Object,Set,Map)}</li>
      * </ul>
      */
     @Test
@@ -1077,7 +1122,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
         Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
 
-        List<NotifiedEvent> empty = new ArrayList<>();
+        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(empty, listener.getUpdateEvents());
         assertEquals(removed, listener.getRemovalEvents());
@@ -1088,7 +1133,9 @@ public class DataStoreListenerTest extends TestBase {
      * Ensure that only removal event can be filtered out.
      *
      * <ul>
-     *   <li>{@link DataStoreListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link AbstractDataChangeListener#onDataChanged(AsyncDataChangeEvent)}</li>
+     *   <li>{@link DataStoreListener#onCreated(Object,Map)}</li>
+     *   <li>{@link DataStoreListener#onUpdated(Object,Map,Map)}</li>
      * </ul>
      */
     @Test
@@ -1134,7 +1181,7 @@ public class DataStoreListenerTest extends TestBase {
         Mockito.verify(ev, Mockito.never()).getOriginalSubtree();
         Mockito.verify(ev, Mockito.never()).getUpdatedSubtree();
 
-        List<NotifiedEvent> empty = new ArrayList<>();
+        List<NotifiedEvent> empty = Collections.<NotifiedEvent>emptyList();
         assertEquals(created, listener.getCreationEvents());
         assertEquals(updated, listener.getUpdateEvents());
         assertEquals(empty, listener.getRemovalEvents());
@@ -1187,7 +1234,7 @@ public class DataStoreListenerTest extends TestBase {
             for (NotifiedEvent nev: removed) {
                 InstanceIdentifier<?> path = nev.getPath();
                 removedSet.add(path);
-                DataObject old = nev.getOldObject();
+                DataObject old = nev.getNewObject();
                 if (old != null) {
                     original = putData(original, path, old);
                 }
@@ -1272,7 +1319,7 @@ public class DataStoreListenerTest extends TestBase {
         SalPort sport = new SalPort(dpid, port);
         VtnPort vport = createVtnPortBuilder(sport).build();
         InstanceIdentifier<VtnPort> path = sport.getVtnPortIdentifier();
-        return new NotifiedEvent(path, null, vport);
+        return new NotifiedEvent(path, vport, null);
     }
 
     /**

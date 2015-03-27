@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -90,6 +90,52 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
+    }
+
+    /**
+     * Delete all the flow conditions configured in the specified container.
+     *
+     * @param containerName  The name of the container.
+     * @return Response as dictated by the HTTP Response Status code.
+     * @since  Lithium
+     */
+    @DELETE
+    @TypeHint(TypeHint.NO_CONTENT.class)
+    @StatusCodes({
+        @ResponseCode(code = HTTP_OK,
+                      condition = "At least one flow condition was deleted " +
+                      "successfully."),
+        @ResponseCode(code = HTTP_NO_CONTENT,
+                      condition = "No flow condition is present."),
+        @ResponseCode(code = HTTP_UNAUTHORIZED,
+                      condition = "User is not authorized to perform this " +
+                      "operation."),
+        @ResponseCode(code = HTTP_NOT_FOUND,
+                      condition = "The specified container does not exist."),
+        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
+                      condition = "\"default\" is specified to " +
+                      "<u>{containerName}</u> and a container other than " +
+                      "the default container is present."),
+        @ResponseCode(code = HTTP_INTERNAL_ERROR,
+                      condition = "Fatal internal error occurred in the " +
+                      "VTN Manager."),
+        @ResponseCode(code = HTTP_UNAVAILABLE,
+                      condition = "One or more of mandatory controller " +
+                      "services, such as the VTN Manager, are unavailable.")})
+    public Response clearFlowCondition(
+            @PathParam("containerName") String containerName) {
+        checkPrivilege(containerName, Privilege.WRITE);
+
+        IVTNManager mgr = getVTNManager(containerName);
+        Status status = mgr.clearFlowCondition();
+        if (status == null) {
+            return Response.noContent().build();
+        }
+        if (status.isSuccess()) {
+            return Response.ok().build();
+        }
+
+        throw getException(status);
     }
 
     /**

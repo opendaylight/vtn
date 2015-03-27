@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal.util;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.Collection;
+import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -286,5 +287,49 @@ public final class MiscUtils {
         }
 
         return UpdateType.CHANGED;
+    }
+
+    /**
+     * Cast an object type to the specified type.
+     *
+     * @param type  A class that indicates the target type.
+     * @param obj   An object to be casted.
+     * @param <T>   The target type.
+     * @return  A casted object if the given object can be casted to the
+     *          specified type. Otherwise {@code null}.
+     */
+    public static <T> T cast(Class<T> type, Object obj) {
+        return (type.isInstance(obj)) ? type.cast(obj) : null;
+    }
+
+    /**
+     * Cast an object type to the specified type.
+     *
+     * @param type  A class that indicates the target type.
+     * @param obj   An object to be casted.
+     * @param <T>   The target type.
+     * @return  A casted object if the given object can be casted to the
+     *          specified type.
+     * @throws DataTypeMismatchException
+     *    The type of {@code obj} does not match the type specified by
+     *    {@code type}.
+     */
+    public static <T> T checkedCast(Class<T> type, Object obj)
+        throws DataTypeMismatchException {
+        if (type.isInstance(obj)) {
+            return type.cast(obj);
+        }
+
+        throw new DataTypeMismatchException(type, obj);
+    }
+
+    /**
+     * Convert all of the characters in the given string to lower case.
+     *
+     * @param str  A string to be converted.
+     * @return  A converted string.
+     */
+    public static String toLowerCase(String str) {
+        return str.toLowerCase(Locale.ENGLISH);
     }
 }

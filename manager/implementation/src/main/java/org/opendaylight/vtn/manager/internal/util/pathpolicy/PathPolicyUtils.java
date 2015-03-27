@@ -44,6 +44,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  */
 public final class PathPolicyUtils {
     /**
+     * The path policy ID associated with the system default routing policy.
+     */
+    public static final int  DEFAULT_POLICY = 0;
+
+    /**
      * Default link cost used when the path policy does not exist.
      */
     public static final Long  DEFAULT_LINK_COST = Long.valueOf(1L);

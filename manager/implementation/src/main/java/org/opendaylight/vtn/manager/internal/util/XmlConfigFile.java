@@ -61,9 +61,19 @@ public final class XmlConfigFile {
         CONFIG,
 
         /**
+         * Indicates the configuration of the VTN.
+         */
+        VTN,
+
+        /**
          * Indicates the configuration for the path policy.
          */
         PATHPOLICY,
+
+        /**
+         * Indicates the configuration of the global path map list.
+         */
+        PATHMAP,
 
         /**
          * Indicates the configuration for the flow condition.

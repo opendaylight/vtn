@@ -24,9 +24,11 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.VTNSubSystem;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -49,6 +51,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.routing.updated.RemovedLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.routing.updated.RemovedLinkBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.ClearPathPolicyOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathCostInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathCostOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathPolicyInput;
@@ -124,6 +127,7 @@ public final class VTNRoutingManager
                              LogicalDatastoreType.OPERATIONAL,
                              DataChangeScope.SUBTREE);
             pathPolicyListener = new PathPolicyListener(provider, topology);
+            addCloseable(pathPolicyListener);
         } catch (RuntimeException e) {
             LOG.error("Failed to initialize routing manager.", e);
             close();
@@ -147,8 +151,8 @@ public final class VTNRoutingManager
      * @return  A {@link RouteResolver} instance if found.
      *          {@code null} if not fonud.
      */
-    public RouteResolver getRouteResolver(int id) {
-        return topology.getResolver(Integer.valueOf(id));
+    public RouteResolver getRouteResolver(Integer id) {
+        return topology.getResolver(id);
     }
 
     /**
@@ -199,7 +203,6 @@ public final class VTNRoutingManager
     public void close() {
         super.close();
         vtnListeners.clear();
-        pathPolicyListener.close();
     }
 
     // DataStoreListener
@@ -236,12 +239,13 @@ public final class VTNRoutingManager
      */
     @Override
     protected void onCreated(TopologyEventContext ectx,
-                             InstanceIdentifier<VtnLink> key, VtnLink value) {
+                             IdentifiedData<VtnLink> data) {
+        VtnLink vlink = data.getValue();
         try {
-            ectx.addCreated(value);
+            ectx.addCreated(vlink);
         } catch (IllegalArgumentException e) {
             LOG.debug("Ignore unsupported inter-switch link creation: " +
-                      value, e);
+                      vlink, e);
         }
     }
 
@@ -250,8 +254,7 @@ public final class VTNRoutingManager
      */
     @Override
     protected void onUpdated(TopologyEventContext ectx,
-                             InstanceIdentifier<VtnLink> key, VtnLink oldValue,
-                             VtnLink newValue) {
+                             ChangedData<VtnLink> data) {
         throw new IllegalStateException("Should never be called.");
     }
 
@@ -260,12 +263,13 @@ public final class VTNRoutingManager
      */
     @Override
     protected void onRemoved(TopologyEventContext ectx,
-                             InstanceIdentifier<VtnLink> key, VtnLink value) {
+                             IdentifiedData<VtnLink> data) {
+        VtnLink vlink = data.getValue();
         try {
-            ectx.addRemoved(value);
+            ectx.addRemoved(vlink);
         } catch (IllegalArgumentException e) {
             LOG.debug("Ignore unsupported inter-switch link deletion: " +
-                      value, e);
+                      vlink, e);
         }
     }
 
@@ -287,7 +291,10 @@ public final class VTNRoutingManager
     }
 
     /**
-     * {@inheritDoc}
+     * Return a set of {@link VtnUpdateType} instances that specifies
+     * event types to be listened.
+     *
+     * @return  A set of {@link VtnUpdateType} instances.
      */
     @Override
     protected Set<VtnUpdateType> getRequiredEvents() {
@@ -413,5 +420,19 @@ public final class VTNRoutingManager
             return RpcUtils.getErrorBuilder(RemovePathCostOutput.class, e).
                 buildFuture();
         }
+    }
+
+    /**
+     * Remove all the path policies.
+     *
+     * @return  A {@link Future} associated with the RPC task.
+     */
+    @Override
+    public Future<RpcResult<ClearPathPolicyOutput>> clearPathPolicy() {
+        // Create a task that removes all the path policies.
+        ClearPathPolicyTask task = new ClearPathPolicyTask();
+        VTNFuture<VtnUpdateType> taskFuture = vtnProvider.postSync(task);
+        return new RpcFuture<VtnUpdateType, ClearPathPolicyOutput>(
+            taskFuture, task);
     }
 }

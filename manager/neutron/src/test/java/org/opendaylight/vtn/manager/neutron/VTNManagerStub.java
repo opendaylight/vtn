@@ -506,6 +506,11 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
+    public Status clearFlowCondition() {
+        return null;
+    }
+
+    @Override
     public FlowMatch getFlowConditionMatch(String name, int index)
         throws VTNException {
         return null;
@@ -538,6 +543,11 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status removePathPolicy(int id) {
+        return null;
+    }
+
+    @Override
+    public Status clearPathPolicy() {
         return null;
     }
 
@@ -590,6 +600,11 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
+    public Status clearPathMap() {
+        return null;
+    }
+
+    @Override
     public List<PathMap> getPathMaps(VTenantPath path) throws VTNException {
         return null;
     }
@@ -606,6 +621,11 @@ public class VTNManagerStub implements IVTNManager {
 
     @Override
     public Status removePathMap(VTenantPath path, int index) {
+        return null;
+    }
+
+    @Override
+    public Status clearPathMap(VTenantPath path) {
         return null;
     }
 

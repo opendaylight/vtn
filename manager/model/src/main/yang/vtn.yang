@@ -1,0 +1,70 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn";
+    prefix vtn;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-path-map {
+        prefix pathmap;
+        revision-date 2015-03-28;
+    }
+
+    description
+      "The module that describes the configuration of the VTN
+       (Virtual Tenant Network).";
+
+    revision 2015-03-28 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-info {
+        description "Describes information about a VTN.";
+
+        leaf name {
+            description "The name of the VTN.";
+            type vtype:vnode-name;
+        }
+
+        container vtn-path-maps {
+            description
+              "A list of VTN path maps affect flows in this VTN.
+               If an incoming packet for this VTN matches the flow condition
+               configured in VTN path map, the route of that packet is
+               determined by the path policy configured in that path map.
+               If no VTN path map matches an incoming packet, global path maps
+               are evaluated.
+               Note that this container may not be present if no VTN path map
+               is configured.";
+            uses pathmap:vtn-path-map-list;
+        }
+    }
+
+    container vtns {
+        description
+          "The root container of all VTNs (Virtual Tenant Network).
+           Note that the VTN configuration must be modified by RPC.
+           Do not edit this container directly.
+
+           Remarks: This model is still in development.";
+        config false;
+        presence "Indicates the VTN management is active.";
+
+        list vtn {
+            description  "A list of VTNs.";
+            key "name";
+            uses vtn-info;
+        }
+    }
+}

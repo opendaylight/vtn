@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.config;
 
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -17,7 +16,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -29,7 +30,6 @@ import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
  * VTN configuration listener for operational view.
@@ -108,10 +108,11 @@ public final class OperationalListener
     /**
      * Update the current configuration.
      *
-     * @param vcfg  A {@link VtnConfig} instance that contains parameters
-     *              to be applied.
+     * @param data  An {@link IdentifiedData} instance which contains the
+     *              configuration to be applied.
      */
-    private void updateConfig(VtnConfig vcfg) {
+    private void updateConfig(IdentifiedData<VtnConfig> data) {
+        VtnConfig vcfg = data.getValue();
         VTNConfigImpl cur = current.get();
         VTNConfigImpl vconf = new VTNConfigImpl(vcfg);
         String diff = VTNConfigImpl.diff(cur, vconf);
@@ -145,8 +146,7 @@ public final class OperationalListener
      * {@inheritDoc}
      */
     @Override
-    protected void onCreated(Void ectx, InstanceIdentifier<VtnConfig> path,
-                             VtnConfig data) {
+    protected void onCreated(Void ectx, IdentifiedData<VtnConfig> data) {
         updateConfig(data);
     }
 
@@ -154,17 +154,15 @@ public final class OperationalListener
      * {@inheritDoc}
      */
     @Override
-    protected void onUpdated(Void ectx, InstanceIdentifier<VtnConfig> path,
-                             VtnConfig oldData, VtnConfig newData) {
-        updateConfig(newData);
+    protected void onUpdated(Void ectx, ChangedData<VtnConfig> data) {
+        updateConfig(data);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void onRemoved(Void ectx, InstanceIdentifier<VtnConfig> path,
-                             VtnConfig data) {
+    protected void onRemoved(Void ectx, IdentifiedData<VtnConfig> data) {
         LOG.warn("Global configuration has been removed unexpectedly.");
     }
 
@@ -182,13 +180,5 @@ public final class OperationalListener
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
     }
 }

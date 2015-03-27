@@ -262,7 +262,13 @@ module vtn-flow-condition {
            This grouping is used as output of RPC that modifies the VTN flow
            match configuration in a flow condition.";
 
-        uses vtype:vtn-index;
+        leaf index {
+            description
+              "The index value that specifies the flow match in the flow
+               condition.";
+            type int32;
+        }
+
         uses vtype:vtn-rpc-result;
     }
 
@@ -462,6 +468,28 @@ module vtn-flow-condition {
                    and results.";
                 uses vtn-flow-match-result;
             }
+        }
+    }
+
+    rpc clear-flow-condition {
+        description
+          "Remove all the flow conditions.
+
+           `status' in RPC output descripts the result of the operation.
+
+           REMOVED indicates that at least one flow condition has been
+           removed.
+
+           Null indicates that no flow condition is present.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        output {
+            uses vtype:vtn-rpc-result;
         }
     }
 }

@@ -25,14 +25,17 @@ import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.VTNSubSystem;
+import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -47,6 +50,7 @@ import org.opendaylight.yangtools.yang.binding.DataObject;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.ClearFlowConditionOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.RemoveFlowConditionMatchOutput;
@@ -91,6 +95,36 @@ public final class FlowCondManager
      */
     private class FlowCondLoadTask extends AbstractTxTask<VtnFlowConditions> {
         /**
+         * Resume the configuration for the given flow condition.
+         *
+         * @param vlist   A list of {@link VtnFlowCondition} instance to store
+         *                resumed configuration.
+         * @param loaded  A set of loaded flow condition names.
+         * @param name    The name of the flow condition.
+         * @param vfcond  A {@link VTNFlowCondition} instance.
+         */
+        private void resume(List<VtnFlowCondition> vlist, Set<String> loaded,
+                            String name, VTNFlowCondition vfcond) {
+            try {
+                vfcond.verify();
+                String condName = vfcond.getIdentifier();
+                if (!name.equals(condName)) {
+                    String msg = new StringBuilder("Unexpected name: ").
+                        append(condName).append(": expected=").append(name).
+                        toString();
+                    throw new IllegalArgumentException(msg);
+                }
+                vlist.add(vfcond.toVtnFlowConditionBuilder().build());
+                loaded.add(name);
+            } catch (RpcException | RuntimeException e) {
+                String msg = MiscUtils.joinColon(
+                    "Ignore invalid flow condition configuration",
+                    name, e.getMessage());
+                LOG.warn(msg, e);
+            }
+        }
+
+        /**
          * {@inheritDoc}
          */
         @Override
@@ -102,19 +136,10 @@ public final class FlowCondManager
             XmlConfigFile.Type ftype = XmlConfigFile.Type.FLOWCOND;
             List<VtnFlowCondition> vlist = new ArrayList<>();
             for (String key: XmlConfigFile.getKeys(ftype)) {
-                VTNFlowCondition vfcond = XmlConfigFile.load(
-                    ftype, key, VTNFlowCondition.class);
+                VTNFlowCondition vfcond = XmlConfigFile.
+                    load(ftype, key, VTNFlowCondition.class);
                 if (vfcond != null) {
-                    try {
-                        vfcond.verify();
-                        vlist.add(vfcond.toVtnFlowConditionBuilder().build());
-                        loaded.add(vfcond.getIdentifier());
-                    } catch (VTNException e) {
-                        String msg = MiscUtils.joinColon(
-                            "Ignore invalid flow condition configuration",
-                            key, e.getMessage());
-                        LOG.warn(msg);
-                    }
+                    resume(vlist, loaded, key, vfcond);
                 }
             }
 
@@ -149,7 +174,7 @@ public final class FlowCondManager
             if (vlist != null) {
                 for (VtnFlowCondition vfc: vlist) {
                     String name = vfc.getName().getValue();
-                    LOG.info("Flow condition was loaded: {}", name);
+                    LOG.info("{}: Flow condition has been loaded.", name);
                 }
             }
         }
@@ -165,11 +190,6 @@ public final class FlowCondManager
     private static class FlowCondSaveTask
         extends AbstractTxTask<VtnFlowConditions> {
         /**
-         * A list of {@link VtnFlowCondition} instances to be saved.
-         */
-        private List<VtnFlowCondition>  saveConfig = new ArrayList<>();
-
-        /**
          * Set {@code true} if the root container has been created.
          */
         private boolean  created;
@@ -179,7 +199,6 @@ public final class FlowCondManager
          */
         @Override
         public VtnFlowConditions execute(TxContext ctx) throws VTNException {
-            saveConfig.clear();
             created = false;
 
             // Load current configuration.
@@ -194,14 +213,6 @@ public final class FlowCondManager
                 conditions = new VtnFlowConditionsBuilder().build();
                 tx.put(oper, path, conditions, true);
                 created = true;
-            } else {
-                List<VtnFlowCondition> vlist =
-                    conditions.getVtnFlowCondition();
-                if (vlist != null) {
-                    for (VtnFlowCondition vfc: vlist) {
-                        saveConfig.add(vfc);
-                    }
-                }
             }
 
             return conditions;
@@ -215,18 +226,21 @@ public final class FlowCondManager
                               VtnFlowConditions result) {
             if (created) {
                 LOG.info(
-                    "An empty flow condition configuration has been created.");
+                    "An empty flow condition container has been created.");
             }
 
-            Set<String> names = new HashSet<>();
             XmlConfigFile.Type ftype = XmlConfigFile.Type.FLOWCOND;
-            for (VtnFlowCondition vfc: saveConfig) {
-                // Save configuration into a file.
-                VTNFlowCondition vfcond = VTNFlowCondition.create(vfc);
-                if (vfcond != null) {
-                    String name = vfcond.getIdentifier();
-                    XmlConfigFile.save(ftype, name, vfcond);
-                    names.add(name);
+            Set<String> names = new HashSet<>();
+            List<VtnFlowCondition> vlist = result.getVtnFlowCondition();
+            if (vlist != null) {
+                for (VtnFlowCondition vfc: vlist) {
+                    // Save configuration into a file.
+                    VTNFlowCondition vfcond = VTNFlowCondition.create(vfc);
+                    if (vfcond != null) {
+                        String name = vfcond.getIdentifier();
+                        XmlConfigFile.save(ftype, name, vfcond);
+                        names.add(name);
+                    }
                 }
             }
 
@@ -253,20 +267,22 @@ public final class FlowCondManager
      *
      * @param ectx     A {@link FlowCondChange} instance which keeps changes to
      *                 the configuration.
-     * @param path     Path to the flow condition.
-     * @param vfc      A {@link VtnFlowCondition} instance.
+     * @param data     An {@link IdentifiedData} instance that contains a data
+     *                 object.
      * @param created  {@code true} means that the given flow condition has
      *                 been newly created.
      */
     private void onUpdated(FlowCondChange ectx,
-                           InstanceIdentifier<VtnFlowCondition> path,
-                           VtnFlowCondition vfc, boolean created) {
+                           IdentifiedData<VtnFlowCondition> data,
+                           boolean created) {
+        VtnFlowCondition vfc = data.getValue();
         VTNFlowCondition vfcond = VTNFlowCondition.create(vfc);
         if (vfcond == null) {
             LOG.warn("Ignore broken {} event: path={}, value={}",
-                     (created) ? "creation" : "update", path, vfc);
+                     (created) ? "creation" : "update", data.getIdentifier(),
+                     vfc);
         } else {
-            ectx.addUpdated(vfcond, created);
+            ectx.addUpdated(vfcond.getIdentifier(), vfcond, created);
         }
     }
 
@@ -294,12 +310,11 @@ public final class FlowCondManager
      */
     @Override
     protected void onCreated(FlowCondChange ectx,
-                             InstanceIdentifier<VtnFlowCondition> key,
-                             VtnFlowCondition value) {
+                             IdentifiedData<VtnFlowCondition> data) {
         // Do nothing if the specified event was caused by the initial setup.
         Set<String> loaded = loadedConditions;
         if (loaded != null) {
-            String name = FlowCondUtils.getName(key);
+            String name = FlowCondUtils.getName(data.getIdentifier());
             if (name != null && loaded.remove(name)) {
                 if (loaded.isEmpty()) {
                     LOG.debug("All loaded flow conditions have been notified.");
@@ -309,7 +324,7 @@ public final class FlowCondManager
             }
         }
 
-        onUpdated(ectx, key, value, true);
+        onUpdated(ectx, data, true);
     }
 
     /**
@@ -317,10 +332,8 @@ public final class FlowCondManager
      */
     @Override
     protected void onUpdated(FlowCondChange ectx,
-                             InstanceIdentifier<VtnFlowCondition> key,
-                             VtnFlowCondition oldValue,
-                             VtnFlowCondition newValue) {
-        onUpdated(ectx, key, newValue, false);
+                             ChangedData<VtnFlowCondition> data) {
+        onUpdated(ectx, data, false);
     }
 
     /**
@@ -328,12 +341,12 @@ public final class FlowCondManager
      */
     @Override
     protected void onRemoved(FlowCondChange ectx,
-                             InstanceIdentifier<VtnFlowCondition> key,
-                             VtnFlowCondition value) {
-        String name = FlowCondUtils.getName(key);
+                             IdentifiedData<VtnFlowCondition> data) {
+        InstanceIdentifier<VtnFlowCondition> path = data.getIdentifier();
+        String name = FlowCondUtils.getName(path);
         if (name == null) {
             LOG.warn("Ignore broken removal event: path={}, value={}",
-                     key, value);
+                     path, data.getValue());
         } else {
             ectx.addRemoved(name);
         }
@@ -354,14 +367,6 @@ public final class FlowCondManager
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Set<VtnUpdateType> getRequiredEvents() {
-        return null;
     }
 
     // VTNSubSystem
@@ -397,7 +402,7 @@ public final class FlowCondManager
      *     flow condition will be associated with the specified name.
      *   </li>
      *   <li>
-     *     If the flow condition specifie dby the name already exists,
+     *     If the flow condition specifie by the name already exists,
      *     it will be modified as specified the RPC input.
      *   </li>
      * </ul>
@@ -486,5 +491,19 @@ public final class FlowCondManager
             return RpcUtils.getErrorBuilder(
                 RemoveFlowConditionMatchOutput.class, e).buildFuture();
         }
+    }
+
+    /**
+     * Remove all the flow conditions.
+     *
+     * @return  A {@link Future} associated with the RPC task.
+     */
+    @Override
+    public Future<RpcResult<ClearFlowConditionOutput>> clearFlowCondition() {
+        // Create a task that removes all the flow conditions.
+        ClearFlowConditionTask task = new ClearFlowConditionTask();
+        VTNFuture<VtnUpdateType> taskFuture = vtnProvider.postSync(task);
+        return new RpcFuture<VtnUpdateType, ClearFlowConditionOutput>(
+            taskFuture, task);
     }
 }

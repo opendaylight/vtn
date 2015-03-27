@@ -61,12 +61,7 @@ public final class ContainerConfig implements IObjectReader {
         /**
          * Indicates the configuration of the VTN.
          */
-        TENANT,
-
-        /**
-         * Indicates the configuration of the container path map list.
-         */
-        PATHMAP;
+        TENANT;
     }
 
     /**

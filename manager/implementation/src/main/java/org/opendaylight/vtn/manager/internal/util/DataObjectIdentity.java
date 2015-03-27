@@ -67,11 +67,6 @@ public final class DataObjectIdentity {
     private static final String  CLASS_SUFFIX_KEY = "Key";
 
     /**
-     * A prime number used to generate hash code.
-     */
-    private static final int  HASH_PRIME = 31;
-
-    /**
      * A map that keeps values in the target {@link DataObject} instance.
      */
     private final Map<String, Object>  dataMap = new HashMap<>();
@@ -103,7 +98,8 @@ public final class DataObjectIdentity {
             throw new IllegalStateException(msg, e);
         }
 
-        hash = dataType.getName().hashCode() + dataMap.hashCode() * HASH_PRIME;
+        hash = dataType.getName().hashCode() +
+            dataMap.hashCode() * MiscUtils.HASH_PRIME;
     }
 
     /**

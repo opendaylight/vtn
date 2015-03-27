@@ -43,11 +43,6 @@ public final class IdentifierTargetComparator
     private static final long  serialVersionUID = 1L;
 
     /**
-     * A prime number used to calculate hash code.
-     */
-    private static final int  HASH_PRIME = 127;
-
-    /**
      * A map that keeps order of target types.
      */
     private final Map<Class<?>, Integer>  targetOrder = new HashMap<>();
@@ -144,6 +139,7 @@ public final class IdentifierTargetComparator
      */
     @Override
     public int hashCode() {
-        return targetOrder.hashCode() + (getClass().hashCode() * HASH_PRIME);
+        return targetOrder.hashCode() +
+            (getClass().hashCode() * MiscUtils.HASH_PRIME);
     }
 }
