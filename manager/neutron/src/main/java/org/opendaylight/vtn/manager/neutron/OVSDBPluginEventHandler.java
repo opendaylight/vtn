@@ -496,14 +496,15 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             return null;
         }
 
-        Set<Long> setBigInt = intf.getOpenFlowPortColumn().getData();
-        if (setBigInt == null || setBigInt.isEmpty()) {
+        Set<Integer> portSet = intf.getOpenFlowPortColumn().getData();
+        if (portSet == null || portSet.isEmpty()) {
             LOG.error("No OF Ports configured for interface {}", intf);
             return null;
         }
-        LOG.trace("OF Port for interface {}",
-                  setBigInt.toArray()[0].toString());
-        return setBigInt.toArray()[0].toString();
+
+        String port = portSet.toArray()[0].toString();
+        LOG.trace("OF Port for interface {}", port);
+        return port;
     }
 
     /**

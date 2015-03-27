@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -193,4 +193,21 @@ public class OpenVSwitchStub implements OpenVSwitch {
     public void setSystemVersion(Set<String> systemVersion) {
     }
 
+    @Override
+    public Column<GenericTableSchema, Set<String>> getDatapathTypesColumn() {
+        return null;
+    }
+
+    @Override
+    public void setDatapathTypes(Set<String> datapathTypes) {
+    }
+
+    @Override
+    public Column<GenericTableSchema, Set<String>> getIfaceTypesColumn() {
+        return null;
+    }
+
+    @Override
+    public void setIfaceTypes(Set<String> ifaceTypes) {
+    }
 }

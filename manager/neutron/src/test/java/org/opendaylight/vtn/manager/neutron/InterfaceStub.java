@@ -38,9 +38,9 @@ public class InterfaceStub implements Interface {
     private Map<String, String> externalIds;
 
     /*
-     * Set<Long> declaration for openFlowPort of the interface
+     * Set<Integer> declaration for openFlowPort of the interface
      */
-    private Set<Long> openFlowPort;
+    private Set<Integer> openFlowPort;
 
     /*
      * GenericTableSchema declaration for creating Tableschema of Bridge
@@ -82,20 +82,20 @@ public class InterfaceStub implements Interface {
     }
 
     @Override
-    public Column<GenericTableSchema, Set<Long>> getOpenFlowPortColumn() {
-        if (this.openFlowPort != null) {
-            if (this.openFlowPort.contains(new Long("0"))) {
-                return new Column<GenericTableSchema, Set<Long>>(null, null);
-            } else {
-                return new Column<GenericTableSchema, Set<Long>>(null, openFlowPort);
+    public Column<GenericTableSchema, Set<Integer>> getOpenFlowPortColumn() {
+        Set<Integer> portSet = openFlowPort;
+        if (portSet != null) {
+            if (portSet.contains(Integer.valueOf(0))) {
+                portSet = null;
             }
+            return new Column<GenericTableSchema, Set<Integer>>(null, portSet);
         }
 
         return null;
     }
 
     @Override
-    public void setOpenFlowPort(Set<Long> openFlowPort) {
+    public void setOpenFlowPort(Set<Integer> openFlowPort) {
         this.openFlowPort = openFlowPort;
     }
 
@@ -199,12 +199,12 @@ public class InterfaceStub implements Interface {
     }
 
     @Override
-    public Column<GenericTableSchema, Set<Long>> getOpenFlowPortRequestColumn() {
+    public Column<GenericTableSchema, Set<Integer>> getOpenFlowPortRequestColumn() {
         return null;
     }
 
     @Override
-    public void setOpenFlowPortRequest(String openFlowPortRequest) {
+    public void setOpenFlowPortRequest(Set<Integer> openFlowPortRequest) {
     }
 
     @Override

@@ -282,13 +282,13 @@ public class OVSDBManagerStub extends TestBase implements OvsdbConfigurationServ
 
                     mapOvsdb.delegate().put(rowUpdate[ROW_UPDATE_INTERFACE_NAME], rowUpdate[ROW_UPDATE_INTERFACE_PORT_ID]);
                     intfStubRow.setExternalIds(mapOvsdb.delegate());
-                    OvsdbSet<Long> ofPortColumn = new OvsdbSet<>();
+                    OvsdbSet<Integer> ofPortColumn = new OvsdbSet<>();
 
                     if (rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(OF_PORT_ARRAY_IS_NULL)) {
                         // Added Dumy port and in InterfaceStub, for this Dumyport OFPort will be returned as NULL
-                        ofPortColumn.delegate().add(new Long("0"));
+                        ofPortColumn.delegate().add(Integer.valueOf(0));
                     } else if (!rowUpdate[ROW_UPDATE_OPTION].equalsIgnoreCase(OF_PORT_ARRAY_IS_EMPTY)) {
-                        ofPortColumn.delegate().add(new Long("1"));
+                        ofPortColumn.delegate().add(Integer.valueOf(1));
                     }
                     intfStubRow.setOpenFlowPort(ofPortColumn.delegate());
 
@@ -363,8 +363,8 @@ public class OVSDBManagerStub extends TestBase implements OvsdbConfigurationServ
                         mapOvsdb.delegate().put(isUpdateOfInterest[ROW_UPDATE_INTERFACE_NAME], isUpdateOfInterest[ROW_UPDATE_INTERFACE_PORT_ID]);
                         intfStubRow.setExternalIds(mapOvsdb.delegate());
 
-                        OvsdbSet<Long> ofPortColumn = new OvsdbSet<>();
-                        ofPortColumn.delegate().add(new Long("1"));
+                        OvsdbSet<Integer> ofPortColumn = new OvsdbSet<>();
+                        ofPortColumn.delegate().add(Integer.valueOf(1));
                         intfStubRow.setOpenFlowPort(ofPortColumn.delegate());
                     }
                     return (T)intfStubRow;
