@@ -18,6 +18,7 @@ import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 import org.opendaylight.neutron.spi.INeutronNetworkAware;
 import org.opendaylight.neutron.spi.INeutronPortAware;
 import org.opendaylight.neutron.spi.INeutronPortCRUD;
+import org.opendaylight.neutron.spi.INeutronSubnetAware;
 
 import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConfigurationService;
 import org.opendaylight.ovsdb.compatibility.plugin.api.OvsdbConnectionService;
@@ -57,6 +58,7 @@ public class Activator extends ComponentActivatorAbstractBase {
     public Object[] getImplementations() {
         Object[] res = {NetworkHandler.class,
                         PortHandler.class,
+                        SubnetHandler.class,
                         OVSDBPluginEventHandler.class};
         return res;
     }
@@ -90,6 +92,16 @@ public class Activator extends ComponentActivatorAbstractBase {
         if (imp.equals(PortHandler.class)) {
             // Export the services.
             c.setInterface(INeutronPortAware.class.getName(), null);
+
+            // Create service dependencies.
+            c.add(createServiceDependency().
+                  setService(IVTNManager.class).
+                  setCallbacks("setVTNManager", "unsetVTNManager").
+                  setRequired(true));
+        }
+        if (imp.equals(SubnetHandler.class)) {
+            // Export the services.
+            c.setInterface(INeutronSubnetAware.class.getName(), null);
 
             // Create service dependencies.
             c.add(createServiceDependency().
