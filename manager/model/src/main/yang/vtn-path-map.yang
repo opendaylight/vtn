@@ -209,7 +209,7 @@ module vtn-path-map {
             leaf-list map-index {
                 description
                   "A list of path map indices to be removed from the path map
-                   configuration specified by `name' field.
+                   configuration specified by `tenant-name' field.
                    Duplicates in this list will be eliminated automatically.";
                 type int32;
             }
