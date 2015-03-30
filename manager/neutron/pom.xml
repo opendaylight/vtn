@@ -43,6 +43,7 @@
         <configuration>
           <instructions>
             <Import-Package>
+              org.opendaylight.controller.networkconfig.neutron,
               org.opendaylight.controller.sal.core,
               org.opendaylight.controller.sal.utils,
               org.opendaylight.neutron.spi,
@@ -66,6 +67,11 @@
   </build>
 
   <dependencies>
+    <dependency>
+      <groupId>org.opendaylight.controller</groupId>
+      <artifactId>networkconfig.neutron</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.opendaylight.neutron</groupId>
       <artifactId>neutron-spi</artifactId>
