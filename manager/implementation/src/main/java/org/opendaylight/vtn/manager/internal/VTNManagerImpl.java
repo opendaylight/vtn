@@ -3381,6 +3381,8 @@ public class VTNManagerImpl
         }
 
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        VTNFuture<?> rmf;
+        Status status;
         try {
             checkTenantConfig(tconf);
             VTenantImpl vtn = new VTenantImpl(containerName, tenantName,
@@ -3392,7 +3394,7 @@ public class VTNManagerImpl
             // Create a VTN flow database.
             createTenantFlowDB(tenantName);
 
-            Status status = vtn.saveConfig(null);
+            status = vtn.saveConfig(null);
             VTenant vtenant = vtn.getVTenant();
             updateVTNMode(false);
             enqueueEvent(path, vtenant, UpdateType.ADDED);
@@ -3401,11 +3403,19 @@ public class VTNManagerImpl
         } catch (VTNException e) {
             InstanceIdentifier<Vtn> vpath = VTenantUtils.getIdentifier(vname);
             RemoveTenantTask task = new RemoveTenantTask(vpath);
-            provider.post(task);
-            return e.getStatus();
+            rmf = provider.post(task);
+            status = e.getStatus();
         } finally {
             data.cleanUp(this);
         }
+
+        try {
+            rmf.checkedGet();
+        } catch (VTNException e) {
+            // Ignore error.
+        }
+
+        return status;
     }
 
     /**
@@ -3446,6 +3456,7 @@ public class VTNManagerImpl
     @Override
     public Status removeTenant(VTenantPath path) {
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
+        VTNFuture<?> rmf;
         try {
             String tenantName = VTenantUtils.getName(path);
             VTNManagerProvider provider = checkUpdate();
@@ -3460,7 +3471,7 @@ public class VTNManagerImpl
             InstanceIdentifier<Vtn> vpath =
                 VTenantUtils.getIdentifier(tenantName);
             RemoveTenantTask task = new RemoveTenantTask(vpath);
-            provider.post(task);
+            rmf = provider.post(task);
 
             VTenant vtenant = vtn.getVTenant();
             vtn.destroy(this);
@@ -3477,6 +3488,12 @@ public class VTNManagerImpl
             return e.getStatus();
         } finally {
             data.cleanUp(this);
+        }
+
+        try {
+            rmf.checkedGet();
+        } catch (VTNException e) {
+            return e.getStatus();
         }
 
         return new Status(StatusCode.SUCCESS, null);
