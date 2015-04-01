@@ -102,12 +102,17 @@ public class PortStub implements Port{
     }
 
     @Override
-    public Column<GenericTableSchema, Set<Long>> getTrunksColumn() {
+    public Column<GenericTableSchema, Set<Integer>> getTrunksColumn() {
         return null;
     }
 
     @Override
-    public void setTrunks(Set<Long> trunks) {
+    public Set<Integer> getTrunks() {
+        return null;
+    }
+
+    @Override
+    public void setTrunks(Set<Integer> trunks) {
     }
 
     @Override
@@ -116,7 +121,12 @@ public class PortStub implements Port{
     }
 
     @Override
-    public void setTag(Set<Long> tag) {
+    public int getTag() {
+        return 0;
+    }
+
+    @Override
+    public void setTag(int tag) {
     }
 
     @Override
