@@ -356,9 +356,6 @@ public final class TestOption {
             TestHelper.bindingAwareSalBundles(),
             TestHelper.configMinumumBundles(),
 
-            // Load java-concurrent-hash-trie-map required by yangtools.
-            mavenBundle("com.github.romix", "java-concurrent-hash-trie-map"),
-
             // Override the location of the MD-SAL module configuration file.
             systemProperty(PROP_FILE_STORAGE).value(ctlrXmlPath),
 
