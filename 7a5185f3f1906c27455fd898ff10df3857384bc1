@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5a93c517_a07d59e9",
+        "filename": "manager/common/pom.xml",
+        "patchSetId": 2
+      },
+      "lineNbr": 547,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-03T05:28:37Z",
+      "side": 1,
+      "message": "We don\u0027t need this artifact.\nActually, the controller project does not provide this artifact in Lithium.",
+      "range": {
+        "startLine": 543,
+        "startChar": 0,
+        "endLine": 547,
+        "endChar": 19
+      },
+      "revId": "7a5185f3f1906c27455fd898ff10df3857384bc1",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "5a93c517_c020a5f9",
+        "filename": "manager/neutron/src/main/java/org/opendaylight/vtn/manager/neutron/Activator.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 17,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-03T05:28:37Z",
+      "side": 1,
+      "message": "That should be \"org.opendaylight.neutron.spi.INeutronSubnetAware\".",
+      "range": {
+        "startLine": 17,
+        "startChar": 7,
+        "endLine": 17,
+        "endChar": 76
+      },
+      "revId": "7a5185f3f1906c27455fd898ff10df3857384bc1",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
