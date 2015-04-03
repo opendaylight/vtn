@@ -496,7 +496,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             return null;
         }
 
-        Set<Integer> portSet = intf.getOpenFlowPortColumn().getData();
+        Set<Long> portSet = intf.getOpenFlowPortColumn().getData();
         if (portSet == null || portSet.isEmpty()) {
             LOG.error("No OF Ports configured for interface {}", intf);
             return null;
