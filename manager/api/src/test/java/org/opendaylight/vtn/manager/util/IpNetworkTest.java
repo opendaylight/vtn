@@ -18,6 +18,12 @@ import org.junit.Test;
 
 import org.opendaylight.vtn.manager.TestBase;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.Address;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4Builder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv6;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv6Builder;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv6Prefix;
@@ -131,6 +137,7 @@ public class IpNetworkTest extends TestBase {
      *   <li>{@link IpNetwork#create(InetAddress)}</li>
      *   <li>{@link IpNetwork#create(InetAddress, int)}</li>
      *   <li>{@link IpNetwork#create(IpPrefix)}</li>
+     *   <li>{@link IpNetwork#create(Address)}</li>
      *   <li>{@link IpNetwork#create(String)}</li>
      * </ul>
      *
@@ -165,7 +172,14 @@ public class IpNetworkTest extends TestBase {
                 assertEquals(prefix, ip.getPrefixLength());
 
                 String cidr = host + "/" + i;
-                IpPrefix ipp = new IpPrefix(new Ipv4Prefix(cidr));
+                Ipv4Prefix ipv4 = new Ipv4Prefix(cidr);
+                IpPrefix ipp = new IpPrefix(ipv4);
+                ip = IpNetwork.create(ipp);
+                assertTrue(ip instanceof Ip4Network);
+                assertEquals(expected, ip);
+                assertEquals(prefix, ip.getPrefixLength());
+
+                Ipv4 i4 = new Ipv4Builder().setIpv4Address(ipv4).build();
                 ip = IpNetwork.create(ipp);
                 assertTrue(ip instanceof Ip4Network);
                 assertEquals(expected, ip);
@@ -241,13 +255,26 @@ public class IpNetworkTest extends TestBase {
 
         assertEquals(null, IpNetwork.create((IpPrefix)null));
         assertEquals(null, IpNetwork.create((String)null));
+        assertEquals(null, IpNetwork.create((Address)null));
+        assertEquals(null, IpNetwork.create((Ipv4)null));
+        assertEquals(null, IpNetwork.create((Ipv6)null));
 
-        IpPrefix ipp = new IpPrefix(new Ipv6Prefix("::1/64"));
+        Ipv6Prefix ipv6 = new Ipv6Prefix("::1/64");
+        IpPrefix ipp = new IpPrefix(ipv6);
         try {
             IpNetwork.create(ipp);
             unexpected();
         } catch (IllegalArgumentException e) {
             String msg = "Unsupported IP prefix: " + ipp;
+            assertEquals(msg, e.getMessage());
+        }
+
+        Ipv6 i6 = new Ipv6Builder().setIpv6Address(ipv6).build();
+        try {
+            IpNetwork.create(i6);
+            unexpected();
+        } catch (IllegalArgumentException e) {
+            String msg = "Unsupported IP address: " + i6;
             assertEquals(msg, e.getMessage());
         }
 

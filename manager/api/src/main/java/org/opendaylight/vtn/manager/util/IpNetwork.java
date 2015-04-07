@@ -21,6 +21,9 @@ import javax.xml.bind.annotation.XmlValue;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.Address;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
@@ -219,7 +222,7 @@ public abstract class IpNetwork implements Serializable {
         if (ipp != null) {
             Ipv4Prefix ipv4 = ipp.getIpv4Prefix();
             if (ipv4 != null) {
-                return Ip4Network.create(ipv4.getValue());
+                return create(ipv4.getValue());
             }
 
             if (ipp.getIpv6Prefix() != null) {
@@ -229,6 +232,30 @@ public abstract class IpNetwork implements Serializable {
         }
 
         return null;
+    }
+
+    /**
+     * Create an {@link IpNetwork} instance which represents the IP network
+     * specified by the given {@link Address} instance.
+     *
+     * @param addr  An {@link Address} instance which represents the
+     *              IP address.
+     * @return  An {@link IpNetwork} instance which represents the IP network
+     *          specified by {@code addr}. Note that {@code null} is returned
+     *          if {@code addr} is {@code null} or it does not contain valid
+     *          value.
+     * @throws IllegalArgumentException
+     *    The given {@link Address} instance is invalid.
+     */
+    public static final IpNetwork create(Address addr) {
+        if (addr instanceof Ipv4) {
+            Ipv4Prefix ipv4 = ((Ipv4)addr).getIpv4Address();
+            return (ipv4 == null) ? null : create(ipv4.getValue());
+        } else if (addr == null) {
+            return null;
+        }
+
+        throw new IllegalArgumentException("Unsupported IP address: " + addr);
     }
 
     /**
@@ -370,6 +397,13 @@ public abstract class IpNetwork implements Serializable {
      * @return  An {@link IpPrefix} instance.
      */
     public abstract IpPrefix getIpPrefix();
+
+    /**
+     * Return a MD-SAL IP address which represents this network address.
+     *
+     * @return  An {@link Address} instance.
+     */
+    public abstract Address getMdAddress();
 
     /**
      * Return a string representation of this network in CIDR notation.

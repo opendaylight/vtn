@@ -23,10 +23,10 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  */
 public final class LongAdapter extends XmlAdapter<String, Long> {
     /**
-     * Convert the given string into an {@link Long} instance.
+     * Convert the given {@link Long} instance into a string.
      *
-     * @param v  A string to be converted.
-     * @return   A {@link Long} instance if {@code v} is not {@code null}.
+     * @param v  A {@link Long} instance to be converted.
+     * @return   A string if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override
@@ -35,10 +35,10 @@ public final class LongAdapter extends XmlAdapter<String, Long> {
     }
 
     /**
-     * Convert the given {@link Long} instance into a string.
+     * Convert the given string into a {@link Long} instance.
      *
-     * @param v  An {@link Long} instance to be converted.
-     * @return   A string if {@code v} is not {@code null}.
+     * @param v  A string to be converted.
+     * @return   A {@link Long} instance if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override

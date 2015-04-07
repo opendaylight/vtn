@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,7 +44,7 @@ public final class PushVlanAction extends FlowAction {
      *
      * <ul>
      *   <li>
-     *     The value must be 33024 (0x8100: 801.1Q) or 34984 (0x88a8: 802.1ad).
+     *     The value must be 33024 (0x8100: 802.1Q) or 34984 (0x88a8: 802.1ad).
      *   </li>
      *   <li>
      *     This attribute is mandatory.

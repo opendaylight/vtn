@@ -23,6 +23,9 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlValueType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4Builder;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
@@ -272,6 +275,7 @@ public class Ip4NetworkTest extends TestBase {
      *   <li>{@link Ip4Network#getNetMask()}</li>
      *   <li>{@link Ip4Network#getMaxPrefix()}</li>
      *   <li>{@link Ip4Network#getIpPrefix()}</li>
+     *   <li>{@link Ip4Network#getMdAddress()}</li>
      *   <li>{@link Ip4Network#getCidrText()}</li>
      *   <li>{@link Ip4Network#getHostAddress()}</li>
      *   <li>{@link Ip4Network#getBytes()}</li>
@@ -294,7 +298,9 @@ public class Ip4NetworkTest extends TestBase {
             String host = iaddr.getHostAddress();
             String text = host;
             String cidr = host + "/32";
-            IpPrefix ipp = new IpPrefix(new Ipv4Prefix(cidr));
+            Ipv4Prefix ipv4 = new Ipv4Prefix(cidr);
+            IpPrefix ipp = new IpPrefix(ipv4);
+            Ipv4 i4 = new Ipv4Builder().setIpv4Address(ipv4).build();
 
             Ip4Network[] cases = {
                 new Ip4Network(addr),
@@ -310,6 +316,7 @@ public class Ip4NetworkTest extends TestBase {
                 IpPrefix ipp1 = ip4.getIpPrefix();
                 assertEquals(ipp, ipp1);
                 assertSame(ipp1, ip4.getIpPrefix());
+                assertEquals(i4, ip4.getMdAddress());
                 String cidr1 = ip4.getCidrText();
                 assertEquals(cidr, cidr1);
                 assertSame(cidr1, ip4.getCidrText());
@@ -340,7 +347,10 @@ public class Ip4NetworkTest extends TestBase {
                 String maskedCidr = maskedHost + "/" + prefix;
                 String maskedText = (prefix == 32)
                     ? maskedHost : maskedCidr;
-                IpPrefix maskedIpp = new IpPrefix(new Ipv4Prefix(maskedCidr));
+                Ipv4Prefix maskedIpv4 = new Ipv4Prefix(maskedCidr);
+                IpPrefix maskedIpp = new IpPrefix(maskedIpv4);
+                Ipv4 maskedI4 = new Ipv4Builder().setIpv4Address(maskedIpv4).
+                    build();
                 String arg1 = maskedHost + "/" + i;
                 String arg2 = host + "/" + i;
 
@@ -358,6 +368,7 @@ public class Ip4NetworkTest extends TestBase {
                     IpPrefix ipp1 = ip4.getIpPrefix();
                     assertEquals(maskedIpp, ipp1);
                     assertSame(ipp1, ip4.getIpPrefix());
+                    assertEquals(maskedI4, ip4.getMdAddress());
                     String cidr1 = ip4.getCidrText();
                     assertEquals(maskedCidr, cidr1);
                     assertSame(cidr1, ip4.getCidrText());
@@ -379,13 +390,7 @@ public class Ip4NetworkTest extends TestBase {
                         assertSame(ip4, Ip4Network.toIp4Address(ip4));
                     } else {
                         assertEquals(false, ip4.isAddress());
-                        try {
-                            Ip4Network.toIp4Address(ip4);
-                            unexpected();
-                        } catch (IllegalArgumentException e) {
-                            String msg = "Not an IPv4 address: " + ip4;
-                            assertEquals(msg, e.getMessage());
-                        }
+                        assertEquals(null, Ip4Network.toIp4Address(ip4));
                     }
                 }
             }
@@ -415,13 +420,7 @@ public class Ip4NetworkTest extends TestBase {
             new UnknownIpNetwork(),
         };
         for (IpNetwork ipn: invalidNet) {
-            try {
-                Ip4Network.toIp4Address(ipn);
-                unexpected();
-            } catch (IllegalArgumentException e) {
-                String msg = "Not an IPv4 address: " + ipn;
-                assertEquals(msg, e.getMessage());
-            }
+            assertEquals(null, Ip4Network.toIp4Address(ipn));
         }
 
         // Invalid prefix length.

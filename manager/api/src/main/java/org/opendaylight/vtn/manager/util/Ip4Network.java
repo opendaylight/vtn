@@ -17,6 +17,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.address.Ipv4Builder;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Prefix;
 
@@ -178,17 +181,12 @@ public final class Ip4Network extends IpNetwork {
      * IPv4 address.
      *
      * @param ipn  An {@link IpNetwork} instance.
-     * @return  {@code ipn} casted as {@link Ip4Network}.
-     * @throws IllegalArgumentException
-     *    The given {@link IpNetwork} instance does not represent an
-     *    IPv4 address.
+     * @return  {@code ipn} casted as {@link Ip4Network} if {@code ipn}
+     *          represents an IPv4 address. Otherwise {@code null}.
      */
     public static Ip4Network toIp4Address(IpNetwork ipn) {
-        if (ipn instanceof Ip4Network && ipn.isAddress()) {
-            return (Ip4Network)ipn;
-        }
-
-        throw new IllegalArgumentException("Not an IPv4 address: " + ipn);
+        return (ipn instanceof Ip4Network && ipn.isAddress())
+            ? (Ip4Network)ipn : null;
     }
 
     /**
@@ -370,6 +368,17 @@ public final class Ip4Network extends IpNetwork {
         }
 
         return ip;
+    }
+
+    /**
+     * Return a MD-SAL IP address which represents this network address.
+     *
+     * @return  An {@link Ipv4} instance.
+     */
+    @Override
+    public Ipv4 getMdAddress() {
+        IpPrefix ipp = getIpPrefix();
+        return new Ipv4Builder().setIpv4Address(ipp.getIpv4Prefix()).build();
     }
 
     /**

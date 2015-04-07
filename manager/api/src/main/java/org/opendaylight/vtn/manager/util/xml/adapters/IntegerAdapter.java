@@ -23,10 +23,10 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  */
 public final class IntegerAdapter extends XmlAdapter<String, Integer> {
     /**
-     * Convert the given string into an {@link Integer} instance.
+     * Convert the given {@link Integer} instance into a string.
      *
-     * @param v  A string to be converted.
-     * @return   A {@link Integer} instance if {@code v} is not {@code null}.
+     * @param v  An {@link Integer} instance to be converted.
+     * @return   A string if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override
@@ -35,10 +35,10 @@ public final class IntegerAdapter extends XmlAdapter<String, Integer> {
     }
 
     /**
-     * Convert the given {@link Integer} instance into a string.
+     * Convert the given string into an {@link Integer} instance.
      *
-     * @param v  An {@link Integer} instance to be converted.
-     * @return   A string if {@code v} is not {@code null}.
+     * @param v  A string to be converted.
+     * @return   An {@link Integer} instance if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override

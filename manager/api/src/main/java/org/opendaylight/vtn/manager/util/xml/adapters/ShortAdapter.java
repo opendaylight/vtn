@@ -23,10 +23,10 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  */
 public final class ShortAdapter extends XmlAdapter<String, Short> {
     /**
-     * Convert the given string into an {@link Short} instance.
+     * Convert the given {@link Short} instance into a string.
      *
-     * @param v  A string to be converted.
-     * @return   A {@link Short} instance if {@code v} is not {@code null}.
+     * @param v  A {@link Short} instance to be converted.
+     * @return   A string if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override
@@ -35,10 +35,10 @@ public final class ShortAdapter extends XmlAdapter<String, Short> {
     }
 
     /**
-     * Convert the given {@link Short} instance into a string.
+     * Convert the given string into a {@link Short} instance.
      *
-     * @param v  An {@link Short} instance to be converted.
-     * @return   A string if {@code v} is not {@code null}.
+     * @param v  A string to be converted.
+     * @return   A {@link Short} instance if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override

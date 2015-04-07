@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.util;
 
 import java.net.InetAddress;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.address.Address;
+
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpPrefix;
 
 /**
@@ -47,6 +49,14 @@ public final class UnknownIpNetwork extends IpNetwork {
      */
     @Override
     public IpPrefix getIpPrefix() {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Address getMdAddress() {
         return null;
     }
 

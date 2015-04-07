@@ -23,10 +23,10 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  */
 public final class ByteAdapter extends XmlAdapter<String, Byte> {
     /**
-     * Convert the given string into an {@link Byte} instance.
+     * Convert the given {@link Byte} instance into a string.
      *
-     * @param v  A string to be converted.
-     * @return   A {@link Byte} instance if {@code v} is not {@code null}.
+     * @param v  A {@link Byte} instance to be converted.
+     * @return   A string if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override
@@ -35,10 +35,10 @@ public final class ByteAdapter extends XmlAdapter<String, Byte> {
     }
 
     /**
-     * Convert the given {@link Byte} instance into a string.
+     * Convert the given string into a {@link Byte} instance.
      *
-     * @param v  An {@link Byte} instance to be converted.
-     * @return   A string if {@code v} is not {@code null}.
+     * @param v  A string to be converted.
+     * @return   A {@link Byte} instance if {@code v} is not {@code null}.
      *           {@code null} if {@code v} is {@code null}.
      */
     @Override
