@@ -45,6 +45,8 @@ import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+
 /**
  * Implementation of VLAN mapping to the virtual L2 bridge.
  *
@@ -539,7 +541,7 @@ public final class VlanMapImpl implements VBridgeNode {
      */
     @Override
     public VNodeRoute getIngressRoute() {
-        return new VNodeRoute(mapPath, VNodeRoute.Reason.VLANMAPPED);
+        return new VNodeRoute(mapPath, VirtualRouteReason.VLANMAPPED);
     }
 
     /**

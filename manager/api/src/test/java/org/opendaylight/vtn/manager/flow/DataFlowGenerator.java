@@ -29,6 +29,8 @@ import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+
 /**
  * Generator of unique {@link DataFlow} instances.
  *
@@ -263,23 +265,23 @@ public final class DataFlowGenerator extends TestBase {
         String tname = "tenant_1";
         VNodePath vpath = new VBridgePath(tname, "bridge_1");
         List<VNodeRoute> vroute = new ArrayList<VNodeRoute>();
-        vroute.add(new VNodeRoute(vpath, VNodeRoute.Reason.VLANMAPPED));
+        vroute.add(new VNodeRoute(vpath, VirtualRouteReason.VLANMAPPED));
         virtualRoutes.add(vroute);
 
         vroute = new ArrayList<VNodeRoute>(vroute);
         vpath = new VBridgeIfPath(tname, "bridge_2", "if_3");
-        vroute.add(new VNodeRoute(vpath, VNodeRoute.Reason.REDIRECTED));
+        vroute.add(new VNodeRoute(vpath, VirtualRouteReason.REDIRECTED));
         vpath = new VTerminalPath(tname, "term_3");
-        vroute.add(new VNodeRoute(vpath, VNodeRoute.Reason.REDIRECTED));
+        vroute.add(new VNodeRoute(vpath, VirtualRouteReason.REDIRECTED));
         vpath = new VTerminalIfPath(tname, "term_1", "if_11");
-        vroute.add(new VNodeRoute(vpath, VNodeRoute.Reason.REDIRECTED));
+        vroute.add(new VNodeRoute(vpath, VirtualRouteReason.REDIRECTED));
         virtualRoutes.add(vroute);
 
         vroute = new ArrayList<VNodeRoute>();
         vpath = new VBridgeIfPath(tname, "bridge_3", "if_123");
-        vroute.add(new VNodeRoute(vpath, VNodeRoute.Reason.PORTMAPPED));
+        vroute.add(new VNodeRoute(vpath, VirtualRouteReason.PORTMAPPED));
         vpath = new VBridgePath(tname, "bridge_3");
-        vroute.add(new VNodeRoute(vpath, VNodeRoute.Reason.MACMAPPED));
+        vroute.add(new VNodeRoute(vpath, VirtualRouteReason.MACMAPPED));
         virtualRoutes.add(vroute);
 
         physicalRoutes.add((List<NodeRoute>)null);

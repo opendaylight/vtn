@@ -9,9 +9,9 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
-
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * {@code MapType} class represents types of mappings between virtual and
@@ -21,17 +21,17 @@ public enum MapType {
     /**
      * Port mapping.
      */
-    PORT(1 << 0, Reason.PORTMAPPED),
+    PORT(1 << 0, VirtualRouteReason.PORTMAPPED),
 
     /**
      * MAC mapping.
      */
-    MAC(1 << 1, Reason.MACMAPPED, FlowMatchType.DL_SRC),
+    MAC(1 << 1, VirtualRouteReason.MACMAPPED, FlowMatchType.DL_SRC),
 
     /**
      * VLAN mapping.
      */
-    VLAN(1 << 2, Reason.VLANMAPPED),
+    VLAN(1 << 2, VirtualRouteReason.VLANMAPPED),
 
     /**
      * A pseudo mapping type which means a wildcard.
@@ -44,10 +44,10 @@ public enum MapType {
     private final int  mask;
 
     /**
-     * A {@link Reason} instance which represents the packet is mapped by
-     * this type of virtual mapping.
+     * A {@link VirtualRouteReason} instance which represents the packet is
+     * mapped by this type of virtual mapping.
      */
-    private final Reason  reason;
+    private final VirtualRouteReason  reason;
 
     /**
      * A {@link FlowMatchType} instance which represents flow match field
@@ -68,10 +68,10 @@ public enum MapType {
      * Construct a new mapping type.
      *
      * @param mask    A bitmask which identifies the mapping type.
-     * @param reason  A {@link Reason} instance associated with the mapping
-     *                type.
+     * @param reason  A {@link VirtualRouteReason} instance associated with
+     *                the mapping type.
      */
-    private MapType(int mask, Reason reason) {
+    private MapType(int mask, VirtualRouteReason reason) {
         this(mask, reason, null);
     }
 
@@ -79,12 +79,12 @@ public enum MapType {
      * Construct a new mapping type.
      *
      * @param mask    A bitmask which identifies the mapping type.
-     * @param reason  A {@link Reason} instance associated with the mapping
-     *                type.
+     * @param reason  A {@link VirtualRouteReason} instance associated with
+     *                the mapping type.
      * @param mtype   A {@link FlowMatchType} instance which represents flow
      *                match fields to specify the packet.
      */
-    private MapType(int mask, Reason reason, FlowMatchType mtype) {
+    private MapType(int mask, VirtualRouteReason reason, FlowMatchType mtype) {
         this.mask = mask;
         this.reason = reason;
         matchType = mtype;
@@ -102,12 +102,12 @@ public enum MapType {
     }
 
     /**
-     * Return a {@link Reason} instance associated with this type of
-     * virtual mapping.
+     * Return a {@link VirtualRouteReason} instance associated with this type
+     * of virtual mapping.
      *
-     * @return  A {@link Reason} instance.
+     * @return  A {@link VirtualRouteReason} instance.
      */
-    public Reason getReason() {
+    public VirtualRouteReason getReason() {
         return reason;
     }
 

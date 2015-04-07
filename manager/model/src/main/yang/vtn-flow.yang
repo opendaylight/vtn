@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-flow {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:flow";
+    prefix vflow;
+
+    description
+      "The module that describes the data flow information established by
+       the VTN Manager.";
+
+    revision 2015-04-10 {
+        description "Initial revision.";
+    }
+
+    /*
+     * Data types for data flow
+     */
+
+    typedef virtual-route-reason {
+        description
+          "Describes the reason why the packet is forwarded to the virtual
+           node.";
+
+        type enumeration {
+            enum PORTMAPPED {
+                description
+                  "Indicates the packet is mapped by the port mapping.
+                   This value is set only if the virtual node specified by
+                   the virtual node path in `virtual-route-info' is the
+                   ingress node.";
+                value 0;
+            }
+
+            enum VLANMAPPED {
+                description
+                  "Indicates the packet is mapped by the VLAN mapping.
+                   This value is set only if the virtual node specified by
+                   the virtual node path in `virtual-route-info' is the
+                   ingress node.";
+                value 1;
+            }
+
+            enum MACMAPPED {
+                description
+                  "Indicates the packet is mapped by the MAC mapping.
+                   This value is set only if the virtual node specified by
+                   the virtual node path in `virtual-route-info' is the
+                   ingress node.";
+                value 2;
+            }
+
+            enum FORWARDED {
+                description
+                  "Indicates the packet is forwarded through the virtual
+                   node.
+                   For example, this reason is set when a packet is forwarded
+                   from the vBridge interface to another vBridge interface
+                   attached to the same vBridge.";
+                value 3;
+            }
+
+            enum REDIRECTED {
+                description
+                  "Indicates the packet is redirected by the flow filter.";
+                value 4;
+            }
+
+            enum LINKED {
+                description
+                  "Indicates the packet is forwarded from the virtual node
+                   to another virtual node through virtual node link.
+                   Currently the VTN Manager never set this reason because
+                   the virtual node link is not yet supported.";
+                value 5;
+            }
+        }
+    }
+}

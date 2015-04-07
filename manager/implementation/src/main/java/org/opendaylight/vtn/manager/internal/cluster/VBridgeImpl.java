@@ -39,7 +39,6 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
@@ -70,6 +69,8 @@ import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * Implementation of vBridge (virtual layer 2 bridge).
@@ -860,7 +861,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         }
 
         VBridgePath bpath = bnode.getPath();
-        pctx.setEgressVNodeRoute(new VNodeRoute(bpath, Reason.FORWARDED));
+        pctx.setEgressVNodeRoute(new VNodeRoute(bpath,
+                                                VirtualRouteReason.FORWARDED));
 
         // Evaluate flow filters for outgoing packets.
         // Note that this should never clone a PacketContext.

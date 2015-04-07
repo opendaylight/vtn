@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,10 +10,11 @@
 package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.VBridgePath;
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.internal.cluster.PortBridge;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * An implementation of {@link VBridgeNode} only for testing.
@@ -32,7 +33,7 @@ public class TestBridgeNode implements VBridgeNode {
     /**
      * The reason why the packet was forwarded.
      */
-    private Reason  reason = Reason.FORWARDED;
+    private VirtualRouteReason  reason = VirtualRouteReason.FORWARDED;
 
     /**
      * Construct an empty instance.
@@ -71,9 +72,9 @@ public class TestBridgeNode implements VBridgeNode {
     /**
      * Set the reason why the packet was forwarded.
      *
-     * @param r  A {@link Reason} instance.
+     * @param r  A {@link VirtualRouteReason} instance.
      */
-    public void setRouteReason(Reason r) {
+    public void setRouteReason(VirtualRouteReason r) {
         reason = r;
     }
 
