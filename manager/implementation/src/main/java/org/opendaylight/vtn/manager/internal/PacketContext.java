@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -66,6 +65,8 @@ import org.opendaylight.controller.sal.packet.RawPacket;
 import org.opendaylight.controller.sal.packet.TCP;
 import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.EtherTypes;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * {@code PacketContext} class describes the context of received packet.
@@ -743,7 +744,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     public void setEgressVNodeRoute(VNodeRoute vroute) {
         VNodeRoute old = egressNodeRoute;
         if (old != null) {
-            if (vroute.getReason() == Reason.FORWARDED &&
+            if (vroute.getReason() == VirtualRouteReason.FORWARDED &&
                 old.getPath().equals(vroute.getPath())) {
                 // No need to record the specified hop because the hop to the
                 // specified virtual node is already recorded.
@@ -1101,7 +1102,8 @@ public class PacketContext implements Cloneable, FlowMatchContext {
         }
 
         // Record the packet redirection as the hop to the egress node.
-        setEgressVNodeRoute(new VNodeRoute(path, Reason.REDIRECTED));
+        setEgressVNodeRoute(new VNodeRoute(path,
+                                           VirtualRouteReason.REDIRECTED));
 
         // Increment the virtual node hops.
         int ret = virtualNodeHops + 1;

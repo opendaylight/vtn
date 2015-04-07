@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,7 +13,8 @@ import java.io.Serializable;
 
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * {@code MapReference} class describes a reference to virtual network mapping
@@ -134,7 +135,7 @@ public class MapReference implements Serializable, Comparable<MapReference> {
      * @return  A {@link VNodeRoute} instance.
      */
     public VNodeRoute getIngressRoute() {
-        Reason reason = mapType.getReason();
+        VirtualRouteReason reason = mapType.getReason();
         assert reason != null;
 
         return new VNodeRoute(vnodePath, reason);

@@ -11,11 +11,11 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
-
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * JUnit test for {@link MapType}.
@@ -29,17 +29,17 @@ public class MapTypeTest extends TestBase {
         for (MapType type: MapType.values()) {
             switch (type) {
             case PORT:
-                assertEquals(Reason.PORTMAPPED, type.getReason());
+                assertEquals(VirtualRouteReason.PORTMAPPED, type.getReason());
                 assertEquals(null, type.getMatchType());
                 break;
 
             case MAC:
-                assertEquals(Reason.MACMAPPED, type.getReason());
+                assertEquals(VirtualRouteReason.MACMAPPED, type.getReason());
                 assertEquals(FlowMatchType.DL_SRC, type.getMatchType());
                 break;
 
             case VLAN:
-                assertEquals(Reason.VLANMAPPED, type.getReason());
+                assertEquals(VirtualRouteReason.VLANMAPPED, type.getReason());
                 assertEquals(null, type.getMatchType());
                 break;
 

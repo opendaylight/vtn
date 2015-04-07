@@ -57,6 +57,8 @@ import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+
 /**
  * JUnit test for {@link DataFlow}.
  */
@@ -470,10 +472,10 @@ public class DataFlowTest extends TestBase {
     @Test
     public void testVirtualRoute() {
         LinkedList<VNodeRoute> vroutes = new LinkedList<VNodeRoute>();
-        VNodeRoute.Reason[] reasons = VNodeRoute.Reason.values();
+        VirtualRouteReason[] reasons = VirtualRouteReason.values();
         vroutes.add(new VNodeRoute());
         for (VNodePath path: createVNodePaths(10, false)) {
-            for (VNodeRoute.Reason reason: reasons) {
+            for (VirtualRouteReason reason: reasons) {
                 vroutes.add(new VNodeRoute(path, reason));
             }
         }

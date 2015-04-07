@@ -17,6 +17,8 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+
 /**
  * JUnit test for {@link VNodeRoute}.
  */
@@ -31,17 +33,17 @@ public class VNodeRouteTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        VNodeRoute.Reason[] reasons = VNodeRoute.Reason.values();
+        VirtualRouteReason[] reasons = VirtualRouteReason.values();
         for (VNodePath path: createVNodePaths(10)) {
             VNodeRoute vnr = new VNodeRoute(path, null);
             assertEquals(path, vnr.getPath());
             assertEquals(null, vnr.getReason());
             assertEquals(null, vnr.getReasonString());
-            for (VNodeRoute.Reason reason: reasons) {
+            for (VirtualRouteReason reason: reasons) {
                 vnr = new VNodeRoute(path, reason);
                 assertEquals(path, vnr.getPath());
                 assertEquals(reason, vnr.getReason());
-                assertEquals(reason.toString(), vnr.getReasonString());
+                assertEquals(reason.name(), vnr.getReasonString());
             }
         }
     }
@@ -54,9 +56,9 @@ public class VNodeRouteTest extends TestBase {
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
         List<VNodePath> paths = createVNodePaths(10);
-        List<VNodeRoute.Reason> reasons = createReasons();
+        List<VirtualRouteReason> reasons = createReasons();
         for (VNodePath path: paths) {
-            for (VNodeRoute.Reason reason: reasons) {
+            for (VirtualRouteReason reason: reasons) {
                 VNodeRoute vnr1 = new VNodeRoute(path, reason);
                 VNodePath path1 = (path == null)
                     ? null : (VNodePath)path.clone();
@@ -78,7 +80,7 @@ public class VNodeRouteTest extends TestBase {
         String suffix = "]";
         for (VNodePath path: createVNodePaths(10)) {
             String p = (path == null) ? null : "path=" + path;
-            for (VNodeRoute.Reason reason: createReasons()) {
+            for (VirtualRouteReason reason: createReasons()) {
                 String r = (reason == null) ? null : "reason=" + reason;
                 VNodeRoute vnr = new VNodeRoute(path, reason);
                 String required = joinStrings(prefix, suffix, ",", p, r);
@@ -93,7 +95,7 @@ public class VNodeRouteTest extends TestBase {
     @Test
     public void testSerialize() {
         for (VNodePath path: createVNodePaths(10)) {
-            for (VNodeRoute.Reason reason: createReasons()) {
+            for (VirtualRouteReason reason: createReasons()) {
                 VNodeRoute vnr = new VNodeRoute(path, reason);
                 serializeTest(vnr);
             }
@@ -109,7 +111,7 @@ public class VNodeRouteTest extends TestBase {
             "", "1", "UNKNOWN", "BAD_REASON",
         };
         for (VNodePath path: createVNodePaths(10)) {
-            for (VNodeRoute.Reason reason: createReasons()) {
+            for (VirtualRouteReason reason: createReasons()) {
                 VNodeRoute vnr = new VNodeRoute(path, reason);
                 jaxbTest(vnr, VNodeRoute.class, XML_ROOT);
             }
@@ -129,7 +131,7 @@ public class VNodeRouteTest extends TestBase {
     @Test
     public void testJSON() {
         for (VNodePath path: createVNodePaths(10)) {
-            for (VNodeRoute.Reason reason: createReasons()) {
+            for (VirtualRouteReason reason: createReasons()) {
                 VNodeRoute vnr = new VNodeRoute(path, reason);
                 jsonTest(vnr, VNodeRoute.class);
             }
@@ -137,40 +139,40 @@ public class VNodeRouteTest extends TestBase {
     }
 
     /**
-     * Test case for {@link VNodeRoute.Reason} class.
+     * Test case for {@link VirtualRouteReason} class.
      */
     @Test
     public void testReason() {
-        VNodeRoute.Reason[] values = VNodeRoute.Reason.values();
+        VirtualRouteReason[] values = VirtualRouteReason.values();
         assertEquals(6, values.length);
-        assertEquals(VNodeRoute.Reason.PORTMAPPED, values[0]);
-        assertEquals(VNodeRoute.Reason.VLANMAPPED, values[1]);
-        assertEquals(VNodeRoute.Reason.MACMAPPED, values[2]);
-        assertEquals(VNodeRoute.Reason.FORWARDED, values[3]);
-        assertEquals(VNodeRoute.Reason.REDIRECTED, values[4]);
-        assertEquals(VNodeRoute.Reason.LINKED, values[5]);
-        assertEquals(0, VNodeRoute.Reason.PORTMAPPED.ordinal());
-        assertEquals(1, VNodeRoute.Reason.VLANMAPPED.ordinal());
-        assertEquals(2, VNodeRoute.Reason.MACMAPPED.ordinal());
-        assertEquals(3, VNodeRoute.Reason.FORWARDED.ordinal());
-        assertEquals(4, VNodeRoute.Reason.REDIRECTED.ordinal());
-        assertEquals(5, VNodeRoute.Reason.LINKED.ordinal());
+        assertEquals(VirtualRouteReason.PORTMAPPED, values[0]);
+        assertEquals(VirtualRouteReason.VLANMAPPED, values[1]);
+        assertEquals(VirtualRouteReason.MACMAPPED, values[2]);
+        assertEquals(VirtualRouteReason.FORWARDED, values[3]);
+        assertEquals(VirtualRouteReason.REDIRECTED, values[4]);
+        assertEquals(VirtualRouteReason.LINKED, values[5]);
+        assertEquals(0, VirtualRouteReason.PORTMAPPED.ordinal());
+        assertEquals(1, VirtualRouteReason.VLANMAPPED.ordinal());
+        assertEquals(2, VirtualRouteReason.MACMAPPED.ordinal());
+        assertEquals(3, VirtualRouteReason.FORWARDED.ordinal());
+        assertEquals(4, VirtualRouteReason.REDIRECTED.ordinal());
+        assertEquals(5, VirtualRouteReason.LINKED.ordinal());
 
-        for (VNodeRoute.Reason reason: values) {
+        for (VirtualRouteReason reason: values) {
             serializeTest(reason);
         }
     }
 
     /**
-     * Create a list of {@link VNodeRoute.Reason} instances.
+     * Create a list of {@link VirtualRouteReason} instances.
      *
-     * @return  A list which contains {@link VNodeRoute.Reason} instances and
+     * @return  A list which contains {@link VirtualRouteReason} instances and
      *          a {@code null}.
      */
-    private List<VNodeRoute.Reason> createReasons() {
-        List<VNodeRoute.Reason> reasons = new ArrayList<VNodeRoute.Reason>();
+    private List<VirtualRouteReason> createReasons() {
+        List<VirtualRouteReason> reasons = new ArrayList<>();
         reasons.add(null);
-        for (VNodeRoute.Reason reason: VNodeRoute.Reason.values()) {
+        for (VirtualRouteReason reason: VirtualRouteReason.values()) {
             reasons.add(reason);
         }
 
@@ -182,7 +184,7 @@ public class VNodeRouteTest extends TestBase {
      *
      * @param path    A {@link VNodePath} instance which specifies
      *                the location of the virtual node inside the VTN.
-     * @param reason  A string representation of {@link VNodeRoute.Reason}
+     * @param reason  A string representation of {@link VirtualRouteReason}
      *                instance.
      * @return  A {@link VNodeRoute} instance.
      */

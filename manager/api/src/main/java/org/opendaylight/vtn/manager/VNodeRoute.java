@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,6 +20,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * {@code VNodeRoute} class is used to represent the virtual packet
@@ -50,57 +52,7 @@ public final class VNodeRoute implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6838855132879897784L;
-
-    /**
-     * This enum represents the reason why the packet is forwarded to the
-     * virtual node.
-     *
-     * @since  Helium
-     */
-    public static enum Reason {
-        /**
-         * Indicates the packet is mapped by the port mapping.
-         */
-        PORTMAPPED,
-
-        /**
-         * Indicates the packet is mapped by the VLAN mapping.
-         */
-        VLANMAPPED,
-
-        /**
-         * Indicates the packet is mapped by the MAC mapping.
-         */
-        MACMAPPED,
-
-        /**
-         * Indicates the packet is forwarded through the virtual node.
-         *
-         * <p>
-         *   For example, this reason is set when a packet is forwarded
-         *   from the vBridge interface to another vBridge interface attached
-         *   to the same vBridge.
-         * </p>
-         */
-        FORWARDED,
-
-        /**
-         * Indicates the packet is redirected by the flow filter.
-         */
-        REDIRECTED,
-
-        /**
-         * Indicates the packet is forwarded from the virtual node to another
-         * virtual node through virtual node link.
-         *
-         * <p>
-         *   Currently the VTN Manager never set this reason because
-         *   the virtual node link is not yet supported.
-         * </p>
-         */
-        LINKED;
-    }
+    private static final long serialVersionUID = -9115647284222382981L;
 
     /**
      * A {@link VNodePath} which represents the location of the
@@ -118,7 +70,7 @@ public final class VNodeRoute implements Serializable {
     /**
      * The reason why the packet is forwarded to the virtual node.
      */
-    private Reason  reason;
+    private VirtualRouteReason  reason;
 
     /**
      * Construct a new instance which indicates the data flow is terminated.
@@ -132,11 +84,11 @@ public final class VNodeRoute implements Serializable {
      * @param path     A {@link VNodePath} instance which specifies
      *                 the location of the virtual node inside the VTN.
      *                 Specifying {@code null} results in undefined behavior.
-     * @param reason   A {@link Reason} instance which represents the reason
-     *                 why the packet is forwarded.
+     * @param reason   A {@link VirtualRouteReason} instance which represents
+     *                 the reason why the packet is forwarded.
      *                 Specifying {@code null} results in undefined behavior.
      */
-    public VNodeRoute(VNodePath path, Reason reason) {
+    public VNodeRoute(VNodePath path, VirtualRouteReason reason) {
         this.path = path;
         this.reason = reason;
     }
@@ -156,12 +108,12 @@ public final class VNodeRoute implements Serializable {
     /**
      * Return the reason why the packet is forwarded to the virtual node.
      *
-     * @return  A {@link Reason} instance which represents the reason why
-     *          the packet is forwarded.
+     * @return  A {@link VirtualRouteReason} instance which represents the
+     *          reason why the packet is forwarded.
      *          {@code null} is returned if this instance indicates that the
      *          data flow is terminated without packet forwarding.
      */
-    public Reason getReason() {
+    public VirtualRouteReason getReason() {
         return reason;
     }
 
@@ -233,7 +185,7 @@ public final class VNodeRoute implements Serializable {
      */
     @XmlAttribute(name = "reason")
     public String getReasonString() {
-        return (reason == null) ? null : reason.toString();
+        return (reason == null) ? null : reason.name();
     }
 
     /**
@@ -244,12 +196,12 @@ public final class VNodeRoute implements Serializable {
      *   This method is called by JAXB.
      * </p>
      *
-     * @param str  A string representation of {@link Reason}.
+     * @param str  A string representation of {@link VirtualRouteReason}.
      */
     @SuppressWarnings("unused")
     private void setReasonString(String str) {
         try {
-            reason = Reason.valueOf(str);
+            reason = VirtualRouteReason.valueOf(str);
         } catch (Exception e) {
             reason = null;
         }

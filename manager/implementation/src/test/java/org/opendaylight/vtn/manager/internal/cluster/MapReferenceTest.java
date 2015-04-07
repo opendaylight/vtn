@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,11 +21,12 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VNodeRoute.Reason;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
  * JUnit test for {@link MapReference}.
@@ -133,19 +134,19 @@ public class MapReferenceTest extends TestBase {
 
             VNodePath path = ref.getPath();
             VNodeRoute vr = ref.getIngressRoute();
-            Reason reason = vr.getReason();
+            VirtualRouteReason reason = vr.getReason();
             assertEquals(path, vr.getPath());
             switch (type) {
             case PORT:
-                assertEquals(Reason.PORTMAPPED, reason);
+                assertEquals(VirtualRouteReason.PORTMAPPED, reason);
                 break;
 
             case VLAN:
-                assertEquals(Reason.VLANMAPPED, reason);
+                assertEquals(VirtualRouteReason.VLANMAPPED, reason);
                 break;
 
             case MAC:
-                assertEquals(Reason.MACMAPPED, reason);
+                assertEquals(VirtualRouteReason.MACMAPPED, reason);
                 break;
 
             default:
