@@ -223,14 +223,6 @@ public final class TopologyListener
     }
 
     /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected Logger getLogger() {
-        return LOG;
-    }
-
-    /**
      * Return a set of {@link VtnUpdateType} instances that specifies
      * event types to be listened.
      *
@@ -239,5 +231,15 @@ public final class TopologyListener
     @Override
     protected Set<VtnUpdateType> getRequiredEvents() {
         return REQUIRED_EVENTS;
+    }
+
+    // CloseableContainer
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected Logger getLogger() {
+        return LOG;
     }
 }

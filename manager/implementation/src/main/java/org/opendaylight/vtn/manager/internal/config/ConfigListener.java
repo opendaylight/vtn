@@ -222,6 +222,8 @@ public final class ConfigListener extends DataStoreListener<VtnConfig, Void> {
         return VTNConfigManager.CONFIG_IDENT;
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

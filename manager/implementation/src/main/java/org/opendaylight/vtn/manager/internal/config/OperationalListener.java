@@ -174,6 +174,8 @@ public final class OperationalListener
         return VTNConfigManager.CONFIG_IDENT;
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

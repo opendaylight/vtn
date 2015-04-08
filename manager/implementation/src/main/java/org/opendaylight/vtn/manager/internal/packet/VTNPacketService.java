@@ -263,7 +263,7 @@ public final class VTNPacketService extends SalNotificationListener
         }
     }
 
-    // SalNotificationListener
+    // CloseableContainer
 
     /**
      * {@inheritDoc}

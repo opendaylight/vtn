@@ -361,6 +361,8 @@ public final class FlowCondManager
             child(VtnFlowCondition.class).build();
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

@@ -363,6 +363,8 @@ public final class PathMapManager
             child(VtnPathMap.class).build();
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

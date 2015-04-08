@@ -144,6 +144,8 @@ public final class NodeConnectorListener
             augmentation(FlowCapableNodeConnector.class).build();
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

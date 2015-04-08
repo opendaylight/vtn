@@ -33,13 +33,19 @@ public class SalNotificationListenerTest extends TestBase {
         /**
          * Logger instance.
          */
-        private final Logger  logger = Mockito.mock(Logger.class);
+        private Logger  logger;
 
         /**
          * {@inheritDoc}
          */
+        @Override
         protected Logger getLogger() {
-            return logger;
+            Logger log = logger;
+            if (log == null) {
+                log = Mockito.mock(Logger.class);
+                logger = log;
+            }
+            return log;
         }
     }
 
@@ -148,8 +154,7 @@ public class SalNotificationListenerTest extends TestBase {
         Mockito.verify(logger, Mockito.never()).error(Mockito.anyString());
 
         // Unregister a listener.
-        String msg = "Failed to unregister notification listener: " +
-            listener.getClass().getName();
+        String msg = "Failed to close instance: " + reg;
         IllegalArgumentException iae =
             new IllegalArgumentException("Bad argument");
         Mockito.doThrow(iae).when(reg).close();

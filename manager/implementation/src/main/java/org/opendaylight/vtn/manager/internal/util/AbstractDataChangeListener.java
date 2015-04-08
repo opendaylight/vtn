@@ -13,8 +13,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import org.slf4j.Logger;
-
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataChangeListener;
 import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
@@ -34,16 +32,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * @param <C>  Type of event context.
  */
 public abstract class AbstractDataChangeListener<T extends DataObject, C>
-    implements AutoCloseable, DataChangeListener {
+    extends CloseableContainer implements DataChangeListener {
     /**
      * The type of the target data.
      */
     private final Class<T>  targetType;
-
-    /**
-     * A closeable objects to be closed on a {@link #close()} call.
-     */
-    private final CompositeAutoCloseable  closeables;
 
     /**
      * Construct a new instance.
@@ -52,7 +45,6 @@ public abstract class AbstractDataChangeListener<T extends DataObject, C>
      */
     protected AbstractDataChangeListener(Class<T> cls) {
         targetType = cls;
-        closeables = new CompositeAutoCloseable(getLogger());
     }
 
     /**
@@ -88,19 +80,6 @@ public abstract class AbstractDataChangeListener<T extends DataObject, C>
             getLogger().error(msg, e);
             throw new IllegalStateException(msg, e);
         }
-    }
-
-    /**
-     * Add the given closeable object to the closeable object set.
-     *
-     * <p>
-     *   The given object will be closed on a {@link #close()} call.
-     * </p>
-     *
-     * @param ac  An {@link AutoCloseable} instance.
-     */
-    protected final void addCloseable(AutoCloseable ac) {
-        closeables.add(ac);
     }
 
     /**
@@ -297,23 +276,6 @@ public abstract class AbstractDataChangeListener<T extends DataObject, C>
      * @return  A wildcard instance identifier.
      */
     protected abstract InstanceIdentifier<T> getWildcardPath();
-
-    /**
-     * Return a logger instance.
-     *
-     * @return  A {@link Logger} instance.
-     */
-    protected abstract Logger getLogger();
-
-    // AutoCloseable
-
-    /**
-     * Close this listener.
-     */
-    @Override
-    public void close() {
-        closeables.close();
-    }
 
     // DataChangeListener
 

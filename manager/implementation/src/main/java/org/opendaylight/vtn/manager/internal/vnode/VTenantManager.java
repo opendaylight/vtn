@@ -365,6 +365,8 @@ public final class VTenantManager
             child(Vtn.class).build();
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

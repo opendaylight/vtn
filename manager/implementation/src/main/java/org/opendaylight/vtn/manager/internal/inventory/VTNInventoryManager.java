@@ -341,6 +341,8 @@ public final class VTNInventoryManager
             child(VtnNode.class).build();
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */

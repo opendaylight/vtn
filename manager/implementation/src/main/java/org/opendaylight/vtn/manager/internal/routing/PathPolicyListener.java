@@ -366,6 +366,8 @@ final class PathPolicyListener
             child(VtnPathPolicy.class).build();
     }
 
+    // CloseableContainer
+
     /**
      * {@inheritDoc}
      */
