@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -139,6 +139,12 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bytes": 638,
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"packets": 7,
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"duration": 36510
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"averagedStats": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bytes": 345.32,
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"packets": 3.8,
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"start": 1428516341931,
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"end": 1428516352034
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
  * &nbsp;&nbsp;&nbsp;&nbsp;},
  * &nbsp;&nbsp;&nbsp;&nbsp;{
@@ -196,6 +202,12 @@ import org.opendaylight.vtn.manager.flow.DataFlow;
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bytes": 3028,
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"packets": 11,
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"duration": 763910
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"averagedStats": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"bytes": 103.41,
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"packets": 4.9,
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"start": 1428515410123,
+ * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"end": 1428515420134
  * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
  * &nbsp;&nbsp;&nbsp;&nbsp;}
  * &nbsp;&nbsp;]

@@ -1562,6 +1562,8 @@
     @XmlJavaTypeAdapter(value = IntegerAdapter.class, type = int.class),
     @XmlJavaTypeAdapter(value = LongAdapter.class, type = Long.class),
     @XmlJavaTypeAdapter(value = LongAdapter.class, type = long.class),
+    @XmlJavaTypeAdapter(value = DoubleAdapter.class, type = double.class),
+    @XmlJavaTypeAdapter(value = DoubleAdapter.class, type = Double.class),
 })
 package org.opendaylight.vtn.manager;
 
@@ -1569,6 +1571,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.opendaylight.vtn.manager.util.xml.adapters.ByteAdapter;
+import org.opendaylight.vtn.manager.util.xml.adapters.DoubleAdapter;
 import org.opendaylight.vtn.manager.util.xml.adapters.IntegerAdapter;
 import org.opendaylight.vtn.manager.util.xml.adapters.LongAdapter;
 import org.opendaylight.vtn.manager.util.xml.adapters.ShortAdapter;

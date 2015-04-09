@@ -438,14 +438,11 @@ public class DataFlowTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         FlowStats prev = null;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst = new FlowStats(p, b, d);
                     assertEquals(prev, df.getStatistics());
                     df.setStatistics(fst);
                     assertEquals(fst, df.getStatistics());
@@ -457,6 +454,41 @@ public class DataFlowTest extends TestBase {
 
         df.setStatistics(null);
         assertEquals(null, df.getStatistics());
+        checkDataFlow(df);
+    }
+
+    /**
+     * Test case for {@link DataFlow#getAveragedStatistics()} and
+     * {@link DataFlow#setAveragedStatistics(AveragedFlowStats)}.
+     */
+    @Test
+    public void testAveragedStats() {
+        DataFlow df = createDataFlow();
+
+        double[] packets = {0D, 123D, 1234.5678D};
+        double[] bytes = {0D, 3333D, 34567.8901D};
+        long[] starts = {0L, 123456L, 1234567890L};
+        long[] ends = {0L, 3333333L, 9999999999999L};
+        AveragedFlowStats prev = null;
+
+        for (double p: packets) {
+            for (double b: bytes) {
+                for (long s: starts) {
+                    for (long e: ends) {
+                        AveragedFlowStats stats =
+                            new AveragedFlowStats(p, b, s, e);
+                        assertEquals(prev, df.getAveragedStatistics());
+                        df.setAveragedStatistics(stats);
+                        assertEquals(stats, df.getAveragedStatistics());
+                        checkDataFlow(df);
+                        prev = stats;
+                    }
+                }
+            }
+        }
+
+        df.setAveragedStatistics(null);
+        assertEquals(null, df.getAveragedStatistics());
         checkDataFlow(df);
     }
 

@@ -409,7 +409,19 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *   </ul>
      * @param interval
      *   Time interval in seconds for retrieving the average statistics.
-     *   The default value is TEN seconds.
+     *   <ul>
+     *     <li>The default value is <strong>10</strong> seconds.</li>
+     *     <li>
+     *       The default value is used if zero or a negative value is
+     *       specified.
+     *     </li>
+     *     <li>
+     *       Note that this value is just a hint for determining the
+     *       measurement period. The actual measurement period can be derived
+     *       from <strong>averagedStats</strong> element in the returned
+     *       <strong>dataflow</strong> element.
+     *     </li>
+     *   </ul>
      * @return
      *    <strong>dataflows</strong> element contains detailed information
      *    about all data flows present in the VTN specified by the requested
@@ -450,9 +462,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             @QueryParam("portName") String portName,
             @DefaultValue("false") @QueryParam("update") boolean update,
             @DefaultValue("10") @QueryParam("interval") int interval) {
-        if (interval < 0 || interval > 30) {
-            throw new IllegalArgumentException("Statistics interval should be non-negative and no more than 30");
-        }
         checkPrivilege(containerName, Privilege.READ);
 
         IVTNManager mgr = getVTNManager(containerName);
@@ -463,7 +472,8 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             ? DataFlow.Mode.UPDATE_STATS
             : DataFlow.Mode.DETAIL;
         try {
-            return new DataFlowList(mgr.getDataFlows(path, mode, filter, interval));
+            return new DataFlowList(mgr.getDataFlows(path, mode, filter,
+                                                     interval));
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -495,7 +505,19 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *   </ul>
      * @param interval
      *   Time interval in seconds for retrieving the average statistics.
-     *   The default value is TEN seconds.
+     *   <ul>
+     *     <li>The default value is <strong>10</strong> seconds.</li>
+     *     <li>
+     *       The default value is used if zero or a negative value is
+     *       specified.
+     *     </li>
+     *     <li>
+     *       Note that this value is just a hint for determining the
+     *       measurement period. The actual measurement period can be derived
+     *       from <strong>averagedStats</strong> element in the returned
+     *       <strong>dataflow</strong> element.
+     *     </li>
+     *   </ul>
      * @return
      *    <strong>dataflow</strong> element contains detailed information
      *    about the data flow specified by the requested URI.
@@ -532,9 +554,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             @PathParam("flowId") long flowId,
             @DefaultValue("false") @QueryParam("update") boolean update,
             @DefaultValue("10") @QueryParam("interval") int interval) {
-        if (interval < 0 || interval > 30) {
-            throw new IllegalArgumentException("Statistics interval should be non-negative and no more than 30");
-        }
         checkPrivilege(containerName, Privilege.READ);
 
         IVTNManager mgr = getVTNManager(containerName);

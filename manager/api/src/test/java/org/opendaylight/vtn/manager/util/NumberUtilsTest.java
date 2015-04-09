@@ -33,7 +33,8 @@ public class NumberUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link NumberUtils#hashCode(long)}.
+     * Test case for {@link NumberUtils#hashCode(long)} and
+     * {@link NumberUtils#hashCode(double)}.
      */
     @Test
     public void testHashCode() {
@@ -43,6 +44,10 @@ public class NumberUtilsTest extends TestBase {
             int lo = rand.nextInt();
             long l = ((long)hi << Integer.SIZE) | (long)(lo & 0xffffffffL);
             assertEquals(hi ^ lo, NumberUtils.hashCode(l));
+
+            double d = rand.nextDouble();
+            int h = NumberUtils.hashCode(d);
+            assertEquals(h, NumberUtils.hashCode(d));
         }
     }
 
@@ -419,5 +424,26 @@ public class NumberUtilsTest extends TestBase {
         assertEquals(null, NumberUtils.toLong((Short)null));
         assertEquals(null, NumberUtils.toLong((Integer)null));
         assertEquals(null, NumberUtils.toLong((Long)null));
+    }
+
+    /**
+     * Test case for {@link NumberUtils#equals(double, double)}.
+     */
+    @Test
+    public void testEqualsDouble() {
+        Random rand = new Random();
+        for (int i = 0; i < 50; i++) {
+            double d = rand.nextDouble();
+            assertEquals(true, NumberUtils.equals(d, d));
+
+            double[] values = {
+                d + 0.0001,
+                d - 0.00001,
+            };
+            for (double d1: values) {
+                assertEquals(false, NumberUtils.equals(d, d1));
+                assertEquals(false, NumberUtils.equals(d1, d));
+            }
+        }
     }
 }

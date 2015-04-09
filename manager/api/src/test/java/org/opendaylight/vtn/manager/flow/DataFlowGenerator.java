@@ -210,6 +210,12 @@ public final class DataFlowGenerator extends TestBase {
         new ArgumentList<FlowStats>();
 
     /**
+     * Averaged statistics information of the data flow.
+     */
+    private final ArgumentList<AveragedFlowStats>  averagedStats =
+        new ArgumentList<AveragedFlowStats>();
+
+    /**
      * A list of {@link VNodeRoute} instances which represents the virtual
      * packet routing path.
      */
@@ -255,11 +261,17 @@ public final class DataFlowGenerator extends TestBase {
         ingressPorts.addAll(createPortLocations(1L, DATAFLOW_COUNT / 7));
         egressPaths.addAll(createVNodePaths(DATAFLOW_COUNT / 2));
         egressPorts.addAll(createPortLocations(0x123456789aL, 13));
-        statistics.add((FlowStats)null).add(new FlowStats(0L, 0L, 0L, 0L, 0L, 10000L)).
-            add(new FlowStats(100L, 3000L, 50000L, 2L, 60L, 10000L)).
-            add(new FlowStats(12345L, 67890L, 123456789L, 1235L, 37050, 20000L)).
-            add(new FlowStats(0x12345L, 0x67890L, 0x123456789L, 10L, 300L, 20000L)).
-            add(new FlowStats(10000000L, 123456712L, 9999999999L, 300L, 9000L, 30000L));
+        statistics.add((FlowStats)null).add(new FlowStats(0L, 0L, 0L)).
+            add(new FlowStats(100L, 3000L, 50000L)).
+            add(new FlowStats(12345L, 67890L, 123456789L)).
+            add(new FlowStats(0x12345L, 0x67890L, 0x123456789L)).
+            add(new FlowStats(10000000L, 123456712L, 9999999999L));
+        averagedStats.add((AveragedFlowStats)null).
+            add(new AveragedFlowStats(0D, 0D, 0L, 0L)).
+            add(new AveragedFlowStats(333.44D, 5555.678D, 1234567L, 1235000L)).
+            add(new AveragedFlowStats(9999.0D, 98765.4D, 333333L, 444444L)).
+            add(new AveragedFlowStats(12345678.9D, 999999999.123D,
+                                      123456789L, 1234567890L));
 
         virtualRoutes.add((List<VNodeRoute>)null);
         String tname = "tenant_1";
@@ -336,6 +348,7 @@ public final class DataFlowGenerator extends TestBase {
         egressPaths.setUp();
         egressPorts.setUp();
         statistics.setUp();
+        averagedStats.setUp();
         virtualRoutes.setUp();
         physicalRoutes.setUp();
         edgeFlows.setUp();
@@ -358,6 +371,7 @@ public final class DataFlowGenerator extends TestBase {
         swport = new SwitchPort(ncType, "19");
         PortLocation eport = new PortLocation(enode, swport);
         FlowStats stats = statistics.get(1);
+        AveragedFlowStats average = averagedStats.get(1);
         List<VNodeRoute> vroutes = virtualRoutes.get(1);
         List<NodeRoute> routes = physicalRoutes.get(1);
         EdgeFlow ef = edgeFlows.get(1);
@@ -365,6 +379,7 @@ public final class DataFlowGenerator extends TestBase {
         DataFlow df = new DataFlow(id, created, idle, hard, ipath, iport,
                                    epath, eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -376,6 +391,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id1, created, idle, hard, ipath, iport,
                           epath, eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -387,6 +403,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created1, idle, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -398,6 +415,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle1, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -409,6 +427,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard1, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -420,6 +439,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath1, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -432,6 +452,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport1, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -443,6 +464,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath1,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -455,6 +477,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath,
                           eport1);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -463,9 +486,11 @@ public final class DataFlowGenerator extends TestBase {
         uniqueFlows.add(df);
 
         FlowStats stats1 = statistics.get(2);
+        AveragedFlowStats average1 = averagedStats.get(2);
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats1);
+        df.setAveragedStatistics(average1);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -477,6 +502,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes1);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -488,6 +514,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes1) {
             df.addPhysicalRoute(nr);
@@ -499,6 +526,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -509,6 +537,7 @@ public final class DataFlowGenerator extends TestBase {
         df = new DataFlow(id, created, idle, hard, ipath, iport, epath,
                           eport);
         df.setStatistics(stats);
+        df.setAveragedStatistics(average);
         df.setVirtualRoute(vroutes);
         for (NodeRoute nr: routes) {
             df.addPhysicalRoute(nr);
@@ -540,6 +569,11 @@ public final class DataFlowGenerator extends TestBase {
             FlowStats stats = statistics.next();
             if (stats != null) {
                 df.setStatistics(stats);
+            }
+
+            AveragedFlowStats average = averagedStats.next();
+            if (average != null) {
+                df.setAveragedStatistics(average);
             }
 
             List<VNodeRoute> vroutes = virtualRoutes.next();

@@ -95,6 +95,15 @@ public abstract class XmlDataType {
         map.put(Byte.class, forByte);
         map.put(byte.class, forByte);
 
+        String[] forDouble = {
+            "",
+            "bad-double",
+            "11.00.11",
+            "-100.123.456E+200",
+        };
+        map.put(Double.class, forDouble);
+        map.put(double.class, forDouble);
+
         String[] forEther = {
             "",
             "bad address",

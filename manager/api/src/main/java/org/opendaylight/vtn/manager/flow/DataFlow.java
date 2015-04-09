@@ -46,6 +46,7 @@ import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
 import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.flowprogrammer.Flow;
@@ -163,6 +164,12 @@ import org.opendaylight.controller.sal.flowprogrammer.Flow;
  * &nbsp;&nbsp;&nbsp;&nbsp;"bytes": 638,
  * &nbsp;&nbsp;&nbsp;&nbsp;"packets": 7,
  * &nbsp;&nbsp;&nbsp;&nbsp;"duration": 36510
+ * &nbsp;&nbsp;},
+ * &nbsp;&nbsp;"averagedStats": {
+ * &nbsp;&nbsp;&nbsp;&nbsp;"bytes": 345.32,
+ * &nbsp;&nbsp;&nbsp;&nbsp;"packets": 3.8,
+ * &nbsp;&nbsp;&nbsp;&nbsp;"start": 1428516341931,
+ * &nbsp;&nbsp;&nbsp;&nbsp;"end": 1428516352034
  * &nbsp;&nbsp;}
  * }</pre>
  *
@@ -210,6 +217,10 @@ public final class DataFlow implements Serializable {
          *     Statistics information.
          *     ({@link DataFlow#getStatistics()})
          *   </li>
+         *   <li>
+         *     Averaged statistics information.
+         *     ({@link DataFlow#getAveragedStatistics()})
+         *   </li>
          * </ul>
          */
         SUMMARY,
@@ -222,6 +233,8 @@ public final class DataFlow implements Serializable {
          *   are filled if available. {@link DataFlow#getStatistics()} returns
          *   statistics cached in the statistics manager, which is updated
          *   every 10 seconds.
+         *   {@link DataFlow#getAveragedStatistics()} returns averaged
+         *   statistics per second if available.
          * </p>
          */
         DETAIL,
@@ -522,6 +535,21 @@ public final class DataFlow implements Serializable {
     private FlowStats  statistics;
 
     /**
+     * Averaged flow statistics per second.
+     *
+     * <ul>
+     *   <li>
+     *     This element is omitted if statistics information is not configured
+     *     or unavailable.
+     *   </li>
+     * </ul>
+     *
+     * @since  Lithium
+     */
+    @XmlElement
+    private AveragedFlowStats  averagedStats;
+
+    /**
      * Private constructor only for JAXB.
      */
     @SuppressWarnings("unused")
@@ -729,6 +757,30 @@ public final class DataFlow implements Serializable {
     }
 
     /**
+     * Return a {@link AveragedFlowStats} instance which contains the averaged
+     * flow statistics per second.
+     *
+     * @return  An {@link AveragedFlowStats} instance.
+     *          {@code null} is returned if it is not configured in this
+     *          instance.
+     * @since  Lithium
+     */
+    public AveragedFlowStats getAveragedStatistics() {
+        return averagedStats;
+    }
+
+    /**
+     * Set averaged statistics information of the data flow.
+     *
+     * @param stats  An {@link AveragedFlowStats} instance which contains the
+     *               averaged flow statistics per second.
+     * @since  Lithium
+     */
+    public void setAveragedStatistics(AveragedFlowStats stats) {
+        averagedStats = stats;
+    }
+
+    /**
      * Set information about ingress and egress flow entries.
      *
      * @param ingress  A SAL flow which represents the ingress flow entry of
@@ -806,16 +858,6 @@ public final class DataFlow implements Serializable {
     }
 
     /**
-     * Construct a hash code from a long integer value.
-     *
-     * @param value  A long integer value.
-     * @return  A hash code for the specified value.
-     */
-    private int hashCode(long value) {
-        return (int)(value ^ (value >>> Integer.SIZE));
-    }
-
-    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -843,7 +885,8 @@ public final class DataFlow implements Serializable {
                 Objects.equals(actions, flow.actions) &&
                 Objects.equals(virtualRoute, flow.virtualRoute) &&
                 Objects.equals(physicalRoute, flow.physicalRoute) &&
-                Objects.equals(statistics, flow.statistics));
+                Objects.equals(statistics, flow.statistics) &&
+                Objects.equals(averagedStats, flow.averagedStats));
     }
 
     /**
@@ -855,8 +898,9 @@ public final class DataFlow implements Serializable {
     public int hashCode() {
         int h = Objects.hash(ingressNodePath, ingressPort,
                              egressNodePath, egressPort, match, actions,
-                             virtualRoute, physicalRoute, statistics);
-        return h + idleTimeout + hardTimeout + hashCode(flowId) +
-            hashCode(creationTime);
+                             virtualRoute, physicalRoute, statistics,
+                             averagedStats);
+        return h + idleTimeout + hardTimeout + NumberUtils.hashCode(flowId) +
+            NumberUtils.hashCode(creationTime);
     }
 }

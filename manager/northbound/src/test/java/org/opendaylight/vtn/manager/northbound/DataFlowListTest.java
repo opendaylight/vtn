@@ -222,6 +222,29 @@ public class DataFlowListTest extends TestBase {
                       new XmlAttributeType("icmptype", "type", short.class).
                       add(XML_ROOT, "dataflow", "actions"),
                       new XmlAttributeType("icmpcode", "code", short.class).
-                      add(XML_ROOT, "dataflow", "actions"));
+                      add(XML_ROOT, "dataflow", "actions"),
+
+                      // FlowStats
+                      new XmlAttributeType("statistics", "packets", long.class).
+                      add(XML_ROOT, "dataflow"),
+                      new XmlAttributeType("statistics", "bytes", long.class).
+                      add(XML_ROOT, "dataflow"),
+                      new XmlAttributeType("statistics", "duration",
+                                           long.class).
+                      add(XML_ROOT, "dataflow"),
+
+                      // AveragedFlowStats
+                      new XmlAttributeType("averagedStats", "packets",
+                                           double.class).
+                      add(XML_ROOT, "dataflow"),
+                      new XmlAttributeType("averagedStats", "bytes",
+                                           double.class).
+                      add(XML_ROOT, "dataflow"),
+                      new XmlAttributeType("averagedStats", "start",
+                                           long.class).
+                      add(XML_ROOT, "dataflow"),
+                      new XmlAttributeType("averagedStats", "end",
+                                           long.class).
+                      add(XML_ROOT, "dataflow"));
     }
 }

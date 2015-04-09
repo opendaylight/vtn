@@ -32,19 +32,13 @@ public class FlowStatsTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst = new FlowStats(p, b, d);
                     assertEquals(p, fst.getPacketCount());
                     assertEquals(b, fst.getByteCount());
                     assertEquals(d, fst.getDuration());
-                    assertEquals(packetsPerSec, fst.getPacketsPerSec());
-                    assertEquals(bytesPerSec, fst.getBytesPerSec());
-                    assertEquals(interval, fst.getInterval());
                 }
             }
         }
@@ -60,14 +54,11 @@ public class FlowStatsTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst1 = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
-                    FlowStats fst2 = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst1 = new FlowStats(p, b, d);
+                    FlowStats fst2 = new FlowStats(p, b, d);
                     testEquals(set, fst1, fst2);
                 }
             }
@@ -85,16 +76,12 @@ public class FlowStatsTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst = new FlowStats(p, b, d);
                     String required = "FlowStats[packets=" + p +
-                        ",bytes=" + b + ",duration=" + d + ",packets-per-sec=" + packetsPerSec +
-                        ",bytes-per-sec=" + bytesPerSec + ",interval=" + interval + "]";
+                        ",bytes=" + b + ",duration=" + d + "]";
                     assertEquals(required, fst.toString());
                 }
             }
@@ -109,13 +96,10 @@ public class FlowStatsTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst = new FlowStats(p, b, d);
                     serializeTest(fst);
                 }
             }
@@ -130,13 +114,10 @@ public class FlowStatsTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst = new FlowStats(p, b, d);
                     jaxbTest(fst, FlowStats.class, XML_ROOT);
                 }
             }
@@ -146,12 +127,7 @@ public class FlowStatsTest extends TestBase {
         jaxbErrorTest(FlowStats.class,
                       new XmlAttributeType(XML_ROOT, "packets", long.class),
                       new XmlAttributeType(XML_ROOT, "bytes", long.class),
-                      new XmlAttributeType(XML_ROOT, "duration", long.class),
-                      new XmlAttributeType(XML_ROOT, "packets-per-sec",
-                                           long.class),
-                      new XmlAttributeType(XML_ROOT, "bytes-per-sec",
-                                           long.class),
-                      new XmlAttributeType(XML_ROOT, "interval", long.class));
+                      new XmlAttributeType(XML_ROOT, "duration", long.class));
     }
 
     /**
@@ -162,13 +138,10 @@ public class FlowStatsTest extends TestBase {
         long[] packets = {0L, 1000L, 10000000000L};
         long[] bytes = {0L, 12345L, 123456789012L};
         long[] duration = {0L, 8888888L, 9999999999999L};
-        long packetsPerSec = 100L;
-        long bytesPerSec = 1000L;
-        long interval = 10000L;
         for (long p: packets) {
             for (long b: bytes) {
                 for (long d: duration) {
-                    FlowStats fst = new FlowStats(p, b, d, packetsPerSec, bytesPerSec, interval);
+                    FlowStats fst = new FlowStats(p, b, d);
                     jsonTest(fst, FlowStats.class);
                 }
             }

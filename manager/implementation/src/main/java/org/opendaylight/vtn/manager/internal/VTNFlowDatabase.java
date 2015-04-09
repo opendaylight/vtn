@@ -967,7 +967,7 @@ public class VTNFlowDatabase {
                 DataFlow df = vflow.getDataFlow(ctx, detail);
                 if (detail) {
                     FlowEntry fent = vflow.getFlowEntries().get(0);
-                    df.setStatistics(streader.get(fent, update, interval));
+                    streader.set(df, fent, update, interval);
                 }
                 list.add(df);
             }
@@ -1006,7 +1006,7 @@ public class VTNFlowDatabase {
         DataFlow df = vflow.getDataFlow(ctx, detail);
         if (detail) {
             FlowEntry fent = vflow.getFlowEntries().get(0);
-            df.setStatistics(streader.get(fent, update, interval));
+            streader.set(df, fent, update, interval);
         }
 
         return df;

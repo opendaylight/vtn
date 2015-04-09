@@ -19,6 +19,11 @@ import java.math.BigInteger;
  */
 public final class NumberUtils {
     /**
+     * A prime number used to calculate hash code.
+     */
+    public static final int  HASH_PRIME = 31;
+
+    /**
      * The number of octets in an integer value.
      */
     public static final int  NUM_OCTETS_INTEGER = Integer.SIZE / Byte.SIZE;
@@ -66,6 +71,16 @@ public final class NumberUtils {
      */
     public static int hashCode(long value) {
         return (int)(value ^ (value >>> Integer.SIZE));
+    }
+
+    /**
+     * Return a hash code of the given double value.
+     *
+     * @param value  A double value.
+     * @return  A hash code of the given value.
+     */
+    public static int hashCode(double value) {
+        return hashCode(Double.doubleToLongBits(value));
     }
 
     /**
@@ -223,5 +238,18 @@ public final class NumberUtils {
      */
     public static Long toLong(Number num) {
         return (num == null) ? null : Long.valueOf(num.longValue());
+    }
+
+    /**
+     * Determine whether the given double numbers are identical.
+     *
+     * @param d1  The first double number to be compared.
+     * @param d2  The second double number to be compared.
+     * @return  {@code true} only if the given two double numbers are
+     *          identical.
+     * @see Double#equals(Object)
+     */
+    public static boolean equals(double d1, double d2) {
+        return (Double.doubleToLongBits(d1) == Double.doubleToLongBits(d2));
     }
 }
