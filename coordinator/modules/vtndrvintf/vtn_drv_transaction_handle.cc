@@ -264,6 +264,7 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
     // Reject Commits if audit is not successful for the controller
     if ( config_id != 0 ) {
       if ( ctr->get_audit_result() != PFC_TRUE ) {
+        pfc_log_debug("Audit is not successful for the controller");
         tclib_ptr->TcLibWriteControllerInfo(ctr_name,
                       (uint32_t)UNC_RC_CTR_DISCONNECTED, 0);
         ret_code = unc::tclib::TC_SUCCESS;
@@ -282,9 +283,10 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitVoteRequest(
       ret_code = HandleCommitCache(ctr_name, ctr, drv);
       if (ret_code !=unc::tclib::TC_SUCCESS) {
         pfc_log_error("VOTE Failure in driver, ret %u", ret_code);
-        AbortControllers(controllers);
+        ctr->set_audit_result(PFC_FALSE);
         pfc_log_debug("Exiting HandleCommitVoteRequest");
-        return unc::tclib::TC_FAILURE;
+        Abort=PFC_TRUE;
+        break;
       } else {
         retc = UNC_RC_SUCCESS;
       }
@@ -314,10 +316,9 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
                                              controller* ctr,
                                              driver* drv) {
   ODC_FUNC_TRACE;
-  uint32_t retc = UNC_DRV_RC_ERR_GENERIC;
-  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
   PFC_ASSERT(ctr != NULL);
 
+  unc::tclib::TcCommonRet ret_code = unc::tclib::TC_FAILURE;
   unc::tclib::TcLibModule* tclib_ptr =
       static_cast<unc::tclib::TcLibModule*>
       (unc::tclib::TcLibModule::getInstance("tclib"));
@@ -332,6 +333,8 @@ unc::tclib::TcCommonRet DriverTxnInterface::HandleCommitCache
     //  get the controoler configuration from config node and execute
     for (cfgnode = itr_ptr->FirstItem(); itr_ptr->IsDone() == false;
          cfgnode = itr_ptr->NextItem() ) {
+      uint32_t retc = UNC_DRV_RC_ERR_GENERIC;
+      ret_code = unc::tclib::TC_FAILURE;
       unc_key_type_t keytype = cfgnode->get_type_name();
       pfc_log_debug("%u,keytype", keytype);
       std::map <unc_key_type_t, KtHandler*>::iterator

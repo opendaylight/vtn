@@ -256,7 +256,7 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
       flow_match->inetMatch_->inet4_->protocol_=val.ip_proto;
 
     if (val.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_VALID)
-      flow_match->inetMatch_->inet4_->protocol_=val.ip_dscp;
+      flow_match->inetMatch_->inet4_->dscp_=val.ip_dscp;
   }
 
   if ( val.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID ||
@@ -278,7 +278,7 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
         flow_match->l4Match_->icmp_->type_=val.icmp_type;
 
       if ( val.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID )
-        flow_match->l4Match_->icmp_->type_=val.icmp_code;
+        flow_match->l4Match_->icmp_->code_=val.icmp_code;
 
     } else {
       flow_match->l4Match_->tcp_=new tcp();
