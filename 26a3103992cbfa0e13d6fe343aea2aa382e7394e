@@ -1,0 +1,27 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "5a93c517_eaec8991",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/PortMapCleanerTest.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 35,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-10T00:27:17Z",
+      "side": 1,
+      "message": "Is there any reason why it prints stack trace here?\nWhat do you test in this conditional catch clauses?\n\nIt seems to me that if it reaches here, it means that this unit test code is wrong.\n\nThe assertEquals(1,1) does not make any sense at all.",
+      "range": {
+        "startLine": 34,
+        "startChar": 0,
+        "endLine": 35,
+        "endChar": 35
+      },
+      "revId": "26a3103992cbfa0e13d6fe343aea2aa382e7394e",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
