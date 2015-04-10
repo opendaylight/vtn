@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,9 @@ import java.util.List;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
 import org.opendaylight.controller.sal.core.UpdateType;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 /**
  * {@code VBridgeIfPath} class describes the position of the
@@ -35,7 +38,7 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4595746672343646779L;
+    private static final long serialVersionUID = 3954665694272437194L;
 
     /**
      * A string which represents that the node type is vBridge interface.
@@ -97,6 +100,8 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
         this(bridgePath.getTenantName(), bridgePath.getBridgeName(), ifName);
     }
 
+    // VTenantPath
+
     /**
      * {@inheritDoc}
      *
@@ -106,6 +111,20 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     @Override
     public String getNodeType() {
         return NODETYPE_VBRIDGE_IF;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since  Lithium
+     */
+    @Override
+    public VirtualNodePath toVirtualNodePath() {
+        return new VirtualNodePathBuilder().
+            setTenantName(getTenantName()).
+            setBridgeName(getTenantNodeName()).
+            setInterfaceName(ifName).
+            build();
     }
 
     /**
@@ -157,6 +176,8 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
         return components;
     }
 
+    // VNodePath
+
     /**
      * Convert this instance into a {@link VNodeLocation} instance.
      *
@@ -166,6 +187,8 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     public VNodeLocation toVNodeLocation() {
         return new VNodeLocation(this);
     }
+
+    // Object
 
     /**
      * Return the hash code of this object.

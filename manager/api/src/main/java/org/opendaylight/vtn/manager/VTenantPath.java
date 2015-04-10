@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,9 @@ package org.opendaylight.vtn.manager;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 /**
  * {@code VTenantPath} class describes the position of the
@@ -30,7 +33,7 @@ public class VTenantPath
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 1686897608613576535L;
+    private static final long serialVersionUID = -2864472628337433470L;
 
     /**
      * A string which represents that the node type is VTN.
@@ -121,6 +124,17 @@ public class VTenantPath
     }
 
     /**
+     * Convert this instance into a {@link VirtualNodePath} instance.
+     *
+     * @return  A {@link VirtualNodePath} instance.
+     * @since   Lithium
+     */
+    public VirtualNodePath toVirtualNodePath() {
+        return new VirtualNodePathBuilder().
+            setTenantName(tenantName).build();
+    }
+
+    /**
      * Return a {@link StringBuilder} object which contains a string
      * representation of this object.
      *
@@ -168,6 +182,8 @@ public class VTenantPath
         components.add(tenantName);
         return components;
     }
+
+    // Object
 
     /**
      * Determine whether the given object is identical to this object.

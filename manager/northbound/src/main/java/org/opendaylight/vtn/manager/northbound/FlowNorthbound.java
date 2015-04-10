@@ -44,6 +44,8 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
+
 /**
  * This class provides Northbound REST APIs to handle data flow in the VTN.
  *
@@ -214,7 +216,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                                              portType, portId, portName);
         try {
             return new DataFlowList(
-                mgr.getDataFlows(path, DataFlow.Mode.SUMMARY, filter, -1));
+                mgr.getDataFlows(path, DataFlowMode.SUMMARY, filter, -1));
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -278,7 +280,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
         try {
-            return mgr.getDataFlow(path, flowId, DataFlow.Mode.SUMMARY, -1);
+            return mgr.getDataFlow(path, flowId, DataFlowMode.SUMMARY, -1);
         } catch (VTNException e) {
             throw getException(e.getStatus());
         }
@@ -468,9 +470,9 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         VTenantPath path = new VTenantPath(tenantName);
         DataFlowFilter filter = createFilter(srcMac, srcVlan, nodeStr,
                                              portType, portId, portName);
-        DataFlow.Mode mode = (update)
-            ? DataFlow.Mode.UPDATE_STATS
-            : DataFlow.Mode.DETAIL;
+        DataFlowMode mode = (update)
+            ? DataFlowMode.UPDATESTATS
+            : DataFlowMode.DETAIL;
         try {
             return new DataFlowList(mgr.getDataFlows(path, mode, filter,
                                                      interval));
@@ -558,9 +560,9 @@ public class FlowNorthbound extends VTNNorthBoundBase {
 
         IVTNManager mgr = getVTNManager(containerName);
         VTenantPath path = new VTenantPath(tenantName);
-        DataFlow.Mode mode = (update)
-            ? DataFlow.Mode.UPDATE_STATS
-            : DataFlow.Mode.DETAIL;
+        DataFlowMode mode = (update)
+            ? DataFlowMode.UPDATESTATS
+            : DataFlowMode.DETAIL;
         try {
             return mgr.getDataFlow(path, flowId, mode, interval);
         } catch (VTNException e) {

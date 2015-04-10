@@ -182,69 +182,7 @@ public final class DataFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3132586177881619796L;
-
-    /**
-     * This enum specifies modes used to query information about data flow.
-     */
-    public static enum Mode {
-        /**
-         * Indicates that summarized information is required.
-         *
-         * <p>
-         *   If this mode is specified, the following attributes in
-         *   {@link DataFlow} are omitted.
-         * </p>
-         *
-         * <ul>
-         *   <li>
-         *     The flow condition configured in the ingress flow entry.
-         *     ({@link DataFlow#getMatch()})
-         *   </li>
-         *   <li>
-         *     Actions to applied to the packet by the egress flow entry.
-         *     ({@link DataFlow#getActions()})
-         *   </li>
-         *   <li>
-         *     The route of the packet in the virtual network.
-         *     ({@link DataFlow#getVirtualRoute()})
-         *   </li>
-         *   <li>
-         *     The route of the packet in the physical network.
-         *     ({@link DataFlow#getPhysicalRoute()})
-         *   </li>
-         *   <li>
-         *     Statistics information.
-         *     ({@link DataFlow#getStatistics()})
-         *   </li>
-         *   <li>
-         *     Averaged statistics information.
-         *     ({@link DataFlow#getAveragedStatistics()})
-         *   </li>
-         * </ul>
-         */
-        SUMMARY,
-
-        /**
-         * Indicates that detailed information is required.
-         *
-         * <p>
-         *   If this mode is specified, all attributes in {@link DataFlow}
-         *   are filled if available. {@link DataFlow#getStatistics()} returns
-         *   statistics cached in the statistics manager, which is updated
-         *   every 10 seconds.
-         *   {@link DataFlow#getAveragedStatistics()} returns averaged
-         *   statistics per second if available.
-         * </p>
-         */
-        DETAIL,
-
-        /**
-         * Same as {@link #DETAIL}, but always make requests to physical
-         * switches to get flow statistics.
-         */
-        UPDATE_STATS;
-    }
+    private static final long serialVersionUID = -5026911993576342566L;
 
     /**
      * An identifier of this data flow assigned by the VTN Manager.

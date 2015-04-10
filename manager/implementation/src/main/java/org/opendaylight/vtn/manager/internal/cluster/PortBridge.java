@@ -19,7 +19,6 @@ import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 
@@ -44,6 +43,7 @@ import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.PacketResult;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -63,7 +63,7 @@ public abstract class PortBridge<T extends PortInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7583382547288594923L;
+    private static final long serialVersionUID = -4197952582273139491L;
 
     /**
      * Construct an abstract bridge node that can have port mappings.
@@ -117,15 +117,15 @@ public abstract class PortBridge<T extends PortInterface>
         Lock wrlock = writeLock();
         try {
             T vif = getInterfaceImpl(path);
-            VNodeState ifState = vif.setPortMap(mgr, ctx, pmconf);
+            VnodeState ifState = vif.setPortMap(mgr, ctx, pmconf);
             if (ifState == null) {
                 // Unchanged.
                 return false;
             }
 
             if (vif.isEnabled()) {
-                if (ifState == VNodeState.DOWN) {
-                    setState(mgr, VNodeState.DOWN);
+                if (ifState == VnodeState.DOWN) {
+                    setState(mgr, VnodeState.DOWN);
                 } else {
                     updateState(mgr);
                 }
@@ -150,7 +150,7 @@ public abstract class PortBridge<T extends PortInterface>
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNode(mgr, db, bst, ev);
+            VnodeState state = notifyIfNode(mgr, db, bst, ev);
             setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
@@ -172,7 +172,7 @@ public abstract class PortBridge<T extends PortInterface>
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNodeConnector(mgr, db, bst, ev);
+            VnodeState state = notifyIfNodeConnector(mgr, db, bst, ev);
             setState(mgr, db, bst, state);
         } finally {
             wrlock.unlock();
@@ -398,7 +398,7 @@ public abstract class PortBridge<T extends PortInterface>
             if (bst.getFaultedPathSize() == 0) {
                 updateState(mgr, db, bst);
             } else {
-                setState(mgr, db, bst, VNodeState.DOWN);
+                setState(mgr, db, bst, VnodeState.DOWN);
             }
         } finally {
             wrlock.unlock();
@@ -646,7 +646,7 @@ public abstract class PortBridge<T extends PortInterface>
      * @return  New state of this node.
      * @throws VTNException  An error occurred.
      */
-    protected final VNodeState notifyIfNode(
+    protected final VnodeState notifyIfNode(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
         BridgeState bst, VtnNodeEvent ev) throws VTNException {
         if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
@@ -663,10 +663,10 @@ public abstract class PortBridge<T extends PortInterface>
             }
         }
 
-        VNodeState state = (bst.getFaultedPathSize() == 0)
-            ? VNodeState.UNKNOWN : VNodeState.DOWN;
+        VnodeState state = (bst.getFaultedPathSize() == 0)
+            ? VnodeState.UNKNOWN : VnodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
-            VNodeState s = vif.notifyNode(mgr, db, state, ev);
+            VnodeState s = vif.notifyNode(mgr, db, state, ev);
             if (vif.isEnabled()) {
                 Logger logger = getLogger();
                 if (logger.isTraceEnabled()) {
@@ -695,7 +695,7 @@ public abstract class PortBridge<T extends PortInterface>
      * @return  New state of this node.
      * @throws VTNException  An error occurred.
      */
-    protected final VNodeState notifyIfNodeConnector(
+    protected final VnodeState notifyIfNodeConnector(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
         BridgeState bst, VtnPortEvent ev) throws VTNException {
         if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
@@ -714,10 +714,10 @@ public abstract class PortBridge<T extends PortInterface>
             }
         }
 
-        VNodeState state = (bst.getFaultedPathSize() == 0)
-            ? VNodeState.UNKNOWN : VNodeState.DOWN;
+        VnodeState state = (bst.getFaultedPathSize() == 0)
+            ? VnodeState.UNKNOWN : VnodeState.DOWN;
         for (T vif: getInterfaceMap().values()) {
-            VNodeState s = vif.notifyNodeConnector(mgr, db, state, ev);
+            VnodeState s = vif.notifyNodeConnector(mgr, db, state, ev);
             if (vif.isEnabled()) {
                 Logger logger = getLogger();
                 if (logger.isTraceEnabled()) {

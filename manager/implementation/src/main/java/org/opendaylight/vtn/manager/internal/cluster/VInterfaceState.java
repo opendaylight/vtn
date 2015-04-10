@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,9 +11,9 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import java.io.Serializable;
 
-import org.opendaylight.vtn.manager.VNodeState;
-
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * {@code VInterfaceState} class keeps runtime state of the virtual interface.
@@ -33,17 +33,17 @@ public class VInterfaceState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4395393607635863497L;
+    private static final long serialVersionUID = 1742777937956679222L;
 
     /**
      * State of the interface.
      */
-    private VNodeState  ifState;
+    private VnodeState  ifState;
 
     /**
      * State of the switch port mapped to this interface.
      */
-    private VNodeState portState;
+    private VnodeState portState;
 
     /**
      * Node connector actually mapped to this interface.
@@ -66,8 +66,8 @@ public class VInterfaceState implements Serializable {
      * @param state   The state of the virtual interface.
      *                Specifying {@code null} results in undefined behavior.
      */
-    VInterfaceState(VNodeState state) {
-        this(state, VNodeState.UNKNOWN, null);
+    VInterfaceState(VnodeState state) {
+        this(state, VnodeState.UNKNOWN, null);
     }
 
     /**
@@ -79,7 +79,7 @@ public class VInterfaceState implements Serializable {
      *                   Specifying {@code null} results in undefined behavior.
      * @param mapped     Node connector mapped to the virtual interface.
      */
-    VInterfaceState(VNodeState state, VNodeState portState,
+    VInterfaceState(VnodeState state, VnodeState portState,
                     NodeConnector mapped) {
         ifState = state;
         mappedPort = mapped;
@@ -91,7 +91,7 @@ public class VInterfaceState implements Serializable {
      *
      * @return  The state of the virtual interface.
      */
-    VNodeState getState() {
+    VnodeState getState() {
         return ifState;
     }
 
@@ -105,7 +105,7 @@ public class VInterfaceState implements Serializable {
      *
      * @param state  The state of the virtual interface.
      */
-    void setState(VNodeState state) {
+    void setState(VnodeState state) {
         if (ifState != state) {
             ifState = state;
             dirty = true;
@@ -117,7 +117,7 @@ public class VInterfaceState implements Serializable {
      *
      * @return  The state of the switch port mapped to this interface.
      */
-    VNodeState getPortState() {
+    VnodeState getPortState() {
         return portState;
     }
 
@@ -131,7 +131,7 @@ public class VInterfaceState implements Serializable {
      *
      * @param state  The state of the switch port.
      */
-    void setPortState(VNodeState state) {
+    void setPortState(VnodeState state) {
         if (portState != state) {
             portState = state;
             dirty = true;
@@ -158,7 +158,7 @@ public class VInterfaceState implements Serializable {
     void setMappedPort(NodeConnector mapped) {
         mappedPort = mapped;
         if (mapped == null) {
-            setPortState(VNodeState.UNKNOWN);
+            setPortState(VnodeState.UNKNOWN);
         }
     }
 

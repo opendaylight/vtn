@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * {@code VTerminal} class describes the vTerminal information.
  *
@@ -48,7 +50,7 @@ public class VTerminal extends VTerminalConfig
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4820420037223611567L;
+    private static final long serialVersionUID = -8426139969576246558L;
 
     /**
      * The name of the vTerminal.
@@ -61,7 +63,7 @@ public class VTerminal extends VTerminalConfig
      *
      * @see  <a href="package-summary.html#vTerminal.status">vTerminal status</a>
      */
-    private VNodeState  state;
+    private VnodeState  state;
 
     /**
      * The number of path faults in flows redirected to the vTerminal
@@ -87,7 +89,7 @@ public class VTerminal extends VTerminalConfig
     @SuppressWarnings("unused")
     private VTerminal() {
         super(null);
-        state = VNodeState.UNKNOWN;
+        state = VnodeState.UNKNOWN;
     }
 
     /**
@@ -97,9 +99,9 @@ public class VTerminal extends VTerminalConfig
      *
      * @param termName  The name of the vTerminal.
      * @param state
-     *   A {@link VNodeState} object which represents the
+     *   A {@link VnodeState} object which represents the
      *   {@linkplain <a href="package-summary.html#vTerminal.status">state of the vTerminal</a>}.
-     *   The state will be treated as {@linkplain VNodeState#UNKNOWN UNKNOWN}
+     *   The state will be treated as {@linkplain VnodeState#UNKNOWN UNKNOWN}
      *   if {@code null} is specified.
      * @param faults    The number of path faults in flows redirected to the
      *                  vTerminal interface.
@@ -109,14 +111,14 @@ public class VTerminal extends VTerminalConfig
      * @throws NullPointerException
      *    {@code vtconf} is {@code null}.
      */
-    public VTerminal(String termName, VNodeState state, int faults,
+    public VTerminal(String termName, VnodeState state, int faults,
                      VTerminalConfig vtconf) {
         super(vtconf.getDescription());
         name = termName;
         this.faults = faults;
 
         if (state == null) {
-            this.state = VNodeState.UNKNOWN;
+            this.state = VnodeState.UNKNOWN;
         } else {
             this.state = state;
         }
@@ -137,26 +139,26 @@ public class VTerminal extends VTerminalConfig
      *
      * <ul>
      *   <li>
-     *     {@link VNodeState#UP} is returned when the vTerminal is in
+     *     {@link VnodeState#UP} is returned when the vTerminal is in
      *     {@linkplain <a href="package-summary.html#vTerminal.status.UP">UP</a>}
      *     state.
      *   </li>
      *   <li>
-     *     {@link VNodeState#DOWN} is returned when the vTerminal is in
+     *     {@link VnodeState#DOWN} is returned when the vTerminal is in
      *     {@linkplain <a href="package-summary.html#vTerminal.status.DOWN">DOWN</a>}
      *     state.
      *   </li>
      *   <li>
-     *     {@link VNodeState#UNKNOWN} is returned when the vTerminal is in
+     *     {@link VnodeState#UNKNOWN} is returned when the vTerminal is in
      *     {@linkplain <a href="package-summary.html#vTerminal.status.UNKNOWN">UNKNOWN</a>}
      *     state.
      *   </li>
      * </ul>
      *
-     * @return  A {@link VNodeState} object which represents the state of
+     * @return  A {@link VnodeState} object which represents the state of
      *          the vTerminal.
      */
-    public VNodeState getState() {
+    public VnodeState getState() {
         return state;
     }
 
@@ -195,22 +197,22 @@ public class VTerminal extends VTerminalConfig
      *   <ul>
      *     <li>
      *       <strong>1</strong> gets configured when the vTerminal is in
-     *       {@link VNodeState#UP UP} state.
+     *       UP state.
      *     </li>
      *     <li>
      *       <strong>0</strong> gets configured when the vTerminal is in
-     *       {@link VNodeState#DOWN DOWN} state.
+     *       DOWN state.
      *     </li>
      *     <li>
      *       <strong>-1</strong> gets configured when the vTerminal is in
-     *       {@link VNodeState#UNKNOWN UNKNOWN} state.
+     *       UNKNOWN state.
      *     </li>
      *   </ul>
      * @deprecated  Only for JAXB. Use {@link #getState()} instead.
      */
     @XmlAttribute(name = "state")
     public int getStateValue() {
-        return state.getValue();
+        return state.getIntValue();
     }
 
     /**
@@ -224,7 +226,7 @@ public class VTerminal extends VTerminalConfig
      */
     @SuppressWarnings("unused")
     private void setStateValue(int st) {
-        this.state = VNodeState.valueOf(st);
+        this.state = VBridge.toVnodeState(st);
     }
 
     // Object

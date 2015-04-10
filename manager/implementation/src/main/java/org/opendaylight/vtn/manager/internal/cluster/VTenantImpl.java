@@ -30,11 +30,9 @@ import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -77,6 +75,9 @@ import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
+
 /**
  * Implementation of virtual tenant.
  *
@@ -90,7 +91,7 @@ public final class VTenantImpl implements FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5991620686397130068L;
+    private static final long serialVersionUID = -3064904901603741301L;
 
     /**
      * Logger instance.
@@ -1079,7 +1080,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * @throws VTNException  An error occurred.
      */
     public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
-                                             MacMapAclType aclType)
+                                             VtnAclType aclType)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -1156,7 +1157,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr     VTN Manager service.
      * @param path    A {@link VBridgePath} object that specifies the position
      *                of the vBridge.
-     * @param op      A {@link UpdateOperation} instance which indicates
+     * @param op      A {@link VtnUpdateOperationType} instance which indicates
      *                how to change the MAC mapping configuration.
      * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
      *                mapping configuration information.
@@ -1167,7 +1168,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * @throws VTNException  An error occurred.
      */
     public UpdateType setMacMap(VTNManagerImpl mgr, VBridgePath path,
-                                UpdateOperation op, MacMapConfig mcconf)
+                                VtnUpdateOperationType op, MacMapConfig mcconf)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -1194,8 +1195,8 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param mgr       VTN Manager service.
      * @param path      A {@link VBridgePath} object that specifies the
      *                  position of the vBridge.
-     * @param op        A {@link UpdateOperation} instance which indicates
-     *                  how to change the MAC mapping configuration.
+     * @param op        A {@link VtnUpdateOperationType} instance which
+     *                  indicates how to change the MAC mapping configuration.
      * @param aclType   The type of access control list.
      * @param dlhosts   A set of {@link DataLinkHost} instances.
      * @return          A {@link UpdateType} object which represents the result
@@ -1205,7 +1206,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * @throws VTNException  An error occurred.
      */
     public UpdateType setMacMap(VTNManagerImpl mgr, VBridgePath path,
-                                UpdateOperation op, MacMapAclType aclType,
+                                VtnUpdateOperationType op, VtnAclType aclType,
                                 Set<? extends DataLinkHost> dlhosts)
         throws VTNException {
         Lock rdlock = rwLock.readLock();

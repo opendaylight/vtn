@@ -19,13 +19,14 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTenantPath;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
 import org.opendaylight.controller.sal.core.UpdateType;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * Abstract implementation of virtual interface.
@@ -40,7 +41,7 @@ public abstract class AbstractInterface implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -8695908264365793708L;
+    private static final long serialVersionUID = 8164690341869791248L;
 
     /**
      * The parent node which contains this virtual interface.
@@ -203,7 +204,7 @@ public abstract class AbstractInterface implements Serializable {
 
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VInterfaceState ist = getIfState(db);
-        VNodeState state;
+        VnodeState state;
         if (changed) {
             // Need to change interface state.
             state = changeEnableState(mgr, ctx, db, ist, newen.booleanValue());
@@ -211,7 +212,7 @@ public abstract class AbstractInterface implements Serializable {
             state = ist.getState();
         }
 
-        VNodeState pstate = ist.getPortState();
+        VnodeState pstate = ist.getPortState();
         VInterface viface = new VInterface(getName(), state, pstate, cf);
         VInterfaceEvent.changed(mgr, ifPath, viface, true);
         return true;
@@ -230,14 +231,14 @@ public abstract class AbstractInterface implements Serializable {
      * @param prstate  Current state of the parent node.
      * @return  New state of the parent node.
      */
-    final VNodeState resume(VTNManagerImpl mgr, TxContext ctx,
-                            VNodeState prstate) {
+    final VnodeState resume(VTNManagerImpl mgr, TxContext ctx,
+                            VnodeState prstate) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VInterfaceState ist = getIfState(db);
-        VNodeState state = resuming(mgr, db, ctx, ist);
+        VnodeState state = resuming(mgr, db, ctx, ist);
         if (!isEnabled()) {
             // State of disabled interface must be DOWN.
-            state = VNodeState.DOWN;
+            state = VnodeState.DOWN;
         }
 
         ist.setState(state);
@@ -276,8 +277,8 @@ public abstract class AbstractInterface implements Serializable {
     final void destroy(VTNManagerImpl mgr, boolean retain) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         VInterfaceState ist = getIfState(mgr);
-        VNodeState state = ist.getState();
-        VNodeState pstate = ist.getPortState();
+        VnodeState state = ist.getState();
+        VnodeState pstate = ist.getPortState();
         VInterface viface = new VInterface(getName(), state, pstate, ifConfig);
         destroying(mgr, db, ist, retain);
         db.remove(ifPath);
@@ -294,10 +295,10 @@ public abstract class AbstractInterface implements Serializable {
      * @param prstate  Current state of the parent node.
      * @return  New state of the parent node.
      */
-    final VNodeState getParentState(ConcurrentMap<VTenantPath, Object> db,
-                                    VNodeState prstate) {
+    final VnodeState getParentState(ConcurrentMap<VTenantPath, Object> db,
+                                    VnodeState prstate) {
         VInterfaceState ist = getIfState(db);
-        VNodeState state = ist.getState();
+        VnodeState state = ist.getState();
         return getParentState(state, prstate);
     }
 
@@ -308,14 +309,14 @@ public abstract class AbstractInterface implements Serializable {
      * @param prstate  Current state of the parent node.
      * @return  New state of the parent node.
      */
-    protected final VNodeState getParentState(VNodeState state,
-                                              VNodeState prstate) {
-        if (state == VNodeState.DOWN) {
-            return VNodeState.DOWN;
+    protected final VnodeState getParentState(VnodeState state,
+                                              VnodeState prstate) {
+        if (state == VnodeState.DOWN) {
+            return VnodeState.DOWN;
         }
 
-        if (prstate == VNodeState.UNKNOWN && state == VNodeState.UP) {
-            return VNodeState.UP;
+        if (prstate == VnodeState.UNKNOWN && state == VnodeState.UP) {
+            return VnodeState.UP;
         }
 
         return prstate;
@@ -352,8 +353,8 @@ public abstract class AbstractInterface implements Serializable {
         ConcurrentMap<VTenantPath, Object> db) {
         VInterfaceState ist = (VInterfaceState)db.get(ifPath);
         if (ist == null) {
-            VNodeState state = (isEnabled())
-                ? VNodeState.UNKNOWN : VNodeState.DOWN;
+            VnodeState state = (isEnabled())
+                ? VnodeState.UNKNOWN : VnodeState.DOWN;
             ist = new VInterfaceState(state);
         }
 
@@ -377,11 +378,11 @@ public abstract class AbstractInterface implements Serializable {
      */
     protected boolean setState(VTNManagerImpl mgr,
                                ConcurrentMap<VTenantPath, Object> db,
-                               VInterfaceState ist, VNodeState state) {
-        VNodeState st;
+                               VInterfaceState ist, VnodeState state) {
+        VnodeState st;
         if (!isEnabled()) {
             // State of disabled interface must be DOWN.
-            st = VNodeState.DOWN;
+            st = VnodeState.DOWN;
         } else {
             st = state;
         }
@@ -390,7 +391,7 @@ public abstract class AbstractInterface implements Serializable {
         boolean dirty = ist.isDirty();
         if (dirty) {
             db.put((VNodePath)ifPath, ist);
-            VNodeState pstate = ist.getPortState();
+            VnodeState pstate = ist.getPortState();
             VInterface viface = new VInterface(getName(), st, pstate,
                                                ifConfig);
             VInterfaceEvent.changed(mgr, ifPath, viface, false);
@@ -514,7 +515,7 @@ public abstract class AbstractInterface implements Serializable {
      *                 disabled.
      * @return  New state of this interface.
      */
-    protected abstract VNodeState changeEnableState(
+    protected abstract VnodeState changeEnableState(
         VTNManagerImpl mgr, TxContext ctx,
         ConcurrentMap<VTenantPath, Object> db, VInterfaceState ist,
         boolean enabled);
@@ -529,7 +530,7 @@ public abstract class AbstractInterface implements Serializable {
      * @param ist  Current state of this interface.
      * @return  New state of this interface.
      */
-    protected abstract VNodeState resuming(
+    protected abstract VnodeState resuming(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
         TxContext ctx, VInterfaceState ist);
 

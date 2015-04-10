@@ -17,6 +17,8 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * JUnit test for {@link VInterface}.
  */
@@ -31,15 +33,15 @@ public class VInterfaceTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        VNodeState[] stateValues = VNodeState.values();
-        VNodeState[] states = new VNodeState[stateValues.length + 1];
+        VnodeState[] stateValues = VnodeState.values();
+        VnodeState[] states = new VnodeState[stateValues.length + 1];
         System.arraycopy(stateValues, 0, states, 1, stateValues.length);
         states[0] = null;
 
         for (String name: createStrings("nm")) {
             for (VInterfaceConfig iconf: createConfigs()) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         String emsg = "(name)" + name
                                 + ",(state)"
                                 + ((state == null) ? "null" : state.toString())
@@ -56,10 +58,10 @@ public class VInterfaceTest extends TestBase {
 
                         // null state should be interpreted as UNKNOWN.
                         if (state == null) {
-                            state = VNodeState.UNKNOWN;
+                            state = VnodeState.UNKNOWN;
                         }
                         if (estate == null) {
-                            estate = VNodeState.UNKNOWN;
+                            estate = VnodeState.UNKNOWN;
                         }
                         assertSame(emsg, state, viface.getState());
                         assertSame(emsg, estate, viface.getEntityState());
@@ -78,11 +80,11 @@ public class VInterfaceTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
         List<String> names = createStrings("nm");
         List<VInterfaceConfig> configs = createConfigs();
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (VInterfaceConfig iconf: configs) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface i1 =
                             new VInterface(name, state, estate, iconf);
                         VInterface i2 =
@@ -106,11 +108,11 @@ public class VInterfaceTest extends TestBase {
     public void testToString() {
         String prefix = "VInterface[";
         String suffix = "]";
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (VInterfaceConfig iconf: createConfigs()) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
 
@@ -149,11 +151,11 @@ public class VInterfaceTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (VInterfaceConfig iconf: createConfigs()) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
                         serializeTest(viface);
@@ -168,11 +170,11 @@ public class VInterfaceTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (VInterfaceConfig iconf: createConfigs()) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
                         jaxbTest(viface, VInterface.class, XML_ROOT);
@@ -181,23 +183,23 @@ public class VInterfaceTest extends TestBase {
             }
         }
 
-        // Ensure that "state" attribute is decoded as VNodeState.
+        // Ensure that "state" attribute is decoded as VnodeState.
         String name = "name";
         String desc = "description";
         Boolean enabled = Boolean.TRUE;
         jaxbStateTest(name, desc, enabled, -1, 0,
-                      VNodeState.UNKNOWN, VNodeState.DOWN);
+                      VnodeState.UNKNOWN, VnodeState.DOWN);
         jaxbStateTest(name, desc, enabled, 0, 1,
-                      VNodeState.DOWN, VNodeState.UP);
+                      VnodeState.DOWN, VnodeState.UP);
         jaxbStateTest(name, desc, enabled, 1, -1,
-                      VNodeState.UP, VNodeState.UNKNOWN);
+                      VnodeState.UP, VnodeState.UNKNOWN);
 
         // Ensure that UNKNOWN is set to the state if "state"
         // attribute is omitted.
         jaxbStateTest(name, desc, enabled, null, 0,
-                      VNodeState.UNKNOWN, VNodeState.DOWN);
+                      VnodeState.UNKNOWN, VnodeState.DOWN);
         jaxbStateTest(name, desc, enabled, 1, null,
-                      VNodeState.UP, VNodeState.UNKNOWN);
+                      VnodeState.UP, VnodeState.UNKNOWN);
 
         // Ensure that UNKNOWN is set to the state if "state"
         // attribute is invalid.
@@ -206,9 +208,9 @@ public class VInterfaceTest extends TestBase {
                 continue;
             }
             jaxbStateTest(name, desc, enabled, new Integer(st), 0,
-                          VNodeState.UNKNOWN, VNodeState.DOWN);
+                          VnodeState.UNKNOWN, VnodeState.DOWN);
             jaxbStateTest(name, desc, enabled, 1, new Integer(st),
-                          VNodeState.UP, VNodeState.UNKNOWN);
+                          VnodeState.UP, VnodeState.UNKNOWN);
         }
 
         // Ensure that broken values in XML can be detected.
@@ -230,7 +232,7 @@ public class VInterfaceTest extends TestBase {
      */
     private void jaxbStateTest(String name, String desc, Boolean enabled,
                                Integer state, Integer estate,
-                               VNodeState required, VNodeState reqestate) {
+                               VnodeState required, VnodeState reqestate) {
         StringBuilder builder = new StringBuilder(XML_DECLARATION);
         builder.append('<').append(XML_ROOT);
         if (name != null) {

@@ -22,21 +22,18 @@ import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -48,12 +45,16 @@ import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
-import org.opendaylight.vtn.manager.flow.DataFlow.Mode;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 /**
  * Stub class for unit tests.
@@ -143,7 +144,7 @@ public class VTNManagerStub implements IVTNManager {
         if (path.equals(bridge1)) {
             VBridgeConfig bconf = new VBridgeConfig(null);
             VBridge bridge = new VBridge(BRIDGE_1_NAME,
-                                         VNodeState.UNKNOWN,
+                                         VnodeState.UNKNOWN,
                                          0,
                                          bconf);
             return bridge;
@@ -196,15 +197,15 @@ public class VTNManagerStub implements IVTNManager {
         if (path.equals(if1)) {
             VInterfaceConfig iconf = new VInterfaceConfig(null, true);
             VInterface vif = new VInterface(VBR_IF_1_NAME,
-                                            VNodeState.UNKNOWN,
-                                            VNodeState.UNKNOWN,
+                                            VnodeState.UNKNOWN,
+                                            VnodeState.UNKNOWN,
                                             iconf);
             return vif;
         } else if (path.equals(if2)) {
             VInterfaceConfig iconf = new VInterfaceConfig("br-int config", true);
             VInterface vif = new VInterface(VBR_IF_1_NAME,
-                                            VNodeState.UNKNOWN,
-                                            VNodeState.UNKNOWN,
+                                            VnodeState.UNKNOWN,
+                                            VnodeState.UNKNOWN,
                                             iconf);
             return vif;
         } else if (path.equals(if3)) {
@@ -213,8 +214,8 @@ public class VTNManagerStub implements IVTNManager {
 
                 VInterfaceConfig iconf = new VInterfaceConfig(null, true);
                 VInterface vif = new VInterface(VBR_IF_3_NAME,
-                                                VNodeState.UNKNOWN,
-                                                VNodeState.UNKNOWN,
+                                                VnodeState.UNKNOWN,
+                                                VnodeState.UNKNOWN,
                                                 iconf);
                 return vif;
             }
@@ -414,7 +415,9 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public Set<DataLinkHost> getMacMapConfig(VBridgePath path, MacMapAclType aclType) throws VTNException {
+    public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
+                                             VtnAclType aclType)
+        throws VTNException {
         return null;
     }
 
@@ -429,13 +432,16 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op, MacMapConfig mcconf) throws VTNException {
+    public UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
+                                MacMapConfig mcconf) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op, MacMapAclType aclType,
-            Set<? extends DataLinkHost> dlhosts) throws VTNException {
+    public UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
+                                VtnAclType aclType,
+                                Set<? extends DataLinkHost> dlhosts)
+        throws VTNException {
         return null;
     }
 
@@ -469,13 +475,14 @@ public class VTNManagerStub implements IVTNManager {
     }
 
     @Override
-    public List<DataFlow> getDataFlows(VTenantPath path, Mode mode,
+    public List<DataFlow> getDataFlows(VTenantPath path, DataFlowMode mode,
             DataFlowFilter filter, int interval) throws VTNException {
         return null;
     }
 
     @Override
-    public DataFlow getDataFlow(VTenantPath path, long flowId, Mode mode, int interval)
+    public DataFlow getDataFlow(VTenantPath path, long flowId,
+                                DataFlowMode mode, int interval)
         throws VTNException {
         return null;
     }

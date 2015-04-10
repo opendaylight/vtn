@@ -18,6 +18,22 @@ module vtn-types {
         revision-date 2013-08-19;
     }
 
+    /* OpenDaylight openflowplugin */
+    import opendaylight-action-types {
+        prefix action;
+        revision-date 2013-11-12;
+    }
+
+    /* OpenDaylight yangtools */
+    import opendaylight-l2-types {
+        prefix l2;
+        revision-date 2013-08-27;
+    }
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+
     description
       "The module that descripes various data types used by the VTN Manager.";
 
@@ -30,6 +46,86 @@ module vtn-types {
         type string {
             length "1 .. 31";
             pattern "[a-zA-Z0-9][a-zA-Z0-9_]*";
+        }
+    }
+
+    grouping vnode-path-fields {
+        description
+          "Describes a set of fields which specify the location of the
+           virtual node inside the VTN.";
+
+        leaf tenant-name {
+            description "The name of the VTN.";
+            type string;
+        }
+
+        leaf bridge-name {
+            description
+              "The name of the vBridge.
+               This field is omitted if the virtual node specified by this
+               model is neither a vBridge nor a virtual node attached to the
+               vBridge.";
+            type string;
+        }
+
+        leaf router-name {
+            description
+              "The name of the vRouter.
+               This field is ignored if `bridge-name' field is configured.
+               Currently the VTN Manager never uses this field because the
+               virtual router is not yet supported.";
+            type string;
+        }
+
+        leaf terminal-name {
+            description
+              "The name of the vTerminal.
+               This field is ignored if either `bridge-name' or `router-name'
+               field is configured.
+               This field is omitted if the virtual node specified by this
+               model is neither a vTerminal nor a virtual node attached to
+               the vTerminal.";
+            type string;
+        }
+
+        leaf interface-name {
+            description
+              "The name of the virtual interface.
+
+               - If the virtual interface specified by this model is attached
+                 to a vBridge, the name of the vBridge is set to `bridge-name'
+                 field.
+               - If the virtual interface specified by this model is attached
+                 to a vRouter, the name of the vRouter is set to
+                 `router-name' field.
+               - If the virtual interface specified by this model is attached
+                 to a vTerminal, the name of the vTerminal is set to
+                 `terminal-name' field.
+               - This field is omitted if the virtual node specified by this
+                 model is not a virtual interface.";
+            type string;
+        }
+    }
+
+    typedef vnode-state {
+        description "Describes the state of the virtual node in the VTN.";
+
+        type enumeration {
+            enum UNKNOWN {
+                description
+                  "Indicates the state of the virtual node is unavailable.";
+                value -1;
+            }
+
+            enum DOWN {
+                description "Indicates the virtual node is in down state.";
+                value 0;
+            }
+
+            enum UP {
+                description "Indicates the virtual node is in up state.";
+                value 1;
+            }
         }
     }
 
@@ -158,6 +254,86 @@ module vtn-types {
         }
     }
 
+    typedef vtn-acl-type {
+        description "Describes the type of access control list.";
+
+        type enumeration {
+            enum ALLOW {
+                description
+                  "Indicates that user is allowed to access the resource.";
+                value 0;
+            }
+
+            enum DENY {
+                description
+                  "Indicates that user is disallowed to access the resource.";
+                value 1;
+            }
+        }
+    }
+
+    grouping vtn-switch-port {
+        description
+          "Describes the location of the physical swtich port.
+
+           This model describes only the information that identifies the port
+           within a physical swtich, and does not describes the information
+           that identifies the physical switch.";
+
+        leaf port-id {
+            description
+              "Identifier for a switch port in the physical switch.
+               To specify the OpenFlow switch port, a string representation
+               of the port number for a physical port needs to be specified.
+
+               If this field is omitted, it is necessary to specify the
+               `port-name' field.";
+            type string;
+        }
+
+        leaf port-name {
+            description
+              "The name of the switch port.
+
+               Note that an empty string cannot be specified as the port name.
+               If this attribute is omitted, it is necessary to specify the
+               `port-id' field.";
+            type string {
+                length "1 .. max";
+            }
+        }
+    }
+
+    grouping vtn-port-location {
+        description
+          "Describes the location of the physical switch port.";
+
+        leaf node {
+            description "Identifier for a physical switch.";
+            type inv:node-id;
+        }
+
+        uses vtn-switch-port;
+    }
+
+    grouping vlan-host {
+        description
+          "Describes the host in VLAN.
+           A host in VLAN is specified by a pair of MAC address and VLAN ID.";
+
+        leaf mac-address {
+            description "MAC address of the host.";
+            type yang:mac-address;
+        }
+
+        leaf vlan-id {
+            description
+              "VLAN ID that specifies the VLAN to which the host belongs.
+               Zero means the untagged network.";
+            type l2:vlan-id;
+        }
+    }
+
     typedef vtn-port-desc {
         description
           "Describes the location of the physical switch port.
@@ -212,6 +388,18 @@ module vtn-types {
                 "The number of seconds to be set to `hard-timeout' field
                  in flow entries. Zero means an infinite time.";
             type uint16;
+        }
+    }
+
+    typedef vlan-type {
+        description
+          "Describes the VLAN type supported by the VTN Manager.";
+
+        type enumeration {
+            enum VLAN {
+                description "Indicates the IEEE 802.1Q VLAN.";
+                value 33024;
+            }
         }
     }
 }

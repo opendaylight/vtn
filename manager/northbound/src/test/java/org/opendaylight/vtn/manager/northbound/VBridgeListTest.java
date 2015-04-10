@@ -16,7 +16,8 @@ import java.util.List;
 import org.junit.Test;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
-import org.opendaylight.vtn.manager.VNodeState;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * JUnit test for {@link VBridgeList}.
@@ -45,11 +46,11 @@ public class VBridgeListTest extends TestBase {
         VBridgeList emptyList = new VBridgeList(new ArrayList<VBridge>());
         assertEquals(list, emptyList.getList());
 
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (String desc: descs) {
                 for (int flt = 0; flt < nflts; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VBridgeConfig bconf = new VBridgeConfig(desc);
                         VBridge b = new VBridge(name, state, flt, bconf);
 
@@ -87,11 +88,11 @@ public class VBridgeListTest extends TestBase {
         List<String> names = createStrings("name");
         List<String> descs = createStrings("desc");
         int nflts = 2;
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (String desc: descs) {
                 for (int flt = 0; flt < nflts; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VBridgeConfig bconf = new VBridgeConfig(desc);
                         VBridge b1 = new VBridge(name, state, flt, bconf);
                         bconf = new VBridgeConfig(copy(desc));
@@ -131,11 +132,11 @@ public class VBridgeListTest extends TestBase {
         jaxbTest(vbList, VBridgeList.class, XML_ROOT);
         jsonTest(vbList, VBridgeList.class);
 
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("vBridge")) {
             for (String desc: createStrings("Description")) {
                 for (int flt = 0; flt < 2; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VBridgeConfig bconf = new VBridgeConfig(desc);
                         VBridge vbridge = new VBridge(name, state, flt, bconf);
 

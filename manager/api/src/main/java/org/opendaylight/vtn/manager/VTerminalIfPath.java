@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,9 @@ import java.util.List;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
 import org.opendaylight.controller.sal.core.UpdateType;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 /**
  * {@code VTerminalIfPath} class describes the position of the
@@ -36,7 +39,7 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5392212457209001771L;
+    private static final long serialVersionUID = -1784433049161672167L;
 
     /**
      * A string which represents that the node type is vTerminal interface.
@@ -98,6 +101,8 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
         this(termPath.getTenantName(), termPath.getTerminalName(), ifName);
     }
 
+    // VTenantPath
+
     /**
      * {@inheritDoc}
      *
@@ -107,6 +112,20 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
     @Override
     public String getNodeType() {
         return NODETYPE_VTERM_IF;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since  Lithium
+     */
+    @Override
+    public VirtualNodePath toVirtualNodePath() {
+        return new VirtualNodePathBuilder().
+            setTenantName(getTenantName()).
+            setTerminalName(getTenantNodeName()).
+            setInterfaceName(ifName).
+            build();
     }
 
     /**
@@ -158,6 +177,8 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
         return components;
     }
 
+    // VNodePath
+
     /**
      * Convert this instance into a {@link VNodeLocation} instance.
      *
@@ -167,6 +188,8 @@ public class VTerminalIfPath extends VTerminalPath implements VInterfacePath {
     public VNodeLocation toVNodeLocation() {
         return new VNodeLocation(this);
     }
+
+    // Object
 
     /**
      * Return the hash code of this object.

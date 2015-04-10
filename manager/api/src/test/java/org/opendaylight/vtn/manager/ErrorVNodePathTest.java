@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,6 +31,12 @@ public class ErrorVNodePathTest extends TestBase {
 
             try {
                 path.toVNodeLocation();
+                unexpected();
+            } catch (IllegalStateException e) {
+            }
+
+            try {
+                path.toVirtualNodePath();
                 unexpected();
             } catch (IllegalStateException e) {
             }

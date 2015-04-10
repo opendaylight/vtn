@@ -16,7 +16,8 @@ import java.util.List;
 import org.junit.Test;
 import org.opendaylight.vtn.manager.VTerminal;
 import org.opendaylight.vtn.manager.VTerminalConfig;
-import org.opendaylight.vtn.manager.VNodeState;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * JUnit test for {@link VTerminalList}.
@@ -45,11 +46,11 @@ public class VTerminalListTest extends TestBase {
         VTerminalList emptyList = new VTerminalList(new ArrayList<VTerminal>());
         assertEquals(list, emptyList.getList());
 
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (String desc: descs) {
                 for (int flt = 0; flt < nflts; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminalConfig bconf = new VTerminalConfig(desc);
                         VTerminal b = new VTerminal(name, state, flt, bconf);
 
@@ -87,11 +88,11 @@ public class VTerminalListTest extends TestBase {
         List<String> names = createStrings("name");
         List<String> descs = createStrings("desc");
         int nflts = 2;
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (String desc: descs) {
                 for (int flt = 0; flt < nflts; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminalConfig vtconf = new VTerminalConfig(desc);
                         VTerminal b1 = new VTerminal(name, state, flt, vtconf);
                         vtconf = new VTerminalConfig(copy(desc));
@@ -132,11 +133,11 @@ public class VTerminalListTest extends TestBase {
         jaxbTest(vtList, VTerminalList.class, XML_ROOT);
         jsonTest(vtList, VTerminalList.class);
 
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("vTerminal")) {
             for (String desc: createStrings("Description")) {
                 for (int flt = 0; flt < 2; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminalConfig vtconf = new VTerminalConfig(desc);
                         VTerminal vterm =
                             new VTerminal(name, state, flt, vtconf);

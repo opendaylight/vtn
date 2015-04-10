@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.junit.Test;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
 
 /**
  * JUnit test for {@link VTenantPath}.
@@ -46,16 +48,19 @@ public class VTenantPathTest extends TestBase {
             VTenantPath path = new VTenantPath(tname);
             assertEquals(tname, path.getTenantName());
             assertEquals("VTN", path.getNodeType());
+            checkVirtualNodePath(path);
 
             VTenantPath clone = path.clone();
-            assertNotSame(clone, path);
-            assertEquals(clone, path);
+            assertNotSame(path, clone);
+            assertEquals(path, clone);
+            checkVirtualNodePath(clone);
 
             String name = tname + "_new";
             VTenantPath path1 = path.replaceTenantName(name);
             assertEquals(name, path1.getTenantName());
             assertEquals("VTN", path1.getNodeType());
             assertEquals(VTenantPath.class, path1.getClass());
+            checkVirtualNodePath(path1);
         }
     }
 
@@ -282,5 +287,19 @@ public class VTenantPathTest extends TestBase {
 
         VTerminalIfPath vtipath = new VTerminalIfPath(vtpath, "interface");
         assertEquals(expected, path.contains(vtipath));
+    }
+
+    /**
+     * Test case for {@link VTenantPath#toVirtualNodePath()}.
+     *
+     * @param path  A {@link VTenantPath} to be tested.
+     */
+    private void checkVirtualNodePath(VTenantPath path) {
+        VirtualNodePath vpath = path.toVirtualNodePath();
+        assertEquals(path.getTenantName(), vpath.getTenantName());
+        assertEquals(null, vpath.getBridgeName());
+        assertEquals(null, vpath.getInterfaceName());
+        assertEquals(null, vpath.getRouterName());
+        assertEquals(null, vpath.getTerminalName());
     }
 }

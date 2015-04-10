@@ -16,7 +16,8 @@ import java.util.List;
 import org.junit.Test;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VNodeState;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * JUnit test for {@link VInterfaceList}.
@@ -35,7 +36,7 @@ public class VInterfaceListTest extends TestBase {
         List<VInterface> list = new ArrayList<VInterface>();
         List<String> names = createStrings("nm");
         List<VInterfaceConfig> configs = createConfigs();
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
 
         // null list.
         VInterfaceList nullList = new VInterfaceList(null);
@@ -48,8 +49,8 @@ public class VInterfaceListTest extends TestBase {
 
         for (String name: names) {
             for (VInterfaceConfig iconf: configs) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface i =
                             new VInterface(name, state, estate, iconf);
 
@@ -92,11 +93,11 @@ public class VInterfaceListTest extends TestBase {
         List<VInterface> list2 = new ArrayList<VInterface>();
         List<String> names = createStrings("nm");
         List<VInterfaceConfig> configs = createConfigs();
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (VInterfaceConfig iconf: configs) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface i1 =
                             new VInterface(name, state, estate, iconf);
                         VInterface i2 =
@@ -149,11 +150,11 @@ public class VInterfaceListTest extends TestBase {
         jaxbTest(ifList, VInterfaceList.class, XML_ROOT);
         jsonTest(ifList, VInterfaceList.class);
 
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (VInterfaceConfig iconf: createConfigs()) {
-                for (VNodeState state: states) {
-                    for (VNodeState estate: states) {
+                for (VnodeState state: states) {
+                    for (VnodeState estate: states) {
                         VInterface viface =
                             new VInterface(name, state, estate, iconf);
 

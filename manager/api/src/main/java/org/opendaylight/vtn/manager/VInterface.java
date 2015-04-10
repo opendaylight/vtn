@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * {@code VInterface} class describes the virtual interface information.
  *
@@ -48,7 +50,7 @@ public class VInterface extends VInterfaceConfig
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7399114907471127284L;
+    private static final long serialVersionUID = 2939100529362804426L;
 
     /**
      * The name of the virtual interface.
@@ -61,12 +63,12 @@ public class VInterface extends VInterfaceConfig
      *
      * @see  <a href="package-summary.html#vInterface.status">Virtual interface status</a>
      */
-    private VNodeState  state;
+    private VnodeState  state;
 
     /**
      * State of the network element mapped to this virtual interface.
      */
-    private VNodeState  entityState;
+    private VnodeState  entityState;
 
     /**
      * Private constructor used for JAXB mapping.
@@ -74,8 +76,8 @@ public class VInterface extends VInterfaceConfig
     @SuppressWarnings("unused")
     private VInterface() {
         super(null, null);
-        state = VNodeState.UNKNOWN;
-        entityState = VNodeState.UNKNOWN;
+        state = VnodeState.UNKNOWN;
+        entityState = VnodeState.UNKNOWN;
     }
 
     /**
@@ -85,14 +87,14 @@ public class VInterface extends VInterfaceConfig
      *
      * @param ifName  The name of the virtual interface.
      * @param state
-     *  A {@link VNodeState} object which represents the
+     *  A {@link VnodeState} object which represents the
      *  {@linkplain <a href="package-summary.html#vInterface.status">state of the virtual interface</a>}.
-     *  The state will be treated as {@linkplain VNodeState#UNKNOWN UNKNOWN} if
+     *  The state will be treated as {@linkplain VnodeState#UNKNOWN UNKNOWN} if
      *  {@code null} is specified.
-     * @param estate  A {@link VNodeState} object which represents the state
+     * @param estate  A {@link VnodeState} object which represents the state
      *                of the network element mapped to the virtual interface.
      *                The state will be treated as
-     *                {@linkplain VNodeState#UNKNOWN UNKNOWN} if {@code null}
+     *                {@linkplain VnodeState#UNKNOWN UNKNOWN} if {@code null}
      *                is specified.
      * @param iconf   A {@link VInterfaceConfig} object which contains
      *                configuration information about the virtual interface.
@@ -100,18 +102,18 @@ public class VInterface extends VInterfaceConfig
      * @throws NullPointerException
      *    {@code iconf} is {@code null}.
      */
-    public VInterface(String ifName, VNodeState state, VNodeState estate,
+    public VInterface(String ifName, VnodeState state, VnodeState estate,
                       VInterfaceConfig iconf) {
         super(iconf.getDescription(), iconf.getEnabled());
         name = ifName;
 
         if (state == null) {
-            this.state = VNodeState.UNKNOWN;
+            this.state = VnodeState.UNKNOWN;
         } else {
             this.state = state;
         }
         if (estate == null) {
-            this.entityState = VNodeState.UNKNOWN;
+            this.entityState = VnodeState.UNKNOWN;
         } else {
             this.entityState = estate;
         }
@@ -133,27 +135,27 @@ public class VInterface extends VInterfaceConfig
      *
      * <ul>
      *   <li>
-     *     {@link VNodeState#UP} is returned when the virtual interface is in
+     *     {@link VnodeState#UP} is returned when the virtual interface is in
      *     {@linkplain <a href="package-summary.html#vInterface.status.UP">UP</a>}
      *      state.
      *   </li>
      *   <li>
-     *     {@link VNodeState#DOWN} is returned when the virtual interface is in
+     *     {@link VnodeState#DOWN} is returned when the virtual interface is in
      *     {@linkplain <a href="package-summary.html#vInterface.status.DOWN">DOWN</a>}
      *      state.
      *   </li>
      *   <li>
-     *     {@link VNodeState#UNKNOWN} is returned when the virtual interface is
+     *     {@link VnodeState#UNKNOWN} is returned when the virtual interface is
      *     in
      *     {@linkplain <a href="package-summary.html#vInterface.status.UNKNOWN">UNKNOWN</a>}
      *     state.
      *   </li>
      * </ul>
      *
-     * @return  A {@link VNodeState} object which represents the state of
+     * @return  A {@link VnodeState} object which represents the state of
      *          the virtual interface.
      */
-    public VNodeState getState() {
+    public VnodeState getState() {
         return state;
     }
 
@@ -165,21 +167,21 @@ public class VInterface extends VInterfaceConfig
      *   If the
      *   {@linkplain <a href="package-summary.html#port-map">port mapping</a>} is
      *   configured to the virtual interface specified by this object,
-     *   this method returns a {@link VNodeState} object which represents the
+     *   this method returns a {@link VnodeState} object which represents the
      *   state of the physical switch port mapped to the virtual interface.
      * </p>
      *
      * <ul>
      *   <li>
-     *     {@link VNodeState#UP} is returned if mapped network elements is
+     *     {@link VnodeState#UP} is returned if mapped network elements is
      *     operating.
      *   </li>
      *   <li>
-     *     {@link VNodeState#DOWN} is returned if mapped network elements is
+     *     {@link VnodeState#DOWN} is returned if mapped network elements is
      *     not operating.
      *   </li>
      *   <li>
-     *     {@link VNodeState#UNKNOWN} is returned if no network element is
+     *     {@link VnodeState#UNKNOWN} is returned if no network element is
      *     mapped to the virtual interface.
      *   </li>
      * </ul>
@@ -188,12 +190,12 @@ public class VInterface extends VInterfaceConfig
      *   Note that the state of mapped network element is configured
      *   irrespective of whether the virtual interface is enabled or disabled.
      *   For example, even if the virtual interface is disabled, this method
-     *   returns {@link VNodeState#UP} if mapped network element is operating.
+     *   returns {@link VnodeState#UP} if mapped network element is operating.
      * </p>
      *
      * @return  The state of the network element mapped to this interface.
      */
-    public VNodeState getEntityState() {
+    public VnodeState getEntityState() {
         return entityState;
     }
 
@@ -211,22 +213,22 @@ public class VInterface extends VInterfaceConfig
      *   <ul>
      *     <li>
      *       <strong>1</strong> gets configured when the virtual interface is
-     *       in {@link VNodeState#UP UP} state.
+     *       in UP state.
      *     </li>
      *     <li>
      *       <strong>0</strong> gets configured when the virtual interface is
-     *       in {@link VNodeState#DOWN DOWN} state.
+     *       in DOWN state.
      *     </li>
      *     <li>
      *       <strong>-1</strong> gets configured when the virtual interface is
-     *       in {@link VNodeState#UNKNOWN UNKNOWN} state.
+     *       in UNKNOWN state.
      *     </li>
      *   </ul>
      * @deprecated  Only for JAXB. Use {@link #getState()} instead.
      */
     @XmlAttribute(name = "state")
     public int getStateValue() {
-        return state.getValue();
+        return state.getIntValue();
     }
 
     /**
@@ -240,7 +242,7 @@ public class VInterface extends VInterfaceConfig
      */
     @SuppressWarnings("unused")
     private void setStateValue(int st) {
-        this.state = VNodeState.valueOf(st);
+        this.state = VBridge.toVnodeState(st);
     }
 
     /**
@@ -285,7 +287,7 @@ public class VInterface extends VInterfaceConfig
      */
     @XmlAttribute(name = "entityState")
     public int getEntityStateValue() {
-        return entityState.getValue();
+        return entityState.getIntValue();
     }
 
     /**
@@ -299,7 +301,7 @@ public class VInterface extends VInterfaceConfig
      */
     @SuppressWarnings("unused")
     private void setEntityStateValue(int st) {
-        this.entityState = VNodeState.valueOf(st);
+        this.entityState = VBridge.toVnodeState(st);
     }
 
     // Object

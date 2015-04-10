@@ -25,12 +25,9 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
@@ -62,6 +59,9 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -81,7 +81,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5231707441002111262L;
+    private static final long serialVersionUID = 7427407992720900842L;
 
     /**
      * Logger instance.
@@ -202,16 +202,17 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         /**
          * Set up the context used to update the target access control list.
          *
-         * @param op       A {@link UpdateOperation} instance which indicates
-         *                 how to update the MAC mapping configuration.
+         * @param op       A {@link VtnUpdateOperationType} instance which
+         *                 indicates how to update the MAC mapping
+         *                 configuration.
          * @param dlhosts  A {@link MacMapConfig} instance which contains the
          *                 MAC mapping configuration information.
          * @throws VTNException  An error occurred.
          */
-        private void setUp(UpdateOperation op,
+        private void setUp(VtnUpdateOperationType op,
                            Set<? extends DataLinkHost> dlhosts)
             throws VTNException {
-            if (op == UpdateOperation.SET) {
+            if (op == VtnUpdateOperationType.SET) {
                 // Change configuration as specified exactly.
                 set(dlhosts);
             } else if (op == null) {
@@ -221,14 +222,14 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                     return;
                 }
 
-                if (op == UpdateOperation.ADD) {
+                if (op == VtnUpdateOperationType.ADD) {
                     // Add the specified configuration to the current
                     // configuration.
                     add(dlhosts);
                 } else {
                     // Remove the specified configuration from the current
                     // configuration.
-                    assert op == UpdateOperation.REMOVE;
+                    assert op == VtnUpdateOperationType.REMOVE;
                     remove(dlhosts);
                 }
             }
@@ -285,7 +286,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         }
 
         /**
-         * Perform {@link UpdateOperation#SET} operation.
+         * Perform {@link VtnUpdateOperationType#SET} operation.
          *
          * @param dlhosts  A set of {@link DataLinkHost} instances to be
          *                 exactly set to the access control host set.
@@ -319,7 +320,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         protected abstract Set<MacVlan> getTarget();
 
         /**
-         * Perform {@link UpdateOperation#SET} operation.
+         * Perform {@link VtnUpdateOperationType#SET} operation.
          *
          * @param dlhosts  A set of {@link DataLinkHost} instances to be
          *                 exactly set to the access control host set.
@@ -329,7 +330,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
             throws VTNException;
 
         /**
-         * Perform {@link UpdateOperation#ADD} operation.
+         * Perform {@link VtnUpdateOperationType#ADD} operation.
          *
          * @param dlhosts  A set of {@link DataLinkHost} instances to be
          *                 added to the access control host set.
@@ -339,7 +340,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
             throws VTNException;
 
         /**
-         * Perform {@link UpdateOperation#REMOVE} operation.
+         * Perform {@link VtnUpdateOperationType#REMOVE} operation.
          *
          * @param dlhosts  A set of {@link DataLinkHost} instances to be
          *                 removed from the access control host set.
@@ -562,15 +563,16 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
          * Set up the context used to update both <strong>allow</strong> and
          * <strong>deny</strong> access control lists.
          *
-         * @param op      A {@link UpdateOperation} instance which indicates
-         *                how to update the MAC mapping configuration.
+         * @param op      A {@link VtnUpdateOperationType} instance which
+         *                indicates how to update the MAC mapping
+         *                configuration.
          * @param mcconf  A {@link MacMapConfig} instance which contains the
          *                MAC mapping configuration information.
          * @throws VTNException  An error occurred.
          */
-        private UpdateBothContext(UpdateOperation op, MacMapConfig mcconf)
-            throws VTNException {
-            if (op == UpdateOperation.SET) {
+        private UpdateBothContext(VtnUpdateOperationType op,
+                                  MacMapConfig mcconf) throws VTNException {
+            if (op == VtnUpdateOperationType.SET) {
                 // Update configuration as specified exactly.
                 Set<DataLinkHost> allow, deny;
                 if (mcconf == null) {
@@ -591,7 +593,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
 
                 Set<DataLinkHost> allow = mcconf.getAllowedHosts();
                 Set<DataLinkHost> deny = mcconf.getDeniedHosts();
-                if (op == UpdateOperation.ADD) {
+                if (op == VtnUpdateOperationType.ADD) {
                     // Add the specified configuration to the current
                     // configuration.
                     allowedContext.add(allow);
@@ -599,7 +601,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 } else {
                     // Remove the specified configuration from the current
                     // configuration.
-                    assert op == UpdateOperation.REMOVE;
+                    assert op == VtnUpdateOperationType.REMOVE;
                     allowedContext.remove(allow);
                     deniedContext.remove(deny);
                 }
@@ -719,12 +721,12 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *          information in the specified access control list is returned.
      * @throws VTNException  An error occurred.
      */
-    Set<DataLinkHost> getMacMapConfig(MacMapAclType aclType)
+    Set<DataLinkHost> getMacMapConfig(VtnAclType aclType)
         throws VTNException {
-        if (aclType == MacMapAclType.ALLOW) {
+        if (aclType == VtnAclType.ALLOW) {
             return toDataLinkHostSet(allowedHosts);
         }
-        if (aclType == MacMapAclType.DENY) {
+        if (aclType == VtnAclType.DENY) {
             return toDataLinkHostSet(deniedHosts);
         }
 
@@ -809,7 +811,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * </p>
      *
      * @param mgr     VTN Manager service.
-     * @param op      A {@link UpdateOperation} instance which indicates
+     * @param op      A {@link VtnUpdateOperationType} instance which indicates
      *                how to change the MAC mapping configuration.
      * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
      *                mapping configuration information.
@@ -819,7 +821,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *                Otherwise {@code null} is returned.
      * @throws VTNException  An error occurred.
      */
-    MacMapConfig setMacMap(VTNManagerImpl mgr, UpdateOperation op,
+    MacMapConfig setMacMap(VTNManagerImpl mgr, VtnUpdateOperationType op,
                            MacMapConfig mcconf) throws VTNException {
         UpdateBothContext context = new UpdateBothContext(op, mcconf);
         return context.update(mgr);
@@ -835,8 +837,8 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * </p>
      *
      * @param mgr      VTN Manager service.
-     * @param op       A {@link UpdateOperation} instance which indicates
-     *                 how to change the MAC mapping configuration.
+     * @param op       A {@link VtnUpdateOperationType} instance which
+     *                 indicates how to change the MAC mapping configuration.
      * @param aclType  The type of access control list.
      * @param dlhosts  A {@link MacMapConfig} instance which contains the MAC
      *                 mapping configuration information.
@@ -846,8 +848,8 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      *                 Otherwise {@code null} is returned.
      * @throws VTNException  An error occurred.
      */
-    MacMapConfig setMacMap(VTNManagerImpl mgr, UpdateOperation op,
-                           MacMapAclType aclType,
+    MacMapConfig setMacMap(VTNManagerImpl mgr, VtnUpdateOperationType op,
+                           VtnAclType aclType,
                            Set<? extends DataLinkHost> dlhosts)
         throws VTNException {
         UpdateAclContext context = createUpdateContext(aclType);
@@ -862,7 +864,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    VNodeState getBridgeState(VTNManagerImpl mgr, VNodeState bstate) {
+    VnodeState getBridgeState(VTNManagerImpl mgr, VnodeState bstate) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         return getBridgeState(mgr, resMgr, bstate);
     }
@@ -880,7 +882,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    VNodeState resume(VTNManagerImpl mgr, TxContext ctx, VNodeState bstate) {
+    VnodeState resume(VTNManagerImpl mgr, TxContext ctx, VnodeState bstate) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         MacMapChange change = new MacMapChange(allowedHosts, deniedHosts,
                                                MacMapChange.DONT_PURGE);
@@ -951,7 +953,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @param ev   A {@link VtnNodeEvent} instance.
      * @return  New bridge state value.
      */
-    VNodeState notifyNode(VTNManagerImpl mgr, VNodeState bstate,
+    VnodeState notifyNode(VTNManagerImpl mgr, VnodeState bstate,
                           VtnNodeEvent ev) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         if (ev.getUpdateType() != VtnUpdateType.REMOVED) {
@@ -982,7 +984,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @param ev      A {@link VtnPortEvent} instance.
      * @return  New bridge state value.
      */
-    VNodeState notifyNodeConnector(VTNManagerImpl mgr, VNodeState bstate,
+    VnodeState notifyNodeConnector(VTNManagerImpl mgr, VnodeState bstate,
                                    VtnPortEvent ev) {
         IVTNResourceManager resMgr = mgr.getResourceManager();
         if (ev.getUpdateType() != VtnUpdateType.REMOVED &&
@@ -1185,12 +1187,12 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @return  A {@link UpdateAclContext} instance.
      * @throws VTNException  An error occurred.
      */
-    private UpdateAclContext createUpdateContext(MacMapAclType aclType)
+    private UpdateAclContext createUpdateContext(VtnAclType aclType)
         throws VTNException {
-        if (aclType == MacMapAclType.ALLOW) {
+        if (aclType == VtnAclType.ALLOW) {
             return new UpdateAllowedContext();
         }
-        if (aclType == MacMapAclType.DENY) {
+        if (aclType == VtnAclType.DENY) {
             return new UpdateDeniedContext();
         }
 
@@ -1230,7 +1232,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     }
 
     /**
-     * Create an error status that indicates {@link UpdateOperation}
+     * Create an error status that indicates {@link VtnUpdateOperationType}
      * cannot be null.
      *
      * @return  An error status.
@@ -1240,8 +1242,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     }
 
     /**
-     * Create an error status that indicates {@link MacMapAclType}
-     * cannot be null.
+     * Create an error status that indicates {@link VtnAclType} cannot be null.
      *
      * @return  An error status.
      */
@@ -1365,9 +1366,9 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    private VNodeState getBridgeState(VTNManagerImpl mgr,
+    private VnodeState getBridgeState(VTNManagerImpl mgr,
                                       IVTNResourceManager resMgr,
-                                      VNodeState bstate) {
+                                      VnodeState bstate) {
         return getBridgeState(resMgr.hasMacMappedHost(mgr, mapPath), bstate);
     }
 
@@ -1379,13 +1380,13 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    private VNodeState getBridgeState(boolean active, VNodeState bstate) {
+    private VnodeState getBridgeState(boolean active, VnodeState bstate) {
         if (!active) {
-            return VNodeState.DOWN;
+            return VnodeState.DOWN;
         }
 
-        if (bstate == VNodeState.UNKNOWN) {
-            return VNodeState.UP;
+        if (bstate == VnodeState.UNKNOWN) {
+            return VnodeState.UP;
         }
 
         return bstate;

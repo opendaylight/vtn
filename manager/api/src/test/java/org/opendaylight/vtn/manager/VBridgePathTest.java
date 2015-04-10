@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.junit.Test;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
 
 /**
  * JUnit test for {@link VBridgePath}.
@@ -30,15 +32,18 @@ public class VBridgePathTest extends TestBase {
                 assertEquals(tname, path.getTenantName());
                 assertEquals(bname, path.getBridgeName());
                 assertEquals("vBridge", path.getNodeType());
+                checkVirtualNodePath(path);
 
                 path = new VBridgePath(tpath, bname);
                 assertEquals(tname, path.getTenantName());
                 assertEquals(bname, path.getBridgeName());
                 assertEquals("vBridge", path.getNodeType());
+                checkVirtualNodePath(path);
 
                 VTenantPath clone = path.clone();
-                assertNotSame(clone, path);
-                assertEquals(clone, path);
+                assertNotSame(path, clone);
+                assertEquals(path, clone);
+                checkVirtualNodePath(clone);
 
                 String name = tname + "_new";
                 VBridgePath path1 = (VBridgePath)path.replaceTenantName(name);
@@ -46,6 +51,7 @@ public class VBridgePathTest extends TestBase {
                 assertEquals(bname, path1.getBridgeName());
                 assertEquals("vBridge", path1.getNodeType());
                 assertEquals(VBridgePath.class, path1.getClass());
+                checkVirtualNodePath(path1);
             }
         }
     }
@@ -150,5 +156,22 @@ public class VBridgePathTest extends TestBase {
 
         VBridgeIfPath ipath = new VBridgeIfPath(bpath, "interface");
         assertEquals(expected, path.contains(ipath));
+    }
+
+    /**
+     * Test case for {@link VBridgePath#toVirtualNodePath()}.
+     *
+     * @param path  A {@link VTenantPath} to be tested.
+     */
+    private void checkVirtualNodePath(VTenantPath path) {
+        assertTrue(path instanceof VBridgePath);
+        VBridgePath bpath = (VBridgePath)path;
+
+        VirtualNodePath vpath = path.toVirtualNodePath();
+        assertEquals(bpath.getTenantName(), vpath.getTenantName());
+        assertEquals(bpath.getBridgeName(), vpath.getBridgeName());
+        assertEquals(null, vpath.getInterfaceName());
+        assertEquals(null, vpath.getRouterName());
+        assertEquals(null, vpath.getTerminalName());
     }
 }

@@ -17,8 +17,6 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 
-import org.opendaylight.vtn.manager.VNodeState;
-
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
@@ -26,6 +24,8 @@ import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.controller.sal.core.Node;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * {@code BridgeState} class keeps runtime state of the virtual bridge node.
@@ -45,12 +45,12 @@ public class BridgeState implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4935729463547757483L;
+    private static final long serialVersionUID = -6810750007547565021L;
 
     /**
      * State of the bridge.
      */
-    private VNodeState  bridgeState;
+    private VnodeState  bridgeState;
 
     /**
      * Set of faulted paths.
@@ -73,7 +73,7 @@ public class BridgeState implements Serializable {
      * @param state  The state of the virtual bridge.
      *               Specifying {@code null} results in undefined behavior.
      */
-    BridgeState(VNodeState state) {
+    BridgeState(VnodeState state) {
         bridgeState = state;
     }
 
@@ -82,7 +82,7 @@ public class BridgeState implements Serializable {
      *
      * @return  The state of the virtual bridge.
      */
-    VNodeState getState() {
+    VnodeState getState() {
         return bridgeState;
     }
 
@@ -91,15 +91,15 @@ public class BridgeState implements Serializable {
      *
      * <p>
      *   If at least one faulted path exists in the bridge, the bridge state
-     *   is always changed to {@link VNodeState#DOWN}.
+     *   is always changed to {@link VnodeState#DOWN}.
      * </p>
      *
      * @param state  The state of the virtual bridge.
      * @return  The state of the virtual bridge actually set.
      */
-    VNodeState setState(VNodeState state) {
-        VNodeState newState = (faultedPaths == null || faultedPaths.isEmpty())
-            ? state : VNodeState.DOWN;
+    VnodeState setState(VnodeState state) {
+        VnodeState newState = (faultedPaths == null || faultedPaths.isEmpty())
+            ? state : VnodeState.DOWN;
         if (bridgeState != newState) {
             bridgeState = newState;
             dirty = true;
@@ -132,7 +132,7 @@ public class BridgeState implements Serializable {
      * Add the given node path to the set of faulted node paths.
      *
      * <p>
-     *   The bridge state is always changed to {@link VNodeState#DOWN}
+     *   The bridge state is always changed to {@link VnodeState#DOWN}
      *   after the call of this method.
      * </p>
      *
@@ -151,7 +151,7 @@ public class BridgeState implements Serializable {
         }
         boolean ret = set.add(path);
         if (ret) {
-            bridgeState = VNodeState.DOWN;
+            bridgeState = VnodeState.DOWN;
             dirty = true;
         }
 

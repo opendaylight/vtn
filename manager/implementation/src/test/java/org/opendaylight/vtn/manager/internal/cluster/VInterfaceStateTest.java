@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,10 +14,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * JUnit test for {@link VInterfaceState}.
@@ -28,15 +29,15 @@ public class VInterfaceStateTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        VNodeState[] states = VNodeState.values();
-        for (VNodeState state: states) {
+        VnodeState[] states = VnodeState.values();
+        for (VnodeState state: states) {
             VInterfaceState ist = new VInterfaceState(state);
             assertSame(state, ist.getState());
-            assertSame(VNodeState.UNKNOWN, ist.getPortState());
+            assertSame(VnodeState.UNKNOWN, ist.getPortState());
             assertNull(ist.getMappedPort());
 
             for (NodeConnector nc: createNodeConnectors(50)) {
-                for (VNodeState pstate: states) {
+                for (VnodeState pstate: states) {
                     ist = new VInterfaceState(state, pstate, nc);
                     assertSame(state, ist.getState());
                     assertSame(pstate, ist.getPortState());
@@ -51,18 +52,18 @@ public class VInterfaceStateTest extends TestBase {
      */
     @Test
     public void testDirty() {
-        VInterfaceState ist = new VInterfaceState(VNodeState.UNKNOWN);
-        assertSame(VNodeState.UNKNOWN, ist.getState());
-        assertSame(VNodeState.UNKNOWN, ist.getPortState());
+        VInterfaceState ist = new VInterfaceState(VnodeState.UNKNOWN);
+        assertSame(VnodeState.UNKNOWN, ist.getState());
+        assertSame(VnodeState.UNKNOWN, ist.getPortState());
         assertFalse(ist.isDirty());
 
         // Change interface state.
-        VNodeState[] states = {
-            VNodeState.UP,
-            VNodeState.DOWN,
-            VNodeState.UNKNOWN,
+        VnodeState[] states = {
+            VnodeState.UP,
+            VnodeState.DOWN,
+            VnodeState.UNKNOWN,
         };
-        for (VNodeState state: states) {
+        for (VnodeState state: states) {
             ist.setState(state);
             String emsg = ist.toString();
             assertSame(emsg, state, ist.getState());
@@ -76,7 +77,7 @@ public class VInterfaceStateTest extends TestBase {
         }
 
         // Change port state.
-        for (VNodeState state: states) {
+        for (VnodeState state: states) {
             ist.setPortState(state);
             String emsg = ist.toString();
             assertSame(emsg, state, ist.getPortState());
@@ -100,13 +101,13 @@ public class VInterfaceStateTest extends TestBase {
         // Set null to mapped port.
         // This should change port state to UNKNOWN.
         assertNotNull(ist.getMappedPort());
-        ist.setPortState(VNodeState.UP);
-        assertSame(VNodeState.UP, ist.getPortState());
+        ist.setPortState(VnodeState.UP);
+        assertSame(VnodeState.UP, ist.getPortState());
         assertTrue(ist.isDirty());
         assertFalse(ist.isDirty());
         ist.setMappedPort(null);
         assertNull(ist.getMappedPort());
-        assertSame(VNodeState.UNKNOWN, ist.getPortState());
+        assertSame(VnodeState.UNKNOWN, ist.getPortState());
         assertTrue(ist.isDirty());
         assertFalse(ist.isDirty());
     }
@@ -118,10 +119,10 @@ public class VInterfaceStateTest extends TestBase {
     @Test
     public void testEquals() {
         HashSet<Object> set = new HashSet<Object>();
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         List<NodeConnector> connectors = createNodeConnectors(50);
-        for (VNodeState state: states) {
-            for (VNodeState pstate: states) {
+        for (VnodeState state: states) {
+            for (VnodeState pstate: states) {
                 for (NodeConnector nc: connectors) {
                     VInterfaceState ist1 =
                         new VInterfaceState(state, pstate, nc);
@@ -143,9 +144,9 @@ public class VInterfaceStateTest extends TestBase {
     public void testToString() {
         String prefix = "VInterfaceState[";
         String suffix = "]";
-        VNodeState[] states = VNodeState.values();
-        for (VNodeState state: states) {
-            for (VNodeState pstate: states) {
+        VnodeState[] states = VnodeState.values();
+        for (VnodeState state: states) {
+            for (VnodeState pstate: states) {
                 for (NodeConnector nc: createNodeConnectors(50)) {
                     VInterfaceState ist = new VInterfaceState(state, pstate, nc);
                     String m = (nc == null) ? null : "mapped=" + nc;
@@ -164,9 +165,9 @@ public class VInterfaceStateTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        VNodeState[] states = VNodeState.values();
-        for (VNodeState state: states) {
-            for (VNodeState pstate: states) {
+        VnodeState[] states = VnodeState.values();
+        for (VnodeState state: states) {
+            for (VnodeState pstate: states) {
                 for (NodeConnector nc: createNodeConnectors(50)) {
                     VInterfaceState ist = new VInterfaceState(state, pstate, nc);
                     serializeTest(ist);

@@ -16,6 +16,8 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * JUnit test for {@link VTerminal}.
  */
@@ -30,8 +32,8 @@ public class VTerminalTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        VNodeState[] stateValues = VNodeState.values();
-        VNodeState[] states = new VNodeState[stateValues.length + 1];
+        VnodeState[] stateValues = VnodeState.values();
+        VnodeState[] states = new VnodeState[stateValues.length + 1];
         System.arraycopy(stateValues, 0, states, 1, stateValues.length);
         states[0] = null;
 
@@ -39,7 +41,7 @@ public class VTerminalTest extends TestBase {
             for (String desc: createStrings("desc")) {
                 VTerminalConfig vtconf = new VTerminalConfig(desc);
                 for (int flt = 0; flt < 3; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminal vterm =
                             new VTerminal(name, state, flt, vtconf);
                         assertEquals(name, vterm.getName());
@@ -48,7 +50,7 @@ public class VTerminalTest extends TestBase {
 
                         // null state should be interpreted as UNKNOWN.
                         if (state == null) {
-                            state = VNodeState.UNKNOWN;
+                            state = VnodeState.UNKNOWN;
                         }
                         assertSame(state, vterm.getState());
                     }
@@ -67,13 +69,13 @@ public class VTerminalTest extends TestBase {
         List<String> names = createStrings("nm");
         List<String> descs = createStrings("desc");
         int nfaults = 2;
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (String desc: descs) {
                 VTerminalConfig vtconf1 = new VTerminalConfig(desc);
                 VTerminalConfig vtconf2 = new VTerminalConfig(copy(desc));
                 for (int flt = 0; flt < nfaults; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminal vt1 =
                             new VTerminal(name, state, flt, vtconf1);
                         VTerminal vt2 =
@@ -95,12 +97,12 @@ public class VTerminalTest extends TestBase {
     public void testToString() {
         String prefix = "VTerminal[";
         String suffix = "]";
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (String desc: createStrings("desc")) {
                 VTerminalConfig vtconf = new VTerminalConfig(desc);
                 for (int flt = 0; flt < 3; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminal vterm =
                             new VTerminal(name, state, flt, vtconf);
                         String n = (name == null) ? null : "name=" + name;
@@ -122,12 +124,12 @@ public class VTerminalTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (String desc: createStrings("desc")) {
                 VTerminalConfig vtconf = new VTerminalConfig(desc);
                 for (int flt = 0; flt < 3; flt++) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VTerminal vterm =
                             new VTerminal(name, state, flt, vtconf);
                         serializeTest(vterm);
@@ -142,24 +144,24 @@ public class VTerminalTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (String desc: createStrings("desc")) {
                 VTerminalConfig vtconf = new VTerminalConfig(desc);
-                for (VNodeState state: states) {
+                for (VnodeState state: states) {
                     VTerminal vterm = new VTerminal(name, state, 0, vtconf);
                     jaxbTest(vterm, VTerminal.class, XML_ROOT);
 
                     // Ensure that "state" attribute is decoded as
-                    // VNodeState.
-                    jaxbStateTest(name, desc, null, -1, VNodeState.UNKNOWN);
-                    jaxbStateTest(name, desc, null, 0, VNodeState.DOWN);
-                    jaxbStateTest(name, desc, null, 1, VNodeState.UP);
+                    // VnodeState.
+                    jaxbStateTest(name, desc, null, -1, VnodeState.UNKNOWN);
+                    jaxbStateTest(name, desc, null, 0, VnodeState.DOWN);
+                    jaxbStateTest(name, desc, null, 1, VnodeState.UP);
 
                     // Ensure that UNKNOWN is set to the state if "state"
                     // attribute is omitted.
                     jaxbStateTest(name, desc, Integer.valueOf(3), null,
-                                  VNodeState.UNKNOWN);
+                                  VnodeState.UNKNOWN);
 
                     // Ensure that UNKNOWN is set to the state if "state"
                     // attribute is invalid.
@@ -169,7 +171,7 @@ public class VTerminalTest extends TestBase {
                             continue;
                         }
                         jaxbStateTest(name, desc, Integer.valueOf(faults),
-                                      Integer.valueOf(st), VNodeState.UNKNOWN);
+                                      Integer.valueOf(st), VnodeState.UNKNOWN);
                         faults++;
                     }
                 }
@@ -192,7 +194,7 @@ public class VTerminalTest extends TestBase {
      * @param required  Required node state.
      */
     private void jaxbStateTest(String name, String desc, Integer faults,
-                               Integer state, VNodeState required) {
+                               Integer state, VnodeState required) {
         StringBuilder builder = new StringBuilder(XML_DECLARATION);
         builder.append('<').append(XML_ROOT);
         if (name != null) {

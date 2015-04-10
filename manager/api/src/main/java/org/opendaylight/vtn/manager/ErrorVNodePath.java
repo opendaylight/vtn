@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,8 @@ package org.opendaylight.vtn.manager;
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
 
 import org.opendaylight.controller.sal.core.UpdateType;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
 
 /**
  * {@code ErrorVNodePath} class is used to indicate that an invalid
@@ -29,7 +31,7 @@ public final class ErrorVNodePath extends VNodePath
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8499003604236055338L;
+    private static final long serialVersionUID = 8974666257098440684L;
 
     /**
      * A string which represents type type of this node path.
@@ -55,6 +57,18 @@ public final class ErrorVNodePath extends VNodePath
     }
 
     /**
+     * Create an {@link IllegalStateException} that indicates unexpected method
+     * is called.
+     *
+     * @return  An exception.
+     */
+    private IllegalStateException unexpected() {
+        return new IllegalStateException("Should never be called.");
+    }
+
+    // VTenantPath
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -65,22 +79,26 @@ public final class ErrorVNodePath extends VNodePath
     /**
      * This method should never be called.
      *
+     * @return Never returns.
+     * @throws IllegalStateException  Always thrown.
+     * @since  Lithium
+     */
+    @Override
+    public VirtualNodePath toVirtualNodePath() {
+        throw unexpected();
+    }
+
+    // VNodePath
+
+    /**
+     * This method should never be called.
+     *
      * @return  Never returns.
      * @throws IllegalStateException  Always thrown.
      */
     @Override
     public VNodeLocation toVNodeLocation() {
         throw unexpected();
-    }
-
-    /**
-     * Create an {@link IllegalStateException} that indicates unexpected method
-     * is called.
-     *
-     * @return  An exception.
-     */
-    private IllegalStateException unexpected() {
-        return new IllegalStateException("Should never be called.");
     }
 
     // VInterfacePath

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -50,9 +50,7 @@ import org.opendaylight.vtn.manager.EthernetHost;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VTNException;
 
@@ -61,6 +59,9 @@ import org.opendaylight.controller.northbound.commons.exception.
 import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 /**
  * This class provides Northbound REST APIs to handle MAC mapping in the
@@ -262,7 +263,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @TypeHint(MacMapConfigInfo.class) MacMapConfigInfo mci) {
         MacMapConfig mcconf = toMacMapConfig(mci);
         return setMacMap(uriInfo, containerName, tenantName, bridgeName,
-                         UpdateOperation.SET, mcconf);
+                         VtnUpdateOperationType.SET, mcconf);
     }
 
     /**
@@ -473,7 +474,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @QueryParam("action") String action,
             @TypeHint(MacMapConfigInfo.class) MacMapConfigInfo mci) {
         MacMapConfig mcconf = toMacMapConfig(mci);
-        UpdateOperation op = toUpdateOperation(action);
+        VtnUpdateOperationType op = toVtnUpdateOperationType(action);
         return setMacMap(uriInfo, containerName, tenantName, bridgeName, op,
                          mcconf);
     }
@@ -518,7 +519,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
         return setMacMap(null, containerName, tenantName, bridgeName,
-                         UpdateOperation.SET, null);
+                         VtnUpdateOperationType.SET, null);
     }
 
     /**
@@ -561,7 +562,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
         return getMacMapConfig(containerName, tenantName, bridgeName,
-                               MacMapAclType.ALLOW);
+                               VtnAclType.ALLOW);
     }
 
     /**
@@ -671,7 +672,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
         return setMacMap(uriInfo, containerName, tenantName, bridgeName,
-                         UpdateOperation.SET, MacMapAclType.ALLOW, dlhosts);
+                         VtnUpdateOperationType.SET, VtnAclType.ALLOW,
+                         dlhosts);
     }
 
     /**
@@ -841,9 +843,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @QueryParam("action") String action,
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
-        UpdateOperation op = toUpdateOperation(action);
+        VtnUpdateOperationType op = toVtnUpdateOperationType(action);
         return setMacMap(uriInfo, containerName, tenantName, bridgeName, op,
-                         MacMapAclType.ALLOW, dlhosts);
+                         VtnAclType.ALLOW, dlhosts);
     }
 
     /**
@@ -893,7 +895,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
         return setMacMap(null, containerName, tenantName, bridgeName,
-                         UpdateOperation.SET, MacMapAclType.ALLOW, null);
+                         VtnUpdateOperationType.SET, VtnAclType.ALLOW, null);
     }
 
     /**
@@ -973,7 +975,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
         return getMacMapConfig(containerName, tenantName, bridgeName,
-                               MacMapAclType.ALLOW, macAddr, vlan);
+                               VtnAclType.ALLOW, macAddr, vlan);
     }
 
     /**
@@ -1090,8 +1092,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
         return setMacMap(uriInfo, containerName, tenantName, bridgeName,
-                         UpdateOperation.ADD, MacMapAclType.ALLOW,
-                         macAddr, vlan);
+                         VtnUpdateOperationType.ADD, VtnAclType.ALLOW, macAddr,
+                         vlan);
     }
 
     /**
@@ -1186,7 +1188,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
         return setMacMap(null, containerName, tenantName, bridgeName,
-                         UpdateOperation.REMOVE, MacMapAclType.ALLOW,
+                         VtnUpdateOperationType.REMOVE, VtnAclType.ALLOW,
                          macAddr, vlan);
     }
 
@@ -1230,7 +1232,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
         return getMacMapConfig(containerName, tenantName, bridgeName,
-                               MacMapAclType.DENY);
+                               VtnAclType.DENY);
     }
 
     /**
@@ -1330,7 +1332,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
         return setMacMap(uriInfo, containerName, tenantName, bridgeName,
-                         UpdateOperation.SET, MacMapAclType.DENY, dlhosts);
+                         VtnUpdateOperationType.SET, VtnAclType.DENY, dlhosts);
     }
 
     /**
@@ -1485,9 +1487,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @QueryParam("action") String action,
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
-        UpdateOperation op = toUpdateOperation(action);
+        VtnUpdateOperationType op = toVtnUpdateOperationType(action);
         return setMacMap(uriInfo, containerName, tenantName, bridgeName, op,
-                         MacMapAclType.DENY, dlhosts);
+                         VtnAclType.DENY, dlhosts);
     }
 
     /**
@@ -1537,7 +1539,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
         return setMacMap(null, containerName, tenantName, bridgeName,
-                         UpdateOperation.SET, MacMapAclType.DENY, null);
+                         VtnUpdateOperationType.SET, VtnAclType.DENY, null);
     }
 
     /**
@@ -1613,7 +1615,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
         return getMacMapConfig(containerName, tenantName, bridgeName,
-                               MacMapAclType.DENY, macAddr, vlan);
+                               VtnAclType.DENY, macAddr, vlan);
     }
 
     /**
@@ -1715,8 +1717,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
         return setMacMap(uriInfo, containerName, tenantName, bridgeName,
-                         UpdateOperation.ADD, MacMapAclType.DENY,
-                         macAddr, vlan);
+                         VtnUpdateOperationType.ADD, VtnAclType.DENY, macAddr,
+                         vlan);
     }
 
     /**
@@ -1807,7 +1809,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
         return setMacMap(null, containerName, tenantName, bridgeName,
-                         UpdateOperation.REMOVE, MacMapAclType.DENY,
+                         VtnUpdateOperationType.REMOVE, VtnAclType.DENY,
                          macAddr, vlan);
     }
 
@@ -1939,14 +1941,13 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
-     * @param aclType        A {@link MacMapAclType} instance which determines
+     * @param aclType        A {@link VtnAclType} instance which determines
      *                       the type of the access control list.
      * @return  A {@link MacHostSet} instance if MAC mapping is configured.
      *          {@code null} is returned if not configured.
      */
     private MacHostSet getMacMapConfig(String containerName, String tenantName,
-                                       String bridgeName,
-                                       MacMapAclType aclType) {
+                                       String bridgeName, VtnAclType aclType) {
         checkPrivilege(containerName, Privilege.READ);
 
         IVTNManager mgr = getVTNManager(containerName);
@@ -1966,7 +1967,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
-     * @param aclType        A {@link MacMapAclType} instance which determines
+     * @param aclType        A {@link VtnAclType} instance which determines
      *                       the type of the access control list.
      * @param macAddr        A string representation of MAC address.
      * @param vlan           A string representation of VLAN ID.
@@ -1975,7 +1976,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *          Otherwise {@code null} is returned.
      */
     private MacHost getMacMapConfig(String containerName, String tenantName,
-                                    String bridgeName, MacMapAclType aclType,
+                                    String bridgeName, VtnAclType aclType,
                                     String macAddr, String vlan) {
         checkPrivilege(containerName, Privilege.READ);
 
@@ -2001,7 +2002,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
-     * @param op             A {@link UpdateOperation} instance which
+     * @param op             A {@link VtnUpdateOperationType} instance which
      *                       determines how to change the configuration.
      * @param mcconf         A {@link MacMapConfig} instance to be applied.
      * @return  A {@link Response} instance which represents HTTP response
@@ -2009,7 +2010,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      */
     private Response setMacMap(UriInfo uriInfo, String containerName,
                                String tenantName, String bridgeName,
-                               UpdateOperation op, MacMapConfig mcconf) {
+                               VtnUpdateOperationType op,
+                               MacMapConfig mcconf) {
         checkPrivilege(containerName, Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager(containerName);
@@ -2039,9 +2041,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
-     * @param op             A {@link UpdateOperation} instance which
+     * @param op             A {@link VtnUpdateOperationType} instance which
      *                       determines how to change the configuration.
-     * @param aclType        A {@link MacMapAclType} instance which determines
+     * @param aclType        A {@link VtnAclType} instance which determines
      *                       the access control list.
      * @param dlhosts        A set of {@link DataLinkHost} instances.
      * @return  A {@link Response} instance which represents HTTP response
@@ -2049,7 +2051,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      */
     private Response setMacMap(UriInfo uriInfo, String containerName,
                                String tenantName, String bridgeName,
-                               UpdateOperation op, MacMapAclType aclType,
+                               VtnUpdateOperationType op, VtnAclType aclType,
                                Set<DataLinkHost> dlhosts) {
         checkPrivilege(containerName, Privilege.WRITE);
 
@@ -2080,9 +2082,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * @param containerName  The name of the container.
      * @param tenantName     The name of the VTN.
      * @param bridgeName     The name of the vBridge.
-     * @param op             A {@link UpdateOperation} instance which
+     * @param op             A {@link VtnUpdateOperationType} instance which
      *                       determines how to change the configuration.
-     * @param aclType        A {@link MacMapAclType} instance which determines
+     * @param aclType        A {@link VtnAclType} instance which determines
      *                       the access control list.
      * @param macAddr        A string representation of MAC address.
      * @param vlan           A string representation of VLAN ID.
@@ -2091,7 +2093,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      */
     private Response setMacMap(UriInfo uriInfo, String containerName,
                                String tenantName, String bridgeName,
-                               UpdateOperation op, MacMapAclType aclType,
+                               VtnUpdateOperationType op, VtnAclType aclType,
                                String macAddr, String vlan) {
         checkPrivilege(containerName, Privilege.WRITE);
 
@@ -2219,20 +2221,20 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Return an {@link UpdateOperation} instance specified by the given
+     * Return an {@link VtnUpdateOperationType} instance specified by the given
      * string.
      *
      * @param action  A string which indicates the type of operation.
-     * @return  A {@link UpdateOperation} instance.
+     * @return  A {@link VtnUpdateOperationType} instance.
      * @throws BadRequestException
      *    An invalid string is specified to {@code action}.
      */
-    private UpdateOperation toUpdateOperation(String action) {
+    private VtnUpdateOperationType toVtnUpdateOperationType(String action) {
         if (action == null || action.equalsIgnoreCase("add")) {
-            return UpdateOperation.ADD;
+            return VtnUpdateOperationType.ADD;
         }
         if (action.equalsIgnoreCase("remove")) {
-            return UpdateOperation.REMOVE;
+            return VtnUpdateOperationType.REMOVE;
         }
 
         throw new BadRequestException("Unsupported action: " + action);

@@ -29,9 +29,7 @@ import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -40,7 +38,6 @@ import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
@@ -71,6 +68,9 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 /**
  * Implementation of vBridge (virtual layer 2 bridge).
@@ -86,7 +86,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 889018147735369186L;
+    private static final long serialVersionUID = -1407722084769673712L;
 
     /**
      * Logger instance.
@@ -254,7 +254,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             if (vmap.isValid(mgr.getStateDB())) {
                 updateState(mgr);
             } else {
-                setState(mgr, VNodeState.DOWN);
+                setState(mgr, VnodeState.DOWN);
             }
             return vlmap;
         } finally {
@@ -400,7 +400,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      *          the specified vBridge.
      * @throws VTNException  An error occurred.
      */
-    Set<DataLinkHost> getMacMapConfig(MacMapAclType aclType)
+    Set<DataLinkHost> getMacMapConfig(VtnAclType aclType)
         throws VTNException {
         Lock rdlock = readLock();
         try {
@@ -467,7 +467,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * instance.
      *
      * @param mgr     VTN Manager service.
-     * @param op      A {@link UpdateOperation} instance which indicates
+     * @param op      A {@link VtnUpdateOperationType} instance which indicates
      *                how to change the MAC mapping configuration.
      * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
      *                mapping configuration information.
@@ -477,7 +477,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      *                changed.
      * @throws VTNException  An error occurred.
      */
-    UpdateType setMacMap(VTNManagerImpl mgr, UpdateOperation op,
+    UpdateType setMacMap(VTNManagerImpl mgr, VtnUpdateOperationType op,
                          MacMapConfig mcconf) throws VTNException {
         Lock wrlock = writeLock();
         try {
@@ -493,8 +493,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * Change the access controll list for the specified MAC mapping.
      *
      * @param mgr       VTN Manager service.
-     * @param op        A {@link UpdateOperation} instance which indicates
-     *                  how to change the MAC mapping configuration.
+     * @param op        A {@link VtnUpdateOperationType} instance which
+     *                  indicates how to change the MAC mapping configuration.
      * @param aclType   The type of access control list.
      * @param dlhosts   A set of {@link DataLinkHost} instances.
      * @return          A {@link UpdateType} object which represents the result
@@ -503,8 +503,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      *                  changed.
      * @throws VTNException  An error occurred.
      */
-    UpdateType setMacMap(VTNManagerImpl mgr, UpdateOperation op,
-                         MacMapAclType aclType,
+    UpdateType setMacMap(VTNManagerImpl mgr, VtnUpdateOperationType op,
+                         VtnAclType aclType,
                          Set<? extends DataLinkHost> dlhosts)
         throws VTNException {
         Lock wrlock = writeLock();
@@ -1151,10 +1151,10 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * @return  New state of this node.
      */
     @Override
-    protected VNodeState resuming(VTNManagerImpl mgr, TxContext ctx,
-                                  VNodeState state) {
+    protected VnodeState resuming(VTNManagerImpl mgr, TxContext ctx,
+                                  VnodeState state) {
         // Resume MAC mapping.
-        VNodeState cur = state;
+        VnodeState cur = state;
         MacMapImpl mmap = macMap;
         if (mmap != null) {
             cur = mmap.resume(mgr, ctx, cur);
@@ -1193,7 +1193,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      */
     @Override
     protected void stateChanged(VTNManagerImpl mgr, BridgeState bst,
-                                VNodeState state) {
+                                VnodeState state) {
         VBridgePath path = getPath();
         int faulted = bst.getFaultedPathSize();
         VBridge vbridge = new VBridge(path.getTenantNodeName(), state, faulted,
@@ -1215,15 +1215,15 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * @return  New state of this bridge.
      */
     @Override
-    protected VNodeState updateStateImpl(
+    protected VnodeState updateStateImpl(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db) {
-        VNodeState state = VNodeState.UNKNOWN;
+        VnodeState state = VnodeState.UNKNOWN;
 
         // Check to see if the MAC mapping is active.
         MacMapImpl mmap = macMap;
         if (mmap != null) {
             state = mmap.getBridgeState(mgr, state);
-            if (state == VNodeState.DOWN) {
+            if (state == VnodeState.DOWN) {
                 return state;
             }
         }
@@ -1231,7 +1231,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         // Scan VLAN mappings.
         for (VlanMapImpl vmap: vlanMaps.values()) {
             state = vmap.getBridgeState(db, state);
-            if (state == VNodeState.DOWN) {
+            if (state == VnodeState.DOWN) {
                 break;
             }
         }
@@ -1299,11 +1299,11 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNode(mgr, db, bst, ev);
+            VnodeState state = notifyIfNode(mgr, db, bst, ev);
 
             MacMapImpl mmap = macMap;
             if (mmap != null) {
-                VNodeState s = mmap.notifyNode(mgr, state, ev);
+                VnodeState s = mmap.notifyNode(mgr, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNode(macmap): {} -> {}",
                               getContainerName(), getNodePath(), state, s);
@@ -1312,7 +1312,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                VNodeState s = vmap.notifyNode(mgr, db, state, ev);
+                VnodeState s = vmap.notifyNode(mgr, db, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNode(vmap:{}): {} -> {}",
                               getContainerName(), getNodePath(),
@@ -1343,11 +1343,11 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
         Lock wrlock = writeLock();
         try {
             BridgeState bst = getBridgeState(db);
-            VNodeState state = notifyIfNodeConnector(mgr, db, bst, ev);
+            VnodeState state = notifyIfNodeConnector(mgr, db, bst, ev);
 
             MacMapImpl mmap = macMap;
             if (mmap != null) {
-                VNodeState s = mmap.notifyNodeConnector(mgr, state, ev);
+                VnodeState s = mmap.notifyNodeConnector(mgr, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNodeConnector(macmap): {} -> {}",
                               getContainerName(), getNodePath(), state, s);
@@ -1356,7 +1356,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             }
 
             for (VlanMapImpl vmap: vlanMaps.values()) {
-                VNodeState s = vmap.notifyNodeConnector(mgr, db, state, ev);
+                VnodeState s = vmap.notifyNodeConnector(mgr, db, state, ev);
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("{}:{}: notifyNodeConnector(vmap:{}): {} -> {}",
                               getContainerName(), getNodePath(),

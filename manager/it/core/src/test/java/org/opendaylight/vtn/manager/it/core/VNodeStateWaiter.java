@@ -28,7 +28,6 @@ import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTerminal;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
@@ -37,6 +36,8 @@ import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * {@code VNodeStateWaiter} is a utility class used to wait for the state
@@ -143,7 +144,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
         /**
          * Expected state of the vBridge.
          */
-        private final VNodeState  expectedState;
+        private final VnodeState  expectedState;
 
         /**
          * Expected fault count.
@@ -159,7 +160,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
          *                A negative value means that the path fault count
          *                should not be observed.
          */
-        private VBridgeStateCond(VBridgePath path, VNodeState state,
+        private VBridgeStateCond(VBridgePath path, VnodeState state,
                                  int faults) {
             super(path);
             expectedState = state;
@@ -196,7 +197,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
         /**
          * Expected state of the vTerminal.
          */
-        private final VNodeState  expectedState;
+        private final VnodeState  expectedState;
 
         /**
          * Expected fault count.
@@ -212,7 +213,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
          *                A negative value means that the path fault count
          *                should not be observed.
          */
-        private VTerminalStateCond(VTerminalPath path, VNodeState state,
+        private VTerminalStateCond(VTerminalPath path, VnodeState state,
                                    int faults) {
             super(path);
             expectedState = state;
@@ -253,13 +254,13 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
         /**
          * Expected state of the virtual interface.
          */
-        private final VNodeState  expectedState;
+        private final VnodeState  expectedState;
 
         /**
          * Expected state of the network element mapped to the virtual
          * interface.
          */
-        private final VNodeState  expectedEntityState;
+        private final VnodeState  expectedEntityState;
 
         /**
          * Construct a new instance.
@@ -269,8 +270,8 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
          * @param estate  The expected state of the network element mapped to
          *                the virtual interface.
          */
-        private VInterfaceStateCond(P path, VNodeState state,
-                                    VNodeState estate) {
+        private VInterfaceStateCond(P path, VnodeState state,
+                                    VnodeState estate) {
             super(path);
             expectedState = state;
             expectedEntityState = estate;
@@ -305,8 +306,8 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
          * @param estate  The expected state of the network element mapped to
          *                the virtual interface.
          */
-        private VBridgeIfStateCond(VBridgeIfPath path, VNodeState state,
-                                   VNodeState estate) {
+        private VBridgeIfStateCond(VBridgeIfPath path, VnodeState state,
+                                   VnodeState estate) {
             super(path, state, estate);
         }
 
@@ -333,8 +334,8 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
          * @param estate  The expected state of the network element mapped to
          *                the virtual interface.
          */
-        private VTerminalIfStateCond(VTerminalIfPath path, VNodeState state,
-                                     VNodeState estate) {
+        private VTerminalIfStateCond(VTerminalIfPath path, VnodeState state,
+                                     VnodeState estate) {
             super(path, state, estate);
         }
 
@@ -367,7 +368,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
      * @param state  The expected state of the vBridge.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VBridgePath path, VNodeState state) {
+    public VNodeStateWaiter set(VBridgePath path, VnodeState state) {
         return set(path, state, 0);
     }
 
@@ -379,7 +380,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
      * @param faults  The expected value of the path fault count.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VBridgePath path, VNodeState state,
+    public VNodeStateWaiter set(VBridgePath path, VnodeState state,
                                 int faults) {
         conditions.put(path, new VBridgeStateCond(path, state, faults));
         return this;
@@ -396,7 +397,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
      * @param state  The expected state of the vTerminal
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VTerminalPath path, VNodeState state) {
+    public VNodeStateWaiter set(VTerminalPath path, VnodeState state) {
         return set(path, state, 0);
     }
 
@@ -408,7 +409,7 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
      * @param faults  The expected value of the path fault count.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VTerminalPath path, VNodeState state,
+    public VNodeStateWaiter set(VTerminalPath path, VnodeState state,
                                 int faults) {
         conditions.put(path, new VTerminalStateCond(path, state, faults));
         return this;
@@ -424,8 +425,8 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
      *                target interface.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VBridgeIfPath path, VNodeState state,
-                                VNodeState estate) {
+    public VNodeStateWaiter set(VBridgeIfPath path, VnodeState state,
+                                VnodeState estate) {
         conditions.put(path, new VBridgeIfStateCond(path, state, estate));
         return this;
     }
@@ -439,8 +440,8 @@ public class VNodeStateWaiter extends VTNManagerAwareAdapter
      *                target interface.
      * @return  This instance.
      */
-    public VNodeStateWaiter set(VTerminalIfPath path, VNodeState state,
-                                VNodeState estate) {
+    public VNodeStateWaiter set(VTerminalIfPath path, VnodeState state,
+                                VnodeState estate) {
         conditions.put(path, new VTerminalIfStateCond(path, state, estate));
         return this;
     }

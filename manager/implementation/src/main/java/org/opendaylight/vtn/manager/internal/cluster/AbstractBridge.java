@@ -27,7 +27,6 @@ import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 
@@ -38,6 +37,8 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * {@code AbstractBridge} class describes virtual node that contains
@@ -56,7 +57,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2733358290698233177L;
+    private static final long serialVersionUID = 4508356334331941156L;
 
     /**
      * Attached virtual interfaces.
@@ -79,7 +80,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @param mgr  VTN Manager service.
      * @return  The state of this node.
      */
-    final VNodeState getState(VTNManagerImpl mgr) {
+    final VnodeState getState(VTNManagerImpl mgr) {
         BridgeState bst = getBridgeState(mgr);
         return bst.getState();
     }
@@ -247,7 +248,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @param ctx  A runtime context for MD-SAL datastore transaction task.
      */
     final void resume(VTNManagerImpl mgr, TxContext ctx) {
-        VNodeState state = VNodeState.UNKNOWN;
+        VnodeState state = VnodeState.UNKNOWN;
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         String containerName = getContainerName();
 
@@ -255,7 +256,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         try {
             // Resume virtual interfaces.
             for (T vif: vInterfaces.values()) {
-                VNodeState s = vif.resume(mgr, ctx, state);
+                VnodeState s = vif.resume(mgr, ctx, state);
                 if (vif.isEnabled()) {
                     state = s;
                 }
@@ -320,7 +321,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @param mgr    VTN Manager service.
      * @param state  New bridge state.
      */
-    protected final void setState(VTNManagerImpl mgr, VNodeState state) {
+    protected final void setState(VTNManagerImpl mgr, VnodeState state) {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         BridgeState bst = getBridgeState(db);
         setState(mgr, db, bst, state);
@@ -341,7 +342,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      */
     protected final void setState(VTNManagerImpl mgr,
                                   ConcurrentMap<VTenantPath, Object> db,
-                                  BridgeState bst, VNodeState state) {
+                                  BridgeState bst, VnodeState state) {
         bst.setState(state);
         if (bst.isDirty()) {
             db.put(getNodePath(), bst);
@@ -370,7 +371,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         ConcurrentMap<VTenantPath, Object> db) {
         BridgeState bst = (BridgeState)db.get(getNodePath());
         if (bst == null) {
-            bst = new BridgeState(VNodeState.UNKNOWN);
+            bst = new BridgeState(VnodeState.UNKNOWN);
         }
 
         return bst;
@@ -396,7 +397,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
         BridgeState bst = getBridgeState(db);
         boolean ret = bst.addFaultedPath(snode.getAdNode(), dnode.getAdNode());
-        setState(mgr, db, bst, VNodeState.DOWN);
+        setState(mgr, db, bst, VnodeState.DOWN);
 
         return ret;
     }
@@ -434,14 +435,14 @@ public abstract class AbstractBridge<T extends AbstractInterface>
     protected final void updateState(VTNManagerImpl mgr,
                                      ConcurrentMap<VTenantPath, Object> db,
                                      BridgeState bst) {
-        VNodeState state = (bst.getFaultedPathSize() == 0)
-            ? updateStateImpl(mgr, db) : VNodeState.DOWN;
-        if (state != VNodeState.DOWN) {
+        VnodeState state = (bst.getFaultedPathSize() == 0)
+            ? updateStateImpl(mgr, db) : VnodeState.DOWN;
+        if (state != VnodeState.DOWN) {
             // Scan virtual interfaces.
             for (T vif: vInterfaces.values()) {
                 if (vif.isEnabled()) {
                     state = vif.getParentState(db, state);
-                    if (state == VNodeState.DOWN) {
+                    if (state == VnodeState.DOWN) {
                         break;
                     }
                 }
@@ -464,9 +465,9 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @param db     Runtime state DB.
      * @return  New state of this bridge.
      */
-    protected VNodeState updateStateImpl(
+    protected VnodeState updateStateImpl(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db) {
-        return VNodeState.UNKNOWN;
+        return VnodeState.UNKNOWN;
     }
 
     /**
@@ -674,8 +675,8 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @param state  Current state of this node.
      * @return  New state of this node.
      */
-    protected abstract VNodeState resuming(VTNManagerImpl mgr, TxContext ctx,
-                                           VNodeState state);
+    protected abstract VnodeState resuming(VTNManagerImpl mgr, TxContext ctx,
+                                           VnodeState state);
 
     /**
      * Invoked when this node is resumed from the configuration file.
@@ -697,7 +698,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @param state  New state of this node.
      */
     protected abstract void stateChanged(VTNManagerImpl mgr, BridgeState bst,
-                                         VNodeState state);
+                                         VnodeState state);
 
     /**
      * Determine whether the given object is identical to this object.

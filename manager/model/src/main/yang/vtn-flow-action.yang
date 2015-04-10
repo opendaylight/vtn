@@ -1,0 +1,275 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-flow-action {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:flow:action";
+    prefix vaction;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+
+    /* OpenDaylight yangtools */
+    import opendaylight-l2-types {
+        prefix l2;
+        revision-date 2013-08-27;
+    }
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+    import ietf-inet-types {
+        prefix inet;
+        revision-date 2010-09-24;
+    }
+
+    /* OpenDaylight openflowplugin */
+    import opendaylight-action-types {
+        prefix action;
+        revision-date 2013-11-12;
+    }
+
+    description
+      "The module that describes the flow actions supported by the
+       VTN Manager.";
+
+    revision 2015-04-10 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-dladdr-action-fields {
+        description
+          "Describes the flow action fields that sets the MAC address into
+           packet.";
+
+        leaf address {
+            description "Describes the MAC address to be set into packet.";
+            type yang:mac-address;
+            mandatory true;
+        }
+    }
+
+    grouping vtn-ipaddr-action-fields {
+        description
+          "Describes the flow action fields that sets the IP address into
+           packet.";
+        uses action:address;
+    }
+
+    grouping vtn-port-action-fields {
+        description
+          "Describes the flow action fields that sets the port number for
+           IP transport layer protocol into packet.";
+        leaf port {
+            description
+              "Describes the port number to be set.
+               If this field is omitted, it will be treated as zero is
+               specified.";
+            type inet:port-number;
+            default 0;
+        }
+    }
+
+    grouping vtn-action-fields {
+        description
+          "Describes the flow action fields supported by the VTN Manager.";
+
+        choice vtn-action {
+            description "Describes the abstract type of flow action.";
+
+            case vtn-drop-action {
+                description
+                  "Describes the flow action that drops every packet.";
+            }
+
+            case vtn-set-dl-src-action {
+                description
+                  "Describes the flow action that sets the specified source
+                   MAC address into the Ethernet header.
+                   Node that the following MAC address cannot be specified.
+                     - Broadcast address
+                     - Multicast address
+                     - Zero";
+                uses vtn-dladdr-action-fields;
+            }
+
+            case vtn-set-dl-dst-action {
+                description
+                  "Describes the flow action that sets the specified
+                   destination  MAC address into the Ethernet header.
+                   Node that the following MAC address cannot be specified.
+                     - Broadcast address
+                     - Multicast address
+                     - Zero";
+                uses vtn-dladdr-action-fields;
+            }
+
+            case vtn-push-vlan-action {
+                description
+                  "Describes the flow action that adds a VLAN tag into
+                   packet.";
+
+                leaf vlan-type {
+                    description
+                      "Describes the type for a new VLAN tag.";
+
+                    mandatory true;
+                    type vtype:vlan-type;
+                }
+            }
+
+            case vtn-pop-vlan-action {
+                description
+                  "Describes the flow action that strips the outermost VLAN
+                   tag.";
+            }
+
+            case vtn-set-vlan-id-action {
+                description
+                  "Describes the flow action that sets the specified VLAN ID
+                   into the IEEE 802.1Q VLAN tag.";
+
+                leaf vlan-id {
+                    description
+                      "The VLAN ID to be set.
+                       Note that zero cannot be specified. If you need a flow
+                       action which removes VLAN tag from packets,
+                       use `vtn-pop-vlan-action' instead.";
+                    mandatory true;
+                    type uint16 {
+                        range "1 .. 4095";
+                    }
+                }
+            }
+
+            case vtn-set-vlan-pcp-action {
+                description
+                  "Describes the flow action that sets the specified VLAN
+                   priority into the IEEE 802.1Q VAN tag.";
+
+                leaf vlan-pcp {
+                    description
+                      "The VLAN priority to be set.
+                       If this field is omitted, it will be treated as zero is
+                       specified.";
+                    type l2:vlan-pcp;
+                    default 0;
+                }
+            }
+
+            case vtn-set-inet-src-action {
+                description
+                  "Describes the flow action that sets the specified source IP
+                   address into the IP header.
+                   Currently, only IPv4 address can be specified and this
+                   action affects only IPv4 packet.";
+                uses vtn-ipaddr-action-fields;
+            }
+
+            case vtn-set-inet-dst-action {
+                description
+                  "Describes the flow action that sets the specified
+                   destination IP address into the IP header.
+                   Currently, only IPv4 address can be specified and this
+                   action affects only IPv4 packet.";
+                uses vtn-ipaddr-action-fields;
+            }
+
+            case vtn-set-inet-dscp-action {
+                description
+                  "Describes the flow action that sets the specified IP
+                   DSCP value into the IP header.
+                   Currently, only IPv4 packet can be modified by this
+                   action.";
+
+                leaf dscp {
+                    description
+                      "The DSCP value to be set.
+                       If this field is omitted, it will be treated as zero is
+                       specified.";
+                    type inet:dscp;
+                    default 0;
+                }
+            }
+
+            case vtn-set-port-src-action {
+                description
+                  "Describes the flow action that sets the specified source
+                   port number into the TCP or UDP header.
+                   Currently, this action only affects TCP or UDP packet
+                   on IPv4.";
+                uses vtn-port-action-fields;
+            }
+
+            case vtn-set-port-dst-action {
+                description
+                  "Describes the flow action that sets the specified
+                   destination port number into the TCP or UDP header.
+                   Currently, this action only affects TCP or UDP packet
+                   on IPv4.";
+                uses vtn-port-action-fields;
+            }
+
+            case vtn-set-icmp-type-action {
+                description
+                  "Describes the flow action that sets the specified ICMP type
+                   into the ICMP header.
+                   Currently, this action only affects ICMP packet on IPv4.";
+
+                leaf type {
+                    description
+                      "The ICMP type to be set.
+                       If this field is omitted, it will be treated as zero is
+                       specified.";
+                    type uint8;
+                    default 0;
+                }
+            }
+
+            case vtn-set-icmp-code-action {
+                description
+                  "Describes the flow action that sets the specified ICMP code
+                   into the ICMP header.
+                   Currently, this action only affects ICMP packet on IPv4.";
+
+                leaf code {
+                    description
+                      "The ICMP code to be set.
+                       If this field is omitted, it will be treated as zero is
+                       specified.";
+                    type uint8;
+                    default 0;
+                }
+            }
+        }
+    }
+
+    grouping vtn-ordered-flow-action {
+        description
+          "Describes the flow action fields with `order' field.";
+        uses action:ordered;
+        uses vtn-action-fields;
+    }
+
+    grouping vtn-flow-action-list {
+        description "Describes a list of flow actions.";
+
+        list vtn-flow-action {
+            description
+              "Describes a list of flow actions supported by the VTN Manager.
+               Each action in this list needs to have a unique index value in
+               `order' field. Flow actions in a flow entry are sorted by
+               `order' field in ascending order.";
+            key "order";
+            uses vtn-ordered-flow-action;
+        }
+    }
+}

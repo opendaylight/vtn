@@ -43,14 +43,12 @@ import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.IVTNModeListener;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -174,6 +172,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.Vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.remove.flow.condition.match.output.RemoveMatchResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.set.flow.condition.match.input.FlowMatchList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.set.flow.condition.match.output.SetMatchResult;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.ClearPathMapInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.ClearPathMapInputBuilder;
@@ -209,6 +208,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vt
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.Vtn;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.rev150328.vtns.VtnBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -4220,7 +4220,7 @@ public class VTNManagerImpl
      */
     @Override
     public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
-                                             MacMapAclType aclType)
+                                             VtnAclType aclType)
         throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -4294,7 +4294,7 @@ public class VTNManagerImpl
      *
      * @param path    A {@link VBridgePath} object that specifies the position
      *                of the vBridge.
-     * @param op      A {@link UpdateOperation} instance which indicates
+     * @param op      A {@link VtnUpdateOperationType} instance which indicates
      *                how to change the MAC mapping configuration.
      * @param mcconf  A {@link MacMapConfig} instance which contains the MAC
      *                mapping configuration information.
@@ -4305,7 +4305,7 @@ public class VTNManagerImpl
      * @throws VTNException  An error occurred.
      */
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+    public UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
                                 MacMapConfig mcconf) throws VTNException {
         // Acquire writer lock because this operation may change existing
         // virtual network mapping.
@@ -4325,8 +4325,8 @@ public class VTNManagerImpl
      *
      * @param path      A {@link VBridgePath} object that specifies the
      *                  position of the vBridge.
-     * @param op        A {@link UpdateOperation} instance which indicates
-     *                  how to change the MAC mapping configuration.
+     * @param op        A {@link VtnUpdateOperationType} instance which
+     *                  indicates how to change the MAC mapping configuration.
      * @param aclType   The type of access control list.
      * @param dlhosts   A set of {@link DataLinkHost} instances.
      * @return          A {@link UpdateType} object which represents the result
@@ -4336,8 +4336,8 @@ public class VTNManagerImpl
      * @throws VTNException  An error occurred.
      */
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op,
-                                MacMapAclType aclType,
+    public UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
+                                VtnAclType aclType,
                                 Set<? extends DataLinkHost> dlhosts)
         throws VTNException {
         // Acquire writer lock because this operation may change existing
@@ -4623,8 +4623,8 @@ public class VTNManagerImpl
      *
      * @param path    A {@link VTenantPath} object that specifies the position
      *                of the VTN.
-     * @param mode    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
-     *                instance which specifies behavior of this method.
+     * @param mode    A {@link DataFlowMode} instance which specifies behavior
+     *                of this method.
      * @param filter  If a {@link DataFlowFilter} instance is specified,
      *                only data flows that meet the condition specified by
      *                {@link DataFlowFilter} instance is returned.
@@ -4635,7 +4635,7 @@ public class VTNManagerImpl
      * @throws VTNException  An error occurred.
      */
     @Override
-    public List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
+    public List<DataFlow> getDataFlows(VTenantPath path, DataFlowMode mode,
                                        DataFlowFilter filter, int interval)
         throws VTNException {
         VTNManagerProvider provider = checkService();
@@ -4649,12 +4649,12 @@ public class VTNManagerImpl
         // We should not acquire lock here because succeeding method call may
         // make requests to get flow statistics. Synchronization will be done
         // by VTNFlowDatabase appropriately.
-        boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
+        boolean update = (mode == DataFlowMode.UPDATESTATS);
         TxContext ctx = provider.newTxContext();
         try {
             VTNFlowDatabase fdb = getTenantFlowDB(path);
             DataFlowFilterImpl flt = new DataFlowFilterImpl(ctx, filter);
-            if (mode == DataFlow.Mode.SUMMARY) {
+            if (mode == DataFlowMode.SUMMARY) {
                 return fdb.getFlows(ctx, null, update, flt, interval);
             } else if (mode == null) {
                 throw new VTNException(MiscUtils.argumentIsNull("Mode"));
@@ -4672,8 +4672,8 @@ public class VTNManagerImpl
      * @param path    A {@link VTenantPath} object that specifies the position
      *                of the VTN.
      * @param flowId  An identifier of the data flow.
-     * @param mode    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
-     *                instance which specifies behavior of this method.
+     * @param mode    A {@link DataFlowMode} instance which specifies behavior
+     *                of this method.
      * @return  A {@link DataFlow} instance which represents information
      *          about the specified data flow.
      *          {@code null} is returned if the specified data flow was not
@@ -4682,7 +4682,7 @@ public class VTNManagerImpl
      */
     @Override
     public DataFlow getDataFlow(VTenantPath path, long flowId,
-                                DataFlow.Mode mode, int interval)
+                                DataFlowMode mode, int interval)
         throws VTNException {
         VTNManagerProvider provider = checkService();
         if (inContainerMode) {
@@ -4695,11 +4695,11 @@ public class VTNManagerImpl
         // We should not acquire lock here because succeeding method call may
         // make requests to get flow statistics. Synchronization will be done
         // by VTNFlowDatabase appropriately.
-        boolean update = (mode == DataFlow.Mode.UPDATE_STATS);
+        boolean update = (mode == DataFlowMode.UPDATESTATS);
         TxContext ctx = provider.newTxContext();
         try {
             VTNFlowDatabase fdb = getTenantFlowDB(path);
-            if (mode == DataFlow.Mode.SUMMARY) {
+            if (mode == DataFlowMode.SUMMARY) {
                 return fdb.getFlow(ctx, flowId, null, update, interval);
             } else if (mode == null) {
                 throw new VTNException(MiscUtils.argumentIsNull("Mode"));

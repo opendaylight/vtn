@@ -23,7 +23,6 @@ import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 
@@ -53,6 +52,7 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 /**
@@ -70,7 +70,7 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6806660789796486540L;
+    private static final long serialVersionUID = -503140432578419418L;
 
     /**
      * Port mapping configuration.
@@ -159,7 +159,7 @@ public abstract class PortInterface extends AbstractInterface
      *          was not changed.
      * @throws VTNException  An error occurred.
      */
-    final VNodeState setPortMap(VTNManagerImpl mgr, TxContext ctx,
+    final VnodeState setPortMap(VTNManagerImpl mgr, TxContext ctx,
                                 PortMapConfig pmconf)
         throws VTNException {
         ConcurrentMap<VTenantPath, Object> db = mgr.getStateDB();
@@ -243,18 +243,18 @@ public abstract class PortInterface extends AbstractInterface
             PortMapEvent.changed(mgr, path, pmap, true);
         }
 
-        VNodeState state;
+        VnodeState state;
         if (isEnabled()) {
             state = getNewState(reader, ist);
         } else {
-            state = VNodeState.DOWN;
-            VNodeState pstate = getPortState(reader, sport);
+            state = VnodeState.DOWN;
+            VnodeState pstate = getPortState(reader, sport);
             ist.setPortState(pstate);
         }
         ist.setState(state);
         db.put((VNodePath)path, ist);
         if (ist.isDirty()) {
-            VNodeState pstate = ist.getPortState();
+            VnodeState pstate = ist.getPortState();
             VInterface viface = new VInterface(getName(), state, pstate,
                                                getVInterfaceConfig());
             VInterfaceEvent.changed(mgr, path, viface, false);
@@ -272,10 +272,10 @@ public abstract class PortInterface extends AbstractInterface
      * @param ev      A {@link VtnNodeEvent} instance.
      * @return  New state of the parent node.
      */
-    final VNodeState notifyNode(VTNManagerImpl mgr,
+    final VnodeState notifyNode(VTNManagerImpl mgr,
                                 ConcurrentMap<VTenantPath, Object> db,
-                                VNodeState prstate, VtnNodeEvent ev) {
-        VNodeState state = notifyNode(mgr, db, ev);
+                                VnodeState prstate, VtnNodeEvent ev) {
+        VnodeState state = notifyNode(mgr, db, ev);
         return getParentState(state, prstate);
     }
 
@@ -289,10 +289,10 @@ public abstract class PortInterface extends AbstractInterface
      * @param ev       {@link VtnPortEvent} instance.
      * @return  New state of this virtual node.
      */
-    final VNodeState notifyNodeConnector(VTNManagerImpl mgr,
+    final VnodeState notifyNodeConnector(VTNManagerImpl mgr,
                                          ConcurrentMap<VTenantPath, Object> db,
-                                         VNodeState prstate, VtnPortEvent ev) {
-        VNodeState state = notifyNodeConnector(mgr, db, ev);
+                                         VnodeState prstate, VtnPortEvent ev) {
+        VnodeState state = notifyNodeConnector(mgr, db, ev);
         return getParentState(state, prstate);
     }
 
@@ -341,8 +341,8 @@ public abstract class PortInterface extends AbstractInterface
         }
 
         VInterfaceState ist = getIfState(mgr);
-        VNodeState state = ist.getState();
-        if (state != VNodeState.UP) {
+        VnodeState state = ist.getState();
+        if (state != VnodeState.UP) {
             return;
         }
 
@@ -489,17 +489,17 @@ public abstract class PortInterface extends AbstractInterface
      * @return  New node state.
      * @throws VTNException  An error occurred.
      */
-    private VNodeState getNewState(InventoryReader rdr, VInterfaceState ist)
+    private VnodeState getNewState(InventoryReader rdr, VInterfaceState ist)
         throws VTNException {
         NodeConnector nc = ist.getMappedPort();
         if (nc == null) {
-            return VNodeState.DOWN;
+            return VnodeState.DOWN;
         }
 
         SalPort sport = SalPort.create(nc);
         if (sport == null) {
             // This should never happen.
-            return VNodeState.DOWN;
+            return VnodeState.DOWN;
         }
 
         VtnPort vport = rdr.get(sport);
@@ -519,16 +519,16 @@ public abstract class PortInterface extends AbstractInterface
      *                port mapped to this node.
      * @return  New node state.
      */
-    private VNodeState getNewState(VInterfaceState ist, VtnPort vport) {
+    private VnodeState getNewState(VInterfaceState ist, VtnPort vport) {
         // Update the state of the mapped port.
-        VNodeState pstate = getPortState(vport);
+        VnodeState pstate = getPortState(vport);
         ist.setPortState(pstate);
 
-        if (pstate == VNodeState.UP && InventoryUtils.isEdge(vport)) {
-            return VNodeState.UP;
+        if (pstate == VnodeState.UP && InventoryUtils.isEdge(vport)) {
+            return VnodeState.UP;
         }
 
-        return VNodeState.DOWN;
+        return VnodeState.DOWN;
     }
 
     /**
@@ -536,14 +536,14 @@ public abstract class PortInterface extends AbstractInterface
      *
      * @param reader  A {@link InventoryReader} instance.
      * @param sport   A {@link SalPort} instance.
-     * @return  A {@link VNodeState} instance which represents the state of
+     * @return  A {@link VnodeState} instance which represents the state of
      *          the specified switc port.
      * @throws VTNException  An error occurred.
      */
-    private VNodeState getPortState(InventoryReader reader, SalPort sport)
+    private VnodeState getPortState(InventoryReader reader, SalPort sport)
         throws VTNException {
         if (sport == null) {
-            return VNodeState.UNKNOWN;
+            return VnodeState.UNKNOWN;
         }
 
         VtnPort vport = reader.get(sport);
@@ -554,16 +554,16 @@ public abstract class PortInterface extends AbstractInterface
      * Get state of the switch port.
      *
      * @param vport   A {@link VtnPort} instance.
-     * @return  A {@link VNodeState} instance which represents the state of
+     * @return  A {@link VnodeState} instance which represents the state of
      *          the specified switc port.
      */
-    private VNodeState getPortState(VtnPort vport) {
+    private VnodeState getPortState(VtnPort vport) {
         if (vport == null) {
-            return VNodeState.UNKNOWN;
+            return VnodeState.UNKNOWN;
         }
 
         return (InventoryUtils.isEnabled(vport))
-            ? VNodeState.UP : VNodeState.DOWN;
+            ? VnodeState.UP : VnodeState.DOWN;
     }
 
     /**
@@ -576,7 +576,7 @@ public abstract class PortInterface extends AbstractInterface
      *          {@code null} is returned if the port mapping configuration
      *          was not changed.
      */
-    private VNodeState unsetPortMap(VTNManagerImpl mgr,
+    private VnodeState unsetPortMap(VTNManagerImpl mgr,
                                     ConcurrentMap<VTenantPath, Object> db,
                                     VInterfaceState ist) {
         PortMapConfig pmconf = portMapConfig;
@@ -593,9 +593,9 @@ public abstract class PortInterface extends AbstractInterface
         PortMap pmap = new PortMap(pmconf, mapped);
         VInterfacePath path = getInterfacePath();
         PortMapEvent.removed(mgr, path, pmap, true);
-        setState(mgr, db, ist, VNodeState.UNKNOWN);
+        setState(mgr, db, ist, VnodeState.UNKNOWN);
 
-        return VNodeState.UNKNOWN;
+        return VnodeState.UNKNOWN;
     }
 
     /**
@@ -735,11 +735,11 @@ public abstract class PortInterface extends AbstractInterface
      * @param ev   A {@link VtnNodeEvent} instance.
      * @return  New state of this interface.
      */
-    private VNodeState notifyNode(VTNManagerImpl mgr,
+    private VnodeState notifyNode(VTNManagerImpl mgr,
                                   ConcurrentMap<VTenantPath, Object> db,
                                   VtnNodeEvent ev) {
         VInterfaceState ist = getIfState(db);
-        VNodeState cur = ist.getState();
+        VnodeState cur = ist.getState();
         if (ev.getUpdateType() != VtnUpdateType.REMOVED) {
             return cur;
         }
@@ -760,7 +760,7 @@ public abstract class PortInterface extends AbstractInterface
             // No need to flush MAC address table entries and flow entries.
             // It will be done by the VTN Manager service.
             unmapPort(mgr, db, ist, true, false);
-            cur = VNodeState.DOWN;
+            cur = VnodeState.DOWN;
             setState(mgr, db, ist, cur);
         }
 
@@ -776,18 +776,18 @@ public abstract class PortInterface extends AbstractInterface
      * @param ev       {@link VtnPortEvent} instance.
      * @return  New state of this virtual interface.
      */
-    private VNodeState notifyNodeConnector(
+    private VnodeState notifyNodeConnector(
         VTNManagerImpl mgr, ConcurrentMap<VTenantPath, Object> db,
         VtnPortEvent ev) {
         VInterfaceState ist = getIfState(db);
-        VNodeState cur = ist.getState();
+        VnodeState cur = ist.getState();
         PortMapConfig pmconf = portMapConfig;
         if (pmconf == null) {
             return cur;
         }
 
         NodeConnector mapped = ist.getMappedPort();
-        VNodeState state = VNodeState.UNKNOWN;
+        VnodeState state = VnodeState.UNKNOWN;
         SalPort sport = ev.getSalPort();
         VtnPort vport = ev.getVtnPort();
         switch (ev.getUpdateType()) {
@@ -821,7 +821,7 @@ public abstract class PortInterface extends AbstractInterface
                     // changed. In this case flow and MAC address table entries
                     // need to be purged.
                     unmapPort(mgr, db, ist, true, true);
-                    state = VNodeState.DOWN;
+                    state = VnodeState.DOWN;
                 } else {
                     state = getNewState(ist, vport);
                 }
@@ -835,7 +835,7 @@ public abstract class PortInterface extends AbstractInterface
                 // No need to flush MAC address table entries and flow entries.
                 // It will be done by the VTN Manager service.
                 unmapPort(mgr, db, ist, true, false);
-                state = VNodeState.DOWN;
+                state = VnodeState.DOWN;
             } else {
                 return cur;
             }
@@ -1041,27 +1041,27 @@ public abstract class PortInterface extends AbstractInterface
      * @return  New state of this interface.
      */
     @Override
-    protected final VNodeState changeEnableState(
+    protected final VnodeState changeEnableState(
         VTNManagerImpl mgr, TxContext ctx,
         ConcurrentMap<VTenantPath, Object> db, VInterfaceState ist,
         boolean enabled) {
-        VNodeState state;
+        VnodeState state;
         if (enabled) {
             // Determine new state by the state of mapped port.
             if (portMapConfig == null) {
-                state = VNodeState.UNKNOWN;
+                state = VnodeState.UNKNOWN;
             } else {
                 InventoryReader reader = ctx.getInventoryReader();
                 try {
                     state = getNewState(reader, ist);
                 } catch (Exception e) {
                     mgr.logException(getLogger(), getPath(), e);
-                    state = VNodeState.UNKNOWN;
+                    state = VnodeState.UNKNOWN;
                 }
             }
         } else {
             // State of disabled interface must be DOWN.
-            state = VNodeState.DOWN;
+            state = VnodeState.DOWN;
         }
 
         ist.setState(state);
@@ -1090,12 +1090,12 @@ public abstract class PortInterface extends AbstractInterface
      * @return  New state of this interface.
      */
     @Override
-    protected final VNodeState resuming(VTNManagerImpl mgr,
+    protected final VnodeState resuming(VTNManagerImpl mgr,
                                         ConcurrentMap<VTenantPath, Object> db,
                                         TxContext ctx, VInterfaceState ist) {
         PortMapConfig pmconf = portMapConfig;
         if (pmconf == null) {
-            return VNodeState.UNKNOWN;
+            return VnodeState.UNKNOWN;
         }
 
         NodeConnector mapped = ist.getMappedPort();
@@ -1116,7 +1116,7 @@ public abstract class PortInterface extends AbstractInterface
             }
         }
 
-        return VNodeState.UNKNOWN;
+        return VnodeState.UNKNOWN;
     }
 
     /**

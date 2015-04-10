@@ -24,7 +24,6 @@ import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
 import org.opendaylight.vtn.manager.VNodePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VTerminal;
@@ -47,6 +46,8 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * Implementation of vTerminal.
  *
@@ -60,7 +61,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2406688533486021084L;
+    private static final long serialVersionUID = -598441412301746755L;
 
     /**
      * Logger instance.
@@ -409,8 +410,8 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      * @return  New state of this node.
      */
     @Override
-    protected VNodeState resuming(VTNManagerImpl mgr, TxContext ctx,
-                                  VNodeState state) {
+    protected VnodeState resuming(VTNManagerImpl mgr, TxContext ctx,
+                                  VnodeState state) {
         // Nothing to do.
         return state;
     }
@@ -439,7 +440,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      */
     @Override
     protected void stateChanged(VTNManagerImpl mgr, BridgeState bst,
-                                VNodeState state) {
+                                VnodeState state) {
         VTerminalPath path = getPath();
         int faulted = bst.getFaultedPathSize();
         VTerminal vterm = new VTerminal(path.getTerminalName(), state, faulted,

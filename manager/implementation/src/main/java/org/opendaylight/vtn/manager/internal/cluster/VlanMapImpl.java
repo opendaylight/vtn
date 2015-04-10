@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VlanMap;
@@ -46,6 +45,7 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 
 /**
  * Implementation of VLAN mapping to the virtual L2 bridge.
@@ -64,7 +64,7 @@ public final class VlanMapImpl implements VBridgeNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4123355894114921752L;
+    private static final long serialVersionUID = -6214731407046228448L;
 
     /**
      * Logger instance.
@@ -140,8 +140,8 @@ public final class VlanMapImpl implements VBridgeNode {
      * @param bstate Current bridge state value.
      * @return  New bridge state value.
      */
-    VNodeState getBridgeState(ConcurrentMap<VTenantPath, Object> db,
-                              VNodeState bstate) {
+    VnodeState getBridgeState(ConcurrentMap<VTenantPath, Object> db,
+                              VnodeState bstate) {
         boolean valid = isValid(db);
         return getBridgeState(valid, bstate);
     }
@@ -159,7 +159,7 @@ public final class VlanMapImpl implements VBridgeNode {
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    VNodeState resume(VTNManagerImpl mgr, TxContext ctx, VNodeState bstate) {
+    VnodeState resume(VTNManagerImpl mgr, TxContext ctx, VnodeState bstate) {
         // Register this VLAN mapping to the global resource manager.
         IVTNResourceManager resMgr = mgr.getResourceManager();
         short vlan = vlanMapConfig.getVlan();
@@ -205,9 +205,9 @@ public final class VlanMapImpl implements VBridgeNode {
      * @param ev      A {@link VtnNodeEvent} instance.
      * @return  New bridge state value.
      */
-    VNodeState notifyNode(VTNManagerImpl mgr,
+    VnodeState notifyNode(VTNManagerImpl mgr,
                           ConcurrentMap<VTenantPath, Object> db,
-                          VNodeState bstate, VtnNodeEvent ev) {
+                          VnodeState bstate, VtnNodeEvent ev) {
         boolean cur = isValid(db);
         Node myNode = vlanMapConfig.getNode();
         SalNode snode = ev.getSalNode();
@@ -245,9 +245,9 @@ public final class VlanMapImpl implements VBridgeNode {
      * @return  New bridge state value.
      * @throws VTNException  An error occurred.
      */
-    VNodeState notifyNodeConnector(VTNManagerImpl mgr,
+    VnodeState notifyNodeConnector(VTNManagerImpl mgr,
                                    ConcurrentMap<VTenantPath, Object> db,
-                                   VNodeState bstate, VtnPortEvent ev)
+                                   VnodeState bstate, VtnPortEvent ev)
         throws VTNException {
         boolean cur = isValid(db);
         SalPort sport = ev.getSalPort();
@@ -362,13 +362,13 @@ public final class VlanMapImpl implements VBridgeNode {
      * @param bstate  Current bridge state value.
      * @return  New bridge state value.
      */
-    private VNodeState getBridgeState(boolean valid, VNodeState bstate) {
+    private VnodeState getBridgeState(boolean valid, VnodeState bstate) {
         if (!valid) {
-            return VNodeState.DOWN;
+            return VnodeState.DOWN;
         }
 
-        if (bstate == VNodeState.UNKNOWN) {
-            return VNodeState.UP;
+        if (bstate == VnodeState.UNKNOWN) {
+            return VnodeState.UP;
         }
 
         return bstate;

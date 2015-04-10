@@ -17,6 +17,8 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * JUnit test for {@link VBridge}.
  */
@@ -31,8 +33,8 @@ public class VBridgeTest extends TestBase {
      */
     @Test
     public void testGetter() {
-        VNodeState[] stateValues = VNodeState.values();
-        VNodeState[] states = new VNodeState[stateValues.length + 1];
+        VnodeState[] stateValues = VnodeState.values();
+        VnodeState[] states = new VnodeState[stateValues.length + 1];
         System.arraycopy(stateValues, 0, states, 1, stateValues.length);
         states[0] = null;
 
@@ -41,7 +43,7 @@ public class VBridgeTest extends TestBase {
                 for (Integer ival: createIntegers(-2, 5)) {
                     VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                     for (int flt = 0; flt < 3; flt++) {
-                        for (VNodeState state: states) {
+                        for (VnodeState state: states) {
                             String emsg = "(name)" + name + ",(desc)" + desc
                                     + ",(ival)" + ((ival == null) ? "null" : ival.intValue())
                                     + ",(flt)" + flt;
@@ -63,7 +65,7 @@ public class VBridgeTest extends TestBase {
 
                             // null state should be interpreted as UNKNOWN.
                             if (state == null) {
-                                state = VNodeState.UNKNOWN;
+                                state = VnodeState.UNKNOWN;
                             }
                             assertSame(emsg, state, vbridge.getState());
                         }
@@ -84,12 +86,12 @@ public class VBridgeTest extends TestBase {
         List<String> descs = createStrings("desc");
         List<Integer> intervals = createIntegers(10, 3);
         List<Integer> faults = createIntegers(0, 2, false);
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: names) {
             for (String desc: descs) {
                 for (Integer ival: intervals) {
                     for (Integer flt: faults) {
-                        for (VNodeState state: states) {
+                        for (VnodeState state: states) {
                             int f = flt.intValue();
                             VBridgeConfig bconf =
                                 createVBridgeConfig(desc, ival);
@@ -116,12 +118,12 @@ public class VBridgeTest extends TestBase {
     public void testToString() {
         String prefix = "VBridge[";
         String suffix = "]";
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (String desc: createStrings("desc")) {
                 for (Integer ival: createIntegers(10, 2)) {
                     for (int flt = 0; flt < 3; flt++) {
-                        for (VNodeState state: states) {
+                        for (VnodeState state: states) {
                             VBridgeConfig bconf =
                                 createVBridgeConfig(desc, ival);
                             VBridge vbridge = new VBridge(name, state, flt,
@@ -149,12 +151,12 @@ public class VBridgeTest extends TestBase {
      */
     @Test
     public void testSerialize() {
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (String desc: createStrings("desc")) {
                 for (Integer ival: createIntegers(10, 2)) {
                     for (int flt = 0; flt < 3; flt++) {
-                        for (VNodeState state: states) {
+                        for (VnodeState state: states) {
                             VBridgeConfig bconf =
                                 createVBridgeConfig(desc, ival);
                             VBridge vbridge =
@@ -172,11 +174,11 @@ public class VBridgeTest extends TestBase {
      */
     @Test
     public void testJAXB() {
-        VNodeState[] states = VNodeState.values();
+        VnodeState[] states = VnodeState.values();
         for (String name: createStrings("nm")) {
             for (String desc: createStrings("desc")) {
                 for (Integer ival: createIntegers(10, 2)) {
-                    for (VNodeState state: states) {
+                    for (VnodeState state: states) {
                         VBridgeConfig bconf = createVBridgeConfig(desc, ival);
                         VBridge vbridge = new VBridge(name, state, 0, bconf);
                         jaxbTest(vbridge, VBridge.class, XML_ROOT);
@@ -184,16 +186,16 @@ public class VBridgeTest extends TestBase {
                         jaxbTest(vbridge, VBridge.class, XML_ROOT);
                     }
 
-                    // Ensure that "state" attribute is decoded as VNodeState.
+                    // Ensure that "state" attribute is decoded as VnodeState.
                     jaxbStateTest(name, desc, ival, null, -1,
-                                  VNodeState.UNKNOWN);
-                    jaxbStateTest(name, desc, ival, null, 0, VNodeState.DOWN);
-                    jaxbStateTest(name, desc, ival, null, 1, VNodeState.UP);
+                                  VnodeState.UNKNOWN);
+                    jaxbStateTest(name, desc, ival, null, 0, VnodeState.DOWN);
+                    jaxbStateTest(name, desc, ival, null, 1, VnodeState.UP);
 
                     // Ensure that UNKNOWN is set to the state if "state"
                     // attribute is omitted.
                     jaxbStateTest(name, desc, ival, new Integer(3), null,
-                                  VNodeState.UNKNOWN);
+                                  VnodeState.UNKNOWN);
 
                     // Ensure that UNKNOWN is set to the state if "state"
                     // attribute is invalid.
@@ -202,7 +204,7 @@ public class VBridgeTest extends TestBase {
                             continue;
                         }
                         jaxbStateTest(name, desc, ival, new Integer(5),
-                                      new Integer(st), VNodeState.UNKNOWN);
+                                      new Integer(st), VnodeState.UNKNOWN);
                     }
                 }
             }
@@ -228,7 +230,7 @@ public class VBridgeTest extends TestBase {
      */
     private void jaxbStateTest(String name, String desc, Integer ival,
                                Integer faults, Integer state,
-                               VNodeState required) {
+                               VnodeState required) {
         StringBuilder builder = new StringBuilder(XML_DECLARATION);
         builder.append('<').append(XML_ROOT);
         if (name != null) {

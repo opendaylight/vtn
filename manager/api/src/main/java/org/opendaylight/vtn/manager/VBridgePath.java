@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,9 @@
  */
 
 package org.opendaylight.vtn.manager;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 /**
  * {@code VBridgePath} class describes the position of the
@@ -26,7 +29,7 @@ public class VBridgePath extends VNodePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2918772111159548106L;
+    private static final long serialVersionUID = 6995311908378312865L;
 
     /**
      * A string which represents that the node type is vBridge.
@@ -90,6 +93,8 @@ public class VBridgePath extends VNodePath {
         return getTenantNodeName();
     }
 
+    // VTenantPath
+
     /**
      * {@inheritDoc}
      *
@@ -100,6 +105,21 @@ public class VBridgePath extends VNodePath {
     public String getNodeType() {
         return NODETYPE_VBRIDGE;
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since  Lithium
+     */
+    @Override
+    public VirtualNodePath toVirtualNodePath() {
+        return new VirtualNodePathBuilder().
+            setTenantName(getTenantName()).
+            setBridgeName(getTenantNodeName()).
+            build();
+    }
+
+    // VNodePath
 
     /**
      * Convert this instance into a {@link VNodeLocation} instance.

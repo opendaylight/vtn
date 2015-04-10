@@ -25,6 +25,10 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
+
 /**
  * {@code IVTNManager} is an interface that defines OSGi service for
  * operating the VTN Manager.
@@ -2231,19 +2235,19 @@ public interface IVTNManager {
      * <p>
      *   This method returns a set which contains all host information
      *   configured in the access control list specified by
-     *   {@link MacMapAclType} instance.
+     *   {@link VtnAclType} instance.
      * </p>
      *
      * @param path     A {@link VBridgePath} object that specifies the position
      *                 of the vBridge.
      * @param aclType  The type of access control list.
      *   <dl style="margin-left: 1em;">
-     *     <dt>{@link MacMapAclType#ALLOW}
+     *     <dt>{@link VtnAclType#ALLOW}
      *     <dd>
      *       Return all host information configured in
      *       {@linkplain <a href="package-summary.html#MAC-map.allow">Map Allow list</a>}.
      *
-     *     <dt>{@link MacMapAclType#DENY}
+     *     <dt>{@link VtnAclType#DENY}
      *     <dd>
      *       Return all host information configured in
      *       {@linkplain <a href="package-summary.html#MAC-map.deny">Map Deny list</a>}.
@@ -2281,7 +2285,7 @@ public interface IVTNManager {
      *   </dl>
      * @since  Helium
      */
-    Set<DataLinkHost> getMacMapConfig(VBridgePath path, MacMapAclType aclType)
+    Set<DataLinkHost> getMacMapConfig(VBridgePath path, VtnAclType aclType)
         throws VTNException;
 
     /**
@@ -2415,10 +2419,10 @@ public interface IVTNManager {
      * @param path    A {@link VBridgePath} object that specifies the position
      *                of the vBridge.
      * @param op
-     *   A {@link UpdateOperation} instance which indicates how to change
-     *   the MAC mapping configuration.
+     *   A {@link VtnUpdateOperationType} instance which indicates how to
+     *   change the MAC mapping configuration.
      *   <dl style="margin-left: 1em;">
-     *     <dt>{@link UpdateOperation#SET}
+     *     <dt>{@link VtnUpdateOperationType#SET}
      *     <dd>
      *       Change the configuration of the MAC mapping exactly the same
      *       as the configuration specified by {@code mcconf}.
@@ -2435,7 +2439,7 @@ public interface IVTNManager {
      *         </li>
      *       </ul>
      *
-     *     <dt>{@link UpdateOperation#ADD}
+     *     <dt>{@link VtnUpdateOperationType#ADD}
      *     <dd>
      *       Append the host information configured in {@code mcconf} to the
      *       access controll lists configured in MAC mapping.
@@ -2460,7 +2464,7 @@ public interface IVTNManager {
      *         </li>
      *       </ul>
      *
-     *     <dt>{@link UpdateOperation#REMOVE}
+     *     <dt>{@link VtnUpdateOperationType#REMOVE}
      *     <dd>
      *       Remove the host information configured in {@code mcconf} from the
      *       access controll lists configured in the MAC mapping.
@@ -2530,9 +2534,9 @@ public interface IVTNManager {
      *           configured in {@code mcconf}.
      *         </li>
      *         <li>
-     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD}
-     *           is passed to {@code op}, one of the following conditions is
-     *           met.
+     *           {@link VtnUpdateOperationType#SET} or
+     *           {@link VtnUpdateOperationType#ADD} is passed to {@code op},
+     *           one of the following conditions is met.
      *           <ul>
      *             <li>
      *               Multiple {@link EthernetHost} instances with the same
@@ -2556,14 +2560,15 @@ public interface IVTNManager {
      *     <dd>
      *       <ul style="padding-left: 1em;">
      *         <li>
-     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD} is
-     *           passed to {@code op}, and host information configured inside
-     *           Map Allow list in MAC mapping of another vBridge is configured
-     *           in map Allow list of {@code mcconf}.
+     *           {@link VtnUpdateOperationType#SET} or
+     *           {@link VtnUpdateOperationType#ADD} is passed to {@code op},
+     *           and host information configured inside Map Allow list in
+     *           MAC mapping of another vBridge is configured in Map Allow
+     *           list of {@code mcconf}.
      *         </li>
      *         <li>
-     *           {@link UpdateOperation#ADD} is passed to {@code op}, and
-     *           host information having the same MAC address and different
+     *           {@link VtnUpdateOperationType#ADD} is passed to {@code op},
+     *           and host information having the same MAC address and different
      *           VLAN ID when compared to the host information in Map Allow
      *           list of {@code mcconf} is already configured in Map Allow list
      *           of MAC mapping.
@@ -2580,7 +2585,7 @@ public interface IVTNManager {
      *   </dl>
      * @since  Helium
      */
-    UpdateType setMacMap(VBridgePath path, UpdateOperation op,
+    UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
                          MacMapConfig mcconf) throws VTNException;
 
     /**
@@ -2597,10 +2602,10 @@ public interface IVTNManager {
      * @param path      A {@link VBridgePath} object that specifies the
      *                  position of the vBridge.
      * @param op
-     *    A {@link UpdateOperation} instance which indicates how to change
-     *    the access control list.
+     *    A {@link VtnUpdateOperationType} instance which indicates how to
+     *   change the access control list.
      *   <dl style="margin-left: 1em;">
-     *     <dt>{@link UpdateOperation#SET}
+     *     <dt>{@link VtnUpdateOperationType#SET}
      *     <dd>
      *       Change the access control list specified by {@code aclType}
      *       exactly the same as {@code dlhosts}.
@@ -2616,7 +2621,7 @@ public interface IVTNManager {
      *         </li>
      *       </ul>
      *
-     *     <dt>{@link UpdateOperation#ADD}
+     *     <dt>{@link VtnUpdateOperationType#ADD}
      *     <dd>
      *       Append the host information configured in {@code dlhosts} to the
      *       access control list specified by {@code aclType}.
@@ -2631,7 +2636,7 @@ public interface IVTNManager {
      *         </li>
      *       </ul>
      *
-     *     <dt>{@link UpdateOperation#REMOVE}
+     *     <dt>{@link VtnUpdateOperationType#REMOVE}
      *     <dd>
      *       Remove the host information configured in {@code dlhosts} from the
      *       access control list specified by {@code aclType}.
@@ -2652,12 +2657,12 @@ public interface IVTNManager {
      *   </dl>
      * @param aclType   The type of access control list.
      *   <dl style="margin-left: 1em;">
-     *     <dt>{@link MacMapAclType#ALLOW}
+     *     <dt>{@link VtnAclType#ALLOW}
      *     <dd>
      *       Modify host information configured in
      *       {@linkplain <a href="package-summary.html#MAC-map.allow">Map Allow list</a>}.
      *
-     *     <dt>{@link MacMapAclType#DENY}
+     *     <dt>{@link VtnAclType#DENY}
      *     <dd>
      *       Modify host information configured in
      *       {@linkplain <a href="package-summary.html#MAC-map.deny">Map Deny list</a>}.
@@ -2705,17 +2710,17 @@ public interface IVTNManager {
      *           configured in {@code dlhosts}.
      *         </li>
      *         <li>
-     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD}
-     *           is passed to {@code op}, one of the following conditions is
-     *           met.
+     *           {@link VtnUpdateOperationType#SET} or
+     *           {@link VtnUpdateOperationType#ADD} is passed to {@code op},
+     *           one of the following conditions is met.
      *           <ul>
      *             <li>
-     *               {@link MacMapAclType#ALLOW} is passed to {@code aclType},
+     *               {@link VtnAclType#ALLOW} is passed to {@code aclType},
      *               and multiple {@link EthernetHost} instances with the
      *               same MAC address are specified in {@code dlhosts}.
      *             </li>
      *             <li>
-     *               {@link MacMapAclType#DENY} is passed to {@code aclType},
+     *               {@link VtnAclType#DENY} is passed to {@code aclType},
      *               and {@link EthernetHost} instance without MAC address
      *               is configured in {@code dlhosts}.
      *             </li>
@@ -2730,18 +2735,19 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.CONFLICT}
      *     <dd>
-     *       {@link MacMapAclType#ALLOW} is passed to {@code aclType}, and
+     *       {@link VtnAclType#ALLOW} is passed to {@code aclType}, and
      *       one of the following conditions is met.
      *       <ul style="padding-left: 1em;">
      *         <li>
-     *           {@link UpdateOperation#SET} or {@link UpdateOperation#ADD} is
-     *           passed to {@code op}, and host information configured inside
-     *           the access control list in MAC mapping of another vBridge
-     *           is configured in {@code dlhosts}.
+     *           {@link VtnUpdateOperationType#SET} or
+     *           {@link VtnUpdateOperationType#ADD} is passed to {@code op},
+     *           and host information configured inside the access control
+     *           list in MAC mapping of another vBridge is configured in
+     *           {@code dlhosts}.
      *         </li>
      *         <li>
-     *           {@link UpdateOperation#ADD} is passed to {@code op}, and
-     *           host information having the same MAC address and different
+     *           {@link VtnUpdateOperationType#ADD} is passed to {@code op},
+     *           and host information having the same MAC address and different
      *           VLAN ID when compared to the host information in
      *           {@code dlhosts} is already configured in access control list
      *           of MAC mapping.
@@ -2758,8 +2764,8 @@ public interface IVTNManager {
      *   </dl>
      * @since  Helium
      */
-    UpdateType setMacMap(VBridgePath path, UpdateOperation op,
-                         MacMapAclType aclType,
+    UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
+                         VtnAclType aclType,
                          Set<? extends DataLinkHost> dlhosts)
         throws VTNException;
 
@@ -3038,8 +3044,59 @@ public interface IVTNManager {
      * @param path
      *   A {@link VTenantPath} object that specifies the position of the VTN.
      * @param mode
-     *    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode}
-     *    instance which specifies behavior of this method.
+     *    A {@link DataFlowMode} instance which specifies behavior of this
+     *    method.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@link DataFlowMode#SUMMARY}
+     *     <dd>
+     *       Indicates that summarized information is required.
+     *       <p>
+     *         If this mode is specified, the following attributes in
+     *         {@link DataFlow} are omitted.
+     *       </p>
+     *       <ul>
+     *         <li>
+     *           The flow condition configured in the ingress flow entry.
+     *           ({@link DataFlow#getMatch()})
+     *         </li>
+     *         <li>
+     *           Actions to applied to the packet by the egress flow entry.
+     *           ({@link DataFlow#getActions()})
+     *         </li>
+     *         <li>
+     *           The route of the packet in the virtual network.
+     *           ({@link DataFlow#getVirtualRoute()})
+     *         </li>
+     *         <li>
+     *           The route of the packet in the physical network.
+     *           ({@link DataFlow#getPhysicalRoute()})
+     *         </li>
+     *         <li>
+     *           Statistics information. ({@link DataFlow#getStatistics()})
+     *         </li>
+     *         <li>
+     *           Averaged statistics information.
+     *           ({@link DataFlow#getAveragedStatistics()})
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@link DataFlowMode#DETAIL}
+     *     <dd>
+     *       Indicates that detailed information is required.
+     *       <p>
+     *         If this mode is specified, all attributes in {@link DataFlow}
+     *         are filled if available. {@link DataFlow#getStatistics()}
+     *         returns statistics cached in the statistics manager, which is
+     *         updated every 10 seconds.
+     *         {@link DataFlow#getAveragedStatistics()} returns averaged
+     *         statistics per second if available.
+     *       </p>
+     *
+     *     <dt style="font-weight: bold;">{@link DataFlowMode#UPDATESTATS}
+     *     <dd>
+     *       Same as {@link DataFlowMode#DETAIL}, but always make requests to
+     *       physical switches to get flow statistics.
+     *   </dl>
      * @param filter
      *    If a {@link DataFlowFilter} instance is specified, only data flows
      *    that meet the condition specified by {@link DataFlowFilter} instance
@@ -3052,9 +3109,8 @@ public interface IVTNManager {
      *    Note that this value is just a hint for determining the measurement
      *    period. So the actual measurement period may differ from the
      *    specified value.
-     *    This value is ignored if
-     *    {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode#SUMMARY} is
-     *    specified to {@code mode}.
+     *    This value is ignored if {@link DataFlowMode#SUMMARY} is specified
+     *    to {@code mode}.
      * @return  A list of {@link DataFlow} instances which represents
      *          information about data flows.
      * @throws VTNException  An error occurred.
@@ -3079,7 +3135,7 @@ public interface IVTNManager {
      *   </dl>
      * @since  Helium
      */
-    List<DataFlow> getDataFlows(VTenantPath path, DataFlow.Mode mode,
+    List<DataFlow> getDataFlows(VTenantPath path, DataFlowMode mode,
                                 DataFlowFilter filter, int interval)
         throws VTNException;
 
@@ -3092,8 +3148,59 @@ public interface IVTNManager {
      * @param flowId
      *    An identifier of the data flow.
      * @param mode
-     *    A {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode} instance
-     *    which specifies behavior of this method.
+     *    A {@link DataFlowMode} instance which specifies behavior of this
+     *    method.
+     *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@link DataFlowMode#SUMMARY}
+     *     <dd>
+     *       Indicates that summarized information is required.
+     *       <p>
+     *         If this mode is specified, the following attributes in
+     *         {@link DataFlow} are omitted.
+     *       </p>
+     *       <ul>
+     *         <li>
+     *           The flow condition configured in the ingress flow entry.
+     *           ({@link DataFlow#getMatch()})
+     *         </li>
+     *         <li>
+     *           Actions to applied to the packet by the egress flow entry.
+     *           ({@link DataFlow#getActions()})
+     *         </li>
+     *         <li>
+     *           The route of the packet in the virtual network.
+     *           ({@link DataFlow#getVirtualRoute()})
+     *         </li>
+     *         <li>
+     *           The route of the packet in the physical network.
+     *           ({@link DataFlow#getPhysicalRoute()})
+     *         </li>
+     *         <li>
+     *           Statistics information. ({@link DataFlow#getStatistics()})
+     *         </li>
+     *         <li>
+     *           Averaged statistics information.
+     *           ({@link DataFlow#getAveragedStatistics()})
+     *         </li>
+     *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@link DataFlowMode#DETAIL}
+     *     <dd>
+     *       Indicates that detailed information is required.
+     *       <p>
+     *         If this mode is specified, all attributes in {@link DataFlow}
+     *         are filled if available. {@link DataFlow#getStatistics()}
+     *         returns statistics cached in the statistics manager, which is
+     *         updated every 10 seconds.
+     *         {@link DataFlow#getAveragedStatistics()} returns averaged
+     *         statistics per second if available.
+     *       </p>
+     *
+     *     <dt style="font-weight: bold;">{@link DataFlowMode#SUMMARY}
+     *     <dd>
+     *       Same as {@link DataFlowMode#DETAIL}, but always make requests to
+     *       physical switches to get flow statistics.
+     *   </dl>
      * @param interval
      *    Time interval in seconds for retrieving the average statistics.
      *    Specifying zero or a negative value is treated as if 10 is
@@ -3101,9 +3208,8 @@ public interface IVTNManager {
      *    Note that this value is just a hint for determining the measurement
      *    period. So the actual measurement period may differ from the
      *    specified value.
-     *    This value is ignored if
-     *    {@link org.opendaylight.vtn.manager.flow.DataFlow.Mode#SUMMARY} is
-     *    specified to {@code mode}.
+     *    This value is ignored if {@link DataFlowMode#SUMMARY} is specified
+     *    to {@code mode}.
      * @return  A {@link DataFlow} instance which represents information
      *          about the specified data flow.
      *          {@code null} is returned if the specified data flow was not
@@ -3136,7 +3242,7 @@ public interface IVTNManager {
      *   </dl>
      * @since  Helium
      */
-    DataFlow getDataFlow(VTenantPath path, long flowId, DataFlow.Mode mode,
+    DataFlow getDataFlow(VTenantPath path, long flowId, DataFlowMode mode,
                          int interval)
         throws VTNException;
 

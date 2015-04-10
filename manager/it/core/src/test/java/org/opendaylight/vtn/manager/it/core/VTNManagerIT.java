@@ -62,7 +62,6 @@ import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.IVTNManagerAware;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PathCost;
 import org.opendaylight.vtn.manager.PathMap;
@@ -71,7 +70,6 @@ import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
 import org.opendaylight.vtn.manager.SwitchPort;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -79,7 +77,6 @@ import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
 import org.opendaylight.vtn.manager.VInterfacePath;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -136,6 +133,10 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 
@@ -965,7 +966,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                             } else {
                                 assertEquals(emsg, age.intValue(), brdg.getAgeInterval());
                             }
-                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
 
                             olddesc = brdg.getDescription();
                             oldage = brdg.getAgeInterval();
@@ -1048,7 +1049,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                                 if (brdg != null) {
                                     assertEquals(emsgMod, bname, brdg.getName());
                                     assertEquals(emsgMod,
-                                            VNodeState.UNKNOWN, brdg.getState());
+                                            VnodeState.UNKNOWN, brdg.getState());
                                 }
                             }
                         }
@@ -1125,7 +1126,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                                             oldage, brdg.getAgeInterval());
                                 }
                                 assertEquals(emsgMod,
-                                        VNodeState.UNKNOWN, brdg.getState());
+                                        VnodeState.UNKNOWN, brdg.getState());
                             }
                         }
 
@@ -1533,9 +1534,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                                     assertEquals(emsg, enabled, vif.getEnabled());
                                 }
                                 if (enabled == Boolean.FALSE) {
-                                    assertEquals(emsg, VNodeState.DOWN, vif.getState());
+                                    assertEquals(emsg, VnodeState.DOWN, vif.getState());
                                 } else {
-                                    assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
+                                    assertEquals(emsg, VnodeState.UNKNOWN, vif.getState());
                                 }
                             }
 
@@ -1546,7 +1547,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                                 } catch (VTNException e) {
                                     unexpected(e);
                                 }
-                                assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                                assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
                             }
 
                             // Test a null condition.
@@ -1662,9 +1663,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                             }
 
                             if (currenabled == Boolean.FALSE) {
-                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VnodeState.DOWN, vif.getState());
                             } else {
-                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VnodeState.UNKNOWN, vif.getState());
                             }
                             VBridge brdg = null;
                             try {
@@ -1672,7 +1673,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                             } catch (VTNException e) {
                                 unexpected(e);
                             }
-                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
 
                             olddesc = vif.getDescription();
                             oldenabled = vif.getEnabled();
@@ -1728,9 +1729,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                             }
 
                             if (enabled == Boolean.FALSE) {
-                                assertEquals(emsg, VNodeState.DOWN, vif.getState());
+                                assertEquals(emsg, VnodeState.DOWN, vif.getState());
                             } else {
-                                assertEquals(emsg, VNodeState.UNKNOWN, vif.getState());
+                                assertEquals(emsg, VnodeState.UNKNOWN, vif.getState());
                             }
 
                             VBridge brdg = null;
@@ -1739,7 +1740,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                             } catch (VTNException e) {
                                 unexpected(e);
                             }
-                            assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                            assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
                         }
                     }
                 }
@@ -1857,8 +1858,8 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                     unexpected(e);
                 }
                 assertEquals(emsg,
-                             (node == null) ? VNodeState.UP
-                             : VNodeState.DOWN, brdg.getState());
+                             (node == null) ? VnodeState.UP
+                             : VnodeState.DOWN, brdg.getState());
 
                 st = mgr.removeVlanMap(bpath, map.getId());
                 assertEquals(emsg, StatusCode.SUCCESS, st.getCode());
@@ -1910,8 +1911,8 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(emsg, (node == null) ? VNodeState.UP
-                             : VNodeState.DOWN, brdg.getState());
+                assertEquals(emsg, (node == null) ? VnodeState.UP
+                             : VnodeState.DOWN, brdg.getState());
             } else {
                 assertEquals(0, list.size());
                 VBridge brdg = null;
@@ -1920,7 +1921,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(emsg, VNodeState.UNKNOWN, brdg.getState());
+                assertEquals(emsg, VnodeState.UNKNOWN, brdg.getState());
             }
 
             for (VlanMap map : list) {
@@ -1957,9 +1958,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                     unexpected(e);
                 }
 
-                VNodeState expected = (noEdge)
-                    ? VNodeState.DOWN
-                    : VNodeState.UP;
+                VnodeState expected = (noEdge)
+                    ? VnodeState.DOWN
+                    : VnodeState.UP;
                 assertEquals(emsg, expected, vbr.getState());
 
                 st = mgr.removeVlanMap(bpath, vmap.getId());
@@ -2244,7 +2245,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(emsg, VNodeState.DOWN, bif.getState());
+                assertEquals(emsg, VnodeState.DOWN, bif.getState());
 
                 VBridge brdg = null;
                 try {
@@ -2252,7 +2253,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 } catch (VTNException e) {
                     unexpected(e);
                 }
-                assertEquals(emsg, VNodeState.DOWN, brdg.getState());
+                assertEquals(emsg, VnodeState.DOWN, brdg.getState());
             }
         }
 
@@ -2460,7 +2461,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertEquals(StatusCode.SUCCESS, st.getCode());
         try {
             VInterface vif = mgr.getInterface(ifp1);
-            assertEquals(VNodeState.UNKNOWN, vif.getState());
+            assertEquals(VnodeState.UNKNOWN, vif.getState());
         } catch (VTNException e) {
             unexpected(e);
         }
@@ -2488,10 +2489,10 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         assertEquals(StatusCode.SUCCESS, st.getCode());
         try {
             VInterface vif = mgr.getInterface(ifp1);
-            assertEquals(VNodeState.UP, vif.getState());
+            assertEquals(VnodeState.UP, vif.getState());
 
             VBridge vbr = mgr.getBridge(new VBridgePath(tname, bname1));
-            assertEquals(VNodeState.UP, vbr.getState());
+            assertEquals(VnodeState.UP, vbr.getState());
         } catch (Exception e) {
             unexpected(e);
         }
@@ -2641,10 +2642,10 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         st = mgr.setPortMap(vifDead, pmconfDead);
         assertEquals(StatusCode.SUCCESS, st.getCode());
         VInterface vif = mgr.getInterface(vifDead);
-        assertEquals(VNodeState.DOWN, vif.getState());
-        assertEquals(VNodeState.UNKNOWN, vif.getEntityState());
+        assertEquals(VnodeState.DOWN, vif.getState());
+        assertEquals(VnodeState.UNKNOWN, vif.getEntityState());
         VBridge vbr = vtnManager.getBridge(bpath0);
-        assertEquals(VNodeState.DOWN, vbr.getState());
+        assertEquals(VnodeState.DOWN, vbr.getState());
 
         hnc = new HostNodeConnector(mac, ip4addr, ncDead, edge0.getVlan());
         emsg = "(host)" + hnc.toString();
@@ -2934,7 +2935,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 assertEquals(StatusCode.SUCCESS, st.getCode());
 
                 VBridge vbr = vtnManager.getBridge(bpath);
-                assertEquals(VNodeState.UP, vbr.getState());
+                assertEquals(VnodeState.UP, vbr.getState());
 
                 TestPort tport = tp.clone();
                 tport.setVlan(vlan);
@@ -2977,7 +2978,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         }
 
         VBridge vbr = vtnManager.getBridge(bpath);
-        assertEquals(VNodeState.UP, vbr.getState());
+        assertEquals(VnodeState.UP, vbr.getState());
     }
 
     /**
@@ -3580,7 +3581,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 vlan++;
             }
             VNodeStateWaiter waiter = new VNodeStateWaiter(vtnManager).
-                set(bpath, VNodeState.UP);
+                set(bpath, VnodeState.UP);
             waiter.await();
         }
 
@@ -3974,23 +3975,23 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         createVirtualNodes(tpath, bpathList, bipathList, vtpathList,
                            vtipathList);
         VNodeStateWaiter waiter = new VNodeStateWaiter(vtnManager).
-            set(bpathNomap, VNodeState.UNKNOWN).
-            set(bipathNomap, VNodeState.UNKNOWN, VNodeState.UNKNOWN).
-            set(bpathVlan0, VNodeState.UNKNOWN).
-            set(bpathNode1, VNodeState.UNKNOWN).
-            set(bpathNode2Port1, VNodeState.UNKNOWN).
-            set(bipathNode2Port1, VNodeState.UNKNOWN, VNodeState.UNKNOWN).
-            set(bpathMac, VNodeState.UNKNOWN).
-            set(vtpathNomap, VNodeState.UNKNOWN).
-            set(vtipathNomap, VNodeState.UNKNOWN, VNodeState.UNKNOWN).
-            set(vtpathNode1Port3, VNodeState.UNKNOWN).
-            set(vtipathNode1Port3, VNodeState.UNKNOWN, VNodeState.UNKNOWN);
+            set(bpathNomap, VnodeState.UNKNOWN).
+            set(bipathNomap, VnodeState.UNKNOWN, VnodeState.UNKNOWN).
+            set(bpathVlan0, VnodeState.UNKNOWN).
+            set(bpathNode1, VnodeState.UNKNOWN).
+            set(bpathNode2Port1, VnodeState.UNKNOWN).
+            set(bipathNode2Port1, VnodeState.UNKNOWN, VnodeState.UNKNOWN).
+            set(bpathMac, VnodeState.UNKNOWN).
+            set(vtpathNomap, VnodeState.UNKNOWN).
+            set(vtipathNomap, VnodeState.UNKNOWN, VnodeState.UNKNOWN).
+            set(vtpathNode1Port3, VnodeState.UNKNOWN).
+            set(vtipathNode1Port3, VnodeState.UNKNOWN, VnodeState.UNKNOWN);
         waiter.await();
 
         // Map VLAN 0 to bpathVlan0.
         VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
         VlanMap vmap0 = vtnManager.addVlanMap(bpathVlan0, vlconf);
-        waiter.set(bpathVlan0, VNodeState.UP).await();
+        waiter.set(bpathVlan0, VnodeState.UP).await();
 
         // Map VLAN 1 on node1 to bpathNode1.
         BigInteger dpid1 = BigInteger.ONE;
@@ -3998,7 +3999,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         Node node1 = toAdNode(nid1);
         vlconf = new VlanMapConfig(node1, (short)1);
         VlanMap vmap1 = vtnManager.addVlanMap(bpathNode1, vlconf);
-        waiter.set(bpathNode1, VNodeState.DOWN).await();
+        waiter.set(bpathNode1, VnodeState.DOWN).await();
 
         // Map VLAN 2 on port1 on node 2 to bpathNode2Port1.
         BigInteger dpid2 = BigInteger.valueOf(2L);
@@ -4008,8 +4009,8 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         PortMapConfig pmconf = new PortMapConfig(node2, swport, (short)2);
         Status st = vtnManager.setPortMap(bipathNode2Port1, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        waiter.set(bpathNode2Port1, VNodeState.DOWN).
-            set(bipathNode2Port1, VNodeState.DOWN, VNodeState.UNKNOWN).
+        waiter.set(bpathNode2Port1, VnodeState.DOWN).
+            set(bipathNode2Port1, VnodeState.DOWN, VnodeState.UNKNOWN).
             await();
 
         // Map a host at port 2 on node 2 to bpathMac.
@@ -4019,17 +4020,17 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         Set<EthernetHost> dlhosts =
             Collections.singleton(host.getEthernetHost());
         assertEquals(UpdateType.ADDED,
-                     vtnManager.setMacMap(bpathMac, UpdateOperation.ADD,
-                                          MacMapAclType.ALLOW, dlhosts));
-        waiter.set(bpathMac, VNodeState.DOWN).await();
+                     vtnManager.setMacMap(bpathMac, VtnUpdateOperationType.ADD,
+                                          VtnAclType.ALLOW, dlhosts));
+        waiter.set(bpathMac, VnodeState.DOWN).await();
 
         // Map VLAN 10 on port 3 on node 1 to vtpathNode1Port3.
         swport = new SwitchPort(NodeConnectorIDType.OPENFLOW, "3");
         pmconf = new PortMapConfig(node1, swport, (short)10);
         st = vtnManager.setPortMap(vtipathNode1Port3, pmconf);
         assertEquals(StatusCode.SUCCESS, st.getCode());
-        waiter.set(vtpathNode1Port3, VNodeState.DOWN).
-            set(vtipathNode1Port3, VNodeState.DOWN, VNodeState.UNKNOWN).
+        waiter.set(vtpathNode1Port3, VnodeState.DOWN).
+            set(vtipathNode1Port3, VnodeState.DOWN, VnodeState.UNKNOWN).
             await();
 
         List<String> nodeIds = new ArrayList<>();
@@ -4076,7 +4077,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Up port 2 on node 3.
         // This will activate bpathVlan0.
         ofMockService.setPortState(pids[3][2], true, false);
-        waiter.set(bpathVlan0, VNodeState.UP).await();
+        waiter.set(bpathVlan0, VnodeState.UP).await();
 
         // Create node 1.
         // This should never affect virtual node state because no edge port
@@ -4104,19 +4105,19 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Enable port 4 on node 1.
         // This will activate bpathNode1.
         ofMockService.setPortState(pids[1][4], true, false);
-        waiter.set(bpathNode1, VNodeState.UP).await();
+        waiter.set(bpathNode1, VnodeState.UP).await();
 
         // Add port 3 on node 1.
         // This will establish port mapping on vtipathNode1Port3.
         pids[1][3] = ofMockService.addPort(nid1, 3L, false);
-        waiter.set(vtipathNode1Port3, VNodeState.DOWN, VNodeState.DOWN).
+        waiter.set(vtipathNode1Port3, VnodeState.DOWN, VnodeState.DOWN).
             await();
 
         // Enable port 3 on node 1.
         // This will activate vtpathNode1Port3.
         ofMockService.setPortState(pids[1][3], true, false);
-        waiter.set(vtpathNode1Port3, VNodeState.UP).
-            set(vtipathNode1Port3, VNodeState.UP, VNodeState.UP).
+        waiter.set(vtpathNode1Port3, VnodeState.UP).
+            set(vtipathNode1Port3, VnodeState.UP, VnodeState.UP).
             await();
 
         // Create node 2.
@@ -4148,12 +4149,12 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Create port 1.
         // This will establish port mapping on bipathNode2Port1.
         pids[2][1] = ofMockService.addPort(nid2, 1L, false);
-        waiter.set(bipathNode2Port1, VNodeState.DOWN, VNodeState.DOWN).await();
+        waiter.set(bipathNode2Port1, VnodeState.DOWN, VnodeState.DOWN).await();
 
         // Enable port 1.
         ofMockService.setPortState(pids[2][1], true, false);
-        waiter.set(bpathNode2Port1, VNodeState.UP).
-            set(bipathNode2Port1, VNodeState.UP, VNodeState.UP).
+        waiter.set(bpathNode2Port1, VnodeState.UP).
+            set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).
             await();
 
         // Enable all ports, and let the vBridge at bpathVlan0 learn some
@@ -4207,7 +4208,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // This will activate bpathMac.
         sendBroadcast(ofMockService, host);
         assertTrue(bpathMacHosts.add(host.getMacAddressEntry()));
-        waiter.set(bpathMac, VNodeState.UP).await();
+        waiter.set(bpathMac, VnodeState.UP).await();
         checkMacAddressTable(bpathVlan0, bpathVlan0Hosts);
         checkMacAddressTable(bpathNode1, bpathNode1Hosts);
         checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
@@ -4232,8 +4233,8 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Disable port 1 on node 2.
         ofMockService.setPortState(pids[2][1], false, false);
-        waiter.set(bpathNode2Port1, VNodeState.DOWN).
-            set(bipathNode2Port1, VNodeState.DOWN, VNodeState.DOWN).
+        waiter.set(bpathNode2Port1, VnodeState.DOWN).
+            set(bipathNode2Port1, VnodeState.DOWN, VnodeState.DOWN).
             await();
         Set<MacAddressEntry> bpathVlan0HostsTmp =
             filterOut(bpathVlan0Hosts, pids[2][1]);
@@ -4244,7 +4245,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Disable port 2 on node 2.
         ofMockService.setPortState(pids[2][2], false, false);
-        waiter.set(bpathMac, VNodeState.DOWN).await();
+        waiter.set(bpathMac, VnodeState.DOWN).await();
         bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[2][2]);
         checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
         checkMacAddressTable(bpathNode1, bpathNode1Hosts);
@@ -4271,7 +4272,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Disable port 4 on node 1.
         ofMockService.setPortState(pids[1][4], false);
-        waiter.set(bpathNode1, VNodeState.DOWN).await();
+        waiter.set(bpathNode1, VnodeState.DOWN).await();
         bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[1][4]);
         checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
         checkMacAddressTable(bpathNode1, null);
@@ -4336,12 +4337,12 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             sendBroadcast(ofMockService, ment);
         }
 
-        waiter.set(bpathNode1, VNodeState.UP).
-            set(vtpathNode1Port3, VNodeState.UP).
-            set(vtipathNode1Port3, VNodeState.UP, VNodeState.UP).
-            set(bpathNode2Port1, VNodeState.UP).
-            set(bipathNode2Port1, VNodeState.UP, VNodeState.UP).
-            set(bpathMac, VNodeState.UP).await();
+        waiter.set(bpathNode1, VnodeState.UP).
+            set(vtpathNode1Port3, VnodeState.UP).
+            set(vtipathNode1Port3, VnodeState.UP, VnodeState.UP).
+            set(bpathNode2Port1, VnodeState.UP).
+            set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).
+            set(bpathMac, VnodeState.UP).await();
         checkMacAddressTable(bpathVlan0, bpathVlan0Hosts);
         checkMacAddressTable(bpathNode1, bpathNode1Hosts);
         checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
@@ -4351,9 +4352,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         String src = pids[2][2];
         String dst = pids[2][1];
         ofMockService.setPeerIdentifier(src, dst);
-        waiter.set(bpathNode2Port1, VNodeState.DOWN).
-            set(bipathNode2Port1, VNodeState.DOWN, VNodeState.UP).
-            set(bpathMac, VNodeState.DOWN).await();
+        waiter.set(bpathNode2Port1, VnodeState.DOWN).
+            set(bipathNode2Port1, VnodeState.DOWN, VnodeState.UP).
+            set(bpathMac, VnodeState.DOWN).await();
         bpathVlan0HostsTmp = filterOut(bpathVlan0Hosts, src);
         bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, dst);
         checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
@@ -4362,15 +4363,15 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         checkMacAddressTable(bpathMac, null);
 
         ofMockService.setPeerIdentifier(src, null);
-        waiter.set(bpathNode2Port1, VNodeState.UP).
-            set(bipathNode2Port1, VNodeState.UP, VNodeState.UP).await();
+        waiter.set(bpathNode2Port1, VnodeState.UP).
+            set(bipathNode2Port1, VnodeState.UP, VnodeState.UP).await();
         for (MacAddressEntry ment: bpathNode2Port1Hosts) {
             sendBroadcast(ofMockService, ment);
         }
         for (MacAddressEntry ment: bpathMacHosts) {
             sendBroadcast(ofMockService, ment);
         }
-        waiter.set(bpathMac, VNodeState.UP);
+        waiter.set(bpathMac, VnodeState.UP);
         checkMacAddressTable(bpathVlan0, bpathVlan0HostsTmp);
         checkMacAddressTable(bpathNode1, bpathNode1Hosts);
         checkMacAddressTable(bpathNode2Port1, bpathNode2Port1Hosts);
@@ -4389,9 +4390,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Remove node 2.
         ofMockService.removeNode(nid2);
-        waiter.set(bpathNode2Port1, VNodeState.DOWN).
-            set(bipathNode2Port1, VNodeState.DOWN, VNodeState.UNKNOWN).
-            set(bpathMac, VNodeState.DOWN).await();
+        waiter.set(bpathNode2Port1, VnodeState.DOWN).
+            set(bipathNode2Port1, VnodeState.DOWN, VnodeState.UNKNOWN).
+            set(bpathMac, VnodeState.DOWN).await();
         for (int i = 1; i < npids; i++) {
             bpathVlan0HostsTmp = filterOut(bpathVlan0HostsTmp, pids[2][i]);
         }
@@ -4402,7 +4403,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Remove node 1.
         ofMockService.removeNode(nid1);
-        waiter.set(bpathNode1, VNodeState.DOWN).await();
+        waiter.set(bpathNode1, VnodeState.DOWN).await();
         checkMacAddressTable(bpathVlan0, null);
         checkMacAddressTable(bpathNode1, null);
         checkMacAddressTable(bpathNode2Port1, null);
@@ -4597,8 +4598,8 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             assertTrue(hostSet.add(th.getEthernetHost()));
         }
         assertEquals(UpdateType.ADDED,
-                     vtnManager.setMacMap(bpath2, UpdateOperation.ADD,
-                                          MacMapAclType.ALLOW, hostSet));
+                     vtnManager.setMacMap(bpath2, VtnUpdateOperationType.ADD,
+                                          VtnAclType.ALLOW, hostSet));
 
         // Configure MAC mappings for VLAN 4095.
         Deque<VBridgePath> bpathQueue = new LinkedList<>();
@@ -4630,9 +4631,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 }
 
                 assertEquals(expected,
-                             vtnManager.setMacMap(bpath, UpdateOperation.ADD,
-                                                  MacMapAclType.ALLOW,
-                                                  hostSet));
+                             vtnManager.setMacMap(
+                                 bpath, VtnUpdateOperationType.ADD,
+                                 VtnAclType.ALLOW, hostSet));
             }
         }
 
@@ -4655,8 +4656,8 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Note that vBridge state should be DOWN because all MAC mappings are
         // still inactivated.
         VNodeStateWaiter waiter = new VNodeStateWaiter(vtnManager).
-            set(bpath1, VNodeState.DOWN).set(bpath2, VNodeState.DOWN).
-            set(bipath11, VNodeState.UP).set(bipath21, VNodeState.UP);
+            set(bpath1, VnodeState.DOWN).set(bpath2, VnodeState.DOWN).
+            set(bipath11, VnodeState.UP).set(bipath21, VnodeState.UP);
         waiter.await();
 
         // Ensure any incoming packet from internal port is ignored.
@@ -4683,9 +4684,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Send unicast packets.
         List<UnicastFlow> flows1 =
-            unicastTest(bridge1, islPorts, true, VNodeState.DOWN);
+            unicastTest(bridge1, islPorts, true, VnodeState.DOWN);
         List<UnicastFlow> flows2 =
-            unicastTest(bridge2, islPorts, true, VNodeState.DOWN);
+            unicastTest(bridge2, islPorts, true, VnodeState.DOWN);
         FlowCounter counter = new FlowCounter(ofMockService).
             add(flows1).add(flows2).verify();
 
@@ -4724,7 +4725,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         checkMacAddressTable(bpath2, bridge2.getMacAddressEntries());
 
         // Ensure that all virtual nodes are ready.
-        waiter.set(bpath1, VNodeState.UP).set(bpath2, VNodeState.UP).await();
+        waiter.set(bpath1, VnodeState.UP).set(bpath2, VnodeState.UP).await();
 
         // Verify MAC mapping state.
         for (Map.Entry<VBridgePath, Set<TestHost>> entry:
@@ -4953,7 +4954,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         VlanMapConfig vlconf = new VlanMapConfig(null, (short)0);
         VlanMap map = vtnManager.addVlanMap(bpath, vlconf);
         VNodeStateWaiter waiter = new VNodeStateWaiter(vtnManager).
-            set(bpath, VNodeState.UP);
+            set(bpath, VnodeState.UP);
         waiter.await();
 
         // Let the test vBridge learn MAC addresses.
@@ -5042,7 +5043,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
      */
     private List<UnicastFlow> unicastTest(BridgeNetwork bridge,
                                           Set<String> islPorts, boolean up,
-                                          VNodeState bridgeState)
+                                          VnodeState bridgeState)
         throws Exception {
         ArpFlowFactory factory = new ArpFlowFactory(ofMockService);
         return unicastTest(factory, bridge, islPorts, up, bridgeState);
@@ -5065,7 +5066,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                                           BridgeNetwork bridge,
                                           Set<String> islPorts, boolean up)
         throws Exception {
-        return unicastTest(factory, bridge, islPorts, up, VNodeState.UP);
+        return unicastTest(factory, bridge, islPorts, up, VnodeState.UP);
     }
 
     /**
@@ -5086,7 +5087,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
     private List<UnicastFlow> unicastTest(UnicastFlowFactory factory,
                                           BridgeNetwork bridge,
                                           Set<String> islPorts, boolean up,
-                                          VNodeState bridgeState)
+                                          VnodeState bridgeState)
         throws Exception {
         VBridgePath bpath = bridge.getPath();
         Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
@@ -5147,19 +5148,19 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
      */
     private List<UnicastFlow> unicastTest(UnicastFlowFactory factory,
                                           VBridgePath bpath,
-                                          VNodeState bridgeState,
+                                          VnodeState bridgeState,
                                           List<TestHost> srcList,
                                           List<TestHost> dstList, int nfaults,
                                           List<OfMockLink> route)
         throws Exception {
         List<UnicastFlow> flows = new ArrayList<>();
         boolean reachable = (nfaults == 0);
-        VNodeState bstate;
+        VnodeState bstate;
         if (reachable) {
             bstate = bridgeState;
             assertNotNull(route);
         } else {
-            bstate = VNodeState.DOWN;
+            bstate = VnodeState.DOWN;
             assertEquals(null, route);
         }
 
@@ -5558,7 +5559,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Ensure that the test vBridge is up.
         VNodeStateWaiter waiter = new VNodeStateWaiter(vtnManager).
-            set(bpath, VNodeState.UP);
+            set(bpath, VnodeState.UP);
         waiter.await();
 
         // Let the test vBridge learn MAC addresses.
@@ -5577,7 +5578,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         ArpFlowFactory arpfc = new ArpFlowFactory(ofMockService);
         arpfc.addMatchType(FlowMatchType.ETH_TYPE);
         List<UnicastFlow> flows00 =
-            unicastTest(arpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+            unicastTest(arpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                         route0);
 
         // Send UDP packet that should be mapped by the path policy 1.
@@ -5592,7 +5593,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             addMatchType(FlowMatchType.IP_PROTO).
             addMatchType(FlowMatchType.UDP_SRC);
         List<UnicastFlow> flows1 =
-            unicastTest(udpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+            unicastTest(udpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                         route1);
 
         // Send TCP packet that should be mapped by the path policy 2.
@@ -5608,7 +5609,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             addMatchType(FlowMatchType.IP_DSCP).
             setIdleTimeout(idle2).setHardTimeout(hard2);
         List<UnicastFlow> flows2 =
-            unicastTest(tcpfc1, bpath, VNodeState.UP, hosts0, hosts2, 0,
+            unicastTest(tcpfc1, bpath, VnodeState.UP, hosts0, hosts2, 0,
                         route2);
 
         // Send TCP packet that should be mapped by the path policy 3.
@@ -5622,7 +5623,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             addMatchType(FlowMatchType.TCP_DST).
             setIdleTimeout(idle3).setHardTimeout(hard3);
         List<UnicastFlow> flows3 =
-            unicastTest(tcpfc2, bpath, VNodeState.UP, hosts0, hosts2, 0,
+            unicastTest(tcpfc2, bpath, VnodeState.UP, hosts0, hosts2, 0,
                         route3);
 
         // Send TCP packet that should not be matched by any flow condition.
@@ -5633,7 +5634,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             addMatchType(FlowMatchType.IP_DSCP).
             addMatchType(FlowMatchType.TCP_DST);
         List<UnicastFlow> flows01 =
-            unicastTest(tcpfc3, bpath, VNodeState.UP, hosts0, hosts2, 0,
+            unicastTest(tcpfc3, bpath, VnodeState.UP, hosts0, hosts2, 0,
                         route0);
 
         UnicastFlow.verifyFlows(flows00, true, false);
@@ -5673,15 +5674,15 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         counter.clear().verify();
 
         // Restore unicast flows in reverse order.
-        flows01 = unicastTest(tcpfc3, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows01 = unicastTest(tcpfc3, bpath, VnodeState.UP, hosts0, hosts2, 0,
                               route0);
-        flows3 = unicastTest(tcpfc2, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows3 = unicastTest(tcpfc2, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route3);
-        flows2 = unicastTest(tcpfc1, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows2 = unicastTest(tcpfc1, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route2);
-        flows1 = unicastTest(udpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows1 = unicastTest(udpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route1);
-        flows00 = unicastTest(arpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows00 = unicastTest(arpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                               route0);
 
         // Set 1 to the default cost for the path policy 1.
@@ -5705,7 +5706,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Now the path policy 1 will choose the shortest path for packets
         // from nodeIds[0] to nodeIds[2].
-        flows1 = unicastTest(udpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows1 = unicastTest(udpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route0);
 
         // Increase the cost for transmitting packet from nodeIds[3] to
@@ -5747,7 +5748,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         link = getInterSwitchLink(nodeIds[1], nodeIds[2]);
         assertNotNull(link);
         route2.add(link);
-        flows2 = unicastTest(tcpfc1, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows2 = unicastTest(tcpfc1, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route2);
         UnicastFlow.verifyFlows(flows00, true, false);
         UnicastFlow.verifyFlows(flows01, true, false);
@@ -5785,7 +5786,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         link = getInterSwitchLink(nodeIds[1], nodeIds[2]);
         assertNotNull(link);
         route3.add(link);
-        flows3 = unicastTest(tcpfc2, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows3 = unicastTest(tcpfc2, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route3);
 
         UnicastFlow.verifyFlows(flows00, true, false);
@@ -5817,7 +5818,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             addMatchType(FlowMatchType.IP_PROTO).
             addMatchType(FlowMatchType.TCP_DST).
             setIdleTimeout(idle3).setHardTimeout(hard3);
-        flows2 = unicastTest(tcpfc1, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows2 = unicastTest(tcpfc1, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route3);
         counter.clear().add(flows00).add(flows01).add(flows1).add(flows2).
             add(flows3).verify();
@@ -5854,20 +5855,20 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         tcpfc3.clearMatchType().
             addMatchType(FlowMatchType.ETH_TYPE).
             addMatchType(FlowMatchType.IP_PROTO);
-        flows00 = unicastTest(arpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows00 = unicastTest(arpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                               route0);
-        flows01 = unicastTest(tcpfc3, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows01 = unicastTest(tcpfc3, bpath, VnodeState.UP, hosts0, hosts2, 0,
                               route0);
-        flows1 = unicastTest(udpfc, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows1 = unicastTest(udpfc, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route0);
 
         // Unicast flows that will be created by tcpfc1 and tcpfc2 should be
         // forwarded by flow entries craeted by tcpfc3.
         tcpfc1.setAlreadyMapped(true);
         tcpfc2.setAlreadyMapped(true);
-        flows2 = unicastTest(tcpfc1, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows2 = unicastTest(tcpfc1, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route0);
-        flows3 = unicastTest(tcpfc2, bpath, VNodeState.UP, hosts0, hosts2, 0,
+        flows3 = unicastTest(tcpfc2, bpath, VnodeState.UP, hosts0, hosts2, 0,
                              route0);
         counter.clear().add(flows00).add(flows01).add(flows1).verify();
 

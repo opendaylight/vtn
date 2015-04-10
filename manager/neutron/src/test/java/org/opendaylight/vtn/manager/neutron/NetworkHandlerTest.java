@@ -20,21 +20,18 @@ import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.IVTNManager;
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.MacMap;
-import org.opendaylight.vtn.manager.MacMapAclType;
 import org.opendaylight.vtn.manager.MacMapConfig;
 import org.opendaylight.vtn.manager.PathMap;
 import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
-import org.opendaylight.vtn.manager.UpdateOperation;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
 import org.opendaylight.vtn.manager.VBridgePath;
 import org.opendaylight.vtn.manager.VInterface;
 import org.opendaylight.vtn.manager.VInterfaceConfig;
-import org.opendaylight.vtn.manager.VNodeState;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenant;
 import org.opendaylight.vtn.manager.VTenantConfig;
@@ -46,7 +43,6 @@ import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VlanMap;
 import org.opendaylight.vtn.manager.VlanMapConfig;
 import org.opendaylight.vtn.manager.flow.DataFlow;
-import org.opendaylight.vtn.manager.flow.DataFlow.Mode;
 import org.opendaylight.vtn.manager.flow.DataFlowFilter;
 import org.opendaylight.vtn.manager.flow.cond.FlowCondition;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
@@ -60,6 +56,12 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.neutron.spi.NeutronNetwork;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnAclType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
+
 /**
  * JUnit test for {@link NetworkHandler}
  */
@@ -1454,14 +1456,14 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
         if (path.equals(bridge1)) {
             VBridgeConfig bconf = new VBridgeConfig(null);
             VBridge bridge = new VBridge(bridgeName1,
-                                         VNodeState.UNKNOWN,
+                                         VnodeState.UNKNOWN,
                                          0,
                                          bconf);
             return bridge;
         } else if ((path.equals(bridge2)) || (path.equals(bridge3))) {
             VBridgeConfig bconf = new VBridgeConfig(defaultVBridgeDescription);
             VBridge bridge = new VBridge(bridgeName1,
-                                         VNodeState.UNKNOWN,
+                                         VnodeState.UNKNOWN,
                                          0,
                                          bconf);
             return bridge;
@@ -1554,7 +1556,7 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
         // Bridge1
         VBridgeConfig bconf1 = new VBridgeConfig(null);
         VBridge bridge1 = new VBridge(bridgeName1,
-                                         VNodeState.UNKNOWN,
+                                         VnodeState.UNKNOWN,
                                          0,
                                          bconf1);
         bridges.add(bridge1);
@@ -1563,7 +1565,7 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
         if (addBridge2ForGetVlanMap) {
             VBridgeConfig bconf2 = new VBridgeConfig(null);
             VBridge bridge2 = new VBridge(bridgeName2,
-                                             VNodeState.UNKNOWN,
+                                             VnodeState.UNKNOWN,
                                              0,
                                              bconf2);
             bridges.add(bridge2);
@@ -1574,7 +1576,7 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
         if (throwExceptionForGetVlanMap) {
             VBridgeConfig bconf3 = new VBridgeConfig(null);
             VBridge bridge3 = new VBridge(bridgeName3,
-                                             VNodeState.UNKNOWN,
+                                             VnodeState.UNKNOWN,
                                              0,
                                              bconf3);
             bridges.add(bridge3);
@@ -1823,7 +1825,9 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
     }
 
     @Override
-    public Set<DataLinkHost> getMacMapConfig(VBridgePath path, MacMapAclType aclType) throws VTNException {
+    public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
+                                             VtnAclType aclType)
+        throws VTNException {
         return null;
     }
 
@@ -1838,13 +1842,16 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
     }
 
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op, MacMapConfig mcconf) throws VTNException {
+    public UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
+                                MacMapConfig mcconf) throws VTNException {
         return null;
     }
 
     @Override
-    public UpdateType setMacMap(VBridgePath path, UpdateOperation op, MacMapAclType aclType,
-            Set<? extends DataLinkHost> dlhosts) throws VTNException {
+    public UpdateType setMacMap(VBridgePath path, VtnUpdateOperationType op,
+                                VtnAclType aclType,
+                                Set<? extends DataLinkHost> dlhosts)
+        throws VTNException {
         return null;
     }
 
@@ -1878,13 +1885,14 @@ class VTNManagerStubForNetworkHandler implements IVTNManager {
     }
 
     @Override
-    public List<DataFlow> getDataFlows(VTenantPath path, Mode mode,
+    public List<DataFlow> getDataFlows(VTenantPath path, DataFlowMode mode,
             DataFlowFilter filter, int interval) throws VTNException {
         return null;
     }
 
     @Override
-    public DataFlow getDataFlow(VTenantPath path, long flowId, Mode mode, int interval)
+    public DataFlow getDataFlow(VTenantPath path, long flowId,
+                                DataFlowMode mode, int interval)
         throws VTNException {
         return null;
     }

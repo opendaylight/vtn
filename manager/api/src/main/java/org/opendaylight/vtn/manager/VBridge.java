@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.vtn.manager.util.VTNIdentifiable;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * {@code VBridge} class describes the vBridge (virtual L2 bridge) information.
  *
@@ -47,7 +49,7 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2155368684781669955L;
+    private static final long serialVersionUID = 3227947022547796551L;
 
     /**
      * The name of the vBridge.
@@ -60,7 +62,7 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
      *
      * @see  <a href="package-summary.html#vBridge.status">vBridge status</a>
      */
-    private VNodeState  state;
+    private VnodeState  state;
 
     /**
      * The number of path faults detected inside the vBridge.
@@ -87,12 +89,27 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
     private int  faults;
 
     /**
+     * Convert the given integer value into a {@link VnodeState} instance.
+     *
+     * @param st  An integer value which represents the virtual node state.
+     * @return   A {@link VnodeState} instance.
+     */
+    static VnodeState toVnodeState(int st) {
+        VnodeState state = VnodeState.forValue(st);
+        if (state == null) {
+            state = VnodeState.UNKNOWN;
+        }
+
+        return state;
+    }
+
+    /**
      * Private constructor used for JAXB mapping.
      */
     @SuppressWarnings("unused")
     private VBridge() {
         super(null);
-        state = VNodeState.UNKNOWN;
+        state = VnodeState.UNKNOWN;
     }
 
     /**
@@ -102,9 +119,9 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
      *
      * @param bridgeName  The name of the vBridge.
      * @param state
-     *   A {@link VNodeState} object which represents the
+     *   A {@link VnodeState} object which represents the
      *   {@linkplain <a href="package-summary.html#vBridge.status">state of the vBridge</a>}.
-     *   The state will be treated as {@linkplain VNodeState#UNKNOWN UNKNOWN}
+     *   The state will be treated as {@linkplain VnodeState#UNKNOWN UNKNOWN}
      *   if {@code null} is specified.
      * @param faults      The number of path faults detected inside the
      *                    vBridge.
@@ -115,14 +132,14 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
      * @throws NullPointerException
      *    {@code bconf} is {@code null}.
      */
-    public VBridge(String bridgeName, VNodeState state, int faults,
+    public VBridge(String bridgeName, VnodeState state, int faults,
                    VBridgeConfig bconf) {
         super(bconf.getDescription(), bconf.getAgeInterval());
         name = bridgeName;
         this.faults = faults;
 
         if (state == null) {
-            this.state = VNodeState.UNKNOWN;
+            this.state = VnodeState.UNKNOWN;
         } else {
             this.state = state;
         }
@@ -143,26 +160,26 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
      *
      * <ul>
      *   <li>
-     *     {@link VNodeState#UP} is returned when the vBridge is in
+     *     {@link VnodeState#UP} is returned when the vBridge is in
      *     {@linkplain <a href="package-summary.html#vBridge.status.UP">UP</a>}
      *     state.
      *   </li>
      *   <li>
-     *     {@link VNodeState#DOWN} is returned when the vBridge is in
+     *     {@link VnodeState#DOWN} is returned when the vBridge is in
      *     {@linkplain <a href="package-summary.html#vBridge.status.DOWN">DOWN</a>}
      *     state.
      *   </li>
      *   <li>
-     *     {@link VNodeState#UNKNOWN} is returned when the vBridge is in
+     *     {@link VnodeState#UNKNOWN} is returned when the vBridge is in
      *     {@linkplain <a href="package-summary.html#vBridge.status.UNKNOWN">UNKNOWN</a>}
      *     state.
      *   </li>
      * </ul>
      *
-     * @return  A {@link VNodeState} object which represents the state of
+     * @return  A {@link VnodeState} object which represents the state of
      *          the vBridge.
      */
-    public VNodeState getState() {
+    public VnodeState getState() {
         return state;
     }
 
@@ -207,22 +224,22 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
      *   <ul>
      *     <li>
      *       <strong>1</strong> gets configured when the vBridge is in
-     *       {@link VNodeState#UP UP} state.
+     *       UP state.
      *     </li>
      *     <li>
      *       <strong>0</strong> gets configured when the vBridge is in
-     *       {@link VNodeState#DOWN DOWN} state.
+     *       DOWN state.
      *     </li>
      *     <li>
      *       <strong>-1</strong> gets configured when the vBridge is in
-     *       {@link VNodeState#UNKNOWN UNKNOWN} state.
+     *       UNKNOWN state.
      *     </li>
      *   </ul>
      * @deprecated  Only for JAXB. Use {@link #getState()} instead.
      */
     @XmlAttribute(name = "state")
     public int getStateValue() {
-        return state.getValue();
+        return state.getIntValue();
     }
 
     /**
@@ -236,7 +253,7 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
      */
     @SuppressWarnings("unused")
     private void setStateValue(int st) {
-        this.state = VNodeState.valueOf(st);
+        this.state = toVnodeState(st);
     }
 
     // Object

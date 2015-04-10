@@ -12,12 +12,63 @@ module vtn-flow {
     namespace "urn:opendaylight:vtn:flow";
     prefix vflow;
 
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-flow-condition {
+        prefix vfcond;
+        revision-date 2015-03-13;
+    }
+    import vtn-flow-action {
+        prefix vaction;
+        revision-date 2015-04-10;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    /* OpenDaylight openflowplugin */
+    import opendaylight-flow-types {
+        prefix flow;
+        revision-date 2013-10-26;
+    }
+    import opendaylight-action-types {
+        prefix action;
+        revision-date 2013-11-12;
+    }
+    import opendaylight-statistics-types {
+        prefix stat;
+        revision-date 2013-09-25;
+    }
+
     description
       "The module that describes the data flow information established by
        the VTN Manager.";
 
     revision 2015-04-10 {
         description "Initial revision.";
+    }
+
+    /*
+     * Data types for flow entry
+     */
+
+    typedef vtn-flow-id {
+        description  "Identifier for a VTN data flow.";
+        type flow:flow-cookie;
+    }
+
+    grouping vtn-flow-identifiable {
+        description "Describes an interface that specifies a VTN data flow.";
+
+        leaf flow-id {
+            description "Identifier for a VTN data flow.";
+            type vtn-flow-id;
+        }
     }
 
     /*
@@ -80,6 +131,401 @@ module vtn-flow {
                    Currently the VTN Manager never set this reason because
                    the virtual node link is not yet supported.";
                 value 5;
+            }
+        }
+    }
+
+    grouping virtual-route-info {
+        description
+          "This model is used to represent the virtual packet routing
+           within the VTN.
+
+           The route of the packet from the source to the destination virtual
+           node is represented by a sequence of `virtual-route-info'
+           instances. Note that this model may be empty if it indicates that
+           the data flow is terminated without packet forwarding.";
+
+        container virtual-node-path {
+            description
+              "Describes the location of the virtual node inside the VTN.
+               Note that this container is omitted if this model indicates
+               that the data flow is terminated without packet forwarding.";
+            uses vtype:vnode-path-fields;
+        }
+
+        leaf reason {
+            description
+              "Describes the reason why the packet is forwarded to the
+               virtual node.
+               Note that this field is omitted if this model indicates
+               that the data flow is terminated without packet forwarding.";
+            type virtual-route-reason;
+        }
+    }
+
+    grouping physical-route-info {
+        description
+          "Describes a pair of input and output switch port within the
+           same physical switch.
+
+           An instance of `physical-route-info' represents two physical ports
+           in the same physical switch. The route of the packet in the
+           physlcal network from the source to the destination physical
+           switch port is represented by a sequence of `physical-route-info'
+           instances.";
+
+        leaf node {
+            description "Identifier for a physical switch.";
+            type inv:node-id;
+        }
+
+        container physical-ingress-port {
+            description
+              "Identifier for the switch port where the packet is received.";
+            uses vtype:vtn-switch-port;
+        }
+
+        container physical-egress-port {
+            description
+              "Identifier for the switch port to which the packet is sent.";
+            uses vtype:vtn-switch-port;
+        }
+    }
+
+    grouping vtn-data-flow-common {
+        description
+          "Describes a common information about a data flow established by
+           the VTN Manager.";
+
+        uses vtn-flow-identifiable;
+
+        leaf creation-time {
+            description
+              "The creation time of the VTN data flow.
+               This field keeps the number of milliseconds between the
+               creation time and 1970-01-01T00:00:00+0000.";
+            type int64;
+        }
+
+        list virtual-route {
+            description
+              "A sequence of `virtual-route-info' which represents the packet
+               route in the virtual network.
+
+               This list is omitted if the virtual packet route is not
+               configured.
+
+               Note that elements in this list needs to be sorted by `order'
+               field in ascending order.";
+            uses action:ordered;
+            uses virtual-route-info;
+        }
+    }
+
+    /*
+     * RPC definitions
+     */
+
+    grouping averaged-flow-stats-fields {
+        description
+          "Describes the averaged flow statistics per second.";
+
+        leaf packet-count {
+            description
+              "The averaged number of packets per second forwarded by the
+               flow entry.";
+            type decimal64 {
+                fraction-digits 2;
+            }
+        }
+
+        leaf byte-count {
+            description
+              "The averaged number of bytes in packets per second forwarded
+               by the flow entry.";
+            type decimal64 {
+                fraction-digits 2;
+            }
+        }
+
+        leaf start-time {
+            description
+              "The system time when the measurement period begins.
+               The value in this field represents the number of milliseconds
+               between the start time and 1970-01-01T00:00:00+0000.";
+            type int64;
+        }
+
+        leaf end-time {
+            description
+              "The system time when the measurement period ends.
+               The value in this field represents the number of milliseconds
+               between the end time and 1970-01-01T00:00:00+0000.";
+            type int64;
+        }
+    }
+
+    grouping vtn-data-flow-info {
+        description
+          "Describes a data flow established by the VTN Manager.";
+
+        uses vtn-data-flow-common;
+        uses vtype:vtn-flow-timeout-config;
+
+        container data-ingress-node {
+            description
+              "The location of the virtual node which maps the incoming
+               packet.";
+            uses vtype:vnode-path-fields;
+        }
+
+        container data-ingress-port {
+            description
+              "The location of the physical switch port where the incoming
+               packet is received.";
+            uses vtype:vtn-port-location;
+        }
+
+        container data-egress-node {
+            description
+              "The location of the virtual node which sends the outgoing
+               packet to the physical network.
+               Note that this container is omitted if this data flow discards
+               the packet.";
+            uses vtype:vnode-path-fields;
+        }
+
+        container data-egress-port {
+            description
+              "The location of the physical switch port to which the outgoing
+               packet is sent.
+               Note that this container is omitted if this data flow discards
+               the packet.";
+            uses vtype:vtn-port-location;
+        }
+
+        container data-flow-match {
+            description
+              "The flow condition configured in the ingress flow entry.
+               This container is omitted if the flow condition is not
+               configured.";
+            uses vfcond:vtn-match-fields;
+        }
+
+        list data-flow-action {
+            description
+              "A list of flow actions to be applied to the packet by the
+               egress flow entry.
+
+               This list is omitted if a list of flow actions is not
+               configured. Am empty list is configured if this data flow
+               forwards packets without any modification.
+
+               Note that elements in this list needs to be sorted by `order'
+               field in ascending order.";
+            uses vaction:vtn-ordered-flow-action;
+        }
+
+        list physical-route {
+            description
+              "A sequence of `physical-route-info' which represents the packet
+               route in the physical network.
+
+               This list is omitted if this data flow discards the packet,
+               or if the physical packet route is not configured.
+
+               Note that elements in this list needs to be sorted by `order'
+               field in ascending order.";
+            uses action:ordered;
+            uses physical-route-info;
+        }
+
+        container data-flow-stats {
+            description
+              "Statistics information about this data flow.
+               This container is omitted if statistics information is
+               unavailable, or it is not configured.";
+            uses stat:generic-statistics;
+        }
+
+        container averaged-flow-stats {
+            description
+              "Statistics information per second about this data flow.
+               This container is omitted if statistics information is
+               unavailable, or it is not configured.";
+            uses averaged-flow-stats-fields;
+        }
+    }
+
+    typedef data-flow-mode {
+        description
+          "Describes modes used to query information about data flow.";
+
+        type enumeration {
+            enum SUMMARY {
+                description
+                  "Indicates that summarized information is required.
+                   If this mode is specified, the following fields in
+                   `vtn-data-flow-info' are omitted.
+
+                   - `data-flow-match':
+                     The flow condition configured in the ingress flow entry.
+                   - `data-flow-action':
+                     Actions to be applied to the packet by the egress flow
+                     entry.
+                   - `virtual-route':
+                     The route of the packet in the virtual network.
+                   - `physical-route':
+                     The route of the packet in the physical network.
+                   - `data-flow-stats':
+                     Statistics information.
+                   - `averaged-flow-stats':
+                     Averaged flow statistics information.";
+                value 0;
+            }
+
+            enum DETAIL {
+                description
+                  "Indicates that detailed information is required.
+                   If this mode is specified, all fields in
+                   `vtn-data-flow-info' are filled if available.
+                   `data-flow-stats' keeps statistics cached in the
+                   controller, which is updated every 10 seconds.";
+                value 1;
+            }
+
+            enum UPDATESTATS {
+                description
+                  "Same as `DETAIL', but always make requests to physical
+                   switches to get flow statistics.";
+                value 2;
+            }
+        }
+    }
+
+    rpc get-data-flow {
+        description
+          "Return information about data flows specified by the RPC input.
+
+           The RPC input specifies the condition to select data flows to be
+           returned. If more than one conditions are specified, data flows
+           that meets all the specified conditions will be returned.
+
+           If `flow-id' is specified, only a data flow specified by the
+           flow ID will be selected.
+
+           If `node' is specified, only data flows that forward packets via
+           the specified switch will be selected.
+
+           If `data-flow-port' is specified, only data flows that forward
+           packets via the specified switch port will be selected.
+           Note that `data-flow-port' field is ignored unless `node' field
+           is specified.
+
+           If `data-flow-source' is specified, only data flows that map
+           packets sent by the specified L2 host will be selected.
+
+           On successful completion, information about data flows specified
+           by the RPC input is set to the RPC output.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified VTN is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf tenant-name {
+                description "The name of the VTN.";
+                type string;
+                mandatory true;
+            }
+
+            uses vtn-flow-identifiable;
+
+            leaf mode {
+                description "Specifies behavior of this operation.";
+                type data-flow-mode;
+            }
+
+            leaf node {
+                description "Identifier for a physical switch.";
+                type inv:node-id;
+            }
+
+            container data-flow-port {
+                description
+                  "Specifies the location of the physical switch port in the
+                   physical switch specified by `node' field.";
+                uses vtype:vtn-switch-port;
+            }
+
+            container data-flow-source {
+                description
+                  "Specifies the L2 source host of the data flow.";
+                uses vtype:vlan-host;
+            }
+
+            leaf average-interval {
+                description
+                  "The number of seconds in the measurement period for
+                   averaged flow statistics. `averaged-flow-stats' field is
+                   omitted if no valid flow statistics are logged within the
+                   given interval. Specifying zero or a negative value is
+                   treated as if 10 is specified.
+                   Note that this value is just a hint for determining the
+                   measurement period. The actual measurement period can be
+                   derived from `averaged-flow-stats' field.
+                   This field is ignored if SUMMARY is specified in `mode'.";
+                type int32;
+                default 10;
+            }
+        }
+
+        output {
+            list data-flow-info {
+                description
+                  "A list of information about data flows that meets the
+                   condition specified by the RPC input.";
+                uses vtn-data-flow-info;
+            }
+        }
+    }
+
+    rpc get-data-flow-count {
+        description
+          "Return the number of data flows present in the specified VTN.
+
+           On successful completion, the number of data flows is set to the
+           RPC output.
+
+           On failure, one of vtn-error-tag value which indicates the cause
+           of error is set into application tag in RPC error.
+
+           `BADREQUEST' is set if the RPC input contains invalid data.
+
+           `NOTFOUND' is set if the specified VTN is not present.
+
+           `INTERNALERROR' is set if the operation failed due to internal
+           error.";
+
+        input {
+            leaf tenant-name {
+                description "The name of the VTN.";
+                type string;
+                mandatory true;
+            }
+        }
+
+        output {
+            leaf count {
+                description
+                  "The number of data flows present in the specified VTN.";
+                type int32;
             }
         }
     }

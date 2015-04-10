@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,6 +23,9 @@ import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
 import org.opendaylight.controller.sal.utils.NodeCreator;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
+
 /**
  * JUnit test for {@link VBridgeIfPath}.
  */
@@ -43,6 +46,7 @@ public class VBridgeIfPathTest extends TestBase {
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vBridge-IF", path.getNodeType());
                     checkRedirectFilter(path);
+                    checkVirtualNodePath(path);
 
                     path = new VBridgeIfPath(bpath, iname);
                     assertEquals(tname, path.getTenantName());
@@ -50,10 +54,12 @@ public class VBridgeIfPathTest extends TestBase {
                     assertEquals(iname, path.getInterfaceName());
                     assertEquals("vBridge-IF", path.getNodeType());
                     checkRedirectFilter(path);
+                    checkVirtualNodePath(path);
 
                     VTenantPath clone = path.clone();
-                    assertNotSame(clone, path);
-                    assertEquals(clone, path);
+                    assertNotSame(path, clone);
+                    assertEquals(path, clone);
+                    checkVirtualNodePath(clone);
 
                     for (String name: new String[]{null, tname + "_new"}) {
                         VBridgeIfPath path1 = path.replaceTenantName(name);
@@ -62,6 +68,7 @@ public class VBridgeIfPathTest extends TestBase {
                         assertEquals(iname, path1.getInterfaceName());
                         assertEquals("vBridge-IF", path1.getNodeType());
                         checkRedirectFilter(path1);
+                        checkVirtualNodePath(path1);
                     }
                 }
             }
@@ -100,14 +107,14 @@ public class VBridgeIfPathTest extends TestBase {
         String iname = "if_1";
         VBridgeIfPath path = new VBridgeIfPath("tenant", "vbridge", iname);
         VInterfaceConfig iconf = new VInterfaceConfig("vBridge 1", null);
-        VInterface vif = new VInterface(iname, VNodeState.DOWN,
-                                        VNodeState.UNKNOWN, iconf);
+        VInterface vif = new VInterface(iname, VnodeState.DOWN,
+                                        VnodeState.UNKNOWN, iconf);
         UpdateType type = UpdateType.ADDED;
         List<List<Object>> expected = new ArrayList<List<Object>>();
         expected.add(toList(path, vif, type));
         path.vInterfaceChanged(listener, vif, type);
 
-        vif = new VInterface(iname, VNodeState.UP, VNodeState.UP, iconf);
+        vif = new VInterface(iname, VnodeState.UP, VnodeState.UP, iconf);
         type = UpdateType.CHANGED;
         expected.add(toList(path, vif, type));
         path.vInterfaceChanged(listener, vif, type);
@@ -295,5 +302,22 @@ public class VBridgeIfPathTest extends TestBase {
             assertEquals(path, rf.getDestination());
             assertEquals(b, rf.isOutput());
         }
+    }
+
+    /**
+     * Test case for {@link VBridgeIfPath#toVirtualNodePath()}.
+     *
+     * @param path  A {@link VTenantPath} to be tested.
+     */
+    private void checkVirtualNodePath(VTenantPath path) {
+        assertTrue(path instanceof VBridgeIfPath);
+        VBridgeIfPath bipath = (VBridgeIfPath)path;
+
+        VirtualNodePath vpath = path.toVirtualNodePath();
+        assertEquals(bipath.getTenantName(), vpath.getTenantName());
+        assertEquals(bipath.getBridgeName(), vpath.getBridgeName());
+        assertEquals(bipath.getInterfaceName(), vpath.getInterfaceName());
+        assertEquals(null, vpath.getRouterName());
+        assertEquals(null, vpath.getTerminalName());
     }
 }

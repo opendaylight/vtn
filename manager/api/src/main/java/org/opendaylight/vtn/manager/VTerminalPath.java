@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,9 @@
  */
 
 package org.opendaylight.vtn.manager;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 
 /**
  * {@code VTerminalPath} class describes the position of the
@@ -28,7 +31,7 @@ public class VTerminalPath extends VNodePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4095702145474291746L;
+    private static final long serialVersionUID = -534834320940791737L;
 
     /**
      * A string which represents that the node type is vTerminal.
@@ -89,6 +92,8 @@ public class VTerminalPath extends VNodePath {
         return getTenantNodeName();
     }
 
+    // VTenantPath
+
     /**
      * {@inheritDoc}
      *
@@ -99,6 +104,21 @@ public class VTerminalPath extends VNodePath {
     public String getNodeType() {
         return NODETYPE_VTERMINAL;
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @since  Lithium
+     */
+    @Override
+    public VirtualNodePath toVirtualNodePath() {
+        return new VirtualNodePathBuilder().
+            setTenantName(getTenantName()).
+            setTerminalName(getTenantNodeName()).
+            build();
+    }
+
+    // VNodePath
 
     /**
      * Convert this instance into a {@link VNodeLocation} instance.

@@ -57,6 +57,7 @@ import org.opendaylight.controller.sal.utils.NodeCreator;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 
 /**
@@ -751,18 +752,24 @@ public class DataFlowTest extends TestBase {
     }
 
     /**
-     * Test case for {@link DataFlow.Mode} class.
+     * Test case for {@link DataFlowMode} class.
      */
     @Test
     public void testMode() {
-        DataFlow.Mode[] values = DataFlow.Mode.values();
+        DataFlowMode[] values = DataFlowMode.values();
         assertEquals(3, values.length);
-        assertEquals(DataFlow.Mode.SUMMARY, values[0]);
-        assertEquals(DataFlow.Mode.DETAIL, values[1]);
-        assertEquals(DataFlow.Mode.UPDATE_STATS, values[2]);
-        assertEquals(0, DataFlow.Mode.SUMMARY.ordinal());
-        assertEquals(1, DataFlow.Mode.DETAIL.ordinal());
-        assertEquals(2, DataFlow.Mode.UPDATE_STATS.ordinal());
+        assertEquals(DataFlowMode.SUMMARY, values[0]);
+        assertEquals(DataFlowMode.DETAIL, values[1]);
+        assertEquals(DataFlowMode.UPDATESTATS, values[2]);
+        assertEquals(DataFlowMode.SUMMARY, DataFlowMode.forValue(0));
+        assertEquals(DataFlowMode.DETAIL, DataFlowMode.forValue(1));
+        assertEquals(DataFlowMode.UPDATESTATS, DataFlowMode.forValue(2));
+        assertEquals(0, DataFlowMode.SUMMARY.ordinal());
+        assertEquals(1, DataFlowMode.DETAIL.ordinal());
+        assertEquals(2, DataFlowMode.UPDATESTATS.ordinal());
+        assertEquals(0, DataFlowMode.SUMMARY.getIntValue());
+        assertEquals(1, DataFlowMode.DETAIL.getIntValue());
+        assertEquals(2, DataFlowMode.UPDATESTATS.getIntValue());
     }
 
     /**
