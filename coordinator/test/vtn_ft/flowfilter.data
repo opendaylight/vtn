@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -15,8 +15,19 @@ nmg_name=test1
 priority=7
 dscp=55
 direction=in
-type_in=in
-type_out=out
+type=in
+index=10
+condition=flowlist1
+
+[VTNFlowfilterOneOut]
+seqnum=10
+fl_name=flowlist1
+action_type=pass
+nmg_name=test1
+priority=7
+dscp=55
+direction=in
+type=out
 index=10
 condition=flowlist1
 
@@ -28,8 +39,7 @@ nmg_name=test1
 priority=7
 dscp=55
 direction=in
-type_in=in
-type_out=out
+type=in
 index=11
 condition=flowlist1
 
@@ -38,15 +48,13 @@ seqnum=10
 fl_name=flowlist1
 action_type=redirect
 nmg_name=test1
-priority=7
 dscp=55
 vnode_name=vbrtwo
 if_name=vbriftwo
 direction=in
-macdstaddr=0123.4567.89ab
-macsrcaddr=0123.4567.89ab
-type_in=in
-type_out=out
+macdstaddr=f0f1.f2f3.f4f5
+macsrcaddr=f0f1.f2f3.f2f5
+type=in
 index=10
 condition=flowlist1
 bridge=vnode_1
@@ -54,6 +62,83 @@ interface=if_1
 output=false
 address=f0:f1:f2:f3:f4:f5
 priority= 7
+
+[FlowfilterOnePass]
+seqnum=10
+fl_name=flowlist1
+action_type=pass
+nmg_name=test1
+dscp=55
+direction=in
+type=in
+index=10
+condition=flowlist1
+output=false
+priority= 7
+
+
+[FlowfilterOneDrop]
+seqnum=10
+fl_name=flowlist1
+action_type=drop
+nmg_name=test1
+dscp=55
+direction=in
+type=in
+index=10
+condition=flowlist1
+output=false
+priority=7
+
+[UpdateFlowfilterOnePass]
+seqnum=10
+fl_name=flowlist1
+action_type=drop
+nmg_name=test1
+dscp=54
+direction=in
+type=in
+index=10
+condition=flowlist1
+output=false
+priority= 6
+
+[UpdateFlowfilterOneDrop]
+seqnum=10
+fl_name=flowlist1
+action_type=pass
+nmg_name=test1
+dscp=5
+direction=in
+type=in
+index=10
+condition=flowlist1
+output=false
+priority= 5
+
+
+
+
+[FlowfilterOneOut]
+seqnum=10
+fl_name=flowlist1
+action_type=redirect
+nmg_name=test1
+dscp=55
+vnode_name=vbrtwo
+if_name=vbriftwo
+direction=in
+macsrcaddr=f0f1.f2f3.f4f5
+macdstaddr=f0f1.f2f3.f2f5
+type=out
+index=10
+condition=flowlist1
+bridge=vnode_1
+interface=if_1
+output=false
+address=f0:f1:f2:f3:f4:f5
+priority= 7
+
 
 [FlowfilterTwo]
 seqnum=11
@@ -67,8 +152,7 @@ if_name=vbrifone
 direction=in
 macdstaddr=0123.4567.89ab
 macsrcaddr=0123.4567.89ab
-type_in=in
-type_out=out
+type=in
 index=11
 condition=flowlist2
 bridge=vnode_2
@@ -80,9 +164,102 @@ priority= 7
 [UpdateFlowfilter]
 vnode_name=vbrthree
 if_name=vbrifthree
+macdstaddr=f0f1.f2f3.f4f5
+macsrcaddr=f0f1.f2f3.f2f5
+priority=5
+dscp=5
+type=in
+action_type=redirect
+fl_name=flowlist1
+seqnum=10
+direction=in
+
+[UpdateFlowfilterOne]
+seqnum=10
+fl_name=flowlist1
+action_type=redirect
+nmg_name=test1
+dscp=55
+vnode_name=vbrthree
+if_name=vbrifthree
+direction=in
+macsrcaddr=f0f1.f2f3.f4f5
+macdstaddr=f0f1.f2f3.f2f5
+type=out
+index=10
+condition=flowlist1
+bridge=vnode_1
+interface=if_1
+output=false
+address=f0:f1:f2:f3:f4:f5
+priority= 7
+
+[NegativeFlowfilter]
+dscp =65
+priority=8
+vnode_name=vbrthree
+if_name=vbrifthree
+macdstaddr=f0f1.f2f3.f4f5
+macsrcaddr=f0f1.f2f3.f2f5
+type=in
+action_type=redirect
+fl_name=flowlist1
+seqnum=10
+direction=in
+
+[NegativeFlowfilterOne]
+dscp =65
+priority=8
+vnode_name=vbrthree
+if_name=vbrifthree
+macdstaddr=f0f1.f2f3.f4f5
+macsrcaddr=f0f1.f2f3.f2f5
+type=out
+action_type=redirect
+fl_name=flowlist1
+seqnum=10
+direction=in
+
+
+[UpdateRedirect]
+seqnum=10
+fl_name=flowlist1
+action_type=redirect
+nmg_name=test1
+priority=7
+dscp=55
+direction=in
+vnode_name=vtermone
+if_name=vtermifone
+macdstaddr=f0f1.f2f3.f4f5
+macsrcaddr=f0f1.f2f3.f3f5
+type=in
+index=10
+condition=flowlist1
+bridge=vnode_1
+interface=if_1
+output=false
+address=f0:f1:f2:f3:f3:f5
+priority= 7
+
+
+[NegativeFlowfilter]
+dscp =65
+priority=8
+vnode_name=vbrthree
+if_name=vbrifthree
+
 
 [UpdateVTNFlowfilter]
 priority=3
+dscp =33
+
+[NegativeVTNFlowfilter]
+priority=8
+dscp =65
+
+
+
 
 [FlowfilterURL]
 url=/flowfilters.json

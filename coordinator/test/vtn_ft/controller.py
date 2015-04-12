@@ -401,7 +401,8 @@ def update_controller_ex(blockname,ipaddr="",version="",auditstatus="",
 def check_controller_state(blockname,state):
     test_url =  vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['url']
     url = coordinator_url + test_url
-
+    if state == 'down':
+       time.sleep(45)
     r = requests.get(url,headers=def_header)
     while(1):
         try:
