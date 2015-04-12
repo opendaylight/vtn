@@ -78,7 +78,7 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
     test_vterm_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['vterm_url']
     test_vtermif_url = vtn_testconfig.ReadValues(VTERMIFDATA,'VTERMIFURL')['ctr_url']
     test_vtermif_name = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['vtermif_name']
-    test_vtermif_admin_status = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['admin_status']
+    test_vtermif_adminstatus = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['adminstatus']
     print test_vterm_url
     url = 'http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vterm_url+test_vtermif_url
     print url
@@ -120,7 +120,6 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
             return 0
         else:
             return 1
-
 
 
 def create_portmap(vtn_blockname,vterm_blockname,vtermif_blockname,vlan_tagged = 1):
@@ -580,7 +579,6 @@ def test_multi_vtn_vterm_vtermif():
         exit(1)
     print "VTN1->VTERM1->VTERMIF1 and VTN2->VTERM2->VTERMIF2 TEST SUCCESS"
 
-###PORTMAP####
 def test_vtn_vterm_vtermif_portmap():
 
     print "CREATE Controller"
@@ -987,6 +985,7 @@ def test_multi_vtn_vterm_vtermif_portmap():
         exit(1)
     print "VTN1->VTERM1->VTERMIF1->PORTMAP AND VTN2->VTERM2->VTERMIF2->PORTMAP TEST SUCCESS"
 
+
 # Main Block
 if __name__ == '__main__':
     print '*****VTERMIF TESTS******'
@@ -996,6 +995,8 @@ if __name__ == '__main__':
     test_vtn_vterm_vtermif_portmap()
     test_vtn_multi_vterm_single_vtermif_portmap()
     test_multi_vtn_vterm_vtermif_portmap()
+    
+
 
 else:
     print "VTERMIF_PORTMAP Loaded as Module"
