@@ -19,8 +19,6 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
 
-import org.opendaylight.controller.sal.action.SetVlanPcp;
-
 /**
  * JUnit test for {@link SetVlanPcpAction}.
  */
@@ -55,12 +53,6 @@ public class SetVlanPcpActionTest extends TestBase {
         for (byte b: bytes) {
             SetVlanPcpAction act = new SetVlanPcpAction(b);
             assertEquals(b, act.getPriority());
-        }
-
-        for (byte pcp = 0; pcp <= 7; pcp++) {
-            SetVlanPcp sact = new SetVlanPcp((int)pcp);
-            SetVlanPcpAction act = new SetVlanPcpAction(sact);
-            assertEquals(pcp, act.getPriority());
         }
     }
 

@@ -25,7 +25,6 @@ import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.TestBase;
 
-import org.opendaylight.controller.sal.action.SetNwDst;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -58,11 +57,6 @@ public class SetInet4DstActionTest extends TestBase {
             assertEquals(null, act.getValidationStatus());
 
             if (iaddr != null) {
-                SetNwDst sact = new SetNwDst(iaddr);
-                act = new SetInet4DstAction(sact);
-                assertEquals(iaddr, act.getAddress());
-                assertEquals(null, act.getValidationStatus());
-
                 for (int prefix = 1; prefix <= 31; prefix++) {
                     IpNetwork bad = IpNetwork.create(iaddr, prefix);
                     try {

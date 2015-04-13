@@ -499,7 +499,6 @@ public class DataFlowTest extends TestBase {
      * <ul>
      *   <li>{@link DataFlow#getVirtualRoute()}</li>
      *   <li>{@link DataFlow#setVirtualRoute(List)}</li>
-     *   <li>{@link DataFlow#addVirtualRoute(List)}</li>
      * </ul>
      */
     @Test
@@ -514,39 +513,17 @@ public class DataFlowTest extends TestBase {
         }
 
         DataFlow df = createDataFlow();
-        List<VNodeRoute> expected = null;
-        while (!vroutes.isEmpty()) {
-            ArrayList<VNodeRoute> list = new ArrayList<VNodeRoute>();
-            list.add(vroutes.removeFirst());
-            if (!vroutes.isEmpty()) {
-                list.add(vroutes.removeFirst());
-            }
-
-            assertEquals(expected, df.getVirtualRoute());
-            df.addVirtualRoute(list);
-            if (expected == null) {
-                expected = new ArrayList<VNodeRoute>();
-            }
-            expected.addAll(list);
-            List<VNodeRoute> result = df.getVirtualRoute();
-            assertEquals(expected, result);
-            checkDataFlow(df);
-
-            // Ensure that VNodeRoute list was copied.
-            list.clear();
-            List<VNodeRoute> result1 = df.getVirtualRoute();
-            assertEquals(expected, result1);
-            assertEquals(result, result1);
-            assertNotSame(result, result1);
-        }
-
-        df = createDataFlow();
         assertEquals(null, df.getVirtualRoute());
-        df.setVirtualRoute(expected);
+        df.setVirtualRoute(vroutes);
         List<VNodeRoute> result = df.getVirtualRoute();
-        assertEquals(expected, result);
-        assertNotSame(expected, result);
+        assertEquals(vroutes, result);
         checkDataFlow(df);
+
+        // Ensure that VNodeRoute list was copied.
+        List<VNodeRoute> result1 = df.getVirtualRoute();
+        assertEquals(vroutes, result1);
+        assertEquals(result, result1);
+        assertNotSame(result, result1);
     }
 
     /**
@@ -554,8 +531,7 @@ public class DataFlowTest extends TestBase {
      *
      * <ul>
      *   <li>{@link DataFlow#getPhysicalRoute()}</li>
-     *   <li>{@link DataFlow#addPhysicalRoute(NodeRoute)}</li>
-     *   <li>{@link DataFlow#clearPhysicalRoute()}</li>
+     *   <li>{@link DataFlow#setPhysicalRoute(List)}</li>
      * </ul>
      */
     @Test
@@ -570,60 +546,49 @@ public class DataFlowTest extends TestBase {
         }
 
         DataFlow df = createDataFlow();
-        List<NodeRoute> expected = null;
-        for (NodeRoute nr: routes) {
-            assertEquals(expected, df.getPhysicalRoute());
-            df.addPhysicalRoute(nr);
-            if (expected == null) {
-                expected = new ArrayList<NodeRoute>();
-            }
-            expected.add(nr);
-            List<NodeRoute> result = df.getPhysicalRoute();
-            assertEquals(expected, result);
-            checkDataFlow(df);
-        }
-
+        assertEquals(null, df.getPhysicalRoute());
+        df.setPhysicalRoute(routes);
+        assertEquals(routes, df.getPhysicalRoute());
+        checkDataFlow(df);
 
         // Ensure that NodeRoute list was copied.
         List<NodeRoute> result = df.getPhysicalRoute();
         List<NodeRoute> result1 = df.getPhysicalRoute();
-        assertEquals(expected, result);
+        assertEquals(routes, result);
         assertEquals(result, result1);
         assertNotSame(result, result1);
-
-        // Clear physical route.
-        df.clearPhysicalRoute();
-        assertEquals(null, df.getPhysicalRoute());
         checkDataFlow(df);
     }
 
     /**
-     * Test case for edge flow information.
+     * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link DataFlow#setEdgeFlows(Flow, Flow)}</li>
+     *   <li>{@link DataFlow#setMatch(FlowMatch)}</li>
+     *   <li>{@link DataFlow#setActions(List)}</li>
      *   <li>{@link DataFlow#getMatch()}</li>
      *   <li>{@link DataFlow#getActions()}</li>
      * </ul>
      */
     @Test
     public void testEdgeFlows() {
-        DataFlow df = createDataFlow();
-        assertEquals(null, df.getMatch());
-        assertEquals(null, df.getActions());
-
         List<Flow> ingressFlows = createIngressFlows(10);
         List<Flow> egressFlows = createEgressFlows(10, true);
         for (Flow ingress: ingressFlows) {
-            FlowMatch fmatch = new FlowMatch(ingress.getMatch());
+            FlowMatch fmatch = DataFlowGenerator.
+                toFlowMatch(ingress.getMatch());
             int ipproto = fmatch.getInetProtocol();
             for (Flow egress: egressFlows) {
-                List<Action> acts = egress.getActions();
-                df.setEdgeFlows(ingress, egress);
+                DataFlow df = createDataFlow();
+                assertEquals(null, df.getMatch());
+                assertEquals(null, df.getActions());
+
+                DataFlowGenerator.setEdgeFlows(df, ingress, egress);
                 assertEquals(fmatch, df.getMatch());
                 checkDataFlow(df);
 
                 List<FlowAction> actions = df.getActions();
+                List<Action> acts = egress.getActions();
                 List<FlowAction> expected = toFlowAction(acts, ipproto);
                 assertEquals(expected, actions);
 
@@ -847,7 +812,8 @@ public class DataFlowTest extends TestBase {
                     // FALLTHROUGH
 
                 default:
-                    FlowAction fact = FlowAction.create(act, ipproto);
+                    FlowAction fact = DataFlowGenerator.
+                        toFlowAction(act, ipproto);
                     assertNotNull(fact);
                     list.add(fact);
                     break;

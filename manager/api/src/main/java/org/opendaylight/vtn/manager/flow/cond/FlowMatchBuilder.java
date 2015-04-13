@@ -159,6 +159,20 @@ public final class FlowMatchBuilder {
     }
 
     /**
+     * Set the source MAC address to match against Ethernet header.
+     *
+     * @param mac  A {@link EtherAddress} instance which represents the
+     *             MAC address. {@code null} means that every source MAC
+     *             address should be matched.
+     * @return  This instance.
+     * @since   Lithium
+     */
+    public FlowMatchBuilder setSourceMacAddress(EtherAddress mac) {
+        sourceMacAddress = mac;
+        return this;
+    }
+
+    /**
      * Set the destination MAC address to match against Ethernet header.
      *
      * @param mac  A {@link EthernetAddress} instance which represents the
@@ -172,28 +186,15 @@ public final class FlowMatchBuilder {
     }
 
     /**
-     * Set the source MAC address to match against Ethernet header.
-     *
-     * @param mac  A {@link EtherAddress} instance which represents the
-     *             MAC address. {@code null} means that every source MAC
-     *             address should be matched.
-     * @return  This instance.
-     * @since  Lithium
-     */
-    public FlowMatchBuilder setSourceEtherAddress(EtherAddress mac) {
-        sourceMacAddress = mac;
-        return this;
-    }
-
-    /**
      * Set the destination MAC address to match against Ethernet header.
      *
      * @param mac  A {@link EtherAddress} instance which represents the
      *             MAC address. {@code null} means that every destination MAC
      *             address should be matched.
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setDestinationEtherAddress(EtherAddress mac) {
+    public FlowMatchBuilder setDestinationMacAddress(EtherAddress mac) {
         destinationMacAddress = mac;
         return this;
     }
@@ -208,11 +209,15 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>65535</strong>.
      *     </li>
+     *     <li>
+     *       {@code null} means that every Ethernet type should be matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setEtherType(int type) {
-        etherType = Integer.valueOf(type);
+    public FlowMatchBuilder setEtherType(Integer type) {
+        etherType = type;
         return this;
     }
 
@@ -229,11 +234,16 @@ public final class FlowMatchBuilder {
      *     <li>
      *       <strong>0</strong> implies untagged Ethernet frame.
      *     </li>
+     *     <li>
+     *       {@code null} means that every VLAN ID, including untagged,
+     *       should be matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setVlanId(short vlan) {
-        vlanId = Short.valueOf(vlan);
+    public FlowMatchBuilder setVlanId(Short vlan) {
+        vlanId = vlan;
         return this;
     }
 
@@ -249,14 +259,18 @@ public final class FlowMatchBuilder {
      *     </li>
      *     <li>
      *       If a valid priority is specified, a valid VLAN ID except for
-     *       zero must be configured by the call of {@link #setVlanId(short)}.
+     *       zero must be configured by the call of {@link #setVlanId(Short)}.
      *       {@code pri}.
+     *     </li>
+     *     <li>
+     *       {@code null} means that every VLAN priority should be matched.
      *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setVlanPriority(byte pri) {
-        vlanPriority = Byte.valueOf(pri);
+    public FlowMatchBuilder setVlanPriority(Byte pri) {
+        vlanPriority = pri;
         return this;
     }
 
@@ -330,11 +344,17 @@ public final class FlowMatchBuilder {
      *         </li>
      *       </ul>
      *     </li>
+     *     <li>
+     *       {@code null} means that all bits in the source IP address
+     *       specified by {@link #setSourceInetAddress(InetAddress)} should
+     *       be matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setSourceInetSuffix(short suffix) {
-        sourceSuffix = Short.valueOf(suffix);
+    public FlowMatchBuilder setSourceInetSuffix(Short suffix) {
+        sourceSuffix = suffix;
         return this;
     }
 
@@ -359,11 +379,17 @@ public final class FlowMatchBuilder {
      *         </li>
      *       </ul>
      *     </li>
+     *     <li>
+     *       {@code null} means that all bits in the destination IP address
+     *       specified by {@link #setDestinationInetAddress(InetAddress)}
+     *       should be matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setDestinationInetSuffix(short suffix) {
-        destinationSuffix = Short.valueOf(suffix);
+    public FlowMatchBuilder setDestinationInetSuffix(Short suffix) {
+        destinationSuffix = suffix;
         return this;
     }
 
@@ -377,11 +403,15 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>255</strong>.
      *     </li>
-     * </ul>
+     *     <li>
+     *       {@code null} means that every IP protocol should be matched.
+     *     </li>
+     *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setInetProtocol(short proto) {
-        inetProtocol = Short.valueOf(proto);
+    public FlowMatchBuilder setInetProtocol(Short proto) {
+        inetProtocol = proto;
         return this;
     }
 
@@ -395,11 +425,15 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>63</strong>.
      *     </li>
-     * </ul>
+     *     <li>
+     *       {@code null} means that every DSCP value should be matched.
+     *     </li>
+     *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setInetDscp(byte dscp) {
-        inetDscp = Byte.valueOf(dscp);
+    public FlowMatchBuilder setInetDscp(Byte dscp) {
+        inetDscp = dscp;
         return this;
     }
 
@@ -418,12 +452,16 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>65535</strong>.
      *     </li>
+     *     <li>
+     *       {@code null} means that every TCP source port should be matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setTcpSourcePort(int port) {
+    public FlowMatchBuilder setTcpSourcePort(Integer port) {
         resetL4Conditions(TcpMatch.class);
-        sourcePort = new PortMatch(Integer.valueOf(port));
+        sourcePort = (port == null) ? null : new PortMatch(port);
         return this;
     }
 
@@ -480,12 +518,17 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>65535</strong>.
      *     </li>
+     *     <li>
+     *       {@code null} means that every TCP destination port should be
+     *       matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setTcpDestinationPort(int port) {
+    public FlowMatchBuilder setTcpDestinationPort(Integer port) {
         resetL4Conditions(TcpMatch.class);
-        destinationPort = new PortMatch(Integer.valueOf(port));
+        destinationPort = (port == null) ? null : new PortMatch(port);
         return this;
     }
 
@@ -544,12 +587,16 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>65535</strong>.
      *     </li>
+     *     <li>
+     *       {@code null} means that every UDP source port should be matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setUdpSourcePort(int port) {
+    public FlowMatchBuilder setUdpSourcePort(Integer port) {
         resetL4Conditions(UdpMatch.class);
-        sourcePort = new PortMatch(Integer.valueOf(port));
+        sourcePort = (port == null) ? null : new PortMatch(port);
         return this;
     }
 
@@ -606,12 +653,17 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>65535</strong>.
      *     </li>
+     *     <li>
+     *       {@code null} means that every UDP destination port should be
+     *       matched.
+     *     </li>
      *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setUdpDestinationPort(int port) {
+    public FlowMatchBuilder setUdpDestinationPort(Integer port) {
         resetL4Conditions(UdpMatch.class);
-        destinationPort = new PortMatch(Integer.valueOf(port));
+        destinationPort = (port == null) ? null : new PortMatch(port);
         return this;
     }
 
@@ -670,12 +722,16 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>255</strong>.
      *     </li>
-     * </ul>
+     *     <li>
+     *       {@code null} means that every ICMP type should be matched.
+     *     </li>
+     *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setIcmpType(short type) {
+    public FlowMatchBuilder setIcmpType(Short type) {
         resetL4Conditions(IcmpMatch.class);
-        icmpType = Short.valueOf(type);
+        icmpType = type;
         return this;
     }
 
@@ -694,13 +750,31 @@ public final class FlowMatchBuilder {
      *       The range of value that can be specified is from
      *       <strong>0</strong> to <strong>255</strong>.
      *     </li>
-     * </ul>
+     *     <li>
+     *       {@code null} means that every ICMP code should be matched.
+     *     </li>
+     *   </ul>
      * @return  This instance.
+     * @since   Lithium
      */
-    public FlowMatchBuilder setIcmpCode(short code) {
+    public FlowMatchBuilder setIcmpCode(Short code) {
         resetL4Conditions(IcmpMatch.class);
-        icmpCode = Short.valueOf(code);
+        icmpCode = code;
         return this;
+    }
+
+    /**
+     * Construct a new {@link FlowMatch} instance without specifying index.
+     *
+     * @return  A {@link FlowMatch} instance.
+     * @since   Lithium
+     */
+    public FlowMatch build() {
+        EthernetMatch em = buildEthernetMatch();
+        InetMatch im = buildInetMatch();
+        L4Match l4m = buildL4Match();
+
+        return new FlowMatch(em, im, l4m);
     }
 
     /**
@@ -809,13 +883,16 @@ public final class FlowMatchBuilder {
         }
 
         if (l4Class.equals(TcpMatch.class)) {
-            return new TcpMatch(sourcePort, destinationPort);
+            return (sourcePort == null && destinationPort == null)
+                ? null : new TcpMatch(sourcePort, destinationPort);
         }
         if (l4Class.equals(UdpMatch.class)) {
-            return new UdpMatch(sourcePort, destinationPort);
+            return (sourcePort == null && destinationPort == null)
+                ? null : new UdpMatch(sourcePort, destinationPort);
         }
         if (l4Class.equals(IcmpMatch.class)) {
-            return new IcmpMatch(icmpType, icmpCode);
+            return (icmpType == null && icmpCode == null)
+                ? null : new IcmpMatch(icmpType, icmpCode);
         }
 
         // This should never happen.

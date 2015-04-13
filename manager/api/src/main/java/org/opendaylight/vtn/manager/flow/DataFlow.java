@@ -48,9 +48,6 @@ import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.flowprogrammer.Flow;
-
 /**
  * This class describes an end-to-end data flow configured by the VTN Manager.
  *
@@ -182,7 +179,7 @@ public final class DataFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5026911993576342566L;
+    private static final long serialVersionUID = -9014546462665468598L;
 
     /**
      * An identifier of this data flow assigned by the VTN Manager.
@@ -719,33 +716,25 @@ public final class DataFlow implements Serializable {
     }
 
     /**
-     * Set information about ingress and egress flow entries.
+     * Set the flow match for the ingress flow entry.
      *
-     * @param ingress  A SAL flow which represents the ingress flow entry of
-     *                 the data flow.
-     * @param egress   A SAL flow which represents the egress flow entry of
-     *                 the data flow.
-     * @throws IllegalArgumentException
-     *    Unexpected value is configured in either {@code ingress} or
-     *    {@code egress}.
+     * @param fmatch  A {@link FlowMatch} instance which represents the flow
+     *                match configured in the ingress flow entry.
+     * @since  Lithium.
      */
-    public void setEdgeFlows(Flow ingress, Flow egress) {
-        match = new FlowMatch(ingress.getMatch());
+    public void setMatch(FlowMatch fmatch) {
+        match = fmatch;
+    }
 
-        List<Action> actlist = egress.getActions();
-        ArrayList<FlowAction> list = new ArrayList<FlowAction>();
-        if (actlist == null || actlist.isEmpty()) {
-            list.add(new DropAction());
-        } else {
-            int ipproto = match.getInetProtocol();
-            for (Action act: actlist) {
-                FlowAction fact = FlowAction.create(act, ipproto);
-                if (fact != null) {
-                    list.add(fact);
-                }
-            }
-        }
-        list.trimToSize();
+    /**
+     * Set the list of egress flow actions.
+     *
+     * @param list  A list of {@link FlowAction} instances.
+     *              Note that the given list itself is configured into this
+     *              instance.
+     * @since  Lithium
+     */
+    public void setActions(List<FlowAction> list) {
         actions = list;
     }
 
@@ -754,45 +743,24 @@ public final class DataFlow implements Serializable {
      *
      * @param vroutes  A list of {@link VNodeRoute} instances which represents
      *                 the virtual packet routing path.
+     *                 Note that the given list itself is configured into this
+     *                 instance.
      */
     public void setVirtualRoute(List<VNodeRoute> vroutes) {
-        virtualRoute = new ArrayList<VNodeRoute>(vroutes);
+        virtualRoute = vroutes;
     }
 
     /**
-     * Add all {@link VNodeRoute} instances in the specified list to the
-     * virtual packet routing path.
+     * Set the physical packet routing path of the data flow.
      *
-     * @param routes  A list of {@link VNodeRoute} instances.
+     * @param nroutes  A list of {@link NodeRoute} instances which represents
+     *                 the physical packet routing path.
+     *                 Note that the given list itself is configured into this
+     *                 instance.
+     * @since  Lithium
      */
-    public void addVirtualRoute(List<VNodeRoute> routes) {
-        List<VNodeRoute> list = virtualRoute;
-        if (list == null) {
-            list = new ArrayList<VNodeRoute>();
-            virtualRoute = list;
-        }
-        list.addAll(routes);
-    }
-
-    /**
-     * Add a {@link NodeRoute} instance to the physical packet routing path.
-     *
-     * @param nroute  A {@link NodeRoute} instance.
-     */
-    public void addPhysicalRoute(NodeRoute nroute) {
-        List<NodeRoute> list = physicalRoute;
-        if (list == null) {
-            list = new ArrayList<NodeRoute>();
-            physicalRoute = list;
-        }
-        list.add(nroute);
-    }
-
-    /**
-     * Clear the physical packet routing path.
-     */
-    public void clearPhysicalRoute() {
-        physicalRoute = null;
+    public void setPhysicalRoute(List<NodeRoute> nroutes) {
+        physicalRoute = nroutes;
     }
 
     /**

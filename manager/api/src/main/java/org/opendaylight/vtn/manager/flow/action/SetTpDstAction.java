@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,8 +14,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import org.opendaylight.controller.sal.action.SetTpDst;
 
 /**
  * This class describes a flow action that sets the destination port number
@@ -36,7 +34,7 @@ public final class SetTpDstAction extends TpPortAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4714996958267325400L;
+    private static final long serialVersionUID = -4007255536251100965L;
 
     /**
      * Private constructor only for JAXB.
@@ -52,16 +50,5 @@ public final class SetTpDstAction extends TpPortAction {
      */
     public SetTpDstAction(int port) {
         super(port);
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A SAL action that sets the destination port.
-     * @throws NullPointerException
-     *    {@code null} is passed to {@code act}.
-     */
-    public SetTpDstAction(SetTpDst act) {
-        super(act.getPort());
     }
 }

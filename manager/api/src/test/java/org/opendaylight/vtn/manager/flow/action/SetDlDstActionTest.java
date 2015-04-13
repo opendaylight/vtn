@@ -26,7 +26,6 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
 
-import org.opendaylight.controller.sal.action.SetDlDst;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -60,14 +59,6 @@ public class SetDlDstActionTest extends TestBase {
             assertTrue(Arrays.equals(bytes, addr));
             assertEquals(null, act.getValidationStatus());
             assertEquals(ea, act.getEtherAddress());
-
-            if (bytes != null) {
-                SetDlDst sact = new SetDlDst(bytes);
-                act = new SetDlDstAction(sact);
-                assertTrue(Arrays.equals(bytes, act.getAddress()));
-                assertEquals(null, act.getValidationStatus());
-                assertEquals(ea, act.getEtherAddress());
-            }
         }
     }
 

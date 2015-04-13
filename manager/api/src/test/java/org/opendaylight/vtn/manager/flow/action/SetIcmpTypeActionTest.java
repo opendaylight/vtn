@@ -19,8 +19,6 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
 
-import org.opendaylight.controller.sal.action.SetTpSrc;
-
 /**
  * JUnit test for {@link SetIcmpTypeAction}.
  */
@@ -53,13 +51,6 @@ public class SetIcmpTypeActionTest extends TestBase {
         short[] types = {Short.MIN_VALUE, 0, 1, 100, 255, Short.MAX_VALUE};
         for (short type: types) {
             SetIcmpTypeAction act = new SetIcmpTypeAction(type);
-            assertEquals(type, act.getType());
-        }
-
-        short[] valid = {1, 30, 90, 130, 180, 200, 254, 255};
-        for (short type: valid) {
-            SetTpSrc sact = new SetTpSrc((int)type);
-            SetIcmpTypeAction act = new SetIcmpTypeAction(sact);
             assertEquals(type, act.getType());
         }
     }

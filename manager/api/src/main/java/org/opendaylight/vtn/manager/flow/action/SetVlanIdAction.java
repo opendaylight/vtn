@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,8 +15,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import org.opendaylight.controller.sal.action.SetVlanId;
 
 /**
  * This class describes a flow action that sets the specified VLAN ID into
@@ -37,7 +35,7 @@ public final class SetVlanIdAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4012461312271690348L;
+    private static final long serialVersionUID = 1112583053740773108L;
 
     /**
      * VLAN ID to be set.
@@ -76,17 +74,6 @@ public final class SetVlanIdAction extends FlowAction {
      */
     public SetVlanIdAction(short vlan) {
         this.vlan = vlan;
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A SAL action that sets the VLAN ID.
-     * @throws NullPointerException
-     *    {@code null} is passed to {@code act}.
-     */
-    public SetVlanIdAction(SetVlanId act) {
-        vlan = (short)act.getVlanId();
     }
 
     /**

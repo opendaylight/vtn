@@ -19,8 +19,6 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
 
-import org.opendaylight.controller.sal.action.SetTpDst;
-
 /**
  * JUnit test for {@link SetIcmpCodeAction}.
  */
@@ -53,13 +51,6 @@ public class SetIcmpCodeActionTest extends TestBase {
         short[] codes = {Short.MIN_VALUE, 0, 1, 100, 255, Short.MAX_VALUE};
         for (short code: codes) {
             SetIcmpCodeAction act = new SetIcmpCodeAction(code);
-            assertEquals(code, act.getCode());
-        }
-
-        short[] valid = {1, 20, 80, 120, 170, 215, 254, 255};
-        for (short code: valid) {
-            SetTpDst sact = new SetTpDst((int)code);
-            SetIcmpCodeAction act = new SetIcmpCodeAction(sact);
             assertEquals(code, act.getCode());
         }
     }

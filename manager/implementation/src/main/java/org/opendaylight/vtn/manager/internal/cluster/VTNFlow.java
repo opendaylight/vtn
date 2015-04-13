@@ -9,14 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.io.Serializable;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.Collection;
-import java.util.List;
+import java.io.Serializable;
+import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.Set;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.opendaylight.vtn.manager.NodeRoute;
 import org.opendaylight.vtn.manager.PortLocation;
@@ -24,6 +25,26 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.DataFlow;
+import org.opendaylight.vtn.manager.flow.action.DropAction;
+import org.opendaylight.vtn.manager.flow.action.FlowAction;
+import org.opendaylight.vtn.manager.flow.action.PopVlanAction;
+import org.opendaylight.vtn.manager.flow.action.PushVlanAction;
+import org.opendaylight.vtn.manager.flow.action.SetDlDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpCodeAction;
+import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4DstAction;
+import org.opendaylight.vtn.manager.flow.action.SetInet4SrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
+import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
+import org.opendaylight.vtn.manager.flow.action.SetVlanIdAction;
+import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
+import org.opendaylight.vtn.manager.flow.cond.FlowMatchBuilder;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.Ip4Network;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.L2Host;
@@ -39,8 +60,16 @@ import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.action.Drop;
 import org.opendaylight.controller.sal.action.Output;
 import org.opendaylight.controller.sal.action.PopVlan;
+import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.action.SetDlDst;
+import org.opendaylight.controller.sal.action.SetDlSrc;
+import org.opendaylight.controller.sal.action.SetNwDst;
+import org.opendaylight.controller.sal.action.SetNwSrc;
+import org.opendaylight.controller.sal.action.SetNwTos;
+import org.opendaylight.controller.sal.action.SetTpDst;
+import org.opendaylight.controller.sal.action.SetTpSrc;
 import org.opendaylight.controller.sal.action.SetVlanId;
+import org.opendaylight.controller.sal.action.SetVlanPcp;
 import org.opendaylight.controller.sal.connection.ConnectionLocality;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -48,6 +77,7 @@ import org.opendaylight.controller.sal.flowprogrammer.Flow;
 import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.match.MatchField;
 import org.opendaylight.controller.sal.match.MatchType;
+import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 
@@ -63,11 +93,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
  *   Note that this class is not synchronized.
  * </p>
  */
-public class VTNFlow implements Serializable {
+public final class VTNFlow implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -7378977687865612389L;
+    private static final long serialVersionUID = 3242571119966042739L;
 
     /**
      * The identifier of the flow group.
@@ -133,6 +163,264 @@ public class VTNFlow implements Serializable {
      * </p>
      */
     private final List<VNodeRoute> virtualRoute = new ArrayList<VNodeRoute>();
+
+    /**
+     * Convert the given AD-SAL match into {@link FlowMatch} instance.
+     *
+     * @param match  An AD-SAL match.
+     * @return  A {@link FlowMatch} instance.
+     * @throws IllegalArgumentException
+     *    The given AD-SAL match contains unexpected value.
+     */
+    public static FlowMatch toFlowMatch(Match match) {
+        FlowMatchBuilder builder = new FlowMatchBuilder();
+        if (match != null) {
+            builder.setSourceMacAddress(getEtherAddress(
+                                            match, MatchType.DL_SRC)).
+                setDestinationMacAddress(getEtherAddress(
+                                             match, MatchType.DL_DST)).
+                setVlanId(getValue(match, MatchType.DL_VLAN, Short.class)).
+                setVlanPriority(getValue(match, MatchType.DL_VLAN_PR,
+                                         Byte.class)).
+                setSourceInetAddress(getValue(
+                                         match, MatchType.NW_SRC,
+                                         InetAddress.class)).
+                setDestinationInetAddress(getValue(
+                                              match, MatchType.NW_DST,
+                                              InetAddress.class)).
+                setInetDscp(getValue(match, MatchType.NW_TOS, Byte.class));
+
+            Short sval = getValue(match, MatchType.DL_TYPE, Short.class);
+            if (sval != null) {
+                int etype = NumberUtils.getUnsigned(sval.shortValue());
+                builder.setEtherType(Integer.valueOf(etype));
+            }
+
+            InetAddress iaddr = getMask(match, MatchType.NW_SRC,
+                                        InetAddress.class);
+            if (iaddr != null) {
+                int len = Ip4Network.getPrefixLength(iaddr.getAddress());
+                builder.setSourceInetSuffix(Short.valueOf((short)len));
+            }
+
+            iaddr = getMask(match, MatchType.NW_DST, InetAddress.class);
+            if (iaddr != null) {
+                int len = Ip4Network.getPrefixLength(iaddr.getAddress());
+                builder.setDestinationInetSuffix(Short.valueOf((short)len));
+            }
+
+            Byte bval = getValue(match, MatchType.NW_PROTO, Byte.class);
+            Short ipproto;
+            if (bval != null) {
+                short proto = (short)NumberUtils.getUnsigned(bval.byteValue());
+                ipproto = Short.valueOf(proto);
+                builder.setInetProtocol(ipproto);
+            } else {
+                ipproto = null;
+            }
+
+            Short srcTp = getValue(match, MatchType.TP_SRC, Short.class);
+            Short dstTp = getValue(match, MatchType.TP_DST, Short.class);
+            if (srcTp != null || dstTp != null) {
+                if (ipproto == null) {
+                    throw new IllegalArgumentException(
+                        "L4 match without NW_PROTO: " + srcTp + ", " + dstTp);
+                }
+
+                int proto = ipproto.intValue();
+                if (IPProtocols.TCP.intValue() == proto) {
+                    if (srcTp != null) {
+                        int port = NumberUtils.getUnsigned(srcTp.shortValue());
+                        builder.setTcpSourcePort(port);
+                    }
+                    if (dstTp != null) {
+                        int port = NumberUtils.getUnsigned(dstTp.shortValue());
+                        builder.setTcpDestinationPort(port);
+                    }
+                } else if (IPProtocols.UDP.intValue() == proto) {
+                    if (srcTp != null) {
+                        int port = NumberUtils.getUnsigned(srcTp.shortValue());
+                        builder.setUdpSourcePort(port);
+                    }
+                    if (dstTp != null) {
+                        int port = NumberUtils.getUnsigned(dstTp.shortValue());
+                        builder.setUdpDestinationPort(port);
+                    }
+                } else if (IPProtocols.ICMP.intValue() == proto) {
+                    builder.setIcmpType(srcTp);
+                    builder.setIcmpCode(dstTp);
+                } else {
+                    throw new IllegalArgumentException(
+                        "Unexpected IP protocol: " + ipproto);
+                }
+            }
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Return the value associated with the given match type in the given
+     * AD-SAL match.
+     *
+     * @param match  An AD-SAL match.
+     * @param mtype  A {@link MatchType} instance which specifies the type
+     *               of match field.
+     * @param type   A class which indicates the type of the value.
+     * @param <T>    The type of the value configured in the specified
+     *               match field.
+     * @return  A value associated with the given match type.
+     *          {@code null} if no value is associated.
+     * @throws IllegalArgumentException
+     *    Unexpected value is configured in the given AD-SAL match.
+     */
+    private static <T> T getValue(Match match, MatchType mtype,
+                                  Class<T> type) {
+        MatchField mf = match.getField(mtype);
+        if (mf == null) {
+            return null;
+        }
+
+        Object value = mf.getValue();
+        if (type.isInstance(value)) {
+            return type.cast(value);
+        }
+
+        // This should never happen.
+        String msg = "Unexpected match field: type=" + mtype + ", field=" + mf;
+        throw new IllegalArgumentException(msg);
+    }
+
+    /**
+     * Return the mask value associated with the given match type in the given
+     * AD-SAL match.
+     *
+     * @param match  An AD-SAL match.
+     * @param mtype  A {@link MatchType} instance which specifies the type
+     *               of match field.
+     * @param type   A class which indicates the type of the mask.
+     * @param <T>    The type of the mask value configured in the specified
+     *               match field.
+     * @return  A mask value associated with the given match type.
+     *          {@code null} if no mask value is associated.
+     * @throws IllegalArgumentException
+     *    Unexpected value is configured in the given AD-SAL match.
+     */
+    private static <T> T getMask(Match match, MatchType mtype,
+                                 Class<T> type) {
+        MatchField mf = match.getField(mtype);
+        if (mf == null) {
+            return null;
+        }
+
+        Object mask = mf.getMask();
+        if (mask == null) {
+            return null;
+        }
+
+        if (type.isInstance(mask)) {
+            return type.cast(mask);
+        }
+
+        // This should never happen.
+        String msg = "Unexpected match mask: type=" + mtype + ", field=" + mf;
+        throw new IllegalArgumentException(msg);
+    }
+
+    /**
+     * Return the {@link EtherAddress} instance associated with the given
+     * match type in the given AD-SAL match.
+     *
+     * @param match  An AD-SAL match.
+     * @param mtype  A {@link MatchType} instance which specifies the type
+     *               of match field.
+     * @return  The {@link EtherAddress} instance associated with the given
+     *          match type. {@code null} if no value is associated.
+     * @throws IllegalArgumentException
+     *    Unexpected value is configured in the given AD-SAL match.
+     */
+    private static EtherAddress getEtherAddress(Match match, MatchType mtype) {
+        byte[] mac = getValue(match, mtype, byte[].class);
+        return EtherAddress.create(mac);
+    }
+
+    /**
+     * Convert the given AD-SAL action into {@link FlowAction} instance.
+     *
+     * @param act      An AD-SAL action.
+     * @param ipproto  IP protocol number.
+     *                 This parameter is used if SET_TP_SRC or SET_TP_DST
+     *                 action is passed to {@code act}.
+     * @return  A {@link FlowAction} instance converted from the given
+     *          SAL action. {@code null} is returned if the given SAL action
+     *          is not supported.
+     */
+    public static FlowAction toFlowAction(Action act, int ipproto) {
+        if (act == null) {
+            return null;
+        }
+
+        if (act instanceof Drop) {
+            return new DropAction();
+        }
+        if (act instanceof PopVlan) {
+            return new PopVlanAction();
+        }
+        if (act instanceof PushVlan) {
+            PushVlan a = (PushVlan)act;
+            return new PushVlanAction(a.getTag());
+        }
+        if (act instanceof SetDlDst) {
+            SetDlDst a = (SetDlDst)act;
+            return new SetDlDstAction(a.getDlAddress());
+        }
+        if (act instanceof SetDlSrc) {
+            SetDlSrc a = (SetDlSrc)act;
+            return new SetDlSrcAction(a.getDlAddress());
+        }
+        if (act instanceof SetNwTos) {
+            SetNwTos a = (SetNwTos)act;
+            return new SetDscpAction((byte)a.getNwTos());
+        }
+        if (act instanceof SetNwDst) {
+            SetNwDst a = (SetNwDst)act;
+            return new SetInet4DstAction(a.getAddress());
+        }
+        if (act instanceof SetNwSrc) {
+            SetNwSrc a = (SetNwSrc)act;
+            return new SetInet4SrcAction(a.getAddress());
+        }
+        if (act instanceof SetVlanId) {
+            SetVlanId a = (SetVlanId)act;
+            return new SetVlanIdAction((short)a.getVlanId());
+        }
+        if (act instanceof SetVlanPcp) {
+            SetVlanPcp a = (SetVlanPcp)act;
+            return new SetVlanPcpAction((byte)a.getPcp());
+        }
+
+        if (act instanceof SetTpDst) {
+            SetTpDst a = (SetTpDst)act;
+            int port = a.getPort();
+            if (ipproto == IPProtocols.TCP.intValue() ||
+                ipproto == IPProtocols.UDP.intValue()) {
+                return new SetTpDstAction(port);
+            } else if (ipproto == IPProtocols.ICMP.intValue()) {
+                return new SetIcmpCodeAction((short)port);
+            }
+        } else if (act instanceof SetTpSrc) {
+            SetTpSrc a = (SetTpSrc)act;
+            int port = a.getPort();
+            if (ipproto == IPProtocols.TCP.intValue() ||
+                ipproto == IPProtocols.UDP.intValue()) {
+                return new SetTpSrcAction(port);
+            } else if (ipproto == IPProtocols.ICMP.intValue()) {
+                return new SetIcmpTypeAction((short)port);
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Construct a new VTN flow object.
@@ -356,17 +644,6 @@ public class VTNFlow implements Serializable {
      */
     public void addVirtualRoute(Collection<VNodeRoute> c) {
         virtualRoute.addAll(c);
-    }
-
-    /**
-     * Clear virtual packet route for this VTN flow.
-     *
-     * <p>
-     *   This method is used only for testing.
-     * </p>
-     */
-    public void clearVirtualRoute() {
-        virtualRoute.clear();
     }
 
     /**
@@ -726,7 +1003,8 @@ public class VTNFlow implements Serializable {
 
         // Determine egress port.
         Flow eflow = flowEntries.get(sz - 1).getFlow();
-        NodeConnector outPort = getOutputPort(eflow.getActions());
+        List<Action> actlist = eflow.getActions();
+        NodeConnector outPort = getOutputPort(actlist);
         PortLocation outLoc = (outPort == null)
             ? null
             : new PortLocation(outPort, getPortName(ctx, outPort));
@@ -738,20 +1016,36 @@ public class VTNFlow implements Serializable {
 
         if (detail) {
             // Set information about ingress and egress flow entries.
-            df.setEdgeFlows(iflow, eflow);
+            FlowMatch fmatch = toFlowMatch(iflow.getMatch());
+            df.setMatch(fmatch);
+            List<FlowAction> facts = new ArrayList<>();
+            if (actlist == null || actlist.isEmpty()) {
+                facts.add(new DropAction());
+            } else {
+                int ipproto = fmatch.getInetProtocol();
+                for (Action act: actlist) {
+                    FlowAction fact = toFlowAction(act, ipproto);
+                    if (fact != null) {
+                        facts.add(fact);
+                    }
+                }
+            }
+            df.setActions(facts);
 
             // Set virtual packet route of the data flow.
             df.setVirtualRoute(virtualRoute);
 
             // Determine physical packet route of the data flow.
+            List<NodeRoute> proutes = new ArrayList<>();
             for (FlowEntry fent: flowEntries) {
                 NodeRoute nroute = getNodeRoute(ctx, fent.getFlow());
                 if (nroute == null) {
-                    df.clearPhysicalRoute();
+                    proutes = null;
                     break;
                 }
-                df.addPhysicalRoute(nroute);
+                proutes.add(nroute);
             }
+            df.setPhysicalRoute(proutes);
         }
 
         return df;

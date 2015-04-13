@@ -19,8 +19,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
-import org.opendaylight.controller.sal.action.SetNwSrc;
-
 /**
  * This class describes a flow action that sets the specified IPv4 address
  * into the IPv4 packet as the source address.
@@ -40,7 +38,7 @@ public final class SetInet4SrcAction extends Inet4AddressAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -5348967690083462053L;
+    private static final long serialVersionUID = 4087326142798118364L;
 
     /**
      * Private constructor only for JAXB.
@@ -72,16 +70,5 @@ public final class SetInet4SrcAction extends Inet4AddressAction {
      */
     public SetInet4SrcAction(IpNetwork addr) {
         super(addr);
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A SAL action that sets the source IP address.
-     * @throws NullPointerException
-     *    {@code null} is passed to {@code act}.
-     */
-    public SetInet4SrcAction(SetNwSrc act) {
-        super(act.getAddress());
     }
 }

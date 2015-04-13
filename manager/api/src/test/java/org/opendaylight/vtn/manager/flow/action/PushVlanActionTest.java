@@ -19,7 +19,6 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
 
-import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
@@ -58,10 +57,6 @@ public class PushVlanActionTest extends TestBase {
             assertEquals(t, act.getType());
 
             act = new PushVlanAction(type);
-            assertEquals(t, act.getType());
-
-            PushVlan sact = new PushVlan(type);
-            act = new PushVlanAction(sact);
             assertEquals(t, act.getType());
         }
     }

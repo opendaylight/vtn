@@ -16,7 +16,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import org.opendaylight.controller.sal.action.PushVlan;
 import org.opendaylight.controller.sal.utils.EtherTypes;
 
 /**
@@ -37,7 +36,7 @@ public final class PushVlanAction extends FlowAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 8597732562434334665L;
+    private static final long serialVersionUID = 6991399341142137061L;
 
     /**
      * Ethernet type of a new VLAN tag.
@@ -80,17 +79,6 @@ public final class PushVlanAction extends FlowAction {
      */
     public PushVlanAction(EtherTypes type) {
         this.type = type.intValue();
-    }
-
-    /**
-     * Construct a new instanfe from the given SAL action.
-     *
-     * @param act  A SAL action that appends a VLAN tag.
-     * @throws NullPointerException
-     *    {@code null} is passed to {@code act}.
-     */
-    public PushVlanAction(PushVlan act) {
-        type = act.getTag();
     }
 
     /**

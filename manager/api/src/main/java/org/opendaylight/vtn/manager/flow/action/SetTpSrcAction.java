@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,8 +14,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import org.opendaylight.controller.sal.action.SetTpSrc;
 
 /**
  * This class describes a flow action that sets the source port number into the
@@ -36,7 +34,7 @@ public final class SetTpSrcAction extends TpPortAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 2267117395018204495L;
+    private static final long serialVersionUID = -2880139916063275691L;
 
     /**
      * Private constructor only for JAXB.
@@ -52,16 +50,5 @@ public final class SetTpSrcAction extends TpPortAction {
      */
     public SetTpSrcAction(int port) {
         super(port);
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A SAL action that sets the source port.
-     * @throws NullPointerException
-     *    {@code null} is passed to {@code act}.
-     */
-    public SetTpSrcAction(SetTpSrc act) {
-        super(act.getPort());
     }
 }

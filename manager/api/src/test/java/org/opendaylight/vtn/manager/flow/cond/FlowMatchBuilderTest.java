@@ -10,6 +10,8 @@
 package org.opendaylight.vtn.manager.flow.cond;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -26,7 +28,8 @@ import org.opendaylight.controller.sal.utils.IPProtocols;
 public class FlowMatchBuilderTest extends TestBase {
     /**
      * Test case for
-     * {@link FlowMatchBuilder#setSourceMacAddress(EthernetAddress)}.
+     * {@link FlowMatchBuilder#setSourceMacAddress(EthernetAddress)} and
+     * {@link FlowMatchBuilder#setSourceMacAddress(EtherAddress)} and
      */
     @Test
     public void testSetSourceMacAddress() {
@@ -43,13 +46,33 @@ public class FlowMatchBuilderTest extends TestBase {
             assertEquals(null, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
             assertEquals(-1, fm.getInetProtocol());
+
+            EtherAddress ea = EtherAddress.create(eaddr);
+            assertSame(fmbuilder, fmbuilder.setSourceMacAddress(ea));
+            fm = fmbuilder.build(index);
+            em = (ea == null) ? null
+                : new EthernetMatch(eaddr, null, null, null, null);
+            assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
             index++;
         }
     }
 
     /**
      * Test case for
-     * {@link FlowMatchBuilder#setDestinationMacAddress(EthernetAddress)}.
+     * {@link FlowMatchBuilder#setDestinationMacAddress(EthernetAddress)} and
+     * {@link FlowMatchBuilder#setDestinationMacAddress(EtherAddress)}.
      */
     @Test
     public void testSetDestinationMacAddress() {
@@ -66,126 +89,127 @@ public class FlowMatchBuilderTest extends TestBase {
             assertEquals(null, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
             assertEquals(-1, fm.getInetProtocol());
-            index++;
-        }
-    }
 
-    /**
-     * Test case for
-     * {@link FlowMatchBuilder#setSourceEtherAddress(EtherAddress)}.
-     */
-    @Test
-    public void testSetSourceEtherAddress() {
-        FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
-        int index = 0;
-        for (EthernetAddress eaddr: createEthernetAddresses()) {
             EtherAddress ea = EtherAddress.create(eaddr);
-            assertSame(fmbuilder, fmbuilder.setSourceEtherAddress(ea));
-            FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = (eaddr == null)
-                ? null
-                : new EthernetMatch(eaddr, null, null, null, null);
-            assertEquals(Integer.valueOf(index), fm.getIndex());
-            assertEquals(em, fm.getEthernetMatch());
-            assertEquals(null, fm.getInetMatch());
-            assertEquals(null, fm.getLayer4Match());
-            assertEquals(-1, fm.getInetProtocol());
-            index++;
-        }
-    }
-
-    /**
-     * Test case for
-     * {@link FlowMatchBuilder#setDestinationEtherAddress(EtherAddress)}.
-     */
-    @Test
-    public void testSetDestinationEtherAddress() {
-        FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
-        int index = 0;
-        for (EthernetAddress eaddr: createEthernetAddresses()) {
-            EtherAddress ea = EtherAddress.create(eaddr);
-            assertSame(fmbuilder, fmbuilder.setDestinationEtherAddress(ea));
-            FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = (eaddr == null)
-                ? null
+            assertSame(fmbuilder, fmbuilder.setDestinationMacAddress(ea));
+            fm = fmbuilder.build(index);
+            em = (ea == null) ? null
                 : new EthernetMatch(null, eaddr, null, null, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
             assertEquals(em, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
             assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
             index++;
         }
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setEtherType(int)}.
+     * Test case for {@link FlowMatchBuilder#setEtherType(Integer)}.
      */
     @Test
     public void testSetEtherType() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        int[] types = {
-            0, 1, 0x800, 0x86dd,
+        Integer[] types = {
+            null, 0, 1, 0x800, 0x86dd, 0xffff,
         };
         EtherAddress nullMac = null;
 
-        for (int type: types) {
+        for (Integer type: types) {
             assertSame(fmbuilder, fmbuilder.setEtherType(type));
             FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = new EthernetMatch(nullMac, nullMac,
-                                                 Integer.valueOf(type),
-                                                 null, null);
+            EthernetMatch em = (type == null)
+                ? null
+                : new EthernetMatch(nullMac, nullMac, type, null, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
             assertEquals(em, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
             assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
             index++;
         }
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setVlanId(short)}.
+     * Test case for {@link FlowMatchBuilder#setVlanId(Short)}.
      */
     @Test
     public void testSetVlanId() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        short[] vlans = {
-            0, 1, 100, 3000, 4095,
+        Short[] vlans = {
+            null, 0, 1, 100, 3000, 4095,
         };
         EtherAddress nullMac = null;
 
-        for (short vlan: vlans) {
+        for (Short vlan: vlans) {
             assertSame(fmbuilder, fmbuilder.setVlanId(vlan));
             FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = new EthernetMatch(nullMac, nullMac, null,
-                                                 Short.valueOf(vlan), null);
+            EthernetMatch em = (vlan == null)
+                ? null
+                : new EthernetMatch(nullMac, nullMac, null, vlan, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
             assertEquals(em, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
             assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
             index++;
         }
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setVlanPriority(byte)}.
+     * Test case for {@link FlowMatchBuilder#setVlanPriority(Byte)}.
      */
     @Test
     public void testSetVlanPriority() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
         EtherAddress nullMac = null;
-
+        List<Byte> priorities = new ArrayList<>();
+        priorities.add(null);
         for (byte pri = 0; pri <= 7; pri++) {
+            priorities.add(Byte.valueOf(pri));
+        }
+
+        for (Byte pri: priorities) {
             assertSame(fmbuilder, fmbuilder.setVlanPriority(pri));
             FlowMatch fm = fmbuilder.build(index);
-            EthernetMatch em = new EthernetMatch(nullMac, nullMac, null, null,
-                                                 Byte.valueOf(pri));
+            EthernetMatch em = (pri == null)
+                ? null
+                : new EthernetMatch(nullMac, nullMac, null, null, pri);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(em, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(em, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
@@ -211,6 +235,13 @@ public class FlowMatchBuilderTest extends TestBase {
                 ? null
                 : new Inet4Match(iaddr, null, null, null, null, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(im, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(im, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
@@ -250,6 +281,13 @@ public class FlowMatchBuilderTest extends TestBase {
             assertEquals(im, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
             assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(im, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
             index++;
         }
 
@@ -265,18 +303,31 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setSourceInetSuffix(short)}.
+     * Test case for {@link FlowMatchBuilder#setSourceInetSuffix(Short)}.
      */
     @Test
     public void testSetSourceInetSuffix() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
+        List<Short> suffixes = new ArrayList<>();
+        suffixes.add(null);
         for (short suffix = 1; suffix <= 31; suffix++) {
+            suffixes.add(Short.valueOf(suffix));
+        }
+        for (Short suffix: suffixes) {
             assertSame(fmbuilder, fmbuilder.setSourceInetSuffix(suffix));
             FlowMatch fm = fmbuilder.build(index);
-            InetMatch im = new Inet4Match(null, Short.valueOf(suffix),
-                                          null, null, null, null);
+            InetMatch im = (suffix == null)
+                ? null
+                : new Inet4Match(null, suffix, null, null, null, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(im, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(im, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
@@ -286,18 +337,31 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setDestinationInetSuffix(short)}.
+     * Test case for {@link FlowMatchBuilder#setDestinationInetSuffix(Short)}.
      */
     @Test
     public void testSetDestinationInetSuffix() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
+        List<Short> suffixes = new ArrayList<>();
+        suffixes.add(null);
         for (short suffix = 1; suffix <= 31; suffix++) {
+            suffixes.add(Short.valueOf(suffix));
+        }
+        for (Short suffix: suffixes) {
             assertSame(fmbuilder, fmbuilder.setDestinationInetSuffix(suffix));
             FlowMatch fm = fmbuilder.build(index);
-            InetMatch im = new Inet4Match(null, null, null,
-                                          Short.valueOf(suffix), null, null);
+            InetMatch im = (suffix == null)
+                ? null
+                : new Inet4Match(null, null, null, suffix, null, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(im, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(im, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
@@ -307,48 +371,66 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setInetProtocol(short)}.
+     * Test case for {@link FlowMatchBuilder#setInetProtocol(Short)}.
      */
     @Test
     public void testSetInetProtocol() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
         Short[] protocols = {
-            Short.valueOf((short)0), Short.valueOf((short)6),
+            null, Short.valueOf((short)0), Short.valueOf((short)6),
             Short.valueOf((short)17), Short.valueOf((short)50),
             Short.valueOf((short)120), Short.valueOf((short)250),
         };
         for (Short proto: protocols) {
-            assertSame(fmbuilder,
-                       fmbuilder.setInetProtocol(proto.shortValue()));
+            assertSame(fmbuilder, fmbuilder.setInetProtocol(proto));
             FlowMatch fm = fmbuilder.build(index);
-            InetMatch im = new Inet4Match(null, null, null, null, proto, null);
+            InetMatch im = (proto == null)
+                ? null
+                : new Inet4Match(null, null, null, null, proto, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(im, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
-            assertEquals(proto.intValue(), fm.getInetProtocol());
+            int ipproto = (proto == null) ? -1 : proto.intValue();
+            assertEquals(ipproto, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(im, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(ipproto, fm.getInetProtocol());
             index++;
         }
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setInetDscp(byte)}.
+     * Test case for {@link FlowMatchBuilder#setInetDscp(Byte)}.
      */
     @Test
     public void testSetInetDscp() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
         Byte[] dscps = {
-            Byte.valueOf((byte)0), Byte.valueOf((byte)1),
+            null, Byte.valueOf((byte)0), Byte.valueOf((byte)1),
             Byte.valueOf((byte)10), Byte.valueOf((byte)33),
             Byte.valueOf((byte)50), Byte.valueOf((byte)63),
         };
         for (Byte dscp: dscps) {
-            assertSame(fmbuilder, fmbuilder.setInetDscp(dscp.byteValue()));
+            assertSame(fmbuilder, fmbuilder.setInetDscp(dscp));
             FlowMatch fm = fmbuilder.build(index);
-            InetMatch im = new Inet4Match(null, null, null, null, null, dscp);
+            InetMatch im = (dscp == null)
+                ? null
+                : new Inet4Match(null, null, null, null, null, dscp);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(im, fm.getInetMatch());
+            assertEquals(null, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(im, fm.getInetMatch());
             assertEquals(null, fm.getLayer4Match());
@@ -358,24 +440,32 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setTcpSourcePort(int)}.
+     * Test case for {@link FlowMatchBuilder#setTcpSourcePort(Integer)}.
      */
     @Test
     public void testSetTcpSourcePort1() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        int[] ports = {
-            0, 1, 10, 60, 100, 5000, 33333, 65535,
+        Integer[] ports = {
+            null, 0, 1, 10, 60, 100, 5000, 33333, 65535,
         };
 
         // L4 protocol condition other than TCP should be cleared.
         fmbuilder.setUdpSourcePort(1).setUdpDestinationPort(2);
 
-        for (int port: ports) {
+        for (Integer port: ports) {
             assertSame(fmbuilder, fmbuilder.setTcpSourcePort(port));
             FlowMatch fm = fmbuilder.build(index);
-            L4Match lm = new TcpMatch(new PortMatch(port), null);
+            L4Match lm = (port == null)
+                ? null : new TcpMatch(new PortMatch(port), null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(lm, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(lm, fm.getLayer4Match());
@@ -413,24 +503,32 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setTcpDestinationPort(int)}.
+     * Test case for {@link FlowMatchBuilder#setTcpDestinationPort(Integer)}.
      */
     @Test
     public void testSetTcpDestinationPort1() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        int[] ports = {
-            0, 1, 10, 60, 100, 5000, 33333, 65535,
+        Integer[] ports = {
+            null, 0, 1, 10, 60, 100, 5000, 33333, 65535,
         };
 
         // L4 protocol condition other than TCP should be cleared.
         fmbuilder.setUdpSourcePort(1).setUdpDestinationPort(2);
 
-        for (int port: ports) {
+        for (Integer port: ports) {
             assertSame(fmbuilder, fmbuilder.setTcpDestinationPort(port));
             FlowMatch fm = fmbuilder.build(index);
-            L4Match lm = new TcpMatch(null, new PortMatch(port));
+            L4Match lm = (port == null)
+                ? null : new TcpMatch(null, new PortMatch(port));
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(lm, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(lm, fm.getLayer4Match());
@@ -468,24 +566,32 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setUdpSourcePort(int)}.
+     * Test case for {@link FlowMatchBuilder#setUdpSourcePort(Integer)}.
      */
     @Test
     public void testSetUdpSourcePort1() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        int[] ports = {
-            0, 1, 10, 60, 100, 5000, 33333, 65535,
+        Integer[] ports = {
+            null, 0, 1, 10, 60, 100, 5000, 33333, 65535,
         };
 
         // L4 protocol condition other than UDP should be cleared.
         fmbuilder.setIcmpType((short)10).setIcmpCode((short)20);
 
-        for (int port: ports) {
+        for (Integer port: ports) {
             assertSame(fmbuilder, fmbuilder.setUdpSourcePort(port));
             FlowMatch fm = fmbuilder.build(index);
-            L4Match lm = new UdpMatch(new PortMatch(port), null);
+            L4Match lm = (port == null)
+                ? null : new UdpMatch(new PortMatch(port), null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(lm, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(lm, fm.getLayer4Match());
@@ -524,24 +630,32 @@ public class FlowMatchBuilderTest extends TestBase {
 
 
     /**
-     * Test case for {@link FlowMatchBuilder#setUdpDestinationPort(int)}.
+     * Test case for {@link FlowMatchBuilder#setUdpDestinationPort(Integer)}.
      */
     @Test
     public void testSetUdpDestinationPort1() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        int[] ports = {
-            0, 1, 10, 60, 100, 5000, 33333, 65535,
+        Integer[] ports = {
+            null, 0, 1, 10, 60, 100, 5000, 33333, 65535,
         };
 
         // L4 protocol condition other than UDP should be cleared.
         fmbuilder.setIcmpType((short)10).setIcmpCode((short)20);
 
-        for (int port: ports) {
+        for (Integer port: ports) {
             assertSame(fmbuilder, fmbuilder.setUdpDestinationPort(port));
             FlowMatch fm = fmbuilder.build(index);
-            L4Match lm = new UdpMatch(null, new PortMatch(port));
+            L4Match lm = (port == null)
+                ? null : new UdpMatch(null, new PortMatch(port));
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(lm, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(lm, fm.getLayer4Match());
@@ -579,24 +693,32 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setIcmpType(short)}.
+     * Test case for {@link FlowMatchBuilder#setIcmpType(Short)}.
      */
     @Test
     public void testSetIcmpType() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        short[] types = {
-            0, 1, 20, 55, 120, 230, 255,
+        Short[] types = {
+            null, 0, 1, 20, 55, 120, 230, 255,
         };
 
         // L4 protocol condition other than ICMP should be cleared.
         fmbuilder.setTcpSourcePort(10).setTcpDestinationPort(20);
 
-        for (short type: types) {
+        for (Short type: types) {
             assertSame(fmbuilder, fmbuilder.setIcmpType(type));
             FlowMatch fm = fmbuilder.build(index);
-            L4Match lm = new IcmpMatch(Short.valueOf(type), null);
+            L4Match lm = (type == null)
+                ? null : new IcmpMatch(type, null);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(lm, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(lm, fm.getLayer4Match());
@@ -606,24 +728,32 @@ public class FlowMatchBuilderTest extends TestBase {
     }
 
     /**
-     * Test case for {@link FlowMatchBuilder#setIcmpCode(short)}.
+     * Test case for {@link FlowMatchBuilder#setIcmpCode(Short)}.
      */
     @Test
     public void testSetIcmpCode() {
         FlowMatchBuilder fmbuilder = new FlowMatchBuilder();
         int index = 0;
-        short[] codes = {
-            0, 3, 31, 67, 133, 219, 255,
+        Short[] codes = {
+            null, 0, 3, 31, 67, 133, 219, 255,
         };
 
         // L4 protocol condition other than ICMP should be cleared.
         fmbuilder.setTcpSourcePort(10).setTcpDestinationPort(20);
 
-        for (short code: codes) {
+        for (Short code: codes) {
             assertSame(fmbuilder, fmbuilder.setIcmpCode(code));
             FlowMatch fm = fmbuilder.build(index);
-            L4Match lm = new IcmpMatch(null, Short.valueOf(code));
+            L4Match lm = (code == null)
+                ? null : new IcmpMatch(null, code);
             assertEquals(Integer.valueOf(index), fm.getIndex());
+            assertEquals(null, fm.getEthernetMatch());
+            assertEquals(null, fm.getInetMatch());
+            assertEquals(lm, fm.getLayer4Match());
+            assertEquals(-1, fm.getInetProtocol());
+
+            fm = fmbuilder.build();
+            assertEquals(null, fm.getIndex());
             assertEquals(null, fm.getEthernetMatch());
             assertEquals(null, fm.getInetMatch());
             assertEquals(lm, fm.getLayer4Match());

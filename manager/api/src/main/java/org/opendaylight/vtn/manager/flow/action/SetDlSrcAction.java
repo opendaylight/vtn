@@ -17,8 +17,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.controller.sal.action.SetDlSrc;
-
 /**
  * This class describes a flow action that sets the specified data layer
  * address into the packet as the source address.
@@ -38,7 +36,7 @@ public final class SetDlSrcAction extends DlAddrAction {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 54464359889513223L;
+    private static final long serialVersionUID = -5980557178088631644L;
 
     /**
      * Private constructor only for JAXB.
@@ -54,17 +52,6 @@ public final class SetDlSrcAction extends DlAddrAction {
      */
     public SetDlSrcAction(byte[] addr) {
         super(addr);
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param act  A SAL action that sets the source data layer address.
-     * @throws NullPointerException
-     *    {@code null} is passed to {@code act}.
-     */
-    public SetDlSrcAction(SetDlSrc act) {
-        super(act.getDlAddress());
     }
 
     /**

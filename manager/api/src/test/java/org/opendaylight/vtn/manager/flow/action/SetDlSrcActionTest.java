@@ -26,7 +26,6 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.TestBase;
 
-import org.opendaylight.controller.sal.action.SetDlSrc;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -60,14 +59,6 @@ public class SetDlSrcActionTest extends TestBase {
             assertTrue(Arrays.equals(bytes, addr));
             assertEquals(null, act.getValidationStatus());
             assertEquals(ea, act.getEtherAddress());
-
-            if (bytes != null) {
-                SetDlSrc sact = new SetDlSrc(bytes);
-                act = new SetDlSrcAction(sact);
-                assertTrue(Arrays.equals(bytes, act.getAddress()));
-                assertEquals(null, act.getValidationStatus());
-                assertEquals(ea, act.getEtherAddress());
-            }
         }
     }
 

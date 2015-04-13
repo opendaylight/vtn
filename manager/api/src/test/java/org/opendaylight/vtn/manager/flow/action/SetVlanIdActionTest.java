@@ -19,8 +19,6 @@ import org.opendaylight.vtn.manager.TestBase;
 import org.opendaylight.vtn.manager.XmlDataType;
 import org.opendaylight.vtn.manager.XmlAttributeType;
 
-import org.opendaylight.controller.sal.action.SetVlanId;
-
 /**
  * JUnit test for {@link SetVlanIdAction}.
  */
@@ -53,13 +51,6 @@ public class SetVlanIdActionTest extends TestBase {
         short[] vlans = {Short.MIN_VALUE, 0, 1, 100, 4095, Short.MAX_VALUE};
         for (short vlan: vlans) {
             SetVlanIdAction act = new SetVlanIdAction(vlan);
-            assertEquals(vlan, act.getVlan());
-        }
-
-        short[] valid = {1, 2, 300, 1000, 2000, 3000, 4095};
-        for (short vlan: valid) {
-            SetVlanId sact = new SetVlanId((int)vlan);
-            SetVlanIdAction act = new SetVlanIdAction(sact);
             assertEquals(vlan, act.getVlan());
         }
     }
