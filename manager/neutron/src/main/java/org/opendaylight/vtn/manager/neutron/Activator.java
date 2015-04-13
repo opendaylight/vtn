@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,7 @@ import org.apache.felix.dm.Component;
 import org.opendaylight.controller.networkconfig.neutron.INeutronNetworkAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortAware;
 import org.opendaylight.controller.networkconfig.neutron.INeutronPortCRUD;
+import org.opendaylight.controller.networkconfig.neutron.INeutronSubnetAware;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
 import org.opendaylight.ovsdb.plugin.api.OvsdbConfigurationService;
 import org.opendaylight.ovsdb.plugin.api.OvsdbConnectionService;
@@ -55,6 +56,7 @@ public class Activator extends ComponentActivatorAbstractBase {
     public Object[] getImplementations() {
         Object[] res = {NetworkHandler.class,
                         PortHandler.class,
+                        SubnetHandler.class,
                         OVSDBPluginEventHandler.class};
         return res;
     }
@@ -88,6 +90,16 @@ public class Activator extends ComponentActivatorAbstractBase {
         if (imp.equals(PortHandler.class)) {
             // Export the services.
             c.setInterface(INeutronPortAware.class.getName(), null);
+
+            // Create service dependencies.
+            c.add(createServiceDependency().
+                  setService(IVTNManager.class).
+                  setCallbacks("setVTNManager", "unsetVTNManager").
+                  setRequired(true));
+        }
+        if (imp.equals(SubnetHandler.class)) {
+            // Export the services.
+            c.setInterface(INeutronSubnetAware.class.getName(), null);
 
             // Create service dependencies.
             c.add(createServiceDependency().
