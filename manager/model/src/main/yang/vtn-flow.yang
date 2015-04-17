@@ -318,7 +318,7 @@ module vtn-flow {
                egress flow entry.
 
                This list is omitted if a list of flow actions is not
-               configured. Am empty list is configured if this data flow
+               configured. An empty list is configured if this data flow
                forwards packets without any modification.
 
                Note that elements in this list needs to be sorted by `order'
@@ -348,7 +348,7 @@ module vtn-flow {
             uses stat:generic-statistics;
         }
 
-        container averaged-flow-stats {
+        container averaged-data-flow-stats {
             description
               "Statistics information per second about this data flow.
                This container is omitted if statistics information is
@@ -448,25 +448,38 @@ module vtn-flow {
             uses vtn-flow-identifiable;
 
             leaf mode {
-                description "Specifies behavior of this operation.";
+                description
+                  "Specifies behavior of this operation.
+                   If omitted, it is treated as if SUMMARY is specified.";
                 type data-flow-mode;
+                default SUMMARY;
             }
 
             leaf node {
-                description "Identifier for a physical switch.";
+                description
+                  "Identifier for a physical switch.
+                   If this field is specified and `data-flow-port' field
+                   is omitted, only data flows that forward packets via
+                   the specified switch will be selected.";
                 type inv:node-id;
             }
 
             container data-flow-port {
                 description
                   "Specifies the location of the physical switch port in the
-                   physical switch specified by `node' field.";
+                   physical switch specified by `node' field.
+                   If both this field and `node' field are specified,
+                   only data flows that forward packets via the specified
+                   switch port will be selected. This field will be
+                   ignored if `node' field is omitted.";
                 uses vtype:vtn-switch-port;
             }
 
             container data-flow-source {
                 description
-                  "Specifies the L2 source host of the data flow.";
+                  "Specifies the L2 source host of the data flow.
+                   If this field is specified, only data flows that map
+                   packets sent by the specified L2 host will be selected.";
                 uses vtype:vlan-host;
             }
 
