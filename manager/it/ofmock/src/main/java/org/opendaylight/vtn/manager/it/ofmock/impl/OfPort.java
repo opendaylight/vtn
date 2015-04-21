@@ -278,8 +278,12 @@ public final class OfPort {
             provider.publish(getNodeConnectorUpdated());
 
             String peer = peerIdentifier;
-            if (peer != null && state) {
-                notifyLinkDiscovered(provider, peer);
+            if (peer != null) {
+                if (state) {
+                    notifyLinkDiscovered(provider, peer);
+                } else {
+                    notifyLinkRemoved(provider, peer);
+                }
             }
         }
     }

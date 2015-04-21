@@ -903,6 +903,10 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
                     "Initial switch port cannot be specified to peer: " + peer;
                 throw new IllegalArgumentException(msg);
             }
+
+            // Ensure that both ports are already notified.
+            portListener.awaitCreated(pid);
+            portListener.awaitCreated(peer);
         }
 
         String dst;
