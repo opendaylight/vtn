@@ -1,0 +1,73 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3aa0d159_945e9844",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/routing/PathPolicyChangeTest.java",
+        "patchSetId": 4
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-23T05:11:44Z",
+      "side": 1,
+      "message": "What are these assertEquals() testing here?\n\nI think these assertEquals(null, ex.getLocalizedMessage()) do not test any aspects of any functions of VTN Manager, and just would hide bugs.",
+      "range": {
+        "startLine": 46,
+        "startChar": 16,
+        "endLine": 46,
+        "endChar": 61
+      },
+      "revId": "ce1891063703e5494207a18b5ce541eacbf8b7a9",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3aa0d159_c66d5a06",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/routing/PathPolicyChangeTest.java",
+        "patchSetId": 4
+      },
+      "lineNbr": 50,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-23T05:11:44Z",
+      "side": 1,
+      "message": "What is the purpose of this call?\nIt seems to me that the same method is called with the same parameter (0) in the above for loop.",
+      "range": {
+        "startLine": 50,
+        "startChar": 12,
+        "endLine": 50,
+        "endChar": 32
+      },
+      "revId": "ce1891063703e5494207a18b5ce541eacbf8b7a9",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3aa0d159_1a3158ec",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/routing/RemoveCostTaskTest.java",
+        "patchSetId": 4
+      },
+      "lineNbr": 45,
+      "author": {
+        "id": 396
+      },
+      "writtenOn": "2015-04-23T05:11:44Z",
+      "side": 1,
+      "message": "I think the following is simpler.\n\nassertEquals(port, removeCostTask.getPortDesc());",
+      "range": {
+        "startLine": 45,
+        "startChar": 12,
+        "endLine": 45,
+        "endChar": 71
+      },
+      "revId": "ce1891063703e5494207a18b5ce541eacbf8b7a9",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
