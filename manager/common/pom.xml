@@ -795,6 +795,11 @@
         <artifactId>transcriber</artifactId>
         <version>0.5.0-SNAPSHOT</version>
       </dependency>
+      <dependency>
+        <groupId>org.opendaylight.neutron</groupId>
+        <artifactId>model</artifactId>
+        <version>0.5.0-SNAPSHOT</version>
+      </dependency>
 
       <!-- OpenDaylight OVSDB project -->
       <dependency>

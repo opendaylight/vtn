@@ -198,6 +198,28 @@
               </binding-forwarded-data-broker>
             </module>
 
+            <!-- forwardingrules-manager configuration -->
+            <module>
+              <type xmlns:frm="urn:opendaylight:params:xml:ns:yang:openflowplugin:app:forwardingrules-manager">
+                frm:forwardingrules-manager
+              </type>
+              <name>forwardingrules-manager</name>
+
+              <data-broker>
+                <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+                  binding:binding-async-data-broker
+                </type>
+                <name>binding-data-broker</name>
+              </data-broker>
+
+              <rpc-registry>
+                <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
+                  binding:binding-rpc-registry
+                </type>
+                <name>binding-rpc-broker</name>
+              </rpc-registry>
+            </module>
+
             <!-- openflowplugin mock-up configuration -->
             <module>
               <type xmlns:ofmock="urn:opendaylight:vtn:it:ofmock:provider">
@@ -376,6 +398,11 @@
         <capability>urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:config-dom-store?module=opendaylight-config-dom-datastore&amp;revision=2014-06-17</capability>
         <capability>urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:operational-dom-store?module=opendaylight-operational-dom-datastore&amp;revision=2014-06-17</capability>
         <capability>urn:opendaylight:params:xml:ns:yang:controller:inmemory-datastore-provider?module=opendaylight-inmemory-datastore-provider&amp;revision=2014-06-17</capability>
+
+        <!-- forwardingrules-manager capabilities -->
+        <capability>
+          urn:opendaylight:params:xml:ns:yang:openflowplugin:app:forwardingrules-manager?module=forwardingrules-manager&amp;revision=2014-09-25
+        </capability>
 
         <!-- openflowplugin mock-up capabilities -->
         <capability>

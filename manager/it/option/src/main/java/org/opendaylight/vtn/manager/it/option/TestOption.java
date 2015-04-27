@@ -367,6 +367,8 @@ public final class TestOption {
             mavenBundle(TestHelper.CONTROLLER_MODELS, "model-inventory"),
             mavenBundle(TestHelper.CONTROLLER_MODELS, "model-topology"),
             mavenBundle(TestHelper.YANGTOOLS_MODELS, "ietf-topology"),
+            mavenBundle(TestHelper.YANGTOOLS_MODELS,
+                        "ietf-yang-types-20130715"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-base"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-service"),
             mavenBundle(OPENFLOW_MODEL, "model-flow-statistics"),
@@ -387,6 +389,7 @@ public final class TestOption {
             // Neutron bundles.
             mavenBundle(NEUTRON, "neutron-spi"),
             mavenBundle(NEUTRON, "transcriber"),
+            mavenBundle(NEUTRON, "model"),
 
             // OVSDB bundles.
             mavenBundle(OVSDB, "library"),
