@@ -41,6 +41,29 @@ pfc_bool_t OdcController::update_ctr(const key_ctr_t& key_ctr,
   return PFC_TRUE;
 }
 
+// converts the switch id from 00:00:00:00:00:00:00:02 to
+// openflow:2 format
+std::string OdcController::frame_openflow_switchid(
+    std::string &node_id) {
+  for (size_t i = 0; i < node_id.length(); i++) {
+    if (node_id[i] == ':') {
+      node_id.erase(i, 1);
+      i--;
+    }
+  }
+  int decimal = strtol(node_id.c_str(), 0, 16);
+  std::stringstream stream;
+  stream << decimal;
+  std::string switch_id = stream.str();
+  if (switch_id.empty()) {
+    return "";
+  }
+  std::string openflow_id = "";
+  openflow_id.append(SWITCH_BASE);
+  openflow_id.append(switch_id);
+  return openflow_id;
+}
+
 // Gets the controller type
 unc_keytype_ctrtype_t OdcController::get_controller_type() {
   ODC_FUNC_TRACE;
