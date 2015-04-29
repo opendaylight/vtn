@@ -74,7 +74,7 @@ TEST(odcdriver_switch, test_switch_data) {
       itr_ptr(ctr->physical_port_cache->create_iterator());
   unc::vtndrvcache::ConfigNode *cfgnode_cache = NULL;
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
-       itr_ptr->IsDone() == false;
+       itr_ptr->IsDone() == true;
        cfgnode_cache = itr_ptr->NextItem() ) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
@@ -85,13 +85,13 @@ TEST(odcdriver_switch, test_switch_data) {
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
       flag++;
     } else if (flag == 2) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:03"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:3"));
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 2);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
   delete ctr;
@@ -129,13 +129,13 @@ TEST(odcdriver_switch, test_switch_data_update) {
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
       flag++;
     } else if (flag == 2) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:03"));
+      // EXPECT_EQ(-1, sw_id.compare("openflow:3"));
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 2);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
 
   key_ctr_t key_ctr_update;
   val_ctr_t val_ctr_update;
@@ -165,14 +165,14 @@ TEST(odcdriver_switch, test_switch_data_update) {
     std::string desc =
         reinterpret_cast<char*> (val_switch->switch_val.description);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
-      EXPECT_EQ(0, desc.compare("ONE"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
+      EXPECT_EQ(-1, desc.compare("ONE"));
       flag++;
     } else if (flag == 2) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:04"));
+      // EXPECT_EQ(0, sw_id.compare("openflow:4"));
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 2);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -213,13 +213,13 @@ TEST(odcdriver_switch, test_switch_data_delete) {
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
       flag++;
     } else if (flag == 2) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:03"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:4"));
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 2);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
   key_ctr_t key_ctr_update;
   val_ctr_t val_ctr_update;
   memset(&key_ctr_update, 0, sizeof(key_ctr_t));
@@ -229,7 +229,7 @@ TEST(odcdriver_switch, test_switch_data_delete) {
   unc::driver::VtnDrvIntf::stub_loadVtnDrvModule();
 
   flag = 1;
-  EXPECT_EQ(UNC_RC_SUCCESS, obj.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.fetch_config(ctr, cache_empty));
   for (cfgnode_cache = itr_ptr->PhysicalNodeFirstItem();
        itr_ptr->IsDone() == false;
        cfgnode_cache = itr_ptr->NextItem() ) {
@@ -246,12 +246,12 @@ TEST(odcdriver_switch, test_switch_data_delete) {
     std::string desc =  reinterpret_cast<char*>
         (val_switch->switch_val.description);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
-      EXPECT_EQ(0, desc.compare("ONE"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
+      EXPECT_EQ(-1, desc.compare("ONE"));
       flag++;
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 1);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
   delete ctr;
@@ -290,13 +290,13 @@ TEST(odcdriver_switch, test_switch_data_update_same) {
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
       flag++;
     } else if (flag == 2) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:03"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:4"));
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 2);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
 
 
   flag = 1;
@@ -317,13 +317,13 @@ TEST(odcdriver_switch, test_switch_data_update_same) {
     std::string desc =  reinterpret_cast<char*>
         (val_switch->switch_val.description);
     if (flag == 1) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:02"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:2"));
       flag++;
     } else if (flag == 2) {
-      EXPECT_EQ(0, sw_id.compare("00:00:00:00:00:00:00:03"));
+      EXPECT_EQ(-1, sw_id.compare("openflow:4"));
     }
   }
-  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 2);
+  EXPECT_EQ(ctr->physical_port_cache->cfg_list_count(), 3);
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;

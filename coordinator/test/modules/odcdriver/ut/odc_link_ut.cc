@@ -553,9 +553,9 @@ TEST(odcdriver_link, test_link_data_delete) {
 
   std::string LINK_RESP_DELETE = "172.16.0.37";
   inet_aton(LINK_RESP_DELETE.c_str(),  &val_ctr.ip_address);
-  cache_empty = PFC_FALSE;
+  cache_empty = PFC_TRUE;
   ctr->update_ctr(key_ctr, val_ctr);
-  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
@@ -581,7 +581,7 @@ TEST(odcdriver_link, test_link_no_data) {
 
   pfc_bool_t cache_empty = PFC_TRUE;
   unc::odcdriver::OdcLink obj_link(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS, obj_link.fetch_config(ctr, cache_empty));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj_link.fetch_config(ctr, cache_empty));
 
   unc::driver::VtnDrvIntf::stub_unloadVtnDrvModule();
   delete ctr->physical_port_cache;
