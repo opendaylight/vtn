@@ -13,8 +13,10 @@
 #include <pfc/ipc_struct.h>
 #include <arpa/inet.h>
 #include <driver/controller_interface.hh>
+#include <odc_driver_common_defs.hh>
 #include <string>
 #include <vector>
+#include <sstream>
 
 namespace unc {
 namespace odcdriver {
@@ -83,6 +85,13 @@ class OdcController: public unc::driver::controller {
    * @return    - PFC_TRUE on updation
    */
   pfc_bool_t update_ctr(const key_ctr_t& key_ctr, const val_ctr_t& val_ctr);
+
+  /**
+   * @brief                     - converts switch id to openflow format
+   * @param[in] node_id         - vtn manager node id format
+   * @return string             - generated string format
+   */
+  std::string frame_openflow_switchid(std::string &node_id);
 
   /**
    * @brief     - Vector to hold vlan-ids for verification purpose
