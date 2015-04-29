@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -8,31 +8,31 @@
 #
 
 [SwitchOne]
-switch_id = 00:00:00:00:00:00:00:01
+switch_id =SW-openflow:1
 description=switch1
 
 [SwitchTwo]
-switch_id=00:00:00:00:00:00:00:02
+switch_id=SW-openflow:2
 description=switch2
 
 [SwitchThree]
-switch_id=00:00:00:00:00:00:00:03
+switch_id=00:SW-openflow:3
 description=switch3
 
 [SwitchFour]
-switch_id=00:00:00:00:00:00:00:04
+switch_id=SW-openflow:4
 description=switch4
 
 [SwitchFive]
-switch_id=00:00:00:00:00:00:00:05
+switch_id=SW-openflow:5
 description=switch5
 
 [SwitchSix]
-switch_id=00:00:00:00:00:00:00:06
+switch_id=SW-openflow:6
 description=switch6
 
 [SwitchSeven]
-switch_id=00:00:00:00:00:00:00:07
+switch_id=SW-openflow:7
 description=switch7
 
 [GETURL]

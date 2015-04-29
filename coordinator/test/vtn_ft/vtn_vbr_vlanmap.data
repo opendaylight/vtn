@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -8,41 +8,41 @@
 #
 
 [VlanmapOne]
-logical_port_id=SW-00:00:00:00:00:00:00:01
+logical_port_id=SW-openflow:1
 vlan_id=10
 u_id=20
 no_vlan_id = true
-vlanmap_id =lpid-SW-00:00:00:00:00:00:00:01
+vlanmap_id =lpid-SW-openflow:1
 node_id=00:00:00:00:00:00:00:01
 any_id=ANY.20
 create_any_id=ANY.10
 
 [VlanmapTwo]
-logical_port_id=SW-00:00:00:00:00:00:00:02
+logical_port_id=SW-openflow:2
 vlan_id=2
 u_id=20
 no_vlan_id = true
-vlanmap_id =lpid-SW-00:00:00:00:00:00:00:02
+vlanmap_id =lpid-SW-openflow:2
 node_id=00:00:00:00:00:00:00:02
 any_id=ANY.20
 create_any_id=ANY.2
 
 [VlanmapThree]
-logical_port_id=SW-00:00:00:00:00:00:00:03
+logical_port_id=SW-openflow:3
 vlan_id=3
 u_id=30
 no_vlan_id = true
-vlanmap_id =lpid-SW-00:00:00:00:00:00:00:03
+vlanmap_id =lpid-SW-openflow:3
 node_id=00:00:00:00:00:00:00:03
 any_id=ANY.30
 create_any_id=ANY.3
 
 [VlanmapFour]
-logical_port_id=SW-00:00:00:00:00:00:00:04
+logical_port_id=SW-openflow:4
 vlan_id=4
 u_id=40
 no_vlan_id = true
-vlanmap_id =lpid-SW-00:00:00:00:00:00:00:04
+vlanmap_id =lpid-SW-openflow:4
 node_id=00:00:00:00:00:00:00:04
 any_id=ANY.40
 create_any_id=ANY.4

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -281,6 +281,7 @@ class OdcPort : public unc::driver::vtn_driver_read_command {
   unc::restjson::ConfFileValues_t conf_file_values_;
   std::map <std::string, std::string> port_id_val_;
   std::map <std::string, std::string> link_map_;
+  std::string parent_switch_;
 };
 }  // namespace odcdriver
 }  // namespace unc

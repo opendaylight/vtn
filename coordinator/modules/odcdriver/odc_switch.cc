@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 20155555 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,9 +31,8 @@ UncRespCode OdcSwitch::fetch_config(unc::driver::controller *ctr_ptr,
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
 
   std::string url = "";
-  url.append(BASE_SW_URL);
-  url.append(CONTAINER_NAME);
-  url.append(NODES);
+  url.append(RESTCONF_BASE);
+  url.append(VTN_SW_NODES);
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                                         ctr_ptr->get_user_name(),
@@ -86,22 +85,10 @@ UncRespCode OdcSwitch::fill_config_node_vector(
   memset(&key_switch, 0, sizeof(key_switch_t));
   memset(&val_switch, 0, sizeof(val_switch_st_t));
 
-  json_object *json_obj_node = NULL;
-  uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                                     "node",
-                                                     arr_idx,
-                                                     json_obj_node);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_node, json_type_null))) {
-    pfc_log_error(" Error while parsing node or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
   std::string node_id   = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node,
+  uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
                                             "id",
-                                            -1,
+                                            arr_idx,
                                             node_id);
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (node_id.empty())) {
@@ -109,40 +96,8 @@ UncRespCode OdcSwitch::fill_config_node_vector(
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  json_object *json_prop = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                            "properties",
-                                            arr_idx,
-                                            json_prop);
+  pfc_log_info(" NODE id :%s", node_id.c_str());
 
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error while parsing description or json_prop NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  json_object *json_obj_description = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_prop,
-                                            "description",
-                                            -1,
-                                            json_obj_description);
-
-  if (restjson::REST_OP_SUCCESS != ret_val) {
-    pfc_log_error(" Error occured while parsing json object description");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string desc   = "";
-  if (json_object_is_type(json_obj_description, json_type_null)) {
-    pfc_log_debug("Switch Description is Null");
-  } else {
-    ret_val = restjson::JsonBuildParse::parse(json_obj_description,
-                                              "value",
-                                              -1,
-                                              desc);
-
-    if (restjson::REST_OP_SUCCESS != ret_val) {
-      pfc_log_error(" Error while parsing description");
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-  }
   std::string ctr_name = ctr_ptr->get_controller_id();
   //  Fills Key Structure
   strncpy(reinterpret_cast<char*> (key_switch.switch_id), node_id.c_str(),
@@ -156,7 +111,7 @@ UncRespCode OdcSwitch::fill_config_node_vector(
   strncpy(reinterpret_cast<char*> (val_switch.switch_val.domain_name),
           DOM_NAME.c_str(), strlen(DOM_NAME.c_str()));
   val_switch.switch_val.valid[VAL_DOMAINID_ATTR] = UNC_VF_VALID;
-
+  std::string desc ="OF-SWITCH";
   strncpy(reinterpret_cast<char*> (val_switch.switch_val.description),
           desc.c_str(), strlen(desc.c_str()));
   val_switch.switch_val.valid[VAL_DESCRIPTION] = UNC_VF_VALID;
@@ -579,22 +534,27 @@ UncRespCode OdcSwitch::parse_node_response(
     return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length =0;
-  json_object *json_obj_node_prop = NULL;
+  json_object *json_obj_node = NULL;
   uint32_t ret_val = restjson::JsonBuildParse::parse(jobj,
-                                                     "nodeProperties",
+                                                     "vtn-nodes",
                                                      -1,
-                                                     json_obj_node_prop);
+                                                     json_obj_node);
 
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_node_prop, json_type_null))) {
+      (json_object_is_type(json_obj_node, json_type_null))) {
     json_object_put(jobj);
-    pfc_log_error("Parsing Error json_obj_node_prop is null");
+    pfc_log_error("Parsing Error json_obj_node is null");
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
+  json_object *json_obj_node_prop = NULL;
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node,
+                                                     "vtn-node",
+                                                     -1,
+                                                     json_obj_node_prop);
   if (json_object_is_type(json_obj_node_prop, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(jobj,
-                                                  "nodeProperties");
+    array_length = restjson::JsonBuildParse::get_array_length(json_obj_node,
+                                                  "vtn-node");
   }
   if (0 == array_length) {
     pfc_log_trace("No SWITCH present");

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -10,102 +10,102 @@
 [PortOne]
 port_id = 1
 port_name = s1-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:01-s1-eth1
+logical_port_id = PP-OF:openflow:1-s1-eth1
 
 [PortTwo]
 port_id = 2
 port_name = s1-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:01-s1-eth2
+logical_port_id = PP-OF:openflow:1-s1-eth2
 
 [PortThree]
 port_id = 1
 port_name = s2-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:02-s2-eth1
+logical_port_id = PP-OF:openflow:2-s2-eth1
 
 [PortFour]
 port_id = 2
 port_name = s2-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:02-s2-eth2
+logical_port_id = PP-OF:openflow:2-s2-eth2
 
 [PortFive]
 port_id = 3
 port_name = s2-eth3
-logical_port_id = PP-OF:00:00:00:00:00:00:00:02-s2-eth3
+logical_port_id = PP-OF:openflow:2-s2-eth3
 
 [PortSix]
 port_id = 1
 port_name = s3-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:03-s3-eth1
+logical_port_id = PP-OF:openflow:3-s3-eth1
 
 [PortSeven]
 port_id = 2
 port_name = s3-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:03-s3-eth2
+logical_port_id = PP-OF:openflow:3-s3-eth2
 
 [PortEight]
 port_id = 3
 port_name = s3-eth3
-logical_port_id = PP-OF:00:00:00:00:00:00:00:03-s3-eth3
+logical_port_id = PP-OF:openflow:3-s3-eth3
 
 [PortNine]
 port_id = 1
 port_name = s4-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:04-s4-eth1
+logical_port_id = PP-OF:openflow:4-s4-eth1
 
 [PortTen]
 port_id = 2
 port_name = s4-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:04-s4-eth2
+logical_port_id = PP-OF:openflow:4-s4-eth2
 
 [PortEleven]
 port_id = 3
 port_name = s4-eth3
-logical_port_id = PP-OF:00:00:00:00:00:00:00:04-s4-eth3
+logical_port_id = PP-OF:openflow:4-s4-eth3
 
 [PortTwelve]
 port_id = 1
 port_name = s5-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:05-s5-eth1
+logical_port_id = PP-OF:openflow:5-s5-eth1
 
 [PortThirteen]
 port_id = 2
 port_name = s5-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:05-s5-eth2
+logical_port_id = PP-OF:openflow:5-s5-eth2
 
 [PortFourteen]
 port_id = 3
 port_name = s5-eth3
-logical_port_id = PP-OF:00:00:00:00:00:00:00:05-s5-eth3
+logical_port_id = PP-OF:openflow:5-s5-eth3
 
 [PortFifteen]
 port_id = 1
 port_name = s6-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:06-s6-eth1
+logical_port_id = PP-OF:openflow:6-s6-eth1
 
 [PortSixteen]
 port_id = 2
 port_name = s6-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:06-s6-eth2
+logical_port_id = PP-OF:openflow:6-s6-eth2
 
 [PortSeventeen]
 port_id = 3
 port_name = s6-eth3
-logical_port_id = PP-OF:00:00:00:00:00:00:00:06-s6-eth3
+logical_port_id = PP-OF:openflow:6-s6-eth3
 
 [PortEighteen]
 port_id = 1
 port_name = s7-eth1
-logical_port_id = PP-OF:00:00:00:00:00:00:00:07-s7-eth1
+logical_port_id = PP-OF:openflow:7-s7-eth1
 
 [PortNineteen]
 port_id = 2
 port_name = s7-eth2
-logical_port_id = PP-OF:00:00:00:00:00:00:00:07-s7-eth2
+logical_port_id = PP-OF:openflow:7-s7-eth2
 
 [PortTwenty]
 port_id = 3
 port_name = s7-eth3
-logical_port_id = PP-OF:00:00:00:00:00:00:00:07-s7-eth3
+logical_port_id = PP-OF:openflow:7-s7-eth3
 
 [URL]
 port_url = /ports/detail.json

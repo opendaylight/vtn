@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -242,7 +242,7 @@ def test_vtn_vbr_vlanmap():
 
     print "TEST 1 : VTenant with one VBridge one VLANMAP without vlan_id and logicalport_id"
   # Delay for AUDIT
-    time.sleep(15)
+    time.sleep(20)
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
         print "VTN Create Failed"
