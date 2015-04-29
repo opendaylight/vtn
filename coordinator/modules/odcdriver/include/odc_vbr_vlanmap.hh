@@ -308,24 +308,15 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    */
   std::string generate_string_for_vector(const std::string &vtn_name,
                                          const std::string &vbr_name,
-                                         const std::string &vlan_id);
-  /**
-   * @brief                     - checks the logical port id format
-   * @param[in][out]            - logical_port_id
-   * @return                    - odc_drv_resp_code_t
-   */
-  odc_drv_resp_code_t check_logical_port_id_format(
-      std::string& logical_port_id);
+                                         const std::string &vlan_id,
+                                         unc::driver::controller *ctr);
 
   /**
-   * @brief                     - converts the format of logical
-   *                              port id
-   * @param[in][out]            - the converted logical
-   *                              port id
-   * @return odc_drv_resp_code_t- ODC_DRV_SUCCESS/
-   *                              ODC_DRV_FAILURE
+   * @brief                     - converts switch id to hexadecimal format
+   * @param[in] node_id         - vtn manager node id format
+   * @return string             - generated string format
    */
-  odc_drv_resp_code_t convert_logical_port(std::string &logical_port_id);
+  std::string frame_switchid_hex(std::string &node_id);
 
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;

@@ -64,9 +64,9 @@ class OdcLink {
    * @param[in] json_obj_node_prop  - json object
    * @param[in[ arr_idx             - array index - in int specifies the array
    *                                  index  -1 denotes no array
-   * @param[out] edge_prop_map      - map which stores edge property values
-   * @param[out] head_conn_map      - map which stores head connection property
-   *                                  values
+   * @param[in]                     - ctr controller pointer
+   * @param[out] cfg_node_vector    - vector to which config node needs to be
+   *                                   pushed
    * @return UncRespCode            - returns
    *                                  UNC_RC_SUCCESS/
    *                                  UNC_DRV_RC_ERR_GENERIC
@@ -74,14 +74,14 @@ class OdcLink {
   UncRespCode fill_edge_value_map(
       json_object *json_obj_node_prop,
       int arr_idx,
-      std::map<std::string, std::string> &edge_prop_map,
-      std::map<std::string, std::string> &head_conn_map);
+      unc::driver::controller *ctr_ptr,
+      std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
    * @brief                          - parse link and append to the vector
    * @param[in]                      - ctr controller pointer
-   * @param[in]                      - edge_prop_map map which contains edge prperties
-   * @param[in]                      - head_conn_map which contains head
+   * @param[in]                      - head_node_conn string which contains edge prperties
+   * @param[in]                      - tail_node_conn string contains head
    *                                   connection properties
    * @param[out] cfg_node_vector     - vector to which config node needs to be
    *                                   pushed
@@ -92,8 +92,8 @@ class OdcLink {
    */
   UncRespCode fill_config_node_vector(
       unc::driver::controller *ctr_ptr,
-      const std::map<std::string, std::string> &edge_prop_map,
-      const std::map<std::string, std::string> &head_conn_map,
+      std::string head_node_conn,
+      std::string tail_node_conn,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector);
 
   /**
@@ -194,7 +194,17 @@ class OdcLink {
       unc::driver::controller *ctr_ptr,
       char *data,
       std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
-
+  /**
+   * @brief                           -  parse the link details from
+                                         connection string
+   * @param[in] conn                  - Connection string contains link values
+   * @param[out] switch_id            - to be filled with the connection string
+   * @param[out] port                 - to be filled with the connection string
+   * @param[out] state                - to be filled with the connection string
+   * return UncRespCode               - None
+   */
+  void parse_properties(std::string conn, std::string &switch_id,
+                          std::string &port, std::string &state);
   /**
    * @brief                          - delete_Link
    * @param[in] ctr                  - Controller pointer
@@ -212,7 +222,6 @@ class OdcLink {
    * @param[in] cfg_node             - Config Node
    */
   void delete_config_node(unc::vtndrvcache::ConfigNode *cfg_node);
-
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;
   std::map<std::string, std::string> link_map_;

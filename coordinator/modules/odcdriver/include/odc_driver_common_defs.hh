@@ -39,6 +39,11 @@ const std::string DEFAULT_USER_NAME     = "admin";
 const std::string DEFAULT_PASSWORD      = "admin";
 const std::string DOM_NAME              = "(DEFAULT)";
 const std::string VTN_URL               = "/controller/nb/v2/vtn/default/vtns";
+const std::string RESTCONF_BASE         = "/restconf/operational";
+const std::string VTN_TOPO_URL          = "/vtn-topology:vtn-topology";
+const std::string VTN_SW_NODES          = "/vtn-inventory:vtn-nodes";
+const std::string VTN_PORT              = "/vtn-inventory:vtn-node";
+const std::string ODL_PORT              = "/opendaylight-inventory:nodes";
 
 // Configuration block to read from odcdriver.conf
 const std::string DRV_CONF_BLK          = "param";
@@ -61,6 +66,8 @@ const std::string SW_PREFIX             = "SW-";
 const std::string PP_PREFIX             = "PP-";
 const std::string PP_OF_PREFIX          = "PP-OF:";
 const std::string UNTAGGED_VLANID       = "65535";
+const std::string SWITCH_BASE           = "openflow:";
+const std::string SWITCH_HEX            = "0000000000000000";
 
 const uint32_t DEFAULT_ODC_PORT         = 8282;
 const uint32_t DEFAULT_CONNECT_TIME_OUT = 30;
