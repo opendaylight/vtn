@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -29,8 +29,8 @@ file_name = sudo python multitree.py
 boundary_id = boundaryone
 domain1_id = (DEFAULT)
 domain2_id = (DEFAULT)
-logical_port1_id = PP-00:00:00:00:00:00:00:01-s1-eth3
-logical_port2_id = PP-00:00:00:00:00:00:00:04-s4-eth3
+logical_port1_id = PP-openflow:1-s1-eth3
+logical_port2_id = PP-openflow:4-s4-eth3
 url = /boundaries/boundaryone.json
 
 [VLINK]

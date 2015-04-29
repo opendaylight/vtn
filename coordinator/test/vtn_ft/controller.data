@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -23,7 +23,7 @@ invalidusername=admininval
 invalidpassword=admininval
 url=/controllers/controller1.json
 get_url=/controllers/controller1
-port=8080
+port=8282
 
 [ControllerSecond]
 ipaddr=10.100.9.42

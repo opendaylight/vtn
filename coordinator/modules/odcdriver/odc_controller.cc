@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -39,6 +39,29 @@ pfc_bool_t OdcController::update_ctr(const key_ctr_t& key_ctr,
   ip_addr_         = (inet_ntoa(val_ctr.ip_address));
   audit_           = val_ctr.enable_audit;
   return PFC_TRUE;
+}
+
+// converts the switch id from 00:00:00:00:00:00:00:02 to
+// openflow:2 format
+std::string OdcController::frame_openflow_switchid(
+    std::string &node_id) {
+  for (size_t i = 0; i < node_id.length(); i++) {
+    if (node_id[i] == ':') {
+      node_id.erase(i, 1);
+      i--;
+    }
+  }
+  int decimal = strtol(node_id.c_str(), 0, 16);
+  std::stringstream stream;
+  stream << decimal;
+  std::string switch_id = stream.str();
+  if (switch_id.empty()) {
+    return "";
+  }
+  std::string openflow_id = "";
+  openflow_id.append(SWITCH_BASE);
+  openflow_id.append(switch_id);
+  return openflow_id;
 }
 
 // Gets the controller type
