@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -39,20 +39,19 @@ UncRespCode OdcPort::fetch_config(
     return UNC_DRV_RC_ERR_GENERIC;
   }
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
-  std::string switch_id = reinterpret_cast<const char*>
+  parent_switch_ = reinterpret_cast<const char*>
       (parent_switch->switch_id);
 
-  if (switch_id.empty()) {
+  if (parent_switch_.empty()) {
     pfc_log_error("Switch id is empty");
     return UNC_DRV_RC_ERR_GENERIC;
   }
   std::string url = "";
-  url.append(BASE_SW_URL);
-  url.append(CONTAINER_NAME);
-  url.append(NODE);
-  url.append(NODE_OF);
+  url.append(RESTCONF_BASE);
+  url.append(VTN_SW_NODES);
+  url.append(VTN_PORT);
   url.append(SLASH);
-  url.append(switch_id);
+  url.append(parent_switch_);
 
   pfc_log_trace("Url for port %s", url.c_str());
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
@@ -80,7 +79,8 @@ UncRespCode OdcPort::fetch_config(
       pfc_log_trace("All nodes : %s", data);
       UncRespCode ret_val =
           parse_port_response(ctr_ptr, data, cfgnode_vector);
-      pfc_log_debug("Number of Ports in Switch %s is, %d", switch_id.c_str(),
+      pfc_log_debug("Number of Ports in Switch %s is, %d",
+                        parent_switch_.c_str(),
                     static_cast<int>(cfgnode_vector.size()));
       if (UNC_RC_SUCCESS != ret_val) {
         pfc_log_error("Error while parsing the port response");
@@ -88,7 +88,7 @@ UncRespCode OdcPort::fetch_config(
       }
       // compare with cahe
       ret_val = compare_with_cache(ctr_ptr,
-                                   cfgnode_vector, switch_id, cache_empty);
+                                   cfgnode_vector, parent_switch_, cache_empty);
       pfc_log_debug("Response from compare_with_cache is %d", ret_val);
       return ret_val;
     }
@@ -109,87 +109,57 @@ UncRespCode OdcPort::fill_config_node_vector(
   memset(&key_port, 0, sizeof(key_port_t));
   memset(&val_port, 0, sizeof(val_port_st_t));
 
-  json_object *json_obj_node_conn = NULL;
+  // json_object *json_obj_node_conn = NULL;
+  std::string port_id = "";
   uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
-                                                     "nodeconnector",
+                                                     "id",
                                                      arr_idx,
-                                                     json_obj_node_conn);
+                                                     port_id);
 
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_node_conn, json_type_null))) {
-    pfc_log_error(" Error while parsing node");
+  if (restjson::REST_OP_SUCCESS != ret_val) {
+    pfc_log_error(" Error while parsing port id");
     return UNC_DRV_RC_ERR_GENERIC;
   }
+  pfc_log_info("odc_port:port_id %s", port_id.c_str());
 
-  std::string node_conn_id = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn,
-                                            "id",
-                                            -1,
-                                            node_conn_id);
+  std::string cost = "";
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
+                                                     "cost",
+                                                     arr_idx,
+                                                     cost);
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (node_conn_id.empty())) {
-    pfc_log_error(" Error while parsing node_conn_id");
+      (cost.empty())) {
+    pfc_log_error(" Error while parsing cost");
     return UNC_DRV_RC_ERR_GENERIC;
   }
+  pfc_log_info("odc_port:cost %s", cost.c_str());
 
-  json_object *json_obj_node = NULL;
-  std::string node_type = "";
-  std::string node_id   = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn,
-                                            "node",
-                                            -1,
-                                            json_obj_node);
-
+  std::string port_name = "";
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
+                                                     "name",
+                                                     arr_idx,
+                                                     port_name);
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_node, json_type_null))) {
-    pfc_log_error(" Error while parsing port or json obj is NULL");
+      (port_name.empty())) {
+    pfc_log_error(" Error while parsing port name");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn,
-                                            "type",
-                                            -1,
-                                            node_type);
+  pfc_log_info("odc_port:port_name %s", port_name.c_str());
 
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (node_type.empty())) {
-    pfc_log_error(" Error while parsing node_type");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  if (node_type.compare("SW") == 0) {
-    pfc_log_debug("SW type is received");
-    return UNC_RC_SUCCESS;
-  }
-
-  ret_val = restjson::JsonBuildParse::parse(json_obj_node, "id",
-                                            -1, node_id);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (node_id.empty())) {
-    pfc_log_error(" Error while parsing node id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string name_value = "";
   uint state_value = 0;
-  uint config_value = 0;
-  unsigned long long speed = 0;
-  ret_val = parse_port_properties_value(arr_idx,
-                                        json_obj_node_conn_prop,
-                                        name_value,
-                                        state_value,
-                                        config_value,
-                                        speed);
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
+                                                     "enabled",
+                                                     arr_idx,
+                                                     state_value);
+  pfc_log_info("odc_port:status %d", state_value);
 
-  if (UNC_RC_SUCCESS != ret_val) {
-    pfc_log_error("Error in  parsing node conn properties");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
 
   //  Fills Key Structure
-  strncpy(reinterpret_cast<char*> (key_port.port_id), name_value.c_str(),
-          strlen(name_value.c_str()));
+  strncpy(reinterpret_cast<char*> (key_port.port_id), port_name.c_str(),
+          strlen(port_name.c_str()));
 
-  strncpy(reinterpret_cast<char*> (key_port.sw_key.switch_id), node_id.c_str(),
-          strlen(node_id.c_str()));
+  strncpy(reinterpret_cast<char*> (key_port.sw_key.switch_id),
+          parent_switch_.c_str(), strlen(parent_switch_.c_str()));
 
   std::string ctr_name = ctr_ptr->get_controller_id();
   strncpy(reinterpret_cast<char*> (key_port.sw_key.ctr_key.controller_name),
@@ -198,46 +168,47 @@ UncRespCode OdcPort::fill_config_node_vector(
   // Fill Value Structure
   val_port.valid[VAL_PORT_STRUCT_ATTR] = UNC_VF_VALID;
 
-  std::string port_id = "PP-OF:";
-  port_id.append(node_id);
-  port_id.append(HYPHEN);
-  port_id.append(name_value);
-  pfc_log_debug("Port id formed in logical port : %s", port_id.c_str());
+  std::string lp_id = "PP-OF:";
+  lp_id.append(parent_switch_);
+  lp_id.append(HYPHEN);
+  lp_id.append(port_name);
+  pfc_log_debug("Port id formed in logical port : %s", lp_id.c_str());
   // Fill link map
-  std::string head_conn = node_id;
-  std::string port_value = name_value;
+  // linkmap contains port_id as key
+  // switchid|status|portname value
+  // <openflow:3:3,s3-eth3|status|openflow:3>
+  std::string head_conn = port_id;
+  std::string port_value = port_name;
   port_value.append(PIPE_SEPARATOR);
   std::ostringstream str_state_val;
   str_state_val << state_value;
   port_value.append(str_state_val.str());
   port_value.append(PIPE_SEPARATOR);
-  std::ostringstream str_conf_val;
-  str_conf_val << config_value;
-  port_value.append(str_conf_val.str());
-  head_conn.append(PIPE_SEPARATOR);
-  head_conn.append(node_conn_id);
+  port_value.append(parent_switch_);
   link_map_[head_conn] = port_value;
 
   pfc_log_debug("link details framed %s | %s", head_conn.c_str(),
                 port_value.c_str());
-  strncpy(reinterpret_cast<char*> (val_port.logical_port_id), port_id.c_str(),
-          strlen(port_id.c_str()));
+  strncpy(reinterpret_cast<char*> (val_port.logical_port_id), lp_id.c_str(),
+          strlen(lp_id.c_str()));
   val_port.valid[kIdxPortLogicalPortId] = UNC_VF_VALID;
 
-  if (ADMIN_UP == config_value) {
+  unsigned long long speed = 0;
+  if (ADMIN_UP == state_value) {
     val_port.port.admin_status = UPPL_PORT_ADMIN_UP;
     val_port.port.valid[VAL_PORT_EVENT_ATTR3] = UNC_VF_VALID;
-  } else if (ADMIN_DOWN == config_value)  {
+  } else if (ADMIN_DOWN == state_value)  {
     val_port.port.admin_status = UPPL_PORT_ADMIN_DOWN;
     val_port.port.valid[VAL_PORT_EVENT_ATTR3] = UNC_VF_VALID;
   }
-
+  std::string node_conn_id = "";
+  node_conn_id = port_id.substr(strlen(parent_switch_.c_str())+1,
+                                strlen(port_id.c_str()));
   val_port.port.port_number = atoi(node_conn_id.c_str());
   val_port.port.valid[VAL_PORT_EVENT_ATTR1] = UNC_VF_VALID;
 
   if (unc::driver::CONNECTION_UP == ctr_ptr->get_connection_status()) {
-    if ((ADMIN_UP == config_value) &&
-        (EDGE_UP == state_value)) {
+    if (ADMIN_UP == state_value) {
       val_port.oper_status = UPPL_PORT_OPER_UP;
       val_port.valid[VAL_PORT_EVENT_ATTR2] = UNC_VF_VALID;
     } else {
@@ -835,30 +806,42 @@ UncRespCode OdcPort::parse_port_response(
   uint32_t array_length =0;
   json_object *json_obj_node_conn_prop = NULL;
   uint32_t ret_val = restjson::JsonBuildParse::parse(jobj,
-                                                     "nodeConnectorProperties",
+                                                     "vtn-node",
                                                      -1,
                                                      json_obj_node_conn_prop);
-
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
       (json_object_is_type(json_obj_node_conn_prop, json_type_null))) {
     json_object_put(jobj);
     pfc_log_error("Parsing Error json_obj_node_conn_prop is null");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  if (json_object_is_type(json_obj_node_conn_prop, json_type_array)) {
+  json_object *json_obj_port_conn_prop = NULL;
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
+                                            "vtn-port",
+                                            0,
+                                            json_obj_port_conn_prop);
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (json_object_is_type(json_obj_port_conn_prop, json_type_null))) {
+    json_object_put(jobj);
+    pfc_log_error("Parsing Error json_obj_node_conn_prop is null");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  if (json_object_is_type(json_obj_port_conn_prop, json_type_array)) {
     array_length = restjson::JsonBuildParse::get_array_length(
-        jobj,
-        "nodeConnectorProperties");
+        json_obj_port_conn_prop);
+    pfc_log_error("jobj array lenth:%d", array_length);
   }
   if (0 == array_length) {
     pfc_log_debug("No nodes port present");
     json_object_put(jobj);
     return UNC_RC_SUCCESS;
   }
+  pfc_log_info("vtn-port PROPERTY :%s",
+               restjson::JsonBuildParse::get_json_string
+               (json_obj_port_conn_prop));
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
     UncRespCode ret_val = fill_config_node_vector(ctr_ptr,
-                                                  json_obj_node_conn_prop,
+                                                  json_obj_port_conn_prop,
                                                   arr_idx,
                                                   cfgnode_vector);
     if (UNC_RC_SUCCESS != ret_val) {
@@ -900,15 +883,14 @@ UncRespCode OdcPort::read_cmd(unc::driver::controller *ctr_ptr,
   //  Form a url and send the request to get port names of s/w
   //  and populate in map <port-name, port-id>
 
-  std::string name_value = "";
-  uint state_value = 0;
-  uint config_value = 0;
-  unsigned long long speed = 0;
+  // std::string name_value = "";
+  // uint state_value = 0;
+  // uint config_value = 0;
+  // unsigned long long speed = 0;
   std::string url = "";
-  url.append(BASE_SW_URL);
-  url.append(CONTAINER_NAME);
-  url.append(NODE);
-  url.append(NODE_OF);
+  url.append(RESTCONF_BASE);
+  url.append(VTN_SW_NODES);
+  url.append(VTN_PORT);
   url.append(SLASH);
   url.append(switch_id);
 
@@ -942,22 +924,31 @@ UncRespCode OdcPort::read_cmd(unc::driver::controller *ctr_ptr,
       }
       uint32_t array_length =0;
       json_object *json_obj_node_conn_prop = NULL;
-      uint32_t ret_val = restjson::JsonBuildParse::parse(
-          jobj,
-          "nodeConnectorProperties",
-          -1,
-          json_obj_node_conn_prop);
+      uint32_t ret_val = restjson::JsonBuildParse::parse(jobj,
+                                                         "vtn-node",
+                                                         -1,
+                                                    json_obj_node_conn_prop);
       if ((restjson::REST_OP_SUCCESS != ret_val) ||
           (json_object_is_type(json_obj_node_conn_prop, json_type_null))) {
         json_object_put(jobj);
         pfc_log_error("Parsing Error json_obj_node_conn_prop is null");
         return UNC_DRV_RC_ERR_GENERIC;
       }
-
-      if (json_object_is_type(json_obj_node_conn_prop, json_type_array)) {
+      json_object *json_obj_port_conn_prop = NULL;
+      ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
+                                                "vtn-port",
+                                                0,
+                                                json_obj_port_conn_prop);
+      if ((restjson::REST_OP_SUCCESS != ret_val) ||
+          (json_object_is_type(json_obj_port_conn_prop, json_type_null))) {
+        json_object_put(jobj);
+        pfc_log_error("Parsing Error json_obj_node_conn_prop is null");
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      if (json_object_is_type(json_obj_port_conn_prop, json_type_array)) {
         array_length = restjson::JsonBuildParse::get_array_length(
-            jobj,
-            "nodeConnectorProperties");
+            json_obj_port_conn_prop);
+        pfc_log_error("jobj array lenth:%d", array_length);
       }
       if (0 == array_length) {
         pfc_log_debug("No nodes port present");
@@ -965,57 +956,34 @@ UncRespCode OdcPort::read_cmd(unc::driver::controller *ctr_ptr,
         return UNC_RC_SUCCESS;
       }
       for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
-        json_object *json_obj_node_connector = NULL;
-        ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn_prop,
-                                                  "nodeconnector",
-                                                  arr_idx,
-                                                  json_obj_node_connector);
-
-        if ((restjson::REST_OP_SUCCESS != ret_val) ||
-            (json_object_is_type(json_obj_node_connector, json_type_null))) {
-          json_object_put(jobj);
-          pfc_log_error("Parsing Error json_obj_node_cconnector is null");
-          return UNC_DRV_RC_ERR_GENERIC;
-        }
-
         std::string port_id = "";
-        ret_val = restjson::JsonBuildParse::parse(json_obj_node_connector,
-                                                  "id",
-                                                  -1,
-                                                  port_id);
-        pfc_log_debug("port_id = %s ", port_id.c_str());
-        if ((restjson::REST_OP_SUCCESS != ret_val) ||
-            (port_id.empty())) {
-          pfc_log_error(" Error while parsing port_id");
-          return UNC_DRV_RC_ERR_GENERIC;
-        }
+        uint32_t ret_val = restjson::JsonBuildParse::parse(
+                                                    json_obj_port_conn_prop,
+                                                           "id",
+                                                           arr_idx,
+                                                           port_id);
+        std::string port_name = "";
+        ret_val = restjson::JsonBuildParse::parse(json_obj_port_conn_prop,
+                                                  "name",
+                                                  arr_idx,
+                                                  port_name);
 
-        ret_val = parse_port_properties_value(arr_idx,
-                                              json_obj_node_conn_prop,
-                                              name_value,
-                                              state_value,
-                                              config_value,
-                                              speed);
-        pfc_log_debug("name_value = %s ", name_value.c_str());
-
-        port_map.insert(std::pair<string, string>(name_value, port_id));
+        port_map.insert(std::pair<string, string>(port_name, port_id));
       }
       for (std::map<string, string>::iterator it = port_map.begin();
            it != port_map.end(); ++it)
         pfc_log_debug("first: %s  second: %s",
                       it->first.c_str() ,
                       it->second.c_str());
-    }
+  }
   }
 
   // Form a url and send request to get port statisctics
   std::string port_id = "";
   url = "";
-  url.append(BASE_PORT_URL);
-  url.append(CONTAINER_NAME);
-  url.append(PORT);
+  url.append(RESTCONF_BASE);
+  url.append(ODL_PORT);
   url.append(NODE);
-  url.append(NODE_OF);
   url.append(SLASH);
   url.append(switch_id);
 
@@ -1036,7 +1004,7 @@ UncRespCode OdcPort::read_cmd(unc::driver::controller *ctr_ptr,
   if (NULL != response->write_data) {
     if (NULL != response->write_data->memory) {
       char *data_port = response->write_data->memory;
-      pfc_log_trace("All ports : %s", data_port);
+      // pfc_log_trace("All ports : %s", data_port);
       UncRespCode ret_val = parse_port_stat_response(ctr_ptr, read_util,
                                                      data_port,
                                                      port_map,
@@ -1063,22 +1031,32 @@ UncRespCode OdcPort::parse_port_stat_response(
     return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length =0;
-  json_object *json_obj_port_stat = NULL;
+  json_object *json_obj_node = NULL;
   uint32_t ret_val = restjson::JsonBuildParse::parse(jobj,
-                                                     "portStatistic",
+                                                     "node",
                                                      -1,
-                                                     json_obj_port_stat);
+                                                     json_obj_node);
 
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_port_stat, json_type_null))) {
+      (json_object_is_type(json_obj_node, json_type_null))) {
     json_object_put(jobj);
-    pfc_log_error("Parsing Error json_obj_port_stat is null");
+    pfc_log_error("Parsing Error json_obj_node is null");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  if (json_object_is_type(json_obj_port_stat, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(jobj,
-                                                              "portStatistic");
+  json_object *json_obj_node_connector = NULL;
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node,
+                                            "node-connector",
+                                            0,
+                                            json_obj_node_connector);
+  if ((restjson::REST_OP_SUCCESS != ret_val) ||
+      (json_object_is_type(json_obj_node_connector, json_type_null))) {
+    json_object_put(jobj);
+    pfc_log_error("Parsing Error json_obj_node_connector is null");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  if (json_object_is_type(json_obj_node_connector, json_type_array)) {
+    array_length = restjson::JsonBuildParse::get_array_length(
+                                             json_obj_node_connector);
   }
 
   if (0 == array_length) {
@@ -1095,12 +1073,53 @@ UncRespCode OdcPort::parse_port_stat_response(
     memset(&val_port, 0, sizeof(val_port_stats_t));
 
     val_port.valid[kIdxPortStatSt] = UNC_VF_INVALID;
+    std::string port_name = "";
+    pfc_log_info("node-connector :%s",
+                 restjson::JsonBuildParse::get_json_string
+                 (json_obj_node_connector));
+    uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_connector,
+                                                    "flow-node-inventory:name",
+                                                       arr_idx,
+                                                       port_name);
+
+    if ((restjson::REST_OP_SUCCESS != ret_val) ||
+        port_name.empty()) {
+      json_object_put(jobj);
+      pfc_log_error("Parsing Error flow-node-inventory:name is null");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    json_object *json_obj_port_stat = NULL;
+    ret_val = restjson::JsonBuildParse::parse(json_obj_node_connector,
+        "opendaylight-port-statistics:flow-capable-node-connector-statistics",
+                                              arr_idx,
+                                              json_obj_port_stat);
+    pfc_log_info("node-connector-statistics :%s", restjson::JsonBuildParse::
+                                          get_json_string(json_obj_port_stat));
+    pfc_log_info("ret_val :%d", ret_val);
+
+    if ((restjson::REST_OP_SUCCESS != ret_val) ||
+        (json_object_is_type(json_obj_port_stat, json_type_null))) {
+      json_object_put(jobj);
+      pfc_log_error("Parsing Error json_obj_port_stat is null");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
+    json_object *json_obj_pkt = NULL;
+    ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
+                                              "packets",
+                                              -1,
+                                              json_obj_pkt);
+    if ((restjson::REST_OP_SUCCESS != ret_val) ||
+        (json_object_is_type(json_obj_pkt, json_type_null))) {
+      json_object_put(jobj);
+      pfc_log_error("Parsing Error json_obj_pkt is null");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
 
     unsigned long long rx_pkts = 0;
-    uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                                       "receivePackets",
-                                                       arr_idx,
-                                                       rx_pkts);
+    ret_val = restjson::JsonBuildParse::parse(json_obj_pkt,
+                                              "received",
+                                              -1,
+                                              rx_pkts);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing rx_pkts");
       return UNC_DRV_RC_ERR_GENERIC;
@@ -1113,9 +1132,9 @@ UncRespCode OdcPort::parse_port_stat_response(
     }
 
     unsigned long long tx_pkts = 0;
-    ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "transmitPackets",
-                                              arr_idx,
+    ret_val = restjson::JsonBuildParse::parse(json_obj_pkt,
+                                              "transmitted",
+                                              -1,
                                               tx_pkts);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing tx_pkts");
@@ -1127,11 +1146,22 @@ UncRespCode OdcPort::parse_port_stat_response(
         val_port.valid[kIdxPortStatTxPackets] = UNC_VF_INVALID;
       }
     }
+    json_object *json_obj_bytes = NULL;
+    ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
+                                              "bytes",
+                                              -1,
+                                              json_obj_bytes);
+    if ((restjson::REST_OP_SUCCESS != ret_val) ||
+        (json_object_is_type(json_obj_bytes, json_type_null))) {
+      json_object_put(jobj);
+      pfc_log_error("Parsing Error json_obj_bytes is null");
+      return UNC_DRV_RC_ERR_GENERIC;
+    }
 
     unsigned long long rx_bytes = 0;
-    ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "receiveBytes",
-                                              arr_idx,
+    ret_val = restjson::JsonBuildParse::parse(json_obj_bytes,
+                                              "received",
+                                              -1,
                                               rx_bytes);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing rx_bytes");
@@ -1145,9 +1175,9 @@ UncRespCode OdcPort::parse_port_stat_response(
     }
 
     unsigned long long tx_bytes = 0;
-    ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "transmitBytes",
-                                              arr_idx,
+    ret_val = restjson::JsonBuildParse::parse(json_obj_bytes,
+                                              "transmitted",
+                                              -1,
                                               tx_bytes);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing tx_bytes");
@@ -1162,8 +1192,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long rx_drops = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "receiveDrops",
-                                              arr_idx,
+                                              "receive-drops",
+                                              -1,
                                               rx_drops);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing rx_drops");
@@ -1178,8 +1208,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long tx_drops = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "transmitDrops",
-                                              arr_idx,
+                                              "transmit-drops",
+                                              -1,
                                               tx_drops);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing tx_drops");
@@ -1194,8 +1224,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long rx_err = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "receiveErrors",
-                                              arr_idx,
+                                              "receive-errors",
+                                              -1,
                                               rx_err);
 
     if (restjson::REST_OP_SUCCESS != ret_val) {
@@ -1211,8 +1241,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long tx_err = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "transmitErrors",
-                                              arr_idx,
+                                              "transmit-errors",
+                                              -1,
                                               tx_err);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing tx_err");
@@ -1227,8 +1257,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long rx_Frame_err = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "receiveFrameError",
-                                              arr_idx,
+                                              "receive-frame-error",
+                                              -1,
                                               rx_Frame_err);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing rx_Frame_err");
@@ -1243,8 +1273,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long rx_OverRun_err = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "receiveOverRunError",
-                                              arr_idx,
+                                              "receive-over-run-error",
+                                              -1,
                                               rx_OverRun_err);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing rx_OverRun_err");
@@ -1259,8 +1289,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long rx_Crc_err = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "receiveCrcError",
-                                              arr_idx,
+                                              "receive-crc-error",
+                                              -1,
                                               rx_Crc_err);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing rx_Crc_err");
@@ -1275,8 +1305,8 @@ UncRespCode OdcPort::parse_port_stat_response(
 
     unsigned long long Collision_count = 0;
     ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "collisionCount",
-                                              arr_idx,
+                                              "collision-count",
+                                              -1,
                                               Collision_count);
     if (restjson::REST_OP_SUCCESS != ret_val) {
       pfc_log_error(" Error while parsing Collision_count");
@@ -1287,26 +1317,6 @@ UncRespCode OdcPort::parse_port_stat_response(
       } else {
         val_port.valid[kIdxPortStatCollisions] = UNC_VF_INVALID;
       }
-    }
-    json_object *json_obj_node_conn = NULL;
-    ret_val = restjson::JsonBuildParse::parse(json_obj_port_stat,
-                                              "nodeConnector",
-                                              arr_idx,
-                                              json_obj_node_conn);
-    if ((restjson::REST_OP_SUCCESS != ret_val) ||
-        (json_object_is_type(json_obj_node_conn, json_type_null))) {
-      pfc_log_error(" Error while parsing node Connector");
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-
-    std::string port_id = "";
-    ret_val = restjson::JsonBuildParse::parse(json_obj_node_conn,
-                                              "id",
-                                              -1,
-                                              port_id);
-    if ((restjson::REST_OP_SUCCESS != ret_val) || (port_id.empty())) {
-      pfc_log_error(" Error while parsing port_id");
-      return UNC_DRV_RC_ERR_GENERIC;
     }
 
     // Fill key and val Struct
@@ -1329,8 +1339,8 @@ UncRespCode OdcPort::parse_port_stat_response(
               ctr_name.c_str(), strlen(ctr_name.c_str()));
       for (std::map<string, string>::iterator it = port_map.begin();
           it != port_map.end(); ++it) {
-        if (it->second.compare(port_id) == 0) {
-          pfc_log_debug("Port_id matched map: %s", it->second.c_str());
+        if (it->first.compare(port_name) == 0) {
+          pfc_log_debug("Port_name matched map: %s", it->second.c_str());
           strncpy(reinterpret_cast<char*> (key_port.port_id), it->first.c_str(),
                   strlen(it->first.c_str()));
           break;
@@ -1349,8 +1359,8 @@ UncRespCode OdcPort::parse_port_stat_response(
         pfc_log_error("Port_id_key is empty");
         return UNC_DRV_RC_ERR_GENERIC;
       }
-      if (port_id.compare(port_id_key) == 0) {
-        pfc_log_debug("Matched port_id = %s",  port_id.c_str());
+      if (port_name.compare(port_id_key) == 0) {
+        pfc_log_debug("Matched port_name = %s",  port_name.c_str());
         unc::vtnreadutil::driver_read_util_io<val_port_stats_t>::
             add_read_value(&val_port, read_util);
         return UNC_RC_SUCCESS;

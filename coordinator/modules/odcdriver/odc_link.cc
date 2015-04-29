@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -34,9 +34,8 @@ UncRespCode OdcLink::fetch_config(
   std::vector<unc::vtndrvcache::ConfigNode *> cfgnode_vector;
 
   std::string url = "";
-  url.append(BASE_TOPO_URL);
-  url.append(CONTAINER_NAME);
-  url.append(SLASH);
+  url.append(RESTCONF_BASE);
+  url.append(VTN_TOPO_URL);
 
   unc::restjson::RestUtil rest_util_obj(ctr_ptr->get_host_address(),
                                         ctr_ptr->get_user_name(),
@@ -81,167 +80,61 @@ UncRespCode OdcLink::fetch_config(
 UncRespCode OdcLink::fill_edge_value_map(
     json_object *json_obj_node_prop,
     int arr_idx,
-    std::map<std::string, std::string> &edge_prop_map,
-    std::map<std::string, std::string> &head_conn_map) {
+    unc::driver::controller *ctr_ptr,
+    std::vector<unc::vtndrvcache::ConfigNode *> &cfg_node_vector) {
   ODC_FUNC_TRACE;
 
-  json_object *json_obj_edge = NULL;
+  std::string source_node_id = "";
   uint32_t ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
-                                                     "edge",
+                                                     "source",
                                                      arr_idx,
-                                                     json_obj_edge);
+                                                     source_node_id);
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_edge, json_type_null))) {
-    pfc_log_error(" Error while parsing edge or json type NULL");
+      (source_node_id.empty())) {
+    pfc_log_error(" Error while parsing source node id");
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  json_object *json_obj_tail_conn = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_edge,
-                                            "tailNodeConnector",
-                                            -1,
-                                            json_obj_tail_conn);
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_tail_conn, json_type_null))) {
-    pfc_log_error(" Error while parsing tail connector or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  json_object *json_obj_tail_node = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_tail_conn,
-                                            "node",
-                                            -1,
-                                            json_obj_tail_node);
+  std::string dst_node_id = "";
+  ret_val = restjson::JsonBuildParse::parse(json_obj_node_prop,
+                                            "destination",
+                                            arr_idx,
+                                            dst_node_id);
 
   if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_tail_node, json_type_null))) {
-    pfc_log_error(" Error while parsing node or json_node NULL");
+      (dst_node_id.empty())) {
+    pfc_log_error("Error while parsing destination node_id");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  std::string tail_node_id = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_tail_node,
-                                            "id",
-                                            -1,
-                                            tail_node_id);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (tail_node_id.empty())) {
-    pfc_log_error("Error while parsing node_id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  std::string tail_id   = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_tail_conn,
-                                            "id",
-                                            -1,
-                                            tail_id);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (tail_id.empty())) {
-    pfc_log_error(" Error while parsing type id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  json_object *json_obj_head_conn = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_edge,
-                                            "headNodeConnector",
-                                            -1,
-                                            json_obj_head_conn);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_head_conn, json_type_null))) {
-    pfc_log_error(" Error while parsing head connector or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string head_id = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_head_conn,
-                                            "id",
-                                            -1,
-                                            head_id);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (head_id.empty())) {
-    pfc_log_error("Error while parsing head conn id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-  json_object *json_obj_head_node = NULL;
-  ret_val = restjson::JsonBuildParse::parse(json_obj_head_conn,
-                                            "node",
-                                            -1,
-                                            json_obj_head_node);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (json_object_is_type(json_obj_head_node, json_type_null))) {
-    pfc_log_error(" Error while parsing head connector node or json type NULL");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string head_node_id = "";
-  ret_val = restjson::JsonBuildParse::parse(json_obj_head_node,
-                                            "id",
-                                            -1,
-                                            head_node_id);
-
-  if ((restjson::REST_OP_SUCCESS != ret_val) ||
-      (head_node_id.empty())) {
-    pfc_log_error("Error while parsing head conn id");
-    return UNC_DRV_RC_ERR_GENERIC;
-  }
-
-  std::string tail_conn_prop = "";
-  tail_conn_prop.append(tail_node_id);
-  tail_conn_prop.append(PIPE_SEPARATOR);
-  tail_conn_prop.append(tail_id);
-
-  std::string head_conn_prop = "";
-  head_conn_prop.append(head_node_id);
-  head_conn_prop.append(PIPE_SEPARATOR);
-  head_conn_prop.append(head_id);
-  // extract porp_name, state value and config value from link_map
-  std::string port_name    = "";
-  std::string state_value  = "";
-  std::string config_value = "";
+  std::string dst_prob = "";
+  std::string source_prob = "";
   std::map<std::string, std::string>::iterator iter;
-  iter = link_map_.find(head_conn_prop);
+  pfc_log_info("source_node_id %s", source_node_id.c_str());
+  iter = link_map_.find(source_node_id);
   if (iter != link_map_.end()) {
-    std::string prob_str = iter->second;
-    pfc_log_info("Entry in link map is  val : %s", prob_str.c_str());
-    std::size_t pos = prob_str.find(PIPE_SEPARATOR);
-    port_name = prob_str.substr(0, pos);
-    std::string config_sub = prob_str.substr(pos);
-    pos = config_sub.find(PIPE_SEPARATOR);
-    state_value = config_sub.substr(pos+1, 1);
-    config_value= config_sub.substr(pos+3, 4);
+      source_prob = iter->second;
   } else {
-    pfc_log_error("Error while parsing prop config value");
+    pfc_log_error("Error while parsing link map source node");
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
-  // head_conn_map contains details in the format sample
-  // head_conn_map["00:00:00:00:00:00:00:03|3"]="s3-eth3" used to map the port
-  // of tail node connector key is the combination of headnodeid, head id. Value
-  // is the combination of name value
-  head_conn_map[head_conn_prop] = port_name;
+  pfc_log_info("dst_node_id %s", dst_node_id.c_str());
+  iter = link_map_.find(dst_node_id);
+  if (iter != link_map_.end()) {
+      dst_prob = iter->second;
+  } else {
+    pfc_log_error("Error while parsing link map dst node");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  pfc_log_info("Entry in link map source is  val : %s", source_prob.c_str());
+  pfc_log_info("Entry in link map dst is  val : %s", dst_prob.c_str());
+  ret_val = fill_config_node_vector
+      (ctr_ptr, source_prob, dst_prob, cfg_node_vector);
 
-  pfc_log_trace("Entry in head_conn_map is key : %s, val : %s",
-                head_conn_prop.c_str(), port_name.c_str());
-
-  head_conn_prop.append(PIPE_SEPARATOR);
-  head_conn_prop.append(port_name);
-  head_conn_prop.append(PIPE_SEPARATOR);
-  head_conn_prop.append(state_value);
-  head_conn_prop.append(PIPE_SEPARATOR);
-  head_conn_prop.append(config_value);
-
-  // edge_prop_map contains details in the format
-  // edge_prop_map["00:00:00:00:00:00:00:01|2"]=
-  // "00:00:00:00:00:00:00:03|3|s3-eth3|1|1"
-  // key is the combination of tailnodeid and id, value is the combinationation
-  // of headnodeid, head id, namevalue, state value, conf value
-  edge_prop_map[tail_conn_prop] = head_conn_prop;
-  pfc_log_trace("Entry in edge prop map is key : %s, val : %s",
-                tail_conn_prop.c_str(), head_conn_prop.c_str());
+  if (UNC_RC_SUCCESS != ret_val) {
+    pfc_log_error("Error return from fill config node_vector failure");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
   return UNC_RC_SUCCESS;
 }
 
@@ -611,113 +504,83 @@ pfc_bool_t OdcLink::is_link_modified(val_link_st_t *val_link_ctr,
 // Fills config node vector with link
 UncRespCode OdcLink::fill_config_node_vector(
     unc::driver::controller *ctr_ptr,
-    const std::map<std::string, std::string> &edge_prop_map,
-    const std::map<std::string, std::string> &head_conn_map,
+    std::string head_node_conn,
+    std::string tail_node_conn,
     std::vector< unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
   ODC_FUNC_TRACE;
-  for (std::map<std::string, std::string>::const_iterator it
-       = edge_prop_map.begin(); it != edge_prop_map.end(); ++it) {
-    std::string tail_node_conn = it->first;
-    std::string head_node_conn = it->second;
+  std::string switch_id1 = "";
+  std::string switch_id2 = "";
+  std::string port_id1 = "";
+  std::string port_id2 = "";
+  std::string state_value1 = "";
+  std::string state_value2 = "";
+  pfc_log_info("head_node_conn entry:%s", head_node_conn.c_str());
+  pfc_log_info("tail_node_conn entry:%s", tail_node_conn.c_str());
+  parse_properties(head_node_conn, switch_id1, port_id1, state_value1);
+  parse_properties(tail_node_conn, switch_id2, port_id2, state_value2);
+  pfc_log_trace("SW1 : %s ,PORT1: %s, SW2: %s,PORT2: %s", switch_id1.c_str(),
+                port_id1.c_str(), switch_id2.c_str(), port_id2.c_str());
+  if ((switch_id1.empty()) || (switch_id2.empty()) ||
+      (port_id1.empty()) || (port_id2.empty())) {
+    pfc_log_error("switch id or port id is empty");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  key_link_t key_link;
+  val_link_st_t val_link;
+  memset(&key_link, 0, sizeof(key_link_t));
+  memset(&val_link, 0, sizeof(val_link_st_t));
 
-    std::map<std::string, std::string>::const_iterator it_head_node;
-    it_head_node = head_conn_map.find(tail_node_conn);
+  // Fills Key structure
+  strncpy(reinterpret_cast<char*>(key_link.switch_id1), switch_id1.c_str(),
+                         strlen(switch_id1.c_str()));
+  strncpy(reinterpret_cast<char*>(key_link.switch_id2), switch_id2.c_str(),
+                         strlen(switch_id2.c_str()));
+  strncpy(reinterpret_cast<char*>(key_link.port_id1), port_id1.c_str(),
+                         strlen(port_id1.c_str()));
+  strncpy(reinterpret_cast<char*>(key_link.port_id2), port_id2.c_str(),
+                         strlen(port_id2.c_str()));
 
-    std::string port_id1 = "";
-    if (it_head_node != head_conn_map.end()) {
-      port_id1 = it_head_node->second;
+  std::string ctr_name = ctr_ptr->get_controller_id();
+  strncpy(reinterpret_cast<char*> (key_link.ctr_key.controller_name),
+          ctr_name.c_str(), strlen(ctr_name.c_str()));
+
+  // Fills Val Structure
+  uint state_value_int1 = atoi(state_value1.c_str());
+  uint state_value_int2 = atoi(state_value2.c_str());
+  val_link.valid[VAL_LINK_STRUCT_ATTR] = UNC_VF_VALID;
+  val_link.link.valid[VAL_DESCRPTION_ATTR] = UNC_VF_VALID;
+  if (unc::driver::CONNECTION_UP == ctr_ptr->get_connection_status()) {
+    if ((EDGE_UP == state_value_int1) &&
+        (EDGE_UP == state_value_int2)) {
+      val_link.oper_status = UPPL_LINK_OPER_UP;
+      val_link.valid[VAL_OPERSTATUS_ATTR] = UNC_VF_VALID;
     } else {
-      pfc_log_debug("No corresponding port available .");
-      continue;
-    }
-    size_t pos_sw_one = tail_node_conn.find(PIPE_SEPARATOR);
-    if (pos_sw_one == std::string::npos) {
-      pfc_log_error("Error in tail_node_conn value");
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-    std::string switch_id1 = tail_node_conn.substr(0, pos_sw_one);
-    std::string switch_id2 = "";
-    std::string port_id2 = "";
-    std::string state_value = "";
-    std::string conf_value = "";
-    char *save_ptr;
-    char *head_node_char = const_cast<char *> (head_node_conn.c_str());
-    char *tokener = strtok_r(head_node_char, "|", &save_ptr);
-    int parse_occurence = 0;
-    while (NULL != tokener) {
-      switch (parse_occurence) {
-        case 0:
-          switch_id2 = tokener;
-          break;
-        case 2:
-          port_id2 = tokener;
-          break;
-        case 3:
-          state_value = tokener;
-          break;
-        case 4:
-          conf_value = tokener;
-          break;
-        default:
-          pfc_log_trace("Value is not relevant %d", parse_occurence);
-          break;
-      }
-      parse_occurence++;
-      tokener = strtok_r(NULL, "|", &save_ptr);
-    }
-    if ((switch_id1.empty()) || (switch_id2.empty()) ||
-        (port_id1.empty()) || (port_id2.empty())) {
-      pfc_log_error("switch id or port id is empty");
-      return UNC_DRV_RC_ERR_GENERIC;
-    }
-    pfc_log_trace("SW1 : %s ,PORT1: %s, SW2: %s,PORT2: %s", switch_id1.c_str(),
-                  port_id1.c_str(), switch_id2.c_str(), port_id2.c_str());
-    key_link_t key_link;
-    val_link_st_t val_link;
-    memset(&key_link, 0, sizeof(key_link_t));
-    memset(&val_link, 0, sizeof(val_link_st_t));
-
-    // Fills Key structure
-    strncpy(reinterpret_cast<char*>
-        (key_link.switch_id1), switch_id1.c_str(), strlen(switch_id1.c_str()));
-    strncpy(reinterpret_cast<char*>
-        (key_link.switch_id2), switch_id2.c_str(), strlen(switch_id2.c_str()));
-    strncpy(reinterpret_cast<char*>
-        (key_link.port_id1), port_id1.c_str(), strlen(port_id1.c_str()));
-    strncpy(reinterpret_cast<char*>
-        (key_link.port_id2), port_id2.c_str(), strlen(port_id2.c_str()));
-
-    std::string ctr_name = ctr_ptr->get_controller_id();
-    strncpy(reinterpret_cast<char*> (key_link.ctr_key.controller_name),
-                                ctr_name.c_str(), strlen(ctr_name.c_str()));
-
-    // Fills Val Structure
-    uint state_value_int = atoi(state_value.c_str());
-    uint conf_value_int = atoi(conf_value.c_str());
-    val_link.valid[VAL_LINK_STRUCT_ATTR] = UNC_VF_VALID;
-    val_link.link.valid[VAL_DESCRPTION_ATTR] = UNC_VF_VALID;
-    if (unc::driver::CONNECTION_UP == ctr_ptr->get_connection_status()) {
-      if ((ADMIN_UP == conf_value_int) &&
-          (EDGE_UP == state_value_int)) {
-        val_link.oper_status = UPPL_LINK_OPER_UP;
-        val_link.valid[VAL_OPERSTATUS_ATTR] = UNC_VF_VALID;
-      } else {
-        val_link.oper_status = UPPL_LINK_OPER_DOWN;
-        val_link.valid[VAL_OPERSTATUS_ATTR] = UNC_VF_VALID;
-      }
-    } else {
-      val_link.oper_status = UPPL_LINK_OPER_UNKNOWN;
+      val_link.oper_status = UPPL_LINK_OPER_DOWN;
       val_link.valid[VAL_OPERSTATUS_ATTR] = UNC_VF_VALID;
     }
-    pfc_log_debug("oper status of link is %d", val_link.oper_status);
-
-    unc::vtndrvcache::ConfigNode *cfgptr =
-    new unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, uint32_t>
-        (&key_link, &val_link, uint32_t(UNC_OP_READ));
-    PFC_VERIFY(cfgptr != NULL);
-    cfgnode_vector.push_back(cfgptr);
+  } else {
+    val_link.oper_status = UPPL_LINK_OPER_UNKNOWN;
+    val_link.valid[VAL_OPERSTATUS_ATTR] = UNC_VF_VALID;
   }
+  pfc_log_debug("oper status of link is %d", val_link.oper_status);
+
+  unc::vtndrvcache::ConfigNode *cfgptr =
+      new unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t,
+          uint32_t>(&key_link, &val_link, uint32_t(UNC_OP_READ));
+  PFC_VERIFY(cfgptr != NULL);
+  cfgnode_vector.push_back(cfgptr);
   return UNC_RC_SUCCESS;
+}
+
+// method to parse the link details from connection string
+void OdcLink::parse_properties(std::string conn, std::string &switch_id,
+                               std::string &port, std::string &state) {
+  std::size_t pos = conn.find(PIPE_SEPARATOR);
+  port = conn.substr(0, pos);
+  std::string state_sub = conn.substr(pos+1);
+  pos = state_sub.find("|");
+  state = state_sub.substr(0, pos);
+  switch_id = state_sub.substr(pos+1);
 }
 
 // parsing function for converting controller response to driver format
@@ -732,25 +595,35 @@ UncRespCode OdcLink::parse_link_response(
     return UNC_DRV_RC_ERR_GENERIC;
   }
   uint32_t array_length =0;
-  json_object *json_obj_edge_prop = NULL;
+  json_object *json_obj_vtn_topo = NULL;
   int parse_ret_val = restjson::JsonBuildParse::parse(jobj,
-                                                      "edgeProperties",
+                                                      "vtn-topology",
                                                       -1,
-                                                      json_obj_edge_prop);
+                                                      json_obj_vtn_topo);
 
   if ((restjson::REST_OP_SUCCESS != parse_ret_val) ||
-      (json_object_is_type(json_obj_edge_prop, json_type_null))) {
+      (json_object_is_type(json_obj_vtn_topo, json_type_null))) {
     json_object_put(jobj);
-    pfc_log_error("Parsing Error json_obj_edge_prop is null");
+    pfc_log_error("Parsing Error json_obj_vtn_topo is null");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-
-  if (json_object_is_type(json_obj_edge_prop, json_type_array)) {
-    array_length = restjson::JsonBuildParse::get_array_length(jobj,
-                                                              "edgeProperties");
+  json_object *json_obj_vtn_links = NULL;
+  parse_ret_val = restjson::JsonBuildParse::parse(json_obj_vtn_topo,
+                                                      "vtn-link",
+                                                      -1,
+                                                      json_obj_vtn_links);
+  if ((restjson::REST_OP_SUCCESS != parse_ret_val) ||
+      (json_object_is_type(json_obj_vtn_links, json_type_null))) {
+    json_object_put(jobj);
+    pfc_log_error("Parsing Error json_obj_vtn_vlinks is null");
+    return UNC_DRV_RC_ERR_GENERIC;
+  }
+  if (json_object_is_type(json_obj_vtn_links, json_type_array)) {
+    array_length = restjson::JsonBuildParse::get_array_length(json_obj_vtn_topo,
+                                                              "vtn-link");
   }
   if (0 == array_length) {
-    pfc_log_debug("No EDGE present");
+    pfc_log_debug("No LINKS present");
     json_object_put(jobj);
     return UNC_RC_SUCCESS;
   }
@@ -759,22 +632,12 @@ UncRespCode OdcLink::parse_link_response(
   std::map<std::string, std::string> head_conn_map;
   for (uint32_t arr_idx = 0; arr_idx < array_length; arr_idx++) {
     ret_val = fill_edge_value_map(
-        json_obj_edge_prop, arr_idx, edge_prop_map, head_conn_map);
-
+        json_obj_vtn_links, arr_idx, ctr_ptr, cfgnode_vector);
     if (UNC_RC_SUCCESS != ret_val) {
       json_object_put(jobj);
       pfc_log_error("Error return from fill map failure");
       return ret_val;
     }
-  }
-
-  ret_val = fill_config_node_vector
-      (ctr_ptr, edge_prop_map, head_conn_map, cfgnode_vector);
-
-  if (UNC_RC_SUCCESS != ret_val) {
-    json_object_put(jobj);
-    pfc_log_error("Error return from fill config node_vector failure");
-    return ret_val;
   }
   json_object_put(jobj);
   return UNC_RC_SUCCESS;

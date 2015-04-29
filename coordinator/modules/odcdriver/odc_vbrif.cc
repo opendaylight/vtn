@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -41,27 +41,14 @@ odc_drv_resp_code_t OdcVbrIfCommand::validate_logical_port_id(
   }
   //  Split switch id alone without port name
   std::string switch_id = switch_port.substr(0, hyphen_occurence);
-  pfc_log_debug("Switch id in port map %s", switch_id.c_str());
-  char *switch_id_char = const_cast<char *> (switch_id.c_str());
-  char *save_ptr;
-  char *colon_tokener = strtok_r(switch_id_char, ":", &save_ptr);
-  int parse_occurence = 0;
-  while (colon_tokener != NULL) {
-    //  Split string with token ":" and length of splitted sw is 2
-    // 11:11:22:22:33:33:44:44 length of splitted by ":" is 2
-    if (2 != strlen(colon_tokener)) {
+  size_t base_occurence = switch_id.find(":");
+  std::string switch_base = switch_id.substr(0, base_occurence);
+  pfc_log_info("switch_base:%s", switch_base.c_str());
+  if ((switch_base.compare("openflow"))) {
       pfc_log_error("Invalid switch id format supported by Vtn Manager");
       return ODC_DRV_FAILURE;
-    }
-    colon_tokener = strtok_r(NULL, ":", &save_ptr);
-    parse_occurence++;
-  }
-  //  After splitting the switch id with token ":"  the occurence should be 8
-  //  Eg : 11:11:22:22:33:33:44:44 by splitting with ":" the value is 8
-  if (parse_occurence != 8) {
-    pfc_log_error("Invalid format not supported by Vtn Manager");
-    return ODC_DRV_FAILURE;
-  }
+      }
+  pfc_log_debug("Switch id in port map %s", switch_id.c_str());
   pfc_log_debug("Valid logical_port id");
   return ODC_DRV_SUCCESS;
 }
@@ -79,79 +66,13 @@ odc_drv_resp_code_t OdcVbrIfCommand::check_logical_port_id_format(
   }
   odc_drv_resp_code_t logical_port_retval = validate_logical_port_id(
       logical_port_id);
-  if (logical_port_retval != ODC_DRV_SUCCESS) {
-    pfc_log_debug("logical port needs to be converted to proper format");
-    logical_port_retval = convert_logical_port(logical_port_id);
-    if (logical_port_retval != ODC_DRV_SUCCESS) {
-      pfc_log_error("Failed during conversion of logical port id %s",
-                    logical_port_id.c_str());
-      return ODC_DRV_FAILURE;
-    }
-    logical_port_retval = validate_logical_port_id(logical_port_id);
     if (logical_port_retval != ODC_DRV_SUCCESS) {
       pfc_log_error("Failed during validation of logical port id %s",
                     logical_port_id.c_str());
       return ODC_DRV_FAILURE;
     }
-  }
   return logical_port_retval;
 }
-
-//  Converts the logical port id from PP-1111-2222-3333-4444-name to
-//  PP-11:11:22:22:33:33:44:44-name format
-odc_drv_resp_code_t OdcVbrIfCommand::convert_logical_port(
-    std::string &logical_port_id) {
-  ODC_FUNC_TRACE;
-  if ((logical_port_id.compare(0, 3, PP_PREFIX) != 0) &&
-      (logical_port_id.size() < 24)) {
-    pfc_log_error("%s: Logical_port_id doesn't have PP- prefix and"
-                  "less than required length", PFC_FUNCNAME);
-    return ODC_DRV_FAILURE;
-  }
-  //  Validate the format before conversion
-  std::string switch_id = logical_port_id.substr(3);
-  char *switch_id_validation = const_cast<char *> (switch_id.c_str());
-  char *save_ptr;
-  //  Split string with token "-"
-  char *string_token = strtok_r(switch_id_validation , "-", &save_ptr);
-  int occurence = 0;
-
-  while (string_token != NULL) {
-    //  Switch id token should be of length 4
-    if ((occurence < 4) && (4 != strlen(string_token))) {
-      pfc_log_error("Invalid Switch id format");
-      return ODC_DRV_FAILURE;
-    }
-    occurence++;
-    string_token = strtok_r(NULL, "-", &save_ptr);
-  }
-  //  Parsing string token by "-" length of parsed SW minimun 5
-  //  Eg : 1111-2222-3333-4444-portname length of SW parsed by token "-"
-  if (occurence < 5) {
-    pfc_log_error("Invalid Switch id format");
-    return ODC_DRV_FAILURE;
-  }
-  switch_id = logical_port_id.substr(3, 19);
-  pfc_log_debug("Switch id in port map %s", switch_id.c_str());
-  std::string port_name = logical_port_id.substr(23);
-
-  //  Converts 1111-2222-3333-4444 to 11:11:22:22:33:33:44:44
-  //  First occurence of colon is 2 and next occuerence of colon is obtained if
-  //  is incremented by 3
-  for (uint position = 2; position < switch_id.length(); position += 3) {
-    if (switch_id.at(position) == '-') {
-      switch_id.replace(position, 1 , COLON);
-    } else {
-      switch_id.insert(position, COLON);
-    }
-  }
-  logical_port_id = PP_PREFIX;
-  logical_port_id.append(switch_id);
-  logical_port_id.append(HYPHEN);
-  logical_port_id.append(port_name);
-  return ODC_DRV_SUCCESS;
-}
-
 
 // Creates Request Body for Port Map
 json_object* OdcVbrIfCommand::create_request_body_port_map(
@@ -163,14 +84,20 @@ json_object* OdcVbrIfCommand::create_request_body_port_map(
   pfc_log_debug("VALUE RECEIVED for LOGICAL PORT %u" ,
               vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]);
 
-  pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());
-
-  switch_id = logical_port_id.substr(3, 23);
-  port_name = logical_port_id.substr(27);
-  if ((switch_id.empty()) || (port_name.empty())) {
+  pfc_log_debug("logical_port_id is %s", logical_port_id.c_str());\
+  std::string switch_port = logical_port_id.substr(3);
+  size_t hyphen_occurence = switch_port.find("-");
+  std::string of_switch_id = switch_port.substr(0, hyphen_occurence);
+  port_name = switch_port.substr(hyphen_occurence+1);
+  if ((of_switch_id.empty()) || (port_name.empty())) {
     pfc_log_error("port name or switch id is empty");
     return NULL;
   }
+  // convert switch id from unsigned decimal to hex string
+  int switch_val = atoi(of_switch_id.substr(9).c_str());
+  std::stringstream stream;
+  stream << std::hex << switch_val;
+  switch_id = stream.str();
   pfc_log_debug("port name : %s", port_name.c_str());
   pfc_log_debug("switch id : %s", switch_id.c_str());
   json_object *jobj_parent = unc::restjson::JsonBuildParse::create_json_obj();
@@ -858,7 +785,16 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
         pfc_log_debug("name parse error");
         return UNC_DRV_RC_ERR_GENERIC;
       }
-      logical_port.append(node_id);
+      unc::odcdriver::OdcController *odc_ctr =
+                   reinterpret_cast<unc::odcdriver::OdcController *>(ctr);
+      PFC_ASSERT(odc_ctr != NULL);
+      std::string switch_val = odc_ctr->frame_openflow_switchid(node_id);
+      if (switch_val.empty()) {
+        pfc_log_error("%s:switch id empty", PFC_FUNCNAME);
+        return UNC_DRV_RC_ERR_GENERIC;
+      }
+      pfc_log_debug("converted node id:%s", switch_val.c_str());
+      logical_port.append(switch_val);
       logical_port.append(HYPHEN);
       logical_port.append(port_name);
       pfc_log_debug("logical port id %s", logical_port.c_str());
@@ -891,6 +827,7 @@ UncRespCode OdcVbrIfCommand::fill_config_node_vector(std::string vtn_name,
   cfgnode_vector.push_back(cfgptr);
   return UNC_RC_SUCCESS;
 }
+
 }  // namespace odcdriver
 }  // namespace unc
 
