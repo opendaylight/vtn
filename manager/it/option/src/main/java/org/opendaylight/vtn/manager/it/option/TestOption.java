@@ -135,6 +135,11 @@ public final class TestOption {
         TestHelper.CONTROLLER + ".thirdparty";
 
     /**
+     * Group ID for openflowplugin.
+     */
+    private static final String  OPENFLOW = "org.opendaylight.openflowplugin";
+
+    /**
      * Group ID for YANG models provided by openflowplugin.
      */
     private static final String  OPENFLOW_MODEL =
@@ -374,6 +379,7 @@ public final class TestOption {
             mavenBundle(OPENFLOW_MODEL, "model-flow-statistics"),
 
             // Load OpenFlow service applications.
+            mavenBundle(OPENFLOW, "openflowplugin-common"),
             mavenBundle(OPENFLOW_APPS, "inventory-manager"),
             mavenBundle(OPENFLOW_APPS, "topology-manager"),
             mavenBundle(OPENFLOW_APPS, "forwardingrules-manager"),
