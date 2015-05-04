@@ -178,7 +178,8 @@
           <!-- no startupFeatures -->
           <bootFeatures>
             <feature>standard</feature>
-            <feature>odl-vtn-manager-all</feature>
+            <feature>odl-vtn-manager-rest</feature>
+            <feature>odl-vtn-manager-neutron</feature>
           </bootFeatures>
           <!-- no installedFeatures -->
         </configuration>

@@ -23,21 +23,23 @@
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${feature.openflowplugin.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin.legacy/features-legacy/${feature.openflowplugin.version}/xml/features</repository>
 
+  <!-- TODO: Delete this feature after it is removed from other projects. -->
   <feature
       name='odl-vtn-manager-all'
       description="OpenDaylight VTN Manager All"
       version='${project.version}'>
-    <feature version="${project.version}">odl-vtn-manager-runtime</feature>
-    <feature version="${project.version}">odl-vtn-manager-java-api</feature>
-    <feature version="${project.version}">odl-vtn-manager-northbound</feature>
+    <feature version="${project.version}">odl-vtn-manager</feature>
+    <feature version="${project.version}">odl-vtn-manager-rest</feature>
     <feature version="${project.version}">odl-vtn-manager-neutron</feature>
   </feature>
 
   <feature
-      name='odl-vtn-manager-java-api'
+      name='odl-vtn-manager'
       description="OpenDaylight :: VTN Manager :: Java API"
       version='${project.version}'>
     <feature version="${odl.mdsal.version}">odl-mdsal-broker</feature>
+    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-adsal-compatibility-all</feature>
+    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
     <feature version="${feature.openflowplugin.version}">odl-openflowplugin-nsf-model</feature>
     <feature version="${feature.neutron.version}">odl-neutron-service</feature>
     <feature version="${feature.nsf.version}">odl-nsf-service</feature>
@@ -48,11 +50,11 @@
   </feature>
 
   <feature
-      name='odl-vtn-manager-northbound'
-      description="OpenDaylight :: VTN Manager :: Northbound"
+      name='odl-vtn-manager-rest'
+      description="OpenDaylight :: VTN Manager :: REST API"
       version='${project.version}'>
     <feature version='${feature.neutron.version}'>odl-neutron-northbound-api</feature>
-    <feature version="${project.version}">odl-vtn-manager-java-api</feature>
+    <feature version="${project.version}">odl-vtn-manager</feature>
     <feature version="${odl.mdsal.version}">odl-restconf</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.northbound/${project.version}</bundle>
   </feature>
@@ -65,15 +67,7 @@
     <feature version='${feature.neutron.version}'>odl-neutron-transcriber</feature>
     <feature version='${feature.ovsdb.version}'>odl-ovsdb-all</feature>
     <feature version='${feature.ovsdb.version}'>odl-ovsdb-compatibility-layer</feature>
-    <feature version="${project.version}">odl-vtn-manager-java-api</feature>
+    <feature version="${project.version}">odl-vtn-manager</feature>
     <bundle>mvn:org.opendaylight.vtn/manager.neutron/${project.version}</bundle>
-  </feature>
-
-  <feature
-      name='odl-vtn-manager-runtime'
-      description="OpenDaylight :: VTN Manager :: Runtime Dependencies"
-      version='${project.version}'>
-    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-adsal-compatibility-all</feature>
-    <feature version="${feature.openflowplugin.version}">odl-openflowplugin-flow-services</feature>
   </feature>
 </features>
