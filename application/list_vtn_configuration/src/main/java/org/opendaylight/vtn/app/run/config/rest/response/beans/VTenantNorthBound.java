@@ -91,7 +91,7 @@ public class VTenantNorthBound {
     /**
      * description - function to set the description for this object.
      *
-     * @param description
+     * @param vtnDesc
      */
     public void setVtnDesc(String vtnDesc) {
         this.description = vtnDesc;

@@ -137,7 +137,7 @@ public class VBridgeNorthBound {
     /**
      * setAgeInterval - function to set the ageInterval  for this object.
      *
-     * @param name
+     * @param ageInterval
      */
     public void setAgeInterval(int ageInterval) {
         this.ageInterval = ageInterval;

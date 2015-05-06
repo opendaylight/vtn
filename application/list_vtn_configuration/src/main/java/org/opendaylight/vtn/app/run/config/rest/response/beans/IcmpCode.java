@@ -41,7 +41,7 @@ public class IcmpCode {
     /**
      * setCode - function to set the code value for this object.
      *
-     * @param type
+     * @param code
      */
     public void setCode(int code) {
         this.code = code;

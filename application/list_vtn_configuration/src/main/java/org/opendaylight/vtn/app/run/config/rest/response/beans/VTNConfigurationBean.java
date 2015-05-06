@@ -70,7 +70,7 @@ public class VTNConfigurationBean {
     /**
      * getDataflow - function to get the list .
      *
-     * @return {@link List<DataFlowList> }
+     * @return {@link DataFlowList}
      */
     public DataFlowList getDataflow() {
         return dataflow;
@@ -88,7 +88,7 @@ public class VTNConfigurationBean {
     /**
      * getVtFlowfilter - function to get the flowfilter for this object.
      *
-     * @return {@link vtFlowfilter }
+     * @return {@link VTenantFlowFilterList}
      */
     public VTenantFlowFilterList getVtnFlowfilter() {
         return vtnFlowfilter;
@@ -106,7 +106,7 @@ public class VTNConfigurationBean {
     /**
      * getPath - function to get the list .
      *
-     * @return {@link List<VBridgeBean> }
+     * @return List of {@link VBridgeBean} objects
      */
     public List<VBridgeBean> getVbridge() {
         return vbridge;
@@ -124,7 +124,7 @@ public class VTNConfigurationBean {
     /**
      * getPath - function to get the list .
      *
-     * @return {@link List<VTerminalBean> }
+     * @return List of {@link VTerminalBean} objects
      */
     public List<VTerminalBean> getVTerminal() {
         return vterminal;

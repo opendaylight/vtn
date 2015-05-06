@@ -94,7 +94,7 @@ public class PathPolicy implements Serializable, Cloneable {
     /**
      * getCostList - costList can be obtained from this method
      *
-     * @return {@link List<CostDetails>}
+     * @return List of CostDetails
      */
     public List<CostDetails> getCostList() {
         return costList;

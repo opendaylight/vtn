@@ -69,7 +69,7 @@ public class Statistics {
     /**
      * setPackets - function to set the packets for this object.
      *
-     * @return {@link int}
+     * @param packets {@link int}
      */
     public void setPackets(int packets) {
         this.packets = packets;
@@ -87,7 +87,7 @@ public class Statistics {
     /**
      * setDuration - function to set the duration for this object.
      *
-     * @return {@link int}
+     * @param duration {@link int}
      */
     public void setDuration(int duration) {
         this.duration = duration;

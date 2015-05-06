@@ -38,7 +38,7 @@ public class VTenantPathMapNorthBoundList implements Serializable, Cloneable {
     /**
      * getPathmap - function to get the list of pathmap value for this object.
      *
-     * @return {@link List<VTenantPathMapNorthBound>}
+     * @return List of {@link VTenantPathMapNorthBound} objects
      */
     public List<VTenantPathMapNorthBound> getPathmap() {
         return pathmap;

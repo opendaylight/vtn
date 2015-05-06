@@ -44,7 +44,7 @@ public class VTenantFlowFilterList implements Cloneable, Serializable {
     /**
      * getPath - function to get the list of flowfilter objects.
      *
-     * @return {@link List<FlowFilter> }
+     * @return List of {@link FlowFilter} objects
      */
     public List<FlowFilter> getFlowfilter() {
         return flowfilter;

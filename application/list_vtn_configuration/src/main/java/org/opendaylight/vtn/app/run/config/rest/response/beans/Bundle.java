@@ -56,7 +56,7 @@ public class Bundle {
 
     /**
      * setMajor - function to set a value for major.
-     * @return {@link int}
+     * @param major {@link int}
      */
     public void setMajor(int major) {
         this.major = major;
@@ -88,7 +88,7 @@ public class Bundle {
 
     /**
      * setMicro - function to set a value for micro.
-     * @return {@link int}
+     * @param micro {@link int}
      */
     public void setMicro(int micro) {
         this.micro = micro;
@@ -104,7 +104,7 @@ public class Bundle {
 
     /**
      * setQualifier - function to set the qualifier.
-     * @param {@link String}
+     * @param qualifier {@link String}
      */
     public void setQualifier(String qualifier) {
         this.qualifier = qualifier;

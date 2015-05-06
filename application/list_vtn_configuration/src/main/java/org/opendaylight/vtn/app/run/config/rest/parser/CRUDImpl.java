@@ -126,9 +126,9 @@ public class CRUDImpl implements CRUDOperation {
      *         URL
      * @return
      *         Response as String
-     * @throws RequestFailureException
-     *         Throws RequestFailureException if request does not return 'success'
-     * @throws VTNClientException, JSONException, ConnectException
+     * @throws VTNClientException if request does not return 'success'
+     * @throws JSONException
+     * @throws ConnectException
      */
     public String doGET(String url, Map<String, Object> headers) throws VTNClientException, JSONException, ConnectException {
         try {
@@ -160,12 +160,11 @@ public class CRUDImpl implements CRUDOperation {
      *         URL
      * @param obj
      *         Object to send along POST request
-     * @param heders
+     * @param headers
      *         Headers
      * @return
      *         Response as String
-     * @throws RequestFailureException
-     *         Throws RequestFailureException if request does not return 'success'
+     * @throws VTNClientException if request does not return 'success'
      * @throws JSONException
      */
     public String doPOST(String url, Object obj, Map<String, Object> headers) throws VTNClientException, ConnectException, JSONException {
@@ -178,12 +177,11 @@ public class CRUDImpl implements CRUDOperation {
      *         URL
      * @param obj
      *         Object to send along PUT request
-     * @param heders
+     * @param headers
      *         Headers
      * @return
      *         Response as String
-     * @throws RequestFailureException
-     *         Throws RequestFailureException if request does not return 'success'
+     * @throws VTNClientException if request does not return 'success'
      * @throws JSONException
      */
     public String doPUT(String url, Object obj, Map<String, Object> headers) throws VTNClientException, ConnectException, JSONException {
@@ -196,12 +194,11 @@ public class CRUDImpl implements CRUDOperation {
      *         URL
      * @param obj
      *         Object to send along DELETE request
-     * @param heders
+     * @param headers
      *         Headers
      * @return
      *         Response as String
-     * @throws RequestFailureException
-     *         Throws RequestFailureException if request does not return 'success'
+     * @throws VTNClientException if request does not return 'success'
      * @throws JSONException
      */
     public String doDELETE(String url, Object obj, Map<String, Object> headers) throws VTNClientException, ConnectException, JSONException {

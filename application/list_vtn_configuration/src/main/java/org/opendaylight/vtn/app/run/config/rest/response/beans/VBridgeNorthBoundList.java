@@ -36,7 +36,7 @@ public class VBridgeNorthBoundList implements Serializable, Cloneable {
     /**
      * getVbridge - function to get the list of vBridge values for this object.
      *
-     * @return {@link List<VBridgeNorthBound>}
+     * @return List of {@link VBridgeNorthBound} objects.
      */
     public List<VBridgeNorthBound> getVbridge() {
         return vBridge;

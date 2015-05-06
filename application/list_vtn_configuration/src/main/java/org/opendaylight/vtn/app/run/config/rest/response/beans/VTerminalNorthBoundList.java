@@ -43,7 +43,7 @@ public class VTerminalNorthBoundList implements Serializable, Cloneable {
     /**
      * getVterm - function to get the vterminal lists for this object.
      *
-     * @return {@link List<VTerminalNorthBound>}
+     * @return List of {@link VTerminalNorthBound} objects
      */
     public List<VTerminalNorthBound> getVterm() {
         return vterminal;
@@ -52,7 +52,7 @@ public class VTerminalNorthBoundList implements Serializable, Cloneable {
     /**
      * setVterm - function to set the vterminal lists for this object.
      *
-     * @param vterminal
+     * @param vterm
      */
     public void setVterm(List<VTerminalNorthBound> vterm) {
         this.vterminal = vterm;

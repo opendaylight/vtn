@@ -81,7 +81,6 @@ public class VBridgeBean {
     /**
      * To set the MAc Address details of the VBridge.
      * @param macMap
-     * @return
      */
     public void setMacMap(MacMapNorthBound macMap) {
         this.macMap = macMap;
@@ -207,7 +206,7 @@ public class VBridgeBean {
 
     /**
      * getVbrInterface function to get the list of VBridgeInterfaceBean value for this object.
-     * @return {@link List<VBridgeInterfaceBean>}
+     * @return List of {@link VBridgeInterfaceBean} objects
      */
     public List<VBridgeInterfaceBean> getVbrInterface() {
         return vbrInterface;

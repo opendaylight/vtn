@@ -37,7 +37,7 @@ public class VBridgeInterfaceList implements Serializable, Cloneable {
     /**
      * getInterfaces - function to get the interfaces values for this object.
      *
-     * @return {@link List<VBridgeInterface>}
+     * @return List of {@link VBridgeInterface}
      */
     public List<VBridgeInterface> getInterfaces() {
         return interfaces;

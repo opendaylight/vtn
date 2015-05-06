@@ -41,7 +41,7 @@ public class VlanNorthBoundList implements Serializable, Cloneable {
     /**
      * getVlanmap- function to get the list of VlanNorthBound  values for this object.
      *
-     * @return {@link List<VlanNorthBound>}
+     * @return List of {@link VlanNorthBound} objects
      */
     public List<VlanNorthBound> getVlanmap() {
         return vlanmap;

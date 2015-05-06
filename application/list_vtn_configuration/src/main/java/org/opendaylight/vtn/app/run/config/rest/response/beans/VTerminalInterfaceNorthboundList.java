@@ -38,7 +38,7 @@ public class VTerminalInterfaceNorthboundList implements Serializable, Cloneable
 
     /**
      * getInterfaces - function to get the interfaces values for this object.
-     * @return {@link List<VTerminalInterfaceNorthbound>}
+     * @return List of {@link VTerminalInterfaceNorthbound} objects
      */
     public List<VTerminalInterfaceNorthbound> getInterfaces() {
         return interfaces;

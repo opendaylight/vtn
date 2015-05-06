@@ -32,7 +32,7 @@ public class MacMapped {
     /**
      * getMacentry - function to get the macentry value for this object.
      *
-     * @return {@link List<MacEntry>}
+     * @return List of MacEntry objects
      */
     public List<MacEntry> getMacentry() {
         return macentry;

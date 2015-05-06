@@ -45,7 +45,7 @@ public class VTerminalIfFlowFilterNorthboundList implements Cloneable, Serializa
     /**
      * getFlowfilter - function to get the list of flowfilter value for this object.
      *
-     * @return {@link List<FlowFilter>}
+     * @return List of {@link FlowFilter} objects
      */
     public List<FlowFilter> getFlowfilters() {
         return flowfilter;
@@ -54,7 +54,7 @@ public class VTerminalIfFlowFilterNorthboundList implements Cloneable, Serializa
     /**
      *  setFlowfilter - function to set the list of flowfilter value for this object.
      *
-     *  @param flowfilters
+     *  @param flowfilter
      */
     public void setFlowfilter(List<FlowFilter> flowfilter) {
         this.flowfilter = flowfilter;

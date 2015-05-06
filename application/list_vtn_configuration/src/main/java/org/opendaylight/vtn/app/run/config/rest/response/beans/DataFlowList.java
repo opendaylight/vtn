@@ -44,7 +44,7 @@ public class DataFlowList implements Serializable, Cloneable {
     /**
      * getDataFlowlist - function to get the dataFlows.
      *
-     * @return {@link List<dataFlowlist>}
+     * @return List of Data Flow objects
      */
     public List<DataFlow> getDataFlowlist() {
         return dataFlowlist;
@@ -53,7 +53,7 @@ public class DataFlowList implements Serializable, Cloneable {
     /**
      * setDataFlowlist - function to set the dataFlowlist.
      *
-     * @params dataFlowlist
+     * @param dataFlowlist
      */
     public void setDataFlowlist(List<DataFlow> dataFlowlist) {
         this.dataFlowlist = dataFlowlist;

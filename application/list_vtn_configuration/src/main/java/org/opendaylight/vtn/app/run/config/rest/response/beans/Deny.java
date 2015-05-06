@@ -30,7 +30,7 @@ public class Deny {
     /**
      * getMachost - function to get the MacHosts.
      *
-     * @return {@link List<MacHost>}
+     * @return List of MacHost objects
      */
     public List<MacHost> getMachost() {
         return machost;

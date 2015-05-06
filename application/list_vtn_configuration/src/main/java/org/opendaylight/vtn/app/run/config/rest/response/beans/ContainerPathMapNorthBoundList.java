@@ -48,7 +48,7 @@ public class ContainerPathMapNorthBoundList implements Serializable, Cloneable {
     /**
      * getPathMaps - function to get the pathmps.
      *
-     * @return {@link List<ContainerPathMapNorthBound>}
+     * @return List of ContainerPathMapNorthBound objects
      */
     public List<ContainerPathMapNorthBound> getPathMaps() {
         return pathMap;
@@ -57,7 +57,7 @@ public class ContainerPathMapNorthBoundList implements Serializable, Cloneable {
     /**
      * setPathMaps - function to set the pathmps.
      *
-     * @params pathMaps
+     * @param pathMaps
      */
     public void setPathMaps(List<ContainerPathMapNorthBound> pathMaps) {
         this.pathMap = pathMaps;

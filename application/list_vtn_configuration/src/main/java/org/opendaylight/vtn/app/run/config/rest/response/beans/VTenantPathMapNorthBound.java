@@ -77,7 +77,7 @@ public class VTenantPathMapNorthBound {
     /**
      * setIndex - function to set the index for this object.
      *
-     * @param idleTimeout
+     * @param index
      */
     public void setIndex(int index) {
         this.index = index;

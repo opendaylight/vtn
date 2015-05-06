@@ -89,7 +89,7 @@ public class ContainerPathMapNorthBound implements Serializable, Cloneable {
     /**
      * setIndex - function to set the index values.
      *
-     * @param {@link int}
+     * @param index
      */
     public void setIndex(int index) {
         this.index = index;
@@ -162,7 +162,7 @@ public class ContainerPathMapNorthBound implements Serializable, Cloneable {
     /**
      * setHardTimeout - function to set the hardTimeout.
      *
-     * @param {@link int}
+     * @param hardTimeout
      */
     public void setHardTimeout(int hardTimeout) {
         this.hardTimeout = hardTimeout;

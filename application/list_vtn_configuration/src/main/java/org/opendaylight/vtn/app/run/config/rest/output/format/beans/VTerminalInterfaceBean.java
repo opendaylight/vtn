@@ -84,7 +84,7 @@ public class VTerminalInterfaceBean {
     /**
      * set the state of the VTermainal.
      *
-     * @param name
+     * @param state
      *        {@link int}
      */
     public void setState(int state) {
@@ -113,8 +113,7 @@ public class VTerminalInterfaceBean {
     /**
      * get the Description of the VTermainal.
      *
-     * @param description
-     *        {@link String}
+     * @return description {@link String}
      */
     public String getDescription() {
         return description;
@@ -181,7 +180,7 @@ public class VTerminalInterfaceBean {
     /**
      * set the flowfilter of the VTermainal.
      *
-     * @param flowfilter
+     * @param flowfilters
      *        {@link VTerminalIfFlowFilterNorthboundList}
      */
     public void setVtFlowfilter(VTerminalIfFlowFilterNorthboundList flowfilters) {

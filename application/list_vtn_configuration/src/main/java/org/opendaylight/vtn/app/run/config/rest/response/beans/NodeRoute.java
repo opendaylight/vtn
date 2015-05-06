@@ -32,7 +32,7 @@ public class NodeRoute {
     /**
      * getNode - function to get Nodedetails for this object.
      *
-     * @param node
+     * @return node details
      */
     public NodeDetails getNode() {
         return node;

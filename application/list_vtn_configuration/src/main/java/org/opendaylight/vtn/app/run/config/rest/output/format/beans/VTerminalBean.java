@@ -120,7 +120,7 @@ public class VTerminalBean {
 
     /**
      * getVInterface function to get the list of VTerminalInterfaceBean value for this object.
-     * @return {@link List<VTerminalInterfaceBean>}
+     * @return List of {@link VTerminalInterfaceBean} objects
      */
     public List<VTerminalInterfaceBean> getVInterface() {
         return vInterface;

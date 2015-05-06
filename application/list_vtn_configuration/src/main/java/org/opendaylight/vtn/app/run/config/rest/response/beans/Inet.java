@@ -70,8 +70,6 @@ public class Inet {
 
     /**
      * getDst - function to get the Destination values for this object.
-     *
-     * @param src
      */
     public String getDst() {
         return dst;

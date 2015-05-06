@@ -104,7 +104,7 @@ public class VBridgeInterfaceBean {
     /**
      * set the state of the VBridge.
      *
-     * @param name
+     * @param state
      *        {@link int}
      */
     public void setState(int state) {
@@ -133,8 +133,7 @@ public class VBridgeInterfaceBean {
     /**
      * get the Description of the VBridge.
      *
-     * @param description
-     *        {@link String}
+     * @return description {@link String}
      */
     public String getDescription() {
         return description;

@@ -67,7 +67,7 @@ public class InputOutput {
     /**
      * setType - function to set the idfor this object.
      *
-     * @param id
+     * @param type
      */
     public void setType(String type) {
         this.type = type;
@@ -85,7 +85,7 @@ public class InputOutput {
     /**
      * setName - function to set the name for this object.
      *
-     * @return {@link String}
+     * @param name {@link String}
      */
     public void setName(String name) {
         this.name = name;

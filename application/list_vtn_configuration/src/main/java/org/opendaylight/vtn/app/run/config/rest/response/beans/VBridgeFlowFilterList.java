@@ -40,7 +40,7 @@ public class VBridgeFlowFilterList implements Cloneable, Serializable {
     /**
      * getFlowfilter - function to get the list of flowfilter value for this object.
      *
-     * @return {@link List<FlowFilter>}
+     * @return List of {@link FlowFilter} objects.
      */
     public List<FlowFilter> getFlowfilter() {
         return flowfilter;

@@ -150,7 +150,7 @@ public class DataFlow {
     /**
      * setIdleTimeout - function to set the idleTimeout.
      *
-     * @pram idleTimeout
+     * @param idleTimeout
      */
     public void setIdleTimeout(int idleTimeout) {
         this.idleTimeout = idleTimeout;
@@ -168,7 +168,7 @@ public class DataFlow {
     /**
      * setHardTimeout - function to set the hardTimeout.
      *
-     * @pram hardTimeout
+     * @param hardTimeout
      */
     public void setHardTimeout(int hardTimeout) {
         this.hardTimeout = hardTimeout;
@@ -186,7 +186,7 @@ public class DataFlow {
     /**
      * setInNode - function to get the inNode.
      *
-     * @pram inNode
+     * @param inNode
      */
     public void setInNode(IngressNode inNode) {
         this.inNode = inNode;
@@ -204,7 +204,7 @@ public class DataFlow {
     /**
      * setInportobj - function to get the inportobj.
      *
-     * @pram inportobj
+     * @param inportobj
      */
     public void setInportobj(IngressPort inportobj) {
         this.inportobj = inportobj;
@@ -222,7 +222,7 @@ public class DataFlow {
     /**
      * setEnobj - function to set the enobj.
      *
-     * @pram enobj
+     * @param enobj
      */
     public void setEnobj(EgressNode enobj) {
         this.enobj = enobj;
@@ -240,7 +240,7 @@ public class DataFlow {
     /**
      * setGpobj - function to get the gpobj.
      *
-     * @return gpobj
+     * @param gpobj
      */
     public void setGpobj(EgressPort gpobj) {
         this.gpobj = gpobj;
@@ -258,7 +258,7 @@ public class DataFlow {
     /**
      * setMatchobj - function to get the matchobj.
      *
-     * @return {@link Match}
+     * @param matchobj {@link Match}
      */
     public void setMatchobj(Match matchobj) {
         this.matchobj = matchobj;

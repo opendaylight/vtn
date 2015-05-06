@@ -75,7 +75,7 @@ public class Flowconditions implements Serializable {
     /**
      * getMatchobj - function to get the Match objects for this object.
      *
-     * @return {@link List<Match>}
+     * @return List of Match objects
      */
     public List<Match> getMatchobj() {
         return match;

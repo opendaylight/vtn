@@ -41,7 +41,7 @@ public class Tpdst {
     /**
      * setDscp - function to set the dscp value for this object.
      *
-     * @param dscp
+     * @param port
      */
     public void setPort(int port) {
         this.port = port;

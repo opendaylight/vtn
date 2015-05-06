@@ -43,7 +43,7 @@ public class PortDetails {
     /**
      * getName - function to get the name for this object
      *
-     * @return { @link String}
+     * @return {@link String}
      */
     public String getName() {
         return name;
@@ -52,7 +52,7 @@ public class PortDetails {
     /**
      * setName - function to set the name for this object.
      *
-     * @param code
+     * @param name
      */
     public void setName(String name) {
         this.name = name;
@@ -61,7 +61,7 @@ public class PortDetails {
     /**
      * getType - function to get the type for this object
      *
-     * @return { @link String}
+     * @return {@link String}
      */
     public String getType() {
         return type;
@@ -70,7 +70,7 @@ public class PortDetails {
     /**
      * setType - function to set the type for this object
      *
-     * @return { @link String}
+     * @param type {@link String}
      */
     public void setType(String type) {
         this.type = type;
@@ -79,7 +79,7 @@ public class PortDetails {
     /**
      * getId - function to get the ID for this object
      *
-     * @return { @link String}
+     * @return {@link String}
      */
     public String getId() {
         return id;

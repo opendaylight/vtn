@@ -72,7 +72,7 @@ public class LocationDetails implements Serializable, Cloneable {
     /**
      * setPort - function to set the port values for this object.
      *
-     * @return {@link port}
+     * @param port
      */
     public void setPort(PortDetails port) {
         this.port = port;

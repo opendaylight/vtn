@@ -44,7 +44,7 @@ public class IngressNode {
     /**
      * setTenant - function to set the tenant value for this object.
      *
-     * @return {@link String}
+     * @param tenant {@link String}
      */
     public void setTenant(String tenant) {
         this.tenant = tenant;

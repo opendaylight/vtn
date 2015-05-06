@@ -82,7 +82,7 @@ public class RestRequest {
 
     /**
      * getResponse - to get the response .
-     * @return {@link Map<String, String>}
+     * @return response
      */
     public String getResponse() {
         return response;

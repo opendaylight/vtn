@@ -45,7 +45,7 @@ public class Action {
 
     /**
      * setPobj - function to set the Popvlan refrence.
-     * @param Popvlan
+     * @param pobj
      */
     public void setPobj(Popvlan pobj) {
         this.pobj = pobj;

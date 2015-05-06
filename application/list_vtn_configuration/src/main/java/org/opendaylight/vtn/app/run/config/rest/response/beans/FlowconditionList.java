@@ -37,7 +37,7 @@ public class FlowconditionList {
     /**
      * getFlowconditionlist - function to get the flowcondition for this object.
      *
-     * @return {@link List<Flowconditions>}
+     * @return List of Flowconditions
      */
     public List<Flowconditions> getFlowconditionlist() {
         return flowcondition;
