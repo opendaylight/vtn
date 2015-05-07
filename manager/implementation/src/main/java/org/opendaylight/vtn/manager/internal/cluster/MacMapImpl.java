@@ -442,7 +442,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
          */
         @Override
         protected boolean  register(VTNManagerImpl mgr) throws VTNException {
-            return register(mgr, this, new UpdateDeniedContext());
+            return MacMapImpl.this.register(mgr, this, new UpdateDeniedContext());
         }
     }
 
@@ -518,7 +518,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
          */
         @Override
         protected boolean register(VTNManagerImpl mgr) throws VTNException {
-            return register(mgr, new UpdateAllowedContext(), this);
+            return MacMapImpl.this.register(mgr, new UpdateAllowedContext(), this);
         }
 
         /**
@@ -630,7 +630,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
          */
         @Override
         protected boolean register(VTNManagerImpl mgr) throws VTNException {
-            return register(mgr, allowedContext, deniedContext);
+            return MacMapImpl.this.register(mgr, allowedContext, deniedContext);
         }
 
         /**
