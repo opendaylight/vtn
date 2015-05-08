@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3aa0d159_1b360553",
+        "filename": "/COMMIT_MSG",
+        "patchSetId": 2
+      },
+      "lineNbr": 8,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-05-08T09:48:04Z",
+      "side": 1,
+      "message": "A better comment will be \n\" Unit Tests for VtnNodeEvent and VtnPortEvent\"",
+      "revId": "eae6401fff6754ad4c15d7d0634bf531cec7c4d9",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
