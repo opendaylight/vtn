@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,7 +13,6 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -54,16 +53,13 @@ import org.opendaylight.controller.sal.authorization.Privilege;
  * This class provides Northbound REST APIs to handle VTN
  * (virtual tenant network).
  */
-@Path("/{containerName}/vtns")
+@Path("/default/vtns")
 public class VTenantNorthbound extends VTNNorthBoundBase {
     /**
-     * Return information about all the VTNs present in the specified
-     * container.
+     * Return information about all the VTNs present in the default container.
      *
-     * @param containerName  The name of the container.
      * @return  <strong>vtns</strong> element contains information about all
-     *          the VTNs present in the container specified by the requested
-     *          URI.
+     *          the VTNs present in the default container.
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -74,19 +70,16 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public VTenantList getTenants(
-            @PathParam("containerName") String containerName) {
-        checkPrivilege(containerName, Privilege.READ);
+    public VTenantList getTenants() {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
 
         try {
             return new VTenantList(mgr.getTenants());
@@ -96,11 +89,9 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Return information about the specified VTN inside the specified
-     * container.
+     * Return information about the specified VTN inside the default container.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return  <strong>vtn</strong> element contains information about the
      *          VTN specified by the requested URI.
      */
@@ -115,22 +106,17 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public VTenant getTenant(
-            @PathParam("containerName") String containerName,
-            @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.READ);
+    public VTenant getTenant(@PathParam("tenantName") String tenantName) {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         try {
             return mgr.getTenant(path);
@@ -140,10 +126,9 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Create a new VTN inside the specified container.
+     * Create a new VTN inside the default container.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
+     * @param uriInfo  Requested URI information.
      * @param tenantName
      *   The name of the VTN to be created.
      *   <ul>
@@ -204,12 +189,6 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "The VTN specified by the requested URI " +
                       "already exists."),
@@ -224,12 +203,11 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response addTenant(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @TypeHint(VTenantConfig.class) VTenantConfig tconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.addTenant(path, tconf);
         if (status.isSuccess()) {
@@ -240,10 +218,9 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Modify configuration of existing VTN in the specified container.
+     * Modify configuration of existing VTN in the default container.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param all
      *   A boolean value to determine the treatment of attributes omitted in
      *   <strong>vtnconf</strong> element.
@@ -298,14 +275,7 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -316,13 +286,12 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response modifyTenant(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @DefaultValue("false") @QueryParam("all") boolean all,
             @TypeHint(VTenantConfig.class) VTenantConfig tconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.modifyTenant(path, tconf, all);
         if (status.isSuccess()) {
@@ -340,8 +309,7 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
      *   will also be deleted.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{tenantName}")
@@ -354,26 +322,17 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response deleteTenant(
-            @PathParam("containerName") String containerName,
-            @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    public Response deleteTenant(@PathParam("tenantName") String tenantName) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.removeTenant(path);
         if (status.isSuccess()) {

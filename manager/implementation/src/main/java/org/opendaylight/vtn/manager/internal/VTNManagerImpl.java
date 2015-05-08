@@ -132,15 +132,12 @@ import org.opendaylight.controller.clustering.services.
 import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
-import org.opendaylight.controller.sal.core.ContainerFlow;
-import org.opendaylight.controller.sal.core.IContainerListener;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
@@ -220,8 +217,8 @@ public class VTNManagerImpl
     implements IVTNManager, IVTNFlowDebugger,
                ICacheUpdateAware<ClusterEventId, Object>,
                VTNInventoryListener, VTNRoutingListener, VTNPacketListener,
-               IConfigurationContainerAware, IContainerListener,
-               IHostFinder, IFlowProgrammerListener {
+               IConfigurationContainerAware, IHostFinder,
+               IFlowProgrammerListener {
     /**
      * Logger instance.
      */
@@ -333,16 +330,6 @@ public class VTNManagerImpl
     private IConnectionManager  connectionManager;
 
     /**
-     * Container manager service instance.
-     *
-     * <p>
-     *   Note that {@code null} is set unless this instance is associated with
-     *   the default container.
-     * </p>
-     */
-    private IContainerManager  containerManager;
-
-    /**
      * Host listeners.
      */
     private final CopyOnWriteArrayList<IfHostListener>  hostListeners =
@@ -371,6 +358,11 @@ public class VTNManagerImpl
     private String  containerName;
 
     /**
+     * Set true if the VTN Manager runs in a non-default container.
+     */
+    private boolean  nonDefault;
+
+    /**
      * Read write lock to synchronize per-container resources.
      */
     private final ReentrantReadWriteLock  rwLock =
@@ -392,21 +384,9 @@ public class VTNManagerImpl
     private boolean  vtnMode;
 
     /**
-     * True if non-default container exists.
-     * This variable always keeps {@code false} if this service is associated
-     * with a non-default container.
-     */
-    private boolean  inContainerMode;
-
-    /**
      * True if the VTN Manager service is available.
      */
     private volatile boolean  serviceAvailable;
-
-    /**
-     * True if the container is being destroyed.
-     */
-    private boolean  destroying;
 
     /**
      * List of cluster events.
@@ -635,19 +615,15 @@ public class VTNManagerImpl
 
         LOG.trace("{}: init() called", cname);
         containerName = cname;
+        nonDefault = !cname.equals(GlobalConstants.DEFAULT.toString());
+        if (nonDefault) {
+            LOG.trace("{}: Nothing to do in a non-default container.", cname);
+            return;
+        }
 
         // Initialize configuration directory for the container.
         ContainerConfig cfg = new ContainerConfig(cname);
         cfg.init();
-
-        // Load static configuration.
-        if (containerManager != null) {
-            assert containerName.equals(GlobalConstants.DEFAULT.toString());
-            inContainerMode = containerManager.inContainerMode();
-        } else {
-            inContainerMode = false;
-        }
-
         createCaches();
 
         // Start VTN task thread.
@@ -687,7 +663,7 @@ public class VTNManagerImpl
         // Initialize VTN flow databases.
         initFlowDatabase();
 
-        vtnMode = !(inContainerMode || tenantDB.isEmpty());
+        vtnMode = !tenantDB.isEmpty();
 
         resourceManager.addManager(this);
         if (vtnProvider != null) {
@@ -745,6 +721,10 @@ public class VTNManagerImpl
      */
     void destroy() {
         LOG.trace("{}: destroy() called", containerName);
+        if (!nonDefault) {
+            return;
+        }
+
         resourceManager.removeManager(this);
         vtnManagerAware.clear();
 
@@ -777,10 +757,6 @@ public class VTNManagerImpl
                          containerName, taskQueueThread.getName());
             }
             taskQueueThread = null;
-        }
-
-        if (destroying) {
-            destroyCaches();
         }
 
         LOG.info("{}: VTN Manager has been destroyed", containerName);
@@ -905,25 +881,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Destroy cluster caches.
-     */
-    private void destroyCaches() {
-        IClusterContainerServices cluster = clusterService;
-        if (cluster != null) {
-            cluster.destroyCache(CACHE_TENANT);
-            cluster.destroyCache(CACHE_STATE);
-            cluster.destroyCache(CACHE_EVENT);
-            cluster.destroyCache(CACHE_FLOWS);
-
-            if (macAddressDB != null) {
-                cluster.destroyCache(CACHE_MAC);
-            }
-
-            LOG.debug("{}: Destroyed VTN caches.", containerName);
-        }
-    }
-
-    /**
      * Initialize the VTN flow database.
      */
     private void initFlowDatabase() {
@@ -983,13 +940,6 @@ public class VTNManagerImpl
         for (MacTableEntryId id: removed) {
             removeMacAddress(id);
         }
-    }
-
-    /**
-     * Called when the container is being destroyed.
-     */
-    void containerDestroy() {
-        destroying = true;
     }
 
     /**
@@ -1162,41 +1112,6 @@ public class VTNManagerImpl
      */
     public IConnectionManager getConnectionManager() {
         return connectionManager;
-    }
-
-    /**
-     * Invoked when a container manager service is registered.
-     *
-     * @param service  Container manager service.
-     */
-    void setContainerManager(IContainerManager service) {
-        LOG.trace("{}: Set container manager service: {}", containerName,
-                  service);
-        containerManager = service;
-    }
-
-    /**
-     * Invoked when a container manager service is unregistered.
-     *
-     * @param service  Container manager service.
-     */
-    void unsetContainerManager(IContainerManager service) {
-        if (service != null && service.equals(containerManager)) {
-            LOG.trace("{}: Unset container manager service: {}",
-                      containerName, service);
-            containerManager = null;
-        }
-    }
-
-    /**
-     * Return container manager service instance.
-     *
-     * @return  Container manager service.
-     *          Note that {@code null} is always returned unless this instance
-     *          is associated with the default container.
-     */
-    public IContainerManager getContainerManager() {
-        return containerManager;
     }
 
     /**
@@ -1584,19 +1499,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Collect inactive flows and remove them in background.
-     */
-    public void cleanUpRemovedFlows() {
-        if (clusterService.amICoordinator()) {
-            RemovedFlowSelector selector =
-                new RemovedFlowSelector(fwRuleManager);
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                fdb.removeFlows(this, selector);
-            }
-        }
-    }
-
-    /**
      * Transmit an ethernet frame to the specified node connector.
      *
      * @param egress  A {@link SalPort} instance which specifies the egress
@@ -1811,24 +1713,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Check whether the VTN configuration can be updated or not.
-     *
-     * <p>
-     *   This method must be called with holding {@link #rwLock}.
-     * </p>
-     *
-     * @return  VTN Manager provider service.
-     * @throws VTNException   VTN configuration can not be updated.
-     */
-    private VTNManagerProvider checkUpdate() throws VTNException {
-        if (inContainerMode) {
-            throw new VTNException(StatusCode.NOTACCEPTABLE,
-                                   "VTN is disabled by container mode");
-        }
-        return checkService();
-    }
-
-    /**
      * Ensure that the given tenant configuration is not null.
      *
      * @param tconf  Tenant configuration
@@ -1842,12 +1726,27 @@ public class VTNManagerImpl
     }
 
     /**
+     * Ensure that the VTN Manager runs on the default container.
+     *
+     * @throws VTNException
+     *    VTN Manager service runs in a non-default container.
+     */
+    private void checkDefault() throws VTNException {
+        if (nonDefault) {
+            throw new VTNException(StatusCode.NOTACCEPTABLE,
+                                   "Non-default container is not supported.");
+        }
+    }
+
+    /**
      * Check whether the VTN Manager service is available or not.
      *
      * @return  VTN Manager provider service.
      * @throws VTNException   VTN Manager service is not available.
      */
     private VTNManagerProvider checkService() throws VTNException {
+        checkDefault();
+
         VTNManagerProvider provider = vtnProvider;
         if (provider == null || !serviceAvailable) {
             throw new VTNException(StatusCode.NOSERVICE,
@@ -2823,7 +2722,7 @@ public class VTNManagerImpl
      *              on the VTN task thread.
      */
     private void updateVTNMode(boolean sync) {
-        if (!inContainerMode && !tenantDB.isEmpty()) {
+        if (!tenantDB.isEmpty()) {
             // Activate VTN.
             if (!vtnMode) {
                 vtnMode = true;
@@ -3238,6 +3137,8 @@ public class VTNManagerImpl
      */
     @Override
     public List<VTenant> getTenants() throws VTNException {
+        checkDefault();
+
         ArrayList<VTenant> list;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -3266,6 +3167,8 @@ public class VTNManagerImpl
      */
     @Override
     public VTenant getTenant(VTenantPath path) throws VTNException {
+        checkDefault();
+
         VTenant vtenant;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
@@ -3370,7 +3273,7 @@ public class VTNManagerImpl
         VnodeName vname;
         VTNManagerProvider provider;
         try {
-            provider = checkUpdate();
+            provider = checkService();
             tenantName = VTenantUtils.getName(path);
             vname = VTenantUtils.checkName(tenantName);
             AddTenantTask task = new AddTenantTask(vname);
@@ -3436,7 +3339,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
             checkTenantConfig(tconf);
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.setVTenantConfig(this, path, tconf, all);
@@ -3459,7 +3362,7 @@ public class VTNManagerImpl
         VTNFuture<?> rmf;
         try {
             String tenantName = VTenantUtils.getName(path);
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Make the specified tenant invisible.
             VTenantImpl vtn = tenantDB.remove(tenantName);
@@ -3508,6 +3411,8 @@ public class VTNManagerImpl
      */
     @Override
     public List<VBridge> getBridges(VTenantPath path) throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3527,6 +3432,8 @@ public class VTNManagerImpl
      */
     @Override
     public VBridge getBridge(VBridgePath path) throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3548,7 +3455,7 @@ public class VTNManagerImpl
     public Status addBridge(VBridgePath path, VBridgeConfig bconf) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.addBridge(this, path, bconf);
@@ -3576,7 +3483,7 @@ public class VTNManagerImpl
                                boolean all) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.modifyBridge(this, path, bconf, all);
@@ -3599,7 +3506,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeBridge(this, path);
@@ -3621,6 +3528,8 @@ public class VTNManagerImpl
     @Override
     public List<VTerminal> getTerminals(VTenantPath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3640,6 +3549,8 @@ public class VTNManagerImpl
      */
     @Override
     public VTerminal getTerminal(VTerminalPath path) throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3661,7 +3572,7 @@ public class VTNManagerImpl
     public Status addTerminal(VTerminalPath path, VTerminalConfig vtconf) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.addTerminal(this, path, vtconf);
@@ -3689,7 +3600,7 @@ public class VTNManagerImpl
                                boolean all) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.modifyTerminal(this, path, vtconf, all);
@@ -3712,7 +3623,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeTerminal(this, path);
@@ -3734,6 +3645,8 @@ public class VTNManagerImpl
     @Override
     public List<VInterface> getInterfaces(VBridgePath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3755,6 +3668,8 @@ public class VTNManagerImpl
     @Override
     public VInterface getInterface(VBridgeIfPath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3776,7 +3691,7 @@ public class VTNManagerImpl
     public Status addInterface(VBridgeIfPath path, VInterfaceConfig iconf) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.addInterface(this, path, iconf);
@@ -3806,7 +3721,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         TxContext ctx = null;
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
             return vtn.modifyInterface(this, ctx, path, iconf, all);
@@ -3832,7 +3747,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeInterface(this, path);
@@ -3853,6 +3768,8 @@ public class VTNManagerImpl
     @Override
     public List<VInterface> getInterfaces(VTerminalPath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3874,6 +3791,8 @@ public class VTNManagerImpl
     @Override
     public VInterface getInterface(VTerminalIfPath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3895,7 +3814,7 @@ public class VTNManagerImpl
     public Status addInterface(VTerminalIfPath path, VInterfaceConfig iconf) {
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.addInterface(this, path, iconf);
@@ -3925,7 +3844,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.readLock());
         TxContext ctx = null;
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
             return vtn.modifyInterface(this, ctx, path, iconf, all);
@@ -3951,7 +3870,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeInterface(this, path);
@@ -3972,6 +3891,8 @@ public class VTNManagerImpl
     @Override
     public List<VlanMap> getVlanMaps(VBridgePath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -3994,6 +3915,8 @@ public class VTNManagerImpl
     @Override
     public VlanMap getVlanMap(VBridgePath path, String mapId)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4017,6 +3940,8 @@ public class VTNManagerImpl
     @Override
     public VlanMap getVlanMap(VBridgePath path, VlanMapConfig vlconf)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4044,7 +3969,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         TxContext ctx = null;
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
             return vtn.addVlanMap(this, ctx, path, vlconf);
@@ -4066,7 +3991,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeVlanMap(this, path, mapId);
@@ -4088,6 +4013,8 @@ public class VTNManagerImpl
      */
     @Override
     public PortMap getPortMap(VBridgeIfPath path) throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4110,6 +4037,8 @@ public class VTNManagerImpl
      */
     @Override
     public PortMap getPortMap(VTerminalIfPath path) throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4138,7 +4067,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         TxContext ctx = null;
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
             return vtn.setPortMap(this, ctx, path, pmconf);
@@ -4169,7 +4098,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         TxContext ctx = null;
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             VTenantImpl vtn = getTenantImpl(path);
             ctx = provider.newTxContext();
             return vtn.setPortMap(this, ctx, path, pmconf);
@@ -4196,6 +4125,8 @@ public class VTNManagerImpl
      */
     @Override
     public MacMap getMacMap(VBridgePath path) throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4222,6 +4153,8 @@ public class VTNManagerImpl
     public Set<DataLinkHost> getMacMapConfig(VBridgePath path,
                                              VtnAclType aclType)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4248,6 +4181,8 @@ public class VTNManagerImpl
     @Override
     public List<MacAddressEntry> getMacMappedHosts(VBridgePath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4278,6 +4213,8 @@ public class VTNManagerImpl
     public MacAddressEntry getMacMappedHost(VBridgePath path,
                                             DataLinkAddress addr)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4311,7 +4248,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.setMacMap(this, path, op, mcconf);
@@ -4344,7 +4281,7 @@ public class VTNManagerImpl
         // virtual network mapping.
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.setMacMap(this, path, op, aclType, dlhosts);
@@ -4370,6 +4307,10 @@ public class VTNManagerImpl
      */
     @Override
     public void findHost(InetAddress addr, Set<VBridgePath> pathSet) {
+        if (nonDefault) {
+            return;
+        }
+
         if (LOG.isTraceEnabled()) {
             LOG.trace("{}: findHost() called: addr={}, pathSet={}",
                       containerName, addr, pathSet);
@@ -4437,6 +4378,10 @@ public class VTNManagerImpl
      */
     @Override
     public boolean probeHost(HostNodeConnector host) {
+        if (nonDefault) {
+            return false;
+        }
+
         if (LOG.isTraceEnabled()) {
             LOG.trace("{}: probeHost() called: host={}", containerName, host);
         }
@@ -4535,6 +4480,8 @@ public class VTNManagerImpl
     @Override
     public List<MacAddressEntry> getMacEntries(VBridgePath path)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4558,6 +4505,8 @@ public class VTNManagerImpl
     @Override
     public MacAddressEntry getMacEntry(VBridgePath path, DataLinkAddress addr)
         throws VTNException {
+        checkDefault();
+
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4585,7 +4534,7 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             return vtn.removeMacEntry(this, path, addr);
@@ -4605,7 +4554,7 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(path);
             vtn.flushMacEntries(this, path);
@@ -4639,12 +4588,6 @@ public class VTNManagerImpl
                                        DataFlowFilter filter, int interval)
         throws VTNException {
         VTNManagerProvider provider = checkService();
-        if (inContainerMode) {
-            // No flow entry is active in container mode.
-            // It's harmless to access inContainerMode flag without holding
-            // rmLock.
-            return new ArrayList<DataFlow>(0);
-        }
 
         // We should not acquire lock here because succeeding method call may
         // make requests to get flow statistics. Synchronization will be done
@@ -4685,12 +4628,6 @@ public class VTNManagerImpl
                                 DataFlowMode mode, int interval)
         throws VTNException {
         VTNManagerProvider provider = checkService();
-        if (inContainerMode) {
-            // No flow entry is active in container mode.
-            // It's harmless to access inContainerMode flag without holding
-            // rmLock.
-            return null;
-        }
 
         // We should not acquire lock here because succeeding method call may
         // make requests to get flow statistics. Synchronization will be done
@@ -4721,13 +4658,7 @@ public class VTNManagerImpl
      */
     @Override
     public int getDataFlowCount(VTenantPath path) throws VTNException {
-        if (inContainerMode) {
-            // No flow entry is active in container mode.
-            // It's harmless to access inContainerMode flag without holding
-            // rmLock.
-            return 0;
-        }
-
+        checkService();
         VTNFlowDatabase fdb = getTenantFlowDB(path);
         return fdb.getFlowCount();
     }
@@ -4799,7 +4730,7 @@ public class VTNManagerImpl
     @Override
     public UpdateType setFlowCondition(String name, FlowCondition fcond)
         throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Construct an RPC input that replaces the flow condition specified
         // by the given name.
@@ -4827,7 +4758,7 @@ public class VTNManagerImpl
     @Override
     public Status removeFlowCondition(String name) {
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             RemoveFlowConditionInput input =
                 new RemoveFlowConditionInputBuilder().setName(name).build();
 
@@ -4851,7 +4782,7 @@ public class VTNManagerImpl
     @Override
     public Status clearFlowCondition() {
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Invoke RPC and await its completion.
             VtnFlowConditionService rpc =
@@ -4914,7 +4845,7 @@ public class VTNManagerImpl
     public UpdateType setFlowConditionMatch(String name, int index,
                                             FlowMatch match)
         throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Complete FlowMatch instance.
         FlowMatch mt;
@@ -4966,7 +4897,7 @@ public class VTNManagerImpl
     public Status removeFlowConditionMatch(String name, int index) {
         Integer idx = Integer.valueOf(index);
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Construct an RPC input that removes the flow match associated
             // with the given index in the flow condition.
@@ -5057,7 +4988,7 @@ public class VTNManagerImpl
     @Override
     public UpdateType setPathPolicy(int id, PathPolicy policy)
         throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Construct an RPC input that replaces the path policy configuration
         // with the given onfiguration.
@@ -5085,7 +5016,7 @@ public class VTNManagerImpl
     @Override
     public Status removePathPolicy(int id) {
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             RemovePathPolicyInput input = new RemovePathPolicyInputBuilder().
                 setId(Integer.valueOf(id)).build();
 
@@ -5109,7 +5040,7 @@ public class VTNManagerImpl
     @Override
     public Status clearPathPolicy() {
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Invoke RPC and await its completion.
             VtnPathPolicyService rpc =
@@ -5161,7 +5092,7 @@ public class VTNManagerImpl
     @Override
     public boolean setPathPolicyDefaultCost(int id, long cost)
         throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Construct an RPC input that updates only the default cost.
         PathPolicyConfigBuilder.Rpc builder =
@@ -5193,6 +5124,8 @@ public class VTNManagerImpl
     @Override
     public long getPathPolicyCost(int id, PortLocation ploc)
         throws VTNException {
+        checkDefault();
+
         VtnPortDesc vdesc;
         try {
             vdesc = NodeUtils.toVtnPortDesc(ploc);
@@ -5239,7 +5172,7 @@ public class VTNManagerImpl
     @Override
     public UpdateType setPathPolicyCost(int id, PortLocation ploc, long cost)
         throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Construct an RPC input that adds the given link cost configuration.
         VtnPortDesc vdesc = NodeUtils.toVtnPortDesc(ploc);
@@ -5278,7 +5211,7 @@ public class VTNManagerImpl
     public Status removePathPolicyCost(int id, PortLocation ploc) {
         TxContext ctx = null;
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Construct an RPC input that removes the given link cost
             // configuration.
@@ -5388,7 +5321,7 @@ public class VTNManagerImpl
      */
     @Override
     public UpdateType setPathMap(int index, PathMap pmap) throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Construct an RPC input that adds the given path map configuration
         // to the global path map list.
@@ -5426,7 +5359,7 @@ public class VTNManagerImpl
     public Status removePathMap(int index) {
         Integer idx = Integer.valueOf(index);
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Construct an RPC input that removes the global path map
             // associated with the given index in the global path map list.
@@ -5464,7 +5397,7 @@ public class VTNManagerImpl
     @Override
     public Status clearPathMap() {
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
 
             // Construct an RPC input that removes all the global path maps.
             ClearPathMapInput input = new ClearPathMapInputBuilder().build();
@@ -5555,7 +5488,7 @@ public class VTNManagerImpl
     @Override
     public UpdateType setPathMap(VTenantPath path, int index, PathMap pmap)
         throws VTNException {
-        VTNManagerProvider provider = checkUpdate();
+        VTNManagerProvider provider = checkService();
 
         // Construct an RPC input that adds the given path map configuration
         // to the path map list in the specified VTN.
@@ -5609,7 +5542,7 @@ public class VTNManagerImpl
     public Status removePathMap(VTenantPath path, int index) {
         Integer idx = Integer.valueOf(index);
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             String tname = VTenantUtils.getName(path);
 
             // Construct an RPC input that removes the VTN path map
@@ -5651,7 +5584,7 @@ public class VTNManagerImpl
     @Override
     public Status clearPathMap(VTenantPath path) {
         try {
-            VTNManagerProvider provider = checkUpdate();
+            VTNManagerProvider provider = checkService();
             String tname = VTenantUtils.getName(path);
 
             // Construct an RPC input that removes all the VTN path maps
@@ -5688,6 +5621,8 @@ public class VTNManagerImpl
     @Override
     public List<FlowFilter> getFlowFilters(FlowFilterId fid)
         throws VTNException {
+        checkDefault();
+
         LockStack lstack = new LockStack();
         lstack.push(rwLock.readLock());
         try {
@@ -5715,6 +5650,8 @@ public class VTNManagerImpl
     @Override
     public FlowFilter getFlowFilter(FlowFilterId fid, int index)
         throws VTNException {
+        checkDefault();
+
         LockStack lstack = new LockStack();
         lstack.push(rwLock.readLock());
         try {
@@ -5746,7 +5683,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         LockStack lstack = new LockStack();
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(fid);
             FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
@@ -5781,7 +5718,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         LockStack lstack = new LockStack();
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(fid);
             FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
@@ -5816,7 +5753,7 @@ public class VTNManagerImpl
         VTNThreadData data = VTNThreadData.create(rwLock.writeLock());
         LockStack lstack = new LockStack();
         try {
-            checkUpdate();
+            checkService();
 
             VTenantImpl vtn = getTenantImpl(fid);
             FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, fid, false);
@@ -5851,8 +5788,8 @@ public class VTNManagerImpl
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
+            checkService();
             String tenantName = VTenantUtils.getName(path);
-            checkUpdate();
 
             VTNFlowDatabase fdb = getTenantFlowDB(tenantName);
             if (fdb == null) {
@@ -6144,94 +6081,6 @@ public class VTNManagerImpl
         }
     }
 
-    // IContainerListener
-
-    /**
-     * Called to notify a change in the tag assigned to a switch.
-     *
-     * @param containerName container for which the update has been raised
-     * @param n Node of the tag under notification
-     * @param oldTag previous version of the tag, this differ from the
-     * newTag only if the UpdateType is a modify
-     * @param newTag new value for the tag, different from oldTag only
-     * in case of modify operation
-     * @param t type of update
-     */
-    @Override
-    public void tagUpdated(String containerName, Node n, short oldTag,
-                           short newTag, UpdateType t) {
-    }
-
-    /**
-     * Notification raised when the container flow layout changes.
-     *
-     * @param containerName container for which the update has been raised
-     * @param previousFlow previous value of the container flow under
-     * update, differs from the currentFlow only and only if it's an
-     * update operation
-     * @param currentFlow current version of the container flow differs from
-     * the previousFlow only in case of update
-     * @param t type of update
-     */
-    @Override
-    public void containerFlowUpdated(String containerName,
-                                     ContainerFlow previousFlow,
-                                     ContainerFlow currentFlow,
-                                     UpdateType t) {
-    }
-
-    /**
-     * Notification raised when a NodeConnector is added or removed in
-     * the container.
-     *
-     * @param containerName container for which the update has been raised
-     * @param p NodeConnector being updated
-     * @param t type of modification, but among the types the modify
-     * operation is not expected to be raised because the
-     * nodeConnectors are anyway immutable so this is only used to
-     * add/delete
-     */
-    @Override
-    public void nodeConnectorUpdated(String containerName, NodeConnector p,
-                                     UpdateType t) {
-    }
-
-    /**
-     * Notification raised when the container mode has changed.
-     * This notification is needed for some bundle in the default container
-     * to cleanup some HW state when switching from non-slicing to
-     * slicing case and vice-versa.
-     *
-     * @param t  ADDED when first container is created, REMOVED when last
-     *           container is removed
-     */
-    @Override
-    public void containerModeUpdated(UpdateType t) {
-        assert containerName.equals(GlobalConstants.DEFAULT.toString());
-
-        boolean mode;
-        switch (t) {
-        case ADDED:
-            mode = true;
-            break;
-
-        case REMOVED:
-            mode = false;
-            break;
-
-        default:
-            return;
-        }
-
-        Lock wrlock = rwLock.writeLock();
-        wrlock.lock();
-        try {
-            inContainerMode = mode;
-        } finally {
-            unlock(wrlock, true);
-        }
-    }
-
     // VTNPacketListener
 
     /**
@@ -6372,17 +6221,7 @@ public class VTNManagerImpl
      */
     @Override
     public void flowRemoved(Node node, Flow flow) {
-        if (containerManager != null && containerManager.inContainerMode()) {
-            // The given flow was removed by forwarding rule manager, and it
-            // will be restored when the controller exits the container mode.
-            // Note that we can not use inContainerMode variable here because
-            // containerModeUpdated() handler for FRM may be called before
-            // the VTN Manager. Although this code may miss FLOW_REMOVED
-            // notifications actually sent by OF switch, they will be fixed
-            // when the controller quits the container mode.
-            assert containerName.equals(GlobalConstants.DEFAULT.toString());
-            LOG.trace("{}: Ignore FLOW_REMOVED during container mode: " +
-                      "node={}, flow={}", containerName, node, flow);
+        if (nonDefault) {
             return;
         }
 

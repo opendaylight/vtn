@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.northbound;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -80,15 +79,14 @@ import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
  *
  * @since Helium
  */
-@Path("/{containerName}/vtns/{tenantName}/vbridges/{bridgeName}/flowfilters")
+@Path("/default/vtns/{tenantName}/vbridges/{bridgeName}/flowfilters")
 public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
     /**
      * Return information about flow filters configured in the specified
      * vBridge flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param listType
      *   The type of the flow filter list (case insensitive).
      *   <dl style="margin-left: 1em;">
@@ -122,7 +120,6 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -133,21 +130,19 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public FlowFilterList getFlowFilters(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("listType") String listType) {
         FlowFilterId fid = createFlowFilterId(tenantName, bridgeName,
                                               listType);
-        return getFlowFilters(containerName, fid);
+        return getFlowFilters(fid);
     }
 
     /**
      * Delete all flow filters in the specified vBridge flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param listType
      *   The type of the flow filter list (case insensitive).
      *   <dl style="margin-left: 1em;">
@@ -181,14 +176,9 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -196,22 +186,20 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteFlowFilters(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("listType") String listType) {
         FlowFilterId fid = createFlowFilterId(tenantName, bridgeName,
                                               listType);
-        return deleteFlowFilters(containerName, fid);
+        return deleteFlowFilters(fid);
     }
 
     /**
      * Return information about the flow filter specified by the flow filter
      * index in the vBridge flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param listType
      *   The type of the flow filter list (case insensitive).
      *   <dl style="margin-left: 1em;">
@@ -251,7 +239,6 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
@@ -264,14 +251,13 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public FlowFilter getFlowFilter(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("listType") String listType,
             @PathParam("index") int index) {
         FlowFilterId fid = createFlowFilterId(tenantName, bridgeName,
                                               listType);
-        return getFlowFilter(containerName, fid, index);
+        return getFlowFilter(fid, index);
     }
 
     /**
@@ -298,10 +284,9 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param listType
      *   The type of the flow filter list (case insensitive).
      *   <dl style="margin-left: 1em;">
@@ -398,16 +383,11 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -419,7 +399,6 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putFlowFilter(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("listType") String listType,
@@ -427,16 +406,15 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
             @TypeHint(FlowFilter.class) FlowFilter ff) {
         FlowFilterId fid = createFlowFilterId(tenantName, bridgeName,
                                               listType);
-        return putFlowFilter(uriInfo, containerName, fid, index, ff);
+        return putFlowFilter(uriInfo, fid, index, ff);
     }
 
     /**
      * Delete the flow filter specified by the index number in the
      * vBridge flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param listType
      *   The type of the flow filter list (case insensitive).
      *   <dl style="margin-left: 1em;">
@@ -474,16 +452,11 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -491,14 +464,13 @@ public class VBridgeFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteFlowFilter(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("listType") String listType,
             @PathParam("index") int index) {
         FlowFilterId fid = createFlowFilterId(tenantName, bridgeName,
                                               listType);
-        return deleteFlowFilter(containerName, fid, index);
+        return deleteFlowFilter(fid, index);
     }
 
     /**

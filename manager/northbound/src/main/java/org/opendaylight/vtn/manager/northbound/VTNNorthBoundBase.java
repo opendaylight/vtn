@@ -24,7 +24,6 @@ import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 
-import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.northbound.commons.RestMessages;
 import org.opendaylight.controller.northbound.commons.exception.
     BadRequestException;
@@ -45,6 +44,7 @@ import org.opendaylight.controller.sal.authorization.Privilege;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.UpdateType;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
+import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -95,29 +95,16 @@ public abstract class VTNNorthBoundBase {
     /**
      * Check access privilege.
      *
-     * @param containerName  The name of the container.
      * @param priv  Access privilege.
      * @throws UnauthorizedException
      *    A client is not authorized.
-     * @throws ResourceNotFoundException
-     *    Invalid container name is specified.
      */
-    protected void checkPrivilege(String containerName, Privilege priv) {
-        IContainerManager containerManager = (IContainerManager)ServiceHelper.
-            getGlobalInstance(IContainerManager.class, this);
-        if (containerManager == null) {
-            throw serviceUnavailable("Container");
-        }
-        if (!containerManager.doesContainerExist(containerName)) {
-            String msg = containerName + ": " +
-                RestMessages.NOCONTAINER.toString();
-            throw new ResourceNotFoundException(msg);
-        }
-
+    protected void checkPrivilege(Privilege priv) {
         String name = getUserName();
-        if (!NorthboundUtils.isAuthorized(name, containerName, priv, this)) {
+        String cname = GlobalConstants.DEFAULT.toString();
+        if (!NorthboundUtils.isAuthorized(name, cname, priv, this)) {
             String msg = "User is not authorized to perform this operation " +
-                "on container " + containerName;
+                "on container " + cname;
             throw new UnauthorizedException(msg);
         }
     }
@@ -163,19 +150,17 @@ public abstract class VTNNorthBoundBase {
     }
 
     /**
-     * Return the VTN manager service associated with the specified container.
+     * Return the VTN manager service associated with the default container.
      *
-     * @param containerName  The container name.
-     * @return  The VTN manager service associated with the specified
+     * @return  The VTN manager service associated with the default
      *          container.
      * @throws ServiceUnavailableException
      *    Unable to get VTN manager service.
-     * @throws ResourceNotFoundException
-     *    Invalid container name is specified.
      */
-    protected IVTNManager getVTNManager(String containerName) {
+    protected IVTNManager getVTNManager() {
+        String cname = GlobalConstants.DEFAULT.toString();
         IVTNManager mgr = (IVTNManager)ServiceHelper.
-            getInstance(IVTNManager.class, containerName, this);
+            getInstance(IVTNManager.class, cname, this);
         if (mgr == null) {
             throw serviceUnavailable("VTN Manager");
         }
@@ -184,20 +169,18 @@ public abstract class VTNNorthBoundBase {
     }
 
     /**
-     * Return the VTN flow debugger service associated with the specified
+     * Return the VTN flow debugger service associated with the default
      * container.
      *
-     * @param containerName  The container name.
-     * @return  The VTN flow debugger service associated with the specified
+     * @return  The VTN flow debugger service associated with the default
      *          container.
      * @throws ServiceUnavailableException
      *    Unable to get VTN manager service.
-     * @throws ResourceNotFoundException
-     *    Invalid container name is specified.
      */
-    protected IVTNFlowDebugger getVTNFlowDebugger(String containerName) {
+    protected IVTNFlowDebugger getVTNFlowDebugger() {
+        String cname = GlobalConstants.DEFAULT.toString();
         IVTNFlowDebugger debugger = (IVTNFlowDebugger)ServiceHelper.
-            getInstance(IVTNFlowDebugger.class, containerName, this);
+            getInstance(IVTNFlowDebugger.class, cname, this);
         if (debugger == null) {
             throw serviceUnavailable("VTN Flow Debugger");
         }
@@ -309,15 +292,13 @@ public abstract class VTNNorthBoundBase {
     /**
      * Return all flow filters in the specified flow filter list.
      *
-     * @param container  The name of the container.
-     * @param fid        Flow filter identifier.
+     * @param fid  Flow filter identifier.
      * @return  A {@link FlowFilterList} instance.
      */
-    protected FlowFilterList getFlowFilters(String container,
-                                            FlowFilterId fid) {
-        checkPrivilege(container, Privilege.READ);
+    protected FlowFilterList getFlowFilters(FlowFilterId fid) {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(container);
+        IVTNManager mgr = getVTNManager();
         try {
             return new FlowFilterList(mgr.getFlowFilters(fid));
         } catch (VTNException e) {
@@ -328,16 +309,14 @@ public abstract class VTNNorthBoundBase {
     /**
      * Return the specified flow filter in the specified flow filter list.
      *
-     * @param container  The name of the container.
-     * @param fid        Flow filter identifier.
-     * @param index      The index which specifies the flow filter.
+     * @param fid    Flow filter identifier.
+     * @param index  The index which specifies the flow filter.
      * @return  A {@link FlowFilter} instance.
      */
-    protected FlowFilter getFlowFilter(String container, FlowFilterId fid,
-                                       int index) {
-        checkPrivilege(container, Privilege.READ);
+    protected FlowFilter getFlowFilter(FlowFilterId fid, int index) {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(container);
+        IVTNManager mgr = getVTNManager();
         try {
             return mgr.getFlowFilter(fid, index);
         } catch (VTNException e) {
@@ -348,19 +327,17 @@ public abstract class VTNNorthBoundBase {
     /**
      * Create or modify the flow filter in the specified flow filter list.
      *
-     * @param uriInfo    Requested URI information.
-     * @param container  The name of the container.
-     * @param fid        Flow filter identifier.
-     * @param index      The index which specifies the flow filter.
-     * @param filter     A {@link FlowFilter} instance.
+     * @param uriInfo  Requested URI information.
+     * @param fid      Flow filter identifier.
+     * @param index    The index which specifies the flow filter.
+     * @param filter   A {@link FlowFilter} instance.
      * @return  Response as dictated by the HTTP Response Status code.
      */
-    protected Response putFlowFilter(UriInfo uriInfo, String container,
-                                     FlowFilterId fid, int index,
-                                     FlowFilter filter) {
-        checkPrivilege(container, Privilege.WRITE);
+    protected Response putFlowFilter(UriInfo uriInfo, FlowFilterId fid,
+                                     int index, FlowFilter filter) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(container);
+        IVTNManager mgr = getVTNManager();
         try {
             UpdateType result = mgr.setFlowFilter(fid, index, filter);
             if (result == null) {
@@ -380,14 +357,13 @@ public abstract class VTNNorthBoundBase {
     /**
      * Delete all flow filters in the specified flow filter list.
      *
-     * @param container  The name of the container.
-     * @param fid        Flow filter identifier.
+     * @param fid  Flow filter identifier.
      * @return  Response as dictated by the HTTP Response Status code.
      */
-    protected Response deleteFlowFilters(String container, FlowFilterId fid) {
-        checkPrivilege(container, Privilege.WRITE);
+    protected Response deleteFlowFilters(FlowFilterId fid) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(container);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.clearFlowFilter(fid);
         if (status == null) {
             return Response.noContent().build();
@@ -402,16 +378,14 @@ public abstract class VTNNorthBoundBase {
     /**
      * Delete the flow filter in the specified flow filter list.
      *
-     * @param container  The name of the container.
-     * @param fid        Flow filter identifier.
-     * @param index      The index which specifies the flow filter.
+     * @param fid    Flow filter identifier.
+     * @param index  The index which specifies the flow filter.
      * @return  Response as dictated by the HTTP Response Status code.
      */
-    protected Response deleteFlowFilter(String container, FlowFilterId fid,
-                                        int index) {
-        checkPrivilege(container, Privilege.WRITE);
+    protected Response deleteFlowFilter(FlowFilterId fid, int index) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(container);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.removeFlowFilter(fid, index);
         if (status == null) {
             return Response.noContent().build();

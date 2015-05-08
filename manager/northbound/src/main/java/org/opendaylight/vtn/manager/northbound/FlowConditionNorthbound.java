@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.northbound;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -53,13 +52,12 @@ import org.opendaylight.controller.sal.utils.Status;
  *
  * @since Helium
  */
-@Path("/{containerName}/flowconditions")
+@Path("/default/flowconditions")
 public class FlowConditionNorthbound extends VTNNorthBoundBase {
     /**
      * Return information about flow conditions configured in the specified
      * container.
      *
-     * @param containerName  The name of the container.
      * @return  <strong>flowconditions</strong> element contains information
      *          about flow conditions specified by the requested URI.
      */
@@ -72,19 +70,16 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public FlowConditionList getFlowConditions(
-            @PathParam("containerName") String containerName) {
-        checkPrivilege(containerName, Privilege.READ);
+    public FlowConditionList getFlowConditions() {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             return new FlowConditionList(mgr.getFlowConditions());
         } catch (VTNException e) {
@@ -93,9 +88,8 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Delete all the flow conditions configured in the specified container.
+     * Delete all the flow conditions configured in the default container.
      *
-     * @param containerName  The name of the container.
      * @return Response as dictated by the HTTP Response Status code.
      * @since  Lithium
      */
@@ -110,23 +104,16 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response clearFlowCondition(
-            @PathParam("containerName") String containerName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    public Response clearFlowCondition() {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.clearFlowCondition();
         if (status == null) {
             return Response.noContent().build();
@@ -140,10 +127,9 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
 
     /**
      * Return information about the flow condition specified by the name
-     * inside the specified container.
+     * inside the default container.
      *
-     * @param containerName  The name of the container.
-     * @param condName       The name of the flow condition.
+     * @param condName  The name of the flow condition.
      * @return  <strong>flowcondition</strong> element contains information
      *          about the flow condition specified by the requested URI.
      */
@@ -158,10 +144,8 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified flow condition does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified flow condition does not " +
+                      "exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -169,11 +153,10 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public FlowCondition getFlowCondition(
-            @PathParam("containerName") String containerName,
             @PathParam("condName") String condName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             return mgr.getFlowCondition(condName);
         } catch (VTNException e) {
@@ -183,7 +166,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
 
     /**
      * Create or modify the flow condition specified by the name inside the
-     * specified container.
+     * default container.
      *
      * <ul>
      *   <li>
@@ -191,8 +174,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *     <span style="text-decoration: underline;">{condName}</span> does
      *     not exist, a new flow condition will be associated with
      *     <span style="text-decoration: underline;">{condName}</span> in the
-     *     container specified by
-     *     <span style="text-decoration: underline;">{containerName}</span>.
+     *     default container.
      *   </li>
      *   <li>
      *     If the flow condition specified by
@@ -202,8 +184,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
+     * @param uriInfo  Requested URI information.
      * @param condName
      *   The name of the flow condition.
      *   <ul>
@@ -277,12 +258,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -294,12 +269,11 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putFlowCondition(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("condName") String condName,
             @TypeHint(FlowCondition.class) FlowCondition fcond) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             UpdateType result = mgr.setFlowCondition(condName, fcond);
             if (result == null) {
@@ -317,11 +291,10 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Delete the flow condition specified by the name inside the specified
+     * Delete the flow condition specified by the name inside the default
      * container.
      *
-     * @param containerName  The name of the container.
-     * @param condName       The name of the flow condition.
+     * @param condName  The name of the flow condition.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{condName}")
@@ -334,14 +307,8 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified flow condition does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "The specified flow condition does not " +
+                      "exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -349,11 +316,10 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteFlowCondition(
-            @PathParam("containerName") String containerName,
             @PathParam("condName") String condName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.removeFlowCondition(condName);
         if (status.isSuccess()) {
             return Response.ok().build();
@@ -366,8 +332,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      * Return information about the specified flow match condition configured
      * in the specified flow condition.
      *
-     * @param containerName  The name of the container.
-     * @param condName       The name of the flow condition.
+     * @param condName  The name of the flow condition.
      * @param index
      *    The match index that specifies the flow match condition.
      *    A string representation of an integer value must be specified.
@@ -389,7 +354,6 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified flow condition does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
@@ -401,12 +365,11 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public FlowMatch getFlowConditionMatch(
-            @PathParam("containerName") String containerName,
             @PathParam("condName") String condName,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             return mgr.getFlowConditionMatch(condName, index);
         } catch (VTNException e) {
@@ -416,7 +379,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
 
     /**
      * Configure a flow match condition into the specified flow condition
-     * inside the specified container.
+     * inside the default container.
      *
      * <ul>
      *   <li>
@@ -438,9 +401,8 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param condName       The name of the flow condition.
+     * @param uriInfo   Requested URI information.
+     * @param condName  The name of the flow condition.
      * @param index
      *   The match index that specifies flow match condition in the flow
      *   condition.
@@ -505,15 +467,10 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified flow condition does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -525,13 +482,12 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putFlowConditionMatch(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("condName") String condName,
             @PathParam("index") int index,
             @TypeHint(FlowMatch.class) FlowMatch match) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             UpdateType result =
                 mgr.setFlowConditionMatch(condName, index, match);
@@ -552,8 +508,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
     /**
      * Delete the specified flow match condition in the flow condition.
      *
-     * @param containerName  The name of the container.
-     * @param condName       The name of the flow condition.
+     * @param condName  The name of the flow condition.
      * @param index
      *    The match index that specifies the flow match condition.
      *    A string representation of an integer value must be specified.
@@ -574,15 +529,10 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified flow condition does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -590,12 +540,11 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteFlowConditionMatch(
-            @PathParam("containerName") String containerName,
             @PathParam("condName") String condName,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.removeFlowConditionMatch(condName, index);
         if (status == null) {
             return Response.noContent().build();

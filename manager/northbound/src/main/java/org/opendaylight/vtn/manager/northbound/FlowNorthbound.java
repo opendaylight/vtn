@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.northbound;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -51,7 +50,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlow
  *
  * @since  Helium
  */
-@Path("/{containerName}/vtns/{tenantName}/flows")
+@Path("/default/vtns/{tenantName}/flows")
 public class FlowNorthbound extends VTNNorthBoundBase {
     /**
      * Return summarized information about all data flows present in the
@@ -96,8 +95,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *     </ul>
      * </dl>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName The name of the VTN.
      * @param srcMac
      *    The MAC address which specifies the source L2 host.
      *    <ul>
@@ -189,10 +187,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -200,7 +195,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public DataFlowList getDataFlows(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @QueryParam("srcMac") String srcMac,
             @QueryParam("srcVlan") @DefaultValue("0") String srcVlan,
@@ -208,9 +202,9 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             @QueryParam("portType") String portType,
             @QueryParam("portId") String portId,
             @QueryParam("portName") String portName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         DataFlowFilter filter = createFilter(srcMac, srcVlan, nodeStr,
                                              portType, portId, portName);
@@ -226,8 +220,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      * Return summarized information about the data flow specified by the
      * flow identifier.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param flowId
      *    The identifier of the data flow.
      *    A string representation of a long integer value must be
@@ -260,7 +253,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{flowId}</u> can not be " +
                       "converted into a long integer.</li>" +
@@ -272,12 +264,11 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public DataFlow getDataFlow(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("flowId") long flowId) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         try {
             return mgr.getDataFlow(path, flowId, DataFlowMode.SUMMARY, -1);
@@ -329,8 +320,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *     </ul>
      * </dl>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param srcMac
      *    The MAC address which specifies the source L2 host.
      *    <ul>
@@ -443,10 +433,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -454,7 +441,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public DataFlowList getDetailedDataFlows(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @QueryParam("srcMac") String srcMac,
             @QueryParam("srcVlan") @DefaultValue("0") String srcVlan,
@@ -464,9 +450,9 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             @QueryParam("portName") String portName,
             @DefaultValue("false") @QueryParam("update") boolean update,
             @DefaultValue("10") @QueryParam("interval") int interval) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         DataFlowFilter filter = createFilter(srcMac, srcVlan, nodeStr,
                                              portType, portId, portName);
@@ -485,8 +471,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      * Return detailed information about the data flow specified by the
      * flow identifier.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param flowId
      *    The identifier of the data flow.
      *    A string representation of a long integer value must be
@@ -539,7 +524,6 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{flowId}</u> can not be " +
                       "converted into a long integer.</li>" +
@@ -551,14 +535,13 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public DataFlow getDetailedDataFlow(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("flowId") long flowId,
             @DefaultValue("false") @QueryParam("update") boolean update,
             @DefaultValue("10") @QueryParam("interval") int interval) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         DataFlowMode mode = (update)
             ? DataFlowMode.UPDATESTATS
@@ -573,8 +556,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
     /**
      * Return the number of data flows present in the specified VTN.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return
      *    <strong>integer</strong> element contains the number of data flows
      *    present in the VTN specified by the requested URI.
@@ -590,10 +572,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -601,11 +580,10 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public XmlLongInteger getFlowCount(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         try {
             return new XmlLongInteger(mgr.getDataFlowCount(path));
@@ -623,8 +601,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
      *   <strong>true</strong>.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @DELETE
@@ -636,14 +613,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -651,11 +621,10 @@ public class FlowNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response removeAllFlows(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNFlowDebugger debugger = getVTNFlowDebugger(containerName);
+        IVTNFlowDebugger debugger = getVTNFlowDebugger();
         VTenantPath path = new VTenantPath(tenantName);
         Status status = debugger.removeAllFlows(path);
         if (status.isSuccess()) {

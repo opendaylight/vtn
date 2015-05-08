@@ -105,6 +105,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -188,8 +192,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -269,8 +272,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -317,8 +319,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -354,6 +355,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -386,6 +391,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *         vBridge specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -476,8 +485,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -555,8 +563,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -605,8 +612,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -643,6 +649,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -678,6 +688,10 @@ public interface IVTNManager {
      *     <dd>
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *       vTerminal specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -760,8 +774,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -832,8 +845,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -880,8 +892,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -923,6 +934,10 @@ public interface IVTNManager {
      *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *         vBridge specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -960,6 +975,10 @@ public interface IVTNManager {
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *       vBridge or vBridge interface specified by {@code path} does not
      *       exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1048,8 +1067,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1126,8 +1144,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1176,8 +1193,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1219,6 +1235,10 @@ public interface IVTNManager {
      *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *         vTerminal specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -1256,6 +1276,10 @@ public interface IVTNManager {
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *       vTerminal or vTerminal interface specified by {@code path} does
      *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1345,8 +1369,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1425,8 +1448,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1476,8 +1498,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1517,6 +1538,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *         vBridge specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1564,6 +1589,10 @@ public interface IVTNManager {
      *           in the vBridge specified by {@code path}.
      *         </li>
      *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1620,6 +1649,10 @@ public interface IVTNManager {
      *           with {@code vlconf}.
      *         </li>
      *       </ul>
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1728,8 +1761,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1786,8 +1818,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -1831,6 +1862,10 @@ public interface IVTNManager {
      *       vBridge interface specified by {@code path}
      *       does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -1873,6 +1908,10 @@ public interface IVTNManager {
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *       vTerminal or vTerminal interface specified by {@code path} does
      *       not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2023,8 +2062,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2177,8 +2215,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2219,6 +2256,10 @@ public interface IVTNManager {
      *     <dd>
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
      *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2280,6 +2321,10 @@ public interface IVTNManager {
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
      *       specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -2331,6 +2376,10 @@ public interface IVTNManager {
      *     <dd>
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
      *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2396,6 +2445,10 @@ public interface IVTNManager {
      *     <dd>
      *       {@linkplain <a href="package-summary.html#VTN">VTN</a>} or vBridge
      *       specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2577,8 +2630,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2756,8 +2808,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2777,6 +2828,10 @@ public interface IVTNManager {
      *   a broadcast ARP request to the specified vBridges.
      *   If a host is found, it is reported to {@code HostTracker} via
      *   {@code IfHostListener} interface.
+     * </p>
+     * <p>
+     *   Note that this method does nothing if this service is associated
+     *   with a non-default container.
      * </p>
      *
      * @param addr
@@ -2842,6 +2897,9 @@ public interface IVTNManager {
      *     <li>
      *       If the vBridge to which the {@code host} belongs does not exist.
      *     </li>
+     *     <li>
+     *       If this service is associated with a non-default container.
+     *     </li>
      *   </ul>
      */
     boolean probeHost(HostNodeConnector host);
@@ -2878,6 +2936,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *         vBridge specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2927,6 +2989,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>{@linkplain <a href="package-summary.html#VTN">VTN</a>} or
      *         vBridge specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -2981,8 +3047,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3028,8 +3093,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3129,6 +3193,10 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3237,6 +3305,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -3270,6 +3342,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -3287,6 +3363,10 @@ public interface IVTNManager {
      *   The following are the main {@code StatusCode} set in {@link Status}
      *   delivered by the exception.
      *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -3309,6 +3389,10 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>Flow condition specified by {@code name} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3414,8 +3498,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3449,8 +3532,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3477,8 +3559,7 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3507,6 +3588,10 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>Flow condition specified by {@code name} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3594,8 +3679,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3635,8 +3719,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3654,6 +3737,10 @@ public interface IVTNManager {
      *   The following are the main {@code StatusCode} set in {@link Status}
      *   delivered by the exception.
      *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -3673,6 +3760,10 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3754,8 +3845,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3785,8 +3875,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3813,8 +3902,7 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3836,6 +3924,10 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3877,6 +3969,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>Path policy specified by {@code id} does not exist.
      *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -3905,6 +4001,10 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>Path policy specified by {@code id} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -3972,8 +4072,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4013,8 +4112,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4034,6 +4132,10 @@ public interface IVTNManager {
      *   The following are the main {@code StatusCode} set in {@link Status}
      *   delivered by the exception.
      *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -4055,6 +4157,10 @@ public interface IVTNManager {
      *   The following are the main {@code StatusCode} set in {@link Status}
      *   delivered by the exception.
      *   <dl style="margin-left: 1em;">
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
+     *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
      *   </dl>
@@ -4151,8 +4257,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4181,8 +4286,7 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4210,8 +4314,7 @@ public interface IVTNManager {
      *   <dl style="margin-left: 1em;">
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4244,6 +4347,10 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4278,6 +4385,10 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>VTN specified by {@code path} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4379,8 +4490,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4424,8 +4534,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4468,8 +4577,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4508,6 +4616,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>
      *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4550,6 +4662,10 @@ public interface IVTNManager {
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTFOUND}
      *     <dd>
      *       The target virtual node configured in {@code fid} does not exist.
+     *
+     *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
+     *     <dd>
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4670,8 +4786,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4723,8 +4838,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.
@@ -4774,8 +4888,7 @@ public interface IVTNManager {
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.NOTACCEPTABLE}
      *     <dd>
-     *       This service is associated with the default container, and
-     *       a container other than the default container is present.
+     *       This service is associated with a non-default container.
      *
      *     <dt style="font-weight: bold;">{@code StatusCode.INTERNALERROR}
      *     <dd>Fatal internal error occurred in the VTN Manager.

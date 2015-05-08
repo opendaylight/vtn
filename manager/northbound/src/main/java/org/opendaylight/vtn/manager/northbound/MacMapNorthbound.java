@@ -13,7 +13,6 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -69,7 +68,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  *
  * @since  Helium
  */
-@Path("/{containerName}/vtns/{tenantName}/vbridges/{bridgeName}/macmap")
+@Path("/default/vtns/{tenantName}/vbridges/{bridgeName}/macmap")
 public class MacMapNorthbound extends VTNNorthBoundBase {
     /**
      * A pseudo MAC address which indicates an undefined value.
@@ -80,9 +79,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Return information about MAC mapping configured in the specified
      * vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  <strong>macmap</strong> element contains information about
      *          MAC mapping specified by the requested URI.
      */
@@ -100,7 +98,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -111,12 +108,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacMapInfo getMacMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             MacMap mcmap = mgr.getMacMap(path);
@@ -133,10 +129,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   This API changes both the Map Allow and Map Deny list of MAC mapping.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param mci
      *   <strong>macmapconf</strong> specifies the MAC mapping configuration
      *   information.
@@ -232,14 +227,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "Host information configured in " +
                       "Map Access list of MAC mapping, configured on " +
@@ -257,12 +247,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setMacMap(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @TypeHint(MacMapConfigInfo.class) MacMapConfigInfo mci) {
         MacMapConfig mcconf = toMacMapConfig(mci);
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName,
+        return setMacMap(uriInfo, tenantName, bridgeName,
                          VtnUpdateOperationType.SET, mcconf);
     }
 
@@ -283,10 +272,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param mci
      *   <strong>macmapconf</strong> specifies the MAC mapping configuration
      *   information to be added or removed.
@@ -434,14 +422,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "\"add\" is passed to " +
                       "<u>action</u>, and one of the following conditions " +
@@ -468,23 +451,20 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response modifyMacMap(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @QueryParam("action") String action,
             @TypeHint(MacMapConfigInfo.class) MacMapConfigInfo mci) {
         MacMapConfig mcconf = toMacMapConfig(mci);
         VtnUpdateOperationType op = toVtnUpdateOperationType(action);
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName, op,
-                         mcconf);
+        return setMacMap(uriInfo, tenantName, bridgeName, op, mcconf);
     }
 
     /**
      * Delete the MAC mapping configured in the specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  Response as dictated by the HTTP Response Status code.
      */
     @DELETE
@@ -500,14 +480,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -515,10 +490,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteMacMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        return setMacMap(null, containerName, tenantName, bridgeName,
+        return setMacMap(null, tenantName, bridgeName,
                          VtnUpdateOperationType.SET, null);
     }
 
@@ -526,9 +500,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Return the contents of Map Allow list of MAC mapping configured in the
      * specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  <strong>machosts</strong> element contains host information
      *          configured in Map Allow list of MAC mapping.
      */
@@ -547,7 +520,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -558,11 +530,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacHostSet getMacMapAllowed(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        return getMacMapConfig(containerName, tenantName, bridgeName,
-                               VtnAclType.ALLOW);
+        return getMacMapConfig(tenantName, bridgeName, VtnAclType.ALLOW);
     }
 
     /**
@@ -574,10 +544,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   contents specified by request body.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param mhset
      *   <strong>machosts</strong> specifies the host information to be
      *   configured in Map Allow list.
@@ -643,14 +612,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "Host information configured in Map Allow " +
                       "list of MAC mapping, configured on another vBridge, " +
@@ -666,12 +630,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setMacMapAllowed(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName,
+        return setMacMap(uriInfo, tenantName, bridgeName,
                          VtnUpdateOperationType.SET, VtnAclType.ALLOW,
                          dlhosts);
     }
@@ -693,10 +656,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param mhset
      *   <strong>machosts</strong> specifies host information to be added
      *   or removed.
@@ -805,14 +767,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "\"add\" is passed to " +
                       "<u>action</u>, and one of the following conditions " +
@@ -837,14 +794,13 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response modifyMacMapAllowed(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @QueryParam("action") String action,
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
         VtnUpdateOperationType op = toVtnUpdateOperationType(action);
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName, op,
+        return setMacMap(uriInfo, tenantName, bridgeName, op,
                          VtnAclType.ALLOW, dlhosts);
     }
 
@@ -857,9 +813,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   become empty.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  Response as dictated by the HTTP Response Status code.
      */
     @Path("allow")
@@ -876,14 +831,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -891,10 +841,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteMacMapAllowed(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        return setMacMap(null, containerName, tenantName, bridgeName,
+        return setMacMap(null, tenantName, bridgeName,
                          VtnUpdateOperationType.SET, VtnAclType.ALLOW, null);
     }
 
@@ -902,9 +851,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Determine whether the specified host information is present in the
      * Map Allow list of MAC mapping configured in the specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be tested.
      *   <ul>
@@ -958,7 +906,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -969,13 +916,12 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacHost getMacMapAllowedHost(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
-        return getMacMapConfig(containerName, tenantName, bridgeName,
-                               VtnAclType.ALLOW, macAddr, vlan);
+        return getMacMapConfig(tenantName, bridgeName, VtnAclType.ALLOW,
+                               macAddr, vlan);
     }
 
     /**
@@ -989,10 +935,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   is already configured in the Map Allow list.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be added.
      *   <ul>
@@ -1058,14 +1003,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "<ul>" +
                       "<li>Host information configured in Map Allow list of " +
@@ -1086,12 +1026,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setMacMapAllowedHost(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName,
+        return setMacMap(uriInfo, tenantName, bridgeName,
                          VtnUpdateOperationType.ADD, VtnAclType.ALLOW, macAddr,
                          vlan);
     }
@@ -1113,9 +1052,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be removed.
      *   <ul>
@@ -1167,14 +1105,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -1182,12 +1115,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteMacMapAllowedHost(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
-        return setMacMap(null, containerName, tenantName, bridgeName,
+        return setMacMap(null, tenantName, bridgeName,
                          VtnUpdateOperationType.REMOVE, VtnAclType.ALLOW,
                          macAddr, vlan);
     }
@@ -1196,9 +1128,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Return the contents of Map Deny list of MAC mapping configured in the
      * specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  <strong>machosts</strong> element contains host information
      *          configured in Map Deny list of MAC mapping.
      */
@@ -1217,7 +1148,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -1228,21 +1158,18 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacHostSet getMacMapDenied(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        return getMacMapConfig(containerName, tenantName, bridgeName,
-                               VtnAclType.DENY);
+        return getMacMapConfig(tenantName, bridgeName, VtnAclType.DENY);
     }
 
     /**
      * Change whole contents of Map Deny list of MAC mapping configured in
      * the specified vBridge.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param mhset
      *   <strong>machosts</strong> specifies the host information to be
      *   configured in Map Deny list.
@@ -1307,14 +1234,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1326,12 +1248,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setMacMapDenied(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName,
+        return setMacMap(uriInfo, tenantName, bridgeName,
                          VtnUpdateOperationType.SET, VtnAclType.DENY, dlhosts);
     }
 
@@ -1352,10 +1273,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param mhset
      *   <strong>machosts</strong> specifies host information to be added
      *   or removed.
@@ -1462,14 +1382,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1481,14 +1396,13 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response modifyMacMapDenied(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @QueryParam("action") String action,
             @TypeHint(MacHostSet.class) MacHostSet mhset) {
         Set<DataLinkHost> dlhosts = toValidDataLinkHostSet(mhset);
         VtnUpdateOperationType op = toVtnUpdateOperationType(action);
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName, op,
+        return setMacMap(uriInfo, tenantName, bridgeName, op,
                          VtnAclType.DENY, dlhosts);
     }
 
@@ -1501,9 +1415,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   become empty.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  Response as dictated by the HTTP Response Status code.
      */
     @Path("deny")
@@ -1520,14 +1433,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -1535,10 +1443,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteMacMapDenied(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        return setMacMap(null, containerName, tenantName, bridgeName,
+        return setMacMap(null, tenantName, bridgeName,
                          VtnUpdateOperationType.SET, VtnAclType.DENY, null);
     }
 
@@ -1546,9 +1453,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Determine whether the specified host information is present in the
      * Map Deny list of MAC mapping configured in the specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be tested.
      *   <ul>
@@ -1598,7 +1504,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -1609,13 +1514,12 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacHost getMacMapDeniedHost(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
-        return getMacMapConfig(containerName, tenantName, bridgeName,
-                               VtnAclType.DENY, macAddr, vlan);
+        return getMacMapConfig(tenantName, bridgeName, VtnAclType.DENY,
+                               macAddr, vlan);
     }
 
     /**
@@ -1629,10 +1533,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   already configured in the Map Deny list.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be added.
      *   <ul>
@@ -1695,14 +1598,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -1711,12 +1609,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setMacMapDeniedHost(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName,
+        return setMacMap(uriInfo, tenantName, bridgeName,
                          VtnUpdateOperationType.ADD, VtnAclType.DENY, macAddr,
                          vlan);
     }
@@ -1738,9 +1635,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be removed.
      *   <ul>
@@ -1788,14 +1684,9 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -1803,12 +1694,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteMacMapDeniedHost(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr,
             @PathParam("vlan") String vlan) {
-        return setMacMap(null, containerName, tenantName, bridgeName,
+        return setMacMap(null, tenantName, bridgeName,
                          VtnUpdateOperationType.REMOVE, VtnAclType.DENY,
                          macAddr, vlan);
     }
@@ -1817,9 +1707,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Return a list of hosts where mapping is actually active based on
      * MAC mapping configured in the specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  <strong>macentries</strong> element contains information about
      *          all hosts actually mapped by MAC mapping.
      */
@@ -1838,7 +1727,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -1849,12 +1737,11 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacEntryList getMacMappedHosts(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             List<MacAddressEntry> list = mgr.getMacMappedHosts(path);
@@ -1868,9 +1755,8 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Determine whether the specified MAC address is actually mapped on
      * the basis of the MAC mapping configured in the specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param macAddr
      *   A string representation of MAC address to be found.
      *   <ul>
@@ -1906,7 +1792,6 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -1917,14 +1802,13 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public MacEntry getMacMappedHost(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("macAddr") String macAddr) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
         EthernetAddress dladdr = parseEthernetAddress(macAddr);
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             MacAddressEntry entry = mgr.getMacMappedHost(path, dladdr);
@@ -1938,19 +1822,18 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Return a {@link MacHostSet} instance which contains host information
      * configured in the access control list of MAC mapping.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param aclType        A {@link VtnAclType} instance which determines
-     *                       the type of the access control list.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param aclType     A {@link VtnAclType} instance which determines
+     *                    the type of the access control list.
      * @return  A {@link MacHostSet} instance if MAC mapping is configured.
      *          {@code null} is returned if not configured.
      */
-    private MacHostSet getMacMapConfig(String containerName, String tenantName,
-                                       String bridgeName, VtnAclType aclType) {
-        checkPrivilege(containerName, Privilege.READ);
+    private MacHostSet getMacMapConfig(String tenantName, String bridgeName,
+                                       VtnAclType aclType) {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             Set<DataLinkHost> dlhosts = mgr.getMacMapConfig(path, aclType);
@@ -1964,24 +1847,23 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Determine whether the specified host is configured in the access control
      * list of the MAC mapping.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param aclType        A {@link VtnAclType} instance which determines
-     *                       the type of the access control list.
-     * @param macAddr        A string representation of MAC address.
-     * @param vlan           A string representation of VLAN ID.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param aclType     A {@link VtnAclType} instance which determines
+     *                    the type of the access control list.
+     * @param macAddr     A string representation of MAC address.
+     * @param vlan        A string representation of VLAN ID.
      * @return  A {@link MacHost} instance is returned if the specified host
      *          is configured in the specified access control list.
      *          Otherwise {@code null} is returned.
      */
-    private MacHost getMacMapConfig(String containerName, String tenantName,
-                                    String bridgeName, VtnAclType aclType,
-                                    String macAddr, String vlan) {
-        checkPrivilege(containerName, Privilege.READ);
+    private MacHost getMacMapConfig(String tenantName, String bridgeName,
+                                    VtnAclType aclType, String macAddr,
+                                    String vlan) {
+        checkPrivilege(Privilege.READ);
 
         DataLinkHost dlhost = toDataLinkHost(macAddr, vlan);
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             Set<DataLinkHost> dlhosts = mgr.getMacMapConfig(path, aclType);
@@ -1998,23 +1880,21 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
     /**
      * Change MAC mapping configuration.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param op             A {@link VtnUpdateOperationType} instance which
-     *                       determines how to change the configuration.
-     * @param mcconf         A {@link MacMapConfig} instance to be applied.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param op          A {@link VtnUpdateOperationType} instance which
+     *                    determines how to change the configuration.
+     * @param mcconf      A {@link MacMapConfig} instance to be applied.
      * @return  A {@link Response} instance which represents HTTP response
      *          to be returned.
      */
-    private Response setMacMap(UriInfo uriInfo, String containerName,
-                               String tenantName, String bridgeName,
-                               VtnUpdateOperationType op,
+    private Response setMacMap(UriInfo uriInfo, String tenantName,
+                               String bridgeName, VtnUpdateOperationType op,
                                MacMapConfig mcconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             UpdateType type = mgr.setMacMap(path, op, mcconf);
@@ -2037,25 +1917,23 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Change the specified access control list in the MAC mapping
      * configuration.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param op             A {@link VtnUpdateOperationType} instance which
-     *                       determines how to change the configuration.
-     * @param aclType        A {@link VtnAclType} instance which determines
-     *                       the access control list.
-     * @param dlhosts        A set of {@link DataLinkHost} instances.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param op          A {@link VtnUpdateOperationType} instance which
+     *                    determines how to change the configuration.
+     * @param aclType     A {@link VtnAclType} instance which determines
+     *                    the access control list.
+     * @param dlhosts     A set of {@link DataLinkHost} instances.
      * @return  A {@link Response} instance which represents HTTP response
      *          to be returned.
      */
-    private Response setMacMap(UriInfo uriInfo, String containerName,
-                               String tenantName, String bridgeName,
-                               VtnUpdateOperationType op, VtnAclType aclType,
-                               Set<DataLinkHost> dlhosts) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    private Response setMacMap(UriInfo uriInfo, String tenantName,
+                               String bridgeName, VtnUpdateOperationType op,
+                               VtnAclType aclType, Set<DataLinkHost> dlhosts) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             UpdateType type = mgr.setMacMap(path, op, aclType, dlhosts);
@@ -2078,30 +1956,28 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
      * Add/Remove the specified host to/from the specified access control list
      * in the MAC mapping configuration.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param op             A {@link VtnUpdateOperationType} instance which
-     *                       determines how to change the configuration.
-     * @param aclType        A {@link VtnAclType} instance which determines
-     *                       the access control list.
-     * @param macAddr        A string representation of MAC address.
-     * @param vlan           A string representation of VLAN ID.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param op          A {@link VtnUpdateOperationType} instance which
+     *                    determines how to change the configuration.
+     * @param aclType     A {@link VtnAclType} instance which determines
+     *                    the access control list.
+     * @param macAddr     A string representation of MAC address.
+     * @param vlan        A string representation of VLAN ID.
      * @return  A {@link Response} instance which represents HTTP response
      *          to be returned.
      */
-    private Response setMacMap(UriInfo uriInfo, String containerName,
-                               String tenantName, String bridgeName,
-                               VtnUpdateOperationType op, VtnAclType aclType,
-                               String macAddr, String vlan) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    private Response setMacMap(UriInfo uriInfo, String tenantName,
+                               String bridgeName, VtnUpdateOperationType op,
+                               VtnAclType aclType, String macAddr,
+                               String vlan) {
+        checkPrivilege(Privilege.WRITE);
 
         Set<DataLinkHost> dlhosts = new HashSet<DataLinkHost>();
         dlhosts.add(toDataLinkHost(macAddr, vlan));
 
-        return setMacMap(uriInfo, containerName, tenantName, bridgeName,
-                         op, aclType, dlhosts);
+        return setMacMap(uriInfo, tenantName, bridgeName, op, aclType, dlhosts);
     }
 
     /**

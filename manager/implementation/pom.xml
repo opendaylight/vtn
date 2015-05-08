@@ -161,11 +161,6 @@
 
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
-      <artifactId>containermanager</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
       <artifactId>forwardingrulesmanager</artifactId>
     </dependency>
 

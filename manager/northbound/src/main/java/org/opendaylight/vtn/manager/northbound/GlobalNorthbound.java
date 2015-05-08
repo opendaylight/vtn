@@ -26,7 +26,6 @@ import org.codehaus.enunciate.jaxrs.TypeHint;
 import org.opendaylight.vtn.manager.BundleVersion;
 import org.opendaylight.vtn.manager.IVTNGlobal;
 
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.sal.authorization.Privilege;
 
@@ -82,16 +81,5 @@ public class GlobalNorthbound extends VTNNorthBoundBase {
         }
 
         return global;
-    }
-
-    /**
-     * Check access privilege.
-     *
-     * @param priv  Access privilege.
-     * @throws org.opendaylight.controller.northbound.commons.exception.UnauthorizedException
-     *    A client is not authorized.
-     */
-    private void checkPrivilege(Privilege priv) {
-        checkPrivilege(GlobalConstants.DEFAULT.toString(), priv);
     }
 }

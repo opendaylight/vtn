@@ -54,7 +54,6 @@ import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -1689,130 +1688,6 @@ public class GlobalResourceManager
         return true;
     }
 
-    /**
-     * Remove all {@link MapReference} objects associated with the specified
-     * container from the map.
-     *
-     * @param map            A {@link Map} which contains {@link MapReference}
-     *                       objects as values.
-     * @param containerName  The name of the container.
-     * @param <T>            The type of keys in {@code map}.
-     * @return  {@code true} is returned if at least one entry was removed.
-     *          {@code false} is returned if the specified map was not changed.
-     */
-    private <T> boolean removeMapReferences(Map<T, MapReference> map,
-                                            String containerName) {
-        Set<T> keys = new HashSet<T>();
-        for (Map.Entry<T, MapReference> entry: map.entrySet()) {
-            MapReference ref = entry.getValue();
-            if (containerName.equals(ref.getContainerName())) {
-                T key = entry.getKey();
-                keys.add(key);
-            }
-        }
-
-        if (keys.isEmpty()) {
-            return false;
-        }
-
-        for (T key: keys) {
-            map.remove(key);
-        }
-
-        return true;
-    }
-
-    /**
-     * Remove all data related to the specified container from
-     * {@link #macMapDenied}.
-     *
-     * @param containerName  The name of the container.
-     * @return  {@code true} is returned if at least one entry was removed.
-     *          {@code false} is returned if no entry was removed.
-     */
-    private boolean removeMacMapDenied(String containerName) {
-        Set<MacVlan> removed = new HashSet<MacVlan>();
-        Map<MacVlan, Set<MapReference>> updated =
-            new HashMap<MacVlan, Set<MapReference>>();
-
-        for (Map.Entry<MacVlan, Set<MapReference>> entry:
-                 macMapDenied.entrySet()) {
-            Set<MapReference> rset = entry.getValue();
-            boolean changed = false;
-            for (Iterator<MapReference> it = rset.iterator(); it.hasNext();) {
-                MapReference ref = it.next();
-                if (containerName.equals(ref.getContainerName())) {
-                    it.remove();
-                    changed = true;
-                }
-            }
-
-            if (changed) {
-                MacVlan mvlan = entry.getKey();
-                if (rset.isEmpty()) {
-                    removed.add(mvlan);
-                } else {
-                    updated.put(mvlan, rset);
-                }
-            }
-        }
-
-        macMapDenied.putAll(updated);
-
-        for (MacVlan mvlan: removed) {
-            macMapDenied.remove(mvlan);
-        }
-
-        return !(updated.isEmpty() && removed.isEmpty());
-    }
-
-    /**
-     * Remove all data related to the specified container from
-     * {@link #macMapStates}.
-     *
-     * @param containerName  The name of the container.
-     * @return  {@code true} is returned if at least one entry was removed.
-     *          {@code false} is returned if no entry was removed.
-     */
-    private boolean removeMacMapStates(String containerName) {
-        Set<MapReference> removed = new HashSet<MapReference>();
-        for (MapReference ref: macMapStates.keySet()) {
-            if (containerName.equals(ref.getContainerName())) {
-                removed.add(ref);
-            }
-        }
-
-        if (removed.isEmpty()) {
-            return false;
-        }
-
-        for (MapReference ref: removed) {
-            macMapStates.remove(ref);
-        }
-
-        return true;
-    }
-
-    /**
-     * Clean up resources associated with the given container.
-     *
-     * @param containerName  The name of the container.
-     * @return  {@code true} is returned the configuration was changed.
-     *          {@code false} is returned if not changed.
-     */
-    private boolean cleanUpImpl(String containerName) {
-        // Clear port and VLAN mappings.
-        boolean ret = removeMapReferences(vlanMaps, containerName);
-        ret = (removeMapReferences(portMaps, containerName) || ret);
-
-        // Clear MAC mappings.
-        ret = (removeMapReferences(macMapAllowed, containerName) || ret);
-        ret = (removeMacMapDenied(containerName) || ret);
-        ret = (removeMacMapStates(containerName) || ret);
-
-        return ret;
-    }
-
     // IVTNGlobal
 
     /**
@@ -2225,42 +2100,6 @@ public class GlobalResourceManager
     public boolean isRemoteClusterAddress(InetAddress addr) {
         synchronized (remoteClusterNodes) {
             return remoteClusterNodes.contains(addr);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void cleanUp(final String containerName) {
-        LOG.trace("{}: Clean up resources", containerName);
-
-        // Clean up caches in a cluster cache transaction.
-        VTNManagerImpl mgr =
-            vtnManagers.get(GlobalConstants.DEFAULT.toString());
-        VTNConfig config = mgr.getVTNConfig();
-        ConfigTrans<Object> xact = new ConfigTrans<Object>(config) {
-            @Override
-            protected Object update() {
-                if (cleanUpImpl(containerName)) {
-                    setChanged();
-                }
-                return null;
-            }
-        };
-
-        try {
-            xact.execute();
-        } catch (Exception e) {
-            LOG.error(containerName + ": Failed to clean up resource", e);
-        }
-
-        if (vtnManagers.size() == 1) {
-            // The controller quits the container mode.
-            // Some FLOW_REMOVED notifications might be ignored when the
-            // controller entered the container mode.
-            // So we need to clean up them.
-            mgr.cleanUpRemovedFlows();
         }
     }
 

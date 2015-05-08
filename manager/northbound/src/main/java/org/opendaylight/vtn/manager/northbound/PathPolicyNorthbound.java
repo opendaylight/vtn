@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.northbound;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -74,15 +73,14 @@ import org.opendaylight.controller.sal.utils.Status;
  *
  * @since Helium
  */
-@Path("/{containerName}/pathpolicies")
+@Path("/default/pathpolicies")
 public class PathPolicyNorthbound extends VTNNorthBoundBase {
     /**
-     * Return a list of path policy identifiers configured in the specified
+     * Return a list of path policy identifiers configured in the default
      * container.
      *
-     * @param containerName  The name of the container.
      * @return  <strong>integers</strong> element contains integer values
-     *          which identify path policies in the specified container.
+     *          which identify path policies in the default container.
      */
     @GET
     @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML})
@@ -93,19 +91,16 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public XmlLongIntegerList getPathPolicyIds(
-            @PathParam("containerName") String containerName) {
-        checkPrivilege(containerName, Privilege.READ);
+    public XmlLongIntegerList getPathPolicyIds() {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             return new XmlLongIntegerList(mgr.getPathPolicyIds());
         } catch (VTNException e) {
@@ -114,9 +109,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
     }
 
     /**
-     * Delete all the path policies configured in the specified container.
+     * Delete all the path policies configured in the default container.
      *
-     * @param containerName  The name of the container.
      * @return Response as dictated by the HTTP Response Status code.
      * @since  Lithium
      */
@@ -131,23 +125,16 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
-        @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "The specified container does not exist."),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response clearPathPolicy(
-            @PathParam("containerName") String containerName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    public Response clearPathPolicy() {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.clearPathPolicy();
         if (status == null) {
             return Response.noContent().build();
@@ -161,10 +148,9 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
 
     /**
      * Return information about the path policy specified by the path policy
-     * ID inside the specified container.
+     * ID inside the default container.
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @return  <strong>pathpolicy</strong> element contains information
      *          about the path policy specified by the requested URI.
      */
@@ -180,7 +166,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
@@ -191,12 +176,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public PathPolicy getPathPolicy(
-            @PathParam("containerName") String containerName,
-            @PathParam("policyId") int policyId) {
-        checkPrivilege(containerName, Privilege.READ);
+    public PathPolicy getPathPolicy(@PathParam("policyId") int policyId) {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             return mgr.getPathPolicy(policyId);
         } catch (VTNException e) {
@@ -206,7 +189,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
 
     /**
      * Create or modify the path policy specified by the path policy ID
-     * inside the specified container.
+     * inside the default container.
      *
      * <ul>
      *   <li>
@@ -214,8 +197,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *     <span style="text-decoration: underline;">{policyId}</span> does
      *     not exist, a new path policy will be associated with
      *     <span style="text-decoration: underline;">{policyId}</span> in the
-     *     container specified by
-     *     <span style="text-decoration: underline;">{containerName}</span>.
+     *     default container.
      *   </li>
      *   <li>
      *     If the path policy specified by
@@ -225,8 +207,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
+     * @param uriInfo   Requested URI information.
      * @param policyId
      *   The identifier of the path policy.
      *   <p>
@@ -288,15 +269,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>A string passed to <u>{policyId}</u> can not be " +
-                      "converted into an integer.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "A string passed to <u>{policyId}</u> can " +
+                      "not be converted into an integer."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -308,12 +282,11 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putPathPolicy(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @TypeHint(PathPolicy.class) PathPolicy policy) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             UpdateType result = mgr.setPathPolicy(policyId, policy);
             if (result == null) {
@@ -332,10 +305,9 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
 
     /**
      * Delete the path policy specified by the path policy identifier inside
-     * the specified container.
+     * the default container.
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{policyId}")
@@ -349,27 +321,20 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified flow condition does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response deletePathPolicy(
-            @PathParam("containerName") String containerName,
-            @PathParam("policyId") int policyId) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    public Response deletePathPolicy(@PathParam("policyId") int policyId) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         Status status = mgr.removePathPolicy(policyId);
         if (status.isSuccess()) {
             return Response.ok().build();
@@ -381,8 +346,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
     /**
      * Return the default link cost configured in the specified path policy.
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @return
      *   <strong>integer</strong> element contains the default link cost
      *   configured in the path policy specified by the requested URI.
@@ -412,7 +376,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
@@ -424,11 +387,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public XmlLongInteger getPathPolicyDefaultCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             return new XmlLongInteger(mgr.getPathPolicyDefaultCost(policyId));
         } catch (VTNException e) {
@@ -439,8 +401,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
     /**
      * Change the default link cost configured in the specified path policy.
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param cost
      *   <strong>integer</strong> element specifies the default link cost
      *   to be configured.
@@ -482,15 +443,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -501,12 +457,11 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putPathPolicyDefaultCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @TypeHint(XmlLongInteger.class) XmlLongInteger cost) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         try {
             Long c = cost.getValue();
             if (c == null) {
@@ -537,8 +492,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -578,15 +532,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -597,12 +546,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public XmlLongInteger getCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId) {
-        return getCostImpl(containerName, policyId, nodeType, nodeId,
-                           null, null, null);
+        return getCostImpl(policyId, nodeType, nodeId, null, null, null);
     }
 
     /**
@@ -620,9 +567,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param uriInfo   Requested URI information.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -687,15 +633,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -707,13 +648,12 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putCost(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @TypeHint(XmlLongInteger.class) XmlLongInteger cost) {
-        return putCostImpl(uriInfo, containerName, policyId, nodeType, nodeId,
-                           null, null, null, cost);
+        return putCostImpl(uriInfo, policyId, nodeType, nodeId, null, null,
+                           null, cost);
     }
 
     /**
@@ -728,8 +668,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -769,15 +708,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -788,12 +722,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId) {
-        return deleteCostImpl(containerName, policyId, nodeType, nodeId,
-                              null, null, null);
+        return deleteCostImpl(policyId, nodeType, nodeId, null, null, null);
     }
 
     /**
@@ -811,8 +743,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -856,15 +787,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -875,13 +801,11 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public XmlLongInteger getCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portName") String portName) {
-        return getCostImpl(containerName, policyId, nodeType, nodeId,
-                           portName, null, null);
+        return getCostImpl(policyId, nodeType, nodeId, portName, null, null);
     }
 
     /**
@@ -899,9 +823,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param uriInfo   Requested URI information.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -972,15 +895,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -992,14 +910,13 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putCost(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portName") String portName,
             @TypeHint(XmlLongInteger.class) XmlLongInteger cost) {
-        return putCostImpl(uriInfo, containerName, policyId, nodeType, nodeId,
-                           portName, null, null, cost);
+        return putCostImpl(uriInfo, policyId, nodeType, nodeId, portName,
+                           null, null, cost);
     }
 
     /**
@@ -1014,8 +931,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1059,15 +975,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1078,13 +989,12 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portName") String portName) {
-        return deleteCostImpl(containerName, policyId, nodeType, nodeId,
-                              portName, null, null);
+        return deleteCostImpl(policyId, nodeType, nodeId, portName, null,
+                              null);
     }
 
     /**
@@ -1102,8 +1012,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1160,15 +1069,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1179,14 +1083,12 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public XmlLongInteger getCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portType") String portType,
             @PathParam("portId") String portId) {
-        return getCostImpl(containerName, policyId, nodeType, nodeId,
-                           null, portType, portId);
+        return getCostImpl(policyId, nodeType, nodeId, null, portType, portId);
     }
 
     /**
@@ -1204,9 +1106,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param uriInfo   Requested URI information.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1293,15 +1194,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1313,15 +1209,14 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putCost(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portType") String portType,
             @PathParam("portId") String portId,
             @TypeHint(XmlLongInteger.class) XmlLongInteger cost) {
-        return putCostImpl(uriInfo, containerName, policyId, nodeType, nodeId,
-                           null, portType, portId, cost);
+        return putCostImpl(uriInfo, policyId, nodeType, nodeId, null,
+                           portType, portId, cost);
     }
 
     /**
@@ -1337,8 +1232,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1395,15 +1289,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1414,14 +1303,13 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portType") String portType,
             @PathParam("portId") String portId) {
-        return deleteCostImpl(containerName, policyId, nodeType, nodeId,
-                              null, portType, portId);
+        return deleteCostImpl(policyId, nodeType, nodeId, null, portType,
+                              portId);
     }
 
     /**
@@ -1438,8 +1326,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1500,15 +1387,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1519,15 +1401,14 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public XmlLongInteger getCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portType") String portType,
             @PathParam("portId") String portId,
             @PathParam("portName") String portName) {
-        return getCostImpl(containerName, policyId, nodeType, nodeId,
-                           portName, portType, portId);
+        return getCostImpl(policyId, nodeType, nodeId, portName, portType,
+                           portId);
     }
 
     /**
@@ -1545,9 +1426,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param uriInfo   Requested URI information.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1638,15 +1518,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1658,7 +1533,6 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putCost(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
@@ -1666,8 +1540,8 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
             @PathParam("portId") String portId,
             @PathParam("portName") String portName,
             @TypeHint(XmlLongInteger.class) XmlLongInteger cost) {
-        return putCostImpl(uriInfo, containerName, policyId, nodeType, nodeId,
-                           portName, portType, portId, cost);
+        return putCostImpl(uriInfo, policyId, nodeType, nodeId, portName,
+                           portType, portId, cost);
     }
 
     /**
@@ -1683,8 +1557,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      *   See document of <strong>pathpolicy</strong> element for more details.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
+     * @param policyId  The identifier of the path policy.
      * @param nodeType
      *   Type of the node corresponding to the physical switch.
      *    <ul>
@@ -1745,15 +1618,10 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified path policy does not exist.</li>" +
                       "<li>A string passed to <u>{policyId}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -1764,43 +1632,38 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteCost(
-            @PathParam("containerName") String containerName,
             @PathParam("policyId") int policyId,
             @PathParam("nodeType") String nodeType,
             @PathParam("nodeId") String nodeId,
             @PathParam("portType") String portType,
             @PathParam("portId") String portId,
             @PathParam("portName") String portName) {
-        return deleteCostImpl(containerName, policyId, nodeType, nodeId,
-                              portName, portType, portId);
+        return deleteCostImpl(policyId, nodeType, nodeId, portName, portType,
+                              portId);
     }
 
     /**
      * Return the link cost associated with the specified switch port location.
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
-     * @param nodeType       Type of the node corresponding to the physical
-     *                       switch.
-     * @param nodeId         A string which represents identifier of the node
-     *                       corresponding to the physical switch.
-     * @param portName       The name of the physical switch port.
-     * @param portType       Type of the node connector corresponding to a
-     *                       physical switch port.
-     * @param portId         A string which represents identifier of a node
-     *                       connector corresponding to a physical switch
-     *                       port.
+     * @param policyId  The identifier of the path policy.
+     * @param nodeType  Type of the node corresponding to the physical switch.
+     * @param nodeId    A string which represents identifier of the node
+     *                  corresponding to the physical switch.
+     * @param portName  The name of the physical switch port.
+     * @param portType  Type of the node connector corresponding to a
+     *                  physical switch port.
+     * @param portId    A string which represents identifier of a node
+     *                  connector corresponding to a physical switch port.
      * @return  A {@link XmlLongInteger} instance which contains the link cost.
      * @throws BadRequestException
      *    Invalid parameter is specified.
      */
-    private XmlLongInteger getCostImpl(String containerName, int policyId,
-                                       String nodeType, String nodeId,
-                                       String portName, String portType,
-                                       String portId) {
-        checkPrivilege(containerName, Privilege.READ);
+    private XmlLongInteger getCostImpl(int policyId, String nodeType,
+                                       String nodeId, String portName,
+                                       String portType, String portId) {
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         PortLocation ploc =
             createLocation(nodeType, nodeId, portName, portType, portId);
         try {
@@ -1816,32 +1679,30 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
     /**
      * Associate the link cost with the specified switch port location.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
-     * @param nodeType       Type of the node corresponding to the physical
-     *                       switch.
-     * @param nodeId         A string which represents identifier of the node
-     *                       corresponding to the physical switch.
-     * @param portName       The name of the physical switch port.
-     * @param portType       Type of the node connector corresponding to a
-     *                       physical switch port.
-     * @param portId         A string which represents identifier of a node
-     *                       connector corresponding to a physical switch port.
-     * @param cost           A {@link XmlLongInteger} instance which contains
-     *                       the link cost to be configured.
+     * @param uriInfo   Requested URI information.
+     * @param policyId  The identifier of the path policy.
+     * @param nodeType  Type of the node corresponding to the physical switch.
+     * @param nodeId    A string which represents identifier of the node
+     *                  corresponding to the physical switch.
+     * @param portName  The name of the physical switch port.
+     * @param portType  Type of the node connector corresponding to a
+     *                  physical switch port.
+     * @param portId    A string which represents identifier of a node
+     *                  connector corresponding to a physical switch port.
+     * @param cost      A {@link XmlLongInteger} instance which contains
+     *                  the link cost to be configured.
      * @return  A {@link Response} instance which represents the result of
      *          REST API.
      * @throws BadRequestException
      *    Invalid parameter is specified.
      */
-    private Response putCostImpl(UriInfo uriInfo, String containerName,
-                                 int policyId, String nodeType, String nodeId,
+    private Response putCostImpl(UriInfo uriInfo, int policyId,
+                                 String nodeType, String nodeId,
                                  String portName, String portType,
                                  String portId, XmlLongInteger cost) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         Long c = cost.getValue();
         if (c == null) {
             throw new BadRequestException("Link cost must be specified.");
@@ -1869,30 +1730,26 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
      * Detete the link cost configuration for the specified switch port
      * location.
      *
-     * @param containerName  The name of the container.
-     * @param policyId       The identifier of the path policy.
-     * @param nodeType       Type of the node corresponding to the physical
-     *                       switch.
-     * @param nodeId         A string which represents identifier of the node
-     *                       corresponding to the physical switch.
-     * @param portName       The name of the physical switch port.
-     * @param portType       Type of the node connector corresponding to a
-     *                       physical switch port.
-     * @param portId         A string which represents identifier of a node
-     *                       connector corresponding to a physical switch
-     *                       port.
+     * @param policyId  The identifier of the path policy.
+     * @param nodeType  Type of the node corresponding to the physical switch.
+     * @param nodeId    A string which represents identifier of the node
+     *                  corresponding to the physical switch.
+     * @param portName  The name of the physical switch port.
+     * @param portType  Type of the node connector corresponding to a
+     *                  physical switch port.
+     * @param portId    A string which represents identifier of a node
+     *                  connector corresponding to a physical switch port.
      * @return  A {@link Response} instance which represents the result of
      *          REST API.
      * @throws BadRequestException
      *    Invalid parameter is specified.
      */
-    private Response deleteCostImpl(String containerName, int policyId,
-                                    String nodeType, String nodeId,
-                                    String portName, String portType,
-                                    String portId) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    private Response deleteCostImpl(int policyId, String nodeType,
+                                    String nodeId, String portName,
+                                    String portType, String portId) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         PortLocation ploc =
             createLocation(nodeType, nodeId, portName, portType, portId);
         Status status = mgr.removePathPolicyCost(policyId, ploc);

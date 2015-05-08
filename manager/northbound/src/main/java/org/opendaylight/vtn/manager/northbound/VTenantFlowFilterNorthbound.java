@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.northbound;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -55,13 +54,12 @@ import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
  *
  * @since Helium
  */
-@Path("/{containerName}/vtns/{tenantName}/flowfilters")
+@Path("/default/vtns/{tenantName}/flowfilters")
 public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
     /**
      * Return information about flow filters configured in the specified VTN.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return
      *   <strong>flowfilters</strong> element contains information about the
      *   VTN flow filter list specified by the requested URI.
@@ -76,10 +74,7 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -87,16 +82,14 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public FlowFilterList getFlowFilters(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        return getFlowFilters(containerName, createFlowFilterId(tenantName));
+        return getFlowFilters(createFlowFilterId(tenantName));
     }
 
     /**
      * Delete all flow filters in the VTN flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @DELETE
@@ -111,14 +104,7 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -126,17 +112,15 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteFlowFilters(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        return deleteFlowFilters(containerName, createFlowFilterId(tenantName));
+        return deleteFlowFilters(createFlowFilterId(tenantName));
     }
 
     /**
      * Return information about the flow filter specified by the
      * flow filter index in the VTN flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param index
      *   The index value which specifies the flow filter in the VTN flow filter
      *   list. A string representation of an integer value must be specified.
@@ -159,7 +143,6 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
@@ -171,11 +154,9 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public FlowFilter getFlowFilter(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index) {
-        return getFlowFilter(containerName, createFlowFilterId(tenantName),
-                             index);
+        return getFlowFilter(createFlowFilterId(tenantName), index);
     }
 
     /**
@@ -198,9 +179,8 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
      * @param index
      *   The index value which specifies the flow filter in the VTN flow filter
      *   list.
@@ -282,15 +262,10 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -302,20 +277,18 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putFlowFilter(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index,
             @TypeHint(FlowFilter.class) FlowFilter ff) {
-        return putFlowFilter(uriInfo, containerName,
-                             createFlowFilterId(tenantName), index, ff);
+        return putFlowFilter(uriInfo, createFlowFilterId(tenantName), index,
+                             ff);
     }
 
     /**
      * Delete the flow filter specified by the index number in the VTN
      * flow filter list.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param index
      *   The index value which specifies the flow filter in the VTN flow filter
      *   list. A string representation of an integer value must be specified.
@@ -335,15 +308,10 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -351,11 +319,9 @@ public class VTenantFlowFilterNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteFlowFilter(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index) {
-        return deleteFlowFilter(containerName, createFlowFilterId(tenantName),
-                                index);
+        return deleteFlowFilter(createFlowFilterId(tenantName), index);
     }
 
     /**

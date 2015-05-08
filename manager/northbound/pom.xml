@@ -91,7 +91,6 @@
         <configuration>
           <instructions>
             <Import-Package>
-              org.opendaylight.controller.containermanager,
               org.opendaylight.controller.northbound.commons,
               org.opendaylight.controller.northbound.commons.exception,
               org.opendaylight.controller.northbound.commons.utils,
@@ -133,11 +132,6 @@
     <dependency>
       <groupId>org.opendaylight.controller</groupId>
       <artifactId>sal</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opendaylight.controller</groupId>
-      <artifactId>containermanager</artifactId>
     </dependency>
 
     <dependency>

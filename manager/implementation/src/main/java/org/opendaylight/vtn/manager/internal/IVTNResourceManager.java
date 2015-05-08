@@ -409,13 +409,6 @@ public interface IVTNResourceManager {
     boolean isRemoteClusterAddress(InetAddress addr);
 
     /**
-     * Clean up resources associated with the given container.
-     *
-     * @param containerName  The name of the container.
-     */
-    void cleanUp(String containerName);
-
-    /**
      * Return a VTN Manager service in the specified container.
      *
      * @param containerName  The name of the container.

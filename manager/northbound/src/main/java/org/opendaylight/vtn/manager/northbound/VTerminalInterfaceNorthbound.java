@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,6 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -65,15 +64,14 @@ import org.opendaylight.controller.sal.utils.Status;
  *
  * @since  Helium
  */
-@Path("/{containerName}/vtns/{tenantName}/vterminals/{termName}/interfaces")
+@Path("/default/vtns/{tenantName}/vterminals/{termName}/interfaces")
 public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
     /**
      * Return information about all the virtual interfaces present in the
      * specified vTerminal.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
      * @return  <strong>interfaces</strong> element contains information about
      *          all the virtual interfaces in the vTerminal specified by the
      *          requested URI.
@@ -89,7 +87,6 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "</ul>"),
@@ -100,12 +97,11 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public VInterfaceList getInterfaces(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalPath path = new VTerminalPath(tenantName, termName);
         try {
             List<VInterface> list = mgr.getInterfaces(path);
@@ -119,10 +115,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
      * Return information about the specified virtual interface inside the
      * specified vTerminal.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
-     * @param ifName         The name of the vTerminal interface.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
+     * @param ifName      The name of the vTerminal interface.
      * @return  <strong>interface</strong> element contains information about
      *          the vTerminal interface specified by the requested URI.
      */
@@ -138,7 +133,6 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "<li>The specified vTerminal interface does not " +
@@ -151,13 +145,12 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public VInterface getInterface(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         try {
@@ -174,10 +167,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
      *   Note that vTerminal can contain only one virtual interface.
      * </p>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
      * @param ifName
      *   The name of the vTerminal interface to be created.
      *   <ul>
@@ -233,14 +225,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "The vTerminal specified by the requested " +
                       "URI already contains a virtual interface."),
@@ -255,14 +242,13 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response addInterface(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName,
             @TypeHint(VInterfaceConfig.class) VInterfaceConfig iconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         Status status = mgr.addInterface(path, iconf);
@@ -277,10 +263,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
      * Modify configuration of existing virtual interface in the specified
      * vTerminal.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
-     * @param ifName         The name of the vTerminal interface.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
+     * @param ifName      The name of the vTerminal interface.
      * @param all
      *   A boolean value to determine the treatment of attributes omitted in
      *   <strong>interfaceconf</strong> element.
@@ -325,16 +310,11 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "<li>The specified vTerminal interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -345,15 +325,14 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response modifyInterface(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName,
             @DefaultValue("false") @QueryParam("all") boolean all,
             @TypeHint(VInterfaceConfig.class) VInterfaceConfig iconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         Status status = mgr.modifyInterface(path, iconf, all);
@@ -367,10 +346,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
     /**
      * Delete the specified vTerminal interface.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
-     * @param ifName         The name of the vTerminal interface.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
+     * @param ifName      The name of the vTerminal interface.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
@@ -384,16 +362,11 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "<li>The specified vTerminal interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -401,13 +374,12 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteInterface(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         Status status = mgr.removeInterface(path);
@@ -422,10 +394,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
      * Return information about the port mapping configured in the specified
      * virtual interface in the vTerminal.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
-     * @param ifName         The name of the vTerminal interface.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
+     * @param ifName      The name of the vTerminal interface.
      * @return  <strong>portmap</strong> element contains information about
      *          the port mapping configured in the vTerminal interface
      *          specified by the requested URI.
@@ -446,7 +417,6 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "<li>The specified vTerminal interface does not " +
@@ -459,13 +429,12 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public PortMapInfo getPortMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         try {
@@ -507,10 +476,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName      The name of the vTerminal.
-     * @param ifName         The name of the vTerminal interface.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
+     * @param ifName      The name of the vTerminal interface.
      * @param pmconf
      *   <strong>portmapconf</strong> specifies the port mapping configuration
      *   information.
@@ -589,16 +557,11 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "<li>The specified vTerminal interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "The specified physical switch port is " +
                       "present, and the specified VLAN ID is mapped to " +
@@ -613,14 +576,13 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setPortMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName,
             @TypeHint(PortMapConfig.class) PortMapConfig pmconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         if (pmconf == null) {
@@ -646,10 +608,9 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
      *   configured in the specified vTerminal interface.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param termName       The name of the vTerminal.
-     * @param ifName         The name of the vTerminal interface.
+     * @param tenantName  The name of the VTN.
+     * @param termName    The name of the vTerminal.
+     * @param ifName      The name of the vTerminal interface.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}/portmap")
@@ -663,16 +624,11 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vTerminal does not exist.</li>" +
                       "<li>The specified vTerminal interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -680,13 +636,12 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deletePortMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("termName") String termName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTerminalIfPath path =
             new VTerminalIfPath(tenantName, termName, ifName);
         Status status = mgr.setPortMap(path, null);

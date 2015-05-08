@@ -30,16 +30,13 @@ import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
 import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.containermanager.IContainerManager;
 import org.opendaylight.controller.forwardingrulesmanager.
     IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
-import org.opendaylight.controller.sal.core.IContainerListener;
 import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.sal.utils.ServiceHelper;
 import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 
 /**
@@ -156,14 +153,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             list.add(IHostFinder.class.getName());
             list.add(IFlowProgrammerListener.class.getName());
             if (containerName.equals(GlobalConstants.DEFAULT.toString())) {
-                list.add(IContainerListener.class.getName());
-
-                c.add(createServiceDependency().
-                      setService(IContainerManager.class).
-                      setCallbacks("setContainerManager",
-                                   "unsetContainerManager").
-                      setRequired(true));
-
                 // Register dependency to MD-SAL VTN Manager provider.
                 c.add(createServiceDependency().
                       setService(VTNManagerProvider.class).
@@ -225,34 +214,6 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setService(IfHostListener.class).
                   setCallbacks("addHostListener", "removeHostListener").
                   setRequired(false));
-        }
-    }
-
-    /**
-     * Invoked when a container is being destroyed.
-     *
-     * @param containerName  The name of the container.
-     */
-    @Override
-    public void containerDestroy(String containerName) {
-        VTNManagerImpl mgr = (VTNManagerImpl)ServiceHelper.
-            getInstance(IVTNManager.class, containerName, this);
-        if (mgr != null) {
-            // Let the VTN manager know that this container is being destroyed.
-            mgr.containerDestroy();
-        }
-
-        super.containerDestroy(containerName);
-
-        // Remove configuration files.
-        ContainerConfig cfg = new ContainerConfig(containerName);
-        cfg.cleanUp();
-
-        // Clean up resources registered to the resource manager service.
-        IVTNResourceManager resMgr = (IVTNResourceManager)ServiceHelper.
-            getGlobalInstance(IVTNResourceManager.class, this);
-        if (resMgr != null) {
-            resMgr.cleanUp(containerName);
         }
     }
 }

@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.northbound;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -60,13 +59,12 @@ import org.opendaylight.controller.sal.utils.Status;
  *
  * @since Helium
  */
-@Path("/{containerName}/vtns/{tenantName}/pathmaps")
+@Path("/default/vtns/{tenantName}/pathmaps")
 public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
     /**
      * Return information about VTN pathmap configured in the specified VTN.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return  <strong>pathmaps</strong> element contains information
      *          about VTN path map list specified by the requested URI.
      */
@@ -80,10 +78,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -91,11 +86,10 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public PathMapList getPathMaps(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         try {
             return new PathMapList(mgr.getPathMaps(path));
@@ -107,8 +101,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
     /**
      * Delete all the VTN path maps configured in the specified VTN.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @return Response as dictated by the HTTP Response Status code.
      * @since  Lithium
      */
@@ -124,26 +117,17 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
-                      condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
-                      "<li>The specified VTN does not exist.</li>" +
-                      "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
+                      condition = "The specified VTN does not exist."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
         @ResponseCode(code = HTTP_UNAVAILABLE,
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
-    public Response clearPathMap(
-            @PathParam("containerName") String containerName,
-            @PathParam("tenantName") String tenantName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+    public Response clearPathMap(@PathParam("tenantName") String tenantName) {
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.clearPathMap(path);
         if (status == null) {
@@ -160,8 +144,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      * Return information about the VTN path map specified by the path map
      * index inside the specified VTN.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param index
      *   The index value which specifies the path map in the VTN path map list.
      *   A string representation of an integer value must be specified.
@@ -177,13 +160,12 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       condition = "Operation completed successfully."),
         @ResponseCode(code = HTTP_NO_CONTENT,
                       condition = "The specified path map does not exist " +
-                      "in the specified container."),
+                      "in the default container."),
         @ResponseCode(code = HTTP_UNAUTHORIZED,
                       condition = "User is not authorized to perform this " +
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
@@ -195,12 +177,11 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public PathMap getPathMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         try {
             return mgr.getPathMap(path, index);
@@ -229,9 +210,8 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
      * @param index
      *   The index value which specifies the path map in the VTN path map list.
      *   <ul>
@@ -303,15 +283,10 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -323,13 +298,12 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response putPathMap(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index,
             @TypeHint(PathMap.class) PathMap pmap) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         try {
             UpdateType result = mgr.setPathMap(path, index, pmap);
@@ -351,8 +325,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
      * Delete the VTN path map specified by the index number inside the
      * specified VTN.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
+     * @param tenantName  The name of the VTN.
      * @param index
      *   The index value which specifies the path map in the VTN path map list.
      *   A string representation of an integer value must be specified.
@@ -372,15 +345,10 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>A string passed to <u>{index}</u> can not be " +
                       "converted into an integer.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -388,12 +356,11 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deletePathMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("index") int index) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VTenantPath path = new VTenantPath(tenantName);
         Status status = mgr.removePathMap(path, index);
         if (status == null) {

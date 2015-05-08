@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,7 +15,6 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_ACCEPTABLE;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -63,15 +62,14 @@ import org.opendaylight.controller.sal.utils.Status;
  * This class provides Northbound REST APIs to handle virtual interface
  * in vBridge.
  */
-@Path("/{containerName}/vtns/{tenantName}/vbridges/{bridgeName}/interfaces")
+@Path("/default/vtns/{tenantName}/vbridges/{bridgeName}/interfaces")
 public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     /**
      * Return information about all the virtual interfaces present in the
      * specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @return  <strong>interfaces</strong> element contains information about
      *          all the virtual interfaces in the vBridge specified by the
      *          requested URI.
@@ -87,7 +85,6 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
@@ -98,12 +95,11 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public VInterfaceList getInterfaces(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgePath path = new VBridgePath(tenantName, bridgeName);
         try {
             List<VInterface> list = mgr.getInterfaces(path);
@@ -117,10 +113,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      * Return information about the specified virtual interface inside the
      * specified vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param ifName         The name of the vBridge interface.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the vBridge interface.
      * @return  <strong>interface</strong> element contains information about
      *          the vBridge interface specified by the requested URI.
      */
@@ -136,7 +131,6 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>The specified vBridge interface does not " +
@@ -149,13 +143,12 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public VInterface getInterface(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         try {
             return mgr.getInterface(path);
@@ -167,10 +160,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     /**
      * Create a new virtual interface inside the specified vBridge.
      *
-     * @param uriInfo        Requested URI information.
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
+     * @param uriInfo     Requested URI information.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
      * @param ifName
      *   The name of the vBridge interface to be created.
      *   <ul>
@@ -226,14 +218,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "The vBridge interface specified by the " +
                       "requested URI already exists."),
@@ -248,14 +235,13 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "services, such as the VTN Manager, are unavailable.")})
     public Response addInterface(
             @Context UriInfo uriInfo,
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName,
             @TypeHint(VInterfaceConfig.class) VInterfaceConfig iconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         Status status = mgr.addInterface(path, iconf);
         if (status.isSuccess()) {
@@ -269,10 +255,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      * Modify configuration of existing virtual interface in the specified
      * vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param ifName         The name of the vBridge interface.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the vBridge interface.
      * @param all
      *   A boolean value to determine the treatment of attributes omitted in
      *   <strong>interfaceconf</strong> element.
@@ -317,16 +302,11 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>The specified vBridge interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_UNSUPPORTED_TYPE,
                       condition = "Unsupported data type is specified in " +
                       "<strong>Content-Type</strong> header."),
@@ -337,15 +317,14 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response modifyInterface(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName,
             @DefaultValue("false") @QueryParam("all") boolean all,
             @TypeHint(VInterfaceConfig.class) VInterfaceConfig iconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         Status status = mgr.modifyInterface(path, iconf, all);
         if (status.isSuccess()) {
@@ -358,10 +337,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
     /**
      * Delete the specified vBridge interface.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param ifName         The name of the vBridge interface.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the vBridge interface.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}")
@@ -375,16 +353,11 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>The specified vBridge interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -392,13 +365,12 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deleteInterface(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         Status status = mgr.removeInterface(path);
         if (status.isSuccess()) {
@@ -412,10 +384,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      * Return information about the port mapping configured in the specified
      * virtual interface in the vBridge.
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param ifName         The name of the vBridge interface.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the vBridge interface.
      * @return  <strong>portmap</strong> element contains information about
      *          the port mapping configured in the vBridge interface specified
      *          by the requested URI.
@@ -436,7 +407,6 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>The specified vBridge interface does not " +
@@ -449,13 +419,12 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public PortMapInfo getPortMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.READ);
+        checkPrivilege(Privilege.READ);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         try {
             PortMap pmap = mgr.getPortMap(path);
@@ -496,10 +465,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      *   </li>
      * </ul>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param ifName         The name of the vBridge interface.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the vBridge interface.
      * @param pmconf
      *   <strong>portmapconf</strong> specifies the port mapping configuration
      *   information.
@@ -578,16 +546,11 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>The specified vBridge interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_CONFLICT,
                       condition = "The specified physical switch port is " +
                       "present, and the specified VLAN ID is mapped to " +
@@ -602,14 +565,13 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response setPortMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName,
             @TypeHint(PortMapConfig.class) PortMapConfig pmconf) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         if (pmconf == null) {
             // This should never happen.
@@ -634,10 +596,9 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
      *   configured in the specified vBridge interface.
      * </p>
      *
-     * @param containerName  The name of the container.
-     * @param tenantName     The name of the VTN.
-     * @param bridgeName     The name of the vBridge.
-     * @param ifName         The name of the vBridge interface.
+     * @param tenantName  The name of the VTN.
+     * @param bridgeName  The name of the vBridge.
+     * @param ifName      The name of the vBridge interface.
      * @return Response as dictated by the HTTP Response Status code.
      */
     @Path("{ifName}/portmap")
@@ -651,16 +612,11 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       "operation."),
         @ResponseCode(code = HTTP_NOT_FOUND,
                       condition = "<ul>" +
-                      "<li>The specified container does not exist.</li>" +
                       "<li>The specified VTN does not exist.</li>" +
                       "<li>The specified vBridge does not exist.</li>" +
                       "<li>The specified vBridge interface does not " +
                       "exist.</li>" +
                       "</ul>"),
-        @ResponseCode(code = HTTP_NOT_ACCEPTABLE,
-                      condition = "\"default\" is specified to " +
-                      "<u>{containerName}</u> and a container other than " +
-                      "the default container is present."),
         @ResponseCode(code = HTTP_INTERNAL_ERROR,
                       condition = "Fatal internal error occurred in the " +
                       "VTN Manager."),
@@ -668,13 +624,12 @@ public class VBridgeInterfaceNorthbound extends VTNNorthBoundBase {
                       condition = "One or more of mandatory controller " +
                       "services, such as the VTN Manager, are unavailable.")})
     public Response deletePortMap(
-            @PathParam("containerName") String containerName,
             @PathParam("tenantName") String tenantName,
             @PathParam("bridgeName") String bridgeName,
             @PathParam("ifName") String ifName) {
-        checkPrivilege(containerName, Privilege.WRITE);
+        checkPrivilege(Privilege.WRITE);
 
-        IVTNManager mgr = getVTNManager(containerName);
+        IVTNManager mgr = getVTNManager();
         VBridgeIfPath path = new VBridgeIfPath(tenantName, bridgeName, ifName);
         Status status = mgr.setPortMap(path, null);
         if (status.isSuccess()) {
