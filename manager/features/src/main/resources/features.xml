@@ -23,16 +23,6 @@
   <repository>mvn:org.opendaylight.openflowplugin/features-openflowplugin/${feature.openflowplugin.version}/xml/features</repository>
   <repository>mvn:org.opendaylight.openflowplugin.legacy/features-legacy/${feature.openflowplugin.version}/xml/features</repository>
 
-  <!-- TODO: Delete this feature after it is removed from other projects. -->
-  <feature
-      name='odl-vtn-manager-all'
-      description="OpenDaylight VTN Manager All"
-      version='${project.version}'>
-    <feature version="${project.version}">odl-vtn-manager</feature>
-    <feature version="${project.version}">odl-vtn-manager-rest</feature>
-    <feature version="${project.version}">odl-vtn-manager-neutron</feature>
-  </feature>
-
   <feature
       name='odl-vtn-manager'
       description="OpenDaylight :: VTN Manager :: Java API"

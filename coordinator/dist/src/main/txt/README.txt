@@ -93,9 +93,9 @@ Therefore, you need to run OpenDaylight controllers, and enable VTN features.
 
     bin/karaf
 
-2. Install VTN Manager and OpenFlow plugin features.
+2. Install VTN Manager.
 
-    feature:install odl-vtn-manager-all odl-openflowplugin-all odl-adsal-compatibility-all
+    feature:install odl-vtn-manager-rest
 
 ### TEST VTN COORDINATOR
 
