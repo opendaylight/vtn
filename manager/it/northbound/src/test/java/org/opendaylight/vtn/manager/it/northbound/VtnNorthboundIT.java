@@ -133,7 +133,7 @@ public final class VtnNorthboundIT extends TestBase {
      * Base URI of VTN Manager's REST APIs.
      */
     private static final String VTN_BASE_URL =
-        "http://127.0.0.1:8080/controller/nb/v2/vtn/";
+        "http://127.0.0.1:8288/controller/nb/v2/vtn/";
 
     /**
      * Resource name for VTN APIs.
