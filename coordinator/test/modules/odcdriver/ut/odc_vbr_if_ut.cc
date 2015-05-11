@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -786,7 +786,7 @@ TEST(odcdriver,  create_cmd_port_map_invalid_data) {
 
 TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
   unc::restjson::ConfFileValues_t conf_file;
-  conf_file.odc_port = 8080;
+  conf_file.odc_port = 8282;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
@@ -822,7 +822,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
+  std::string logical_port =  "PP-openflow:2-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  0;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
@@ -834,7 +834,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid_zero) {
 
 TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
   unc::restjson::ConfFileValues_t conf_file;
-  conf_file.odc_port = 8080;
+  conf_file.odc_port = 8282;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
@@ -870,7 +870,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
+  std::string logical_port =  "PP-openflow:22-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  0;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
@@ -882,7 +882,7 @@ TEST(odcdriver,  create_cmd_port_map_in_diff_format) {
 
 TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
   unc::restjson::ConfFileValues_t conf_file;
-  conf_file.odc_port = 8080;
+  conf_file.odc_port = 8282;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrIfCommand obj(conf_file);
@@ -919,7 +919,7 @@ TEST(odcdriver,  create_cmd_port_map_in_proper_format_invalid) {
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
   std::string logical_port =
-      "PP-11:11:22:22:33:33:44:444-namendfsjdfhsdbfhsdg";
+      "PP-openflooow:22-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  0;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
@@ -1064,7 +1064,7 @@ TEST(odcdriver,  create_cmd_port_map_valid_with_vlanid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
+  std::string logical_port =  "PP-openflow:22-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  2;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
@@ -1114,7 +1114,7 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
+  std::string logical_port =  "PP-openflow:22-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  0;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
@@ -1163,7 +1163,7 @@ TEST(odcdriver,  update_cmd_no_port_map) {
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
           descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
   vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
+  std::string logical_port =  "PP-openflow:22-namendfsjdfhsdbfhsdg";
   vbrif_val.val_vbrif.portmap.vlan_id =  0;
   strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),

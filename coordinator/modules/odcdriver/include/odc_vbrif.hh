@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -193,16 +193,6 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
    */
   odc_drv_resp_code_t check_logical_port_id_format(
       std::string& logical_port_id);
-
-  /**
-   * @brief                     - converts the format of logical
-   *                              port id
-   * @param[in][out]            - the converted logical
-   *                              port id
-   * @return odc_drv_resp_code_t- ODC_DRV_SUCCESS/
-   *                              ODC_DRV_FAILURE
-   */
-  odc_drv_resp_code_t convert_logical_port(std::string &logical_port_id);
 
  private:
   unc::restjson::ConfFileValues_t conf_file_values_;
