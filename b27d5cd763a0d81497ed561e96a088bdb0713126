@@ -1,0 +1,21 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3aa0d159_87306c02",
+        "filename": "coordinator/java/vtn-webapi/src/org/opendaylight/vtn/webapi/enums/ContentTypeEnum.java",
+        "patchSetId": 1
+      },
+      "lineNbr": 21,
+      "author": {
+        "id": 824
+      },
+      "writtenOn": "2015-05-12T10:44:36Z",
+      "side": 1,
+      "message": "Pls fix indent",
+      "revId": "b27d5cd763a0d81497ed561e96a088bdb0713126",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
