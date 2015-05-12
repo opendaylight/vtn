@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.util.concurrent;
 
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,6 +45,10 @@ public final class FutureCallbackTask<T> implements Runnable {
     private static final long  POLLING_INTERVAL = 3000;
 
     /**
+     * The default value for the number of pollings.
+     */
+    private static final int  DEFAULT_MAX_POLLS = 10;
+    /**
      * The future to wait for completion.
      */
     private final Future<T>  future;
@@ -59,6 +64,11 @@ public final class FutureCallbackTask<T> implements Runnable {
     private final Timer  timer;
 
     /**
+     * The number of pollings.
+     */
+    private final int  maxPolls;
+
+    /**
      * A timer task to wait for the completion of the future.
      */
     private class PollingTask extends TimerTask {
@@ -66,11 +76,6 @@ public final class FutureCallbackTask<T> implements Runnable {
          * The number of milliseconds to poll the completion of the future.
          */
         private static final long  POLL_TIMEOUT = 1;
-
-        /**
-         * The maximum number of times of the polling.
-         */
-        private static final long  COUNTER_MAX = 10;
 
         /**
          * The number of times for polling.
@@ -87,7 +92,7 @@ public final class FutureCallbackTask<T> implements Runnable {
             }
 
             counter++;
-            if (counter >= COUNTER_MAX) {
+            if (counter >= getMaxPolls()) {
                 // Cancel the future.
                 long elapsed = (POLLING_INTERVAL * counter) +
                     FUTURE_SYNC_TIMEOUT;
@@ -98,7 +103,7 @@ public final class FutureCallbackTask<T> implements Runnable {
     }
 
     /**
-     * Construct a new instance.
+     * Construct a new instance with specifying 10 as the number of pollings.
      *
      * @param f   A future to wait for completion.
      * @param cb  A future callback to be invoked.
@@ -106,9 +111,32 @@ public final class FutureCallbackTask<T> implements Runnable {
      */
     public FutureCallbackTask(Future<T> f, FutureCallback<? super T> cb,
                               Timer t) {
+        this(f, cb, t, DEFAULT_MAX_POLLS);
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param f       A future to wait for completion.
+     * @param cb      A future callback to be invoked.
+     * @param t       A timer used for polling.
+     * @param npolls  The maximum number of pollings.
+     */
+    public FutureCallbackTask(Future<T> f, FutureCallback<? super T> cb,
+                              Timer t, int npolls) {
         future = f;
         callback = cb;
         timer = t;
+        maxPolls = npolls;
+    }
+
+    /**
+     * Return the maximum number of future pollings.
+     *
+     * @return  The maxumum number of pollings.
+     */
+    public int getMaxPolls() {
+        return maxPolls;
     }
 
     // Runnable
@@ -165,8 +193,13 @@ public final class FutureCallbackTask<T> implements Runnable {
      */
     private void cancel(long elapsed) {
         boolean canceled = future.cancel(true);
-        LOG.error("Future did not complete within {} msecs: future={}, " +
-                  "callback={}, canceled={}", elapsed, future, callback,
-                  canceled);
+        String msg = new StringBuilder("Future did not complete within ").
+            append(elapsed).append(" msecs").toString();
+        LOG.error("{}: future={}, callback={}, canceled={}",
+                  msg, future, callback, canceled);
+        if (canceled) {
+            CancellationException e = new CancellationException(msg);
+            callback.onFailure(e);
+        }
     }
 }

@@ -8,156 +8,200 @@
  */
 package org.opendaylight.vtn.manager.internal.routing;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
-import org.opendaylight.vtn.manager.PathPolicy;
+
+import org.mockito.Mockito;
+
+import org.opendaylight.vtn.manager.internal.FlowSelector;
+import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
+import org.opendaylight.vtn.manager.internal.TxContext;
+import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
+import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.internal.TxContext;
-
-import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathPolicyOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateOperationType;
 
 /**
  * JUnit test for {@link SetPathPolicyTask}.
- *
  */
 public class SetPathPolicyTaskTest extends TestBase {
     /**
-     * method to test create of {@link SetPathPolicyTask}
+     * Test case for the following methods.
      *
-     * @throws Exception
+     * <ul>
+     *   <li>
+     *     {@link SetPathPolicyTask#create(TopologyGraph, SetPathPolicyInput)}
+     *   </li>
+     *   <li>{@link SetPathPolicyTask#fixMissingParents()}</li>
+     *   <li>{@link SetPathPolicyTask#getOutputType()}</li>
+     *   <li>{@link SetPathPolicyTask#createOutput(VtnUpdateType)}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
     public void testCreate() throws Exception {
-        VTNManagerProvider provider = new VTNProviderStub();
-        PathPolicy pp = new PathPolicy(1, 1L, null);
-
-        // operation type as set
-        SetPathPolicyInput input = new PathPolicyConfigBuilder.Rpc().set(pp)
-                .getBuilder().setOperation(VtnUpdateOperationType.SET).build();
-
-        SetPathPolicyTask task = SetPathPolicyTask.create(new TopologyGraph(
-                provider), input);
-
-        // operation type as remove
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        StatusCode code = StatusCode.BADREQUEST;
+        String msg = "RPC input cannot be null";
         try {
-
-            input = new PathPolicyConfigBuilder.Rpc().set(pp).getBuilder()
-                    .setOperation(VtnUpdateOperationType.REMOVE).build();
-
-            task = SetPathPolicyTask.create(new TopologyGraph(provider), input);
+            SetPathPolicyTask.create(null, null);
+            unexpected();
         } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
             Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
         }
 
-        // null input
+        VtnUpdateOperationType op = VtnUpdateOperationType.REMOVE;
+        SetPathPolicyInputBuilder builder = new SetPathPolicyInputBuilder().
+            setOperation(op);
+        etag = RpcErrorTag.BAD_ELEMENT;
+        msg = "Invalid operation type: " + op;
         try {
-            task = SetPathPolicyTask.create(new TopologyGraph(provider), null);
+            SetPathPolicyTask.create(null, builder.build());
+            unexpected();
         } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
             Status st = e.getStatus();
-            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
         }
 
-    }
-
-    /**
-     * method to test createOutput of {@link SetPathPolicyTask}
-     *
-     * @throws Exception
-     */
-    @Test
-    public void testCreateOutput() throws Exception {
-
-        List<Integer> ids = new ArrayList<>();
-        for (int i = 1; i <= 3; i++) {
-            Integer id = Integer.valueOf(i);
-            ids.add(id);
+        builder.setOperation(VtnUpdateOperationType.SET);
+        etag = RpcErrorTag.MISSING_ELEMENT;
+        msg = "Path policy ID cannot be null";
+        try {
+            SetPathPolicyTask.create(null, builder.build());
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
         }
-        Long[] defCosts = {null, Long.valueOf(1L), Long.valueOf(777L),
-                Long.valueOf(3333L), Long.valueOf(9999999L),
-                Long.valueOf(Long.MAX_VALUE), };
 
-        VTNManagerProvider provider = new VTNProviderStub();
-        for (Integer id : ids) {
-            for (Long defCost : defCosts) {
-                long defc = (defCost == null) ? PathPolicy.COST_UNDEF : defCost
-                        .longValue();
-                try {
-                    Long dc = Long.valueOf(defc);
-                    PathPolicy pp = new PathPolicy(id, defc, null);
-                    SetPathPolicyInput input = new PathPolicyConfigBuilder.Rpc()
-                            .set(pp).getBuilder().setPresent(true).build();
+        for (int id = 1; id <= 3; id++) {
+            builder.setOperation(VtnUpdateOperationType.SET).setId(id).
+                setDefaultCost(null);
 
-                    SetPathPolicyTask task = SetPathPolicyTask.create(
-                            new TopologyGraph(provider), input);
+            SetPathPolicyTask task =
+                SetPathPolicyTask.create(null, builder.build());
+            assertNotNull(task);
+            assertEquals(true, task.fixMissingParents());
+            assertEquals(SetPathPolicyOutput.class, task.getOutputType());
 
-                    task.fixMissingParents();
-                    Class<SetPathPolicyOutput> c = task.getOutputType();
-                    assertEquals(c, SetPathPolicyOutput.class);
-                    SetPathPolicyOutput output = task
-                            .createOutput(VtnUpdateType.forValue(0));
-                    assertEquals(output.getStatus(), VtnUpdateType.forValue(0));
-                    testSuccess(task, provider);
-                    VtnPathPolicy vpp = new VtnPathPolicyBuilder().setId(id)
-                            .setDefaultCost(dc).build();
-                    testStarted(task, provider, vpp);
-                } catch (Exception e) {
-                    unexpected(e);
-                }
+            for (VtnUpdateType type: VtnUpdateType.values()) {
+                SetPathPolicyOutput output = task.createOutput(type);
+                assertEquals(type, output.getStatus());
             }
         }
     }
 
     /**
-     * method to test onSuccess of {@link SetPathPolicyTask}
+     * Test case for the following methods.
      *
-     * @param task
-     * @param provider
-     */
-    public void testSuccess(SetPathPolicyTask task, VTNManagerProvider provider) {
-        try {
-            task.onSuccess(provider, VtnUpdateType.forValue(0));
-            task.onSuccess(provider, VtnUpdateType.forValue(1));
-            task.onSuccess(provider, null);
-
-        } catch (Exception e) {
-            unexpected(e);
-        }
-    }
-
-    /**
-     * method to test onStarted of {@link SetPathPolicyTask}
+     * <ul>
+     *   <li>
+     *     {@link SetPathPolicyTask#onStarted(TxContext,org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy)}
+     *   </li>
+     *   <li>
+     *     {@link SetPathPolicyTask#onSuccess(VTNManagerProvider,VtnUpdateType)}
+     *   </li>
+     * </ul>
      *
-     * @param task
-     * @param provider
-     * @param vpp
+     * @throws Exception  An error occurred.
      */
-    public void testStarted(SetPathPolicyTask task,
-            VTNManagerProvider provider, VtnPathPolicy vpp) {
-        try {
-            TxContext ctx = provider == null ? null : provider.newTxContext();
-            task.onStarted(ctx, vpp);
+    @Test
+    public void testOnStarted() throws Exception {
+        TxContext ctx = Mockito.mock(TxContext.class);
+        VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
+        TopologyGraph topo = new TopologyGraph(provider);
+        Integer[] policies = {1, 2, 3};
+
+        VTNFuture<?> f = new SettableVTNFuture<Void>();
+        List<VTNFuture<?>> futures = Collections.<VTNFuture<?>>singletonList(f);
+        List<VTNFuture<?>> empty = Collections.<VTNFuture<?>>emptyList();
+        Class<PathPolicyFlowSelector> selector = PathPolicyFlowSelector.class;
+        FlowSelector allFlows = null;
+
+        for (Integer id: policies) {
+            Mockito.reset(provider);
+            assertEquals(null, topo.getResolver(id));
+
+            SetPathPolicyInputBuilder builder = new SetPathPolicyInputBuilder().
+                setId(id).setOperation(VtnUpdateOperationType.SET).
+                setPresent(true);
+            SetPathPolicyInput input = builder.build();
+            SetPathPolicyTask task =
+                SetPathPolicyTask.create(topo, input);
+            assertNotNull(task);
+
+            RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
+            StatusCode code = StatusCode.NOTFOUND;
+            String msg = id + ": Path policy does not exist.";
+            try {
+                task.onStarted(ctx, null);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(code, st.getCode());
+                assertEquals(msg, st.getDescription());
+            }
+
+            input = builder.setPresent(false).build();
+            task = SetPathPolicyTask.create(topo, input);
+            assertNotNull(task);
             task.onStarted(ctx, null);
-        } catch (RpcException r) {
-            Status st = r.getStatus();
-            assertEquals(StatusCode.NOTFOUND, st.getCode());
-        } catch (Exception e) {
-            unexpected(e);
+            assertEquals(0, task.getBackgroundTasks().size());
+            Mockito.verifyZeroInteractions(ctx);
+
+            // Path policy is not changed.
+            task.onSuccess(provider, null);
+            Mockito.verifyZeroInteractions(provider);
+            assertEquals(0, task.getBackgroundTasks().size());
+
+            // Path policy is created.
+            VtnUpdateType result = VtnUpdateType.CREATED;
+            topo.updateResolver(id);
+            Mockito.when(provider.removeFlows(allFlows)).
+                thenReturn(futures);
+            task.onSuccess(provider, result);
+            List<VTNFuture<?>> bg = task.getBackgroundTasks();
+            assertEquals(1, bg.size());
+            assertEquals(f, bg.get(0));
+            Mockito.verify(provider).removeFlows(allFlows);
+            Mockito.verify(provider, Mockito.never()).
+                removeFlows(Mockito.isA(selector));
+
+            // Path policy is updated.
+            Mockito.reset(provider);
+            result = VtnUpdateType.CHANGED;
+            Mockito.when(provider.removeFlows(Mockito.isA(selector))).
+                thenReturn(futures);
+            task.onSuccess(provider, result);
+            bg = task.getBackgroundTasks();
+            assertEquals(2, bg.size());
+            assertEquals(f, bg.get(0));
+            assertEquals(f, bg.get(1));
+            Mockito.verify(provider, Mockito.never()).removeFlows(allFlows);
+            Mockito.verify(provider).removeFlows(Mockito.isA(selector));
         }
     }
-
 }

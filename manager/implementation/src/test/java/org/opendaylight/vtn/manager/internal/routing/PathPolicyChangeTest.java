@@ -11,40 +11,38 @@ package org.opendaylight.vtn.manager.internal.routing;
 
 import org.junit.Test;
 
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.PathPolicy;
-import org.opendaylight.vtn.manager.internal.TestBase;
+
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
  * JUnit test for {@link PathPolicyChange}
  */
 public class PathPolicyChangeTest extends TestBase {
-
     /**
-     * Test case for onUpdated and onRemoved methods.
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link PathPolicyChange#onUpdated(Interger,PathPolicy)}</li>
+     *   <li>{@link PathPolicyChange#onRemoved(Interger)}</li>
+     * </ul>
      */
     @Test
-    public void testSetter() {
-        VTNManagerImpl vtnmangerimpl = new VTNManagerImpl();
-        VTNManagerProvider impl = vtnmangerimpl.getVTNProvider();
-        TopologyGraph topo = new TopologyGraph(impl);
-        PathPolicyChange policy = new PathPolicyChange(topo);
-        for (Integer in: createIntegers(0, 10)) {
-            for (PathPolicy pathpolicy: createPathPolicy()) {
-                try {
-                    policy.onUpdated(in, pathpolicy);
-                } catch (Exception ex) {
-                    assertEquals(null, ex.getLocalizedMessage());
-                }
-            }
-        }
-        for (Integer in: createIntegers(0, 10)) {
-            try {
-                policy.onRemoved(in);
-            } catch (Exception ex) {
-                assertEquals(null, ex.getLocalizedMessage());
-            }
+    public void test() {
+        VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
+        TopologyGraph topo = new TopologyGraph(provider);
+        PathPolicyChange change = new PathPolicyChange(topo);
+        Integer[] policies = {1, 2, 3};
+        for (Integer id: policies) {
+            PathPolicy pp = new PathPolicy(id, 0L, null);
+            assertEquals(true, change.onUpdated(id, pp));
+            assertEquals(false, change.onUpdated(id, pp));
+            assertEquals(false, change.onUpdated(id, pp));
+            change.onRemoved(id);
         }
     }
 

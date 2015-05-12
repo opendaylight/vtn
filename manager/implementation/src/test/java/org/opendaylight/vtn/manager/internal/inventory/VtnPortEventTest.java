@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import org.junit.AfterClass;
@@ -67,7 +68,7 @@ public class VtnPortEventTest extends TestBase {
     }
     /**
      * Test method for
-     * {@link VtnPortEvent#testGetSalPort()}.
+     * {@link VtnPortEvent#getSalPort()}.
      */
     @Test
     public void testGetSalPort() {

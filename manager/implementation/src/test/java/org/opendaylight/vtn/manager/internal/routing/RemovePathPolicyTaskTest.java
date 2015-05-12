@@ -9,228 +9,157 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
-import org.junit.Assert;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import java.util.Collections;
 import java.util.List;
-import java.util.ArrayList;
+
+import org.junit.Test;
+
+import org.mockito.Mockito;
+
+import org.opendaylight.vtn.manager.internal.FlowSelector;
+import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
+import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.controller.sal.utils.Status;
+import org.opendaylight.controller.sal.utils.StatusCode;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathPolicyInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.RemovePathPolicyInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicy;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policies.VtnPathPolicyBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCost;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.vtn.path.policy.config.VtnPathCostKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
-import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
-import org.opendaylight.vtn.manager.VTNException;
 
 /**
  * JUnit test for {@link RemovePathPolicyTask}
  */
-public class RemovePathPolicyTaskTest {
-
+public class RemovePathPolicyTaskTest extends TestBase {
     /**
-      * Static instance of RemovePolicyTask to perform unit testing.
-      */
-    private static RemovePathPolicyTask removePathPolicyTask;
-    /**
-      * Static instance of TopologyGraph to perform unit testing.
-      */
-    private static TopologyGraph topologyGraph;
-    /**
-      * Static instance of VTNManagerProvider to perform unit testing.
-      */
-    private static VTNManagerProvider vtnManagerProvider;
-    /**
-      * Static instance of VTNManagerImpl to perform unit testing.
-      */
-    private static VTNManagerImpl vtnManagerImpl;
-    /**
-      * Static instance of RemovePathPolicyInput to perform unit testing.
-      */
-    private static RemovePathPolicyInput removePathPolicyInput;
-    /**
-      * Static instance of RemovePathPolicyInputBuilder to perform unit testing.
-      */
-    private static RemovePathPolicyInputBuilder removePathPolicyInputBuilder;
-    /**
-      * Static instance of VtnPathPolicy to perform unit testing.
-      */
-    private static VtnPathPolicy vtnPathPolicy;
-    /**
-      * Static instance of VtnPathPolicyBuilder to perform unit testing.
-      */
-    private static VtnPathPolicyBuilder vtnPathPolicyBuilder;
-    /**
-      * Static instance of VtnPortDesc to perform unit testing.
-      */
-    private static VtnPortDesc vtnPortDesc;
-    /**
-      * Static instance of VtnUpdateType to perform unit testing.
-      */
-    private static VtnUpdateType vtnUpdateType;
-    /**
-      * Static instance of TxContext to perform unit testing.
-      */
-    private static TxContext txContext;
-    /**
-      * Static instance of VtnPathCost to perform unit testing.
-      */
-    private static VtnPathCost vtnPathCost;
-    /**
-      * Static instance of VtnPath to perform unit testing.
-      */
-    private static VtnPathCostBuilder vtnPathCostBuilder;
-
-    /**
-     * This method creates the requird objects to perform unit testing
-     */
-    @BeforeClass
-    public static void setUpBeforeClass() {
-        vtnManagerImpl = new VTNManagerImpl();
-        vtnManagerProvider = new VTNManagerProvStub();
-        topologyGraph = new TopologyGraph(vtnManagerProvider);
-        removePathPolicyInputBuilder = new RemovePathPolicyInputBuilder();
-        removePathPolicyInputBuilder.setId(new Integer(10));
-        removePathPolicyInput = removePathPolicyInputBuilder.build();
-        vtnPathPolicyBuilder = new VtnPathPolicyBuilder();
-        vtnPathPolicy = vtnPathPolicyBuilder.build();
-        vtnPortDesc = new VtnPortDesc("openflow:1,,");
-        vtnUpdateType = VtnUpdateType.REMOVED;
-    }
-
-    /**
-     * This method makes unnecessary objects eligible for garbage collection
-     */
-    @AfterClass
-    public static void tearDownAfterClass() {
-        vtnUpdateType = null;
-        vtnPortDesc = null;
-        vtnPathPolicy = null;
-        vtnPathPolicyBuilder = null;
-        removePathPolicyInputBuilder = null;
-        removePathPolicyInput = null;
-        removePathPolicyInputBuilder = null;
-        topologyGraph = null;
-        vtnManagerProvider = null;
-        vtnManagerImpl = null;
-    }
-
-    /**
-     * Test method for
-     * {@link RemovePathPolicyTask#create(TopologyGraph , RemovePathPolicyInput)}.
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>
+     *     {@link RemovePathPolicyTask#create(TopologyGraph, RemovePathPolicyInput)}
+     *   </li>
+     *   <li>{@link RemovePathPolicyTask#getOutputType()}</li>
+     *   <li>{@link RemovePathPolicyTask#createOutput(VtnUpdateType)}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testCreate() {
+    public void testCreate() throws Exception {
+        RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
+        StatusCode code = StatusCode.BADREQUEST;
+        String msg = "RPC input cannot be null";
         try {
-            Assert.assertTrue(RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput) instanceof RemovePathPolicyTask);
-        } catch (Exception ex) {
-            Assert.assertFalse(ex instanceof RpcException);
+            RemovePathPolicyTask.create(null, null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
         }
+
+        RemovePathPolicyInputBuilder builder =
+            new RemovePathPolicyInputBuilder();
+        msg = "Path policy ID cannot be null";
         try {
-            RemovePathPolicyTask.create(topologyGraph, null);
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof RpcException);
+            RemovePathPolicyTask.create(null, builder.build());
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
         }
-        try {
-            removePathPolicyInputBuilder.setId(null);
-            removePathPolicyInput = removePathPolicyInputBuilder.build();
-            RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof RpcException);
+
+        for (int id = 1; id <= 3; id++) {
+            builder.setId(id);
+            RemovePathPolicyTask task =
+                RemovePathPolicyTask.create(null, builder.build());
+            assertNotNull(task);
+            assertEquals(Void.class, task.getOutputType());
+
+            for (VtnUpdateType type: VtnUpdateType.values()) {
+                assertEquals(null, task.createOutput(type));
+            }
         }
     }
 
     /**
-      * Test method for
-      * {@link RemovePathPolicyTask#onStarted(TxContext, VtnPathPolicy)}.
-      */
-    @Test
-    public void testOnStarted() {
-        try {
-            vtnManagerProvider = new VTNManagerProvStub();
-            topologyGraph = new TopologyGraph(vtnManagerProvider);
-            removePathPolicyTask = RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-            vtnPathPolicy = null;
-            removePathPolicyTask.onStarted(txContext, null);
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof VTNException);
-        }
-        try {
-            vtnManagerProvider = new VTNManagerProvStub();
-            topologyGraph = new TopologyGraph(vtnManagerProvider);
-            removePathPolicyTask = RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-            vtnPathPolicy = null;
-            removePathPolicyTask.onStarted(null, null);
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof VTNException);
-        }
-
-        try {
-            txContext = vtnManagerProvider.newTxContext();
-            vtnPathPolicyBuilder = new VtnPathPolicyBuilder();
-            vtnPathPolicyBuilder.setDefaultCost(new Long(1000L));
-            vtnPathPolicyBuilder.setId(new Integer(10));
-            vtnPathPolicyBuilder.setKey(new VtnPathPolicyKey(new Integer(10)));
-            vtnPathCostBuilder = new VtnPathCostBuilder();
-            vtnPathCostBuilder.setCost(new Long(1000L));
-            vtnPathCostBuilder.setKey(new VtnPathCostKey(new VtnPortDesc("openflow:1,,")));
-            vtnPathCostBuilder.setPortDesc(new VtnPortDesc("openflow:1,,"));
-            List<VtnPathCost> list = new ArrayList<VtnPathCost>();
-            list.add(vtnPathCostBuilder.build());
-            vtnPathPolicyBuilder.setVtnPathCost(list);
-            removePathPolicyTask = RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-            removePathPolicyTask.onStarted(txContext, vtnPathPolicyBuilder.build());
-        } catch (Exception ex) {
-            Assert.assertFalse(ex instanceof VTNException);
-        }
-    }
-
-    /**
-     * Test method for
-     * {@link RemovePathPolicyTask#onSuccess().
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>
+     *     {@link RemovePathPolicyTask#onStarted(TxContext,VtnPathPolicy)}
+     *   </li>
+     *   <li>
+     *     {@link RemovePathPolicyTask#onSuccess(VTNManagerProvider,VtnUpdateType)}
+     *   </li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testOnSuccess() {
-        try {
-            removePathPolicyTask = RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-            removePathPolicyTask.onSuccess(vtnManagerProvider, vtnUpdateType);
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof NullPointerException);
-        }
-    }
+    public void testOnStarted() throws Exception {
+        TxContext ctx = Mockito.mock(TxContext.class);
+        VTNManagerProvider provider = Mockito.mock(VTNManagerProvider.class);
+        TopologyGraph topo = new TopologyGraph(provider);
+        Integer[] policies = {1, 2, 3};
 
-    /**
-     * Test method for
-     * {@link RemovePathPolicyTask#getOutputType().
-     */
-    @Test
-    public void testGetOutputType() {
-        try {
-            removePathPolicyTask = RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-            Assert.assertEquals(Void.class, removePathPolicyTask.getOutputType());
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof NullPointerException);
-        }
-    }
+        VTNFuture<?> f = new SettableVTNFuture<Void>();
+        List<VTNFuture<?>> futures = Collections.<VTNFuture<?>>singletonList(f);
+        Class<PathPolicyFlowSelector> selector = PathPolicyFlowSelector.class;
+        Mockito.when(provider.removeFlows(Mockito.isA(selector))).
+            thenReturn(futures);
 
-    /**
-     * Test method for
-     * {@link RemovePathPolicyTask#createOutputType().
-     */
-    public void testCreateOutput() {
-        try {
-            removePathPolicyTask = RemovePathPolicyTask.create(topologyGraph, removePathPolicyInput);
-            Assert.assertTrue(removePathPolicyTask.createOutput(vtnUpdateType) instanceof Void);
-        } catch (Exception ex) {
-            Assert.assertTrue(ex instanceof NullPointerException);
+        int times = 0;
+        for (Integer id: policies) {
+            topo.updateResolver(id);
+
+            RemovePathPolicyInput input = new RemovePathPolicyInputBuilder().
+                setId(id).build();
+            RemovePathPolicyTask task =
+                RemovePathPolicyTask.create(topo, input);
+            assertNotNull(task);
+
+            RpcErrorTag etag = RpcErrorTag.DATA_MISSING;
+            StatusCode code = StatusCode.NOTFOUND;
+            String msg = id + ": Path policy does not exist.";
+            try {
+                task.onStarted(ctx, null);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(code, st.getCode());
+                assertEquals(msg, st.getDescription());
+            }
+
+            VtnPathPolicy vpp = new VtnPathPolicyBuilder().
+                setId(id).build();
+            task.onStarted(ctx, vpp);
+            assertEquals(0, task.getBackgroundTasks().size());
+            Mockito.verifyZeroInteractions(ctx);
+            Mockito.verify(provider, Mockito.times(times)).
+                removeFlows(Mockito.any(FlowSelector.class));
+
+            times++;
+            topo.removeResolver(id);
+            task.onSuccess(provider, VtnUpdateType.REMOVED);
+            List<VTNFuture<?>> bg = task.getBackgroundTasks();
+            assertEquals(1, bg.size());
+            assertEquals(f, bg.get(0));
+            Mockito.verify(provider, Mockito.times(times)).
+                removeFlows(Mockito.isA(selector));
         }
     }
 }

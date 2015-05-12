@@ -107,7 +107,7 @@ public class RemovePathCostTaskTest {
 
     /**
      * Test method for
-     * {@link RemovePathCostTask#create(TopologyGraph , RemovePathCostInput)}.
+     * {@link RemovePathCostTask#create(TopologyGraph, RemovePathCostInput)}.
      */
     @Test
     public void testCreate() {
@@ -159,7 +159,7 @@ public class RemovePathCostTaskTest {
 
     /**
      * Test method for
-     * {@link RemovePathCostTask#onStarted().
+     * {@link RemovePathCostTask#onStarted(TxContext)}.
      */
     @Test
     public void testOnStarted() {
@@ -172,7 +172,7 @@ public class RemovePathCostTaskTest {
 
     /**
      * Test method for
-     * {@link RemovePathCostTask#onSuccess().
+     * {@link RemovePathCostTask#onSuccess(VTNManagerProvider, List)}.
      */
     @Test
     public void testOnSuccess() {
@@ -199,7 +199,7 @@ public class RemovePathCostTaskTest {
 
     /**
      * Test method for
-     * {@link RemovePathCostTask#getOutputType().
+     * {@link RemovePathCostTask#getOutputType()}.
      */
     @Test
     public void testGetOutputType() {
@@ -213,7 +213,7 @@ public class RemovePathCostTaskTest {
 
     /**
      * Test method for
-     * {@link RemovePathCostTask#createOutput().
+     * {@link RemovePathCostTask#createOutput(List)}.
      */
     @Test
     public void testCreateOutput() {

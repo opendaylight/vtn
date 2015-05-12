@@ -10,10 +10,11 @@
 package org.opendaylight.vtn.manager.internal.routing;
 
 import org.junit.Test;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLink;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.topology.rev150209.vtn.topology.VtnLinkBuilder;
-
 
 /**
  * JUnit test for {@link TopologyEventContext}.
@@ -25,7 +26,7 @@ public class TopologyEventContextTest extends TestBase {
     VtnLink vlink  = vlb.build();
 
     /**
-     * Test case for {@link addCreated(vlink)}.
+     * Test case for {@link TopologyEventContext#addCreated(VtnLink)}.
      */
     @Test
     public void testCreated() {
@@ -34,7 +35,7 @@ public class TopologyEventContextTest extends TestBase {
     }
 
     /**
-     * Test case for {@link addRemoved(vlink)}.
+     * Test case for {@link TopologyEventContext#addRemoved(VtnLink)}.
      */
     @Test
     public void testRemoved() {
