@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+#
+# Copyright (c) 2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <scm>
+    <connection>scm:git:https://git.opendaylight.org/gerrit/p/vtn.git</connection>
+    <developerConnection>scm:git:ssh://git.opendaylight.org:29418/vtn.git</developerConnection>
+    <url>https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_%28VTN%29:Main</url>
+    <tag>HEAD</tag>
+  </scm>
+
+    <groupId>org.opendaylight.vtn</groupId>
+    <artifactId>application.vtnmanager-vsemprovider</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+
+  <properties>
+    <!-- Version of VTN VSEMProvider. -->
+    <vtn.VSEMProvider.version>1.0.0</vtn.VSEMProvider.version>
+
+
+    <!-- The number of GNU make jobs -->
+    <vtn.build.jobs>1</vtn.build.jobs>
+
+    <vtn.pkg.classifier>bin</vtn.pkg.classifier>
+    <vtn.pkg.type>zip</vtn.pkg.type>
+    <vtn.pkg.name>${project.artifactId}-${build.suffix}</vtn.pkg.name>
+    <vtn.pkg.filename>
+      ${vtn.pkg.name}-${vtn.pkg.classifier}.${vtn.pkg.type}
+    </vtn.pkg.filename>
+    <vtn.pkg.path>${basedir}/target/${vtn.pkg.filename}</vtn.pkg.path>
+
+    <vtn.readme.classifier>README</vtn.readme.classifier>
+    <vtn.readme.type>txt</vtn.readme.type>
+    <vtn.readme.filename>
+      ${vtn.pkg.name}-${vtn.readme.classifier}.${vtn.readme.type}
+    </vtn.readme.filename>
+    <vtn.readme.path>${basedir}/target/${vtn.readme.filename}</vtn.readme.path>
+  </properties>
+
+  <build>
+    <defaultGoal>package</defaultGoal>
+    <plugins>
+    <plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>exec-maven-plugin</artifactId>
+    <version>1.1</version>
+    <executions>
+     <execution>
+         <id>exe</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>-j${vtn.build.jobs}</argument>
+              </arguments>
+            </configuration>
+      </execution>
+
+    <!-- Clean up build environment. -->
+    <execution>
+         <id>clean</id>
+            <phase>pre-clean</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>clean</argument>
+              </arguments>
+            </configuration>
+     </execution>
+     </executions>
+     </plugin>
+     </plugins>
+  </build>
+</project>
