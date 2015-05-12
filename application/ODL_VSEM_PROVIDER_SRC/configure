@@ -1,0 +1,175 @@
+
+#!/bin/bash
+
+#
+# Copyright (c) 2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+
+##
+## Configure VSEM Provider build environment.
+##
+
+#MONO Version related
+MONO_VERSION_COMPAT_MAJOR=3
+MONO_VERSION_COMPAT_MINOR=12
+MONO_TESTED_VERISON=3.12.1
+
+#TARGET Diretory related
+OUT_TARGET_DIR="dist/odl_vsem_provider"
+DEFS_MK_FILE="defs.mk"
+
+#CONFIG_STATUS_RELEATED
+CONFIG_STATUS="dist/config.done"
+
+#list of reference assemblies
+
+ref_assemblies=( System.Xml.dll System.Web.Extensions.dll System.Management.dll  System.Net.dll System.Core.dll System.dll System.Xml.Linq.dll System.Runtime.dll System.Linq.dll System.Runtime.Serialization.dll System.Security.dll System.Data.dll System.Data.DataSetExtensions.dll )
+
+check_mono_version () {
+  version_available=`mcs --version | awk '{print $5}'`
+  if [[ $? -ne 0 ]]; then
+    echo "Mono Compiler is not identifiable"
+    echo "Please install or check the PATH variable"
+    exit 1
+  fi
+
+  major_version=`echo $version_available | cut -d. -f1`
+  minor_version=`echo $version_available | cut -d. -f2`
+
+  if [[ $major_version -lt $MONO_VERSION_COMPAT_MAJOR ]]; then
+    echo "Major Version Mismatch"
+    echo "expected:$MONO_VERSION_COMPAT_MAJOR"
+    echo "installed:$major_version"
+    exit 1
+  fi
+
+  if [[ $minor_version -lt $MONO_VERSION_COMPAT_MINOR ]]; then
+    echo "Minor Version Mismatch"
+    echo "expected:$MONO_VERSION_COMPAT_MINOR"
+    echo "installed:$minor_version"
+    exit 1
+  fi
+  echo "Version of Mono Compiler is $version_available"
+}
+
+check_zip_version () {
+  check=`zip --help 2>/dev/null`
+  if [[ $? -ne 0 ]]; then
+    echo "zip does not exist, Please install zip or check PATH varaible"
+    exit 1
+  fi
+  echo "zip command exists"
+}
+
+check_nuget_command () {
+  check='nuget help'
+  if [[ $? -ne 0 ]] ; then
+    echo "nuget does not exist, Please install nuget or check PATH varaible"
+    echo "This Project needs to fetch some asemblies from https://nuget.org"
+    exit 1
+  fi
+  echo "nuget command exists"
+}
+
+create_output_directory () {
+  mkdir -p $OUT_TARGET_DIR
+  if [[ $? -ne 0 ]]; then
+    echo "Create target directory failed, Please check for permissions or other issues"
+    exit 1
+  fi
+  mkdir -p $OUT_TARGET_DIR/Libraries
+
+}
+
+write_mcs_path_to_def () {
+  mcs_path=`which mcs`
+  echo "MCS := $mcs_path" >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+}
+
+write_cs_options_path () {
+  echo CS_OPTIONS := "-warn:4 -target:library -platform:anycpu -noconfig -unsafe+" >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+}  
+
+write_reference_string () {
+  reference_string=""
+  for dll_name in "${ref_assemblies[@]}"
+  do
+    reference_string="$reference_string -r:$OUT_TARGET_DIR/Libraries/$dll_name"
+  done
+
+  reference_string="$reference_string -r:$OUT_TARGET_DIR/Libraries/NetworkServiceInterfaces.dll"
+  reference_string="$reference_string -r:$OUT_TARGET_DIR/Libraries/System.Management.Automation.dll"
+  echo REF_STRING := $reference_string >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+}
+
+write_zip_path_to_def () {
+  zip_path=`which zip`
+  echo "ZIP := $zip_path" >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+  }
+
+fetch_scvmm_sdk_and_copy_assemblies () {
+  rm -rf SCVMM_MONO_REFERENCE_ASSEMBLIES.1.0.0
+  fetch_sdk=`nuget install SCVMM_MONO_REFERENCE_ASSEMBLIES`
+  if [[ $? -ne 0 ]]; then
+    echo "nuget install failed"
+    echo "Please run mozroots --import --sync and retry"
+    echo "Please check proxy settings also"
+    exit 1
+  fi
+  if [ ! -d SCVMM_MONO_REFERENCE_ASSEMBLIES.1.0.0 ]; then
+     echo "nuget install failed, please check connection settings"
+  fi
+    mv SCVMM_MONO_REFERENCE_ASSEMBLIES.1.0.0/lib/net45/*.dll $OUT_TARGET_DIR/Libraries/
+    rm -rf SCVMM_MONO_REFERENCE_ASSEMBLIES.1.0.0
+}
+
+
+find_reference_assemblies_and_copy () {
+  for dll_name in "${ref_assemblies[@]}"
+  do
+      cp_src_location=`find /usr/lib/mono/4.5 -name $dll_name | head -n 1`
+      if [ -z "$cp_src_location" ]; then
+        echo "Find assembly $dll_name failed"
+        exit1
+      fi
+      cp $cp_src_location $OUT_TARGET_DIR/Libraries/
+  done
+}
+
+
+touch_config_status () {
+  touch $CONFIG_STATUS
+}
+
+
+# Main Script
+echo "Configure for VSEM Provider Build in Linux!!"
+
+echo "Clear dist directory if exists"
+if [ -d dist ]; then
+  rm -rf dist
+fi
+echo "Checking the version of mono compiler"
+check_mono_version
+echo "Checking if zip will work"
+check_zip_version
+echo "checking for nuget command"
+check_nuget_command
+echo "Done Verifying all the essential comamnds"
+create_output_directory
+echo "Created the output dest directory"
+fetch_scvmm_sdk_and_copy_assemblies
+echo "SCVMM Assemblies fetched and copied"
+find_reference_assemblies_and_copy
+echo "Reference Assemblies fetched and copied"
+echo "Write the def file for Make"
+write_mcs_path_to_def
+write_zip_path_to_def
+write_cs_options_path
+write_reference_string
+touch_config_status
