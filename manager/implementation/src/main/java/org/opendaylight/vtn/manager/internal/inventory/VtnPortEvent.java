@@ -10,7 +10,8 @@
 package org.opendaylight.vtn.manager.internal.inventory;
 
 import org.opendaylight.vtn.manager.VTNException;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
 
@@ -22,6 +23,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpda
  * added, changed, orremoved.
  */
 public final class VtnPortEvent extends TxEvent {
+    /**
+     * Logger instance.
+     */
+    private static final Logger  LOG =
+        LoggerFactory.getLogger(VtnPortEvent.class);
+
     /**
      * The target inventory listener.
      */
@@ -59,11 +66,32 @@ public final class VtnPortEvent extends TxEvent {
      */
     VtnPortEvent(VTNInventoryListener l, VtnPort vport, Boolean isl,
                  VtnUpdateType type) {
+        if (l == null) {
+            LOG.error("VTNInventoryListener is null.");
+            throw new NullPointerException("VTNInventoryListener is null.");
+        }
+
+        if (vport == null) {
+            LOG.error("VtnPort is null.");
+            throw new NullPointerException("VtnPort is null.");
+        }
+
+        if (isl == null) {
+            LOG.error("Inter-switch link state is null.");
+            throw new NullPointerException("Inter-switch link state is null.");
+        }
+
+        if (type == null) {
+            LOG.error("VtnUpdateType is null.");
+            throw new NullPointerException("VtnUpdateType is null.");
+        }
+
         listener = l;
         vtnPort = vport;
         islChange = isl;
         updateType = type;
         salPort = SalPort.create(vport.getId());
+
     }
 
     /**
@@ -73,11 +101,22 @@ public final class VtnPortEvent extends TxEvent {
      * @param ev  A {@link VtnPortEvent} instance.
      */
     VtnPortEvent(VTNInventoryListener l, VtnPortEvent ev) {
+        if (l == null) {
+            LOG.error("VTNInventoryListener is null.");
+            throw new NullPointerException("VTNInventoryListener is null.");
+        }
+
+        if (ev == null) {
+            LOG.error("VtnPortEvent is null.");
+            throw new NullPointerException("VtnPortEvent is null.");
+        }
+
         listener = l;
         vtnPort = ev.vtnPort;
         islChange = ev.islChange;
         updateType = ev.updateType;
         salPort = ev.salPort;
+
     }
 
     /**
