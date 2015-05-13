@@ -1,0 +1,55 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "3aa0d159_4aba6124",
+        "filename": "manager/implementation/src/main/java/org/opendaylight/vtn/manager/internal/VTNManagerImpl.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 2417,
+      "author": {
+        "id": 3576
+      },
+      "writtenOn": "2015-05-13T17:08:01Z",
+      "side": 1,
+      "message": "Should this logic allow swport to be optional?",
+      "revId": "f8229528091b063a0e6c6c7a073d6778bcbca149",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3aa0d159_aa92059d",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/cluster/MacVlanTest.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 84,
+      "author": {
+        "id": 3576
+      },
+      "writtenOn": "2015-05-13T17:08:01Z",
+      "side": 1,
+      "message": "In general, it\u0027s a good idea for each test method to \"test one thing\".  When a test fails, there should be a good chance that the developer will know basically what\u0027s wrong just by knowing which test method failed.",
+      "revId": "f8229528091b063a0e6c6c7a073d6778bcbca149",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "3aa0d159_8ade296c",
+        "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/util/CompositeAutoCloseableTest.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 167,
+      "author": {
+        "id": 3576
+      },
+      "writtenOn": "2015-05-13T17:08:01Z",
+      "side": 1,
+      "message": "As unit tests using Mockito will often have numerous references to the many small methods in the Mockito class, it\u0027s generally a good idea to do a static import of \"Mockito.*\".  This reduces lines like these to the essence of what they need to specify, with a minimum of noise.",
+      "revId": "f8229528091b063a0e6c6c7a073d6778bcbca149",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
