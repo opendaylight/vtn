@@ -72,6 +72,11 @@ public final class VTNInventoryManager
         new CopyOnWriteArrayList<VTNInventoryListener>();
 
     /**
+     * MD-SAL datastore transaction queue for inventory information.
+     */
+    private final TxQueueImpl  inventoryQueue;
+
+    /**
      * Internal state.
      */
     private final AtomicBoolean  serviceState = new AtomicBoolean(true);
@@ -94,6 +99,7 @@ public final class VTNInventoryManager
         super(VtnNode.class);
         vtnProvider = provider;
         TxQueueImpl queue = new TxQueueImpl("VTN Inventory", provider);
+        inventoryQueue = queue;
         addCloseable(queue);
 
         // Initialize MD-SAL inventory listeners.
@@ -102,7 +108,6 @@ public final class VTNInventoryManager
             addCloseable(new NodeListener(queue, broker));
             addCloseable(new NodeConnectorListener(queue, broker));
             addCloseable(new TopologyListener(queue, broker));
-            queue.start();
 
             // Register VTN inventory listener.
             registerListener(broker, LogicalDatastoreType.OPERATIONAL,
@@ -113,6 +118,13 @@ public final class VTNInventoryManager
             close();
             throw new IllegalStateException(msg, e);
         }
+    }
+
+    /**
+     * Start the inventory service.
+     */
+    public void start() {
+        inventoryQueue.start();
     }
 
     /**

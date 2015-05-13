@@ -24,18 +24,15 @@ import org.slf4j.LoggerFactory;
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
-import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.cluster.RedirectFlowException;
-import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.flow.remove.EdgeHostFlowRemover;
 import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
 import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
 import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
@@ -43,18 +40,23 @@ import org.opendaylight.vtn.manager.internal.packet.cache.Inet4Packet;
 import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
 import org.opendaylight.vtn.manager.internal.packet.cache.TcpPacket;
 import org.opendaylight.vtn.manager.internal.packet.cache.UdpPacket;
+import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchContext;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNLayer4Match;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
+import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.packet.ArpPacketBuilder;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.action.Action;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ARP;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.ICMP;
@@ -110,18 +112,12 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     /**
      * Obsolete layer 2 host entries.
      */
-    private Set<ObjectPair<MacVlan, NodeConnector>>  obsoleteHosts =
-        new HashSet<ObjectPair<MacVlan, NodeConnector>>();
+    private Set<L2Host>  obsoleteHosts = new HashSet<>();
 
     /**
-     * Outgoing node connector.
+     * The egress switch port.
      */
-    private NodeConnector  outgoing;
-
-    /**
-     * Set of virtual node paths to be associated with the data flow.
-     */
-    private Set<VTenantPath>  virtualNodes = new HashSet<VTenantPath>();
+    private SalPort  egressPort;
 
     /**
      * A sequence of virtual packet routing.
@@ -175,9 +171,9 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     private MapReference  mapReference;
 
     /**
-     * A map that keeps SAL actions created by flow filters.
+     * A map that keeps flow actions created by flow filters.
      */
-    private Map<Class<? extends Action>, Action>  filterActions;
+    private Map<Class<? extends FlowFilterAction>, FlowFilterAction>  filterActions;
 
     /**
      * The number of virtual node hops caused by REDIRECT flow filter.
@@ -236,15 +232,16 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      *   This constructor is used to transmit self-originated packet.
      * </p>
      *
-     * @param ether     An ethernet frame.
-     * @param out       Outgoing node connector.
-     * @param ctx       A MD-SAL datastore transaction only for read.
+     * @param ether  An ethernet frame.
+     * @param out    A {@link SalPort} instance corresponding to the egress
+     *               switch port.
+     * @param ctx    A MD-SAL datastore transaction only for read.
      */
-    PacketContext(Ethernet ether, NodeConnector out, TxContext ctx) {
+    PacketContext(Ethernet ether, SalPort out, TxContext ctx) {
         rawPacket = null;
         etherFrame = new EtherPacket(ether);
         txContext = ctx;
-        outgoing = out;
+        egressPort = out;
         packetIn = null;
 
         // Flow filter must not affect self-originated packet.
@@ -322,33 +319,6 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     }
 
     /**
-     * Return a received raw packet.
-     *
-     * @return  A raw packet.
-     */
-    public RawPacket getRawPacket() {
-        return rawPacket;
-    }
-
-    /**
-     * Return the payload in the received ethernet frame.
-     *
-     * @return  A payload.
-     */
-    public Packet getPayload() {
-        return etherFrame.getPayload();
-    }
-
-    /**
-     * Return the node connector where the packet was received.
-     *
-     * @return  A incoming node connector.
-     */
-    public NodeConnector getIncomingNodeConnector() {
-        return rawPacket.getIncomingNodeConnector();
-    }
-
-    /**
      * Return a {@link SalPort} instance corresponding to the ingress switch
      * port.
      *
@@ -375,13 +345,14 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     }
 
     /**
-     * Return a node connector associated with the switch port to which the
-     * packet sends.
+     * Return a {@link SalPort} instance corresponding to the egress switch
+     * port to which the packet sends.
      *
-     * @return  Outgoing node connector.
+     * @return  A {@link SalPort} instance if the egress switch port is
+     *          configured. Otherwise {@code null}.
      */
-    public NodeConnector getOutgoingNodeConnector() {
-        return outgoing;
+    public SalPort getEgressPort() {
+        return egressPort;
     }
 
     /**
@@ -485,9 +456,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      */
     public void addObsoleteEntry(MacTableEntry tent) {
         long mac = tent.getMacAddress();
-        MacVlan mvlan = new MacVlan(mac, tent.getVlan());
-        obsoleteHosts.add(new ObjectPair<MacVlan, NodeConnector>(
-                              mvlan, tent.getPort()));
+        obsoleteHosts.add(new L2Host(mac, tent.getVlan(), tent.getPort()));
     }
 
     /**
@@ -495,37 +464,27 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      *
      * @return  A set of obsolete layer 2 host entries.
      */
-    public Set<ObjectPair<MacVlan, NodeConnector>> getObsoleteEntries() {
+    public Set<L2Host> getObsoleteEntries() {
         return obsoleteHosts;
     }
 
     /**
      * Purge VTN flows relevant to obsolete layer 2 host entries.
-     *
-     * @param mgr         VTN manager service.
-     * @param tenantName  Name of the virtual tenant.
      */
-    public void purgeObsoleteFlow(VTNManagerImpl mgr, String tenantName) {
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-        if (fdb != null) {
-            purgeObsoleteFlow(mgr, fdb);
-        }
+    public void purgeObsoleteFlow() {
+        purgeObsoleteFlow(txContext.getProvider());
     }
 
     /**
      * Purge VTN flows relevant to obsolete layer 2 host entries.
      *
-     * <p>
-     *   This method removes obsolte layer 2 host entries added by
-     *   {@link #addObsoleteEntry(MacTableEntry)}.
-     * </p>
-     *
-     * @param mgr   VTN manager service.
-     * @param fdb   VTN flow database.
+     * @param provider    VTN manager provider service.
      */
-    public void purgeObsoleteFlow(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
-        for (ObjectPair<MacVlan, NodeConnector> host: obsoleteHosts) {
-            fdb.removeFlows(mgr, host.getLeft(), host.getRight());
+    public void purgeObsoleteFlow(VTNManagerProvider provider) {
+        String tname = mapReference.getPath().getTenantName();
+        for (L2Host host: obsoleteHosts) {
+            EdgeHostFlowRemover remover = new EdgeHostFlowRemover(tname, host);
+            provider.removeFlows(remover);
         }
         obsoleteHosts.clear();
     }
@@ -536,21 +495,20 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * @return  A brief description of the ethernet frame in ths context.
      */
     public String getDescription() {
-        NodeConnector incoming = (rawPacket == null)
-            ? null : rawPacket.getIncomingNodeConnector();
-        return getDescription(incoming);
+        return getDescription(getIngressPort());
     }
 
     /**
      * Create a brief description of the ethernet frame in this context.
      *
-     * @param port  A node connector associated with the ethernet frame.
+     * @param sport  A {@link SalPort} instance associated with the ethernet
+     *               frame.
      * @return  A brief description of the ethernet frame in ths context.
      */
-    public String getDescription(NodeConnector port) {
+    public String getDescription(SalPort sport) {
         return getDescription(etherFrame.getSourceAddress(),
                               etherFrame.getDestinationAddress(),
-                              etherFrame.getEtherType(), port,
+                              etherFrame.getEtherType(), sport,
                               etherFrame.getVlanId());
     }
 
@@ -558,17 +516,17 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * Create a brief description of the ethernet frame.
      *
      * @param ether  An ethernet frame.
-     * @param port   A node connector associated with the ethernet frame.
+     * @param sport  A {@link SalPort} instance associated with the ethernet
+     *               frame.
      * @param vlan   VLAN ID.
      * @return  A brief description of the specified ethernet frame.
      */
-    public String getDescription(Ethernet ether, NodeConnector port,
-                                 int vlan) {
+    public String getDescription(Ethernet ether, SalPort sport, int vlan) {
         EtherAddress src = new EtherAddress(ether.getSourceMACAddress());
         EtherAddress dst = new EtherAddress(ether.getDestinationMACAddress());
         return getDescription(src, dst,
                               (int)ether.getEtherType() & ETHER_TYPE_MASK,
-                              port, vlan);
+                              sport, vlan);
     }
 
     /**
@@ -577,17 +535,18 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * @param src    The source MAC address.
      * @param dst    The destination MAC address.
      * @param type   The ethernet type.
-     * @param port   A node connector associated with the ethernet frame.
+     * @param sport  A {@link SalPort} instance associated with the ethernet
+     *               frame.
      * @param vlan   VLAN ID.
      * @return  A brief description of the specified ethernet frame.
      */
     public String getDescription(EtherAddress src, EtherAddress dst, int type,
-                                 NodeConnector port, int vlan) {
+                                 SalPort sport, int vlan) {
         StringBuilder builder = new StringBuilder("src=");
         builder.append(src.getText()).
             append(", dst=").append(dst.getText());
-        if (port != null) {
-            builder.append(", port=").append(port);
+        if (sport != null) {
+            builder.append(", port=").append(sport);
         }
         builder.append(", type=0x").append(Integer.toHexString(type)).
             append(", vlan=").append(vlan);
@@ -700,32 +659,6 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     }
 
     /**
-     * Create match for a flow entry.
-     *
-     * @param inPort  A node connector associated with incoming switch port.
-     * @return  A match object that matches the packet.
-     */
-    public Match createMatch(NodeConnector inPort) {
-        assert !flooding;
-        Match match = new Match();
-
-        // Incoming port field is mandatory.
-        match.setField(MatchType.IN_PORT, inPort);
-
-        etherFrame.setMatch(match, matchFields);
-        Inet4Packet ipv4 = getInet4Packet();
-        if (ipv4 != null) {
-            ipv4.setMatch(match, matchFields);
-            L4Packet l4 = getL4Packet();
-            if (l4 != null) {
-                l4.setMatch(match, matchFields);
-            }
-        }
-
-        return match;
-    }
-
-    /**
      * Append the specified virtual node hop to the virtual packet route.
      *
      * @param vroute  A {@link VNodeRoute} instance which represents a
@@ -767,47 +700,6 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      */
     public VNodeRoute getEgressVNodeRoute() {
         return egressNodeRoute;
-    }
-
-    /**
-     * Record a virtual node to be associated with the data flow.
-     *
-     * <p>
-     *   Note that the virtual node on the packet routing path does not need
-     *   to be associated with the data flow by this method.
-     * </p>
-     *
-     * @param path  A virtual node path.
-     */
-    public void addNodePath(VTenantPath path) {
-        virtualNodes.add(path);
-    }
-
-    /**
-     * Fix up the VTN flow for installation.
-     *
-     * @param vflow  A VTN flow.
-     */
-    public void fixUp(VTNFlow vflow) {
-        if (virtualRoute.isEmpty() && mapReference != null) {
-            // This can happen if the packet was discarded by the VTN flow
-            // filter. In this case we need to estimate ingress virtual node
-            // route from mapping reference.
-            vflow.addVirtualRoute(mapReference.getIngressRoute());
-        }
-
-        // Set the virtual packet routing path.
-        vflow.addVirtualRoute(virtualRoute);
-        vflow.setEgressVNodeRoute(egressNodeRoute);
-
-        // Set path policy identifier.
-        vflow.setPathPolicy(routeResolver.getPathPolicyId());
-
-        // Set additional dependencies.
-        vflow.addDependency(virtualNodes);
-
-        // Set flow timeout.
-        vflow.setTimeout(idleTimeout, hardTimeout);
     }
 
     /**
@@ -875,14 +767,48 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     }
 
     /**
-     * Install a flow entry that discards the packet.
+     * Install a VTN data flow for the received packet.
      *
-     * @param mgr   VTN Manager service.
-     * @param path  The location of the VTN.
-     * @param lp    A {@link LogProvider} instance used for error logging.
+     * @param egress  A {@link SalPort} corresponding to the egress switch
+     *                port.
+     * @param outVid  A VLAN ID to be set to the outgoing packet.
+     * @param path    A list of {@link LinkEdge} instances which represents
+     *                packet route to the destination address of the received
+     *                packet.
      */
-    public void installDropFlow(VTNManagerImpl mgr, VTenantPath path,
-                                LogProvider lp) {
+    public void installFlow(SalPort egress, int outVid, List<LinkEdge> path) {
+        // Purge obsolete flows before installing new flow.
+        purgeObsoleteFlow();
+
+        // Prepare to install an unicast flow entry.
+        addUnicastMatchFields();
+
+        VTNFlowBuilder builder = createFlowBuilder();
+        if (builder == null) {
+            return;
+        }
+
+        // Add flow entries for inter-switch links.
+        SalPort src = packetIn.getIngressPort();
+        for (LinkEdge le: path) {
+            SalPort dst = le.getSourcePort();
+            builder.addInternalFlow(src, dst);
+            src = le.getDestinationPort();
+        }
+
+        // Create the egress flow entry.
+        assert src.getNodeNumber() == egress.getNodeNumber();
+        int inVid = etherFrame.getOriginalVlan();
+        builder.addEgressFlow(src, egress, inVid, outVid, getFilterActions());
+
+        // Install flow entries.
+        txContext.getProvider().addFlow(builder);
+    }
+
+    /**
+     * Install a flow entry that discards the packet.
+     */
+    public void installDropFlow() {
         if (flooding) {
             // Never install flow entry on packet flooding.
             return;
@@ -894,40 +820,29 @@ public class PacketContext implements Cloneable, FlowMatchContext {
             addUnicastMatchFields();
         }
 
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(path.getTenantName());
-        if (fdb == null) {
-            lp.getLogger().error("{}: Flow database was not found",
-                                 lp.getLogPrefix());
+        // Create a flow entry that discards the given packet.
+        VTNFlowBuilder builder = createFlowBuilder();
+        if (builder == null) {
             return;
         }
 
-        // Create a flow entry that discards the given packet.
-        NodeConnector incoming = getIncomingNodeConnector();
-        Match match = createMatch(incoming);
-        int pri = getFlowPriority();
-        VTNFlow vflow = fdb.create(mgr);
-        vflow.addFlow(mgr, match, pri);
-
-        // Set the virtual packet routing.
-        fixUp(vflow);
         if (egressNodeRoute != null) {
-            vflow.setEgressVNodeRoute(null);
+            builder.setEgressVNodeRoute(null);
         }
 
-        // Install a flow entry.
-        fdb.install(mgr, vflow);
+        builder.addDropFlow(packetIn.getIngressPort());
+        txContext.getProvider().addFlow(builder);
     }
 
     /**
      * Append a SAL action to the flow filter action list.
      *
-     * @param act  A SAL action.
+     * @param act  A flow filter action.
      */
-    public void addFilterAction(Action act) {
+    public void addFilterAction(FlowFilterAction act) {
         if (!flooding) {
             if (filterActions == null) {
-                filterActions =
-                    new LinkedHashMap<Class<? extends Action>, Action>();
+                filterActions = new LinkedHashMap<>();
             }
             filterActions.put(act.getClass(), act);
         }
@@ -936,9 +851,9 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     /**
      * Remove the specified flow action from the flow filter action list.
      *
-     * @param actClass  A class of SAL action to be removed.
+     * @param actClass  A class of flow filter action to be removed.
      */
-    public void removeFilterAction(Class<? extends Action> actClass) {
+    public void removeFilterAction(Class<? extends FlowFilterAction> actClass) {
         if (!flooding && filterActions != null) {
             filterActions.remove(actClass);
         }
@@ -947,11 +862,11 @@ public class PacketContext implements Cloneable, FlowMatchContext {
     /**
      * Return a list of SAL actions created by flow filters.
      *
-     * @return  A collection of SAL actions.
-     *          {@code null} is returned if no SAL action was created by
+     * @return  A collection of flow filter actions.
+     *          {@code null} is returned if no flow action was created by
      *          flow filter.
      */
-    public Collection<Action> getFilterActions() {
+    public Collection<FlowFilterAction> getFilterActions() {
         return (filterActions == null) ? null : filterActions.values();
     }
 
@@ -1094,12 +1009,7 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      * @return  The number of virtual node hops.
      */
     public int redirect(VNodePath path) {
-        if (virtualRoute.isEmpty() && mapReference != null) {
-            // This can happen if the packet was redirected by the VTN flow
-            // filter. In this case we need to estimate ingress virtual node
-            // route from mapping reference.
-            virtualRoute.add(mapReference.getIngressRoute());
-        }
+        fixIngressNode();
 
         // Record the packet redirection as the hop to the egress node.
         setEgressVNodeRoute(new VNodeRoute(path,
@@ -1148,6 +1058,89 @@ public class PacketContext implements Cloneable, FlowMatchContext {
      */
     public TxContext getTxContext() {
         return txContext;
+    }
+
+    /**
+     * Fix up the ingress virtual node.
+     */
+    private void fixIngressNode() {
+        if (virtualRoute.isEmpty() && mapReference != null) {
+            // This can happen if the packet was discarded by the VTN flow
+            // filter. In this case we need to estimate ingress virtual node
+            // route from mapping reference.
+            virtualRoute.add(mapReference.getIngressRoute());
+        }
+    }
+
+    /**
+     * Create a new VTN data flow builder.
+     *
+     * @return  A {@link VTNFlowBuilder} on success.
+     *          {@code null} on failure.
+     */
+    private VTNFlowBuilder createFlowBuilder() {
+        VTNMatch vmatch = createMatch();
+        if (vmatch == null) {
+            return null;
+        }
+
+        fixIngressNode();
+        assert !virtualRoute.isEmpty();
+        VNodeRoute vnr = virtualRoute.get(0);
+        String tname = vnr.getPath().getTenantName();
+
+        VTNManagerProvider provider = txContext.getProvider();
+        VTNConfig vcfg = provider.getVTNConfig();
+        EtherAddress mac = vcfg.getControllerMacAddress();
+        int nmatches = matchFields.size() -
+            FlowMatchType.getUnicastTypeCount(matchFields);
+        int pri = vcfg.getL2FlowPriority() + nmatches;
+
+        VTNFlowBuilder builder = new VTNFlowBuilder(
+            tname, mac, vmatch, pri, idleTimeout, hardTimeout);
+
+        // Set the virtual packet routing path and path policy identifier.
+        return builder.addVirtualRoute(virtualRoute).
+            setEgressVNodeRoute(egressNodeRoute).
+            setPathPolicyId(routeResolver.getPathPolicyId());
+    }
+
+    /**
+     * Create a new flow match.
+     *
+     * @return  A {@link VTNMatch} instance.
+     *          {@code null} if this packet is broken.
+     */
+    private VTNMatch createMatch() {
+        assert !flooding;
+
+        try {
+            VTNEtherMatch ematch = etherFrame.createMatch(matchFields);
+            VTNInet4Match imatch = null;
+            VTNLayer4Match l4match = null;
+
+            Inet4Packet ipv4 = getInet4Packet();
+            if (ipv4 != null) {
+                imatch = ipv4.createMatch(matchFields);
+                if (imatch.isEmpty()) {
+                    imatch = null;
+                }
+
+                L4Packet l4 = getL4Packet();
+                if (l4 != null) {
+                    l4match = l4.createMatch(matchFields);
+                    if (l4match.isEmpty()) {
+                        l4match = null;
+                    }
+                }
+            }
+
+            return new VTNMatch(ematch, imatch, l4match);
+        } catch (RpcException | RuntimeException e) {
+            // This should never happen.
+            LOG.error("Failed to create VTNMatch.", e);
+            return null;
+        }
     }
 
     /**

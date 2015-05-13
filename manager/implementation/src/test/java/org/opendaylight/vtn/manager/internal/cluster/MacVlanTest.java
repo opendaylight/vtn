@@ -22,6 +22,9 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 import org.opendaylight.vtn.manager.internal.TestDataLink;
 import org.opendaylight.vtn.manager.internal.TestDataLinkHost;
@@ -29,6 +32,13 @@ import org.opendaylight.vtn.manager.internal.TestDataLinkHost;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSourceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.SourceHostFlowsKey;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
 /**
  * JUnit test for {@link MacVlan}.
@@ -67,9 +77,11 @@ public class MacVlanTest extends TestBase {
 
     /**
      * Test case for getter methods.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testGetter() {
+    public void testGetter() throws Exception {
         short[] vlans = new short[] {0, 1, 1000, 4095};
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan : vlans) {
@@ -99,16 +111,42 @@ public class MacVlanTest extends TestBase {
                 assertEquals(vlan, mv.getVlan());
                 assertEquals(encoded, mv.getEncodedValue());
 
-                try {
-                    EthernetHost ehost = new EthernetHost(ea, vlan);
-                    mv = new MacVlan(ehost);
-                    assertEquals(macLongVal, mv.getMacAddress());
-                    assertEquals(vlan, mv.getVlan());
-                    assertEquals(encoded, mv.getEncodedValue());
-                    assertEquals(ehost, mv.getEthernetHost());
-                } catch (Exception e) {
-                    unexpected(e);
+                EtherAddress eaddr = EtherAddress.create(mac);
+                MacAddress maddr = (eaddr == null)
+                    ? null : eaddr.getMacAddress();
+                MacVlan mv1 = new MacVlan(maddr, (int)vlan);
+                assertEquals(macLongVal, mv1.getMacAddress());
+                assertEquals(vlan, mv1.getVlan());
+                assertEquals(encoded, mv1.getEncodedValue());
+                assertEquals(maddr, mv1.getMdMacAddress());
+                assertEquals(mv, mv1);
+
+                DataFlowSource src = mv.getDataFlowSource();
+                VlanId vid = new VlanId((int)vlan);
+                assertEquals(maddr, src.getMacAddress());
+                assertEquals(vid, src.getVlanId());
+
+                mv1 = new MacVlan(src);
+                assertEquals(macLongVal, mv1.getMacAddress());
+                assertEquals(vlan, mv1.getVlan());
+                assertEquals(encoded, mv1.getEncodedValue());
+                assertEquals(maddr, mv1.getMdMacAddress());
+                assertEquals(mv, mv1);
+
+                SourceHostFlowsKey skey = mv.getSourceHostFlowsKey();
+                if (maddr == null) {
+                    assertEquals(null, skey);
+                } else {
+                    assertEquals(maddr, skey.getMacAddress());
+                    assertEquals(vid, skey.getVlanId());
                 }
+
+                EthernetHost ehost = new EthernetHost(ea, vlan);
+                mv = new MacVlan(ehost);
+                assertEquals(macLongVal, mv.getMacAddress());
+                assertEquals(vlan, mv.getVlan());
+                assertEquals(encoded, mv.getEncodedValue());
+                assertEquals(ehost, mv.getEthernetHost());
             }
         }
 
@@ -131,7 +169,7 @@ public class MacVlanTest extends TestBase {
         // Specify invalid DataLinkHost.
         try {
             mvlan = new MacVlan((EthernetHost)null);
-            fail("An exception must be thrown");
+            unexpected();
         } catch (VTNException e) {
             Status status = e.getStatus();
             assertEquals(StatusCode.BADREQUEST, status.getCode());
@@ -141,7 +179,7 @@ public class MacVlanTest extends TestBase {
         TestDataLinkHost dlhost = new TestDataLinkHost(dladdr);
         try {
             mvlan = new MacVlan(dlhost);
-            fail("An exception must be thrown");
+            unexpected();
         } catch (VTNException e) {
             Status status = e.getStatus();
             assertEquals(StatusCode.BADREQUEST, status.getCode());
@@ -155,17 +193,11 @@ public class MacVlanTest extends TestBase {
         }
         for (Long addr: invaddrs) {
             byte[] raw = EtherAddress.toBytes(addr.longValue());
-            EthernetAddress eth = null;
-            try {
-                eth = new EthernetAddress(raw);
-            } catch (Exception e) {
-                unexpected(e);
-            }
-
+            EthernetAddress eth = new EthernetAddress(raw);
             EthernetHost ehost = new EthernetHost(eth, (short)0);
             try {
                 mvlan = new MacVlan(dlhost);
-                fail("An exception must be thrown");
+                unexpected();
             } catch (VTNException e) {
                 Status status = e.getStatus();
                 assertEquals(StatusCode.BADREQUEST, status.getCode());
@@ -176,7 +208,7 @@ public class MacVlanTest extends TestBase {
             EthernetHost ehost = new EthernetHost(null, v);
             try {
                 mvlan = new MacVlan(dlhost);
-                fail("An exception must be thrown");
+                unexpected();
             } catch (VTNException e) {
                 Status status = e.getStatus();
                 assertEquals(StatusCode.BADREQUEST, status.getCode());
@@ -186,11 +218,34 @@ public class MacVlanTest extends TestBase {
             EthernetHost ehost = new EthernetHost(null, v);
             try {
                 mvlan = new MacVlan(dlhost);
-                fail("An exception must be thrown");
+                unexpected();
             } catch (VTNException e) {
                 Status status = e.getStatus();
                 assertEquals(StatusCode.BADREQUEST, status.getCode());
             }
+        }
+
+        try {
+            new MacVlan((DataFlowSource)null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals("vlan-host cannot be null", st.getDescription());
+        }
+
+        MacAddress maddr = new MacAddress("00:11:22:33:44:55");
+        DataFlowSource src = new DataFlowSourceBuilder().
+            setMacAddress(maddr).build();
+        try {
+            new MacVlan(src);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.MISSING_ELEMENT, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, st.getCode());
+            assertEquals("VLAN ID cannot be null", st.getDescription());
         }
     }
 
@@ -280,7 +335,7 @@ public class MacVlanTest extends TestBase {
      */
     @Test
     public void testCompareTo() {
-        HashSet hset = new HashSet<MacVlan>();
+        HashSet<MacVlan> hset = new HashSet<>();
 
         // Create test data.
         MacVlan least = new MacVlan(0L);
@@ -295,7 +350,7 @@ public class MacVlanTest extends TestBase {
         } while (hset.size() < 50);
 
         // Sort instances using TreeSet.
-        TreeSet<MacVlan> tset = new TreeSet<MacVlan>(hset);
+        TreeSet<MacVlan> tset = new TreeSet<>(hset);
         assertEquals(hset.size(), tset.size());
 
         // Ensure that MacVlan instances are sorted as expected.

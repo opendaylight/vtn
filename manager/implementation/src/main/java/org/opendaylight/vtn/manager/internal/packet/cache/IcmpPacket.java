@@ -17,13 +17,13 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNIcmpMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.action.SetTpDst;
-import org.opendaylight.controller.sal.action.SetTpSrc;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.ICMP;
 
 /**
@@ -240,34 +240,6 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
     }
 
     /**
-     * Configure match fields to test ICMP header in this packet.
-     *
-     * <p>
-     *   Note that this method creates match fields that matches the original
-     *   packet. Any modification to the packet is ignored.
-     * </p>
-     *
-     * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link FlowMatchType} instances corresponding to
-     *                match fields to be tested.
-     */
-    @Override
-    public void setMatch(Match match, Set<FlowMatchType> fields) {
-        Values v = values;
-        v.fill(packet);
-
-        if (fields.contains(FlowMatchType.ICMP_TYPE)) {
-            // Test ICMP type.
-            match.setField(MatchType.TP_SRC, v.getType());
-        }
-
-        if (fields.contains(FlowMatchType.ICMP_CODE)) {
-            // Test ICMP code.
-            match.setField(MatchType.TP_DST, v.getCode());
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -290,7 +262,7 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
                 // ICMP type in the original packet is unchanged and it will be
                 // specified in flow match. So we don't need to configure
                 // SET_TP_SRC action.
-                pctx.removeFilterAction(SetTpSrc.class);
+                pctx.removeFilterAction(VTNSetIcmpTypeAction.class);
             }
 
             short code = modifiedValues.getCode();
@@ -305,7 +277,7 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
                 // ICMP code in the original packet is unchanged and it will be
                 // specified in flow match. So we don't need to configure
                 // SET_TP_DST action.
-                pctx.removeFilterAction(SetTpDst.class);
+                pctx.removeFilterAction(VTNSetIcmpCodeAction.class);
             }
         }
 
@@ -336,6 +308,25 @@ public final class IcmpPacket implements L4Packet, IcmpHeader {
     }
 
     // L4Packet
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public VTNIcmpMatch createMatch(Set<FlowMatchType> fields)
+        throws RpcException {
+        Values v = values;
+        v.fill(packet);
+
+        Short type = (fields.contains(FlowMatchType.ICMP_TYPE))
+            ? Short.valueOf(v.getType())
+            : null;
+        Short code = (fields.contains(FlowMatchType.ICMP_CODE))
+            ? Short.valueOf(v.getCode())
+            : null;
+
+        return new VTNIcmpMatch(type, code);
+    }
 
     /**
      * Calculate the checksum of the packet.

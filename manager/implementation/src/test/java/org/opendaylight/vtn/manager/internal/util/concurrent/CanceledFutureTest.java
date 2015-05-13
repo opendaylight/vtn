@@ -19,21 +19,19 @@ import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
  * JUnit test for {@link CanceledFuture}.
- * @param <T>
  */
-public class CanceledFutureTest<T> extends TestBase {
+public class CanceledFutureTest extends TestBase {
 
     /**
      * To test cancel(boolean), isCancelled() and isDone() methods in CanceledFuture.
-     * @param <T>  The type of the object to be returned.
      */
     @Test
     public void testCanceledFutureMethods() {
-        CanceledFuture<T> cancelFuture = new CanceledFuture<T>();
-        Assert.assertEquals(true, cancelFuture.cancel(true));
-        Assert.assertEquals(true, cancelFuture.cancel(false));
+        CanceledFuture<Void> cancelFuture = new CanceledFuture<Void>();
         Assert.assertEquals(true, cancelFuture.isCancelled());
         Assert.assertEquals(true, cancelFuture.isDone());
+        Assert.assertEquals(true, cancelFuture.cancel(true));
+        Assert.assertEquals(true, cancelFuture.cancel(false));
     }
 
     /**
@@ -42,7 +40,7 @@ public class CanceledFutureTest<T> extends TestBase {
     @Test
     public void testGet() {
         try {
-            CanceledFuture<T> cancelFuture = new CanceledFuture<T>();
+            CanceledFuture<Void> cancelFuture = new CanceledFuture<Void>();
             cancelFuture.get();
         } catch (CancellationException e) {
         }
@@ -54,7 +52,7 @@ public class CanceledFutureTest<T> extends TestBase {
     @Test
     public void testGetWithArg() {
         try {
-            CanceledFuture<T> cancelFuture = new CanceledFuture<T>();
+            CanceledFuture<Void> cancelFuture = new CanceledFuture<Void>();
             long timeout = 0;
             TimeUnit unit = null;
             cancelFuture.get(timeout, unit);

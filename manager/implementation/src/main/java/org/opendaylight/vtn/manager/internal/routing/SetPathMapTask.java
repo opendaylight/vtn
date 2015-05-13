@@ -17,8 +17,11 @@ import java.util.Set;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.TenantFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
@@ -139,9 +142,10 @@ public final class SetPathMapTask
         for (VtnUpdateType status: result) {
             if (status != null) {
                 // REVISIT: Select flow entries affected by the change.
-                String tname = (tenantName == null)
-                    ? null : tenantName.getValue();
-                addBackgroundTasks(provider.removeFlows(tname, null));
+                FlowRemover remover = (tenantName == null)
+                    ? new AllFlowRemover()
+                    : new TenantFlowRemover(tenantName.getValue());
+                addBackgroundTask(provider.removeFlows(remover));
                 break;
             }
         }

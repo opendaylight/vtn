@@ -33,6 +33,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnEtherMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnInetMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowMatchBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 
@@ -388,7 +390,18 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
      * @return  A {@link VtnInetMatch} instance.
      */
     public final VtnInetMatch getVtnInetMatch() {
-        return (inet4Params == null) ? null : inet4Params.toVtnInetMatch();
+        return getVtnInetMatch(false);
+    }
+
+    /**
+     * Return a {@link VtnInetMatch} instance.
+     *
+     * @param noZero  Avoid zero prefix if {@code true}.
+     * @return  A {@link VtnInetMatch} instance.
+     */
+    public final VtnInetMatch getVtnInetMatch(boolean noZero) {
+        return (inet4Params == null)
+            ? null : inet4Params.toVtnInetMatch(noZero);
     }
 
     /**
@@ -397,7 +410,18 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
      * @return  A {@link VtnLayer4Match} instance.
      */
     public final VtnLayer4Match getVtnLayer4Match() {
-        return (layer4Params == null) ? null : layer4Params.toVtnLayer4Match();
+        return getVtnLayer4Match(false);
+    }
+
+    /**
+     * Return a {@link VtnLayer4Match} instance.
+     *
+     * @param comp  Complete the settings if {@code true}.
+     * @return  A {@link VtnLayer4Match} instance.
+     */
+    public final VtnLayer4Match getVtnLayer4Match(boolean comp) {
+        return (layer4Params == null)
+            ? null : layer4Params.toVtnLayer4Match(comp);
     }
 
     /**
@@ -433,6 +457,20 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
             setVtnEtherMatch(getVtnEtherMatch()).
             setVtnInetMatch(getVtnInetMatch()).
             setVtnLayer4Match(getVtnLayer4Match());
+    }
+
+    /**
+     * Create a {@link DataFlowMatch} instance that contains the settings
+     * configured in this instance.
+     *
+     * @return  A {@link DataFlowMatch} instance.
+     */
+    public DataFlowMatch toDataFlowMatch() {
+        return new DataFlowMatchBuilder().
+            setVtnEtherMatch(getVtnEtherMatch()).
+            setVtnInetMatch(getVtnInetMatch(true)).
+            setVtnLayer4Match(getVtnLayer4Match(true)).
+            build();
     }
 
     /**
@@ -480,6 +518,8 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
     public void verify(VTNMatch vmatch) throws Exception {
         FlowMatch fm = vmatch.toFlowMatch();
         assertEquals(toFlowMatch(), fm);
+        assertEquals(toDataFlowMatch(),
+                     vmatch.toDataFlowMatchBuilder().build());
 
         VTNEtherMatch vether = vmatch.getEtherMatch();
         MatchBuilder mb = vmatch.toMatchBuilder();
@@ -517,6 +557,10 @@ public class MatchParams extends TestBase implements PacketHeader, Cloneable {
         } else {
             layer4Params.verifyValues(vl4);
             layer4Params.verify(mb);
+        }
+
+        if (VTNMatch.class.equals(vmatch.getClass())) {
+            assertEquals(vmatch, new VTNMatch(vether, vinet, vl4));
         }
 
         assertEquals(null, mb.getInPort());

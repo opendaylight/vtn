@@ -16,8 +16,8 @@ import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
 
-import org.opendaylight.controller.sal.action.SetVlanPcp;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -119,7 +119,7 @@ public final class SetVlanPcpActionImpl extends FlowActionImpl {
     public boolean apply(PacketContext pctx) {
         EtherPacket ether = pctx.getEtherPacket();
         ether.setVlanPriority(priority);
-        pctx.addFilterAction(new SetVlanPcp((int)priority));
+        pctx.addFilterAction(new VTNSetVlanPcpAction((short)priority));
         return true;
     }
 }

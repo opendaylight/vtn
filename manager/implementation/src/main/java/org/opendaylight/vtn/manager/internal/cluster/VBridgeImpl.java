@@ -48,7 +48,6 @@ import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.MacAddressTable;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
@@ -62,7 +61,6 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -86,7 +84,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -1407722084769673712L;
+    private static final long serialVersionUID = 2720765815523032298L;
 
     /**
      * Logger instance.
@@ -839,23 +837,23 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             return null;
         }
 
+        SalPort egress = SalPort.create(outgoing);
         if (!bnode.isEnabled()) {
             VBridgePath bpath = bnode.getPath();
             if (LOG.isDebugEnabled()) {
                 LOG.debug("{}:{}: Drop packet due to disabled network: {}",
                           getContainerName(), bpath,
-                          pctx.getDescription(outgoing));
+                          pctx.getDescription(egress));
             }
             return null;
         }
 
-        SalPort egress = SalPort.create(outgoing);
         InventoryReader reader = pctx.getTxContext().getInventoryReader();
         if (!reader.isEnabled(egress)) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("{}:{}: Drop packet because outgoing port is down: " +
                          "{}", getContainerName(), getNodePath(),
-                         pctx.getDescription(outgoing));
+                         pctx.getDescription(egress));
             }
             return null;
         }
@@ -917,9 +915,10 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
 
             if (LOG.isDebugEnabled() && sent.size() == 1 &&
                 sent.contains(innw)) {
+                SalPort sport = SalPort.create(innw.getNodeConnector());
                 LOG.debug("{}:{}: No packet was broadcasted: {}",
                           getContainerName(), bpath,
-                          pctx.getDescription(innw.getNodeConnector()));
+                          pctx.getDescription(sport));
             }
         } catch (RedirectFlowException e) {
             // This should never happen.
@@ -1080,8 +1079,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
                 } else {
                     // REVISIT: Select flow entries affected by obsolete
                     // flow filters.
-                    VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
-                    VTNThreadData.removeFlows(mgr, fdb);
+                    VTNThreadData.removeFlows(mgr, getTenantName());
                 }
             }
 
@@ -1382,7 +1380,6 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
-     * @return  {@link PacketResult#KEEP_PROCESSING}.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
      * @throws RedirectFlowException
@@ -1391,8 +1388,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
      *    An error occurred.
      */
     @Override
-    protected PacketResult handlePacket(VTNManagerImpl mgr, PacketContext pctx,
-                                        VirtualMapNode vnode)
+    protected void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
+                                VirtualMapNode vnode)
         throws DropFlowException, RedirectFlowException, VTNException {
         VBridgePath bpath = getPath();
         MacAddressTable table = mgr.getMacAddressTable(bpath);
@@ -1407,7 +1404,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
                               getContainerName(), getNodePath(),
                               pctx.getDescription());
                 }
-                return PacketResult.KEEP_PROCESSING;
+                return;
             }
         }
 
@@ -1421,7 +1418,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             forward(mgr, pctx, tent.getPort(), tent.getVlan());
         }
 
-        return PacketResult.KEEP_PROCESSING;
+        return;
     }
 
     /**

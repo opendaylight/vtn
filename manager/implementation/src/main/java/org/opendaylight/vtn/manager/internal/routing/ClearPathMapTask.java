@@ -13,8 +13,11 @@ import com.google.common.base.Optional;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.TenantFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -188,9 +191,10 @@ public final class ClearPathMapTask extends AbstractTxTask<VtnUpdateType>
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         if (result != null) {
             // REVISIT: Select flow entries affected by the change.
-            String tname = (tenantName == null)
-                ? null : tenantName.getValue();
-            addBackgroundTasks(provider.removeFlows(tname, null));
+            FlowRemover remover = (tenantName == null)
+                ? new AllFlowRemover()
+                : new TenantFlowRemover(tenantName.getValue());
+            addBackgroundTask(provider.removeFlows(remover));
         }
     }
 

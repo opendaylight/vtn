@@ -28,8 +28,10 @@ public interface InetHeader extends ProtocolHeader {
      *
      * @param ipn  An {@link IpNetwork} instance which represents the source
      *             IP address.
+     * @return  {@code true} if the given address has been successfully set.
+     *          {@code false} if the given address has been rejected.
      */
-    void setSourceAddress(IpNetwork ipn);
+    boolean setSourceAddress(IpNetwork ipn);
 
     /**
      * Return the destination IP address.
@@ -44,8 +46,10 @@ public interface InetHeader extends ProtocolHeader {
      *
      * @param ipn  An {@link IpNetwork} instance which represents the
      *             destination IP address.
+     * @return  {@code true} if the given address has been successfully set.
+     *          {@code false} if the given address has been rejected.
      */
-    void setDestinationAddress(IpNetwork ipn);
+    boolean setDestinationAddress(IpNetwork ipn);
 
     /**
      * Return the IP protocol number.

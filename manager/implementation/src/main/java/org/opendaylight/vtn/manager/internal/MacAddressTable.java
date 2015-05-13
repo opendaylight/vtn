@@ -576,7 +576,7 @@ public class MacAddressTable {
             return;
         }
 
-        NodeConnector port = pctx.getIncomingNodeConnector();
+        NodeConnector port = pctx.getIngressPort().getAdNodeConnector();
         short vlan = (short)pctx.getVlan();
         InetAddress ipaddr = getSourceInetAddress(pctx);
 

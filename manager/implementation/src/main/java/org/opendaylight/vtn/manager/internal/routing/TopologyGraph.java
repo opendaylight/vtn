@@ -142,14 +142,17 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
         @Override
         public final List<LinkEdge> getRoute(InventoryReader rdr, SalNode src,
                                              SalNode dst) {
-            if (src.equals(dst)) {
+            if (src.getNodeNumber() == dst.getNodeNumber()) {
                 return Collections.<LinkEdge>emptyList();
             }
 
             synchronized (TopologyGraph.this) {
                 InventoryReader old = setReader(rdr);
                 try {
-                    return getPath(src, dst);
+                    List<LinkEdge> path = getPath(src, dst);
+                    if (!path.isEmpty()) {
+                        return path;
+                    }
                 } catch (Exception e) {
                     LOG.trace("{}: A vertex is not yet known: {} -> {}",
                               index, src, dst);

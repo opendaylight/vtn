@@ -9,86 +9,74 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
-import java.util.List;
-
 import org.junit.Test;
-import org.opendaylight.vtn.manager.VTNException;
-import org.opendaylight.vtn.manager.VTenantConfig;
-import org.opendaylight.vtn.manager.VTenantPath;
-import org.opendaylight.vtn.manager.internal.LockStack;
-import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
-import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
-import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
-import org.opendaylight.controller.sal.core.Node;
-import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.packet.ARP;
-import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.NodeConnectorCreator;
-import org.opendaylight.controller.sal.utils.NodeCreator;
+import org.mockito.Mockito;
+
+import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
+import org.opendaylight.vtn.manager.flow.filter.DropFilter;
+
+import org.opendaylight.vtn.manager.internal.PacketContext;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
  * JUnit test for {@link DropFlowFilterImpl}.
  */
 public class DropFlowFilterImplTest extends TestBase {
     /**
-     * Testing the Get methods in {@link DropFlowFilterImpl}..
-    */
+     * Test case for all methods.
+     *
+     * @throws Exception  An error occurred.
+     */
     @Test
-    public void testGetter() {
-        // Create 1 openflow node connector.
-        Node node = NodeCreator.createOFNode(Long.valueOf(1L));
-        assertNotNull(node);
-        NodeConnector nc = NodeConnectorCreator.
-            createOFNodeConnector(Short.valueOf((short)2), node);
-        assertNotNull(nc);
+    public void test() throws Exception {
+        FlowFilterNode ffNode = Mockito.mock(FlowFilterNode.class);
+        String container = "default";
+        String tenant = "vtn_1";
+        VTenantPath tpath = new VTenantPath(tenant);
+        Mockito.when(ffNode.getContainerName()).thenReturn(container);
+        Mockito.when(ffNode.getPath()).thenReturn(tpath);
 
-        DropFlowFilterImpl dropFlowFilterImpl = null;
+        int index = 1;
+        String cond = "cond_name";
+        DropFilter type = new DropFilter();
+        FlowFilter filter = new FlowFilter(index, cond, type, null);
+        FlowFilterMap ffMap = FlowFilterMap.createIncoming(ffNode);
+        FlowFilterImpl impl = FlowFilterImpl.create(ffNode, index, filter);
+        assertTrue(impl instanceof DropFlowFilterImpl);
+        assertEquals(true, impl.isMulticastSupported());
+        assertEquals(false, impl.needFlowAction());
+        assertEquals(type, impl.getFilterType());
+        assertNotNull(impl.getLogger());
+        assertEquals(cond, impl.getFlowConditionName());
+        assertEquals(index, impl.getIndex());
+
+        PacketContext pctx = Mockito.mock(PacketContext.class);
+        Mockito.when(pctx.isFlooding()).thenReturn(true);
         try {
-            //Checking for all the scenarios for all the methods in  DropFlowFilterImpl.
-            for (int idx:INDEX_ARRAY) {
-                List<FlowFilter> filterList = createFlowFilter();
-                for (FlowFilter flowfilter : filterList) {
-                    try {
-                        dropFlowFilterImpl = new DropFlowFilterImpl(idx, flowfilter);
-                        assertTrue(dropFlowFilterImpl.isMulticastSupported());
-                        assertFalse(dropFlowFilterImpl.needFlowAction());
-                        assertNotNull(dropFlowFilterImpl.getFilterType());
-
-                        VTNManagerImpl mgr = new VTNManagerImpl();
-                        byte[] addr = {(byte)0x00, (byte)0x00, (byte)0x00,
-                                       (byte)0x00, (byte)0x00, (byte)0x01};
-                        EthernetAddress ea = new EthernetAddress(addr);
-                        byte [] bytes = ea.getValue();
-                        byte [] src = new byte[] {bytes[0], bytes[1], bytes[2],
-                                                  bytes[3], bytes[4], bytes[5]};
-                        byte [] sender = new byte[] {(byte)192, (byte)168,
-                                                     (byte)0, (byte)1};
-                        byte[] dst = new byte[] {(byte)0xff, (byte)0xff, (byte)0xff,
-                                                 (byte)0xff, (byte)0xff, (byte)0xff};
-                        byte[] target = new byte[] {(byte)192, (byte)168, (byte)0, (byte)250};
-
-                        PacketContext pctx = createARPPacketContext(src, dst, sender, target,
-                                                          (short)-1, nc, ARP.REQUEST);
-                        String containerName = "default";
-                        String description = "description";
-
-                        LockStack lstack = new LockStack();
-                        VTenantPath path = new VTenantPath(TENANT_NAME[0]);
-                        VTenantConfig tenantconfig = new VTenantConfig(description);
-                        VTenantImpl vtn =  new VTenantImpl(containerName, TENANT_NAME[0], tenantconfig);
-                        FlowFilterId flowFilterId = new FlowFilterId(path);
-
-                        FlowFilterMap ffmap = vtn.getFlowFilterMap(lstack, flowFilterId, false);
-                        dropFlowFilterImpl.apply(mgr, pctx, ffmap);
-                    } catch (VTNException | NullPointerException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            }
-        } catch (Exception ex) {
+            impl.apply(null, pctx, ffMap);
+            unexpected();
+        } catch (DropFlowException e) {
         }
+
+        Mockito.verify(pctx).isFlooding();
+        Mockito.verify(pctx).installDropFlow();
+        Mockito.verify(pctx, Mockito.never()).getDescription();
+        Mockito.reset(pctx);
+
+        String desc = "test packet";
+        Mockito.when(pctx.isFlooding()).thenReturn(false);
+        Mockito.when(pctx.getDescription()).thenReturn(desc);
+        try {
+            impl.apply(null, pctx, ffMap);
+            unexpected();
+        } catch (DropFlowException e) {
+        }
+
+        Mockito.verify(pctx).isFlooding();
+        Mockito.verify(pctx).installDropFlow();
+        Mockito.verify(pctx).getDescription();
     }
 }

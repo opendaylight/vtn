@@ -8,17 +8,17 @@
  */
 package org.opendaylight.vtn.manager.internal.routing;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.opendaylight.vtn.manager.internal.FlowSelector;
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.PathPolicyFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -134,12 +134,6 @@ public class SetPathPolicyTaskTest extends TestBase {
         TopologyGraph topo = new TopologyGraph(provider);
         Integer[] policies = {1, 2, 3};
 
-        VTNFuture<?> f = new SettableVTNFuture<Void>();
-        List<VTNFuture<?>> futures = Collections.<VTNFuture<?>>singletonList(f);
-        List<VTNFuture<?>> empty = Collections.<VTNFuture<?>>emptyList();
-        Class<PathPolicyFlowSelector> selector = PathPolicyFlowSelector.class;
-        FlowSelector allFlows = null;
-
         for (Integer id: policies) {
             Mockito.reset(provider);
             assertEquals(null, topo.getResolver(id));
@@ -178,30 +172,35 @@ public class SetPathPolicyTaskTest extends TestBase {
             assertEquals(0, task.getBackgroundTasks().size());
 
             // Path policy is created.
+            SettableVTNFuture<Void> future = new SettableVTNFuture<>();
+            List<VTNFuture<?>> futures = new ArrayList<>();
+            futures.add(future);
             VtnUpdateType result = VtnUpdateType.CREATED;
             topo.updateResolver(id);
-            Mockito.when(provider.removeFlows(allFlows)).
-                thenReturn(futures);
+            Mockito.when(
+                provider.removeFlows(Mockito.isA(AllFlowRemover.class))).
+                thenReturn(future);
             task.onSuccess(provider, result);
-            List<VTNFuture<?>> bg = task.getBackgroundTasks();
-            assertEquals(1, bg.size());
-            assertEquals(f, bg.get(0));
-            Mockito.verify(provider).removeFlows(allFlows);
+            assertEquals(futures, task.getBackgroundTasks());
+            Mockito.verify(provider).
+                removeFlows(Mockito.isA(AllFlowRemover.class));
             Mockito.verify(provider, Mockito.never()).
-                removeFlows(Mockito.isA(selector));
+                removeFlows(Mockito.isA(PathPolicyFlowRemover.class));
 
             // Path policy is updated.
+            future = new SettableVTNFuture<>();
+            futures.add(future);
             Mockito.reset(provider);
             result = VtnUpdateType.CHANGED;
-            Mockito.when(provider.removeFlows(Mockito.isA(selector))).
-                thenReturn(futures);
+            Mockito.when(provider.removeFlows(
+                             Mockito.isA(PathPolicyFlowRemover.class))).
+                thenReturn(future);
             task.onSuccess(provider, result);
-            bg = task.getBackgroundTasks();
-            assertEquals(2, bg.size());
-            assertEquals(f, bg.get(0));
-            assertEquals(f, bg.get(1));
-            Mockito.verify(provider, Mockito.never()).removeFlows(allFlows);
-            Mockito.verify(provider).removeFlows(Mockito.isA(selector));
+            assertEquals(futures, task.getBackgroundTasks());
+            Mockito.verify(provider, Mockito.never()).
+                removeFlows(Mockito.isA(AllFlowRemover.class));
+            Mockito.verify(provider).
+                removeFlows(Mockito.isA(PathPolicyFlowRemover.class));
         }
     }
 }

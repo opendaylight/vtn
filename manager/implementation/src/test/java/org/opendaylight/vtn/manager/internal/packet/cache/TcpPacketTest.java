@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,16 +23,15 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.SetTpSrc;
-import org.opendaylight.controller.sal.action.SetTpDst;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.PacketException;
@@ -142,10 +140,12 @@ public class TcpPacketTest extends TestBase {
         int src2 = 413;
         int dst2 = 60345;
 
-        Map<Class<? extends Action>, Action> salActions =
-            new LinkedHashMap<Class<? extends Action>, Action>();
-        salActions.put(SetTpSrc.class, new SetTpSrc(src2));
-        salActions.put(SetTpDst.class, new SetTpDst(dst2));
+        Map<Class<? extends FlowFilterAction>, FlowFilterAction> fltActions =
+            new LinkedHashMap<>();
+        fltActions.put(VTNSetPortSrcAction.class,
+                       new VTNSetPortSrcAction(src2));
+        fltActions.put(VTNSetPortDstAction.class,
+                       new VTNSetPortDstAction(dst2));
 
         for (int flags = TCP_SRC; flags <= TCP_ALL; flags++) {
             TCP pkt = createTCP(src0, dst0);
@@ -157,7 +157,7 @@ public class TcpPacketTest extends TestBase {
             Ethernet ether = createEthernet(pkt);
             PacketContext pctx =
                 createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             TcpPacket tcp1 = (TcpPacket)tcp.clone();
@@ -196,31 +196,31 @@ public class TcpPacketTest extends TestBase {
             assertTrue(pctx.hasMatchField(FlowMatchType.DL_TYPE));
             assertTrue(pctx.hasMatchField(FlowMatchType.IP_PROTO));
 
-            List<Action> filterActions =
-                new ArrayList<Action>(pctx.getFilterActions());
-            assertEquals(new ArrayList<Action>(salActions.values()),
+            List<FlowFilterAction> filterActions =
+                new ArrayList<>(pctx.getFilterActions());
+            assertEquals(new ArrayList<FlowFilterAction>(fltActions.values()),
                          filterActions);
 
             // Actions for unchanged field will be removed if corresponding
             // match type is configured in PacketContext.
-            List<Action> actions = new ArrayList<Action>();
+            List<FlowFilterAction> actions = new ArrayList<>();
             if ((flags & TCP_SRC) != 0) {
-                actions.add(salActions.get(SetTpSrc.class));
+                actions.add(fltActions.get(VTNSetPortSrcAction.class));
             }
             if ((flags & TCP_DST) != 0) {
-                actions.add(salActions.get(SetTpDst.class));
+                actions.add(fltActions.get(VTNSetPortDstAction.class));
             }
 
             pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             assertEquals(true, tcp1.commit(pctx));
             assertSame(newPkt, tcp1.getPacket());
-            filterActions = new ArrayList<Action>(pctx.getFilterActions());
+            filterActions = new ArrayList<>(pctx.getFilterActions());
             assertEquals(actions, filterActions);
 
             // The original packet should not be affected.
@@ -253,57 +253,40 @@ public class TcpPacketTest extends TestBase {
     }
 
     /**
-     * Test case for {@link TcpPacket#setMatch(Match, Set)}.
+     * Test case for {@link TcpPacket#createMatch(Set)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testSetMatch() {
+    public void testCreateMatch() throws Exception {
         int src = 12345;
         int dst = 65432;
-        Map<FlowMatchType, MatchField> tpFields = new HashMap<>();
-        tpFields.put(FlowMatchType.TCP_SRC,
-                     new MatchField(MatchType.TP_SRC,
-                                    Short.valueOf((short)src)));
-        tpFields.put(FlowMatchType.TCP_DST,
-                     new MatchField(MatchType.TP_DST,
-                                    Short.valueOf((short)dst)));
+        VTNPortRange sr = new VTNPortRange(src);
+        VTNPortRange dr = new VTNPortRange(dst);
 
         int src1 = 34012;
         int dst1 = 25;
         TCP pkt = createTCP(src, dst);
         TcpPacket tcp = new TcpPacket(pkt);
 
-        Match match = new Match();
         Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
-        tcp.setMatch(match, fields);
-        List<MatchType> matches = match.getMatchesList();
-        assertEquals(0, matches.size());
+        VTNTcpMatch expected = new VTNTcpMatch();
+        assertEquals(expected, tcp.createMatch(fields));
 
-        for (Map.Entry<FlowMatchType, MatchField> entry: tpFields.entrySet()) {
-            FlowMatchType fmtype = entry.getKey();
-            MatchField mfield = entry.getValue();
-            MatchType mtype = mfield.getType();
+        fields = EnumSet.of(FlowMatchType.TCP_SRC);
+        expected = new VTNTcpMatch(sr, null);
+        assertEquals(expected, tcp.createMatch(fields));
 
-            match = new Match();
-            fields = EnumSet.of(fmtype);
-            tcp.setMatch(match, fields);
-            matches = match.getMatchesList();
-            assertEquals(1, matches.size());
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.TCP_DST);
+        expected = new VTNTcpMatch(null, dr);
+        assertEquals(expected, tcp.createMatch(fields));
 
-        // setMatch() always has to see the original.
+        // createMatch() always has to see the original.
         tcp.setSourcePort(src1);
         tcp.setDestinationPort(dst1);
-        fields = EnumSet.noneOf(FlowMatchType.class);
-        fields.addAll(tpFields.keySet());
-        match = new Match();
-        tcp.setMatch(match, fields);
-        matches = match.getMatchesList();
-        assertEquals(tpFields.size(), matches.size());
-        for (MatchField mfield: tpFields.values()) {
-            MatchType mtype = mfield.getType();
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.TCP_SRC, FlowMatchType.TCP_DST);
+        expected = new VTNTcpMatch(sr, dr);
+        assertEquals(expected, tcp.createMatch(fields));
     }
 
     /**

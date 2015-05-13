@@ -9,14 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
-import java.util.Set;
-
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
 
-import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Packet;
 
 /**
@@ -35,20 +31,6 @@ public interface CachedPacket extends Cloneable {
      * @return  A {@link Packet} instance.
      */
     Packet getPacket();
-
-    /**
-     * Configure match fields to test protocol header in this packet.
-     *
-     * <p>
-     *   Note that this method creates match fields that matches the original
-     *   packet. Any modification to the packet is ignored.
-     * </p>
-     *
-     * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link FlowMatchType} instances corresponding to
-     *                match fields to be tested.
-     */
-    void setMatch(Match match, Set<FlowMatchType> fields);
 
     /**
      * Finalize modification to the packet.

@@ -25,9 +25,9 @@ import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
 import org.opendaylight.vtn.manager.internal.util.SalNotificationListener;
-import org.opendaylight.vtn.manager.internal.util.concurrent.FutureErrorCallback;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
 
 import org.opendaylight.controller.sal.binding.api.NotificationService;
 
@@ -143,8 +143,8 @@ public final class VTNPacketService extends SalNotificationListener
             setPayload(payload);
 
         Future<RpcResult<Void>> f = pps.transmitPacket(builder.build());
-        FutureErrorCallback<RpcResult<Void>> cb = new FutureErrorCallback<>(
-            LOG, "Failed to transmit packet.");
+        RpcErrorCallback<Void> cb = new RpcErrorCallback<>(
+            LOG, "transmit-packet", "Failed to transmit packet.");
         vtnProvider.setCallback(f, cb);
     }
 

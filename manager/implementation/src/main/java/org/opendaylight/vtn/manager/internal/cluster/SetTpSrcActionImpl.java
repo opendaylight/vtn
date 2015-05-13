@@ -15,8 +15,7 @@ import org.opendaylight.vtn.manager.flow.action.SetTpSrcAction;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
 import org.opendaylight.vtn.manager.internal.packet.cache.PortProtoPacket;
-
-import org.opendaylight.controller.sal.action.SetTpSrc;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 
 /**
  * Implementation of flow action that modifies source port number in
@@ -65,7 +64,7 @@ public final class SetTpSrcActionImpl extends TpPortActionImpl {
             PortProtoPacket pkt = (PortProtoPacket)packet;
             int port = getPort();
             pkt.setSourcePort(port);
-            pctx.addFilterAction(new SetTpSrc(port));
+            pctx.addFilterAction(new VTNSetPortSrcAction(port));
             return true;
         }
 

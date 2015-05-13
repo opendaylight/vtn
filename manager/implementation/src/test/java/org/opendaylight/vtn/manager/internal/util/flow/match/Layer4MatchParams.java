@@ -29,6 +29,16 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.M
 public abstract class Layer4MatchParams<T extends Layer4MatchParams>
     extends TestBase implements Layer4Header, Cloneable {
     /**
+     * Construct a {@link VtnLayer4Match} instance.
+     *
+     * @return  A {@link VtnLayer4Match} instance that contains the settings
+     *          configured in this instance.
+     */
+    public final VtnLayer4Match toVtnLayer4Match() {
+        return toVtnLayer4Match(false);
+    }
+
+    /**
      * Construct a {@link L4Match} instance.
      *
      * @return  A {@link L4Match} instance that contains the settings
@@ -39,10 +49,11 @@ public abstract class Layer4MatchParams<T extends Layer4MatchParams>
     /**
      * Construct a {@link VtnLayer4Match} instance.
      *
+     * @param comp  Complete the settings if {@code true}.
      * @return  A {@link VtnLayer4Match} instance that contains the settings
      *          configured in this instance.
      */
-    public abstract VtnLayer4Match toVtnLayer4Match();
+    public abstract VtnLayer4Match toVtnLayer4Match(boolean comp);
 
     /**
      * Construct a {@link VTNLayer4Match} instance.

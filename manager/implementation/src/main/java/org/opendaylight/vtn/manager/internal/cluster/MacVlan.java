@@ -13,16 +13,22 @@ import java.io.Serializable;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
-import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
-import org.opendaylight.controller.sal.utils.Status;
-import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSource;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowSourceBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.SourceHostFlowsKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanHost;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
 /**
  * {@code MacVlan} class represents a pair of MAC address and VLAN ID.
@@ -37,7 +43,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3174739271911614298L;
+    private static final long serialVersionUID = 436706326583245666L;
 
     /**
      * A pseudo MAC address which represents undefined value.
@@ -94,6 +100,41 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     /**
      * Construct a new instance.
      *
+     * @param vh  A {@link VlanHost} instance.
+     * @throws RpcException
+     *    An invalid value is specified to {@code vh}.
+     */
+    public MacVlan(VlanHost vh) throws RpcException {
+        if (vh == null) {
+            throw MiscUtils.getNullArgumentException("vlan-host");
+        }
+
+        Integer vid = ProtocolUtils.getVlanId(vh.getVlanId());
+        if (vid == null) {
+            throw MiscUtils.getNullArgumentException("VLAN ID");
+        }
+
+        EtherAddress eaddr = EtherAddress.create(vh.getMacAddress());
+        long addr = (eaddr == null) ? UNDEFINED : eaddr.getAddress();
+        encodedValue = encode(addr, vid.shortValue());
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param mac   A MAC address.
+     *              {@code null} is treated as undefined value.
+     * @param vlan  VLAN ID. Only lower 12 bits in the value is used.
+     */
+    public MacVlan(MacAddress mac, int vlan) {
+        EtherAddress eaddr = EtherAddress.create(mac);
+        long addr = (eaddr == null) ? UNDEFINED : eaddr.getAddress();
+        encodedValue = encode(addr, (short)vlan);
+    }
+
+    /**
+     * Construct a new instance.
+     *
      * @param mac  A byte array which represents a MAC address.
      *             {@code null} and all-zeroed byte array are treated as
      *             undefined value.
@@ -113,18 +154,17 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      * </p>
      *
      * @param dlhost  A {@link DataLinkHost} instance.
-     * @throws VTNException
-     *    A invalid value is specified to {@code dlhost}.
+     * @throws RpcException
+     *    An invalid value is specified to {@code dlhost}.
      */
-    public MacVlan(DataLinkHost dlhost) throws VTNException {
+    public MacVlan(DataLinkHost dlhost) throws RpcException {
         if (dlhost == null) {
-            Status s = MiscUtils.argumentIsNull("Data link layer host");
-            throw new VTNException(s);
+            throw MiscUtils.getNullArgumentException("Data link layer host");
         }
 
         if (!(dlhost instanceof EthernetHost)) {
             String msg = "Unsupported address type: " + dlhost;
-            throw new VTNException(StatusCode.BADREQUEST, msg);
+            throw RpcException.getBadArgumentException(msg);
         }
 
         EthernetHost ehost = (EthernetHost)dlhost;
@@ -150,6 +190,23 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      */
     public long getMacAddress() {
         return (encodedValue >>> ProtocolUtils.NBITS_VLAN_ID);
+    }
+
+    /**
+     * Return a MD-SAL MAC address.
+     *
+     * @return  A {@link MacAddress} instance.
+     *          Note that {@code null} is returned if no MAC address is
+     *          configured in this instance.
+     */
+    public MacAddress getMdMacAddress() {
+        long mac = getMacAddress();
+        if (mac == UNDEFINED) {
+            return null;
+        }
+
+        EtherAddress eaddr = new EtherAddress(mac);
+        return eaddr.getMacAddress();
     }
 
     /**
@@ -218,6 +275,33 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
     }
 
     /**
+     * Return a {@link DataFlowSource} instance which represents this instance.
+     *
+     * @return  A {@link DataFlowSource} instance.
+     */
+    public DataFlowSource getDataFlowSource() {
+        VlanId vid = new VlanId(Integer.valueOf((int)getVlan()));
+        return new DataFlowSourceBuilder().
+            setMacAddress(getMdMacAddress()).
+            setVlanId(vid).
+            build();
+    }
+
+    /**
+     * Return a {@link SourceHostFlowsKey} instance which represents this
+     * instance.
+     *
+     * @return  A {@link SourceHostFlowsKey} instance.
+     *          Note that {@code null} is returned if no MAC address is
+     *          configured in this instance.
+     */
+    public SourceHostFlowsKey getSourceHostFlowsKey() {
+        VlanId vid = new VlanId(Integer.valueOf((int)getVlan()));
+        MacAddress mac = getMdMacAddress();
+        return (mac == null) ? null : new SourceHostFlowsKey(mac, vid);
+    }
+
+    /**
      * Encode the specified MAC address in long integer and VLAN ID into
      * a long integer.
      *
@@ -240,11 +324,10 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
      *
      * @param eth  A {@link EthernetAddress} instance.
      * @return     A long integer which represents a MAC address.
-     * @throws VTNException
-     *    A invalid address is specified to {@code eth}.
+     * @throws RpcException
+     *    An invalid address is specified to {@code eth}.
      */
-    private long getMacAddress(EthernetAddress eth)
-        throws VTNException {
+    private long getMacAddress(EthernetAddress eth) throws RpcException {
         byte[] raw = eth.getValue();
         long mac = EtherAddress.toLong(raw);
         String badaddr = null;
@@ -261,7 +344,7 @@ public class MacVlan implements Serializable, Comparable<MacVlan> {
         StringBuilder builder = new StringBuilder(badaddr);
         builder.append(" cannot be specified: ").
             append(MiscUtils.formatMacAddress(mac));
-        throw new VTNException(StatusCode.BADREQUEST, builder.toString());
+        throw RpcException.getBadArgumentException(builder.toString());
     }
 
     /**

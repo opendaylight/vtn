@@ -161,6 +161,18 @@ public final class VTenantUtils {
      * @return  The name of the VTN if found.
      *          {@code null} if not found.
      */
+    public static String getTenantName(InstanceIdentifier<?> path) {
+        VnodeName vname = getVnodeName(path);
+        return (vname == null) ? null : vname.getValue();
+    }
+
+    /**
+     * Return the name of the VTN configured in the given instance identifier.
+     *
+     * @param path  An {@link InstanceIdentifier} instance.
+     * @return  The name of the VTN if found.
+     *          {@code null} if not found.
+     */
     public static String getName(InstanceIdentifier<?> path) {
         VnodeName vname = getVnodeName(path);
         return (vname == null) ? null : vname.getValue();

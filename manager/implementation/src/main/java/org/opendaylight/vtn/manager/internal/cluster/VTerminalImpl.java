@@ -33,17 +33,16 @@ import org.opendaylight.vtn.manager.VTerminalPath;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
-import org.opendaylight.vtn.manager.internal.LogProvider;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
@@ -61,7 +60,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -598441412301746755L;
+    private static final long serialVersionUID = -5282799815711635567L;
 
     /**
      * Logger instance.
@@ -254,7 +253,8 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
             return;
         }
 
-        NodeConnector port = pctx.getIncomingNodeConnector();
+        SalPort ingress = pctx.getIngressPort();
+        NodeConnector port = ingress.getAdNodeConnector();
         short vlan = (short)pctx.getVlan();
 
         try {
@@ -273,7 +273,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
                     append(": Unable to create host: src=").
                     append(src.getText()).
                     append(", ipaddr=").append(iaddr).
-                    append(", port=").append(port.toString()).
+                    append(", port=").append(ingress).
                     append(", vlan=").append((int)vlan);
                 LOG.error(builder.toString(), e);
             }
@@ -480,11 +480,10 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
-     * @return  {@link PacketResult#CONSUME}.
      */
     @Override
-    protected PacketResult handlePacket(VTNManagerImpl mgr, PacketContext pctx,
-                                        final VirtualMapNode vnode) {
+    protected void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
+                                VirtualMapNode vnode) {
         RedirectFlowException rex = pctx.getFirstRedirection();
         if (rex == null) {
             // Notify source host of the packet.
@@ -503,21 +502,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
                     pctx.addMatchField(FlowMatchType.DL_DST);
                 }
 
-                LogProvider lp = new LogProvider() {
-                    @Override
-                    public Logger getLogger() {
-                        return LOG;
-                    }
-
-                    @Override
-                    public String getLogPrefix() {
-                        StringBuilder builder =
-                            new StringBuilder(getContainerName());
-                        builder.append(':').append(vnode.getPath());
-                        return builder.toString();
-                    }
-                };
-                pctx.installDropFlow(mgr, getNodePath(), lp);
+                pctx.installDropFlow();
             } else {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("{}:{}: Disable input from vTerminal interface.",
@@ -530,9 +515,7 @@ public final class VTerminalImpl extends PortBridge<VTerminalIfImpl> {
             VNodePath path = getNodePath();
             logger.warn("{}: Packet was redirected to {}: packet={}",
                         rex.getLogPrefix(), path, pctx.getDescription());
-            pctx.installDropFlow(mgr, path, rex);
+            pctx.installDropFlow();
         }
-
-        return PacketResult.CONSUME;
     }
 }

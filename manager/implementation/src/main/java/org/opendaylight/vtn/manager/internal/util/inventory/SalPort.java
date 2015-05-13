@@ -26,6 +26,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeCon
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnectorKey;
+
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TpId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.link.attributes.Destination;
@@ -184,6 +185,28 @@ public final class SalPort extends SalNode {
     }
 
     /**
+     * Create a {@link SalPort} instance from the given pair of node and port
+     * identifier.
+     *
+     * @param nodeId  A node identifier.
+     * @param portId  A string representation of the port number.
+     * @return  A {@code SalPort} instance on success.
+     *          {@code null} on failure.
+     */
+    public static SalPort create(long nodeId, String portId) {
+        try {
+            long portNum = Long.decode(portId).longValue();
+            if (portNum < 0 || portNum > MAX_PORT) {
+                return null;
+            }
+
+            return new SalPort(nodeId, portNum);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /**
      * Convert a AD-SAL node connector into a {@code SalPort} instance.
      *
      * @param nc  An AD-SAL node connector instance.
@@ -240,7 +263,6 @@ public final class SalPort extends SalNode {
         }
 
         Long l = Long.valueOf(id.substring(index + 1));
-
         long portNum = l.longValue();
         if (portNum < 0 || portNum > MAX_PORT) {
             return null;
@@ -250,7 +272,7 @@ public final class SalPort extends SalNode {
     }
 
     /**
-     * Constructor a new instance.
+     * Construct a new instance.
      *
      * @param nodeId  A node identifier.
      * @param portId  A port identifier.
@@ -261,7 +283,7 @@ public final class SalPort extends SalNode {
     }
 
     /**
-     * Constructor a new instance with specifying a string representation of
+     * Construct a new instance with specifying a string representation of
      * this instance.
      *
      * @param nodeId  A node identifier.
@@ -274,7 +296,7 @@ public final class SalPort extends SalNode {
     }
 
     /**
-     * Constructor a new instance with specifying an AD-SAL node connector
+     * Construct a new instance with specifying an AD-SAL node connector
      * corresponding to this instance.
      *
      * @param nodeId  A node identifier.

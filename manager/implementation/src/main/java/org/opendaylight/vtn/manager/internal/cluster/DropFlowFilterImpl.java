@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,7 +16,6 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.filter.DropFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 
-import org.opendaylight.vtn.manager.internal.LogProvider;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 
@@ -33,7 +32,7 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 4242652818005185484L;
+    private static final long serialVersionUID = -4839160630229249797L;
 
     /**
      * Logger instance.
@@ -104,21 +103,8 @@ public final class DropFlowFilterImpl extends FlowFilterImpl {
                      pctx.getDescription());
         }
 
-        LogProvider lp = new LogProvider() {
-            @Override
-            public Logger getLogger() {
-                return LOG;
-            }
-
-            @Override
-            public String getLogPrefix() {
-                return ffmap.getLogPrefix(getIndex());
-            }
-        };
-
         // Install a flow entry that discards the given packet.
-        FlowFilterNode fnode = ffmap.getParent();
-        pctx.installDropFlow(mgr, fnode.getPath(), lp);
+        pctx.installDropFlow();
 
         throw new DropFlowException();
     }

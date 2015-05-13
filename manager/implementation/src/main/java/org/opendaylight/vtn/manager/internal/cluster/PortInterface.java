@@ -25,27 +25,31 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VNodeRoute;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.IVTNResourceManager;
+import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
+import org.opendaylight.vtn.manager.internal.VTNConfig;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNMatch;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
+import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -384,7 +388,7 @@ public abstract class PortInterface extends AbstractInterface
             VInterfacePath path = getInterfacePath();
             logger.trace("{}:{}: Transmit packet to {} interface: {}",
                          getContainerName(), path, path.getNodeType(),
-                         pc.getDescription(frame, mapped, vlan));
+                         pc.getDescription(frame, egress, vlan));
         }
 
         mgr.transmit(egress, frame);
@@ -452,7 +456,7 @@ public abstract class PortInterface extends AbstractInterface
         PortMapConfig pmconf = portMapConfig;
         NodeConnector mapped = getMappedPort(mgr);
         if (pmconf == null || mapped == null) {
-            rex.notMapped(mgr, pctx);
+            rex.notMapped(pctx);
             throw new DropFlowException();
         }
 
@@ -851,6 +855,25 @@ public abstract class PortInterface extends AbstractInterface
     }
 
     /**
+     * Construct a flow match which specifies the given VLAN.
+     *
+     * @param vid  A VLAN ID.
+     * @return  A {@link VTNMatch} instance on success.
+     *          {@code null} on failure.
+     */
+    private VTNMatch createMatch(int vid) {
+        try {
+            VTNEtherMatch ematch =
+                new VTNEtherMatch(null, null, null, vid, null);
+            return new VTNMatch(ematch, null, null);
+        } catch (RpcException e) {
+            // This should never happen.
+            getLogger().error("Failed to create VLAN match: " + vid, e);
+            return null;
+        }
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -930,33 +953,30 @@ public abstract class PortInterface extends AbstractInterface
         }
 
         VInterfaceState ist = getIfState(mgr);
-        NodeConnector mapped = ist.getMappedPort();
+        SalPort mapped = SalPort.create(ist.getMappedPort());
         if (mapped == null) {
             return;
         }
 
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
-        if (fdb == null) {
-            // This should never happen.
-            Logger logger = getLogger();
-            logger.warn("{}:{}: No flow database", getContainerName(),
-                        getInterfacePath());
+        VTNMatch vmatch = createMatch((int)pmconf.getVlan());
+        if (vmatch == null) {
             return;
         }
 
-        VTNFlow vflow = fdb.create(mgr);
-        Match match = new Match();
-        match.setField(MatchType.IN_PORT, mapped);
+        VTNManagerProvider provider = pctx.getTxContext().getProvider();
+        VTNConfig vcfg = provider.getVTNConfig();
+        EtherAddress mac = vcfg.getControllerMacAddress();
+        int pri = vcfg.getL2FlowPriority();
+        int idle = pctx.getIdleTimeout();
+        int hard = pctx.getHardTimeout();
+        String tname = getTenantName();
 
-        // This code expects MatchType.DL_VLAN_NONE is zero.
-        match.setField(MatchType.DL_VLAN, pmconf.getVlan());
-
-        int pri = mgr.getVTNConfig().getL2FlowPriority();
-        vflow.addFlow(mgr, match, pri);
-        vflow.addVirtualRoute(getIngressRoute());
-        vflow.setEgressVNodeRoute(null);
-        vflow.setTimeout(pctx.getIdleTimeout(), pctx.getHardTimeout());
-        fdb.install(mgr, vflow);
+        VTNFlowBuilder builder =
+            new VTNFlowBuilder(tname, mac, vmatch, pri, idle, hard);
+        builder.addVirtualRoute(getIngressRoute()).
+            setEgressVNodeRoute(null).
+            addDropFlow(mapped);
+        provider.addFlow(builder);
     }
 
     /**
@@ -1134,8 +1154,7 @@ public abstract class PortInterface extends AbstractInterface
                                     VInterfaceState ist, boolean retain) {
         if (retain && !(inFlowFilters.isEmpty() && outFlowFilters.isEmpty())) {
             // REVISIT: Select flow entries affected by obsolete flow filters.
-            VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
-            VTNThreadData.removeFlows(mgr, fdb);
+            VTNThreadData.removeFlows(mgr, getTenantName());
         }
 
         PortMapConfig pmconf = portMapConfig;

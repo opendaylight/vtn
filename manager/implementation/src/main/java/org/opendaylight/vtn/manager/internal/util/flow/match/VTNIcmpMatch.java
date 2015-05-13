@@ -26,7 +26,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnIcmpMatchFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatchBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
@@ -62,6 +62,22 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
      * Construct a new instance that matches every ICMP packet.
      */
     public VTNIcmpMatch() {
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param type  The ICMP type to match.
+     *              {@code null} matches every ICMP type.
+     * @param code  The ICMP code to match.
+     *              {@code null} matches every ICMP code.
+     * @throws RpcException
+     *    The specified condition is invalid.
+     */
+    public VTNIcmpMatch(Short type, Short code) throws RpcException {
+        icmpType = type;
+        icmpCode = code;
+        verify();
     }
 
     /**
@@ -214,10 +230,15 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
     }
 
     /**
-     * {@inheritDoc}
+     * Return a {@link VtnIcmpMatch} instance which contains the condition
+     * represented by this instance.
+     *
+     * @return  A {@link VtnIcmpMatch} instance if this instance contains
+     *          the condition. {@code null} if this instance does not contain
+     *          any condition.
      */
     @Override
-    public void setVtnMatch(VtnFlowMatchBuilder builder) {
+    public VtnIcmpMatch toVtnLayer4Match() {
         VtnIcmpMatchBuilder vimatch = null;
         if (icmpType != null) {
             vimatch = create(vimatch).setType(icmpType);
@@ -227,9 +248,7 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
             vimatch = create(vimatch).setCode(icmpCode);
         }
 
-        if (vimatch != null) {
-            builder.setVtnLayer4Match(vimatch.build());
-        }
+        return (vimatch == null) ? null : vimatch.build();
     }
 
     /**

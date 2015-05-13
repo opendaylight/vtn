@@ -15,6 +15,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -98,7 +99,7 @@ public final class ClearFlowConditionTask extends AbstractTxTask<VtnUpdateType>
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         if (result != null) {
             // REVISIT: Select flow entries affected by the change.
-            addBackgroundTasks(provider.removeFlows(null));
+            addBackgroundTask(provider.removeFlows(new AllFlowRemover()));
         }
     }
 

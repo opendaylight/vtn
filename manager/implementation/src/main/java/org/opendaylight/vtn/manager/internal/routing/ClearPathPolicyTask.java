@@ -17,9 +17,9 @@ import com.google.common.base.Optional;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.PathPolicyFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -91,9 +91,9 @@ public final class ClearPathPolicyTask extends AbstractTxTask<VtnUpdateType>
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         // Remove all flow entries affected by removed path policies.
         if (result != null) {
-            PathPolicyFlowSelector selector =
-                new PathPolicyFlowSelector(removedPolicies);
-            addBackgroundTasks(provider.removeFlows(selector));
+            PathPolicyFlowRemover remover =
+                new PathPolicyFlowRemover(removedPolicies);
+            addBackgroundTask(provider.removeFlows(remover));
         }
     }
 

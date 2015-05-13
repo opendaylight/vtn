@@ -14,6 +14,9 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
@@ -25,6 +28,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeKey;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -36,13 +42,19 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
  */
 public class SalNodeTest extends TestBase {
     /**
-     * Test case for {@link SalNode#create(String)},
-     * {@link SalNode#create(NodeId)}, and
-     * {@link SalNode#getNodeNumber()}.
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link SalNode#create(String)}</li>
+     *   <li>{@link SalNode#create(NodeId)}</li>
+     *   <li>{@link SalNode#create(NodeRef)}</li>
+     *   <li>{@link SalNode#getNodeNumber()}</li>
+     * </ul>
      */
     @Test
     public void testCreateString() {
         assertEquals(null, SalNode.create((NodeId)null));
+        assertEquals(null, SalNode.create((NodeRef)null));
         String[] bad = {
             // Invalid node type.
             null,
@@ -59,9 +71,22 @@ public class SalNodeTest extends TestBase {
         for (String id: bad) {
             assertEquals(null, SalNode.create(id));
             if (id != null) {
-                assertEquals(null, SalNode.create(new NodeId(id)));
+                NodeId nid = new NodeId(id);
+                assertEquals(null, SalNode.create(id));
+
+                InstanceIdentifier<Node> path = InstanceIdentifier.
+                    builder(Nodes.class).
+                    child(Node.class, new NodeKey(nid)).build();
+                NodeRef ref = new NodeRef(path);
+                assertEquals(null, SalNode.create(ref));
             }
         }
+
+        // Invalid node path.
+        InstanceIdentifier<?> invalidPath = FlowUtils.getIdentifier("vtn1");
+        assertEquals(null, SalPort.create(new NodeRef(invalidPath)));
+        invalidPath = PathPolicyUtils.getIdentifier(1);
+        assertEquals(null, SalPort.create(new NodeRef(invalidPath)));
 
         BigInteger[] ids = {
             BigInteger.valueOf(0L),
@@ -76,8 +101,14 @@ public class SalNodeTest extends TestBase {
             SalNode snode = SalNode.create(id);
             assertEquals(dpid.longValue(), snode.getNodeNumber());
 
-            snode = SalNode.create(new NodeId(id));
+            NodeId nid = new NodeId(id);
+            snode = SalNode.create(nid);
             assertEquals(dpid.longValue(), snode.getNodeNumber());
+
+            InstanceIdentifier<Node> path = InstanceIdentifier.
+                builder(Nodes.class).
+                child(Node.class, new NodeKey(nid)).build();
+            NodeRef ref = new NodeRef(path);
         }
     }
 
@@ -162,6 +193,8 @@ public class SalNodeTest extends TestBase {
      *   <li>{@link SalNode#getNodeKey()}</li>
      *   <li>{@link SalNode#getNodeIdentifier()}</li>
      *   <li>{@link SalNode#getNodeRef()}</li>
+     *   <li>{@link SalNode#getFlowNodeIdentifier()}</li>
+     *   <li>{@link SalNode#getFlowTableIdentifier(Short)}</li>
      *   <li>{@link SalNode#getVtnNodeKey()}</li>
      *   <li>{@link SalNode#getVtnNodeIdentifier()}</li>
      *   <li>{@link SalNode#getAdNode()}</li>
@@ -208,6 +241,16 @@ public class SalNodeTest extends TestBase {
 
             NodeRef ref = new NodeRef(path);
             assertEquals(ref, snode.getNodeRef());
+
+            InstanceIdentifier<FlowCapableNode> fnodePath = path.builder().
+                augmentation(FlowCapableNode.class).build();
+            assertEquals(fnodePath, snode.getFlowNodeIdentifier());
+
+            for (short table = 0; table < 10; table++) {
+                InstanceIdentifier<Table> tablePath = fnodePath.builder().
+                    child(Table.class, new TableKey(table)).build();
+                assertEquals(tablePath, snode.getFlowTableIdentifier(table));
+            }
 
             VtnNodeKey vkey = new VtnNodeKey(nid);
             assertEquals(vkey, snode.getVtnNodeKey());

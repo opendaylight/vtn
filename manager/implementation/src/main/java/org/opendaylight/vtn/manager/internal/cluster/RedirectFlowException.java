@@ -123,26 +123,23 @@ public final class RedirectFlowException extends Exception
      * Called when the destination virtual interface of the packet redirection
      * was not found.
      *
-     * @param mgr   VTN manager service.
      * @param pctx  A packet context which contains the packet.
      * @param msg   An error message.
      */
-    public void destinationNotFound(VTNManagerImpl mgr, PacketContext pctx,
-                                    String msg) {
+    public void destinationNotFound(PacketContext pctx, String msg) {
         logger.error("{}: Discard packet: {}: to={}, cond={}, packet={}",
                      prefix, msg, destination, condition,
                      pctx.getDescription());
-        pctx.installDropFlow(mgr, filterPath, this);
+        pctx.installDropFlow();
     }
 
     /**
      * Called when the destination virtual interface of the packet redirection
      * was disabled.
      *
-     * @param mgr   VTN Manager service.
      * @param pctx  A packet context which contains the packet.
      */
-    public void destinationDisabled(VTNManagerImpl mgr, PacketContext pctx) {
+    public void destinationDisabled(PacketContext pctx) {
         logger.error("{}: Discard packet: Destination is disabled: " +
                      "to={}, cond={}, packet={}", prefix, destination,
                      condition, pctx.getDescription());
@@ -151,29 +148,27 @@ public final class RedirectFlowException extends Exception
     /**
      * Called when the number of packet redirections exceeded the limit.
      *
-     * @param mgr   VTN Manager service.
      * @param pctx  A packet context which contains the packet.
      * @param hops  The number of virtual node hops.
      */
-    public void tooManyHops(VTNManagerImpl mgr, PacketContext pctx, int hops) {
+    public void tooManyHops(PacketContext pctx, int hops) {
         logger.error("{}: Discard packet: Too many hops: to={}, cond={}, " +
                      "hops={}, packet={}", prefix, destination, condition,
                      hops, pctx.getDescription());
-        pctx.installDropFlow(mgr, filterPath, this);
+        pctx.installDropFlow();
     }
 
     /**
      * Called when the physical switch port is not mapped to the destination
      * virtual interface.
      *
-     * @param mgr   VTN Manager service.
      * @param pctx  A packet context which contains the packet.
      */
-    public void notMapped(VTNManagerImpl mgr, PacketContext pctx) {
+    public void notMapped(PacketContext pctx) {
         logger.error("{}: Discard packet: Switch port is not mapped: " +
                      "to={}, cond={}, packet={}", prefix, destination,
                      condition, pctx.getDescription());
-        pctx.installDropFlow(mgr, filterPath, this);
+        pctx.installDropFlow();
     }
 
     /**

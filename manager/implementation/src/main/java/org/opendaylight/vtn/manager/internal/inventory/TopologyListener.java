@@ -25,6 +25,7 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -201,7 +202,7 @@ public final class TopologyListener
      */
     @Override
     protected void onUpdated(LinkUpdateTask ectx, ChangedData<Link> data) {
-        throw new IllegalStateException("Should never be called.");
+        throw MiscUtils.unexpected();
     }
 
     /**

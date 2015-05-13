@@ -13,9 +13,9 @@ import java.math.BigInteger;
 import java.util.Objects;
 
 import org.opendaylight.vtn.manager.it.ofmock.OfMockFlow;
+import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
@@ -87,13 +87,7 @@ public final class OfMockFlowEntry implements OfMockFlow {
         idleTimeout = getInteger(flow.getIdleTimeout(), "idle-timeout");
         hardTimeout = getInteger(flow.getHardTimeout(), "hard-timeout");
 
-        BigInteger cookie = BigInteger.ZERO;
-        FlowCookie fc = flow.getCookie();
-        if (fc != null) {
-            cookie = fc.getValue();
-        }
-        flowCookie = cookie;
-
+        flowCookie = OfMockUtils.getCookie(flow.getCookie());
         flowMatch = flow.getMatch();
         flowInstructions = flow.getInstructions();
         flowModFlags = flow.getFlags();

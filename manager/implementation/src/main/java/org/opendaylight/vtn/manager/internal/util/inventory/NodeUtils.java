@@ -16,10 +16,13 @@ import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.NodeConnector;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortLocation;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
 /**
  * {@code NodeUtils} class is a collection of utility class methods
@@ -391,5 +394,57 @@ public final class NodeUtils {
         SwitchPort swport = (id == null && name == null)
             ? null : new SwitchPort(name, type, id);
         return new PortLocation(node, swport);
+    }
+
+    /**
+     * Convert the given {@link VtnPortLocation} instance into a
+     * {@link PortLocation} instance.
+     *
+     * <p>
+     *   Note that this method assumes that the given {@link VtnPortLocation}
+     *   contains valid values.
+     * </p>
+     *
+     * @param vpl  A {@link VtnPortLocation} instance.
+     * @return  A {@link PortLocation} instance.
+     *          {@code null} if {@code vpl} is {@code null}.
+     */
+    public static PortLocation toPortLocation(VtnPortLocation vpl) {
+        if (vpl == null) {
+            return null;
+        }
+
+        SalNode snode = SalNode.create(vpl.getNode());
+        SwitchPort swport = toSwitchPort(vpl);
+        return new PortLocation(snode.getAdNode(), swport);
+    }
+
+    /**
+     * Convert the given {@link VtnSwitchPort} instance into a
+     * {@link SwitchPort} instance.
+     *
+     * @param vswp  A {@link VtnSwitchPort} instance.
+     * @return  A {@link PortLocation} instance or {@code null}.
+     */
+    public static SwitchPort toSwitchPort(VtnSwitchPort vswp) {
+        if (vswp == null) {
+            return null;
+        }
+
+        String id = vswp.getPortId();
+        String name = vswp.getPortName();
+        String type;
+
+        if (id == null) {
+            if (name == null) {
+                return null;
+            }
+            type = null;
+        } else {
+            // AD-SAL node connector type is fixed to OPENFLOW.
+            type = NodeConnectorIDType.OPENFLOW;
+        }
+
+        return new SwitchPort(name, type, id);
     }
 }

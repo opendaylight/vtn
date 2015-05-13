@@ -19,6 +19,7 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
@@ -119,7 +120,7 @@ public final class RemoveFlowMatchTask
         for (VtnUpdateType status: result) {
             if (status != null) {
                 // REVISIT: Select flow entries affected by the change.
-                addBackgroundTasks(provider.removeFlows(null));
+                addBackgroundTask(provider.removeFlows(new AllFlowRemover()));
                 break;
             }
         }

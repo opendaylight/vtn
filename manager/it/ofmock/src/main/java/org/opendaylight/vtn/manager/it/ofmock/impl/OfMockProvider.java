@@ -49,6 +49,8 @@ import org.opendaylight.yangtools.yang.binding.Notification;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
@@ -165,11 +167,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     private boolean  firstRun = true;
 
     /**
-     * AD-SAL inventory manager.
-     */
-    private AdSalInventory  adSalInventory;
-
-    /**
      * Construct a new instance.
      *
      * @param broker  A {@link DataBroker} service instance.
@@ -241,11 +238,12 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      *   {@link #rwLock}.
      * </p>
      *
+     * @param ver   OpenFlow protocol version.
      * @param dpid  The datapath ID of the node.
      * @return  An {@link OfNode} instance.
      */
-    private OfNode createNode(BigInteger dpid) {
-        return createNode(ID_OPENFLOW, dpid);
+    private OfNode createNode(VtnOpenflowVersion ver, BigInteger dpid) {
+        return createNode(ver, ID_OPENFLOW, dpid);
     }
 
     /**
@@ -261,7 +259,25 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * @return  An {@link OfNode} instance.
      */
     private OfNode createNode(String prefix, BigInteger dpid) {
-        OfNode node = new OfNode(this, notificationService, prefix, dpid);
+        return createNode(VtnOpenflowVersion.OF13, prefix, dpid);
+    }
+
+    /**
+     * Create a new node.
+     *
+     * <p>
+     *   This method must be called with holding writer lock of
+     *   {@link #rwLock}.
+     * </p>
+     *
+     * @param ver     OpenFlow protocol version.
+     * @param prefix  Protocol prefix of the node.
+     * @param dpid    The datapath ID of the node.
+     * @return  An {@link OfNode} instance.
+     */
+    private OfNode createNode(VtnOpenflowVersion ver, String prefix,
+                              BigInteger dpid) {
+        OfNode node = new OfNode(this, ver, notificationService, prefix, dpid);
         String nid = node.getNodeIdentifier();
         node.register(rpcRegistry);
         OfNode old = switches.put(nid, node);
@@ -394,13 +410,11 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         // missing inventories.
         for (OfNode node: switches.values()) {
             verify(node);
-            adSalInventory.awaitNode(node.getNodeIdentifier());
         }
 
         List<OfPort> isl = new ArrayList<>();
         for (OfPort port: allPorts) {
             verify(port);
-            adSalInventory.awaitPort(port.getPortIdentifier());
 
             String peer = port.getPeerIdentifier();
             if (peer != null && port.isUp()) {
@@ -504,10 +518,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void close() {
-        if (adSalInventory != null) {
-            adSalInventory.close();
-        }
-
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
@@ -562,37 +572,33 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      */
     @Override
     public void initialize() throws InterruptedException {
-        if (adSalInventory == null) {
-            try {
-                adSalInventory = new AdSalInventory(dataBroker);
-            } catch (RuntimeException e) {
-                String msg = "Failed to initialize AD-SAL inventory: " +
-                    e.getMessage();
-                LOG.error(msg, e);
-                throw e;
-            }
-        }
-
         boolean done = false;
         List<OfPort> allPorts = new ArrayList<>();
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             if (switches.isEmpty()) {
-                // Create a node.
+                VtnOpenflowVersion of13 = VtnOpenflowVersion.OF13;
+                VtnOpenflowVersion[] vers = {
+                    VtnOpenflowVersion.OF10,
+                    of13,
+                };
+
+                // Create an OF13 node.
                 long dpid = DPID_BASE;
-                OfNode node1 = createNode(BigInteger.valueOf(dpid));
+                OfNode node1 = createNode(of13, BigInteger.valueOf(dpid));
                 initialSwitches.add(node1.getNodeIdentifier());
 
                 // Create 2 more nodes.
-                for (int i = 1; i <= 2; i++) {
+                for (int i = 0; i < vers.length; i++) {
                     dpid++;
-                    OfNode node = createNode(BigInteger.valueOf(dpid));
+                    BigInteger nodeId = BigInteger.valueOf(dpid);
+                    OfNode node = createNode(vers[i], nodeId);
                     initialSwitches.add(node.getNodeIdentifier());
 
                     // Link port 1 with node1.
                     OfPort port = node.addPort(1L);
-                    OfPort peer = node1.addPort((long)i);
+                    OfPort peer = node1.addPort((long)(i + 1));
                     allPorts.add(port);
                     allPorts.add(peer);
                     port.setPeerIdentifier(this, peer.getPortIdentifier());
@@ -739,7 +745,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
 
         if (sync) {
             nodeListener.awaitCreated(nid);
-            adSalInventory.awaitNode(nid);
         }
 
         return nid;
@@ -802,7 +807,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
 
         if (sync) {
             portListener.awaitCreated(pid);
-            adSalInventory.awaitPort(pid);
         }
 
         return pid;
@@ -814,7 +818,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     @Override
     public void awaitPortCreated(String pid) throws InterruptedException {
         portListener.awaitCreated(pid);
-        adSalInventory.awaitPort(pid);
     }
 
     /**
@@ -1045,11 +1048,9 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
             // Synchronize AD-SAL inventory information only for AD-SAL FRM.
             for (OfNode node: switches.values()) {
                 String nid = node.getNodeIdentifier();
-                adSalInventory.awaitNode(nid);
 
                 for (OfPort port: node.getOfPorts()) {
                     String pid = port.getPortIdentifier();
-                    adSalInventory.awaitPort(pid);
                 }
             }
         } finally {

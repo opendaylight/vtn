@@ -13,11 +13,23 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetIcmpTypeAction;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.TcpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.UdpPacket;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.sal.packet.ICMP;
+import org.opendaylight.controller.sal.packet.TCP;
+import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -60,6 +72,55 @@ public class SetIcmpTypeActionImplTest extends TestBase {
                 assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
             }
         }
+    }
+
+    /**
+     * Test case for {@link SetIcmpCodeActionImpl#apply(PacketContext)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testApply() throws Exception {
+        PacketContext pctx = Mockito.mock(PacketContext.class);
+        short type = 1;
+        short code = 10;
+        ICMP pkt = new ICMP().setType((byte)type).setCode((byte)code);
+        IcmpPacket icmp = new IcmpPacket(pkt);
+        Mockito.when(pctx.getL4Packet()).thenReturn(icmp);
+
+        short type1 = 13;
+        VTNSetIcmpTypeAction vact = new VTNSetIcmpTypeAction(type1);
+        SetIcmpTypeAction a = new SetIcmpTypeAction(type1);
+        SetIcmpTypeActionImpl act = new SetIcmpTypeActionImpl(a);
+        assertEquals(true, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx).addFilterAction(vact);
+        assertEquals(type1, icmp.getIcmpType());
+        assertEquals(code, icmp.getIcmpCode());
+        Mockito.reset(pctx);
+
+        icmp = null;
+        Mockito.when(pctx.getL4Packet()).thenReturn(icmp);
+        assertEquals(false, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx, Mockito.never()).
+            addFilterAction(Mockito.any(FlowFilterAction.class));
+        Mockito.reset(pctx);
+
+        TcpPacket tcp = new TcpPacket(new TCP());
+        Mockito.when(pctx.getL4Packet()).thenReturn(tcp);
+        assertEquals(false, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx, Mockito.never()).
+            addFilterAction(Mockito.any(FlowFilterAction.class));
+        Mockito.reset(pctx);
+
+        UdpPacket udp = new UdpPacket(new UDP());
+        Mockito.when(pctx.getL4Packet()).thenReturn(udp);
+        assertEquals(false, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx, Mockito.never()).
+            addFilterAction(Mockito.any(FlowFilterAction.class));
     }
 
     /**

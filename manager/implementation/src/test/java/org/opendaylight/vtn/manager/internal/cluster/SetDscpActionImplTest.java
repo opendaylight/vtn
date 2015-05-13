@@ -13,11 +13,20 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetDscpAction;
+import org.opendaylight.vtn.manager.util.Ip4Network;
+
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.cache.Inet4Packet;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -60,6 +69,45 @@ public class SetDscpActionImplTest extends TestBase {
                 assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
             }
         }
+    }
+
+    /**
+     * Test case for {@link SetDscpActionImpl#apply(PacketContext)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testApply() throws Exception {
+        PacketContext pctx = Mockito.mock(PacketContext.class);
+        Ip4Network src = new Ip4Network("10.20.30.40");
+        Ip4Network dst = new Ip4Network("192.168.100.200");
+        short proto = 111;
+        short dscp = 0;
+        byte[] payload = new byte[]{0x01, 0x02, 0x03, 0x04};
+        IPv4 pkt = createIPv4(src.getInetAddress(), dst.getInetAddress(),
+                              proto, (byte)dscp);
+        Inet4Packet ipv4 = new Inet4Packet(pkt);
+        Mockito.when(pctx.getInet4Packet()).thenReturn(ipv4);
+
+        short dscp1 = 63;
+        VTNSetInetDscpAction vact = new VTNSetInetDscpAction(dscp1);
+        SetDscpAction a = new SetDscpAction((byte)dscp1);
+        SetDscpActionImpl act = new SetDscpActionImpl(a);
+        assertEquals(true, act.apply(pctx));
+        Mockito.verify(pctx).getInet4Packet();
+        Mockito.verify(pctx).addFilterAction(vact);
+        assertEquals(src, ipv4.getSourceAddress());
+        assertEquals(dst, ipv4.getDestinationAddress());
+        assertEquals(proto, ipv4.getProtocol());
+        assertEquals(dscp1, ipv4.getDscp());
+        Mockito.reset(pctx);
+
+        ipv4 = null;
+        Mockito.when(pctx.getInet4Packet()).thenReturn(ipv4);
+        assertEquals(false, act.apply(pctx));
+        Mockito.verify(pctx).getInet4Packet();
+        Mockito.verify(pctx, Mockito.never()).
+            addFilterAction(Mockito.any(FlowFilterAction.class));
     }
 
     /**

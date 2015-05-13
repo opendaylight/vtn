@@ -13,6 +13,8 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNTcpMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.TcpHeader;
 
 import org.opendaylight.controller.sal.packet.TCP;
@@ -116,6 +118,20 @@ public final class TcpPacket extends PortProtoPacket<TCP>
     @Override
     protected String getProtocolName() {
         return "TCP";
+    }
+
+    /**
+     * Construct TCP flow match fields.
+     *
+     * @param src  A {@link VTNPortRange} instance which specifies the
+     *             source port.
+     * @param dst  A {@link VTNPortRange} instance which specifies the
+     *             destination port.
+     * @return  A {@link VTNTcpMatch} instance.
+     */
+    @Override
+    protected VTNTcpMatch createMatch(VTNPortRange src, VTNPortRange dst) {
+        return new VTNTcpMatch(src, dst);
     }
 
     /**

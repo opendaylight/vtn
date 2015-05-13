@@ -70,7 +70,6 @@ import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.packet.PacketResult;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
@@ -91,7 +90,7 @@ public final class VTenantImpl implements FlowFilterNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3064904901603741301L;
+    private static final long serialVersionUID = 6897679062908750592L;
 
     /**
      * Logger instance.
@@ -1350,9 +1349,6 @@ public final class VTenantImpl implements FlowFilterNode {
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            // Create flow database for this tenant.
-            mgr.createTenantFlowDB(tenantName);
-
             for (VBridgeImpl vbr: vBridges.values()) {
                 vbr.resume(mgr, ctx);
             }
@@ -1524,11 +1520,10 @@ public final class VTenantImpl implements FlowFilterNode {
      *              A virtual node pointed by {@code ref} must be contained
      *              in this tenant.
      * @param pctx  The context of the received packet.
-     * @return  A {@code PacketResult} which indicates the result.
      * @throws VTNException  An error occurred.
      */
-    public PacketResult receive(VTNManagerImpl mgr, MapReference ref,
-                                PacketContext pctx) throws VTNException {
+    public void receive(VTNManagerImpl mgr, MapReference ref,
+                        PacketContext pctx) throws VTNException {
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -1557,19 +1552,18 @@ public final class VTenantImpl implements FlowFilterNode {
             } else if (path instanceof VTerminalPath) {
                 bridge = getTerminalImpl((VTerminalPath)path);
             } else {
-                return PacketResult.IGNORED;
+                return;
             }
 
-            return bridge.receive(mgr, ref, pctx);
+            bridge.receive(mgr, ref, pctx);
         } catch (DropFlowException e) {
             // The given packet was discarded by a flow filter.
-            return PacketResult.CONSUME;
         } catch (RedirectFlowException e) {
             // The given packet was redirected by a flow filter.
-            return redirect(mgr, pctx, e);
+            redirect(mgr, pctx, e);
         } finally {
             try {
-                pctx.purgeObsoleteFlow(mgr, tenantName);
+                pctx.purgeObsoleteFlow();
             } finally {
                 rdlock.unlock();
             }
@@ -2170,14 +2164,14 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param pctx  The context of the received packet.
      * @param rex   An exception that keeps information about the packet
      *              redirection.
-     * @return  A {@code PacketResult} which indicates the result.
      */
-    private PacketResult redirect(VTNManagerImpl mgr, PacketContext pctx,
-                                  RedirectFlowException rex) {
+    private void redirect(VTNManagerImpl mgr, PacketContext pctx,
+                          RedirectFlowException rex) {
         RedirectFlowException current = rex;
         while (true) {
             try {
-                return redirectImpl(mgr, pctx, current);
+                redirectImpl(mgr, pctx, current);
+                return;
             } catch (DropFlowException e) {
                 // The given packet was discarded by a flow filter.
                 RedirectFlowException first = pctx.getFirstRedirection();
@@ -2185,7 +2179,7 @@ public final class VTenantImpl implements FlowFilterNode {
                 logger.warn("{}: Packet was discarded: packet={}",
                             first.getLogPrefix(), pctx.getDescription());
 
-                return PacketResult.CONSUME;
+                return;
             } catch (RedirectFlowException e) {
                 current = e;
             }
@@ -2204,14 +2198,13 @@ public final class VTenantImpl implements FlowFilterNode {
      * @param pctx  The context of the received packet.
      * @param rex   An exception that keeps information about the packet
      *              redirection.
-     * @return  A {@code PacketResult} which indicates the result.
      * @throws DropFlowException
      *    The given packet was discarded by a DROP flow filter.
      * @throws RedirectFlowException
      *    The given packet was redirected by a REDIRECT flow filter.
      */
-    private PacketResult redirectImpl(VTNManagerImpl mgr, PacketContext pctx,
-                                      RedirectFlowException rex)
+    private void redirectImpl(VTNManagerImpl mgr, PacketContext pctx,
+                              RedirectFlowException rex)
         throws DropFlowException, RedirectFlowException {
         // Determine the destination of the redirection.
         VInterfacePath path = rex.getDestination();
@@ -2223,17 +2216,16 @@ public final class VTenantImpl implements FlowFilterNode {
                 bridge = getTerminalImpl((VTerminalIfPath)path);
             } else {
                 // This should never happen.
-                rex.destinationNotFound(mgr, pctx,
-                                        "Unexpected destination path");
+                rex.destinationNotFound(pctx, "Unexpected destination path");
                 throw new DropFlowException();
             }
         } catch (VTNException e) {
             String emsg = e.getStatus().getDescription();
-            rex.destinationNotFound(mgr, pctx, emsg);
+            rex.destinationNotFound(pctx, emsg);
             throw new DropFlowException(e);
         }
 
-        return bridge.redirect(mgr, pctx, rex);
+        bridge.redirect(mgr, pctx, rex);
     }
 
     // FlowFilterNode

@@ -75,18 +75,18 @@ public abstract class AbstractTxTask<T> implements TxTask<T> {
     }
 
     /**
-     * Add background tasks started by this task.
+     * Add a background task started by this task.
      *
-     * @param tasks  A list of {@link VTNFuture} instances associated with
-     *               background tasks.
+     * @param future  A {@link VTNFuture} instance associated with background
+     *                task.
      */
-    protected final void addBackgroundTasks(List<VTNFuture<?>> tasks) {
+    protected final void addBackgroundTask(VTNFuture<?> future) {
         List<VTNFuture<?>> list = backgroundTasks;
         if (list == null) {
-            list = new ArrayList<VTNFuture<?>>();
+            list = new ArrayList<>();
             backgroundTasks = list;
         }
-        list.addAll(tasks);
+        list.add(future);
     }
 
     // TxTask

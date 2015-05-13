@@ -90,7 +90,7 @@ public abstract class MultiDataStoreListener<T extends DataObject, C>
     private <D extends DataObject> IdentifiedData<D> createIdentifiedData(
         InstanceIdentifier<D> path, DataObject value, Object label) {
         try {
-            return new IdentifiedData<D>(path, value);
+            return IdentifiedData.create(path, value);
         } catch (DataTypeMismatchException e) {
             unexpectedData(path, e.getObject(), label);
         }
@@ -112,7 +112,7 @@ public abstract class MultiDataStoreListener<T extends DataObject, C>
     private <D extends DataObject> ChangedData<D> createChangedData(
         InstanceIdentifier<D> path, DataObject value, DataObject old) {
         try {
-            return new ChangedData<D>(path, value, old);
+            return ChangedData.create(path, value, old);
         } catch (DataTypeMismatchException e) {
             unexpectedData(path, e.getObject(), VtnUpdateType.CHANGED);
         }

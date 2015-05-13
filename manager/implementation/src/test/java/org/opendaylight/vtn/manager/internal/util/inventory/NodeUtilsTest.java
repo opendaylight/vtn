@@ -33,9 +33,15 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.checkNodeType;
 import static org.opendaylight.vtn.manager.internal.util.inventory.NodeUtils.checkNodeConnectorType;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalIngressPortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortLocation;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 
 /**
  * JUnit test for {@link NodeUtils}.
@@ -371,8 +377,8 @@ public class NodeUtilsTest extends TestBase {
      * Test case for {@link NodeUtils#toPortLocation(VtnPortDesc)}.
      */
     @Test
-    public void testToPortLocation() {
-        assertEquals(null, NodeUtils.toPortLocation(null));
+    public void testToPortLocation1() {
+        assertEquals(null, NodeUtils.toPortLocation((VtnPortDesc)null));
 
         String[] invalid = {
             "unknown,,",
@@ -412,6 +418,66 @@ public class NodeUtilsTest extends TestBase {
                     PortLocation expected = new PortLocation(node, swport);
                     assertEquals(expected, NodeUtils.toPortLocation(vdesc));
                 }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link NodeUtils#toPortLocation(VtnPortLocation)}.
+     */
+    @Test
+    public void testToPortLocation2() {
+        assertEquals(null, NodeUtils.toPortLocation((VtnPortLocation)null));
+
+        String[] names = {
+            null, "port-1", "port-2",
+        };
+        String[] ids = {
+            null, "1", "2",
+        };
+
+        for (long dpid = 1L; dpid <= 10L; dpid++) {
+            SalNode snode = new SalNode(dpid);
+            Node node = snode.getAdNode();
+            NodeId nodeId = snode.getNodeId();
+            for (String id: ids) {
+                String type = (id == null)
+                    ? null : NodeConnectorIDType.OPENFLOW;
+                for (String name: names) {
+                    VtnPortLocation vploc = new DataIngressPortBuilder().
+                        setNode(nodeId).setPortId(id).setPortName(name).
+                        build();
+                    SwitchPort swport = (id == null && name == null)
+                        ? null : new SwitchPort(name, type, id);
+                    PortLocation expected = new PortLocation(node, swport);
+                    assertEquals(expected, NodeUtils.toPortLocation(vploc));
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link NodeUtils#toSwitchPort(VtnSwitchPort)}.
+     */
+    @Test
+    public void testToSwitchPort() {
+        assertEquals(null, NodeUtils.toSwitchPort((VtnSwitchPort)null));
+
+        String[] names = {
+            null, "port-1", "port-2",
+        };
+        String[] ids = {
+            null, "1", "2",
+        };
+
+        for (String id: ids) {
+            String type = (id == null) ? null : NodeConnectorIDType.OPENFLOW;
+            for (String name: names) {
+                VtnSwitchPort vswp = new PhysicalIngressPortBuilder().
+                    setPortId(id).setPortName(name).build();
+                SwitchPort expected = (id == null && name == null)
+                    ? null : new SwitchPort(name, type, id);
+                assertEquals(expected, NodeUtils.toSwitchPort(vswp));
             }
         }
     }

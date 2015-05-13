@@ -126,6 +126,7 @@ public class VTNInet4MatchTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
+     *   <li>{@link VTNInet4Match#VTNInet4Match(IpNetwork,IpNetwork,Short,Short)}</li>
      *   <li>{@link VTNInet4Match#VTNInet4Match(Inet4Match)}</li>
      *   <li>{@link VTNInet4Match#setMatch(MatchBuilder)}</li>
      *   <li>{@link VTNInetMatch#create(org.opendaylight.vtn.manager.flow.cond.InetMatch)}</li>
@@ -155,10 +156,30 @@ public class VTNInet4MatchTest extends TestBase {
             params.setSourceAddress(src);
             for (Short spfx: srcPfx) {
                 params.setSourcePrefix(spfx);
+                IpNetwork srcNw;
+                if (src == null) {
+                    srcNw = null;
+                } else if (spfx == null) {
+                    srcNw = src;
+                } else {
+                    srcNw = new Ip4Network(src.getInetAddress(),
+                                           spfx.intValue());
+                }
+
                 for (IpNetwork dst: dsts) {
                     params.setDestinationAddress(dst);
                     for (Short dpfx: dstPfx) {
                         params.setDestinationPrefix(dpfx);
+                        IpNetwork dstNw;
+                        if (dst == null) {
+                            dstNw = null;
+                        } else if (dpfx == null) {
+                            dstNw = dst;
+                        } else {
+                            dstNw = new Ip4Network(dst.getInetAddress(),
+                                                   dpfx.intValue());
+                        }
+
                         for (Short proto: protocols) {
                             params.setProtocol(proto);
                             for (Short dscp: dscps) {
@@ -167,6 +188,10 @@ public class VTNInet4MatchTest extends TestBase {
                                 VTNInet4Match imatch = new VTNInet4Match(im);
                                 params.verify(imatch);
                                 assertEquals(imatch, VTNInetMatch.create(im));
+
+                                VTNInet4Match imatch1 = new VTNInet4Match(
+                                    srcNw, dstNw, proto, dscp);
+                                assertEquals(imatch, imatch1);
                             }
                         }
                     }
@@ -262,6 +287,17 @@ public class VTNInet4MatchTest extends TestBase {
                 assertEquals("Invalid IP protocol number: " + proto,
                              st.getDescription());
             }
+
+            try {
+                new VTNInet4Match(null, null, proto, null);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid IP protocol number: " + proto,
+                             st.getDescription());
+            }
         }
 
         // Invalid DSCP values.
@@ -276,6 +312,17 @@ public class VTNInet4MatchTest extends TestBase {
             assertEquals(null, im.getValidationStatus());
             try {
                 new VTNInet4Match(im);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid IP DSCP field value: " + dscp,
+                             st.getDescription());
+            }
+
+            try {
+                new VTNInet4Match(null, null, null, dscp);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());

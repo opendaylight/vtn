@@ -174,9 +174,7 @@ public final class PathMapEvaluator {
             LOG.trace("{}.{}: Path map {}: cond={}, policy={}, " +
                       "packet={}", tname, vpm.getIndex(),
                       (rr == null) ? "not matched" : "matched",
-                      cond, policy,
-                      packetContext.getDescription(
-                          packetContext.getIncomingNodeConnector()));
+                      cond, policy, packetContext.getDescription());
         }
 
         return rr;

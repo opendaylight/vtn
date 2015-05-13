@@ -15,13 +15,14 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNLayer4PortMatch;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.action.SetTpDst;
-import org.opendaylight.controller.sal.action.SetTpSrc;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Packet;
 
 /**
@@ -346,6 +347,20 @@ public abstract class PortProtoPacket<T extends Packet>
     protected abstract String getProtocolName();
 
     /**
+     * Construct flow match fields.
+     *
+     * @param src  A {@link VTNPortRange} instance which specifies the
+     *             source port.
+     * @param dst  A {@link VTNPortRange} instance which specifies the
+     *             destination port.
+     * @return  A {@link VTNLayer4PortMatch} instance.
+     * @throws RpcException  Invalid value is specified.
+     */
+    protected abstract VTNLayer4PortMatch createMatch(VTNPortRange src,
+                                                      VTNPortRange dst)
+        throws RpcException;
+
+    /**
      * Return a flow match type corresponding to the source port.
      *
      * @return  A {@link FlowMatchType} instance.
@@ -387,34 +402,6 @@ public abstract class PortProtoPacket<T extends Packet>
     // CachedPacket
 
     /**
-     * Configure match fields to test TCP/UDP header in this packet.
-     *
-     * <p>
-     *   Note that this method creates match fields that matches the original
-     *   packet. Any modification to the packet is ignored.
-     * </p>
-     *
-     * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link FlowMatchType} instances corresponding to
-     *                match fields to be tested.
-     */
-    @Override
-    public final void setMatch(Match match, Set<FlowMatchType> fields) {
-        Values v = values;
-        v.fill(this);
-
-        if (fields.contains(getSourceMatchType())) {
-            // Test source port number.
-            match.setField(MatchType.TP_SRC, (short)v.getSourcePort());
-        }
-
-        if (fields.contains(getDestinationMatchType())) {
-            // Test destination port number.
-            match.setField(MatchType.TP_DST, (short)v.getDestinationPort());
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -437,7 +424,7 @@ public abstract class PortProtoPacket<T extends Packet>
                 // Source port in the original packet is unchanged and it will
                 // be specified in flow match. So we don't need to configure
                 // SET_TP_SRC action.
-                pctx.removeFilterAction(SetTpSrc.class);
+                pctx.removeFilterAction(VTNSetPortSrcAction.class);
             }
 
             int dst = modifiedValues.getDestinationPort();
@@ -452,7 +439,7 @@ public abstract class PortProtoPacket<T extends Packet>
                 // Destination port in the original packet is unchanged and
                 // it will be specified in flow match. So we don't need to
                 // configure SET_TP_DST action.
-                pctx.removeFilterAction(SetTpDst.class);
+                pctx.removeFilterAction(VTNSetPortDstAction.class);
             }
         }
 
@@ -480,6 +467,27 @@ public abstract class PortProtoPacket<T extends Packet>
             // This should never happen.
             throw new IllegalStateException("clone() failed", e);
         }
+    }
+
+    // L4Packet
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public final VTNLayer4PortMatch createMatch(Set<FlowMatchType> fields)
+        throws RpcException {
+        Values v = values;
+        v.fill(this);
+
+        VTNPortRange src = (fields.contains(getSourceMatchType()))
+            ? new VTNPortRange(v.getSourcePort())
+            : null;
+        VTNPortRange dst = (fields.contains(getDestinationMatchType()))
+            ? new VTNPortRange(v.getDestinationPort())
+            : null;
+
+        return createMatch(src, dst);
     }
 
     // Layer4PortHeader

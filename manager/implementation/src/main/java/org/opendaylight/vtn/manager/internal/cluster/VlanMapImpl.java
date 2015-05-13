@@ -330,9 +330,10 @@ public final class VlanMapImpl implements VBridgeNode {
             }
 
             if (LOG.isTraceEnabled()) {
+                SalPort sport = SalPort.create(nc);
                 LOG.trace("{}:{}: Transmit packet to VLAN mapping: {}",
                           mgr.getContainerName(), mapPath,
-                          pc.getDescription(frame, nc, vlan));
+                          pc.getDescription(frame, sport, vlan));
             }
             mgr.transmit(nc, frame);
         }

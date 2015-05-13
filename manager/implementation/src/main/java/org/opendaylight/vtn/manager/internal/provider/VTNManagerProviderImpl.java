@@ -9,11 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.provider;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.FlowSelector;
+import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
@@ -34,16 +33,19 @@ import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
 import org.opendaylight.vtn.manager.internal.config.VTNConfigManager;
+import org.opendaylight.vtn.manager.internal.flow.VTNFlowManager;
 import org.opendaylight.vtn.manager.internal.flow.cond.FlowCondManager;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryManager;
 import org.opendaylight.vtn.manager.internal.packet.VTNPacketService;
 import org.opendaylight.vtn.manager.internal.routing.PathMapManager;
 import org.opendaylight.vtn.manager.internal.routing.VTNRoutingManager;
+import org.opendaylight.vtn.manager.internal.util.VTNTimer;
 import org.opendaylight.vtn.manager.internal.util.concurrent.CanceledFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCallbackTask;
 import org.opendaylight.vtn.manager.internal.util.concurrent.FutureCanceller;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNThreadPool;
+import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.tx.ReadTxContext;
@@ -60,6 +62,8 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
 
 /**
  * MD-SAL service provider of the VTN Manager.
@@ -88,6 +92,12 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      * started by the MD-SAL transaction task.
      */
     private static final long  TX_BGTASK_TIMEOUT = 30000L;
+
+    /**
+     * The number of milliseconds to wait for completion of the global timer
+     * thread.
+     */
+    private static final long  TIMER_SHUTDOWN_TIMEOUT = 10000L;
 
     /**
      * Data broker SAL service.
@@ -132,7 +142,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     /**
      * The global timer.
      */
-    private final AtomicReference<Timer>  globalTimer;
+    private final VTNTimer  globalTimer;
 
     /**
      * Registry for internal subsystems.
@@ -161,8 +171,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         globalExecutor =
             new VTNThreadPool("VTN Async Thread", THREAD_POOL_MAXSIZE,
                               THREAD_POOL_KEEPALIVE);
-        globalTimer = new AtomicReference<Timer>(
-            new Timer("Global timer for VTN provider"));
+        globalTimer = new VTNTimer("Global timer for VTN provider");
 
         TxQueueImpl globq =  new TxQueueImpl("VTN Main", this);
         globalQueue = new AtomicReference<TxQueueImpl>(globq);
@@ -174,8 +183,11 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         inventoryManager = new AtomicReference<VTNInventoryManager>(vim);
 
         // Initialize internal subsystems.
+        VTNFlowManager vfm;
         try {
-            subSystems.add(new VTenantManager(this)).
+            vfm = new VTNFlowManager(this, nsv);
+            subSystems.add(vfm).
+                add(new VTenantManager(this)).
                 add(new VTNRoutingManager(this)).
                 add(new FlowCondManager(this)).
                 add(new PathMapManager(this));
@@ -184,6 +196,10 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             subSystems.close();
             throw e;
         }
+
+        // Start inventory service.
+        vim.addListener(vfm);
+        vim.start();
 
         // Resume configurations.
         List<VTNFuture<?>> futures = subSystems.initConfig(master);
@@ -226,7 +242,6 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         AtomicReference<?>[] refs = {
             configManager,
             globalQueue,
-            globalTimer,
             packetService,
         };
         for (AtomicReference<?> ref: refs) {
@@ -235,12 +250,16 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             }
         }
 
+        if (!globalTimer.isAvailable()) {
+            return false;
+        }
+
         VTNInventoryManager vim = inventoryManager.get();
         if (vim == null || !vim.isAlive()) {
             return false;
         }
 
-        if (subSystems.isClosed()) {
+        if (subSystems.isClosed() || subSystems.isRpcClosed()) {
             return false;
         }
 
@@ -291,6 +310,23 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
 
         // Stop RPC services.
         subSystems.closeRpc();
+
+        // Shut down the flow service.
+        VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
+        if (vfm != null) {
+            vfm.shutdown();
+        }
+
+        // Shut down the gloabl timer.
+        if (globalTimer.shutdown()) {
+            // Flush all the timers previously scheduled.
+            try {
+                globalTimer.flush(TIMER_SHUTDOWN_TIMEOUT,
+                                  TimeUnit.MILLISECONDS);
+            } catch (VTNException e) {
+                LOG.warn("Failed to synchronize timer tasks.", e);
+            }
+        }
     }
 
     /**
@@ -326,7 +362,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      */
     @Override
     public Timer getTimer() {
-        return globalTimer.get();
+        return globalTimer;
     }
 
     /**
@@ -350,7 +386,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
         } else {
             // Wait for the future using global thread pool.
             FutureCallbackTask<T> task =
-                new FutureCallbackTask<T>(future, cb, globalTimer.get());
+                new FutureCallbackTask<T>(future, cb, globalTimer);
             globalExecutor.executeTask(task);
         }
     }
@@ -395,35 +431,22 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
      * {@inheritDoc}
      */
     @Override
-    public List<VTNFuture<?>> removeFlows(FlowSelector selector) {
-        VTNManagerImpl mgr = vtnManager.get();
-        if (mgr != null) {
-            List<VTNFuture<?>> list = new ArrayList<>();
-            list.addAll(mgr.removeFlows(selector));
-            return list;
-        }
-
-        return Collections.<VTNFuture<?>>emptyList();
+    public VTNFuture<VtnFlowId> addFlow(VTNFlowBuilder builder) {
+        VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
+        return (vfm == null)
+            ? new CanceledFuture<VtnFlowId>()
+            : vfm.addFlow(builder);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public List<VTNFuture<?>> removeFlows(String tname, FlowSelector selector) {
-        if (tname == null) {
-            return removeFlows(selector);
-        }
-
-        VTNManagerImpl mgr = vtnManager.get();
-        if (mgr != null) {
-            VTNFuture<?> task = mgr.removeFlows(tname, selector);
-            if (task != null) {
-                return Collections.<VTNFuture<?>>singletonList(task);
-            }
-        }
-
-        return Collections.<VTNFuture<?>>emptyList();
+    public VTNFuture<Void> removeFlows(FlowRemover remover) {
+        VTNFlowManager vfm = subSystems.get(VTNFlowManager.class);
+        return (vfm == null)
+            ? new CanceledFuture<Void>()
+            : vfm.removeFlows(remover);
     }
 
     /**
@@ -470,17 +493,15 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
     @Override
     public <T> VTNFuture<T> postSync(TxTask<T> task) {
         VTNFuture<T> f = post(task);
-        Timer timer = globalTimer.get();
-        if (timer == null) {
-            return f;
+        if (globalTimer.isAvailable()) {
+            // Schedule a timer task that cancels the wait for the background
+            // tasks.
+            TxSyncFuture<T> bgf = new TxSyncFuture<T>(task, f);
+            FutureCanceller.set(globalTimer, TX_BGTASK_TIMEOUT, bgf);
+            return bgf;
         }
 
-        // Schedule a timer task that cancels the wait for the background
-        // tasks.
-        TxSyncFuture<T> bgf = new TxSyncFuture<T>(task, f);
-        FutureCanceller.set(timer, TX_BGTASK_TIMEOUT, bgf);
-
-        return bgf;
+        return f;
     }
 
     /**
@@ -507,11 +528,7 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
                 txq.close();
             }
 
-            Timer timer = globalTimer.getAndSet(null);
-            if (timer != null) {
-                timer.cancel();
-            }
-
+            globalTimer.cancel();
             globalExecutor.close();
             vtnManager.set(null);
 

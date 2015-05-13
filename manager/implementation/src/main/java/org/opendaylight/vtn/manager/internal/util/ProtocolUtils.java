@@ -25,14 +25,19 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanPcp;
  */
 public final class ProtocolUtils {
     /**
-     * Mask value which represents  valid bits in an ethernet type.
-     */
-    public static final long  MASK_ETHER_TYPE = 0xffffL;
-
-    /**
      * The number of bits in a valid VLAN ID.
      */
     public static final int  NBITS_VLAN_ID = 12;
+
+    /**
+     * The number of bits in IP ECN field.
+     */
+    private static final int  NBITS_IP_ECN = 2;
+
+    /**
+     * Mask value which represents  valid bits in an ethernet type.
+     */
+    public static final long  MASK_ETHER_TYPE = 0xffffL;
 
     /**
      * Mask value which represents a VLAN ID bits in a long integer.
@@ -199,8 +204,8 @@ public final class ProtocolUtils {
      * @param pri  A VLAN priority.
      * @return  {@code true} only if the given VLAN priority is valid.
      */
-    public static boolean isVlanPriorityValid(byte pri) {
-        return (((short)pri & ~MASK_VLAN_PRI) == 0);
+    public static boolean isVlanPriorityValid(short pri) {
+        return ((pri & ~MASK_VLAN_PRI) == 0);
     }
 
     /**
@@ -270,8 +275,8 @@ public final class ProtocolUtils {
      * @param dscp  A DSCP value.
      * @return  {@code true} only if the given DSCP value is valid.
      */
-    public static boolean isDscpValid(byte dscp) {
-        return (((short)dscp & ~MASK_IP_DSCP) == 0);
+    public static boolean isDscpValid(short dscp) {
+        return ((dscp & ~MASK_IP_DSCP) == 0);
     }
 
     /**
@@ -319,6 +324,26 @@ public final class ProtocolUtils {
     private static RpcException invalidIpDscp(short dscp) {
         return RpcException.getBadArgumentException(
             "Invalid IP DSCP field value: " + dscp);
+    }
+
+    /**
+     * Convert the given IP DSCP value into a TOS value.
+     *
+     * @param dscp  A DSCP value.
+     * @return  A TOS value.
+     */
+    public static int dscpToTos(short dscp) {
+        return ((int)(dscp & MASK_IP_DSCP) << NBITS_IP_ECN);
+    }
+
+    /**
+     * Convert the given IP TOS value into a DSCP value.
+     *
+     * @param tos  A TOS value.
+     * @return  A DSCP value.
+     */
+    public static short tosToDscp(int tos) {
+        return (short)((tos >>> NBITS_IP_ECN) & MASK_IP_DSCP);
     }
 
     /**

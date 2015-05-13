@@ -109,7 +109,7 @@ public class VTNFlowMatch extends VTNMatch
                 builder.setVtnInetMatch(inet.toVtnInetMatchBuilder().build());
                 VTNLayer4Match l4 = getLayer4Match();
                 if (l4 != null) {
-                    l4.setVtnMatch(builder);
+                    builder.setVtnLayer4Match(l4.toVtnLayer4Match());
                 }
             }
         }

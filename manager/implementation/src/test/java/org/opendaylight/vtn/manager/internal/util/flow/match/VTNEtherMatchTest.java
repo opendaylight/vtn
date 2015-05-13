@@ -141,6 +141,7 @@ public class VTNEtherMatchTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNEtherMatch#VTNEtherMatch(EthernetMatch)}</li>
+     *   <li>{@link VTNEtherMatch#VTNEtherMatch(EtherAddress,EtherAddress,Integer,Integer,Short)}</li>
      *   <li>{@link VTNEtherMatch#create(Match)}</li>
      *   <li>{@link VTNEtherMatch#setMatch(MatchBuilder)}</li>
      *   <li>Getter methods.</li>
@@ -172,6 +173,11 @@ public class VTNEtherMatchTest extends TestBase {
                         params.setVlanId(vlan).setVlanPriority((Short)null);
                         VTNEtherMatch ematch = params.toVTNEtherMatch();
                         params.verify(ematch);
+
+                        VTNEtherMatch ematch1 =
+                            new VTNEtherMatch(src, dst, type, vlan, null);
+                        assertEquals(ematch, ematch1);
+
                         if (vlan == null ||
                             vlan.intValue() == EtherHeader.VLAN_NONE) {
                             continue;
@@ -181,6 +187,9 @@ public class VTNEtherMatchTest extends TestBase {
                             params.setVlanPriority(pri);
                             ematch = params.toVTNEtherMatch();
                             params.verify(ematch);
+                            ematch1 = new VTNEtherMatch(src, dst, type, vlan,
+                                                        pri);
+                            assertEquals(ematch, ematch1);
                         }
                     }
                 }
@@ -228,6 +237,17 @@ public class VTNEtherMatchTest extends TestBase {
                 assertEquals("Invalid Ethernet type: " + type,
                              st.getDescription());
             }
+
+            try {
+                new VTNEtherMatch(null, null, type, null, null);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid Ethernet type: " + type,
+                             st.getDescription());
+            }
         }
 
         // Invalid VLAN ID.
@@ -243,6 +263,17 @@ public class VTNEtherMatchTest extends TestBase {
             assertEquals(null, em.getValidationStatus());
             try {
                 new VTNEtherMatch(em);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid VLAN ID: " + vid,
+                             st.getDescription());
+            }
+
+            try {
+                new VTNEtherMatch(null, null, null, vid.intValue(), null);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
@@ -273,6 +304,17 @@ public class VTNEtherMatchTest extends TestBase {
                 assertEquals("Invalid VLAN priority: " + pcp,
                              st.getDescription());
             }
+
+            try {
+                new VTNEtherMatch(null, null, null, 10, pcp.shortValue());
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid VLAN priority: " + pcp,
+                             st.getDescription());
+            }
         }
 
         // Specifying VLAN priority without VLAN ID.
@@ -285,6 +327,17 @@ public class VTNEtherMatchTest extends TestBase {
                 assertEquals(null, em.getValidationStatus());
                 try {
                     new VTNEtherMatch(em);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                    Status st = e.getStatus();
+                    assertEquals(StatusCode.BADREQUEST, st.getCode());
+                    assertEquals("VLAN priority requires a valid VLAN ID.",
+                                 st.getDescription());
+                }
+
+                try {
+                    new VTNEtherMatch(null, null, null, null, (short)pcp);
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());

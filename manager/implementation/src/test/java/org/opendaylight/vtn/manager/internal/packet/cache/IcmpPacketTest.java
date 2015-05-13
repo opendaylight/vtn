@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,16 +19,14 @@ import java.util.Set;
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpTypeAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNIcmpMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.SetTpDst;
-import org.opendaylight.controller.sal.action.SetTpSrc;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.ICMP;
 import org.opendaylight.controller.sal.packet.IPv4;
@@ -112,10 +109,12 @@ public class IcmpPacketTest extends TestBase {
         short type2 = 33;
         short code2 = -1;
 
-        Map<Class<? extends Action>, Action> salActions =
-            new LinkedHashMap<Class<? extends Action>, Action>();
-        salActions.put(SetTpSrc.class, new SetTpSrc(type2));
-        salActions.put(SetTpDst.class, new SetTpDst(code2));
+        Map<Class<? extends FlowFilterAction>, FlowFilterAction> fltActions =
+            new LinkedHashMap<>();
+        fltActions.put(VTNSetIcmpTypeAction.class,
+                       new VTNSetIcmpTypeAction(type2));
+        fltActions.put(VTNSetIcmpCodeAction.class,
+                       new VTNSetIcmpCodeAction(code2));
 
         for (int flags = ICMP_TYPE; flags <= ICMP_ALL; flags++) {
             ICMP pkt = createICMP(type0, code0);
@@ -127,7 +126,7 @@ public class IcmpPacketTest extends TestBase {
             Ethernet ether = createEthernet(pkt);
             PacketContext pctx =
                 createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             IcmpPacket icmp1 = icmp.clone();
@@ -169,31 +168,31 @@ public class IcmpPacketTest extends TestBase {
             // updateChecksum() must return false.
             assertFalse(icmp.updateChecksum(null));
 
-            List<Action> filterActions =
-                new ArrayList<Action>(pctx.getFilterActions());
-            assertEquals(new ArrayList<Action>(salActions.values()),
+            List<FlowFilterAction> filterActions =
+                new ArrayList<>(pctx.getFilterActions());
+            assertEquals(new ArrayList<FlowFilterAction>(fltActions.values()),
                          filterActions);
 
             // Actions for unchanged field will be removed if corresponding
             // match type is configured in PacketContext.
-            List<Action> actions = new ArrayList<Action>();
+            List<FlowFilterAction> actions = new ArrayList<>();
             if ((flags & ICMP_TYPE) != 0) {
-                actions.add(salActions.get(SetTpSrc.class));
+                actions.add(fltActions.get(VTNSetIcmpTypeAction.class));
             }
             if ((flags & ICMP_CODE) != 0) {
-                actions.add(salActions.get(SetTpDst.class));
+                actions.add(fltActions.get(VTNSetIcmpCodeAction.class));
             }
 
             pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             assertEquals(true, icmp1.commit(pctx));
             assertSame(newPkt, icmp1.getPacket());
-            filterActions = new ArrayList<Action>(pctx.getFilterActions());
+            filterActions = new ArrayList<>(pctx.getFilterActions());
             assertEquals(actions, filterActions);
 
             // The original packet should not be affected.
@@ -230,55 +229,38 @@ public class IcmpPacketTest extends TestBase {
     }
 
     /**
-     * Test case for {@link IcmpPacket#setMatch(Match, Set)}.
+     * Test case for {@link IcmpPacket#createMatch(Set)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testSetMatch() {
-        short type = 33;
-        short code = 66;
-        Map<FlowMatchType, MatchField> tpFields = new HashMap<>();
-        tpFields.put(FlowMatchType.ICMP_TYPE,
-                     new MatchField(MatchType.TP_SRC, type));
-        tpFields.put(FlowMatchType.ICMP_CODE,
-                     new MatchField(MatchType.TP_DST, code));
+    public void testSetMatch() throws Exception {
+        Short type = Short.valueOf((short)33);
+        Short code = Short.valueOf((short)66);
 
         short type1 = 29;
         short code1 = 1;
         ICMP pkt = createICMP(type, code);
         IcmpPacket icmp = new IcmpPacket(pkt);
 
-        Match match = new Match();
         Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
-        icmp.setMatch(match, fields);
-        List<MatchType> matches = match.getMatchesList();
-        assertEquals(0, matches.size());
+        VTNIcmpMatch expected = new VTNIcmpMatch();
+        assertEquals(expected, icmp.createMatch(fields));
 
-        for (Map.Entry<FlowMatchType, MatchField> entry: tpFields.entrySet()) {
-            FlowMatchType fmtype = entry.getKey();
-            MatchField mfield = entry.getValue();
-            MatchType mtype = mfield.getType();
+        fields = EnumSet.of(FlowMatchType.ICMP_TYPE);
+        expected = new VTNIcmpMatch(type, null);
+        assertEquals(expected, icmp.createMatch(fields));
 
-            match = new Match();
-            fields = EnumSet.of(fmtype);
-            icmp.setMatch(match, fields);
-            matches = match.getMatchesList();
-            assertEquals(1, matches.size());
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.ICMP_CODE);
+        expected = new VTNIcmpMatch(null, code);
+        assertEquals(expected, icmp.createMatch(fields));
 
-        // setMatch() always has to see the original.
+        // createMatch() always has to see the original.
         icmp.setIcmpType(type1);
         icmp.setIcmpCode(code1);
-        fields = EnumSet.noneOf(FlowMatchType.class);
-        fields.addAll(tpFields.keySet());
-        match = new Match();
-        icmp.setMatch(match, fields);
-        matches = match.getMatchesList();
-        assertEquals(tpFields.size(), matches.size());
-        for (MatchField mfield: tpFields.values()) {
-            MatchType mtype = mfield.getType();
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.ICMP_TYPE, FlowMatchType.ICMP_CODE);
+        expected = new VTNIcmpMatch(type, code);
+        assertEquals(expected, icmp.createMatch(fields));
     }
 
     /**

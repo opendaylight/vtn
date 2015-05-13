@@ -61,6 +61,21 @@ public abstract class VTNLayer4PortMatch<H extends Layer4PortHeader>
     }
 
     /**
+     * Construct a new instance.
+     *
+     * @param src  A {@link VTNPortRange} instance which specifies the range
+     *             of the source port number. {@code null} matches every
+     *             source port number.
+     * @param dst  A {@link VTNPortRange} instance which specifies the range
+     *             of the destination port number. {@code null} matches every
+     *             destination port number.
+     */
+    VTNLayer4PortMatch(VTNPortRange src, VTNPortRange dst) {
+        sourcePort = src;
+        destinationPort = dst;
+    }
+
+    /**
      * Construct a new instance from the given {@link PortProtoMatch} instance.
      *
      * @param pmatch   A {@link PortProtoMatch} instance.

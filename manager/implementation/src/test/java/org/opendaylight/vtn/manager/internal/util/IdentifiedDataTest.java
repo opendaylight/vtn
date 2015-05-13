@@ -32,6 +32,7 @@ public class IdentifiedDataTest extends TestBase {
      *
      * <ul>
      *   <li>{@link IdentifiedData#create(Class,InstanceIdentifier,DataObject)}</li>
+     *   <li>{@link IdentifiedData#create(InstanceIdentifier,DataObject)}</li>
      *   <li>{@link IdentifiedData#IdentifiedData(InstanceIdentifier,DataObject)}</li>
      *   <li>{@link IdentifiedData#getIdentifier()}</li>
      *   <li>{@link IdentifiedData#getValue()}</li>
@@ -59,6 +60,11 @@ public class IdentifiedDataTest extends TestBase {
         assertSame(vnode, nodeData.getValue());
         assertSame(nodeData, nodeData.checkType(VtnNode.class));
         assertSame(null, nodeData.checkType(VtnPort.class));
+        nodeData = IdentifiedData.create(nodePath, vnode);
+        assertSame(nodePath, nodeData.getIdentifier());
+        assertSame(vnode, nodeData.getValue());
+        assertSame(nodeData, nodeData.checkType(VtnNode.class));
+        assertSame(null, nodeData.checkType(VtnPort.class));
         assertSame(null, IdentifiedData.create(VtnNode.class, portPath, null));
 
         IdentifiedData<VtnPort> portData =
@@ -72,12 +78,17 @@ public class IdentifiedDataTest extends TestBase {
         assertSame(vport, portData.getValue());
         assertSame(portData, portData.checkType(VtnPort.class));
         assertSame(null, portData.checkType(VtnNode.class));
+        portData = IdentifiedData.create(portPath, vport);
+        assertSame(portPath, portData.getIdentifier());
+        assertSame(vport, portData.getValue());
+        assertSame(portData, portData.checkType(VtnPort.class));
+        assertSame(null, portData.checkType(VtnNode.class));
         assertSame(null, IdentifiedData.create(VtnPort.class, nodePath, null));
 
         DataObject[] objs = {null, vport};
         for (DataObject obj: objs) {
             try {
-                new IdentifiedData<VtnNode>(nodePath, obj);
+                IdentifiedData.create(nodePath, obj);
                 unexpected();
             } catch (DataTypeMismatchException e) {
                 assertEquals(VtnNode.class, e.getTargetType());
@@ -96,7 +107,7 @@ public class IdentifiedDataTest extends TestBase {
         objs = new DataObject[]{null, vnode};
         for (DataObject obj: objs) {
             try {
-                new IdentifiedData<VtnPort>(portPath, obj);
+                IdentifiedData.create(portPath, obj);
                 unexpected();
             } catch (DataTypeMismatchException e) {
                 assertEquals(VtnPort.class, e.getTargetType());
@@ -110,6 +121,12 @@ public class IdentifiedDataTest extends TestBase {
                 assertEquals(VtnPort.class, e.getTargetType());
                 assertSame(obj, e.getObject());
             }
+        }
+
+        try {
+            IdentifiedData.create((InstanceIdentifier<VtnNode>)null, vnode);
+            unexpected();
+        } catch (IllegalArgumentException e) {
         }
     }
 }

@@ -44,11 +44,19 @@ public final class CompositeAutoCloseable implements AutoCloseable {
     /**
      * Add the given {@link AutoCloseable} instance.
      *
+     * <p>
+     *   Note that the given {@link AutoCloseable} will be closed if this
+     *   instance is already closed.
+     * </p>
+     *
      * @param ac  An {@link AutoCloseable} instance.
      */
     public void add(AutoCloseable ac) {
         Set<AutoCloseable> set = closeables.get();
-        if (set != null) {
+        if (set == null) {
+            logger.warn("Already closed: {}", ac);
+            close(ac);
+        } else {
             set.add(ac);
         }
     }
@@ -60,6 +68,19 @@ public final class CompositeAutoCloseable implements AutoCloseable {
      */
     public boolean isClosed() {
         return (closeables.get() == null);
+    }
+
+    /**
+     * Close the given closeable.
+     *
+     * @param ac  An {@link AutoCloseable} to be closed.
+     */
+    private void close(AutoCloseable ac) {
+        try {
+            ac.close();
+        } catch (Exception e) {
+            logger.error("Failed to close instance: " + ac, e);
+        }
     }
 
     // AutoCloseable
@@ -74,12 +95,7 @@ public final class CompositeAutoCloseable implements AutoCloseable {
             // Close all closeables in reverse order.
             LinkedList<AutoCloseable> list = new LinkedList<>(set);
             while (!list.isEmpty()) {
-                AutoCloseable ac = list.removeLast();
-                try {
-                    ac.close();
-                } catch (Exception e) {
-                    logger.error("Failed to close instance: " + ac, e);
-                }
+                close(list.removeLast());
             }
 
             // For gc.

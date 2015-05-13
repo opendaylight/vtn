@@ -15,8 +15,7 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
-
-import org.opendaylight.controller.sal.action.SetDlSrc;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlSrcAction;
 
 /**
  * Implementation of flow action that modifies source MAC address in Ethernet
@@ -63,7 +62,7 @@ public final class SetDlSrcActionImpl extends DlAddrActionImpl {
         EtherPacket ether = pctx.getEtherPacket();
         EtherAddress addr = getAddress();
         ether.setSourceAddress(addr);
-        pctx.addFilterAction(new SetDlSrc(addr.getBytes()));
+        pctx.addFilterAction(new VTNSetDlSrcAction(addr));
         return true;
     }
 }

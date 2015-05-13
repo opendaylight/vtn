@@ -13,11 +13,23 @@ import java.util.HashSet;
 
 import org.junit.Test;
 
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.flow.action.SetTpDstAction;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.TcpPacket;
+import org.opendaylight.vtn.manager.internal.packet.cache.UdpPacket;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.sal.packet.ICMP;
+import org.opendaylight.controller.sal.packet.TCP;
+import org.opendaylight.controller.sal.packet.UDP;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -66,6 +78,67 @@ public class SetTpDstActionImplTest extends TestBase {
                 assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
             }
         }
+    }
+
+    /**
+     * Test case for {@link SetTpDstActionImpl#apply(PacketContext)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testApply() throws Exception {
+        PacketContext pctx = Mockito.mock(PacketContext.class);
+        int src = 12345;
+        int dst = 333;
+        TCP tpkt = new TCP().
+            setSourcePort((short)src).setDestinationPort((short)dst);
+        TcpPacket tcp = new TcpPacket(tpkt);
+        Mockito.when(pctx.getL4Packet()).thenReturn(tcp);
+
+        int dst1 = 65535;
+        VTNSetPortDstAction vact = new VTNSetPortDstAction(dst1);
+        SetTpDstAction a = new SetTpDstAction(dst1);
+        SetTpDstActionImpl act = new SetTpDstActionImpl(a);
+        assertEquals(true, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx).addFilterAction(vact);
+        assertEquals(src, tcp.getSourcePort());
+        assertEquals(dst1, tcp.getDestinationPort());
+        Mockito.reset(pctx);
+
+        src = 12;
+        dst = 60000;
+        UDP upkt = new UDP().
+            setSourcePort((short)src).setDestinationPort((short)dst);
+        UdpPacket udp = new UdpPacket(upkt);
+        Mockito.when(pctx.getL4Packet()).thenReturn(udp);
+
+        dst1 = 12345;
+        vact = new VTNSetPortDstAction(dst1);
+        a = new SetTpDstAction(dst1);
+        act = new SetTpDstActionImpl(a);
+        assertEquals(true, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx).addFilterAction(vact);
+        assertEquals(src, udp.getSourcePort());
+        assertEquals(dst1, udp.getDestinationPort());
+        Mockito.reset(pctx);
+
+        IcmpPacket icmp = new IcmpPacket(new ICMP());
+        Mockito.when(pctx.getL4Packet()).thenReturn(icmp);
+        assertEquals(false, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx, Mockito.never()).
+            addFilterAction(Mockito.any(FlowFilterAction.class));
+        Mockito.reset(pctx);
+
+        icmp = null;
+        Mockito.when(pctx.getL4Packet()).thenReturn(icmp);
+        assertEquals(false, act.apply(pctx));
+        Mockito.verify(pctx).getL4Packet();
+        Mockito.verify(pctx, Mockito.never()).
+            addFilterAction(Mockito.any(FlowFilterAction.class));
+        Mockito.reset(pctx);
     }
 
     /**

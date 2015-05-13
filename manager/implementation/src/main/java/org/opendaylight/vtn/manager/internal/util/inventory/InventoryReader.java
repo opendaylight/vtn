@@ -37,6 +37,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
 /**
  * Helper class to read VTN node and port information using the given
@@ -319,7 +320,7 @@ public final class InventoryReader {
      */
     public List<VtnNode> getVtnNodes() throws VTNException {
         if (allCached) {
-            List<VtnNode> list = new ArrayList<VtnNode>();
+            List<VtnNode> list = new ArrayList<VtnNode>(nodeCache.size());
             for (NodeCacheEntry ent: nodeCache.values()) {
                 list.add(ent.getVtnNode());
             }
@@ -408,6 +409,37 @@ public final class InventoryReader {
         }
 
         return findPort(snode, target, port.getName());
+    }
+
+    /**
+     * Find a {@link SalPort} instance that meets the specified condition.
+     *
+     * @param snode A {@link SalNode} instance corresponding to a physical
+     *              switch.
+     * @param vswp  A {@link VtnSwitchPort} instance which specifies the
+     *              condition to select switch port.
+     * @return  A {@link SalPort} instance if found.
+     *          {@code null} is returned if not found.
+     * @throws VTNException  An error occurred.
+     */
+    public SalPort findPort(SalNode snode, VtnSwitchPort vswp)
+        throws VTNException {
+        if (get(snode) == null) {
+            return null;
+        }
+
+        SalPort target = null;
+        String id = vswp.getPortId();
+        if (id != null) {
+            // Try to construct a SalPort instance.
+            // This returns null if invalid parameter is specified.
+            target = SalPort.create(snode.getNodeNumber(), id);
+            if (target == null) {
+                return null;
+            }
+        }
+
+        return findPort(snode, target, vswp.getPortName());
     }
 
     /**

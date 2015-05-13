@@ -19,14 +19,14 @@ import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.action.SetNwDst;
-import org.opendaylight.controller.sal.action.SetNwSrc;
-import org.opendaylight.controller.sal.action.SetNwTos;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.IPv4;
 
 /**
@@ -276,6 +276,40 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
     }
 
     /**
+     * Construct match fields to test IP header in this packet.
+     *
+     * <p>
+     *   Note that this method creates match fields that matches the original
+     *   packet. Any modification to the packet is ignored.
+     * </p>
+     *
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
+     *                match fields to be tested.
+     * @return  A {@link VTNInet4Match} instance.
+     * @throws RpcException  This packet is broken.
+     */
+    public VTNInet4Match createMatch(Set<FlowMatchType> fields)
+        throws RpcException {
+        Values v = values;
+        v.fill(packet);
+
+        Ip4Network src = (fields.contains(FlowMatchType.IP_SRC))
+            ? v.getSourceAddress()
+            : null;
+        Ip4Network dst = (fields.contains(FlowMatchType.IP_DST))
+            ? v.getDestinationAddress()
+            : null;
+        Short proto = (fields.contains(FlowMatchType.IP_PROTO))
+            ? Short.valueOf(getProtocol())
+            : null;
+        Short dscp = (fields.contains(FlowMatchType.IP_DSCP))
+            ? Short.valueOf(v.getDscp())
+            : null;
+
+        return new VTNInet4Match(src, dst, proto, dscp);
+    }
+
+    /**
      * Return a {@link Values} instance that keeps current values for
      * IPv4 header fields.
      *
@@ -335,46 +369,6 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
     }
 
     /**
-     * Configure match fields to test IP header in this packet.
-     *
-     * <p>
-     *   Note that this method creates match fields that matches the original
-     *   packet. Any modification to the packet is ignored.
-     * </p>
-     *
-     * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link FlowMatchType} instances corresponding to
-     *                match fields to be tested.
-     */
-    @Override
-    public void setMatch(Match match, Set<FlowMatchType> fields) {
-        Values v = values;
-        v.fill(packet);
-
-        if (fields.contains(FlowMatchType.IP_SRC)) {
-            // Test source IP address.
-            match.setField(MatchType.NW_SRC,
-                           v.getSourceAddress().getInetAddress());
-        }
-
-        if (fields.contains(FlowMatchType.IP_DST)) {
-            // Test destination IP address.
-            match.setField(MatchType.NW_DST,
-                           v.getDestinationAddress().getInetAddress());
-        }
-
-        if (fields.contains(FlowMatchType.IP_PROTO)) {
-            // Test IP protocol number.
-            match.setField(MatchType.NW_PROTO, (byte)getProtocol());
-        }
-
-        if (fields.contains(FlowMatchType.IP_DSCP)) {
-            // Test DSCP field.
-            match.setField(MatchType.NW_TOS, (byte)v.getDscp());
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -398,7 +392,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
                 // Source IP address in the original packet is unchanged and
                 // it will be specified in flow match. So we don't need to
                 // configure SET_NW_SRC action.
-                pctx.removeFilterAction(SetNwSrc.class);
+                pctx.removeFilterAction(VTNSetInetSrcAction.class);
             }
 
             oldIp = values.getDestinationAddress();
@@ -415,7 +409,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
                 // Destination IP address in the original packet is unchanged
                 // and it will be specified in flow match. So we don't need to
                 // configure SET_NW_DST action.
-                pctx.removeFilterAction(SetNwDst.class);
+                pctx.removeFilterAction(VTNSetInetDstAction.class);
             }
 
             short dscp = modifiedValues.getDscp();
@@ -430,7 +424,7 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
                 // DSCP value in the original packet is unchanged and it will
                 // be specified in flow match. So we don't need to configure
                 // SET_NW_TOS action.
-                pctx.removeFilterAction(SetNwTos.class);
+                pctx.removeFilterAction(VTNSetInetDscpAction.class);
             }
         }
 
@@ -481,10 +475,18 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
      * {@inheritDoc}
      */
     @Override
-    public void setSourceAddress(IpNetwork ipn) {
+    public boolean setSourceAddress(IpNetwork ipn) {
+        boolean result;
         Ip4Network ip4 = Ip4Network.toIp4Address(ipn);
-        Values v = getModifiedValues();
-        v.setSourceAddress(ip4);
+        if (ip4 == null) {
+            result = false;
+        } else {
+            Values v = getModifiedValues();
+            v.setSourceAddress(ip4);
+            result = true;
+        }
+
+        return result;
     }
 
     /**
@@ -506,10 +508,18 @@ public final class Inet4Packet implements CachedPacket, InetHeader {
      * {@inheritDoc}
      */
     @Override
-    public void setDestinationAddress(IpNetwork ipn) {
+    public boolean setDestinationAddress(IpNetwork ipn) {
+        boolean result;
         Ip4Network ip4 = Ip4Network.toIp4Address(ipn);
-        Values v = getModifiedValues();
-        v.setDestinationAddress(ip4);
+        if (ip4 == null) {
+            result = false;
+        } else {
+            Values v = getModifiedValues();
+            v.setDestinationAddress(ip4);
+            result = true;
+        }
+
+        return result;
     }
 
     /**

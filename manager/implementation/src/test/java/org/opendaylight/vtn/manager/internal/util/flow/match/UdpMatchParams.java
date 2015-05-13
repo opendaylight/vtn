@@ -17,7 +17,6 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatchBuilder;
@@ -51,12 +50,12 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
      * {@inheritDoc}
      */
     @Override
-    public VtnUdpMatch toVtnLayer4Match() {
+    public VtnUdpMatch toVtnLayer4Match(boolean comp) {
         PortRangeParams r = getSourcePortParams();
-        UdpSourceRange src = (r == null) ? null : r.toUdpSourceRange();
+        UdpSourceRange src = (r == null) ? null : r.toUdpSourceRange(comp);
         r = getDestinationPortParams();
         UdpDestinationRange dst = (r == null)
-            ? null : r.toUdpDestinationRange();
+            ? null : r.toUdpDestinationRange(comp);
 
         return new VtnUdpMatchBuilder().setUdpSourceRange(src).
             setUdpDestinationRange(dst).build();
@@ -145,9 +144,7 @@ public final class UdpMatchParams extends Layer4PortMatchParams<UdpMatchParams>
         assertEquals(srcMatch, um.getSourcePort());
         assertEquals(dstMatch, um.getDestinationPort());
 
-        VtnFlowMatchBuilder vfmb = new VtnFlowMatchBuilder();
-        umatch.setVtnMatch(vfmb);
-        VtnLayer4Match vl4 = vfmb.getVtnLayer4Match();
+        VtnLayer4Match vl4 = umatch.toVtnLayer4Match();
         if (vl4 == null) {
             assertEquals(null, srcMatch);
             assertEquals(null, dstMatch);

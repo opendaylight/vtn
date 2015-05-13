@@ -10,8 +10,11 @@
 package org.opendaylight.vtn.manager.internal;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
  * An instance of {@code L2Host} class specifies the location of layer 2 host.
@@ -23,10 +26,37 @@ public final class L2Host {
     private final MacVlan  host;
 
     /**
-     * A {@link NodeConnector} instance corresponding to a switch port
-     * to which the host is connected.
+     * A {@link SalPort} instance corresponding to a switch port to which the
+     * host is connected.
      */
-    private final NodeConnector  port;
+    private final SalPort  port;
+
+    /**
+     * Construct a new instance.
+     *
+     * @param mvlan  A {@link MacVlan} instance.
+     *               Specifying {@code null} results in undefined behavior.
+     * @param sport  A {@link SalPort} instance corresponding to a switch port
+     *               to which the host is connected.
+     *               Specifying {@code null} results in undefined behavior.
+     */
+    public L2Host(MacVlan mvlan, SalPort sport) {
+        host = mvlan;
+        port = sport;
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param mac    A MAC address.
+     * @param vlan   VLAN ID.
+     * @param sport  A {@link SalPort} instance corresponding to a switch port
+     *               to which the host is connected.
+     *               Specifying {@code null} results in undefined behavior.
+     */
+    public L2Host(MacAddress mac, int vlan, SalPort sport) {
+        this(new MacVlan(mac, vlan), sport);
+    }
 
     /**
      * Construct a new instance.
@@ -38,8 +68,7 @@ public final class L2Host {
      *               Specifying {@code null} results in undefined behavior.
      */
     public L2Host(byte[] mac, short vlan, NodeConnector nc) {
-        host = new MacVlan(mac, vlan);
-        port = nc;
+        this(new MacVlan(mac, vlan), SalPort.create(nc));
     }
 
     /**
@@ -52,8 +81,7 @@ public final class L2Host {
      *               Specifying {@code null} results in undefined behavior.
      */
     public L2Host(long mac, short vlan, NodeConnector nc) {
-        host = new MacVlan(mac, vlan);
-        port = nc;
+        this(new MacVlan(mac, vlan), SalPort.create(nc));
     }
 
     /**
@@ -65,8 +93,7 @@ public final class L2Host {
      *               Specifying {@code null} results in undefined behavior.
      */
     public L2Host(short vlan, NodeConnector nc) {
-        host = new MacVlan(MacVlan.UNDEFINED, vlan);
-        port = nc;
+        this(new MacVlan(MacVlan.UNDEFINED, vlan), SalPort.create(nc));
     }
 
     /**
@@ -85,12 +112,12 @@ public final class L2Host {
     }
 
     /**
-     * Return a {@link NodeConnector} instance corresponding to a switch port.
+     * Return a {@link SalPort} instance corresponding to a switch port.
      *
-     * @return  A {@link NodeConnector} instance corresponding to a switch
-     *          port to which the host is connected.
+     * @return  A {@link SalPort} instance corresponding to a switch port to
+     *          which the host is connected.
      */
-    public NodeConnector getPort() {
+    public SalPort getPort() {
         return port;
     }
 

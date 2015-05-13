@@ -128,6 +128,35 @@ public final class VTNEtherMatch {
     }
 
     /**
+     * Construct a new instance.
+     *
+     * @param src   An {@link EtherAddress} instance which specifies the
+     *              source MAC address. {@code null} matches every source
+     *              MAC address.
+     * @param dst   An {@link EtherAddress} instance which specifies the
+     *              destination MAC address. {@code null} matches every
+     *              destination MAC address.
+     * @param type  An {@link Integer} instance whcih specifies the ethernet
+     *              type. {@code null} matches every ethernet type.
+     * @param vid   The VLAN ID to match. {@link EtherHeader#VLAN_NONE} matches
+     *              untagged frame. {@code null} matches every VLAN frame,
+     *              including untagged frame.
+     * @param pcp   The VLAN priority to match. {@code null} matches every
+     *              VLAN priority.
+     * @throws RpcException
+     *    The specified condition is invalid.
+     */
+    public VTNEtherMatch(EtherAddress src, EtherAddress dst, Integer type,
+                         Integer vid, Short pcp) throws RpcException {
+        sourceAddress = src;
+        destinationAddress = dst;
+        etherType = type;
+        vlanId = vid;
+        vlanPriority = pcp;
+        verify();
+    }
+
+    /**
      * Construct a new instance from the given {@link EthernetMatch} instance.
      *
      * @param ematch  An {@link EthernetMatch} instance.

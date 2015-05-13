@@ -9,17 +9,16 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.opendaylight.vtn.manager.internal.FlowSelector;
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
+import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.PathPolicyFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.concurrent.SettableVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -115,11 +114,10 @@ public class RemovePathPolicyTaskTest extends TestBase {
         TopologyGraph topo = new TopologyGraph(provider);
         Integer[] policies = {1, 2, 3};
 
-        VTNFuture<?> f = new SettableVTNFuture<Void>();
-        List<VTNFuture<?>> futures = Collections.<VTNFuture<?>>singletonList(f);
-        Class<PathPolicyFlowSelector> selector = PathPolicyFlowSelector.class;
-        Mockito.when(provider.removeFlows(Mockito.isA(selector))).
-            thenReturn(futures);
+        VTNFuture<Void> f = new SettableVTNFuture<>();
+        Mockito.when(provider.removeFlows(
+                         Mockito.isA(PathPolicyFlowRemover.class))).
+            thenReturn(f);
 
         int times = 0;
         for (Integer id: policies) {
@@ -150,7 +148,7 @@ public class RemovePathPolicyTaskTest extends TestBase {
             assertEquals(0, task.getBackgroundTasks().size());
             Mockito.verifyZeroInteractions(ctx);
             Mockito.verify(provider, Mockito.times(times)).
-                removeFlows(Mockito.any(FlowSelector.class));
+                removeFlows(Mockito.any(FlowRemover.class));
 
             times++;
             topo.removeResolver(id);
@@ -159,7 +157,7 @@ public class RemovePathPolicyTaskTest extends TestBase {
             assertEquals(1, bg.size());
             assertEquals(f, bg.get(0));
             Mockito.verify(provider, Mockito.times(times)).
-                removeFlows(Mockito.isA(selector));
+                removeFlows(Mockito.isA(PathPolicyFlowRemover.class));
         }
     }
 }

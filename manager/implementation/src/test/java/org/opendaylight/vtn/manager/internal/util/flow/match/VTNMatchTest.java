@@ -26,6 +26,8 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.IpNetwork;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.IcmpHeader;
 import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
@@ -43,6 +45,8 @@ import org.opendaylight.controller.sal.utils.EtherTypes;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
 
 /**
  * JUnit test for {@link VTNMatch}.
@@ -79,9 +83,11 @@ public class VTNMatchTest extends TestBase {
      *
      * <ul>
      *   <li>{@link VTNMatch#VTNMatch()}</li>
-     *   <li>{@link VTNMatch#VTNMatch(org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match)}</li>
+     *   <li>{@link VTNMatch#VTNMatch(VTNEtherMatch,VTNInetMatch,VTNLayer4Match)}</li>
+     *   <li>{@link VTNMatch#VTNMatch(Match)}</li>
      *   <li>{@link VTNMatch#set(FlowMatch)}</li>
      *   <li>{@link VTNMatch#complete()}</li>
+     *   <li>{@link VTNMatch#toDataFlowMatchBuilder()}</li>
      *   <li>Getter methods</li>
      * </ul>
      *
@@ -90,6 +96,17 @@ public class VTNMatchTest extends TestBase {
     @Test
     public void testGetter() throws Exception {
         VTNMatch empty = new VTNMatch();
+        assertEquals(null, empty.getEtherMatch());
+        assertEquals(null, empty.getInetMatch());
+        assertEquals(null, empty.getLayer4Match());
+
+        empty = new VTNMatch((VTNEtherMatch)null, (VTNInetMatch)null,
+                             (VTNLayer4Match)null);
+        assertEquals(null, empty.getEtherMatch());
+        assertEquals(null, empty.getInetMatch());
+        assertEquals(null, empty.getLayer4Match());
+
+        empty = new VTNMatch((Match)null);
         assertEquals(null, empty.getEtherMatch());
         assertEquals(null, empty.getInetMatch());
         assertEquals(null, empty.getLayer4Match());
@@ -112,6 +129,9 @@ public class VTNMatchTest extends TestBase {
         EtherMatchParams eparams = new EtherMatchParams().
             setEtherType(Integer.valueOf(etype));
         Inet4MatchParams i4params = new Inet4MatchParams();
+        String msg = "Ethernet type conflict: type=0x" +
+            Integer.toHexString(etype) + ", expected=0x" +
+            Integer.toHexString(EtherTypes.IPv4.intValue());
         params = new MatchParams().setEtherParams(eparams).
             setInet4Params(i4params);
         FlowMatch fm = params.toFlowMatch();
@@ -123,9 +143,18 @@ public class VTNMatchTest extends TestBase {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             Status st = e.getStatus();
             assertEquals(StatusCode.BADREQUEST, st.getCode());
-            String msg = "Ethernet type conflict: type=0x" +
-                Integer.toHexString(etype) + ", expected=0x" +
-                Integer.toHexString(EtherTypes.IPv4.intValue());
+            assertEquals(msg, st.getDescription());
+        }
+
+        VTNEtherMatch em = new VTNEtherMatch(null, null, etype, null, null);
+        VTNInetMatch im = new VTNInet4Match();
+        try {
+            new VTNMatch(em, im, null);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, st.getCode());
             assertEquals(msg, st.getDescription());
         }
 
@@ -133,6 +162,8 @@ public class VTNMatchTest extends TestBase {
         short proto = 17;
         i4params.setProtocol(Short.valueOf(proto));
         TcpMatchParams tparams = new TcpMatchParams();
+        msg = "IP protocol conflict: proto=" + proto + ", expected=" +
+            IPProtocols.TCP.shortValue();
         params = new MatchParams().
             setInet4Params(i4params).
             setLayer4Params(tparams);
@@ -144,8 +175,18 @@ public class VTNMatchTest extends TestBase {
             assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
             Status st = e.getStatus();
             assertEquals(StatusCode.BADREQUEST, st.getCode());
-            String msg = "IP protocol conflict: proto=" + proto +
-                ", expected=" + IPProtocols.TCP.shortValue();
+            assertEquals(msg, st.getDescription());
+        }
+
+        im = new VTNInet4Match(null, null, proto, null);
+        VTNTcpMatch tm = new VTNTcpMatch();
+        try {
+            new VTNMatch(null, im, tm);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(StatusCode.BADREQUEST, st.getCode());
             assertEquals(msg, st.getDescription());
         }
     }
@@ -166,6 +207,23 @@ public class VTNMatchTest extends TestBase {
         HashSet<Object> set = new HashSet<>();
         HashSet<String> keySet = new HashSet<>();
 
+        SalNode[] nodes = {
+            new SalNode(1L),
+            new SalNode(-1L),
+        };
+        int[] priorities = {
+            0, 30, 65535,
+        };
+        SalPort[] ports = {
+            null,
+            new SalPort(1L, 1L),
+            new SalPort(1L, 2L),
+            new SalPort(2L, 1L),
+            new SalPort(2L, 2L),
+            new SalPort(-1L, 1L),
+            new SalPort(-1L, 0xffffff00L),
+        };
+
         Map<MatchParams, MatchParams> cases = MatchParams.createMatches();
         for (Map.Entry<MatchParams, MatchParams> entry: cases.entrySet()) {
             MatchParams params = entry.getKey();
@@ -173,12 +231,29 @@ public class VTNMatchTest extends TestBase {
             VTNMatch vmatch1 = params.toVTNMatch();
             VTNMatch vmatch2 = expected.toVTNMatch();
             testEquals(set, vmatch1, vmatch2);
-            assertEquals(true, keySet.add(vmatch1.getConditionKey()));
-            assertEquals(false, keySet.add(vmatch2.getConditionKey()));
+
+            String key1 = vmatch1.getConditionKey();
+            String key2 = vmatch2.getConditionKey();
+            assertEquals(true, keySet.add(key1));
+            assertEquals(false, keySet.add(key2));
+
+            for (SalNode node: nodes) {
+                for (int pri: priorities) {
+                    for (SalPort port: ports) {
+                        key1 = vmatch1.getFlowKey(node, pri, port);
+                        key2 = vmatch2.getFlowKey(node, pri, port);
+                        assertEquals(true, keySet.add(key1));
+                        assertEquals(false, keySet.add(key2));
+                    }
+                }
+            }
         }
 
         assertEquals(cases.size(), set.size());
-        assertEquals(cases.size(), keySet.size());
+
+        int expected = (ports.length * priorities.length * nodes.length *
+                        cases.size()) + cases.size();
+        assertEquals(expected, keySet.size());
     }
 
     /**

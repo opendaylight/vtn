@@ -65,6 +65,29 @@ public final class VTNInet4Match extends VTNInetMatch {
     }
 
     /**
+     * Construct a new instance.
+     *
+     * @param src    A {@link IpNetwork} instance which specifies the source
+     *               IP address to match.
+     *               {@code null} matches every source IP address.
+     * @param dst    A {@link IpNetwork} instance which specifies the
+     *               destination IP address to match.
+     *               {@code null} matches every destination IP address.
+     * @param proto  A {@link Short} instance which represents the IP protocol
+     *               number to match against packets.
+     *               {@code null} matches every IP protocol.
+     * @param d      A DSCP field value to match.
+     *               {@code null} matches every DSCP field value.
+     * @throws RpcException
+     *    The specified condition is invalid.
+     */
+    public VTNInet4Match(IpNetwork src, IpNetwork dst, Short proto, Short d)
+        throws RpcException {
+        super(src, dst, proto, d);
+        verify();
+    }
+
+    /**
      * Construct a new instance from the given {@link Inet4Match} instance.
      *
      * @param imatch  An {@link Inet4Match} instance.

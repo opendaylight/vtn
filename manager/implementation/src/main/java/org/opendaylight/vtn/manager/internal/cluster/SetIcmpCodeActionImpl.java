@@ -17,8 +17,8 @@ import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.IcmpPacket;
 import org.opendaylight.vtn.manager.internal.packet.cache.L4Packet;
 import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetIcmpCodeAction;
 
-import org.opendaylight.controller.sal.action.SetTpDst;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 /**
@@ -120,7 +120,7 @@ public final class SetIcmpCodeActionImpl extends FlowActionImpl {
         if (packet instanceof IcmpPacket) {
             IcmpPacket icmp = (IcmpPacket)packet;
             icmp.setIcmpCode(code);
-            pctx.addFilterAction(new SetTpDst((int)code));
+            pctx.addFilterAction(new VTNSetIcmpCodeAction(code));
             return true;
         }
 

@@ -290,7 +290,7 @@ public class SettableVTNFuture<T> extends AbstractVTNFuture<T> {
         }
 
         if (cause instanceof Error) {
-            // An fatal error should be thrown.
+            // A fatal error should be thrown.
             throw (Error)cause;
         }
 

@@ -32,6 +32,7 @@ public class ChangedDataTest extends TestBase {
      *
      * <ul>
      *   <li>{@link ChangedData#create(Class,InstanceIdentifier,DataObject,DataObject)}</li>
+     *   <li>{@link ChangedData#create(InstanceIdentifier,DataObject,DataObject)}</li>
      *   <li>{@link ChangedData#ChangedData(InstanceIdentifier,DataObject,DataObject)}</li>
      *   <li>{@link ChangedData#getIdentifier()}</li>
      *   <li>{@link ChangedData#getValue()}</li>
@@ -63,6 +64,12 @@ public class ChangedDataTest extends TestBase {
         assertSame(vnode2, nodeData.getOldValue());
         assertSame(nodeData, nodeData.checkType(VtnNode.class));
         assertSame(null, nodeData.checkType(VtnPort.class));
+        nodeData = ChangedData.create(nodePath, vnode1, vnode2);
+        assertSame(nodePath, nodeData.getIdentifier());
+        assertSame(vnode1, nodeData.getValue());
+        assertSame(vnode2, nodeData.getOldValue());
+        assertSame(nodeData, nodeData.checkType(VtnNode.class));
+        assertSame(null, nodeData.checkType(VtnPort.class));
         assertSame(null,
                    ChangedData.create(VtnNode.class, portPath, null, null));
 
@@ -79,13 +86,19 @@ public class ChangedDataTest extends TestBase {
         assertSame(vport2, portData.getOldValue());
         assertSame(portData, portData.checkType(VtnPort.class));
         assertSame(null, portData.checkType(VtnNode.class));
+        portData = ChangedData.create(portPath, vport1, vport2);
+        assertSame(portPath, portData.getIdentifier());
+        assertSame(vport1, portData.getValue());
+        assertSame(vport2, portData.getOldValue());
+        assertSame(portData, portData.checkType(VtnPort.class));
+        assertSame(null, portData.checkType(VtnNode.class));
         assertSame(null,
                    ChangedData.create(VtnPort.class, nodePath, null, null));
 
         DataObject[] objs = {null, vport1, vport2};
         for (DataObject obj: objs) {
             try {
-                new ChangedData<VtnNode>(nodePath, obj, vnode1);
+                ChangedData.create(nodePath, obj, vnode1);
                 unexpected();
             } catch (DataTypeMismatchException e) {
                 assertEquals(VtnNode.class, e.getTargetType());
@@ -93,7 +106,7 @@ public class ChangedDataTest extends TestBase {
             }
 
             try {
-                new ChangedData<VtnNode>(nodePath, vnode1, obj);
+                ChangedData.create(nodePath, vnode1, obj);
                 unexpected();
             } catch (DataTypeMismatchException e) {
                 assertEquals(VtnNode.class, e.getTargetType());
@@ -120,7 +133,7 @@ public class ChangedDataTest extends TestBase {
         objs = new DataObject[]{null, vnode1, vnode2};
         for (DataObject obj: objs) {
             try {
-                new ChangedData<VtnPort>(portPath, obj, vport1);
+                ChangedData.create(portPath, obj, vport1);
                 unexpected();
             } catch (DataTypeMismatchException e) {
                 assertEquals(VtnPort.class, e.getTargetType());
@@ -128,7 +141,7 @@ public class ChangedDataTest extends TestBase {
             }
 
             try {
-                new ChangedData<VtnPort>(portPath, vport1, obj);
+                ChangedData.create(portPath, vport1, obj);
                 unexpected();
             } catch (DataTypeMismatchException e) {
                 assertEquals(VtnPort.class, e.getTargetType());
@@ -150,6 +163,13 @@ public class ChangedDataTest extends TestBase {
                 assertEquals(VtnPort.class, e.getTargetType());
                 assertSame(obj, e.getObject());
             }
+        }
+
+        try {
+            ChangedData.create((InstanceIdentifier<VtnNode>)null, vnode1,
+                               vnode2);
+            unexpected();
+        } catch (IllegalArgumentException e) {
         }
     }
 }

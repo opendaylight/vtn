@@ -24,7 +24,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnIcmpMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnTcpMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnUdpMatchFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
@@ -173,12 +172,14 @@ public abstract class VTNLayer4Match {
     public abstract L4Match toL4Match();
 
     /**
-     * Configure the condition represented by this instance into the given
-     * VTN flow match builder.
+     * Return a {@link VtnLayer4Match} instance which contains the condition
+     * represented by this instance.
      *
-     * @param builder  A {@link VtnFlowMatchBuilder} instance.
+     * @return  A {@link VtnLayer4Match} instance if this instance contains
+     *          the condition. {@code null} if this instance does not contain
+     *          any condition.
      */
-    public abstract void setVtnMatch(VtnFlowMatchBuilder builder);
+    public abstract VtnLayer4Match toVtnLayer4Match();
 
     /**
      * Configure the condition represented by this instance into the given

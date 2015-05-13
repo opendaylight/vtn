@@ -29,15 +29,10 @@ import org.opendaylight.controller.clustering.services.
 import org.opendaylight.controller.clustering.services.IClusterGlobalServices;
 import org.opendaylight.controller.clustering.services.ICoordinatorChangeAware;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.forwardingrulesmanager.
-    IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.core.ComponentActivatorAbstractBase;
-import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
-import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 
 /**
  * OSGi bundle activator for the VTN implementation.
@@ -141,7 +136,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             Set<String> propSet = new HashSet<String>();
             propSet.add(VTNManagerImpl.CACHE_EVENT);
             propSet.add(VTNManagerImpl.CACHE_MAC);
-            propSet.add(VTNManagerImpl.CACHE_FLOWS);
             props.put("cachenames", propSet);
             props.put("salListenerName", "vtnmanager");
 
@@ -151,7 +145,6 @@ public class Activator extends ComponentActivatorAbstractBase {
             list.add(ICacheUpdateAware.class.getName());
             list.add(IConfigurationContainerAware.class.getName());
             list.add(IHostFinder.class.getName());
-            list.add(IFlowProgrammerListener.class.getName());
             if (containerName.equals(GlobalConstants.DEFAULT.toString())) {
                 // Register dependency to MD-SAL VTN Manager provider.
                 c.add(createServiceDependency().
@@ -175,12 +168,6 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setCallbacks("setResourceManager", "unsetResourceManager").
                   setRequired(true));
 
-            c.add(createServiceDependency().
-                  setService(IConnectionManager.class).
-                  setCallbacks("setConnectionManager",
-                               "unsetConnectionManager").
-                  setRequired(true));
-
             c.add(createContainerServiceDependency(containerName).
                   setService(IVTNManagerAware.class).
                   setCallbacks("addVTNManagerAware", "removeVTNManagerAware").
@@ -195,18 +182,6 @@ public class Activator extends ComponentActivatorAbstractBase {
                   setService(IClusterContainerServices.class).
                   setCallbacks("setClusterContainerService",
                                "unsetClusterContainerService").
-                  setRequired(true));
-
-            c.add(createContainerServiceDependency(containerName).
-                  setService(IForwardingRulesManager.class).
-                  setCallbacks("setForwardingRuleManager",
-                               "unsetForwardingRuleManager").
-                  setRequired(true));
-
-            c.add(createContainerServiceDependency(containerName).
-                  setService(IStatisticsManager.class).
-                  setCallbacks("setStatisticsManager",
-                               "unsetStatisticsManager").
                   setRequired(true));
 
             // VTN manager can run without any host listener.
