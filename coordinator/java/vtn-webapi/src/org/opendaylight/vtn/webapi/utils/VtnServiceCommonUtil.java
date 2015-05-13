@@ -296,6 +296,7 @@ public final class VtnServiceCommonUtil {
 						ApplicationConstants.PUT_METHOD_NAME)) {
 			isMediaTypeCorrect = false;
 			String contentType = request.getContentType();
+			LOG.debug("Media Type : " + contentType);
 			if (contentType != null) {
 				String content[] = contentType
 						.split(ApplicationConstants.SEMI_COLON);
@@ -304,6 +305,8 @@ public final class VtnServiceCommonUtil {
 								.equalsIgnoreCase(ContentTypeEnum.APPLICATION_JSON
 										.getContentType()) || content[0]
 								.equalsIgnoreCase(ContentTypeEnum.APPLICATION_XML
+										.getContentType()) || content[0]
+								.equalsIgnoreCase(ContentTypeEnum.APPLICATION_XML_SCVMM
 										.getContentType()))) {
 					isMediaTypeCorrect = true;
 				}
