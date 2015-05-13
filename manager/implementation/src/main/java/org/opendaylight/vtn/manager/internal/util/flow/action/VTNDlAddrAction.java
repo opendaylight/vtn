@@ -36,10 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
  */
 @XmlRootElement(name = "vtn-dladdr-action")
 @XmlAccessorType(XmlAccessType.NONE)
-@XmlSeeAlso({
-    VTNSetDlSrcAction.class,
-    VTNSetDlDstAction.class,
-})
+@XmlSeeAlso({VTNSetDlSrcAction.class, VTNSetDlDstAction.class})
 public abstract class VTNDlAddrAction extends FlowFilterAction {
     /**
      * The MAC address to be set.

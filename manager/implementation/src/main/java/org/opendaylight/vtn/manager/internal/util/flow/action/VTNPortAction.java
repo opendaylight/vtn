@@ -31,10 +31,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
  */
 @XmlRootElement(name = "vtn-port-action")
 @XmlAccessorType(XmlAccessType.NONE)
-@XmlSeeAlso({
-    VTNSetPortDstAction.class,
-    VTNSetPortSrcAction.class,
-})
+@XmlSeeAlso({VTNSetPortDstAction.class, VTNSetPortSrcAction.class})
 public abstract class VTNPortAction extends FlowFilterAction {
     /**
      * Default port number.

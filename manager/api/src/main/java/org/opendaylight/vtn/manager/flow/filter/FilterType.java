@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,11 +27,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "filtertype")
 @XmlAccessorType(XmlAccessType.NONE)
-@XmlSeeAlso({
-    PassFilter.class,
-    DropFilter.class,
-    RedirectFilter.class
-})
+@XmlSeeAlso({PassFilter.class, DropFilter.class, RedirectFilter.class})
 public abstract class FilterType implements Serializable {
     /**
      * Version number for serialization.

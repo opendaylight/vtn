@@ -190,8 +190,7 @@ public final class FlowMatch
     @XmlElements({
         @XmlElement(name = "tcp", type = TcpMatch.class),
         @XmlElement(name = "udp", type = UdpMatch.class),
-        @XmlElement(name = "icmp", type = IcmpMatch.class)
-    })
+        @XmlElement(name = "icmp", type = IcmpMatch.class)})
     private L4Match  l4Match;
 
     /**

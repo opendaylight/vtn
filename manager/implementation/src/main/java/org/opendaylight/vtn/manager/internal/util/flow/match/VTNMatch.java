@@ -72,8 +72,7 @@ public class VTNMatch {
      * Conditions against IP header.
      */
     @XmlElements({
-        @XmlElement(name = "vtn-inet4-match", type = VTNInet4Match.class)
-    })
+        @XmlElement(name = "vtn-inet4-match", type = VTNInet4Match.class)})
     private VTNInetMatch  inetMatch;
 
     /**
@@ -82,8 +81,7 @@ public class VTNMatch {
     @XmlElements({
         @XmlElement(name = "vtn-tcp-match", type = VTNTcpMatch.class),
         @XmlElement(name = "vtn-udp-match", type = VTNUdpMatch.class),
-        @XmlElement(name = "vtn-icmp-match", type = VTNIcmpMatch.class),
-    })
+        @XmlElement(name = "vtn-icmp-match", type = VTNIcmpMatch.class)})
     private VTNLayer4Match  layer4Match;
 
     /**

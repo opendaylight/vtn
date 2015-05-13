@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.3.0-SNAPSHOT</version>
+    <version>0.4.0-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>distribution.vtn-coordinator</artifactId>
-  <version>6.1.0.0-SNAPSHOT</version>
+  <version>6.2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <profiles>
@@ -47,10 +47,7 @@
 
   <properties>
     <!-- Version of VTN Coordinator. -->
-    <vtn.coordinator.version>6.1.0.0</vtn.coordinator.version>
-
-    <!-- Version of OpenDaylight virtualization edition. -->
-    <odl.virt.version>0.2.0</odl.virt.version>
+    <vtn.coordinator.version>6.2.0.0</vtn.coordinator.version>
 
     <!-- Skip tests entirely unless integrationtests profile is active. -->
     <skipTests>false</skipTests>
@@ -253,10 +250,6 @@
                 <argument>${vtn.build.prefix}</argument>
 
                 <!-- Replace keywords in README.txt. -->
-                <argument>-R</argument>
-                <argument>%ODL_VIRT_VERSION%</argument>
-                <argument>${odl.virt.version}</argument>
-
                 <argument>-R</argument>
                 <argument>%VTN_COORDINATOR_VERSION%</argument>
                 <argument>${vtn.coordinator.version}</argument>

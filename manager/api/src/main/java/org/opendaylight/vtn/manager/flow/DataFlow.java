@@ -378,8 +378,7 @@ public final class DataFlow implements Serializable {
         @XmlElement(name = "tpsrc", type = SetTpSrcAction.class),
         @XmlElement(name = "tpdst", type = SetTpDstAction.class),
         @XmlElement(name = "icmptype", type = SetIcmpTypeAction.class),
-        @XmlElement(name = "icmpcode", type = SetIcmpCodeAction.class)
-    })
+        @XmlElement(name = "icmpcode", type = SetIcmpCodeAction.class)})
     private List<FlowAction>  actions;
 
     /**

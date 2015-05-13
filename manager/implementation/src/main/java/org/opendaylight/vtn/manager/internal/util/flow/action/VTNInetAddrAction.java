@@ -42,18 +42,14 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
  */
 @XmlRootElement(name = "vtn-ipaddr-action")
 @XmlAccessorType(XmlAccessType.NONE)
-@XmlSeeAlso({
-    VTNSetInetDstAction.class,
-    VTNSetInetSrcAction.class,
-})
+@XmlSeeAlso({VTNSetInetDstAction.class, VTNSetInetSrcAction.class})
 public abstract class VTNInetAddrAction extends FlowFilterAction {
     /**
      * The IP address to be set.
      */
     @XmlElements({
         @XmlElement(name = "ipv4-address", type = Ip4Network.class,
-                    required = true)
-    })
+                    required = true)})
     private IpNetwork  address;
 
     /**

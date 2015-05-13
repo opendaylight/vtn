@@ -38,8 +38,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
     VTNSetInetSrcAction.class,
     VTNSetPortDstAction.class,
     VTNSetPortSrcAction.class,
-    VTNSetVlanPcpAction.class,
-})
+    VTNSetVlanPcpAction.class})
 public abstract class FlowFilterAction extends VTNFlowAction
     implements VTNIdentifiable<Integer> {
     /**

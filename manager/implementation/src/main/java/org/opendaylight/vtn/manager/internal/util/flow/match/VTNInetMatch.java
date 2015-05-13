@@ -64,16 +64,14 @@ public abstract class VTNInetMatch {
      * The source IP network to match.
      */
     @XmlElements({
-        @XmlElement(name = "source-network-v4", type = Ip4Network.class)
-    })
+        @XmlElement(name = "source-network-v4", type = Ip4Network.class)})
     private IpNetwork  sourceNetwork;
 
     /**
      * The destination IP network to match.
      */
     @XmlElements({
-        @XmlElement(name = "destination-network-v4", type = Ip4Network.class)
-    })
+        @XmlElement(name = "destination-network-v4", type = Ip4Network.class)})
     private IpNetwork  destinationNetwork;
 
     /**

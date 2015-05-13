@@ -41,8 +41,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
     SetTpDstAction.class,
     SetTpSrcAction.class,
     SetVlanIdAction.class,
-    SetVlanPcpAction.class
-})
+    SetVlanPcpAction.class})
 public abstract class FlowAction implements Serializable {
     /**
      * Version number for serialization.

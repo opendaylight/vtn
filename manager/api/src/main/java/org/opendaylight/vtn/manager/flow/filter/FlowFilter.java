@@ -158,8 +158,7 @@ public final class FlowFilter
     @XmlElements({
         @XmlElement(name = "pass", type = PassFilter.class),
         @XmlElement(name = "drop", type = DropFilter.class),
-        @XmlElement(name = "redirect", type = RedirectFilter.class)
-    })
+        @XmlElement(name = "redirect", type = RedirectFilter.class)})
     private FilterType  filterType;
 
     /**
@@ -323,8 +322,7 @@ public final class FlowFilter
         @XmlElement(name = "tpsrc", type = SetTpSrcAction.class),
         @XmlElement(name = "tpdst", type = SetTpDstAction.class),
         @XmlElement(name = "icmptype", type = SetIcmpTypeAction.class),
-        @XmlElement(name = "icmpcode", type = SetIcmpCodeAction.class)
-    })
+        @XmlElement(name = "icmpcode", type = SetIcmpCodeAction.class)})
     private List<FlowAction>  actions;
 
     /**
