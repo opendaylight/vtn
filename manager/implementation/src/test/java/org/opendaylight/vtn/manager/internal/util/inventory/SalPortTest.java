@@ -16,6 +16,9 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
+import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
@@ -42,6 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.No
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnectorKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeKey;
+
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.LinkId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.TpId;
 import org.opendaylight.yang.gen.v1.urn.tbd.params.xml.ns.yang.network.topology.rev131021.link.attributes.Destination;
@@ -63,6 +67,7 @@ public class SalPortTest extends TestBase {
      *   <li>{@link SalPort#create(Source)}</li>
      *   <li>{@link SalPort#create(Destination)}</li>
      *   <li>{@link SalPort#create(TpId)}</li>
+     *   <li>{@link SalPort#create(long, String)}</li>
      *   <li>{@link SalPort#getNodeNumber()}</li>
      *   <li>{@link SalPort#getPortNumber()}</li>
      *   <li>{@link SalPort#isLogicalPort(NodeConnectorId)}</li>
@@ -81,6 +86,10 @@ public class SalPortTest extends TestBase {
         InstanceIdentifier<?> path = InstanceIdentifier.
             builder(Nodes.class).
             child(Node.class, new NodeKey(new NodeId("test"))).build();
+        assertEquals(null, SalPort.create(new NodeConnectorRef(path)));
+        path = FlowUtils.getIdentifier("vtn1");
+        assertEquals(null, SalPort.create(new NodeConnectorRef(path)));
+        path = PathPolicyUtils.getIdentifier(1);
         assertEquals(null, SalPort.create(new NodeConnectorRef(path)));
 
         String[] bad = {
@@ -142,11 +151,15 @@ public class SalPortTest extends TestBase {
             "LOCAL",
         };
         for (BigInteger dpid: ids) {
+            long nid = dpid.longValue();
+
             // Without specifying port number.
             String id = "openflow:" + dpid;
             for (SalPort sport: createSalPorts(id, false)) {
                 assertEquals(null, sport);
             }
+            assertEquals(null, SalPort.create(nid, (String)null));
+            assertEquals(null, SalPort.create(nid, ""));
 
             // Specifying logical port name.
             for (String l: logicalPorts) {
@@ -154,6 +167,7 @@ public class SalPortTest extends TestBase {
                 for (SalPort sport: createSalPorts(portId, true)) {
                     assertEquals(null, sport);
                 }
+                assertEquals(null, SalPort.create(nid, l));
             }
 
             // Port number is out of range.
@@ -162,15 +176,26 @@ public class SalPortTest extends TestBase {
                 for (SalPort sport: createSalPorts(portId, false)) {
                     assertEquals(null, sport);
                 }
+                assertEquals(null, SalPort.create(nid, String.valueOf(p)));
             }
 
             for (long p: portNums) {
                 String portId = id + ":" + p;
                 for (SalPort sport: createSalPorts(portId, false)) {
                     assertNotNull(sport);
-                    assertEquals(dpid.longValue(), sport.getNodeNumber());
+                    assertEquals(nid, sport.getNodeNumber());
                     assertEquals(p, sport.getPortNumber());
                 }
+
+                SalPort sport = SalPort.create(nid, String.valueOf(p));
+                assertNotNull(sport);
+                assertEquals(nid, sport.getNodeNumber());
+                assertEquals(p, sport.getPortNumber());
+
+                sport = SalPort.create(nid, String.format("0x%x", p));
+                assertNotNull(sport);
+                assertEquals(nid, sport.getNodeNumber());
+                assertEquals(p, sport.getPortNumber());
             }
         }
     }
@@ -178,7 +203,7 @@ public class SalPortTest extends TestBase {
     /**
      * Test case for {@link SalPort#create(org.opendaylight.controller.sal.core.NodeConnector)},
      * {@link SalPort#getNodeNumber()}, and
-     * {@link SalPort#getPortNumber()},
+     * {@link SalPort#getPortNumber()}
      *
      * @throws Exception   An error occurred.
      */

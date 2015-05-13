@@ -29,6 +29,7 @@ import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -255,7 +256,7 @@ public final class VTNRoutingManager
     @Override
     protected void onUpdated(TopologyEventContext ectx,
                              ChangedData<VtnLink> data) {
-        throw new IllegalStateException("Should never be called.");
+        throw MiscUtils.unexpected();
     }
 
     /**

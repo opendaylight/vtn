@@ -142,9 +142,23 @@ public final class PortRangeParams implements Cloneable {
      * @return  A {@link TcpSourceRange} instance.
      */
     public TcpSourceRange toTcpSourceRange() {
+        return toTcpSourceRange(false);
+    }
+
+    /**
+     * Construct a new {@link TcpSourceRange} instance.
+     *
+     * @param comp  Complete the settings if {@code true}.
+     * @return  A {@link TcpSourceRange} instance.
+     */
+    public TcpSourceRange toTcpSourceRange(boolean comp) {
+        Integer to = portTo;
+        if (to == null && comp) {
+            to = portFrom;
+        }
         return new TcpSourceRangeBuilder().
             setPortFrom(getPortNumber(portFrom)).
-            setPortTo(getPortNumber(portTo)).build();
+            setPortTo(getPortNumber(to)).build();
     }
 
     /**
@@ -153,9 +167,23 @@ public final class PortRangeParams implements Cloneable {
      * @return  A {@link TcpDestinationRange} instance.
      */
     public TcpDestinationRange toTcpDestinationRange() {
+        return toTcpDestinationRange(false);
+    }
+
+    /**
+     * Construct a new {@link TcpDestinationRange} instance.
+     *
+     * @param comp  Complete the settings if {@code true}.
+     * @return  A {@link TcpDestinationRange} instance.
+     */
+    public TcpDestinationRange toTcpDestinationRange(boolean comp) {
+        Integer to = portTo;
+        if (to == null && comp) {
+            to = portFrom;
+        }
         return new TcpDestinationRangeBuilder().
             setPortFrom(getPortNumber(portFrom)).
-            setPortTo(getPortNumber(portTo)).build();
+            setPortTo(getPortNumber(to)).build();
     }
 
     /**
@@ -164,9 +192,23 @@ public final class PortRangeParams implements Cloneable {
      * @return  A {@link UdpSourceRange} instance.
      */
     public UdpSourceRange toUdpSourceRange() {
+        return toUdpSourceRange(false);
+    }
+
+    /**
+     * Construct a new {@link UdpSourceRange} instance.
+     *
+     * @param comp  Complete the settings if {@code true}.
+     * @return  A {@link UdpSourceRange} instance.
+     */
+    public UdpSourceRange toUdpSourceRange(boolean comp) {
+        Integer to = portTo;
+        if (to == null && comp) {
+            to = portFrom;
+        }
         return new UdpSourceRangeBuilder().
             setPortFrom(getPortNumber(portFrom)).
-            setPortTo(getPortNumber(portTo)).build();
+            setPortTo(getPortNumber(to)).build();
     }
 
     /**
@@ -178,6 +220,22 @@ public final class PortRangeParams implements Cloneable {
         return new UdpDestinationRangeBuilder().
             setPortFrom(getPortNumber(portFrom)).
             setPortTo(getPortNumber(portTo)).build();
+    }
+
+    /**
+     * Construct a new {@link UdpDestinationRange} instance.
+     *
+     * @param comp  Complete the settings if {@code true}.
+     * @return  A {@link UdpDestinationRange} instance.
+     */
+    public UdpDestinationRange toUdpDestinationRange(boolean comp) {
+        Integer to = portTo;
+        if (to == null && comp) {
+            to = portFrom;
+        }
+        return new UdpDestinationRangeBuilder().
+            setPortFrom(getPortNumber(portFrom)).
+            setPortTo(getPortNumber(to)).build();
     }
 
     /**

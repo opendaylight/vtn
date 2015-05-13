@@ -11,9 +11,10 @@ package org.opendaylight.vtn.manager.internal.routing;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
+import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -155,18 +156,18 @@ public final class SetPathPolicyTask extends PutDataTask<VtnPathPolicy>
     @Override
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         if (result != null) {
-            PathPolicyFlowSelector selector;
+            FlowRemover remover;
             if (VtnUpdateType.CREATED.equals(result)) {
                 // We need to remove all flow entries because a new path policy
                 // may affect existing flow entries.
-                selector = null;
+                remover = new AllFlowRemover();
             } else {
                 // Remove all flow entries affected by the target path policy.
-                selector = context.getFlowSelector();
+                remover = context.getFlowRemover();
             }
 
             // Remove flow entries affected by the update.
-            addBackgroundTasks(provider.removeFlows(selector));
+            addBackgroundTask(provider.removeFlows(remover));
 
             context.onUpdated();
         }

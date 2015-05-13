@@ -37,11 +37,13 @@ import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodesBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
 /**
  * JUnit test for {@link InventoryReader}.
@@ -557,12 +559,12 @@ public class InventoryReaderTest extends TestBase {
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testFindPort() throws Exception {
+    public void testFindPort1() throws Exception {
         // Set up mock-up of MD-SAL read transaction.
         ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
         InventoryReader reader = new InventoryReader(rtx);
         assertSame(rtx, reader.getReadTransaction());
-        assertEquals(null, reader.findPort(null, null));
+        assertEquals(null, reader.findPort((Node)null, (SwitchPort)null));
 
         Map<SalNode, VtnNode> nodeMap = new HashMap<>();
         LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
@@ -642,6 +644,111 @@ public class InventoryReaderTest extends TestBase {
             for (long dpid = 10L; dpid <= 15L; dpid++) {
                 SalNode snode = new SalNode(dpid);
                 assertEquals(null, reader.findPort(snode.getAdNode(), null));
+            }
+        }
+
+        for (SalNode snode: nodeMap.keySet()) {
+            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
+            Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
+        }
+
+        for (long dpid = 10L; dpid <= 15L; dpid++) {
+            SalNode snode = new SalNode(dpid);
+            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
+            Mockito.verify(rtx, Mockito.times(1)).read(oper, path);
+        }
+    }
+
+    /**
+     * Test case for {@link InventoryReader#findPort(SalNode, VtnSwitchPort)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testFindPort2() throws Exception {
+        // Set up mock-up of MD-SAL read transaction.
+        ReadTransaction rtx = Mockito.mock(ReadTransaction.class);
+        InventoryReader reader = new InventoryReader(rtx);
+        assertSame(rtx, reader.getReadTransaction());
+        assertEquals(null, reader.findPort((SalNode)null, (VtnSwitchPort)null));
+
+        Map<SalNode, VtnNode> nodeMap = new HashMap<>();
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        for (long dpid = 1L; dpid <= 4L; dpid++) {
+            List<VtnPort> portList = new ArrayList<>();
+            for (long port = 1L; port <= 10L; port++) {
+                SalPort sport = new SalPort(dpid, port);
+                VtnPort vport = createVtnPortBuilder(sport).build();
+                portList.add(vport);
+            }
+
+            SalNode snode = new SalNode(dpid);
+            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
+            VtnNode vnode = new VtnNodeBuilder().
+                setId(snode.getNodeId()).setVtnPort(portList).build();
+            Mockito.when(rtx.read(oper, path)).
+                thenReturn(getReadResult(vnode));
+            assertNull(nodeMap.put(snode, vnode));
+        }
+
+        Set<SalNode> notPresent = new HashSet<>();
+        for (long dpid = 10L; dpid <= 15L; dpid++) {
+            SalNode snode = new SalNode(dpid);
+            InstanceIdentifier<VtnNode> path = snode.getVtnNodeIdentifier();
+            VtnNode vnode = null;
+            Mockito.when(rtx.read(oper, path)).
+                thenReturn(getReadResult(vnode));
+            assertTrue(notPresent.add(snode));
+        }
+
+        for (int i = 0; i < 10; i++) {
+            for (Map.Entry<SalNode, VtnNode> entry: nodeMap.entrySet()) {
+                SalNode snode = entry.getKey();
+                VtnNode vnode = entry.getValue();
+                for (VtnPort vport: vnode.getVtnPort()) {
+                    // Search by port name.
+                    SalPort sport = SalPort.create(vport.getId());
+                    String name = vport.getName();
+                    String id = String.valueOf(sport.getPortNumber());
+                    VtnSwitchPort vswp = new DataFlowPortBuilder().
+                        setPortName(name).build();
+                    assertEquals(sport, reader.findPort(snode, vswp));
+                    for (int j = 0; j < 4; j++) {
+                        String nm = name + "-" + j;
+                        vswp = new DataFlowPortBuilder().
+                            setPortName(nm).build();
+                        assertEquals(null, reader.findPort(snode, vswp));
+
+                        vswp = new DataFlowPortBuilder().
+                            setPortName(nm).setPortId(id).build();
+                        assertEquals(null, reader.findPort(snode, vswp));
+                    }
+
+                    // Search by port ID.
+                    vswp = new DataFlowPortBuilder().setPortId(id).build();
+                    assertEquals(sport, reader.findPort(snode, vswp));
+
+                    for (int j = 0; j < 4; j++) {
+                        String badId = String.valueOf(1000 + j);
+                        vswp = new DataFlowPortBuilder().
+                            setPortId(badId).build();
+                        assertEquals(null, reader.findPort(snode, vswp));
+
+                        vswp = new DataFlowPortBuilder().
+                            setPortName(name).setPortId(badId).build();
+                        assertEquals(null, reader.findPort(snode, vswp));
+                    }
+
+                    // Seaerch by port name and type.
+                    vswp = new DataFlowPortBuilder().
+                        setPortName(name).setPortId(id).build();
+                    assertEquals(sport, reader.findPort(snode, vswp));
+                }
+            }
+
+            for (long dpid = 10L; dpid <= 15L; dpid++) {
+                SalNode snode = new SalNode(dpid);
+                assertEquals(null, reader.findPort(snode, null));
             }
         }
 

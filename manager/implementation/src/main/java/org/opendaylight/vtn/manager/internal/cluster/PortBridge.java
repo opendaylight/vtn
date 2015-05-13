@@ -22,12 +22,10 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 
-import org.opendaylight.vtn.manager.internal.ActionList;
 import org.opendaylight.vtn.manager.internal.LockStack;
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.TxContext;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
@@ -39,9 +37,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
-import org.opendaylight.controller.sal.match.Match;
 import org.opendaylight.controller.sal.packet.Ethernet;
-import org.opendaylight.controller.sal.packet.PacketResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeState;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
@@ -63,7 +59,7 @@ public abstract class PortBridge<T extends PortInterface>
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -4197952582273139491L;
+    private static final long serialVersionUID = -1668073638895565709L;
 
     /**
      * Construct an abstract bridge node that can have port mappings.
@@ -195,8 +191,9 @@ public abstract class PortBridge<T extends PortInterface>
      */
     final boolean probeHost(VTNManagerImpl mgr, MapReference ref,
                             PacketContext pctx) throws VTNException {
-        NodeConnector nc = pctx.getOutgoingNodeConnector();
-        assert nc != null;
+        SalPort egress = pctx.getEgressPort();
+        assert egress != null;
+        NodeConnector nc = egress.getAdNodeConnector();
         short vlan = (short)pctx.getVlan();
         long mac = pctx.getDestinationAddress().getAddress();
 
@@ -213,7 +210,7 @@ public abstract class PortBridge<T extends PortInterface>
                     logger.debug("{}:{}: Don't send ARP request to " +
                                  "disabled network: {}",
                                  getContainerName(), vnode.getPath(),
-                                 pctx.getDescription(nc));
+                                 pctx.getDescription(egress));
                 }
                 return false;
             }
@@ -221,7 +218,7 @@ public abstract class PortBridge<T extends PortInterface>
             if (logger.isTraceEnabled()) {
                 logger.trace("{}:{}: Sending ARP request for probing: {}",
                              getContainerName(), getNodePath(),
-                             pctx.getDescription(nc));
+                             pctx.getDescription(egress));
             }
 
             mgr.transmit(nc, pctx.getFrame());
@@ -239,16 +236,16 @@ public abstract class PortBridge<T extends PortInterface>
      *              The specified reference must point the virtual node
      *              contained in this node.
      * @param pctx  The context of the received packet.
-     * @return  A {@code PacketResult} which indicates the result of handler.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
      * @throws RedirectFlowException
      *    The given packet was redirected by a flow filter.
      */
-    final PacketResult receive(VTNManagerImpl mgr, MapReference ref,
-                               PacketContext pctx)
+    final void receive(VTNManagerImpl mgr, MapReference ref,
+                       PacketContext pctx)
         throws DropFlowException, RedirectFlowException {
-        NodeConnector incoming = pctx.getIncomingNodeConnector();
+        SalPort ingress = pctx.getIngressPort();
+        NodeConnector nc = ingress.getAdNodeConnector();
         short vlan = (short)pctx.getVlan();
         long mac = pctx.getSourceAddress().getAddress();
 
@@ -256,9 +253,9 @@ public abstract class PortBridge<T extends PortInterface>
         // of the bridge.
         Lock wrlock = writeLock();
         try {
-            VirtualMapNode vnode = match(mgr, ref, mac, incoming, vlan, true);
+            VirtualMapNode vnode = match(mgr, ref, mac, nc, vlan, true);
             if (vnode == null) {
-                return PacketResult.IGNORED;
+                return;
             }
 
             if (vnode.isEnabled()) {
@@ -268,18 +265,16 @@ public abstract class PortBridge<T extends PortInterface>
                 // Actually this evaluates virtual interface flow filters for
                 // incoming packets.
                 vnode.filterPacket(mgr, pctx, FlowFilterMap.VLAN_UNSPEC);
-
-                return handlePacket(mgr, pctx, vnode);
+                handlePacket(mgr, pctx, vnode);
             } else {
                 Logger logger = getLogger();
                 if (logger.isDebugEnabled()) {
                     logger.debug("{}:{}: Ignore packet received from " +
                                  "disabled network: {}", getContainerName(),
                                  vnode.getPath(),
-                                 pctx.getDescription(incoming));
+                                 pctx.getDescription(ingress));
                 }
                 vnode.disableInput(mgr, pctx);
-                return PacketResult.CONSUME;
             }
         } catch (VTNException e) {
             // This should never happen.
@@ -287,8 +282,6 @@ public abstract class PortBridge<T extends PortInterface>
         } finally {
             wrlock.unlock();
         }
-
-        return PacketResult.KEEP_PROCESSING;
     }
 
     /**
@@ -298,14 +291,13 @@ public abstract class PortBridge<T extends PortInterface>
      * @param pctx  The context of the packet to be redirected.
      * @param rex   An exception that keeps information about the packet
      *              redirection.
-     * @return  A {@code PacketResult} which indicates the result of handler.
      * @throws DropFlowException
      *    The given packet was discarded by a DROP flow filter.
      * @throws RedirectFlowException
      *    The given packet was redirected by a REDIRECT flow filter.
      */
-    final PacketResult redirect(VTNManagerImpl mgr, PacketContext pctx,
-                                RedirectFlowException rex)
+    final void redirect(VTNManagerImpl mgr, PacketContext pctx,
+                        RedirectFlowException rex)
         throws DropFlowException, RedirectFlowException {
         VInterfacePath path = rex.getDestination();
 
@@ -319,12 +311,12 @@ public abstract class PortBridge<T extends PortInterface>
                 vif = getInterfaceImpl(path);
             } catch (VTNException e) {
                 String emsg = e.getStatus().getDescription();
-                rex.destinationNotFound(mgr, pctx, emsg);
+                rex.destinationNotFound(pctx, emsg);
                 throw new DropFlowException(e);
             }
 
             if (!vif.isEnabled()) {
-                rex.destinationDisabled(mgr, pctx);
+                rex.destinationDisabled(pctx);
                 throw new DropFlowException();
             }
 
@@ -332,14 +324,14 @@ public abstract class PortBridge<T extends PortInterface>
             int hops = pctx.redirect((VNodePath)path);
             int hopLimit = mgr.getVTNConfig().getMaxRedirections();
             if (hops > hopLimit) {
-                rex.tooManyHops(mgr, pctx, hops);
+                rex.tooManyHops(pctx, hops);
                 throw new DropFlowException();
             }
 
             if (rex.isOutput()) {
                 // Redirect as outgoing packet.
                 vif.redirect(mgr, pctx, rex, this);
-                return PacketResult.KEEP_PROCESSING;
+                return;
             }
 
             // Use the VLAN ID mapped to the virtual interface for
@@ -351,15 +343,13 @@ public abstract class PortBridge<T extends PortInterface>
             vif.filterPacket(mgr, pctx, vid);
 
             // Forward the packet to the bridge.
-            return handlePacket(mgr, pctx, vif);
+            handlePacket(mgr, pctx, vif);
         } catch (VTNException e) {
             // This should never happen.
             mgr.logException(getLogger(), getNodePath(), e);
         } finally {
             wrlock.unlock();
         }
-
-        return PacketResult.KEEP_PROCESSING;
     }
 
     /**
@@ -479,76 +469,12 @@ public abstract class PortBridge<T extends PortInterface>
         if (logger.isTraceEnabled()) {
             logger.trace("{}:{}: Forward packet to known host: {}",
                          getContainerName(), getNodePath(),
-                         pctx.getDescription(frame, outgoing, outVlan));
+                         pctx.getDescription(frame, egress, outVlan));
         }
         mgr.transmit(egress, frame);
 
         // Install VTN flow.
-        installFlow(mgr, pctx, outgoing, outVlan, path);
-    }
-
-    /**
-     * Install a VTN flow for the received packet.
-     *
-     * @param mgr       VTN Manager service.
-     * @param pctx      The context of the received packet.
-     * @param outgoing  A {@link NodeConnector} corresponding to the outgoing
-     *                  physical switch port.
-     * @param outVlan   A VLAN ID to be set to the outgoing packet.
-     * @param path      A list of {@link LinkEdge} instances which represents
-     *                  packet route to the destination address of the received
-     *                  packet.
-     */
-    protected final void installFlow(VTNManagerImpl mgr, PacketContext pctx,
-                                     NodeConnector outgoing, short outVlan,
-                                     List<LinkEdge> path) {
-        // Create flow entries.
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(getTenantName());
-        if (fdb == null) {
-            // This should never happen.
-            getLogger().warn("{}:{}: No flow database",
-                             getContainerName(), getNodePath());
-            return;
-        }
-
-        // Purge obsolete flows before installing new flow.
-        pctx.purgeObsoleteFlow(mgr, fdb);
-
-        // Prepare to install an unicast flow entry.
-        pctx.addUnicastMatchFields();
-
-        NodeConnector incoming = pctx.getIncomingNodeConnector();
-        short vlan = (short)pctx.getEtherPacket().getOriginalVlan();
-        int pri = pctx.getFlowPriority();
-        VTNFlow vflow = fdb.create(mgr);
-
-        // Create flow entries except for egress flow.
-        for (LinkEdge le: path) {
-            Match match = pctx.createMatch(incoming);
-            NodeConnector port = le.getSourcePort().getAdNodeConnector();
-            ActionList actions = new ActionList(port.getNode(), vlan);
-            actions.addOutput(port);
-            vflow.addFlow(mgr, match, actions, pri);
-            incoming = le.getDestinationPort().getAdNodeConnector();
-        }
-
-        // Create egress flow entry.
-        Node dnode = outgoing.getNode();
-        assert incoming.getNode().equals(outgoing.getNode());
-        Match match = pctx.createMatch(incoming);
-
-        // Note that flow action that modifies the VLAN tag has to be set
-        // before other actions.
-        ActionList actions = new ActionList(dnode, vlan);
-        actions.addVlanId(outVlan).addAll(pctx.getFilterActions()).
-            addOutput(outgoing);
-        vflow.addFlow(mgr, match, actions, pri);
-
-        // Fix up the VTN flow.
-        pctx.fixUp(vflow);
-
-        // Install flow entries.
-        fdb.install(mgr, vflow);
+        pctx.installFlow(egress, (int)outVlan, path);
     }
 
     /**
@@ -762,7 +688,6 @@ public abstract class PortBridge<T extends PortInterface>
      * @param pctx   The context of the received packet.
      * @param vnode  A {@link VirtualMapNode} instance that maps the received
      *               packet.
-     * @return  A {@code PacketResult} which indicates the result of handler.
      * @throws DropFlowException
      *    The given packet was discarded by a flow filter.
      * @throws RedirectFlowException
@@ -770,8 +695,7 @@ public abstract class PortBridge<T extends PortInterface>
      * @throws VTNException
      *    An error occurred.
      */
-    protected abstract PacketResult handlePacket(VTNManagerImpl mgr,
-                                                 PacketContext pctx,
-                                                 VirtualMapNode vnode)
+    protected abstract void handlePacket(VTNManagerImpl mgr, PacketContext pctx,
+                                         VirtualMapNode vnode)
         throws DropFlowException, RedirectFlowException, VTNException;
 }

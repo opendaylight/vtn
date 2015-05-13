@@ -22,7 +22,7 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnUdpMatchFields;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnUdpMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpDestinationRangeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.udp.match.fields.UdpSourceRangeBuilder;
@@ -48,6 +48,20 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
      * Construct a new instance that matches every UDP packet.
      */
     public VTNUdpMatch() {
+    }
+
+    /**
+     * Construct a new instance.
+     *
+     * @param src  A {@link VTNPortRange} instance which specifies the range
+     *             of the source port number. {@code null} matches every
+     *             source port number.
+     * @param dst  A {@link VTNPortRange} instance which specifies the range
+     *             of the destination port number. {@code null} matches every
+     *             destination port number.
+     */
+    public VTNUdpMatch(VTNPortRange src, VTNPortRange dst) {
+        super(src, dst);
     }
 
     /**
@@ -143,10 +157,15 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
     }
 
     /**
-     * {@inheritDoc}
+     * Return a {@link VtnUdpMatch} instance which contains the condition
+     * represented by this instance.
+     *
+     * @return  A {@link VtnUdpMatch} instance if this instance contains
+     *          the condition. {@code null} if this instance does not contain
+     *          any condition.
      */
     @Override
-    public void setVtnMatch(VtnFlowMatchBuilder builder) {
+    public VtnUdpMatch toVtnLayer4Match() {
         VtnUdpMatchBuilder vumatch = null;
         VTNPortRange src = getSourcePort();
         if (src != null) {
@@ -164,9 +183,7 @@ public final class VTNUdpMatch extends VTNLayer4PortMatch<UdpHeader> {
             vumatch = create(vumatch).setUdpDestinationRange(db.build());
         }
 
-        if (vumatch != null) {
-            builder.setVtnLayer4Match(vumatch.build());
-        }
+        return (vumatch == null) ? null : vumatch.build();
     }
 
     /**

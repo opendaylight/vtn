@@ -49,6 +49,7 @@ import org.opendaylight.vtn.manager.PathPolicy;
 import org.opendaylight.vtn.manager.PortLocation;
 import org.opendaylight.vtn.manager.PortMap;
 import org.opendaylight.vtn.manager.PortMapConfig;
+import org.opendaylight.vtn.manager.SwitchPort;
 import org.opendaylight.vtn.manager.VBridge;
 import org.opendaylight.vtn.manager.VBridgeConfig;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -74,9 +75,11 @@ import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilterId;
 import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 import org.opendaylight.vtn.manager.util.VTNIdentifiableComparator;
 
 import org.opendaylight.vtn.manager.internal.config.VTNConfigImpl;
+import org.opendaylight.vtn.manager.internal.flow.remove.PortFlowRemover;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
 import org.opendaylight.vtn.manager.internal.inventory.VtnPortEvent;
@@ -87,6 +90,7 @@ import org.opendaylight.vtn.manager.internal.routing.VTNRoutingListener;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.concurrent.AbstractVTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowMatch;
@@ -100,6 +104,7 @@ import org.opendaylight.vtn.manager.internal.util.pathmap.PathMapUtils;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathCostConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyConfigBuilder;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
 import org.opendaylight.vtn.manager.internal.util.tx.DeleteDataTask;
 import org.opendaylight.vtn.manager.internal.util.tx.PutDataTask;
@@ -108,15 +113,12 @@ import org.opendaylight.vtn.manager.internal.util.vnode.VTenantUtils;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEvent;
 import org.opendaylight.vtn.manager.internal.cluster.ClusterEventId;
 import org.opendaylight.vtn.manager.internal.cluster.FlowFilterMap;
-import org.opendaylight.vtn.manager.internal.cluster.FlowGroupId;
-import org.opendaylight.vtn.manager.internal.cluster.FlowModResult;
 import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
-import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantEvent;
 import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
@@ -131,24 +133,18 @@ import org.opendaylight.controller.clustering.services.
     IClusterContainerServices;
 import org.opendaylight.controller.clustering.services.IClusterServices;
 import org.opendaylight.controller.configuration.IConfigurationContainerAware;
-import org.opendaylight.controller.connectionmanager.IConnectionManager;
-import org.opendaylight.controller.forwardingrulesmanager.FlowEntry;
-import org.opendaylight.controller.forwardingrulesmanager.
-    IForwardingRulesManager;
 import org.opendaylight.controller.hosttracker.IfHostListener;
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
 import org.opendaylight.controller.hosttracker.hostAware.IHostFinder;
 import org.opendaylight.controller.sal.core.Node;
+import org.opendaylight.controller.sal.core.NodeConnector.NodeConnectorIDType;
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.core.UpdateType;
-import org.opendaylight.controller.sal.flowprogrammer.Flow;
-import org.opendaylight.controller.sal.flowprogrammer.IFlowProgrammerListener;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
 import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
-import org.opendaylight.controller.statisticsmanager.IStatisticsManager;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcError;
@@ -170,6 +166,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.rem
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.set.flow.condition.match.input.FlowMatchList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.set.flow.condition.match.output.SetMatchResult;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowCountInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowCountInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowCountOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowInputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.GetDataFlowOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowPort;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.input.DataFlowPortBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data.flow.output.DataFlowInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.ClearPathMapInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathmap.rev150328.ClearPathMapInputBuilder;
@@ -217,8 +224,7 @@ public class VTNManagerImpl
     implements IVTNManager, IVTNFlowDebugger,
                ICacheUpdateAware<ClusterEventId, Object>,
                VTNInventoryListener, VTNRoutingListener, VTNPacketListener,
-               IConfigurationContainerAware, IHostFinder,
-               IFlowProgrammerListener {
+               IConfigurationContainerAware, IHostFinder {
     /**
      * Logger instance.
      */
@@ -255,20 +261,10 @@ public class VTNManagerImpl
     static final String  CACHE_EVENT = "vtn.clusterEvent";
 
     /**
-     * The name of the cluster cache which keeps flow entries in the container.
-     */
-    static final String CACHE_FLOWS = "vtn.flows";
-
-    /**
      * Polling interval, in milliseconds, to wait for completion of cluster
      * cache initialization.
      */
     private static final long  CACHE_INIT_POLLTIME = 100L;
-
-    /**
-     * Default link cost used when the specified path policy does not exist.
-     */
-    private static final long  DEFAULT_LINK_COST = 1L;
 
     /**
      * Keeps virtual tenant configurations in a container.
@@ -284,11 +280,6 @@ public class VTNManagerImpl
      * A cluster cache used to deliver events to nodes in the cluster.
      */
     private ConcurrentMap<ClusterEventId, ClusterEvent>  clusterEvent;
-
-    /**
-     * VTN flow database.
-     */
-    private ConcurrentMap<FlowGroupId, VTNFlow>  flowDB;
 
     /**
      * Keeps all MAC address table entries in this container.
@@ -313,21 +304,6 @@ public class VTNManagerImpl
      * Cluster container service instance.
      */
     private IClusterContainerServices  clusterService;
-
-    /**
-     * Forwarding rule manager service instance.
-     */
-    private IForwardingRulesManager  fwRuleManager;
-
-    /**
-     * Statistics manager service.
-     */
-    private IStatisticsManager  statisticsManager;
-
-    /**
-     * Connection manager service instance.
-     */
-    private IConnectionManager  connectionManager;
 
     /**
      * Host listeners.
@@ -374,11 +350,6 @@ public class VTNManagerImpl
     private TaskQueueThread  taskQueueThread;
 
     /**
-     * Single-threaded task queue runner which executes {@link FlowModTask}.
-     */
-    private TaskQueueThread  flowTaskThread;
-
-    /**
      * True if VTN is active.
      */
     private boolean  vtnMode;
@@ -401,23 +372,9 @@ public class VTNManagerImpl
         new ConcurrentHashMap<VBridgePath, MacAddressTable>();
 
     /**
-     * Flow database associated with virtual tenants.
-     */
-    private final ConcurrentMap<String, VTNFlowDatabase> vtnFlowMap =
-        new ConcurrentHashMap<String, VTNFlowDatabase>();
-
-    /**
-     * Set of remote flow modification requests.
-     */
-    private final Set<RemoteFlowRequest>  remoteFlowRequests =
-        new HashSet<RemoteFlowRequest>();
-
-    private volatile StatsReader statsReader;
-
-    /**
      * A thread which executes queued tasks.
      */
-    private final class TaskQueueThread extends Thread {
+    private static final class TaskQueueThread extends Thread {
         /**
          * Task queue.
          */
@@ -516,86 +473,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * A timer task which interrupts the specified thread.
-     */
-    private final class AlarmTask extends TimerTask {
-        /**
-         * The target thread.
-         */
-        private final Thread  targetThread;
-
-        /**
-         * Determine whether this alarm is active or not.
-         */
-        private boolean  active = true;
-
-        /**
-         * Construct a new alarm task to interrupt the calling thread.
-         */
-        private AlarmTask() {
-            this(Thread.currentThread());
-        }
-
-        /**
-         * Construct a new alarm task to interrupt the given thread.
-         *
-         * @param thread  A target thread.
-         */
-        private AlarmTask(Thread thread) {
-            targetThread = thread;
-        }
-
-        /**
-         * Inactivate this alarm.
-         */
-        private synchronized void inactivate() {
-            active = false;
-            notifyAll();
-        }
-
-        /**
-         * Wait for completion of this alarm.
-         */
-        private synchronized void complete() {
-            while (active) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                }
-            }
-        }
-
-        /**
-         * Interrupt the target thread.
-         */
-        @Override
-        public void run() {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: Alarm expired: thread={}", containerName,
-                          targetThread);
-            }
-            targetThread.interrupt();
-            inactivate();
-        }
-
-        /**
-         * Cancel this alarm task.
-         *
-         * @return  {@code true} is returned only if this alarm has been
-         *          canceled before expiration.
-         */
-        @Override
-        public boolean cancel() {
-            boolean ret = super.cancel();
-            if (ret) {
-                inactivate();
-            }
-
-            return ret;
-        }
-    }
-
-    /**
      * Function called by the dependency manager when all the required
      * dependencies are satisfied.
      *
@@ -630,11 +507,6 @@ public class VTNManagerImpl
         taskQueueThread = new TaskQueueThread("VTN Task Thread: " + cname);
         taskQueueThread.start();
 
-        // Start VTN flow task thread.
-        flowTaskThread = new TaskQueueThread("VTN Flow Thread: " + cname);
-        flowTaskThread.start();
-
-        Timer timer = null;
         if (vtnProvider != null) {
             TxTask<Void> initTask = new AbstractTxTask<Void>() {
                 @Override
@@ -654,24 +526,16 @@ public class VTNManagerImpl
             }
 
             vtnProvider.configLoaded();
-            timer = vtnProvider.getTimer();
         }
 
         // Initialize MAC address tables.
         initMacAddressTable();
-
-        // Initialize VTN flow databases.
-        initFlowDatabase();
 
         vtnMode = !tenantDB.isEmpty();
 
         resourceManager.addManager(this);
         if (vtnProvider != null) {
             serviceAvailable = true;
-        }
-
-        if (timer != null) {
-            statsReader = new StatsReader(statisticsManager, this, timer);
         }
     }
 
@@ -688,10 +552,6 @@ public class VTNManagerImpl
      */
     void stopping() {
         LOG.trace("{}: stopping() called", containerName);
-
-        if (statsReader != null) {
-            statsReader.cancel();
-        }
 
         if (vtnProvider != null) {
             vtnProvider.shutdown();
@@ -737,17 +597,6 @@ public class VTNManagerImpl
         }
 
         // Terminate internal threads.
-        if (flowTaskThread != null) {
-            flowTaskThread.shutdown(false);
-            try {
-                flowTaskThread.join();
-            } catch (InterruptedException e) {
-                LOG.warn("{}: Interrupted while joining thread: {}",
-                         containerName, flowTaskThread.getName());
-            }
-            flowTaskThread = null;
-        }
-
         if (taskQueueThread != null) {
             taskQueueThread.shutdown();
             try {
@@ -773,7 +622,6 @@ public class VTNManagerImpl
             stateDB = new ConcurrentHashMap<VTenantPath, Object>();
             clusterEvent =
                 new ConcurrentHashMap<ClusterEventId, ClusterEvent>();
-            flowDB = new ConcurrentHashMap<FlowGroupId, VTNFlow>();
             macAddressDB = null;
             return;
         }
@@ -807,12 +655,9 @@ public class VTNManagerImpl
         cmode = EnumSet.of(IClusterServices.cacheMode.NON_TRANSACTIONAL,
                            IClusterServices.cacheMode.SYNC);
         createCache(cluster, CACHE_EVENT, cmode);
-        createCache(cluster, CACHE_FLOWS, cmode);
 
         clusterEvent = (ConcurrentMap<ClusterEventId, ClusterEvent>)
             getCache(cluster, CACHE_EVENT);
-        flowDB = (ConcurrentMap<FlowGroupId, VTNFlow>)
-            getCache(cluster, CACHE_FLOWS);
 
         // Remove obsolete events in clusterEvent.
         Set<ClusterEventId> removed = new HashSet<ClusterEventId>();
@@ -878,30 +723,6 @@ public class VTNManagerImpl
         }
 
         return cache;
-    }
-
-    /**
-     * Initialize the VTN flow database.
-     */
-    private void initFlowDatabase() {
-        List<FlowGroupId> orphans = new ArrayList<FlowGroupId>();
-        for (VTNFlow vflow: flowDB.values()) {
-            FlowGroupId gid = vflow.getGroupId();
-            VTNFlowDatabase fdb = getTenantFlowDB(gid);
-            if (fdb != null) {
-                // Initialize indices for the VTN flow.
-                fdb.createIndex(this, vflow);
-            } else {
-                // This should never happen.
-                LOG.error("{}: Orphan VTN flow was found: {}",
-                          containerName, gid);
-                orphans.add(gid);
-            }
-        }
-
-        for (FlowGroupId gid: orphans) {
-            flowDB.remove(gid);
-        }
     }
 
     /**
@@ -1013,105 +834,6 @@ public class VTNManagerImpl
      */
     public IClusterContainerServices getClusterContainerService() {
         return clusterService;
-    }
-
-    /**
-     * Invoked when a forwarding rule manager service is registered.
-     *
-     * @param service  Forwarding rule manager service.
-     */
-    void setForwardingRuleManager(IForwardingRulesManager service) {
-        LOG.trace("{}: Set forwarding rule manager: {}", containerName,
-                  service);
-        fwRuleManager = service;
-    }
-
-    /**
-     * Invoked when a forwarding rule manager service is unregistered.
-     *
-     * @param service  Forwarding rule manager service.
-     */
-    void unsetForwardingRuleManager(IForwardingRulesManager service) {
-        if (service != null && service.equals(fwRuleManager)) {
-            LOG.trace("{}: Unset forwarding rule manager: {}", containerName,
-                      service);
-            fwRuleManager = null;
-        }
-    }
-
-    /**
-     * Return forwarding rule manager service instance.
-     *
-     * @return  Forwarding rule manager service.
-     */
-    public IForwardingRulesManager getForwardingRuleManager() {
-        return fwRuleManager;
-    }
-
-    /**
-     * Invoked when a statistics manager service is registered.
-     *
-     * @param service  Statistics manager service.
-     */
-    void setStatisticsManager(IStatisticsManager service) {
-        LOG.trace("{}: Set statistics manager service: {}", containerName,
-                  service);
-        statisticsManager = service;
-    }
-
-    /**
-     * Invoked when a statistics manager service is unregistered.
-     *
-     * @param service  Statistics manager service.
-     */
-    void unsetStatisticsManager(IStatisticsManager service) {
-        if (service != null && service.equals(statisticsManager)) {
-            LOG.trace("{}: Unset statistics manager service: {}",
-                      containerName, service);
-            statisticsManager = null;
-        }
-    }
-
-    /**
-     * Return statistics manager service instance.
-     *
-     * @return  Statistics manager service.
-     */
-    public IStatisticsManager getStatisticsManager() {
-        return statisticsManager;
-    }
-
-    /**
-     * Invoked when a connection manager service is registered.
-     *
-     * @param service  Connection manager service.
-     */
-    void setConnectionManager(IConnectionManager service) {
-        LOG.trace("{}: Set connection manager service: {}", containerName,
-                  service);
-        connectionManager = service;
-    }
-
-    /**
-     * Invoked when a connection manager service is unregistered.
-     *
-     * @param service  Connection manager service.
-     */
-    void unsetConnectionManager(IConnectionManager service) {
-        if (service != null && service.equals(connectionManager)) {
-            LOG.trace("{}: Unset connection manager service: {}",
-                      containerName, service);
-            connectionManager = null;
-        }
-    }
-
-    /**
-     * Return connection manager service instance.
-     *
-     * @return  Connection manager service.
-     */
-    public IConnectionManager getConnectionManager() {
-        return connectionManager;
     }
 
     /**
@@ -1239,15 +961,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Return VTN flow database.
-     *
-     * @return VTN flow database.
-     */
-    public ConcurrentMap<FlowGroupId, VTNFlow> getFlowDB() {
-        return flowDB;
-    }
-
-    /**
      * Let the specified VTN visible to other controllers in the cluster.
      *
      * @param vtn  A virtual tenant.
@@ -1276,54 +989,6 @@ public class VTNManagerImpl
         // It's harmless to access serviceAvailable flag without holding
         // rwLock because this flag will be turned off only once by stopping().
         return serviceAvailable;
-    }
-
-    /**
-     * Interrupt the calling thread after the specified milliseconds passes.
-     *
-     * <p>
-     *   Note that this method clears interrupt state of the calling thread.
-     * </p>
-     *
-     * @param delay  Delay in milliseconds to be inserted before interrupt.
-     * @return  A timer task which implements alarm timer.
-     */
-    public TimerTask setAlarm(long delay) {
-        AlarmTask task = new AlarmTask();
-        if (vtnProvider != null) {
-            Timer timer = vtnProvider.getTimer();
-            Thread.interrupted();
-            timer.schedule(task, delay);
-        }
-
-        return task;
-    }
-
-    /**
-     * Cancel the given alarm task.
-     *
-     * @param task  An alarm task returned by {@link #setAlarm(long)}.
-     */
-    public void cancelAlarm(TimerTask task) {
-        task.cancel();
-        if (task instanceof AlarmTask) {
-            AlarmTask alarm = (AlarmTask)task;
-            alarm.complete();
-            Thread.interrupted();
-        }
-    }
-
-    /**
-     * Set alarm timer for flow modification.
-     *
-     * <p>
-     *   Note that this method clears interrupt state of the calling thread.
-     * </p>
-     *
-     * @return  A timer task which implements alarm timer.
-     */
-    public TimerTask setFlowModAlarm() {
-        return setAlarm((long)getVTNConfig().getFlowModTimeout());
     }
 
     /**
@@ -1385,117 +1050,6 @@ public class VTNManagerImpl
     public MacAddressTable getMacAddressTable(MacTableEntryId id) {
         VBridgePath path = id.getBridgePath();
         return macTableMap.get(path);
-    }
-
-    /**
-     * Create a new VTN flow database object if not exists.
-     *
-     * @param name  The name of the virtual tenant.
-     */
-    public void createTenantFlowDB(String name) {
-        VTNFlowDatabase fdb = new VTNFlowDatabase(name);
-        vtnFlowMap.put(name, fdb);
-    }
-
-    /**
-     * Remove VTN flow database object.
-     *
-     * @param name  The name of the virtual tenant.
-     * @return  A removed VTN flow database object.
-     *          {@code null} is returned if database does not exist.
-     */
-    public VTNFlowDatabase removeTenantFlowDB(String name) {
-        return vtnFlowMap.remove(name);
-    }
-
-    /**
-     * Return a VTN flow database object associated with the specified virtual
-     * tenant.
-     *
-     * @param name  The name of the virtual tenant.
-     * @return  A VTN flow database associated with the specified virtual
-     *          tenant. {@code null} is returned if not found.
-     */
-    public VTNFlowDatabase getTenantFlowDB(String name) {
-        return vtnFlowMap.get(name);
-    }
-
-    /**
-     * Return a VTN flow database which contains flow entry specified by the
-     * given name.
-     *
-     * @param gid  Identifier of the flow group.
-     * @return  A VTN flow database is returned if found.
-     *          {@code null} is returned if not fonud.
-     */
-    public VTNFlowDatabase getTenantFlowDB(FlowGroupId gid) {
-        String tname = gid.getTenantName();
-        return getTenantFlowDB(tname);
-    }
-
-    /**
-     * Return a VTN flow database for the VTN specified by the path.
-     *
-     * @param path  A {@link VTenantPath} object that specifies the position
-     *              of the VTN.
-     * @return  A VTN flow database.
-     * @throws VTNException  An error occurred.
-     */
-    private VTNFlowDatabase getTenantFlowDB(VTenantPath path)
-        throws VTNException {
-        String tenantName = VTenantUtils.getName(path);
-        VTNFlowDatabase fdb = getTenantFlowDB(tenantName);
-        if (fdb == null) {
-            throw new VTNException(tenantNotFound(tenantName));
-        }
-
-        return fdb;
-    }
-
-    /**
-     * Set remote flow modification request which wait for completion of flow
-     * modification on remote cluster node.
-     *
-     * @param req  A remote flow modification request.
-     */
-    public void addRemoteFlowRequest(RemoteFlowRequest req) {
-        synchronized (remoteFlowRequests) {
-            remoteFlowRequests.add(req);
-        }
-    }
-
-    /**
-     * Remove remote flow modification request.
-     *
-     * @param req  A remote flow modification request.
-     */
-    public void removeRemoteFlowRequest(RemoteFlowRequest req) {
-        synchronized (remoteFlowRequests) {
-            remoteFlowRequests.remove(req);
-        }
-    }
-
-    /**
-     * Called when a remote cluster node reports a result of flow modification.
-     *
-     * @param name    The name of flow entry.
-     * @param result  Result of flow modification.
-     */
-    public void setRemoteFlowResult(String name, FlowModResult result) {
-        int rsize = resourceManager.getRemoteClusterSize();
-        synchronized (remoteFlowRequests) {
-            RemoteFlowRequest done = null;
-            for (RemoteFlowRequest req: remoteFlowRequests) {
-                if (req.setResult(name, result, rsize)) {
-                    done = req;
-                    break;
-                }
-            }
-
-            if (done != null) {
-                remoteFlowRequests.remove(done);
-            }
-        }
     }
 
     /**
@@ -1847,15 +1401,6 @@ public class VTNManagerImpl
     }
 
     /**
-     * Run the specified task on the VTN flow thread.
-     *
-     * @param task  A flow mod task to be run on the VTN flow thread.
-     */
-    void postFlowTask(FlowModTask task) {
-        flowTaskThread.post(task);
-    }
-
-    /**
      * Run the specified task on the global async thread pool.
      *
      * @param r  A runnable to be run on the global async thread pool.
@@ -1863,30 +1408,6 @@ public class VTNManagerImpl
     public void postAsync(Runnable r) {
         if (vtnProvider != null && !vtnProvider.executeTask(r)) {
             LOG.error("{}: Async task was rejected: {}", containerName, r);
-        }
-    }
-
-    /**
-     * Run the specified flow mod task on the global async thread pool.
-     *
-     * @param task  A flow mod task to be run on the global async thread pool.
-     */
-    void postAsync(FlowModTask task) {
-        if (vtnProvider != null && !vtnProvider.executeTask(task)) {
-            if (task instanceof FlowEntryTask) {
-                FlowEntryTask ft = (FlowEntryTask)task;
-                LOG.error("{}: FlowEntryTask was rejected: flow={}",
-                          containerName, ft.getFlowEntry());
-            } else {
-                LOG.error("{}: {} was rejected",
-                          containerName, task.getClass().getSimpleName());
-            }
-
-            if (task instanceof ClusterFlowModTask) {
-                ClusterFlowModTask cft = (ClusterFlowModTask)task;
-                cft.sendRemoteFlowModResult(FlowModResult.FAILED);
-            }
-            task.setResult(false);
         }
     }
 
@@ -2628,17 +2149,10 @@ public class VTNManagerImpl
         wrlock.lock();
         try {
             if (type == UpdateType.ADDED) {
-                // Create flow database for a new tenant.
-                createTenantFlowDB(tenantName);
-
                 // Save configurations, and update VTN mode.
                 saveTenantConfigLocked(tenantName);
                 updateVTNMode(true);
             } else {
-                // Remove flow database.
-                // Flow entries in this tenant is purged by event originator.
-                removeTenantFlowDB(tenantName);
-
                 // Delete the virtual tenant configuration file.
                 ContainerConfig cfg = new ContainerConfig(containerName);
                 cfg.delete(ContainerConfig.Type.TENANT, tenantName);
@@ -2654,58 +2168,6 @@ public class VTNManagerImpl
         } finally {
             unlock(wrlock);
         }
-    }
-
-    /**
-     * Remove all flows accepted by the specified {@link FlowSelector}
-     * instance.
-     *
-     * @param selector  A {@link FlowSelector} instance which determines VTN
-     *                  All flow entries are removed if {@code null} is
-     *                  specified.
-     * @return  A list of {@link FlowRemoveTask} instances.
-     */
-    public List<FlowRemoveTask> removeFlows(FlowSelector selector) {
-        List<FlowRemoveTask> list = new ArrayList<>();
-        if (selector == null) {
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                FlowRemoveTask task = fdb.clear(this);
-                if (task != null) {
-                    list.add(task);
-                }
-            }
-        } else {
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                FlowRemoveTask task = fdb.removeFlows(this, selector);
-                if (task != null) {
-                    list.add(task);
-                }
-            }
-        }
-
-        return list;
-    }
-
-    /**
-     * Remove all flows accepted by the specified {@link FlowSelector}
-     * instance.
-     *
-     * @param tname     The name of the VTN.
-     * @param selector  A {@link FlowSelector} instance which determines VTN
-     *                  All flow entries are removed if {@code null} is
-     *                  specified.
-     * @return  A {@link FlowRemoveTask} instance or {@code null}.
-     */
-    public FlowRemoveTask removeFlows(String tname, FlowSelector selector) {
-        VTNFlowDatabase fdb = getTenantFlowDB(tname);
-        FlowRemoveTask task = null;
-        if (fdb != null) {
-            task = (selector == null)
-                ? fdb.clear(this)
-                : fdb.removeFlows(this, selector);
-        }
-
-        return task;
     }
 
     /**
@@ -2927,6 +2389,87 @@ public class VTNManagerImpl
         }
 
         return ret;
+    }
+
+    /**
+     * Set the given data flow filter into the get-data-flow RPC input.
+     *
+     * @param builder  A input builder for get-data-flow RPC.
+     * @param filter   A {@link DataFlowFilter} instance.
+     * @return  {@code true} on success.
+     *          {@code false} if the given data flow filter contains invalid
+     *          value.
+     */
+    private boolean setInput(GetDataFlowInputBuilder builder,
+                             DataFlowFilter filter) {
+        // Set condition for physical switch.
+        Node node = filter.getNode();
+        if (node != null) {
+            SalNode snode = SalNode.create(node);
+            if (snode == null) {
+                // Unsupported node is specified.
+                return false;
+            }
+
+            builder.setNode(snode.getNodeId());
+
+            SwitchPort swport = filter.getSwitchPort();
+            if (swport != null) {
+                String type = swport.getType();
+                if (type != null &&
+                    !NodeConnectorIDType.OPENFLOW.equals(type)) {
+                    // Unsupported node-connector type.
+                    return false;
+                }
+
+                try {
+                    DataFlowPort dfp = new DataFlowPortBuilder().
+                        setPortId(swport.getId()).
+                        setPortName(swport.getName()).
+                        build();
+                    builder.setDataFlowPort(dfp);
+                } catch (IllegalArgumentException e) {
+                    // Invalid port name is specified.
+                    return false;
+                }
+            }
+        }
+
+        // Set condition for source L2 host.
+        try {
+            builder.setDataFlowSource(
+                FlowUtils.toDataFlowSource(filter.getSourceHost()));
+        } catch (RpcException e) {
+            // The source host is specified by unsupported address type,
+            // or an invalid VLAN ID is specified.
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Invoke get-data-flow RPC.
+     *
+     * @param provider  VTN Manager provider service.
+     * @param input     The input of get-data-flow RPC.
+     * @return  A list of {@link DataFlowInfo} instances.
+     * @throws VTNException  An error occurred.
+     */
+    private List<DataFlowInfo> getDataFlows(VTNManagerProvider provider,
+                                            GetDataFlowInput input)
+        throws VTNException {
+        // Invoke RPC and await its completion.
+        VtnFlowService rpc = provider.getVtnRpcService(VtnFlowService.class);
+        GetDataFlowOutput output = getRpcOutput(rpc.getDataFlow(input));
+
+        List<DataFlowInfo> result = output.getDataFlowInfo();
+        if (result == null) {
+            // This should never happen.
+            throw new VTNException("Data flow list is unavailable.");
+        }
+
+        return result;
     }
 
     /**
@@ -3294,9 +2837,6 @@ public class VTNManagerImpl
                 throw VTenantUtils.getNameConflictException(tenantName);
             }
 
-            // Create a VTN flow database.
-            createTenantFlowDB(tenantName);
-
             status = vtn.saveConfig(null);
             VTenant vtenant = vtn.getVTenant();
             updateVTNMode(false);
@@ -3380,10 +2920,7 @@ public class VTNManagerImpl
             vtn.destroy(this);
 
             // Purge all VTN flows in this tenant.
-            VTNFlowDatabase fdb = removeTenantFlowDB(tenantName);
-            if (fdb != null) {
-                VTNThreadData.removeFlows(this, fdb);
-            }
+            VTNThreadData.removeFlows(this, tenantName);
 
             data.setModeChanged();
             enqueueEvent(path, vtenant, UpdateType.REMOVED);
@@ -4429,7 +3966,7 @@ public class VTNManagerImpl
         }
 
         TxContext ctx = provider.newTxContext();
-        PacketContext pctx = new PacketContext(ether, nc, ctx);
+        PacketContext pctx = new PacketContext(ether, sport, ctx);
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -4570,15 +4107,17 @@ public class VTNManagerImpl
     /**
      * Return information about all data flows present in the specified VTN.
      *
-     * @param path    A {@link VTenantPath} object that specifies the position
-     *                of the VTN.
-     * @param mode    A {@link DataFlowMode} instance which specifies behavior
-     *                of this method.
-     * @param filter  If a {@link DataFlowFilter} instance is specified,
-     *                only data flows that meet the condition specified by
-     *                {@link DataFlowFilter} instance is returned.
-     *                All data flows in the VTN is returned if {@code null}
-     *                is specified.
+     * @param path      A {@link VTenantPath} object that specifies the
+     *                  position of the VTN.
+     * @param mode      A {@link DataFlowMode} instance which specifies
+     *                  behavior of this method.
+     * @param filter    If a {@link DataFlowFilter} instance is specified,
+     *                  only data flows that meet the condition specified by
+     *                  {@link DataFlowFilter} instance is returned.
+     *                  All data flows in the VTN is returned if {@code null}
+     *                  is specified.
+     * @param interval  Time interval in seconds for retrieving the average
+     *                  statistics.
      * @return  A list of {@link DataFlow} instances which represents
      *          information about data flows.
      * @throws VTNException  An error occurred.
@@ -4589,34 +4128,41 @@ public class VTNManagerImpl
         throws VTNException {
         VTNManagerProvider provider = checkService();
 
-        // We should not acquire lock here because succeeding method call may
-        // make requests to get flow statistics. Synchronization will be done
-        // by VTNFlowDatabase appropriately.
-        boolean update = (mode == DataFlowMode.UPDATESTATS);
-        TxContext ctx = provider.newTxContext();
-        try {
-            VTNFlowDatabase fdb = getTenantFlowDB(path);
-            DataFlowFilterImpl flt = new DataFlowFilterImpl(ctx, filter);
-            if (mode == DataFlowMode.SUMMARY) {
-                return fdb.getFlows(ctx, null, update, flt, interval);
-            } else if (mode == null) {
-                throw new VTNException(MiscUtils.argumentIsNull("Mode"));
-            }
+        // Construct an RPC input that obtains a list of data flows.
+        VnodeName vname = VTenantUtils.getVnodeName(path);
+        GetDataFlowInputBuilder builder = new GetDataFlowInputBuilder().
+            setTenantName(vname.getValue()).
+            setMode(mode).
+            setAverageInterval(interval);
 
-            return fdb.getFlows(ctx, statsReader, update, flt, interval);
-        } finally {
-            ctx.cancelTransaction();
+        if (filter != null && !setInput(builder, filter)) {
+            // Invalid filter condition is specified.
+            // Thus no data flow should be selected.
+            return Collections.<DataFlow>emptyList();
         }
+
+        // Invoke RPC and await its completion.
+        List<DataFlowInfo> result = getDataFlows(provider, builder.build());
+
+        // Convert the result.
+        List<DataFlow> list = new ArrayList<>(result.size());
+        for (DataFlowInfo dfi: result) {
+            list.add(FlowUtils.toDataFlow(dfi, mode));
+        }
+
+        return list;
     }
 
     /**
      * Return information about the specified data flow in the VTN.
      *
-     * @param path    A {@link VTenantPath} object that specifies the position
-     *                of the VTN.
-     * @param flowId  An identifier of the data flow.
-     * @param mode    A {@link DataFlowMode} instance which specifies behavior
-     *                of this method.
+     * @param path      A {@link VTenantPath} object that specifies the position
+     *                  of the VTN.
+     * @param flowId    An identifier of the data flow.
+     * @param mode      A {@link DataFlowMode} instance which specifies
+     *                  behavior of this method.
+     * @param interval  Time interval in seconds for retrieving the average
+     *                  statistics.
      * @return  A {@link DataFlow} instance which represents information
      *          about the specified data flow.
      *          {@code null} is returned if the specified data flow was not
@@ -4629,23 +4175,29 @@ public class VTNManagerImpl
         throws VTNException {
         VTNManagerProvider provider = checkService();
 
-        // We should not acquire lock here because succeeding method call may
-        // make requests to get flow statistics. Synchronization will be done
-        // by VTNFlowDatabase appropriately.
-        boolean update = (mode == DataFlowMode.UPDATESTATS);
-        TxContext ctx = provider.newTxContext();
-        try {
-            VTNFlowDatabase fdb = getTenantFlowDB(path);
-            if (mode == DataFlowMode.SUMMARY) {
-                return fdb.getFlow(ctx, flowId, null, update, interval);
-            } else if (mode == null) {
-                throw new VTNException(MiscUtils.argumentIsNull("Mode"));
-            }
+        // Construct an RPC input that obtains information about the specified
+        // data flow.
+        VnodeName vname = VTenantUtils.getVnodeName(path);
+        VtnFlowId fid = new VtnFlowId(NumberUtils.getUnsigned(flowId));
+        GetDataFlowInput input = new GetDataFlowInputBuilder().
+            setTenantName(vname.getValue()).
+            setMode(mode).
+            setAverageInterval(interval).
+            setFlowId(fid).
+            build();
 
-            return fdb.getFlow(ctx, flowId, statsReader, update, interval);
-        } finally {
-            ctx.cancelTransaction();
+        // Invoke RPC and await its completion.
+        List<DataFlowInfo> result = getDataFlows(provider, input);
+
+        // Convert the result.
+        if (result.size() > 1) {
+            // This should never happen.
+            throw new VTNException("Unexpected data flow list: " + result);
         }
+
+        return (result.isEmpty())
+            ? null
+            : FlowUtils.toDataFlow(result.get(0), mode);
     }
 
     /**
@@ -4658,9 +4210,24 @@ public class VTNManagerImpl
      */
     @Override
     public int getDataFlowCount(VTenantPath path) throws VTNException {
-        checkService();
-        VTNFlowDatabase fdb = getTenantFlowDB(path);
-        return fdb.getFlowCount();
+        VTNManagerProvider provider = checkService();
+
+        // Construct an RPC input that obtains the number of data flows.
+        VnodeName vname = VTenantUtils.getVnodeName(path);
+        GetDataFlowCountInput input = new GetDataFlowCountInputBuilder().
+            setTenantName(vname.getValue()).
+            build();
+
+        // Invoke RPC and await its completion.
+        VtnFlowService rpc = provider.getVtnRpcService(VtnFlowService.class);
+        GetDataFlowCountOutput output =
+            getRpcOutput(rpc.getDataFlowCount(input));
+        Integer count = output.getCount();
+        if (count == null) {
+            throw new VTNException("Flow count is unavailable.");
+        }
+
+        return count.intValue();
     }
 
     /**
@@ -5784,38 +5351,8 @@ public class VTNManagerImpl
      */
     @Override
     public Status removeAllFlows(VTenantPath path) {
-        FlowRemoveTask task;
-        Lock rdlock = rwLock.readLock();
-        rdlock.lock();
-        try {
-            checkService();
-            String tenantName = VTenantUtils.getName(path);
-
-            VTNFlowDatabase fdb = getTenantFlowDB(tenantName);
-            if (fdb == null) {
-                return tenantNotFound(tenantName);
-            }
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("{}:{}: Clear flow entries", containerName, path);
-            }
-            task = fdb.clear(this);
-        } catch (VTNException e) {
-            return e.getStatus();
-        } finally {
-            rdlock.unlock();
-        }
-
-        Status status;
-        if (task != null) {
-            // Wait for completion of flow remove task.
-            FlowModResult result = task.getResult();
-            status = result.toStatus();
-        } else {
-            status = new Status(StatusCode.SUCCESS, null);
-        }
-
-        return status;
+        return new Status(StatusCode.UNSUPPORTED,
+                          "Flow debugger is not supported.");
     }
 
     // ICacheUpdateAware
@@ -5869,33 +5406,6 @@ public class VTNManagerImpl
                 cev.traceLog(this, LOG, key);
             }
             cev.received(this, false);
-        } else if (CACHE_FLOWS.equals(cacheName)) {
-            if (!(key instanceof FlowGroupId)) {
-                LOG.error("{}: Unexpected key in flow DB: key={}, value={}",
-                          containerName, key, newValue);
-                return;
-            }
-            if (!(newValue instanceof VTNFlow)) {
-                LOG.error("{}: Unexpected value in flow DB: key={}, value={}",
-                          containerName, key, newValue);
-                return;
-            }
-
-            FlowGroupId gid = (FlowGroupId)key;
-            VTNFlowDatabase fdb = getTenantFlowDB(gid);
-            if (fdb == null) {
-                LOG.error("{}: update: Flow database was not found: group={}",
-                          containerName, gid);
-                return;
-            }
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: Received new VTN flow: group={}",
-                          containerName, gid);
-            }
-
-            // Update indices for a new VTN flow.
-            fdb.createIndex(this, (VTNFlow)newValue);
         } else if (CACHE_MAC.equals(cacheName)) {
             if (!(key instanceof MacTableEntryId)) {
                 LOG.error("{}: Unexpected key in MAC address DB: key={}, " +
@@ -5935,27 +5445,7 @@ public class VTNManagerImpl
             return;
         }
 
-        if (CACHE_FLOWS.equals(cacheName)) {
-            if (!(key instanceof FlowGroupId)) {
-                LOG.error("{}: Unexpected key in the flow DB: {}",
-                          containerName, key);
-                return;
-            }
-
-            FlowGroupId gid = (FlowGroupId)key;
-            VTNFlowDatabase fdb = getTenantFlowDB(gid);
-            if (fdb == null) {
-                LOG.debug("{}: Flow database is already removed: group={}",
-                          containerName, gid);
-                return;
-            }
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("{}: Received removed VTN flow group name: {}",
-                          containerName, gid);
-            }
-            fdb.flowRemoved(this, gid);
-        } else if (CACHE_MAC.equals(cacheName)) {
+        if (CACHE_MAC.equals(cacheName)) {
             if (!(key instanceof MacTableEntryId)) {
                 LOG.error("{}: Unexpected key in MAC address DB: {}",
                           containerName, key);
@@ -6013,16 +5503,11 @@ public class VTNManagerImpl
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            // Uninstall VTN flows affected by the node.
-            SalNode snode = ev.getSalNode();
-            Node node = snode.getAdNode();
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                fdb.removeFlows(this, node);
-            }
-
             if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
                 // Flush MAC address table entries detected on the removed
                 // node.
+                SalNode snode = ev.getSalNode();
+                Node node = snode.getAdNode();
                 for (MacAddressTable table: macTableMap.values()) {
                     table.flush(node);
                 }
@@ -6049,25 +5534,10 @@ public class VTNManagerImpl
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
-            // Uninstall VTN flows affected by the port if it has been disabled
-            // or its link state has been changed.
-            boolean disabled;
-            if (ev.getUpdateType() == VtnUpdateType.REMOVED) {
-                disabled = true;
-            } else {
-                disabled = !InventoryUtils.isEnabled(ev.getVtnPort());
-            }
-
-            Boolean isl = ev.getInterSwitchLinkChange();
-            if (disabled || isl != null) {
-                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                    fdb.removeFlows(this, nc);
-                }
-            }
-
             // Flush MAC address table entries affected by the port if it has
             // been disabled or changed to ISL port.
-            if (disabled || Boolean.TRUE.equals(isl)) {
+            Boolean isl = ev.getInterSwitchLinkChange();
+            if (ev.isDisabled() || Boolean.TRUE.equals(isl)) {
                 for (MacAddressTable table: macTableMap.values()) {
                     table.flush(nc);
                 }
@@ -6098,9 +5568,8 @@ public class VTNManagerImpl
         EtherAddress ctlrMac = getVTNConfig().getControllerMacAddress();
         if (src.equals(ctlrMac)) {
             if (LOG.isTraceEnabled()) {
-                NodeConnector nc = ev.getIngressPort().getAdNodeConnector();
                 LOG.trace("{}: Ignore self-originated packet: {}",
-                          containerName, pctx.getDescription(nc));
+                          containerName, pctx.getDescription());
             }
             return;
         }
@@ -6123,9 +5592,8 @@ public class VTNManagerImpl
                           containerName, ingress);
                 // This PACKET_IN may be caused by an obsolete flow entry.
                 // So all flow entries related to this port should be removed.
-                for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                    fdb.removeFlows(this, nc);
-                }
+                PortFlowRemover remover = new PortFlowRemover(ingress);
+                ev.getTxContext().getProvider().removeFlows(remover);
                 return;
             }
 
@@ -6207,62 +5675,5 @@ public class VTNManagerImpl
         } finally {
             unlock(rdlock);
         }
-    }
-
-    // IFlowProgrammerListener
-
-    /**
-     * Invoked when a SAL flow has expired.
-     *
-     * @param node  The network node on which the flow got removed.
-     * @param flow  The flow that got removed.
-     *              Note: It may contain only the Match and flow parameters
-     *              fields. Actions may not be present.
-     */
-    @Override
-    public void flowRemoved(Node node, Flow flow) {
-        if (nonDefault) {
-            return;
-        }
-
-        LOG.trace("{}: flowRemoved() called: node={}, flow={}",
-                  containerName, node, flow);
-
-        String empty = "";
-        FlowEntry entry = new FlowEntry(empty, empty, flow, node);
-        for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-            if (fdb.flowRemoved(this, entry, false)) {
-                return;
-            }
-        }
-
-        // Below are workaround for a bug of old version of Open vSwitch.
-        Flow fixedFlow = VTNFlowDatabase.fixBrokenOvsFlow(flow);
-        if (fixedFlow != null) {
-            entry = new FlowEntry(empty, empty, fixedFlow, node);
-            for (VTNFlowDatabase fdb: vtnFlowMap.values()) {
-                // In this case we need to uninstall ingress flow too because
-                // it may be still kept by the forwarding rule manager.
-                if (fdb.flowRemoved(this, entry, true)) {
-                    return;
-                }
-            }
-        }
-
-        if (flow.getIdleTimeout() != 0) {
-            LOG.trace("{}: Expired flow not found: node={}, flow={}",
-                      containerName, node, flow);
-        }
-    }
-
-    /**
-     * Invoked when an error message has been received from a switch.
-     *
-     * @param node  The network node on which the error reported.
-     * @param rid   The offending message request ID.
-     * @param err   The error message.
-     */
-    @Override
-    public void flowErrorReported(Node node, long rid, Object err) {
     }
 }

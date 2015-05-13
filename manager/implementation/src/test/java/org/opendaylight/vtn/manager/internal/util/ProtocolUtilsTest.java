@@ -97,26 +97,63 @@ public class ProtocolUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link ProtocolUtils#isVlanPriorityValid(byte)}.
+     * Test case for {@link ProtocolUtils#isVlanPriorityValid(short)} and
+     * {@link ProtocolUtils#checkVlanPriority(short)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testIsVlanPriorityValid() {
-        for (int i = 0; i <= 0xff; i++) {
-            byte pri = (byte)i;
-            assertEquals(pri >= 0 && pri <= 7,
-                         ProtocolUtils.isVlanPriorityValid(pri));
+    public void testCheckVlanPriority() throws Exception {
+        for (short pcp = 0; pcp <= 7; pcp++) {
+            assertEquals(true, ProtocolUtils.isVlanPriorityValid(pcp));
+            ProtocolUtils.checkVlanPriority(pcp);
+        }
+
+        short[] invalid = {
+            Short.MIN_VALUE, -2048, -256, -3, -2, -1,
+            8, 9, 3072, 28672, 32512, Short.MAX_VALUE,
+        };
+        for (short pcp: invalid) {
+            assertEquals(false, ProtocolUtils.isVlanPriorityValid(pcp));
+            try {
+                ProtocolUtils.checkVlanPriority(pcp);
+                unexpected();
+            } catch (RpcException e) {
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid VLAN priority: " + pcp,
+                             st.getDescription());
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+            }
         }
     }
 
     /**
-     * Test case for {@link ProtocolUtils#isDscpValid(byte)}.
+     * Test case for {@link ProtocolUtils#isDscpValid(short)}.
      */
     @Test
     public void testIsDscpValid() {
         for (int i = 0; i <= 0xff; i++) {
-            byte dscp = (byte)i;
-            assertEquals(dscp >= 0 && dscp <= 63, ProtocolUtils.isDscpValid(dscp));
+            short dscp = (short)i;
+            assertEquals(dscp >= 0 && dscp <= 63,
+                         ProtocolUtils.isDscpValid(dscp));
         }
+    }
+
+    /**
+     * Test case for {@link ProtocolUtils#dscpToTos(short)} and
+     * {@link ProtocolUtils#tosToDscp(int)}.
+     */
+    @Test
+    public void testDscpToTos() {
+        for (short dscp = 0; dscp <= 63; dscp++) {
+            int tos = ProtocolUtils.dscpToTos(dscp);
+            assertEquals((int)dscp << 2, tos);
+            assertEquals(dscp, ProtocolUtils.tosToDscp(tos));
+        }
+
+        assertEquals(0xfc, ProtocolUtils.dscpToTos((short)0xffff));
+        assertEquals(0x3f, ProtocolUtils.tosToDscp(0xffffffff));
     }
 
     /**

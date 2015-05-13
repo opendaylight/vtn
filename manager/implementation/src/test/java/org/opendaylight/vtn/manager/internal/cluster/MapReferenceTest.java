@@ -178,9 +178,9 @@ public class MapReferenceTest extends TestBase {
     @Test
     public void testCompareTo() {
         List<MapReference> references = createMapReferences();
-        TreeSet<MapReference> set = new TreeSet(references);
+        TreeSet<MapReference> set = new TreeSet<>(references);
         assertEquals(references.size(), set.size());
-        assertEquals(new HashSet(references), set);
+        assertEquals(new HashSet<MapReference>(references), set);
 
         assertEquals(references.size(), set.size());
 

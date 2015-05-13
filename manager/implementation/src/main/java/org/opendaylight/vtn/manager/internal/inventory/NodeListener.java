@@ -26,6 +26,7 @@ import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
 import org.opendaylight.vtn.manager.internal.util.tx.AbstractTxTask;
@@ -206,7 +207,7 @@ public final class NodeListener
     @Override
     protected void onUpdated(NodeUpdateTask ectx,
                              ChangedData<FlowCapableNode> data) {
-        throw new IllegalStateException("Should never be called.");
+        throw MiscUtils.unexpected();
     }
 
     /**

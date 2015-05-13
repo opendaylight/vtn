@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal;
 
-import java.util.List;
 import java.util.Timer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -19,6 +18,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -27,6 +27,8 @@ import org.opendaylight.controller.sal.packet.Packet;
 
 import org.opendaylight.yangtools.yang.binding.Notification;
 import org.opendaylight.yangtools.yang.binding.RpcService;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnFlowId;
 
 /**
  * This interface defines an internal OSGi service which provides MD-SAL
@@ -134,37 +136,22 @@ public interface VTNManagerProvider extends AutoCloseable, Executor, TxQueue {
     RouteResolver getRouteResolver(Integer id);
 
     /**
-     * Remove flow entries that match the given condition.
+     * Add the given VTN data flow.
      *
-     * <p>
-     *   Note that this method affects all VTNs.
-     * </p>
-     *
-     * @param selector  A {@link FlowSelector} instance.
-     *                  All flow entries are removed if {@code null} is
-     *                  specified.
-     * @return  A list of {@link VTNFuture} instances associated with flow
-     *          removal tasks.
+     * @param builder  A {@link VTNFlowBuilder} instance which contains
+     *                 data flow to be installed.
+     * @return  A future associated with the task which adds a VTN data flow.
      */
-    List<VTNFuture<?>> removeFlows(FlowSelector selector);
+    VTNFuture<VtnFlowId> addFlow(VTNFlowBuilder builder);
 
     /**
      * Remove flow entries that match the given condition.
      *
-     * <p>
-     *   Note that this method removes flow entries present in the specified
-     *   VTN.
-     * </p>
-     *
-     * @param tname     The name of the VTN. All existing VTNs will be targeted
-     *                  if {@code null} is specified.
-     * @param selector  A {@link FlowSelector} instance.
-     *                  All flow entries are removed if {@code null} is
-     *                  specified.
-     * @return  A list of {@link VTNFuture} instances associated with flow
-     *          removal tasks.
+     * @param remover  A {@link FlowRemover} instance which determines VTN data
+     *                 flows to be removed.
+     * @return  A future associated with the task which removes VTN data flows.
      */
-    List<VTNFuture<?>> removeFlows(String tname, FlowSelector selector);
+    VTNFuture<Void> removeFlows(FlowRemover remover);
 
     /**
      * Return an implementation of the specified RPC service.

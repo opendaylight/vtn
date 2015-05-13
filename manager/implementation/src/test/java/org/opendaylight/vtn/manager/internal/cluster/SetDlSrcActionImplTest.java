@@ -17,14 +17,21 @@ import javax.xml.bind.Unmarshaller;
 
 import org.junit.Test;
 
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.flow.action.SetDlSrcAction;
 
+import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.packet.cache.EtherPacket;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlSrcAction;
+
 import org.opendaylight.vtn.manager.internal.TestBase;
 
+import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
@@ -108,6 +115,39 @@ public class SetDlSrcActionImplTest extends TestBase {
         } catch (VTNException e) {
             assertEquals(StatusCode.BADREQUEST, e.getStatus().getCode());
         }
+    }
+
+    /**
+     * Test case for {@link SetDlSrcActionImpl#apply(PacketContext)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testApply() throws Exception {
+        PacketContext pctx = Mockito.mock(PacketContext.class);
+        EtherAddress src = new EtherAddress(0x0123456789abL);
+        EtherAddress dst = new EtherAddress(0xf0fafbfcfdfeL);
+        int type = 0x1234;
+        short vid = 10;
+        byte pcp = 1;
+        byte[] payload = new byte[]{0x01, 0x02, 0x03, 0x04};
+        Ethernet pkt = createEthernet(src.getBytes(), dst.getBytes(), type,
+                                      vid, pcp, payload);
+        EtherPacket ether = new EtherPacket(pkt);
+        Mockito.when(pctx.getEtherPacket()).thenReturn(ether);
+
+        EtherAddress src1 = new EtherAddress(0xa0a1a2a3a4a5L);
+        VTNSetDlSrcAction vact = new VTNSetDlSrcAction(src1);
+        SetDlSrcAction a = new SetDlSrcAction(src1);
+        SetDlSrcActionImpl act = new SetDlSrcActionImpl(a);
+        assertEquals(true, act.apply(pctx));
+        Mockito.verify(pctx).getEtherPacket();
+        Mockito.verify(pctx).addFilterAction(vact);
+        assertEquals(src1, ether.getSourceAddress());
+        assertEquals(dst, ether.getDestinationAddress());
+        assertEquals(type, ether.getEtherType());
+        assertEquals((int)vid, ether.getVlanId());
+        assertEquals((short)pcp, ether.getVlanPriority());
     }
 
     /**

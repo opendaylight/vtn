@@ -305,8 +305,7 @@ public final class PathMapUtils {
             GlobalPathMaps maps = opt.get();
             List<VtnPathMap> list = maps.getVtnPathMap();
             if (list != null && !list.isEmpty()) {
-                Collections.sort(list, new VtnIndexComparator());
-                return list;
+                return MiscUtils.sortedCopy(list, new VtnIndexComparator());
             }
         }
 
@@ -353,8 +352,7 @@ public final class PathMapUtils {
             VtnPathMaps maps = opt.get();
             List<VtnPathMap> list = maps.getVtnPathMap();
             if (list != null && !list.isEmpty()) {
-                Collections.sort(list, new VtnIndexComparator());
-                return list;
+                return MiscUtils.sortedCopy(list, new VtnIndexComparator());
             }
         } else {
             // Check to see if the target VTN is present or not.

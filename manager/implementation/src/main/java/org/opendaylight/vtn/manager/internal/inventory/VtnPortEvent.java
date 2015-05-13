@@ -11,6 +11,7 @@ package org.opendaylight.vtn.manager.internal.inventory;
 
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.InventoryUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.tx.TxEvent;
 
@@ -139,6 +140,18 @@ public final class VtnPortEvent extends TxEvent {
      */
     public VtnUpdateType getUpdateType() {
         return updateType;
+    }
+
+    /**
+     * Determine whether the notified switch port is disabled or not.
+     *
+     * @return  {@code true} if the notified switch port is disabled.
+     *          Otherwise {@code false}.
+     */
+    public boolean isDisabled() {
+        return (updateType == VtnUpdateType.REMOVED)
+            ? true
+            : !InventoryUtils.isEnabled(vtnPort);
     }
 
     // TxEvent

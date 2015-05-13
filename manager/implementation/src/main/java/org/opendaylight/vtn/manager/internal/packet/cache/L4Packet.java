@@ -9,15 +9,35 @@
 
 package org.opendaylight.vtn.manager.internal.packet.cache;
 
+import java.util.Set;
+
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNLayer4Match;
 import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 /**
  * {@code L4Packet} defines interfaces that implements cache for layer 4
  * protocol header.
  */
 public interface L4Packet extends CachedPacket, Layer4Header {
+    /**
+     * Construct match fields to test layer 4 protocol header in this packet.
+     *
+     * <p>
+     *   Note that this method creates match fields that matches the original
+     *   packet. Any modification to the packet is ignored.
+     * </p>
+     *
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
+     *                match fields to be tested.
+     * @return  A {@link VTNLayer4Match} instance.
+     * @throws RpcException  This packet is broken.
+     */
+    VTNLayer4Match createMatch(Set<FlowMatchType> fields) throws RpcException;
+
     /**
      * Calculate the checksum of the packet, and set the computed checksum
      * into a {@link org.opendaylight.controller.sal.packet.Packet} instance

@@ -9,7 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
+import org.opendaylight.vtn.manager.internal.FlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.PathPolicyFlowRemover;
 
 /**
  * {@code PathPolicyRpcContext} describes a runtime context for updating
@@ -69,12 +70,12 @@ final class PathPolicyRpcContext {
     }
 
     /**
-     * Return a {@link PathPolicyFlowSelector} instance that selects flow
-     * entries corresponding to the target path policy.
+     * Return a {@link FlowRemover} instance that removes flow entries
+     * corresponding to the target path policy.
      *
-     * @return  A {@link PathPolicyFlowSelector} instance.
+     * @return  A {@link FlowRemover} instance.
      */
-    PathPolicyFlowSelector getFlowSelector() {
-        return new PathPolicyFlowSelector(policyId.intValue());
+    FlowRemover getFlowRemover() {
+        return new PathPolicyFlowRemover(policyId.intValue());
     }
 }

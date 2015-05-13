@@ -19,7 +19,6 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnIcmpMatchBuilder;
@@ -188,7 +187,7 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
      * {@inheritDoc}
      */
     @Override
-    public VtnIcmpMatch toVtnLayer4Match() {
+    public VtnIcmpMatch toVtnLayer4Match(boolean comp) {
         return new VtnIcmpMatchBuilder().setType(icmpType).setCode(icmpCode).
             build();
     }
@@ -258,9 +257,7 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
         assertEquals(icmpType, im.getType());
         assertEquals(icmpCode, im.getCode());
 
-        VtnFlowMatchBuilder vfmb = new VtnFlowMatchBuilder();
-        imatch.setVtnMatch(vfmb);
-        VtnLayer4Match vl4 = vfmb.getVtnLayer4Match();
+        VtnLayer4Match vl4 = imatch.toVtnLayer4Match();
         if (vl4 == null) {
             assertEquals(null, icmpType);
             assertEquals(null, icmpCode);

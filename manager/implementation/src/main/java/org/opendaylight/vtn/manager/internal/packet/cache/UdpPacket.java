@@ -13,6 +13,8 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.UdpHeader;
 
 import org.opendaylight.controller.sal.packet.UDP;
@@ -119,6 +121,20 @@ public final class UdpPacket extends PortProtoPacket<UDP>
     @Override
     protected String getProtocolName() {
         return "UDP";
+    }
+
+    /**
+     * Construct UDP flow match fields.
+     *
+     * @param src  A {@link VTNPortRange} instance which specifies the
+     *             source port.
+     * @param dst  A {@link VTNPortRange} instance which specifies the
+     *             destination port.
+     * @return  A {@link VTNUdpMatch} instance.
+     */
+    @Override
+    protected VTNUdpMatch createMatch(VTNPortRange src, VTNPortRange dst) {
+        return new VTNUdpMatch(src, dst);
     }
 
     /**

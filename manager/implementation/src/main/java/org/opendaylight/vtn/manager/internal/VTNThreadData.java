@@ -13,8 +13,18 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 
+import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.flow.remove.EdgeHostFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.EdgeNodeFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.EdgePortFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.TenantFlowRemover;
+import org.opendaylight.vtn.manager.internal.flow.remove.VNodeFlowRemover;
+import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.core.Node;
 import org.opendaylight.controller.sal.core.NodeConnector;
@@ -40,9 +50,9 @@ public final class VTNThreadData {
     private final Lock  theLock;
 
     /**
-     * Ongoing flow remove tasks to wait for completion.
+     * A list of futures associated with ongoing tasks.
      */
-    private List<FlowRemoveTask>  flowRemoveTaskList;
+    private List<VTNFuture<?>>  futureList;
 
     /**
      * Determine whether the VTN mode has been changed or not.
@@ -76,6 +86,43 @@ public final class VTNThreadData {
     }
 
     /**
+     * Remove all VTN flows determined by the given flow remover.
+     *
+     * <p>
+     *   Flow removing will be executed in background.
+     *   If a {@code VTNThreadData} is bound to the calling thread,
+     *   the calling thread will wait for completion of flow removing
+     *   when {@link #cleanUp(VTNManagerImpl)} is called.
+     * </p>
+     *
+     * @param provider  VTN Manager provider service.
+     * @param remover   A {@link FlowRemover} instance.
+     */
+    public static void removeFlows(VTNManagerProvider provider,
+                                   FlowRemover remover) {
+        if (provider != null) {
+            addTask(provider.removeFlows(remover));
+        }
+    }
+
+    /**
+     * Remove all VTN flows determined by the given flow remover.
+     *
+     * <p>
+     *   Flow removing will be executed in background.
+     *   If a {@code VTNThreadData} is bound to the calling thread,
+     *   the calling thread will wait for completion of flow removing
+     *   when {@link #cleanUp(VTNManagerImpl)} is called.
+     * </p>
+     *
+     * @param mgr      VTN Manager service.
+     * @param remover  A {@link FlowRemover} instance.
+     */
+    public static void removeFlows(VTNManagerImpl mgr, FlowRemover remover) {
+        removeFlows(mgr.getVTNProvider(), remover);
+    }
+
+    /**
      * Remove all VTN flows which depend on the given virtual node.
      *
      * <p>
@@ -87,12 +134,10 @@ public final class VTNThreadData {
      *
      * @param mgr   VTN Manager service.
      * @param path  Path to the virtual node.
+     * @see VNodeFlowRemover
      */
     public static void removeFlows(VTNManagerImpl mgr, VTenantPath path) {
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(path.getTenantName());
-        if (fdb != null) {
-            addTask(fdb.removeFlows(mgr, path));
-        }
+        removeFlows(mgr, new VNodeFlowRemover(path));
     }
 
     /**
@@ -105,21 +150,19 @@ public final class VTNThreadData {
      *   when {@link #cleanUp(VTNManagerImpl)} is called.
      * </p>
      *
-     * @param mgr         VTN Manager service.
-     * @param tenantName  The name of the virtual tenant.
-     * @param node        A {@link Node} instance corresponding to the target
-     *                    switch.
-     * @param filter      A {@link PortFilter} instance which selects switch
-     *                    ports.
+     * @param mgr     VTN Manager service.
+     * @param tname   The name of the virtual tenant.
+     * @param node    A {@link Node} instance corresponding to the target
+     *                switch.
+     * @param filter  A {@link PortFilter} instance which selects switch ports.
      * @param vlan        A VLAN ID.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, Node, PortFilter, short)
+     * @see EdgeNodeFlowRemover
      */
-    public static void removeFlows(VTNManagerImpl mgr, String tenantName,
+    public static void removeFlows(VTNManagerImpl mgr, String tname,
                                    Node node, PortFilter filter, short vlan) {
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-        if (fdb != null) {
-            addTask(fdb.removeFlows(mgr, node, filter, vlan));
-        }
+        SalNode snode = SalNode.create(node);
+        removeFlows(mgr,
+                    new EdgeNodeFlowRemover(tname, snode, filter, (int)vlan));
     }
 
     /**
@@ -132,18 +175,16 @@ public final class VTNThreadData {
      *   when {@link #cleanUp(VTNManagerImpl)} is called.
      * </p>
      *
-     * @param mgr         VTN Manager service.
-     * @param tenantName  The name of the virtual tenant.
-     * @param port        A node connector associated with a switch port.
-     * @param vlan        A VLAN ID.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, NodeConnector, short)
+     * @param mgr    VTN Manager service.
+     * @param tname  The name of the virtual tenant.
+     * @param port   A node connector associated with a switch port.
+     * @param vlan   A VLAN ID.
+     * @see EdgePortFlowRemover
      */
-    public static void removeFlows(VTNManagerImpl mgr, String tenantName,
+    public static void removeFlows(VTNManagerImpl mgr, String tname,
                                    NodeConnector port, short vlan) {
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-        if (fdb != null) {
-            addTask(fdb.removeFlows(mgr, port, vlan));
-        }
+        SalPort sport = SalPort.create(port);
+        removeFlows(mgr, new EdgePortFlowRemover(tname, sport, (int)vlan));
     }
 
     /**
@@ -156,70 +197,16 @@ public final class VTNThreadData {
      *   when {@link #cleanUp(VTNManagerImpl)} is called.
      * </p>
      *
-     * @param mgr         VTN Manager service.
-     * @param tenantName  The name of the virtual tenant.
-     * @param mvlan       A pair of MAC address and VLAN ID.
-     * @param port        A node connector associated with a switch port.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, MacVlan, NodeConnector)
+     * @param mgr    VTN Manager service.
+     * @param tname  The name of the virtual tenant.
+     * @param mvlan  A pair of MAC address and VLAN ID.
+     * @param port   A node connector associated with a switch port.
+     * @see EdgeHostFlowRemover
      */
-    public static void removeFlows(VTNManagerImpl mgr, String tenantName,
+    public static void removeFlows(VTNManagerImpl mgr, String tname,
                                    MacVlan mvlan, NodeConnector port) {
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-        if (fdb != null) {
-            addTask(fdb.removeFlows(mgr, mvlan, port));
-        }
-    }
-
-    /**
-     * Remove all VTN flows accepted by the specified {@link FlowSelector}
-     * instance.
-     *
-     * <p>
-     *   Flow removing will be executed in background.
-     *   If a {@code VTNThreadData} is bound to the calling thread,
-     *   the calling thread will wait for completion of flow removing
-     *   when {@link #cleanUp(VTNManagerImpl)} is called.
-     * </p>
-     *
-     * @param mgr         VTN Manager service.
-     * @param tenantName  The name of the virtual tenant.
-     * @param selector    A {@link FlowSelector} instance which determines
-     *                    VTN flows to be removed.
-     *                    Specifying {@code null} results in undefined
-     *                    behavior.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, FlowSelector)
-     */
-    public static void removeFlows(VTNManagerImpl mgr, String tenantName,
-                                   FlowSelector selector) {
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tenantName);
-        if (fdb != null) {
-            addTask(fdb.removeFlows(mgr, selector));
-        }
-    }
-
-    /**
-     * Remove all VTN flows accepted by the specified {@link FlowSelector}
-     * instance.
-     *
-     * <p>
-     *   Flow removing will be executed in background.
-     *   If a {@code VTNThreadData} is bound to the calling thread,
-     *   the calling thread will wait for completion of flow removing
-     *   when {@link #cleanUp(VTNManagerImpl)} is called.
-     * </p>
-     *
-     * @param mgr       VTN Manager service.
-     * @param fdb       VTN flow database object associated with the virtual
-     *                  tenant.
-     * @param selector  A {@link FlowSelector} instance which determines
-     *                  VTN flows to be removed.
-     *                  Specifying {@code null} results in undefined
-     *                  behavior.
-     * @see VTNFlowDatabase#removeFlows(VTNManagerImpl, FlowSelector)
-     */
-    public static void removeFlows(VTNManagerImpl mgr, VTNFlowDatabase fdb,
-                                   FlowSelector selector) {
-        addTask(fdb.removeFlows(mgr, selector));
+        SalPort sport = SalPort.create(port);
+        removeFlows(mgr, new EdgeHostFlowRemover(tname, mvlan, sport));
     }
 
     /**
@@ -232,13 +219,11 @@ public final class VTNThreadData {
      *   when {@link #cleanUp(VTNManagerImpl)} is called.
      * </p>
      *
-     * @param mgr  VTN Manager service.
-     * @param fdb  VTN flow database object associated with the virtual tenant.
+     * @param mgr    VTN Manager service.
+     * @param tname  The name of the target VTN.
      */
-    public static void removeFlows(VTNManagerImpl mgr, VTNFlowDatabase fdb) {
-        if (fdb != null) {
-            addTask(fdb.clear(mgr));
-        }
+    public static void removeFlows(VTNManagerImpl mgr, String tname) {
+        removeFlows(mgr, new TenantFlowRemover(tname));
     }
 
     /**
@@ -254,20 +239,20 @@ public final class VTNThreadData {
     }
 
     /**
-     * Add the specified flow remove task to the task list to wait.
+     * Add the specified future to the task list to wait.
      *
-     * @param task  A flow remove task to wait.
+     * @param future  A future associated with the task to wait.
      */
-    private static void addTask(FlowRemoveTask task) {
-        if (task != null) {
+    private static void addTask(VTNFuture<?> future) {
+        if (future != null) {
             VTNThreadData data = THREAD_LOCAL.get();
             if (data != null) {
-                List<FlowRemoveTask> list = data.flowRemoveTaskList;
+                List<VTNFuture<?>> list = data.futureList;
                 if (list == null) {
-                    list = new ArrayList<FlowRemoveTask>();
-                    data.flowRemoveTaskList = list;
+                    list = new ArrayList<>();
+                    data.futureList = list;
                 }
-                list.add(task);
+                list.add(future);
             }
         }
     }
@@ -295,10 +280,13 @@ public final class VTNThreadData {
             THREAD_LOCAL.remove();
         }
 
-        if (flowRemoveTaskList != null) {
+        if (futureList != null) {
             // Wait for completion of background tasks.
-            for (FlowRemoveTask task: flowRemoveTaskList) {
-                task.getResult();
+            for (VTNFuture<?> future: futureList) {
+                try {
+                    future.checkedGet();
+                } catch (VTNException e) {
+                }
             }
         }
     }

@@ -71,6 +71,7 @@ public class VTNPortRangeTest extends TestBase {
      *   <li>{@link VTNPortRange#create(VtnPortRange)}</li>
      *   <li>{@link VTNPortRange#create(PortNumber)}</li>
      *   <li>{@link VTNPortRange#toPortMatch(VTNPortRange)}</li>
+     *   <li>{@link VTNPortRange#VTNPortRange(int)}</li>
      *   <li>{@link VTNPortRange#VTNPortRange(PortMatch)}</li>
      *   <li>{@link VTNPortRange#VTNPortRange(VtnPortRange)}</li>
      *   <li>{@link VTNPortRange#VTNPortRange(PortNumber)}</li>
@@ -111,6 +112,12 @@ public class VTNPortRangeTest extends TestBase {
             Integer port = range.getPortFrom();
             PortNumber pn = new PortNumber(port);
             vr = VTNPortRange.create(pn);
+            assertEquals(port, vr.getPortFrom());
+            assertEquals(port, vr.getPortTo());
+            assertEquals(pn, vr.getPortNumberFrom());
+            assertEquals(pn, vr.getPortNumberTo());
+
+            vr = new VTNPortRange(port.intValue());
             assertEquals(port, vr.getPortFrom());
             assertEquals(port, vr.getPortTo());
             assertEquals(pn, vr.getPortNumberFrom());
@@ -181,6 +188,16 @@ public class VTNPortRangeTest extends TestBase {
                     assertEquals("Invalid port number: " + port,
                                  st.getDescription());
                 }
+            }
+
+            try {
+                new VTNPortRange(port);
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid port number: " + port,
+                             st.getDescription());
             }
         }
 

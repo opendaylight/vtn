@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,7 +24,6 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.flow.filter.FlowFilter;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
-import org.opendaylight.vtn.manager.internal.VTNFlowDatabase;
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNThreadData;
 
@@ -248,9 +247,7 @@ public abstract class FlowFilterMap implements Serializable, Cloneable {
 
         // REVISIT: Select flow entries affected by the change.
         VTenantPath path = parent.getPath();
-        String tname = path.getTenantName();
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tname);
-        VTNThreadData.removeFlows(mgr, fdb);
+        VTNThreadData.removeFlows(mgr, path.getTenantName());
 
         logUpdated(parent.getContainerName(), path, getFlowDirectionName(),
                    index, result, fi);
@@ -276,9 +273,7 @@ public abstract class FlowFilterMap implements Serializable, Cloneable {
 
         // REVISIT: Select flow entries affected by the change.
         VTenantPath path = parent.getPath();
-        String tname = path.getTenantName();
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tname);
-        VTNThreadData.removeFlows(mgr, fdb);
+        VTNThreadData.removeFlows(mgr, path.getTenantName());
 
         UpdateType type = UpdateType.REMOVED;
         logUpdated(parent.getContainerName(), path, getFlowDirectionName(),
@@ -307,9 +302,7 @@ public abstract class FlowFilterMap implements Serializable, Cloneable {
 
         // REVISIT: Select flow entries affected by the change.
         VTenantPath path = parent.getPath();
-        String tname = path.getTenantName();
-        VTNFlowDatabase fdb = mgr.getTenantFlowDB(tname);
-        VTNThreadData.removeFlows(mgr, fdb);
+        VTNThreadData.removeFlows(mgr, path.getTenantName());
 
         String container = parent.getContainerName();
         UpdateType type = UpdateType.REMOVED;

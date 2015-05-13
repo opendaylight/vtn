@@ -210,14 +210,25 @@ public final class Inet4MatchParams extends TestBase
      * @return  A {@link VtnInetMatch} instance.
      */
     public VtnInetMatch toVtnInetMatch() {
+        return toVtnInetMatch(false);
+    }
+
+    /**
+     * Construct a {@link VtnInetMatch} instance.
+     *
+     * @param noZero  Avoid zero prefix if {@code true}.
+     * @return  A {@link VtnInetMatch} instance.
+     */
+    public VtnInetMatch toVtnInetMatch(boolean noZero) {
         VtnInetMatchBuilder builder = new VtnInetMatchBuilder();
 
-        IpPrefix src = getIpPrefix(sourceAddress, sourcePrefix);
+        IpPrefix src = getIpPrefix(sourceAddress, sourcePrefix, noZero);
         if (src != null) {
             builder.setSourceNetwork(src);
         }
 
-        IpPrefix dst = getIpPrefix(destinationAddress, destinationPrefix);
+        IpPrefix dst = getIpPrefix(destinationAddress, destinationPrefix,
+                                   noZero);
         if (dst != null) {
             builder.setDestinationNetwork(dst);
         }
@@ -460,14 +471,19 @@ public final class Inet4MatchParams extends TestBase
      * @param addr    An {@link IpNetwork} instance which represents the
      *                IP address.
      * @param prefix  The network prefix length.
+     * @param noZero  Avoid zero prefix if {@code true}.
      * @return  A {@link IpPrefix} or {@code null}.
      */
-    private IpPrefix getIpPrefix(IpNetwork addr, Short prefix) {
+    private IpPrefix getIpPrefix(IpNetwork addr, Short prefix,
+                                 boolean noZero) {
         if (addr == null) {
             return null;
         }
 
         int len = (prefix == null) ? 0 : prefix.intValue();
+        if (len == 0 && noZero) {
+            len = addr.getMaxPrefix();
+        }
         StringBuilder builder = new StringBuilder(addr.getText()).
             append('/').append(len);
         Ipv4Prefix v4 = new Ipv4Prefix(builder.toString());
@@ -488,8 +504,9 @@ public final class Inet4MatchParams extends TestBase
      * {@inheritDoc}
      */
     @Override
-    public void setSourceAddress(IpNetwork ipn) {
+    public boolean setSourceAddress(IpNetwork ipn) {
         sourceAddress = ipn;
+        return true;
     }
 
     /**
@@ -504,8 +521,9 @@ public final class Inet4MatchParams extends TestBase
      * {@inheritDoc}
      */
     @Override
-    public void setDestinationAddress(IpNetwork ipn) {
+    public boolean setDestinationAddress(IpNetwork ipn) {
         destinationAddress = ipn;
+        return true;
     }
 
     /**

@@ -9,12 +9,15 @@
 
 package org.opendaylight.vtn.manager.internal.routing;
 
+import java.util.Collections;
+
 import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
+import org.opendaylight.vtn.manager.internal.FlowRemover;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.PathPolicyFlowRemover;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
@@ -31,7 +34,7 @@ public class PathPolicyRpcContextTest extends TestBase {
      *   <li>{@link PathPolicyRpcContext#getPolicyId()}</li>
      *   <li>{@link PathPolicyRpcContext#onStarted()}</li>
      *   <li>{@link PathPolicyRpcContext#onUpdated()}</li>
-     *   <li>{@link PathPolicyRpcContext#getFlowSelector()}</li>
+     *   <li>{@link PathPolicyRpcContext#getFlowRemover()}</li>
      * </ul>
      */
     @Test
@@ -44,8 +47,12 @@ public class PathPolicyRpcContextTest extends TestBase {
             PathPolicyRpcContext context = new PathPolicyRpcContext(topo, id);
             assertEquals(id, context.getPolicyId());
 
-            PathPolicyFlowSelector selector = context.getFlowSelector();
-            assertNotNull(selector);
+            FlowRemover rmv = context.getFlowRemover();
+            assertTrue(rmv instanceof PathPolicyFlowRemover);
+            PathPolicyFlowRemover remover = (PathPolicyFlowRemover)rmv;
+            assertEquals(Collections.singleton(id),
+                         remover.getPathPolicyIds());
+
             context.onStarted();
             topo.updateResolver(id);
             context.onUpdated();

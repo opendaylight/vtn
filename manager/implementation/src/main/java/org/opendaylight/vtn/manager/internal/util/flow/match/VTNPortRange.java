@@ -111,6 +111,18 @@ public final class VTNPortRange {
     }
 
     /**
+     * Construct a new instance which specifies the given port number.
+     *
+     * @param port  The port number.
+     * @throws RpcException  An invalid port number is specified.
+     */
+    public VTNPortRange(int port) throws RpcException {
+        portFrom = Integer.valueOf(port);
+        portTo = portFrom;
+        checkPortFrom();
+    }
+
+    /**
      * Construct a new instance from the given {@link PortMatch} instance.
      *
      * @param pmatch  A {@link PortMatch} instance.

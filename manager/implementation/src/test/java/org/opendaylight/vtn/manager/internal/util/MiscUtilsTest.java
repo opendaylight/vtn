@@ -9,15 +9,19 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import java.math.BigInteger;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.slf4j.Logger;
 
@@ -26,6 +30,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import org.opendaylight.vtn.manager.VTNException;
+import org.opendaylight.vtn.manager.util.EtherAddress;
+import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
@@ -47,6 +53,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+
 /**
  * JUnit test for {@link MiscUtils}.
  */
@@ -64,6 +75,32 @@ public class MiscUtilsTest extends TestBase {
                      MiscUtils.formatMacAddress(0x123456L));
         assertEquals("aa:bb:cc:dd:ee:ff",
                      MiscUtils.formatMacAddress(0xaabbccddeeffL));
+    }
+
+    /**
+     * Test case for {@link MiscUtils#toEtherAddress(MacAddress)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testToEtherAddress() throws Exception {
+        MacAddress mac = new MacAddress("00:00:00:00:00:00");
+        assertEquals(new EtherAddress(0L), MiscUtils.toEtherAddress(mac));
+        mac = new MacAddress("00:00:00:00:00:01");
+        assertEquals(new EtherAddress(1L), MiscUtils.toEtherAddress(mac));
+        mac = new MacAddress("00:00:00:00:00:ff");
+        assertEquals(new EtherAddress(0xffL), MiscUtils.toEtherAddress(mac));
+        mac = new MacAddress("12:34:56:78:9a:bc");
+        assertEquals(new EtherAddress(0x123456789abcL),
+                     MiscUtils.toEtherAddress(mac));
+        mac = new MacAddress("aa:BB:cC:Dd:eE:ff");
+        assertEquals(new EtherAddress(0xaabbccddeeffL),
+                     MiscUtils.toEtherAddress(mac));
+        mac = new MacAddress("ff:ff:ff:ff:ff:ff");
+        assertEquals(new EtherAddress(0xffffffffffffL),
+                     MiscUtils.toEtherAddress(mac));
+
+        assertEquals(null, MiscUtils.toEtherAddress((MacAddress)null));
     }
 
     /**
@@ -587,6 +624,122 @@ public class MiscUtilsTest extends TestBase {
             String str = entry.getKey();
             String expected = entry.getValue();
             assertEquals(expected, MiscUtils.toLowerCase(str));
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#unexpected()}.
+     */
+    @Test
+    public void testUnexpected() {
+        String msg = "Should never be called.";
+        for (int i = 0; i < 10; i++) {
+            IllegalStateException ise = MiscUtils.unexpected();
+            assertEquals(IllegalStateException.class, ise.getClass());
+            assertEquals(msg, ise.getMessage());
+        }
+    }
+
+    /**
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link MiscUtils#longValue(Counter32)}</li>
+     *   <li>{@link MiscUtils#longValue(Counter64)}</li>
+     *   <li>{@link MiscUtils#doubleValue(Counter32)}</li>
+     *   <li>{@link MiscUtils#doubleValue(Counter64)}</li>
+     * </ul>
+     */
+    @Test
+    public void testCounterValue() {
+        double delta = 0.000001;
+        assertEquals(0, MiscUtils.longValue((Counter32)null));
+        assertEquals(0, MiscUtils.longValue((Counter64)null));
+        assertEquals(0d, MiscUtils.doubleValue((Counter32)null), delta);
+        assertEquals(0d, MiscUtils.doubleValue((Counter64)null), delta);
+
+        Random rand = new Random();
+        for (int i = 0; i < 100; i++) {
+            long v = rand.nextLong();
+            long v32 = v & 0xffffffffL;
+            Counter32 c32 = new Counter32(Long.valueOf(v32));
+            assertEquals(v32, MiscUtils.longValue(c32));
+            assertEquals((double)v32, MiscUtils.doubleValue(c32), delta);
+
+            BigInteger bi = NumberUtils.getUnsigned(v);
+            Counter64 c64 = new Counter64(bi);
+            assertEquals(v, MiscUtils.longValue(c64));
+            assertEquals(bi.doubleValue(), MiscUtils.doubleValue(c64), delta);
+        }
+    }
+
+    /**
+     * Test case for {@link MiscUtils#sortedCopy(List,Comparator)}.
+     */
+    @Test
+    public void testSortedCopy() {
+        Comparator<Number> comp = new Comparator<Number>() {
+            @Override
+            public int compare(Number n1, Number n2) {
+                return Integer.compare(n1.intValue(), n2.intValue());
+            }
+        };
+
+        Random rand = new Random();
+        List<Integer> list = new ArrayList<>();
+        Set<Integer> numbers = new HashSet<>();
+        do {
+            Integer i = rand.nextInt();
+            if (numbers.add(i)) {
+                list.add(i);
+            }
+        } while (numbers.size() < 100);
+
+        List<Integer> sorted = MiscUtils.sortedCopy(list, comp);
+        assertNotSame(list, sorted);
+        assertEquals(list.size(), sorted.size());
+
+        Integer prev = null;
+        for (Integer i: sorted) {
+            assertEquals(true, numbers.remove(i));
+            if (prev != null) {
+                assertTrue(prev.intValue() < i.intValue());
+            }
+            prev = i;
+        }
+
+        assertEquals(true, numbers.isEmpty());
+    }
+
+    /**
+     * Test case for {@link MiscUtils#equals(Uri,Uri)}.
+     */
+    @Test
+    public void testEqualsUri() {
+        Uri nullUri = null;
+        String[] strings = {
+            "uri:1",
+            "uri:2",
+            "uri:2.1",
+            "uri:3",
+        };
+
+        assertEquals(true, MiscUtils.equals(nullUri, nullUri));
+
+        for (String s1: strings) {
+            Uri u1 = new Uri(new String(s1));
+            assertEquals(false, MiscUtils.equals(u1, nullUri));
+            assertEquals(false, MiscUtils.equals(nullUri, u1));
+
+            for (String s2: strings) {
+                Uri u2 = new Uri(new String(s2));
+                assertEquals(false, MiscUtils.equals(u2, nullUri));
+                assertEquals(false, MiscUtils.equals(nullUri, u2));
+
+                boolean expected = s1.equals(s2);
+                assertEquals(expected, MiscUtils.equals(u1, u2));
+                assertEquals(expected, MiscUtils.equals(u2, u1));
+            }
         }
     }
 

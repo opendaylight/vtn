@@ -146,19 +146,36 @@ public class CompositeAutoCloseableTest extends TestBase {
         Mockito.verify(logger, Mockito.never()).trace(Mockito.anyString());
         Mockito.reset(logger);
 
-        // Ensure that CompositeAutoCloseable does nothing if it is closed.
-        List<CloseCounter> ignored = new ArrayList<>();
+        // Ensure that closeables in CompositeAutoCloseable are closed
+        // only once.
         for (int i = 0; i < 10; i++) {
-            CloseCounter counter = new CloseCounter();
-            ignored.add(counter);
-            cc.add(counter);
-
-            BadCloseable bc = new BadCloseable(new IllegalArgumentException());
-            ignored.add(bc);
-            cc.add(bc);
-
             cc.close();
         }
+        for (CloseCounter counter: counters) {
+            assertEquals(1, counter.getClosedCount());
+        }
+
+        // Ensure that closeables are closed if it is added to closed
+        // CompositeAutoCloseable.
+        CloseCounter counter1 = new CloseCounter();
+        cc.add(counter1);
+        assertEquals(1, counter1.getClosedCount());
+
+        IllegalArgumentException iae = new IllegalArgumentException();
+        BadCloseable bad1 = new BadCloseable(iae);
+        cc.add(bad1);
+        Mockito.verify(logger).error("Failed to close instance: " + bad1, iae);
+        Mockito.verify(logger, Mockito.never()).warn(Mockito.anyString());
+        Mockito.verify(logger, Mockito.never()).debug(Mockito.anyString());
+        Mockito.verify(logger, Mockito.never()).trace(Mockito.anyString());
+
+        // This should do nothing.
+        cc.close();
+        assertEquals(1, counter1.getClosedCount());
+        Mockito.verify(logger).error("Failed to close instance: " + bad1, iae);
+        Mockito.verify(logger, Mockito.never()).warn(Mockito.anyString());
+        Mockito.verify(logger, Mockito.never()).debug(Mockito.anyString());
+        Mockito.verify(logger, Mockito.never()).trace(Mockito.anyString());
 
         sequence = counters.size();
         for (CloseCounter counter: counters) {
@@ -166,10 +183,5 @@ public class CompositeAutoCloseableTest extends TestBase {
             assertEquals(sequence, counter.getSequence());
             sequence--;
         }
-        for (CloseCounter counter: ignored) {
-            assertEquals(0, counter.getClosedCount());
-        }
-
-        Mockito.verifyZeroInteractions(logger);
     }
 }

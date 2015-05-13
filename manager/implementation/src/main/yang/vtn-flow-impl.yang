@@ -1,0 +1,280 @@
+/*
+ * Copyright (c) 2015 NEC Corporation
+ * All rights reserved.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Eclipse Public License v1.0 which accompanies this
+ * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+ */
+
+module vtn-flow-impl {
+    yang-version 1;
+    namespace "urn:opendaylight:vtn:impl:flow";
+    prefix vflow-impl;
+
+    import vtn-types {
+        prefix vtype;
+        revision-date 2015-02-09;
+    }
+    import vtn-flow {
+        prefix vflow;
+        revision-date 2015-04-10;
+    }
+    import vtn-flow-action {
+        prefix vaction;
+        revision-date 2015-04-10;
+    }
+
+    /* OpenDaylight controller */
+    import opendaylight-inventory {
+        prefix inv;
+        revision-date 2013-08-19;
+    }
+
+    /* OpenDaylight openflowplugin */
+    import opendaylight-flow-types {
+        prefix flow;
+        revision-date 2013-10-26;
+    }
+    import opendaylight-action-types {
+        prefix action;
+        revision-date 2013-11-12;
+    }
+    import opendaylight-statistics-types {
+        prefix stat;
+        revision-date 2013-09-25;
+    }
+    import flow-node-inventory {
+        prefix flow-node;
+        revision-date 2013-08-19;
+    }
+
+    /* OpenDaylight yangtools */
+    import opendaylight-l2-types {
+        prefix l2;
+        revision-date 2013-08-27;
+    }
+    import ietf-yang-types {
+        prefix yang;
+        revision-date 2010-09-24;
+    }
+
+    description
+      "The internal module for entities implementing the VTN data flow.
+       Application other than VTN Manager must not use models defined in
+       this module.";
+
+    revision 2015-03-13 {
+        description "Initial revision.";
+    }
+
+    grouping vtn-flow-entry-info {
+        description
+          "Describes information about a flow entry.
+
+           `transaction-id' field describes an OpenFlow transaction ID
+           associated with a FLOW_MOD message that installed this flow
+           entry. Null means that this flow entry is not yet installed.";
+
+        leaf node {
+            description "Identifier for a physical switch.";
+            type inv:node-id;
+        }
+
+        uses flow:flow;
+        uses action:ordered;
+    }
+
+    grouping flow-stats-fields {
+        description
+          "Describes the record of the data flow statistics.";
+
+        uses stat:generic-statistics;
+
+        leaf time {
+            description
+              "The system time when this flow statistics is derived from the
+               switch.";
+            type int64;
+        }
+
+        leaf periodic {
+            description
+              "True means that this information is created by a periodic
+               statistics collector.";
+            type boolean;
+        }
+    }
+
+    grouping vtn-data-flow-fields {
+        description
+          "Describes an internal information about data flow established by
+           the VTN Manager.";
+
+        uses vflow:vtn-data-flow-common;
+
+        leaf sal-flow-id {
+            description "MD-SAL flow identifier of the ingress flow entry.";
+            type flow-node:flow-id;
+        }
+
+        leaf path-policy-id {
+            description
+              "Path policy identifier that determined the packet route of
+               this data flow.";
+            type int32;
+        }
+
+        leaf controller-address {
+            description
+              "A int64 value which represents the MAC address of the
+               controller which installed this flow entry.";
+            type int64;
+        }
+
+        list flow-map-list {
+            description
+              "A list of virtual network mappings which established this
+               data flow.";
+
+            leaf flow-map-id {
+                description "An identifier of virtual network mapping.";
+                type string;
+            }
+        }
+
+        container flow-stats-history {
+            description
+              "Container that keeps history of flow statistics information
+               about this data flow.
+               Note that this container is omitted if no flow statistics
+               information is available.";
+
+            list flow-stats-record {
+                description "A list of flow statistics history records.";
+
+                key "time";
+                uses flow-stats-fields;
+            }
+        }
+
+        list vtn-flow-entry {
+            description
+              "A list of flow entries that establishes this data flow.
+
+               Note that elements in this list needs to be sorted by `order'
+               field in ascending order. The flow entry that has the smallest
+               order indicates the ingress flow entry, and the flow entry
+               that has the largest order indicates the egress flow entry.";
+
+            key "order";
+            uses vtn-flow-entry-info;
+        }
+    }
+
+    grouping flow-id-set {
+        description "Describes a set of VTN data flow IDs.";
+
+        list flow-id-list {
+            description "A list of unique VTN data flow IDs.";
+
+            key "flow-id";
+            uses vflow:vtn-flow-identifiable;
+        }
+    }
+
+    grouping tenant-flow-info {
+        description
+          "Information about data flows present in the VTN.";
+
+        leaf tenant-name {
+            description "The name of the VTN.";
+            type string;
+        }
+
+        list vtn-data-flow {
+            description "A list of data flows present in the VTN.";
+            key "flow-id";
+            uses vtn-data-flow-fields;
+        }
+
+        list match-flows {
+            description
+              "A list of flow IDs indexed by flow condition keys.
+               A flow condition key for a VTN data flow consists of flow
+               match and priority in the ingress flow entry.";
+
+            key "condition-key";
+            leaf condition-key {
+                description
+                  "A string representation of a flow match and priority
+                   configured in the ingress flow entry.";
+                type string;
+            }
+
+            uses vflow:vtn-flow-identifiable;
+        }
+
+        list node-flows {
+            description
+              "A list of VTN data flow IDs indexed by related switch.";
+
+            key "node";
+            leaf node {
+                description "Identifier for a switch.";
+                type inv:node-id;
+            }
+
+            uses flow-id-set;
+        }
+
+        list port-flows {
+            description
+              "A list of VTN data flow IDs indexed by related switch port.";
+
+            key "port";
+            leaf port {
+                description "Identifier for a switch port.";
+                type inv:node-connector-id;
+            }
+
+            uses flow-id-set;
+        }
+
+        list source-host-flows {
+            description
+              "A list of VTN data flow IDs indexed by source host.";
+
+            key "mac-address vlan-id";
+            uses vtype:vlan-host;
+            uses flow-id-set;
+        }
+    }
+
+    container vtn-flows {
+        description
+          "Top level container that contains VTN data flow information.";
+        config false;
+        presence "Indicates that the flow management is active.";
+
+        list vtn-flow-table {
+            description
+              "Information about data flows present in the VTN.
+               Note that the element for the VTN that has no data flow may
+               not be present in this list.";
+            key "tenant-name";
+            uses tenant-flow-info;
+        }
+    }
+
+    container next-flow-id {
+        description
+          "Container that keeps flow identifier for the next allocation.";
+        presence "Indicates that the flow management is active.";
+
+        leaf next-id {
+            description "A data flow identifier for the next allocation.";
+            type vflow:vtn-flow-id;
+        }
+    }
+}

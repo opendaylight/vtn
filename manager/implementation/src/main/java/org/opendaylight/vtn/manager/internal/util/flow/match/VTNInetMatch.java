@@ -171,6 +171,32 @@ public abstract class VTNInetMatch {
     }
 
     /**
+     * Construct a new instance.
+     *
+     * @param src    A {@link IpNetwork} instance which specifies the source
+     *               IP address to match.
+     *               {@code null} matches every source IP address.
+     * @param dst    A {@link IpNetwork} instance which specifies the
+     *               destination IP address to match.
+     *               {@code null} matches every destination IP address.
+     * @param proto  A {@link Short} instance which represents the IP protocol
+     *               number to match against packets.
+     *               {@code null} matches every IP protocol.
+     * @param d      A DSCP field value to match.
+     *               {@code null} matches every DSCP field value.
+     * @throws RpcException
+     *    The specified condition is invalid.
+     */
+    VTNInetMatch(IpNetwork src, IpNetwork dst, Short proto, Short d)
+        throws RpcException {
+        sourceNetwork = src;
+        destinationNetwork = dst;
+        protocol = proto;
+        dscp = d;
+        verify();
+    }
+
+    /**
      * Construct a new instance from the given {@link InetMatch} instance.
      *
      * @param imatch  An {@link InetMatch} instance.

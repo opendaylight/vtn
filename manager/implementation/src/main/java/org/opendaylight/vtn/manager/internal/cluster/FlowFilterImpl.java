@@ -76,7 +76,7 @@ public abstract class FlowFilterImpl implements Serializable {
      * An internal exception to notify that this flow filter does not support
      * the given packet.
      */
-    private final class UnsupportedPacketException extends Exception {
+    private static final class UnsupportedPacketException extends Exception {
         /**
          * Construct a new exception.
          *

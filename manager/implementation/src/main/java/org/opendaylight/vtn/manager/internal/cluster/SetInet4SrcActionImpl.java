@@ -15,8 +15,7 @@ import org.opendaylight.vtn.manager.util.IpNetwork;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
 import org.opendaylight.vtn.manager.internal.packet.cache.Inet4Packet;
-
-import org.opendaylight.controller.sal.action.SetNwSrc;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
 
 /**
  * Implementation of flow action that modifies source IP address in IPv4
@@ -64,7 +63,7 @@ public final class SetInet4SrcActionImpl extends InetAddressActionImpl {
         if (ipv4 != null) {
             IpNetwork ipn = getAddress();
             ipv4.setSourceAddress(ipn);
-            pctx.addFilterAction(new SetNwSrc(ipn.getInetAddress()));
+            pctx.addFilterAction(new VTNSetInetSrcAction(ipn));
             return true;
         }
 

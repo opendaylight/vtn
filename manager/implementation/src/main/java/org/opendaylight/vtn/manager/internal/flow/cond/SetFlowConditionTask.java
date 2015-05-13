@@ -13,9 +13,9 @@ import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.flow.remove.AllFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.FlowCondUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.cond.VTNFlowCondition;
-
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcOutputGenerator;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -142,7 +142,7 @@ public final class SetFlowConditionTask extends PutDataTask<VtnFlowCondition>
     public void onSuccess(VTNManagerProvider provider, VtnUpdateType result) {
         if (result != null) {
             // REVISIT: Select flow entries affected by the change.
-            addBackgroundTasks(provider.removeFlows(null));
+            addBackgroundTask(provider.removeFlows(new AllFlowRemover()));
         }
     }
 

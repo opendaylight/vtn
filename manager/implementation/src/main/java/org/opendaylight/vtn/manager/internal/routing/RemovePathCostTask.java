@@ -17,7 +17,6 @@ import java.util.Map;
 
 import org.opendaylight.vtn.manager.VTNException;
 
-import org.opendaylight.vtn.manager.internal.PathPolicyFlowSelector;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
 import org.opendaylight.vtn.manager.internal.util.pathpolicy.PathPolicyUtils;
@@ -139,8 +138,8 @@ public final class RemovePathCostTask
         for (VtnUpdateType status: result) {
             if (status != null) {
                 // Remove all flow entries affected by the target path policy.
-                PathPolicyFlowSelector selector = context.getFlowSelector();
-                addBackgroundTasks(provider.removeFlows(selector));
+                addBackgroundTask(
+                    provider.removeFlows(context.getFlowRemover()));
 
                 context.onUpdated();
                 break;

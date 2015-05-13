@@ -9,8 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.util.tx;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -61,10 +63,16 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
     private static final long  SUBMIT_TIMEOUT = TimeUnit.SECONDS.toNanos(10L);
 
     /**
-     * The number of milliseconds to wait for completion of runner thread.
+     * The timeout in milliseconds for graceful shutdown.
      */
-    private static final long  RUNNER_JOIN_TIMEOUT =
+    private static final long  SHUTDOWN_TIMEOUT =
         TimeUnit.SECONDS.toMillis(10L);
+
+    /**
+     * The timeout in milliseconds for shutdown by force.
+     */
+    private static final long  CLOSE_TIMEOUT =
+        TimeUnit.SECONDS.toMillis(3L);
 
     /**
      * VTN Manager provider service.
@@ -74,12 +82,17 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
     /**
      * A transaction queue.
      */
-    private Deque<TxFuture>  txQueue = new LinkedList<TxFuture>();
+    private final Deque<TxFuture>  txQueue = new LinkedList<TxFuture>();
 
     /**
      * A runner thread.
      */
     private final Thread  runnerThread;
+
+    /**
+     * Keep {@code true} while this queue is available.
+     */
+    private boolean  available = true;
 
     /**
      * A {@link VTNFuture} implementation to wait for the completion of
@@ -204,7 +217,20 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             return txTask.getClass().getSimpleName();
         }
 
-        // AbstractVTNFuture
+        /**
+         * Set the cause of the failure of this task.
+         *
+         * @param cause  A {@link Throwable} instance which indicates the cause
+         *               of the failure.
+         */
+        private void setFailure(Throwable cause) {
+            if (txTask.needErrorLog(cause)) {
+                LOG.error("DS transaction failed.", cause);
+            }
+            setException(cause);
+        }
+
+        // SettableVTNFuture
 
         /**
          * {@inheritDoc}
@@ -321,11 +347,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
      *          {@code null} if this queue was closed.
      */
     private synchronized TxFuture<?> getTask() {
-        while (true) {
-            if (txQueue == null) {
-                return null;
-            }
-
+        while (available) {
             while (txQueue.size() != 0) {
                 // Ignore canceled task.
                 TxFuture<?> future = txQueue.removeFirst();
@@ -339,6 +361,8 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             } catch (InterruptedException e) {
             }
         }
+
+        return null;
     }
 
     /**
@@ -364,7 +388,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
                              "data conflict.", future.getSimpleTaskName());
                 }
             } catch (Throwable t) {
-                future.setException(t);
+                future.setFailure(t);
                 break;
             } finally {
                 future.cancelTransaction();
@@ -385,12 +409,12 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
     @Override
     public synchronized <T> VTNFuture<T> post(TxTask<T> task) {
         TxFuture<T> future = new TxFuture<T>(vtnProvider, task);
-        if (txQueue == null) {
-            // This queue has been already closed.
+        if (!available) {
+            // This queue has already been closed.
             future.cancel(false);
         } else {
             txQueue.addLast(future);
-            notify();
+            notifyAll();
         }
 
         return future;
@@ -411,12 +435,12 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
     @Override
     public synchronized <T> VTNFuture<T> postFirst(TxTask<T> task) {
         TxFuture<T> future = new TxFuture<T>(vtnProvider, task);
-        if (txQueue == null) {
+        if (!available) {
             // This queue has already been closed.
             future.cancel(false);
         } else {
             txQueue.addFirst(future);
-            notify();
+            notifyAll();
         }
 
         return future;
@@ -429,34 +453,55 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
      */
     @Override
     public void close() {
-        Deque<TxFuture> queue;
+        // At first, wait for all tasks to complete without cancellation.
+        if (awaitShutdown()) {
+            return;
+        }
 
+        // Cancel all tasks on the queue.
+        List<TxFuture> queue;
         synchronized (this) {
-            queue = txQueue;
-            if (queue != null) {
-                txQueue = null;
-                notify();
+            queue = new ArrayList<>(txQueue);
+            if (!queue.isEmpty()) {
+                txQueue.clear();
+                notifyAll();
             }
         }
 
-        if (queue != null) {
-            for (TxFuture future: queue) {
-                future.cancel(true);
-            }
+        for (TxFuture future: queue) {
+            future.cancel(true);
         }
 
-        Thread t = runnerThread;
-        if (t != null) {
-            try {
-                t.join(RUNNER_JOIN_TIMEOUT);
-            } catch (InterruptedException e) {
-            }
-
-            if (t.isAlive()) {
-                t.interrupt();
-                LOG.warn("The runner thread did not complete.");
-            }
+        try {
+            runnerThread.join(CLOSE_TIMEOUT);
+        } catch (InterruptedException e) {
         }
+
+        if (runnerThread.isAlive()) {
+            runnerThread.interrupt();
+            LOG.warn("The runner thread did not complete.");
+        }
+    }
+
+    /**
+     * Wait for all tasks previously queued to complete.
+     *
+     * @return  {@code true} if the runner thread was terminated.
+     *          Otherwise {@code false}.
+     */
+    private boolean awaitShutdown() {
+        // Reject new tasks.
+        synchronized (this) {
+            available = false;
+            notifyAll();
+        }
+
+        try {
+            runnerThread.join(SHUTDOWN_TIMEOUT);
+        } catch (InterruptedException e) {
+        }
+
+        return !runnerThread.isAlive();
     }
 
     // Runnable

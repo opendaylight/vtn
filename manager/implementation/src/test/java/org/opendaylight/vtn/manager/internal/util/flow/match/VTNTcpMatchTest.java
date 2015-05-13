@@ -96,12 +96,21 @@ public class VTNTcpMatchTest extends TestBase {
         TcpMatchParams params = new TcpMatchParams();
         for (PortRangeParams src: srcs) {
             params.setSourcePortParams(src);
+            VTNPortRange sr = (src == null)
+                ? null
+                : VTNPortRange.create(src.toPortMatch());
             for (PortRangeParams dst: dsts) {
                 params.setDestinationPortParams(dst);
                 TcpMatch tm = params.toL4Match();
                 VTNTcpMatch tmatch = new VTNTcpMatch(tm);
                 params.verify(tmatch);
                 assertEquals(tmatch, VTNLayer4Match.create(tm));
+
+                VTNPortRange dr = (dst == null)
+                    ? null
+                    : VTNPortRange.create(dst.toPortMatch());
+                VTNTcpMatch tmatch1 = new VTNTcpMatch(sr, dr);
+                assertEquals(tmatch, tmatch1);
             }
         }
 

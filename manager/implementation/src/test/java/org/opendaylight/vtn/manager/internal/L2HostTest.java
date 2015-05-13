@@ -18,9 +18,12 @@ import org.opendaylight.vtn.manager.util.ByteUtils;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
  * JUnit test for {@link L2Host}.
@@ -32,36 +35,61 @@ public class L2HostTest extends TestBase {
     @Test
     public void testGetter() {
         short[] vlans = new short[] {0, 1, 1000, 4095};
-        for (NodeConnector port: createNodeConnectors(10, false)) {
+        SalPort[] ports = {
+            SalPort.create("openflow:1:1"),
+            SalPort.create("openflow:1:2"),
+            SalPort.create("openflow:1:3"),
+            SalPort.create("openflow:2:1"),
+            SalPort.create("openflow:2:2"),
+            SalPort.create("openflow:2:3"),
+            SalPort.create("openflow:123456789012:12345"),
+        };
+
+        for (SalPort sport: ports) {
+            NodeConnector nc = sport.getAdNodeConnector();
             for (short vlan : vlans) {
                 for (EthernetAddress ea : createEthernetAddresses()) {
                     byte[] addr;
                     long mac;
+                    MacAddress maddr;
                     if (ea == null) {
                         addr = null;
                         mac = 0;
+                        maddr = null;
                     } else {
                         addr = ea.getValue();
-                        mac = EtherAddress.toLong(addr);
+                        EtherAddress eaddr = EtherAddress.create(addr);
+                        mac = eaddr.getAddress();
+                        maddr = eaddr.getMacAddress();
                     }
-                    L2Host lh = new L2Host(addr, vlan, port);
+                    L2Host lh = new L2Host(addr, vlan, nc);
                     MacVlan mvlan = lh.getHost();
                     assertEquals(mac, mvlan.getMacAddress());
                     assertEquals(vlan, mvlan.getVlan());
-                    assertEquals(port, lh.getPort());
+                    assertEquals(sport, lh.getPort());
 
-                    L2Host lh2 = new L2Host(mac, vlan, port);
+                    L2Host lh2 = new L2Host(mac, vlan, nc);
                     mvlan = lh2.getHost();
                     assertEquals(mac, mvlan.getMacAddress());
                     assertEquals(vlan, mvlan.getVlan());
-                    assertEquals(port, lh2.getPort());
+                    assertEquals(sport, lh2.getPort());
+
+                    L2Host lh3 = new L2Host(maddr, (int)vlan, sport);
+                    mvlan = lh3.getHost();
+                    assertEquals(mac, mvlan.getMacAddress());
+                    assertEquals(vlan, mvlan.getVlan());
+                    assertEquals(sport, lh3.getPort());
+
+                    L2Host lh4 = new L2Host(mvlan, sport);
+                    assertEquals(mvlan, lh4.getHost());
+                    assertEquals(sport, lh4.getPort());
                 }
 
-                L2Host lh = new L2Host(vlan, port);
+                L2Host lh = new L2Host(vlan, nc);
                 MacVlan mvlan = lh.getHost();
                 assertEquals(MacVlan.UNDEFINED, mvlan.getMacAddress());
                 assertEquals(vlan, mvlan.getVlan());
-                assertEquals(port, lh.getPort());
+                assertEquals(sport, lh.getPort());
             }
         }
     }
@@ -75,13 +103,22 @@ public class L2HostTest extends TestBase {
         HashSet<Object> set = new HashSet<Object>();
         short[] vlans = {0, 1, 10, 1000, 4095};
         List<EthernetAddress> ethers = createEthernetAddresses();
-        List<NodeConnector> ports = createNodeConnectors(10, false);
+        SalPort[] ports = {
+            SalPort.create("openflow:1:1"),
+            SalPort.create("openflow:1:2"),
+            SalPort.create("openflow:1:3"),
+            SalPort.create("openflow:2:1"),
+            SalPort.create("openflow:2:2"),
+            SalPort.create("openflow:2:3"),
+            SalPort.create("openflow:123456789012:12345"),
+        };
 
-        for (NodeConnector port: ports) {
+        for (SalPort sport: ports) {
+            NodeConnector nc = sport.getAdNodeConnector();
             for (short vlan: vlans) {
                 for (EthernetAddress ea : ethers) {
                     byte[] addr = (ea == null) ? null : ea.getValue();
-                    L2Host h1 = new L2Host(addr, vlan, port);
+                    L2Host h1 = new L2Host(addr, vlan, nc);
 
                     byte[] addr2;
                     if (addr == null) {
@@ -90,16 +127,16 @@ public class L2HostTest extends TestBase {
                         addr2 = new byte[addr.length];
                         System.arraycopy(addr, 0, addr2, 0, addr.length);
                     }
-                    L2Host h2 = new L2Host(addr2, vlan, copy(port));
+                    L2Host h2 = new L2Host(addr2, vlan, copy(nc));
                     testEquals(set, h1, h2);
                 }
 
-                L2Host h = new L2Host(vlan, port);
+                L2Host h = new L2Host(vlan, nc);
                 assertFalse(set.add(h));
             }
         }
 
-        assertEquals(ports.size() * vlans.length * ethers.size(),
+        assertEquals(ports.length * vlans.length * ethers.size(),
                      set.size());
     }
 
@@ -112,10 +149,20 @@ public class L2HostTest extends TestBase {
         String prefix = "L2Host[";
         String suffix = "]";
         short[] vlans = {0, 1, 10, 1000, 4095};
+        SalPort[] ports = {
+            SalPort.create("openflow:1:1"),
+            SalPort.create("openflow:1:2"),
+            SalPort.create("openflow:1:3"),
+            SalPort.create("openflow:2:1"),
+            SalPort.create("openflow:2:2"),
+            SalPort.create("openflow:2:3"),
+            SalPort.create("openflow:123456789012:12345"),
+        };
 
         for (EthernetAddress ea : createEthernetAddresses()) {
             for (short vlan: vlans) {
-                for (NodeConnector port: createNodeConnectors(10, false)) {
+                for (SalPort sport: ports) {
+                    NodeConnector nc = sport.getAdNodeConnector();
                     byte[] addr;
                     long mac;
                     if (ea == null) {
@@ -125,7 +172,7 @@ public class L2HostTest extends TestBase {
                         addr = ea.getValue();
                         mac = EtherAddress.toLong(addr);
                     }
-                    L2Host lh = new L2Host(addr, vlan, port);
+                    L2Host lh = new L2Host(addr, vlan, nc);
 
                     StringBuilder builder = new StringBuilder("host={");
                     if (mac != MacVlan.UNDEFINED) {
@@ -134,7 +181,7 @@ public class L2HostTest extends TestBase {
                             append(',');
                     }
                     builder.append("vlan=").append((int)vlan).append('}');
-                    String p = "port=" + port;
+                    String p = "port=" + sport;
 
                     String required = joinStrings(prefix, suffix, ",",
                                                   builder.toString(), p);

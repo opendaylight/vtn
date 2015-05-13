@@ -96,12 +96,21 @@ public class VTNUdpMatchTest extends TestBase {
         UdpMatchParams params = new UdpMatchParams();
         for (PortRangeParams src: srcs) {
             params.setSourcePortParams(src);
+            VTNPortRange sr = (src == null)
+                ? null
+                : VTNPortRange.create(src.toPortMatch());
             for (PortRangeParams dst: dsts) {
                 params.setDestinationPortParams(dst);
                 UdpMatch um = params.toL4Match();
                 VTNUdpMatch umatch = new VTNUdpMatch(um);
                 params.verify(umatch);
                 assertEquals(umatch, VTNLayer4Match.create(um));
+
+                VTNPortRange dr = (dst == null)
+                    ? null
+                    : VTNPortRange.create(dst.toPortMatch());
+                VTNUdpMatch umatch1 = new VTNUdpMatch(sr, dr);
+                assertEquals(umatch, umatch1);
             }
         }
 

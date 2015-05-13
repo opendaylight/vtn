@@ -12,7 +12,6 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,16 +23,15 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNPortRange;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNUdpMatch;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.SetTpDst;
-import org.opendaylight.controller.sal.action.SetTpSrc;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
 import org.opendaylight.controller.sal.packet.PacketException;
@@ -107,10 +105,12 @@ public class UdpPacketTest extends TestBase {
         int src2 = 64531;
         int dst2 = 3271;
 
-        Map<Class<? extends Action>, Action> salActions =
-            new LinkedHashMap<Class<? extends Action>, Action>();
-        salActions.put(SetTpSrc.class, new SetTpSrc(src2));
-        salActions.put(SetTpDst.class, new SetTpDst(dst2));
+        Map<Class<? extends FlowFilterAction>, FlowFilterAction> fltActions =
+            new LinkedHashMap<>();
+        fltActions.put(VTNSetPortSrcAction.class,
+                       new VTNSetPortSrcAction(src2));
+        fltActions.put(VTNSetPortDstAction.class,
+                       new VTNSetPortDstAction(dst2));
 
         for (int flags = UDP_SRC; flags <= UDP_ALL; flags++) {
             UDP pkt = createUDP(src0, dst0);
@@ -122,7 +122,7 @@ public class UdpPacketTest extends TestBase {
             Ethernet ether = createEthernet(pkt);
             PacketContext pctx =
                 createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             UdpPacket udp1 = (UdpPacket)udp.clone();
@@ -161,31 +161,31 @@ public class UdpPacketTest extends TestBase {
             assertTrue(pctx.hasMatchField(FlowMatchType.DL_TYPE));
             assertTrue(pctx.hasMatchField(FlowMatchType.IP_PROTO));
 
-            List<Action> filterActions =
-                new ArrayList<Action>(pctx.getFilterActions());
-            assertEquals(new ArrayList<Action>(salActions.values()),
+            List<FlowFilterAction> filterActions =
+                new ArrayList<>(pctx.getFilterActions());
+            assertEquals(new ArrayList<FlowFilterAction>(fltActions.values()),
                          filterActions);
 
             // Actions for unchanged field will be removed if corresponding
             // match type is configured in PacketContext.
-            List<Action> actions = new ArrayList<Action>();
+            List<FlowFilterAction> actions = new ArrayList<>();
             if ((flags & UDP_SRC) != 0) {
-                actions.add(salActions.get(SetTpSrc.class));
+                actions.add(fltActions.get(VTNSetPortSrcAction.class));
             }
             if ((flags & UDP_DST) != 0) {
-                actions.add(salActions.get(SetTpDst.class));
+                actions.add(fltActions.get(VTNSetPortDstAction.class));
             }
 
             pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             assertEquals(true, udp1.commit(pctx));
             assertSame(newPkt, udp1.getPacket());
-            filterActions = new ArrayList<Action>(pctx.getFilterActions());
+            filterActions = new ArrayList<>(pctx.getFilterActions());
             assertEquals(actions, filterActions);
 
             // The original packet should not be affected.
@@ -218,57 +218,40 @@ public class UdpPacketTest extends TestBase {
     }
 
     /**
-     * Test case for {@link UdpPacket#setMatch(Match, Set)}.
+     * Test case for {@link UdpPacket#createMatch(Set)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testSetMatch() {
+    public void testCreateMatch() throws Exception {
         int src = 34567;
         int dst = 4321;
-        Map<FlowMatchType, MatchField> tpFields = new HashMap<>();
-        tpFields.put(FlowMatchType.UDP_SRC,
-                     new MatchField(MatchType.TP_SRC,
-                                    Short.valueOf((short)src)));
-        tpFields.put(FlowMatchType.UDP_DST,
-                     new MatchField(MatchType.TP_DST,
-                                    Short.valueOf((short)dst)));
+        VTNPortRange sr = new VTNPortRange(src);
+        VTNPortRange dr = new VTNPortRange(dst);
 
         int src1 = 43982;
         int dst1 = 3178;
         UDP pkt = createUDP(src, dst);
         UdpPacket udp = new UdpPacket(pkt);
 
-        Match match = new Match();
         Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
-        udp.setMatch(match, fields);
-        List<MatchType> matches = match.getMatchesList();
-        assertEquals(0, matches.size());
+        VTNUdpMatch expected = new VTNUdpMatch();
+        assertEquals(expected, udp.createMatch(fields));
 
-        for (Map.Entry<FlowMatchType, MatchField> entry: tpFields.entrySet()) {
-            FlowMatchType fmtype = entry.getKey();
-            MatchField mfield = entry.getValue();
-            MatchType mtype = mfield.getType();
+        fields = EnumSet.of(FlowMatchType.UDP_SRC);
+        expected = new VTNUdpMatch(sr, null);
+        assertEquals(expected, udp.createMatch(fields));
 
-            match = new Match();
-            fields = EnumSet.of(fmtype);
-            udp.setMatch(match, fields);
-            matches = match.getMatchesList();
-            assertEquals(1, matches.size());
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.UDP_DST);
+        expected = new VTNUdpMatch(null, dr);
+        assertEquals(expected, udp.createMatch(fields));
 
-        // setMatch() always has to see the original.
+        // createMatch() always has to see the original.
         udp.setSourcePort(src1);
         udp.setDestinationPort(dst1);
-        fields = EnumSet.noneOf(FlowMatchType.class);
-        fields.addAll(tpFields.keySet());
-        match = new Match();
-        udp.setMatch(match, fields);
-        matches = match.getMatchesList();
-        assertEquals(tpFields.size(), matches.size());
-        for (MatchField mfield: tpFields.values()) {
-            MatchType mtype = mfield.getType();
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.UDP_SRC, FlowMatchType.UDP_DST);
+        expected = new VTNUdpMatch(sr, dr);
+        assertEquals(expected, udp.createMatch(fields));
     }
 
     /**

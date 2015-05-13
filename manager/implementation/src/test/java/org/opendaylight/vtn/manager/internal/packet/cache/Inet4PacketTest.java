@@ -11,7 +11,6 @@ package org.opendaylight.vtn.manager.internal.packet.cache;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,17 +23,15 @@ import org.opendaylight.vtn.manager.util.Ip4Network;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.action.FlowFilterAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDscpAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
-import org.opendaylight.controller.sal.action.Action;
-import org.opendaylight.controller.sal.action.SetNwDst;
-import org.opendaylight.controller.sal.action.SetNwSrc;
-import org.opendaylight.controller.sal.action.SetNwTos;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchField;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IPv4;
 
@@ -114,8 +111,9 @@ public class Inet4PacketTest extends TestBase {
     @Test
     public void testSetter() throws Exception {
         short proto = 111;
-        byte dscp0 = 1;
-        byte dscp1 = 63;
+        short dscp0 = 1;
+        short dscp1 = 63;
+        short dscp2 = 30;
 
         byte[] srcBytes0 = {(byte)192, (byte)168, (byte)33, (byte)44};
         byte[] dstBytes0 = {(byte)172, (byte)30, (byte)40, (byte)50};
@@ -131,13 +129,15 @@ public class Inet4PacketTest extends TestBase {
         byte[] dstBytes2 = {(byte)10, (byte)100, (byte)220, (byte)254};
         Ip4Network src2 = new Ip4Network(srcBytes1);
         Ip4Network dst2 = new Ip4Network(dstBytes2);
-        byte dscp2 = 30;
 
-        Map<Class<? extends Action>, Action> salActions =
-            new LinkedHashMap<Class<? extends Action>, Action>();
-        salActions.put(SetNwSrc.class, new SetNwSrc(src2.getInetAddress()));
-        salActions.put(SetNwDst.class, new SetNwDst(dst2.getInetAddress()));
-        salActions.put(SetNwTos.class, new SetNwTos(dscp2));
+        Map<Class<? extends FlowFilterAction>, FlowFilterAction> fltActions =
+            new LinkedHashMap<>();
+        fltActions.put(VTNSetInetSrcAction.class,
+                       new VTNSetInetSrcAction(src2));
+        fltActions.put(VTNSetInetDstAction.class,
+                       new VTNSetInetDstAction(dst2));
+        fltActions.put(VTNSetInetDscpAction.class,
+                       new VTNSetInetDscpAction(dscp2));
 
         for (int flags = IPV4_SRC; flags <= IPV4_ALL; flags++) {
             IPv4 pkt = createIPv4Packet(src0, dst0, proto, dscp0);
@@ -145,12 +145,12 @@ public class Inet4PacketTest extends TestBase {
 
             Ip4Network src = src0;
             Ip4Network dst = dst0;
-            byte dscp = dscp0;
+            short dscp = dscp0;
 
             Ethernet ether = createEthernet(pkt);
             PacketContext pctx =
                 createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
 
@@ -189,37 +189,37 @@ public class Inet4PacketTest extends TestBase {
             assertEquals(src.getAddress(), newPkt.getSourceAddress());
             assertEquals(dst.getAddress(), newPkt.getDestinationAddress());
             assertEquals((byte)proto, newPkt.getProtocol());
-            assertEquals(dscp, newPkt.getDiffServ());
+            assertEquals((byte)dscp, newPkt.getDiffServ());
 
-            List<Action> filterActions =
-                new ArrayList<Action>(pctx.getFilterActions());
-            assertEquals(new ArrayList<Action>(salActions.values()),
+            List<FlowFilterAction> filterActions =
+                new ArrayList<>(pctx.getFilterActions());
+            assertEquals(new ArrayList<FlowFilterAction>(fltActions.values()),
                          filterActions);
             assertTrue(pctx.hasMatchField(FlowMatchType.DL_TYPE));
 
             // Actions for unchanged field will be removed if corresponding
             // match type is configured in PacketContext.
-            List<Action> actions = new ArrayList<Action>();
+            List<FlowFilterAction> actions = new ArrayList<>();
             if ((flags & IPV4_SRC) != 0) {
-                actions.add(salActions.get(SetNwSrc.class));
+                actions.add(fltActions.get(VTNSetInetSrcAction.class));
             }
             if ((flags & IPV4_DST) != 0) {
-                actions.add(salActions.get(SetNwDst.class));
+                actions.add(fltActions.get(VTNSetInetDstAction.class));
             }
             if ((flags & IPV4_DSCP) != 0) {
-                actions.add(salActions.get(SetNwTos.class));
+                actions.add(fltActions.get(VTNSetInetDscpAction.class));
             }
 
             pctx = createPacketContext(ether, EtherPacketTest.NODE_CONNECTOR);
             for (FlowMatchType mt: FlowMatchType.values()) {
                 pctx.addMatchField(mt);
             }
-            for (Action act: salActions.values()) {
+            for (FlowFilterAction act: fltActions.values()) {
                 pctx.addFilterAction(act);
             }
             assertEquals(true, ip.commit(pctx));
             assertSame(newPkt, ip.getPacket());
-            filterActions = new ArrayList<Action>(pctx.getFilterActions());
+            filterActions = new ArrayList<>(pctx.getFilterActions());
             assertEquals(actions, filterActions);
 
             // The original packet should not be affected.
@@ -232,7 +232,7 @@ public class Inet4PacketTest extends TestBase {
             assertEquals(src0.getAddress(), pkt.getSourceAddress());
             assertEquals(dst0.getAddress(), pkt.getDestinationAddress());
             assertEquals((byte)proto, pkt.getProtocol());
-            assertEquals(dscp0, pkt.getDiffServ());
+            assertEquals((byte)dscp0, pkt.getDiffServ());
 
             // Set values in the original packet.
             ip.setSourceAddress(src0);
@@ -270,69 +270,57 @@ public class Inet4PacketTest extends TestBase {
     }
 
     /**
-     * Test case for {@link Inet4Packet#setMatch(Match, Set)}.
+     * Test case for {@link Inet4Packet#createMatch(Set)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void testSetMatch() {
+    public void testCreateMatch() throws Exception {
         byte[] srcAddr = {(byte)10, (byte)1, (byte)2, (byte)3};
         byte[] dstAddr = {(byte)192, (byte)168, (byte)111, (byte)222};
         Ip4Network src = new Ip4Network(srcAddr);
         Ip4Network dst = new Ip4Network(dstAddr);
-        byte dscp = 0;
-        short proto = 100;
-        Map<FlowMatchType, MatchField> nwFields = new HashMap<>();
-        nwFields.put(FlowMatchType.IP_SRC,
-                     new MatchField(MatchType.NW_SRC, src.getInetAddress()));
-        nwFields.put(FlowMatchType.IP_DST,
-                     new MatchField(MatchType.NW_DST, dst.getInetAddress()));
-        nwFields.put(FlowMatchType.IP_PROTO,
-                     new MatchField(MatchType.NW_PROTO,
-                                    Byte.valueOf((byte)proto)));
-        nwFields.put(FlowMatchType.IP_DSCP,
-                     new MatchField(MatchType.NW_TOS, Byte.valueOf(dscp)));
+        Short dscp = Short.valueOf((short)0);
+        Short proto = Short.valueOf((short)100);
 
         byte[] srcAddr1 = {(byte)100, (byte)200, (byte)33, (byte)44};
         byte[] dstAddr1 = {(byte)172, (byte)16, (byte)123, (byte)234};
         Ip4Network src1 = new Ip4Network(srcAddr1);
         Ip4Network dst1 = new Ip4Network(dstAddr1);
-        byte dscp1 = 63;
+        Short dscp1 = Short.valueOf((short)63);
 
-        IPv4 pkt = createIPv4Packet(src, dst, proto, dscp);
+        IPv4 pkt = createIPv4Packet(src, dst, proto.shortValue(),
+                                    dscp.shortValue());
         Inet4Packet ipv4 = new Inet4Packet(pkt);
 
-        Match match = new Match();
         Set<FlowMatchType> fields = EnumSet.noneOf(FlowMatchType.class);
-        ipv4.setMatch(match, fields);
-        List<MatchType> matches = match.getMatchesList();
-        assertEquals(0, matches.size());
+        VTNInet4Match expected = new VTNInet4Match();
+        assertEquals(expected, ipv4.createMatch(fields));
 
-        for (Map.Entry<FlowMatchType, MatchField> entry: nwFields.entrySet()) {
-            FlowMatchType fmtype = entry.getKey();
-            MatchField mfield = entry.getValue();
-            MatchType mtype = mfield.getType();
+        fields = EnumSet.of(FlowMatchType.IP_SRC);
+        expected = new VTNInet4Match(src, null, null, null);
+        assertEquals(expected, ipv4.createMatch(fields));
 
-            match = new Match();
-            fields = EnumSet.of(fmtype);
-            ipv4.setMatch(match, fields);
-            matches = match.getMatchesList();
-            assertEquals(1, matches.size());
-            assertEquals(mfield, match.getField(mtype));
-        }
+        fields = EnumSet.of(FlowMatchType.IP_DST);
+        expected = new VTNInet4Match(null, dst, null, null);
+        assertEquals(expected, ipv4.createMatch(fields));
 
-        // setMatch() always has to see the original.
+        fields = EnumSet.of(FlowMatchType.IP_PROTO);
+        expected = new VTNInet4Match(null, null, proto, null);
+        assertEquals(expected, ipv4.createMatch(fields));
+
+        fields = EnumSet.of(FlowMatchType.IP_DSCP);
+        expected = new VTNInet4Match(null, null, null, dscp);
+        assertEquals(expected, ipv4.createMatch(fields));
+
+        // createMatch() always has to see the original.
         ipv4.setSourceAddress(src1);
         ipv4.setDestinationAddress(dst1);
-        ipv4.setDscp(dscp1);
-        fields = EnumSet.noneOf(FlowMatchType.class);
-        fields.addAll(nwFields.keySet());
-        match = new Match();
-        ipv4.setMatch(match, fields);
-        matches = match.getMatchesList();
-        assertEquals(nwFields.size(), matches.size());
-        for (MatchField mfield: nwFields.values()) {
-            MatchType mtype = mfield.getType();
-            assertEquals(mfield, match.getField(mtype));
-        }
+        ipv4.setDscp(dscp1.shortValue());
+        fields = EnumSet.of(FlowMatchType.IP_SRC, FlowMatchType.IP_DST,
+                            FlowMatchType.IP_PROTO, FlowMatchType.IP_DSCP);
+        expected = new VTNInet4Match(src, dst, proto, dscp);
+        assertEquals(expected, ipv4.createMatch(fields));
     }
 
     /**
@@ -380,9 +368,9 @@ public class Inet4PacketTest extends TestBase {
      * @return  An {@link IPv4} instance.
      */
     private IPv4 createIPv4Packet(Ip4Network src, Ip4Network dst, short proto,
-                                  byte dscp) {
+                                  short dscp) {
         IPv4 pkt = createIPv4(src.getInetAddress(), dst.getInetAddress(),
-                              proto, dscp);
+                              proto, (byte)dscp);
         pkt.setRawPayload(EtherPacketTest.RAW_PAYLOAD);
 
         return pkt;

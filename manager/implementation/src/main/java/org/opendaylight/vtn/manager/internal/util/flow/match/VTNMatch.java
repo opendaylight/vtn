@@ -22,12 +22,15 @@ import org.opendaylight.vtn.manager.flow.cond.FlowMatch;
 import org.opendaylight.vtn.manager.flow.cond.InetMatch;
 import org.opendaylight.vtn.manager.flow.cond.L4Match;
 
+import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.VtnMatchFields;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnEtherMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnInetMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowMatchBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
@@ -87,6 +90,26 @@ public class VTNMatch {
      * Create a new flow match that matches every packet.
      */
     public VTNMatch() {
+    }
+
+    /**
+     * Construct a new flow match.
+     *
+     * @param ematch   A {@link VTNEtherMatch} instance which specifies the
+     *                 condition for Ethernet header.
+     * @param imatch   A {@link VTNInetMatch} instance which specifies the
+     *                 condition for IP header.
+     * @param l4match  A {@link VTNLayer4Match} instance which specifies the
+     *                 condition for layer 4 protocol header.
+     * @throws RpcException
+     *    The specified condition is invalid.
+     */
+    public VTNMatch(VTNEtherMatch ematch, VTNInetMatch imatch,
+                    VTNLayer4Match l4match) throws RpcException {
+        etherMatch = ematch;
+        inetMatch = imatch;
+        layer4Match = l4match;
+        complete();
     }
 
     /**
@@ -228,6 +251,28 @@ public class VTNMatch {
     }
 
     /**
+     * Return a {@link DataFlowMatchBuilder} instance which contains the
+     * flow conditions configured in this instance.
+     *
+     * @return  A {@link DataFlowMatchBuilder} instance.
+     */
+    public DataFlowMatchBuilder toDataFlowMatchBuilder() {
+        DataFlowMatchBuilder builder = new DataFlowMatchBuilder();
+        if (etherMatch != null) {
+            builder.setVtnEtherMatch(etherMatch.toVtnEtherMatchBuilder().
+                                     build());
+        }
+        if (inetMatch != null) {
+            builder.setVtnInetMatch(inetMatch.toVtnInetMatchBuilder().build());
+        }
+        if (layer4Match != null) {
+            builder.setVtnLayer4Match(layer4Match.toVtnLayer4Match());
+        }
+
+        return builder;
+    }
+
+    /**
      * Return a {@link MatchBuilder} instance which contains the flow
      * conditions configured in this instance.
      *
@@ -249,23 +294,33 @@ public class VTNMatch {
     }
 
     /**
-     * Create a flow condition key that identifies this flow condition.
+     * Create a flow condition key that identifies the flow entry.
      *
-     * @return  A string which can be used to identify the flow match.
+     * @param snode    A {@link SalNode} corresponding to the target switch.
+     * @param pri      Flow priority value.
+     * @param ingress  A {@link SalPort} instance corresponding to the ingress
+     *                 switch port.
+     * @return  A string which can be used to identify the flow entry.
      */
-    public final String getConditionKey() {
-        StringBuilder builder = new StringBuilder();
-        if (etherMatch != null) {
-            etherMatch.setConditionKey(builder);
-            if (inetMatch != null) {
-                inetMatch.setConditionKey(builder);
-                if (layer4Match != null) {
-                    layer4Match.setConditionKey(builder);
-                }
-            }
+    public final String getFlowKey(SalNode snode, int pri, SalPort ingress) {
+        StringBuilder builder = new StringBuilder("node=").
+            append(snode).append(COND_KEY_SEPARATOR).
+            append("pri=").append(pri);
+        if (ingress != null) {
+            builder.append(COND_KEY_SEPARATOR).
+                append(FlowMatchType.IN_PORT).append('=').append(ingress);
         }
 
-        return builder.toString();
+        return createConditionKey(builder);
+    }
+
+    /**
+     * Create a condition key that identifies this flow match.
+     *
+     * @return  A string which can be used to identify this flow match.
+     */
+    public final String getConditionKey() {
+        return createConditionKey(new StringBuilder());
     }
 
     /**
@@ -365,6 +420,38 @@ public class VTNMatch {
 
         // Test layer 4 protocol header.
         return (layer4Match == null || layer4Match.match(ctx));
+    }
+
+    /**
+     * Return the IP protocol specified by this match.
+     *
+     * @return  A {@link Short} instance which represents the IP protocol
+     *          number if this match specifies the IP protocol.
+     *          {@code null} if this match does not specify the IP protocol.
+     */
+    public final Short getInetProtocol() {
+        return (inetMatch == null) ? null : inetMatch.getProtocol();
+    }
+
+    /**
+     * Create a string which identifies the flow condition.
+     *
+     * @param builder  A {@link StringBuilder} instance which contains strings
+     *                 used to construct flow condition key.
+     * @return  A string which identifies the flow condition.
+     */
+    private String createConditionKey(StringBuilder builder) {
+        if (etherMatch != null) {
+            etherMatch.setConditionKey(builder);
+            if (inetMatch != null) {
+                inetMatch.setConditionKey(builder);
+                if (layer4Match != null) {
+                    layer4Match.setConditionKey(builder);
+                }
+            }
+        }
+
+        return builder.toString();
     }
 
     // Objects

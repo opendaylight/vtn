@@ -23,6 +23,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeKey;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -85,6 +88,31 @@ public class SalNode {
     }
 
     /**
+     * Convert a MD-SAL node reference into a {@link SalNode} instance.
+     *
+     * @param ref  A {@link NodeRef} instance.
+     * @return     A {@code SalNode} instance on success.
+     *          {@code null} on failure.
+     */
+    public static final SalNode create(NodeRef ref) {
+        if (ref == null) {
+            return null;
+        }
+
+        InstanceIdentifier<?> id = ref.getValue();
+        if (id == null) {
+            return null;
+        }
+
+        NodeKey key = id.firstKeyOf(Node.class, NodeKey.class);
+        if (key == null) {
+            return null;
+        }
+
+        return create(key.getId());
+    }
+
+    /**
      * Convert a string representation of MD-SAL node ID into a {@code SalNode}
      * instance.
      *
@@ -138,7 +166,7 @@ public class SalNode {
     }
 
     /**
-     * Constructor a new instance.
+     * Construct a new instance.
      *
      * @param id  A node identifier.
      */
@@ -147,7 +175,7 @@ public class SalNode {
     }
 
     /**
-     * Constructor a new instance with specifying a string representation of
+     * Construct a new instance with specifying a string representation of
      * this instance.
      *
      * @param id   A node identifier.
@@ -159,7 +187,7 @@ public class SalNode {
     }
 
     /**
-     * Constructor a new instance with specifying an AD-SAL node corresponding
+     * Construct a new instance with specifying an AD-SAL node corresponding
      * to this instance.
      *
      * @param id    A node identifier.
@@ -213,6 +241,32 @@ public class SalNode {
      */
     public final InstanceIdentifier<Node> getNodeIdentifier() {
         return getNodeIdentifierBuilder().build();
+    }
+
+    /**
+     * Return an instance identifier that specifies flow-capable-node for
+     * the node corresponding to this instance.
+     *
+     * @return An instance identifier for the flow-capable-node.
+     */
+    public final InstanceIdentifier<FlowCapableNode> getFlowNodeIdentifier() {
+        return getNodeIdentifierBuilder().
+            augmentation(FlowCapableNode.class).
+            build();
+    }
+
+    /**
+     * Return an instance identifier for the specified flow table in the
+     * node corresponding to this instance.
+     *
+     * @param tid  Identifier for the table.
+     * @return  An instance identifier for the specified flow table.
+     */
+    public final InstanceIdentifier<Table> getFlowTableIdentifier(Short tid) {
+        return getNodeIdentifierBuilder().
+            augmentation(FlowCapableNode.class).
+            child(Table.class, new TableKey(tid)).
+            build();
     }
 
     /**

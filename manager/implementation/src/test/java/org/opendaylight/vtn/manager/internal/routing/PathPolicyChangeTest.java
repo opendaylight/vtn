@@ -27,8 +27,8 @@ public class PathPolicyChangeTest extends TestBase {
      * Test case for the following methods.
      *
      * <ul>
-     *   <li>{@link PathPolicyChange#onUpdated(Interger,PathPolicy)}</li>
-     *   <li>{@link PathPolicyChange#onRemoved(Interger)}</li>
+     *   <li>{@link PathPolicyChange#onUpdated(Integer,PathPolicy)}</li>
+     *   <li>{@link PathPolicyChange#onRemoved(Integer)}</li>
      * </ul>
      */
     @Test
@@ -45,5 +45,4 @@ public class PathPolicyChangeTest extends TestBase {
             change.onRemoved(id);
         }
     }
-
 }

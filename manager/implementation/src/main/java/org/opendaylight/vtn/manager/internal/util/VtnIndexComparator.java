@@ -59,6 +59,6 @@ public final class VtnIndexComparator
      */
     @Override
     public int hashCode() {
-        return VtnIndexComparator.class.getName().hashCode();
+        return VtnIndexComparator.class.hashCode();
     }
 }

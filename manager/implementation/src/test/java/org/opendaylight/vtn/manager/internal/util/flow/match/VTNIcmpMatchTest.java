@@ -66,7 +66,7 @@ public class VTNIcmpMatchTest extends TestBase {
      * @throws Exception  An error occurred.
      */
     @Test
-    public void testConstructor1() throws Exception {
+    public void testConstructor() throws Exception {
         VTNIcmpMatch empty = new VTNIcmpMatch();
         assertEquals(null, empty.getIcmpType());
         assertEquals(null, empty.getIcmpCode());
@@ -88,6 +88,9 @@ public class VTNIcmpMatchTest extends TestBase {
                 VTNIcmpMatch imatch = new VTNIcmpMatch(im);
                 params.verify(imatch);
                 assertEquals(imatch, VTNLayer4Match.create(im));
+
+                VTNIcmpMatch imatch1 = new VTNIcmpMatch(type, code);
+                assertEquals(imatch, imatch1);
             }
         }
 
@@ -112,10 +115,32 @@ public class VTNIcmpMatchTest extends TestBase {
                              st.getDescription());
             }
 
+            try {
+                new VTNIcmpMatch(value, null);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid ICMP type: " + value,
+                             st.getDescription());
+            }
+
             params.reset().setCode(value);
             im = params.toL4Match();
             try {
                 new VTNIcmpMatch(im);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(StatusCode.BADREQUEST, st.getCode());
+                assertEquals("Invalid ICMP code: " + value,
+                             st.getDescription());
+            }
+
+            try {
+                new VTNIcmpMatch(null, value);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());

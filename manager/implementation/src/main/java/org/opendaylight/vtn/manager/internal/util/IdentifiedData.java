@@ -53,7 +53,32 @@ public class IdentifiedData<T extends DataObject> {
         Class<D> type, InstanceIdentifier<?> path, DataObject data)
         throws DataTypeMismatchException {
         InstanceIdentifier<D> id = DataStoreUtils.cast(type, path);
-        return (id == null) ? null : new IdentifiedData<D>(id, data);
+        return (id == null) ? null : create(id, data);
+    }
+
+    /**
+     * Create a new {@link IdentifiedData} instance.
+     *
+     * @param path  An instance identifier that specifies the data location in
+     *              the MD-SAL datastore.
+     * @param data  A data object.
+     * @param <D>   The type of the target data.
+     * @return  An {@link IdentifiedData} instance.
+     * @throws DataTypeMismatchException
+     *    The type of {@code data} does not match the expected target type.
+     * @throws IllegalArgumentException
+     *    {@code path} is {@code null}.
+     */
+    public static final <D extends DataObject> IdentifiedData<D> create(
+        InstanceIdentifier<D> path, DataObject data)
+        throws DataTypeMismatchException {
+        if (path == null) {
+            throw new IllegalArgumentException(
+                "Instance identifier cannot be null.");
+        }
+
+        D v = MiscUtils.checkedCast(path.getTargetType(), data);
+        return new IdentifiedData<D>(path, v);
     }
 
     /**
@@ -62,19 +87,10 @@ public class IdentifiedData<T extends DataObject> {
      * @param id    An instance identifier that specifies the data location in
      *              the MD-SAL datastore.
      * @param data  A data object.
-     * @throws DataTypeMismatchException
-     *    The type of {@code data} does not match the target type of
-     *    {@code id}.
      */
-    public IdentifiedData(InstanceIdentifier<T> id, DataObject data)
-        throws DataTypeMismatchException {
-        if (id == null) {
-            throw new IllegalArgumentException(
-                "Instance identifier cannot be null.");
-        }
-
+    public IdentifiedData(InstanceIdentifier<T> id, T data) {
         identifier = id;
-        value = MiscUtils.checkedCast(id.getTargetType(), data);
+        value = data;
     }
 
     /**

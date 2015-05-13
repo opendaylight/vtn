@@ -9,10 +9,16 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import java.math.BigInteger;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +38,11 @@ import org.opendaylight.controller.sal.utils.StatusCode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodeName;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
+
 /**
  * {@code MiscUtils} class is a collection of miscellaneous utility class
  * methods.
@@ -49,6 +60,12 @@ public final class MiscUtils {
     public static final int  HASH_PRIME = 31;
 
     /**
+     * The minimum value of the order value for the first element in the
+     * ordered list.
+     */
+    public static final int  ORDER_MIN = 0;
+
+    /**
      * Private constructor that protects this class from instantiating.
      */
     private MiscUtils() {}
@@ -61,6 +78,29 @@ public final class MiscUtils {
      */
     public static String formatMacAddress(long mac) {
         return new EtherAddress(mac).getText();
+    }
+
+    /**
+     * Convert the given {@link MacAddress} instance into an
+     * {@link EtherAddress} instance.
+     *
+     * @param mac  A {@link MacAddress} instance.
+     * @return  An {@link EtherAddress} instance.
+     *          {@code null} if {@code mac} is {@code null}.
+     * @throws RpcException
+     *    The given MAC address is invalid.
+     */
+    public static EtherAddress toEtherAddress(MacAddress mac)
+        throws RpcException {
+        try {
+            return EtherAddress.create(mac);
+        } catch (RuntimeException e) {
+            // This should never happen.
+            String msg = "Invalid MAC address: " + mac;
+            RpcException re = RpcException.getBadArgumentException(msg);
+            re.initCause(e);
+            throw re;
+        }
     }
 
     /**
@@ -331,5 +371,125 @@ public final class MiscUtils {
      */
     public static String toLowerCase(String str) {
         return str.toLowerCase(Locale.ENGLISH);
+    }
+
+    /**
+     * Return an {@link IllegalStateException} which indicates unexpected
+     * method is called.
+     *
+     * @return  An {@link IllegalStateException} instance.
+     */
+    public static IllegalStateException unexpected() {
+        return new IllegalStateException("Should never be called.");
+    }
+
+    /**
+     * Return the value in the given 32-bit counter.
+     *
+     * @param c  The 32-bit counter.
+     * @return  A long value configured in the given counter.
+     *          Node that zero is returned if {@code c} is invalid.
+     */
+    public static long longValue(Counter32 c) {
+        if (c != null) {
+            Long v = c.getValue();
+            if (v != null) {
+                return v.longValue();
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Return the value in the given 64-bit counter.
+     *
+     * @param c  The 64-bit counter.
+     * @return  A long value configured in the given counter.
+     *          Node that zero is returned if {@code c} is invalid.
+     */
+    public static long longValue(Counter64 c) {
+        if (c != null) {
+            BigInteger v = c.getValue();
+            if (v != null) {
+                return v.longValue();
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Return the value in the given 32-bit counter.
+     *
+     * @param c  The 32-bit counter.
+     * @return  A double value configured in the given counter.
+     *          Node that zero is returned if {@code c} is invalid.
+     */
+    public static double doubleValue(Counter32 c) {
+        if (c != null) {
+            Long v = c.getValue();
+            if (v != null) {
+                return v.doubleValue();
+            }
+        }
+
+        return 0d;
+    }
+
+    /**
+     * Return the value in the given 64-bit counter.
+     *
+     * @param c  The 64-bit counter.
+     * @return  A double value configured in the given counter.
+     *          Node that zero is returned if {@code c} is invalid.
+     */
+    public static double doubleValue(Counter64 c) {
+        if (c != null) {
+            BigInteger v = c.getValue();
+            if (v != null) {
+                return v.doubleValue();
+            }
+        }
+
+        return 0d;
+    }
+
+    /**
+     * Return the copy of the given list sorted by the given comparator.
+     *
+     * @param list  A list to be copied.
+     * @param comp  A comparator for the given list.
+     * @param <T>   The type of elements in the list.
+     * @return  A copy of the given list.
+     */
+    public static <T> List<T> sortedCopy(List<T> list,
+                                         Comparator<? super T> comp) {
+        List<T> sorted = new ArrayList<>(list);
+        Collections.sort(sorted, comp);
+        return sorted;
+    }
+
+    /**
+     * Determine whether the given two URIs are identical or not.
+     *
+     * <p>
+     *   Note that this method compares only strings configured in the given
+     *   URIs. The type of classes are never compared.
+     *
+     * </p>
+     *
+     * @param u1  The first instance to be compared.
+     * @param u2  The second instance to be compared.
+     * @return  {@code true} only if {@code vh1} and {@code vh2} are identical.
+     */
+    public static boolean equals(Uri u1, Uri u2) {
+        if (u1 == null) {
+            return (u2 == null);
+        } else if (u2 == null) {
+            return false;
+        }
+
+        return Objects.equals(u1.getValue(), u2.getValue());
     }
 }

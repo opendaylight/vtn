@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.Futures;
 
-import org.opendaylight.vtn.manager.it.ofmock.OfMockService;
 import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RoutedRpcRegistration;
@@ -40,6 +39,8 @@ import org.opendaylight.yangtools.yang.binding.RpcService;
 import org.opendaylight.yangtools.yang.common.RpcError.ErrorType;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FeatureCapability;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeUpdated;
@@ -73,8 +74,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev13
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.OpendaylightFlowTableStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.RemovedReasonFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.AddGroupInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.AddGroupOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.service.rev130918.RemoveGroupInput;
@@ -91,6 +94,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupStatisticsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.GetGroupStatisticsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.group.statistics.rev131111.OpendaylightGroupStatisticsService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeContext;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
@@ -202,6 +206,11 @@ public final class OfNode
     private final OfMockProvider  ofMockProvider;
 
     /**
+     * OpenFlow protocol version.
+     */
+    private final VtnOpenflowVersion  ofVersion;
+
+    /**
      * Datapath ID of this node.
      */
     private final BigInteger  datapathId;
@@ -254,25 +263,16 @@ public final class OfNode
      * Construct a new instance.
      *
      * @param provider  The ofmock provider service.
-     * @param nsv       A {@link NotificationProviderService} service instance.
-     * @param dpid      Datapath ID of the node.
-     */
-    public OfNode(OfMockProvider provider, NotificationProviderService nsv,
-                  BigInteger dpid) {
-        this(provider, nsv, OfMockService.ID_OPENFLOW, dpid);
-    }
-
-    /**
-     * Construct a new instance.
-     *
-     * @param provider  The ofmock provider service.
+     * @param ver       OpenFlow protocol version.
      * @param nsv       A {@link NotificationProviderService} service instance.
      * @param prefix    Protocol prefix of the node.
      * @param dpid      Datapath ID of the node.
      */
-    public OfNode(OfMockProvider provider, NotificationProviderService nsv,
-                  String prefix, BigInteger dpid) {
+    public OfNode(OfMockProvider provider, VtnOpenflowVersion ver,
+                  NotificationProviderService nsv, String prefix,
+                  BigInteger dpid) {
         ofMockProvider = provider;
+        ofVersion = ver;
         datapathId = dpid;
         nodeIdentifier = prefix + dpid;
         nodePath = InstanceIdentifier.builder(Nodes.class).
@@ -328,7 +328,7 @@ public final class OfNode
      * @return    An {@link OfPort} instance.
      */
     public OfPort addPort(long id) {
-        OfPort port = new OfPort(nodeIdentifier, id);
+        OfPort port = new OfPort(ofVersion, nodeIdentifier, id);
         String portId = port.getPortIdentifier();
         if (physicalPorts.put(portId, port) != null) {
             String msg = "Duplicate port number: " + id;
@@ -708,6 +708,117 @@ public final class OfNode
     }
 
     /**
+     * Check whether the MD-SAL match contains another MD-SAL match.
+     *
+     * @param match1  The first MD-SAL match to be tested.
+     * @param match2  The second MD-SAL match to be tested.
+     * @return  {@code true} only if {@code match1} contains {@code match2}.
+     */
+    private boolean contains(Match match1, Match match2) {
+        if (match1 == null) {
+            return true;
+        }
+
+        Match m = (match2 == null)
+            ? new MatchBuilder().build()
+            : match2;
+
+        // Currently, only IN_PORT match is supported.
+        NodeConnectorId inPort1 = match1.getInPort();
+        if (inPort1 != null && !inPort1.equals(m.getInPort())) {
+            return false;
+        }
+
+        // Return false if unsupported filed is specified.
+        return (match1.getInPhyPort() == null &&
+                match1.getMetadata() == null &&
+                match1.getTunnel() == null &&
+                match1.getEthernetMatch() == null &&
+                match1.getVlanMatch() == null &&
+                match1.getIpMatch() == null &&
+                match1.getLayer3Match() == null &&
+                match1.getLayer4Match() == null &&
+                match1.getIcmpv4Match() == null &&
+                match1.getIcmpv6Match() == null &&
+                match1.getProtocolMatchFields() == null &&
+                match1.getTcpFlagMatch() == null);
+    }
+
+    /**
+     * Check whether the given flow cookie satisfies the given condition.
+     *
+     * @param cookie    The flow cookie to be tested.
+     * @param expected  The expected flow cookie.
+     * @param mask      The flow cookie mask.
+     * @return  {@code true} if the given flow cookie satisfies the condition.
+     *          Otherwise {@code false}.
+     */
+    private boolean checkCookie(BigInteger cookie, FlowCookie expected,
+                                FlowCookie mask) {
+        if (ofVersion == VtnOpenflowVersion.OF10) {
+            // Cookie mask is not supported.
+            return true;
+        }
+
+        long lmask = OfMockUtils.getCookie(mask).longValue();
+        if (lmask == 0) {
+            // Cookie mask is not specified.
+            return true;
+        }
+
+        long lexp = OfMockUtils.getCookie(expected).longValue();
+        long lcookie = cookie.longValue();
+
+        return ((lcookie & lmask) == (lexp & lmask));
+    }
+
+    /**
+     * Process a bulk flow remove request.
+     *
+     * @param removed  A list to store removed flow entries.
+     * @param input    An input of this RPC.
+     */
+    private synchronized void removeFlows(List<OfMockFlowEntry> removed,
+                                          RemoveFlowInput input) {
+        Short table = input.getTableId();
+        Match match = input.getMatch();
+        BigInteger oport = input.getOutPort();
+        String out = (oport == null)
+            ? null
+            : OfMockUtils.getPortIdentifier(nodeIdentifier, oport);
+        FlowCookie cookie = input.getCookie();
+        FlowCookie cookieMask = input.getCookieMask();
+
+        for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
+             it.hasNext();) {
+            OfMockFlowEntry ofent = it.next();
+            if (table != null && table.intValue() != ofent.getTableId()) {
+                continue;
+            }
+
+            if (!contains(match, ofent.getMatch())) {
+                continue;
+            }
+
+            if (out != null &&
+                !OfMockUtils.hasOutput(ofent.getInstructions(), out)) {
+                continue;
+            }
+
+            if (!checkCookie(ofent.getCookie(), cookie, cookieMask)) {
+                continue;
+            }
+
+            it.remove();
+            removed.add(ofent);
+        }
+
+        if (!removed.isEmpty()) {
+            notifyAll();
+        }
+    }
+
+    /**
      * Publish a switch-flow-removed notification.
      *
      * @param ofent   A {@link OfMockFlowEntry} instance.
@@ -715,6 +826,12 @@ public final class OfNode
      */
     private void publishFlowRemoved(OfMockFlowEntry ofent,
                                     RemovedReasonFlags reason) {
+        FlowModFlags flags = ofent.getFlowModFlags();
+        if (flags == null || !Boolean.TRUE.equals(flags.isSENDFLOWREM())) {
+            // FLOW_REMOVED is not requested.
+            return;
+        }
+
         org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.Match match =
             new org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.MatchBuilder(ofent.getMatch()).build();
 
@@ -795,35 +912,37 @@ public final class OfNode
     @Override
     public Future<RpcResult<RemoveFlowOutput>> removeFlow(
         RemoveFlowInput input) {
-        OfMockFlowEntry target;
-        try {
-            target = new OfMockFlowEntry(nodeIdentifier, input);
-        } catch (IllegalArgumentException e) {
-            LOG.error("removeFlow: Invalid input: " + input, e);
-            return createIllegalArgument(RemoveFlowOutput.class,
-                                         e.getMessage());
-        }
-
-        // Only DELETE_STRICT is supported.
-        RemovedReasonFlags reason =
-            new RemovedReasonFlags(true, false, false, false);
         List<OfMockFlowEntry> removed = new ArrayList<>();
+        if (Boolean.TRUE.equals(input.isStrict())) {
+            OfMockFlowEntry target;
+            try {
+                target = new OfMockFlowEntry(nodeIdentifier, input);
+            } catch (IllegalArgumentException e) {
+                LOG.error("removeFlow: Invalid input: " + input, e);
+                return createIllegalArgument(RemoveFlowOutput.class,
+                                             e.getMessage());
+            }
 
-        synchronized (this) {
-            for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
-                 it.hasNext();) {
-                OfMockFlowEntry ofent = it.next();
-                if (ofent.equals(target)) {
-                    it.remove();
-                    removed.add(ofent);
+            synchronized (this) {
+                for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
+                     it.hasNext();) {
+                    OfMockFlowEntry ofent = it.next();
+                    if (ofent.equals(target)) {
+                        it.remove();
+                        removed.add(ofent);
+                    }
+                }
+
+                if (!removed.isEmpty()) {
+                    notifyAll();
                 }
             }
-
-            if (!removed.isEmpty()) {
-                notifyAll();
-            }
+        } else {
+            removeFlows(removed, input);
         }
 
+        RemovedReasonFlags reason =
+            new RemovedReasonFlags(true, false, false, false);
         for (OfMockFlowEntry ofent: removed) {
             publishFlowRemoved(ofent, reason);
         }

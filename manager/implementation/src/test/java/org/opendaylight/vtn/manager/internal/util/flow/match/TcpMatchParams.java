@@ -17,7 +17,6 @@ import org.opendaylight.vtn.manager.internal.XmlNode;
 
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.flow.cond.config.VtnFlowMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.VtnLayer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnTcpMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn.match.fields.vtn.layer4.match.VtnTcpMatchBuilder;
@@ -51,12 +50,12 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
      * {@inheritDoc}
      */
     @Override
-    public VtnTcpMatch toVtnLayer4Match() {
+    public VtnTcpMatch toVtnLayer4Match(boolean comp) {
         PortRangeParams r = getSourcePortParams();
-        TcpSourceRange src = (r == null) ? null : r.toTcpSourceRange();
+        TcpSourceRange src = (r == null) ? null : r.toTcpSourceRange(comp);
         r = getDestinationPortParams();
         TcpDestinationRange dst = (r == null)
-            ? null : r.toTcpDestinationRange();
+            ? null : r.toTcpDestinationRange(comp);
 
         return new VtnTcpMatchBuilder().setTcpSourceRange(src).
             setTcpDestinationRange(dst).build();
@@ -145,9 +144,7 @@ public final class TcpMatchParams extends Layer4PortMatchParams<TcpMatchParams>
         assertEquals(srcMatch, tm.getSourcePort());
         assertEquals(dstMatch, tm.getDestinationPort());
 
-        VtnFlowMatchBuilder vfmb = new VtnFlowMatchBuilder();
-        tmatch.setVtnMatch(vfmb);
-        VtnLayer4Match vl4 = vfmb.getVtnLayer4Match();
+        VtnLayer4Match vl4 = tmatch.toVtnLayer4Match();
         if (vl4 == null) {
             assertEquals(null, srcMatch);
             assertEquals(null, dstMatch);

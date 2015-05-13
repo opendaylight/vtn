@@ -19,6 +19,8 @@ import org.opendaylight.vtn.manager.it.ofmock.OfMockUtils;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorUpdated;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnectorUpdatedBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.topology.discovery.rev130819.LinkDiscoveredBuilder;
@@ -96,6 +98,11 @@ public final class OfPort {
     private static final Long  SPEED_KBPS = Long.valueOf(1000000L);
 
     /**
+     * OpenFlow protocol version.
+     */
+    private final VtnOpenflowVersion  ofVersion;
+
+    /**
      * The port number.
      */
     private long  portNumber;
@@ -138,10 +145,12 @@ public final class OfPort {
     /**
      * Construct a new instance.
      *
+     * @param ver  OpenFlow protocol version.
      * @param nid  The node identifier.
      * @param id   The port number.
      */
-    public OfPort(String nid, long id) {
+    public OfPort(VtnOpenflowVersion ver, String nid, long id) {
+        ofVersion = ver;
         portNumber = id;
         portIdentifier = nid + ":" + id;
         portName = "eth" + id;
@@ -194,11 +203,16 @@ public final class OfPort {
         FlowCapableNodeConnectorUpdatedBuilder fcBuilder =
             new FlowCapableNodeConnectorUpdatedBuilder().
             setState(stBuilder.build()).setName(portName).
-            setHardwareAddress(macAddress).setCurrentSpeed(SPEED_KBPS).
-            setMaximumSpeed(SPEED_KBPS).setAdvertisedFeatures(FEATURES_EMPTY).
+            setHardwareAddress(macAddress).
+            setAdvertisedFeatures(FEATURES_EMPTY).
             setPeerFeatures(FEATURES_EMPTY).setSupported(FEATURES_CURRENT).
             setCurrentFeature(FEATURES_CURRENT).setConfiguration(PORT_CONFIG).
             setPortNumber(new PortNumberUni(Long.valueOf(portNumber)));
+
+        if (ofVersion != VtnOpenflowVersion.OF10) {
+            fcBuilder.setCurrentSpeed(SPEED_KBPS).
+                setMaximumSpeed(SPEED_KBPS);
+        }
 
         builder.addAugmentation(FlowCapableNodeConnectorUpdated.class,
                                 fcBuilder.build());

@@ -751,7 +751,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      */
     List<MacAddressEntry> getMacMappedHosts(VTNManagerImpl mgr)
         throws VTNException {
-        ArrayList list = new ArrayList<MacAddressEntry>();
+        ArrayList<MacAddressEntry> list = new ArrayList<>();
         IVTNResourceManager resMgr = mgr.getResourceManager();
         Map<MacVlan, NodeConnector> map =
             resMgr.getMacMappedHosts(mgr, mapPath);
@@ -1055,9 +1055,10 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
 
             NodeConnector port = pvlan.getNodeConnector();
             if (LOG.isTraceEnabled()) {
+                SalPort sport = SalPort.create(port);
                 LOG.trace("{}:{}: Transmit packet to MAC mapping: {}",
                           mgr.getContainerName(), mapPath,
-                          pc.getDescription(frame, port, vlan));
+                          pc.getDescription(frame, sport, vlan));
             }
             mgr.transmit(port, frame);
         }

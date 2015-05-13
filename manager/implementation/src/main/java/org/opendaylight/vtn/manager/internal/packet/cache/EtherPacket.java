@@ -15,14 +15,14 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.PacketContext;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlDstAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetDlSrcAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.FlowMatchType;
+import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
-import org.opendaylight.controller.sal.action.SetDlDst;
-import org.opendaylight.controller.sal.action.SetDlSrc;
-import org.opendaylight.controller.sal.action.SetVlanPcp;
-import org.opendaylight.controller.sal.match.Match;
-import org.opendaylight.controller.sal.match.MatchType;
 import org.opendaylight.controller.sal.packet.Ethernet;
 import org.opendaylight.controller.sal.packet.IEEE8021Q;
 import org.opendaylight.controller.sal.packet.Packet;
@@ -309,6 +309,46 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
     }
 
     /**
+     * Construct match fields to test Ethernet header in this packet.
+     *
+     * <p>
+     *   Note that this method creates match fields that matches the original
+     *   packet. Any modification to the packet is ignored.
+     * </p>
+     *
+     * @param fields  A set of {@link FlowMatchType} instances corresponding to
+     *                match fields to be tested.
+     * @return  A {@link VTNEtherMatch} instance.
+     * @throws RpcException  This packet is broken.
+     */
+    public VTNEtherMatch createMatch(Set<FlowMatchType> fields)
+        throws RpcException {
+        Values v = values;
+        v.fill(packet, vlanTag);
+
+        // VLAN ID field is mandatory.
+        int vid = v.getVlan();
+
+        EtherAddress src = (fields.contains(FlowMatchType.DL_SRC))
+            ? v.getSourceAddress()
+            : null;
+        EtherAddress dst = (fields.contains(FlowMatchType.DL_DST))
+            ? v.getDestinationAddress()
+            : null;
+        Integer type = (fields.contains(FlowMatchType.DL_TYPE))
+            ? Integer.valueOf(etherType)
+            : null;
+
+        // Test VLAN priority only if this packet has a VLAN tag.
+        Short pcp = (vid != VLAN_NONE &&
+                     fields.contains(FlowMatchType.DL_VLAN_PCP))
+            ? v.getVlanPriority()
+            : null;
+
+        return new VTNEtherMatch(src, dst, type, vid, pcp);
+    }
+
+    /**
      * Return a {@link Values} instance that keeps current values for
      * Ethernet header fields.
      *
@@ -352,53 +392,6 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
     }
 
     /**
-     * Configure match fields to test Ethernet header in this packet.
-     *
-     * <p>
-     *   Note that this method creates match fields that matches the original
-     *   packet. Any modification to the packet is ignored.
-     * </p>
-     *
-     * @param match   A {@link Match} instance.
-     * @param fields  A set of {@link FlowMatchType} instances corresponding to
-     *                match fields to be tested.
-     */
-    @Override
-    public void setMatch(Match match, Set<FlowMatchType> fields) {
-        Values v = values;
-        v.fill(packet, vlanTag);
-
-        // VLAN ID field is mandatory.
-        // Note that this code expects MatchType.DL_VLAN_NONE is zero.
-        int vid = v.getVlan();
-        match.setField(MatchType.DL_VLAN, (short)vid);
-
-        if (fields.contains(FlowMatchType.DL_SRC)) {
-            // Test source MAC address.
-            match.setField(MatchType.DL_SRC, v.getSourceAddress().getBytes());
-        }
-
-        if (fields.contains(FlowMatchType.DL_DST)) {
-            // Test destination MAC address.
-            match.setField(MatchType.DL_DST,
-                           v.getDestinationAddress().getBytes());
-        }
-
-        // Test VLAN priority only if this packet has a VLAN tag.
-        if (vid != VLAN_NONE) {
-            if (fields.contains(FlowMatchType.DL_VLAN_PCP)) {
-                match.setField(MatchType.DL_VLAN_PR,
-                               (byte)v.getVlanPriority());
-            }
-        }
-
-        if (fields.contains(FlowMatchType.DL_TYPE)) {
-            // Test Ethernet type.
-            match.setField(MatchType.DL_TYPE, (short)etherType);
-        }
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -416,7 +409,7 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
                 // Source MAC address is not modified, and it will be specified
                 // in flow match. So we don't need to configure SET_DL_SRC
                 // action.
-                pctx.removeFilterAction(SetDlSrc.class);
+                pctx.removeFilterAction(VTNSetDlSrcAction.class);
             }
 
             EtherAddress dst = modifiedValues.getDestinationAddress();
@@ -427,13 +420,13 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
                 // Destination MAC address is not modified, and it will be
                 // specified in flow match. So we don't need to configure
                 // SET_DL_DST action.
-                pctx.removeFilterAction(SetDlDst.class);
+                pctx.removeFilterAction(VTNSetDlDstAction.class);
             }
 
             int vlan = modifiedValues.getVlan();
             if (vlan == VLAN_NONE) {
                 // SET_VLAN_PCP should never be applied to untagged frame.
-                pctx.removeFilterAction(SetVlanPcp.class);
+                pctx.removeFilterAction(VTNSetVlanPcpAction.class);
             } else {
                 short pri = modifiedValues.getVlanPriority();
                 if (values.getVlanPriority() != pri) {
@@ -443,7 +436,7 @@ public final class EtherPacket implements CachedPacket, EtherHeader {
                     // VLAN priority is not modified, and it will be specified
                     // in flow match. So we don't need to configure
                     // SET_VLAN_PCP action.
-                    pctx.removeFilterAction(SetVlanPcp.class);
+                    pctx.removeFilterAction(VTNSetVlanPcpAction.class);
                 }
             }
         }

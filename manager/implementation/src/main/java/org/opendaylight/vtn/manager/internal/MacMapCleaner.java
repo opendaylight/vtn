@@ -15,13 +15,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VNodePath;
+import org.opendaylight.vtn.manager.VTNException;
+
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
 import org.opendaylight.vtn.manager.internal.cluster.MapType;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
-import org.opendaylight.vtn.manager.internal.cluster.VTNFlow;
+import org.opendaylight.vtn.manager.internal.flow.remove.TenantScanFlowRemover;
+import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 
@@ -30,7 +33,7 @@ import org.opendaylight.controller.sal.core.NodeConnector;
  * MAC mapping.
  */
 public final class MacMapCleaner
-    implements MapCleaner, FlowSelector, MacTableEntryFilter {
+    implements MapCleaner, MacTableEntryFilter {
     /**
      * A global resource manager instance.
      */
@@ -67,6 +70,62 @@ public final class MacMapCleaner
      * A map which keeps L2 hosts mapped by the target MAC mapping.
      */
     private Map<MacVlan, Boolean>  hostMapping;
+
+    /**
+     * An implementation of {@link FlowRemover} which removes VTN data flows
+     * to be removed for the MAC mapping.
+     */
+    private final class MacMapFlowRemover extends TenantScanFlowRemover {
+        /**
+         * Construct a new instance.
+         *
+         * @param tname  The name of the target VTN.
+         */
+        private MacMapFlowRemover(String tname) {
+            super(tname);
+        }
+
+        // ScanFlowRemover
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        protected boolean select(FlowCache fc) throws VTNException {
+            ObjectPair<L2Host, L2Host> hosts = fc.getEdgeHosts();
+            if (hosts == null) {
+                return false;
+            }
+
+            L2Host in = hosts.getLeft();
+            MacMapCleaner cl = MacMapCleaner.this;
+            if (cl.checkHost(in.getHost(), in.getPort().getAdNodeConnector(),
+                             fc.getIngressPath())) {
+                return true;
+            }
+
+            L2Host out = hosts.getRight();
+            if (out != null) {
+                return cl.checkHost(out.getHost(),
+                                    out.getPort().getAdNodeConnector(),
+                                    fc.getEgressPath());
+            }
+
+            return false;
+        }
+
+        // FlowRemover
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public String getDescription() {
+            return new StringBuilder("mac-map:").
+                append(MacMapCleaner.this.macMap.toString()).
+                toString();
+        }
+    }
 
     /**
      * Construct a new instance.
@@ -166,7 +225,7 @@ public final class MacMapCleaner
 
         // Remove obsolete flow entries, and flow entries superseded by
         // MAC mapping.
-        VTNThreadData.removeFlows(mgr, tenantName, this);
+        VTNThreadData.removeFlows(mgr, new MacMapFlowRemover(tenantName));
     }
 
     /**
@@ -197,40 +256,6 @@ public final class MacMapCleaner
         boolean mapped = macMap.equals(ref);
         mapping.put(mvlan, Boolean.valueOf(mapped));
         return mapped;
-    }
-
-    // FlowSelector
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean accept(VTNFlow vflow) {
-        ObjectPair<L2Host, L2Host> hosts = vflow.getEdgeHosts();
-        if (hosts == null) {
-            return false;
-        }
-
-        L2Host in = hosts.getLeft();
-        if (checkHost(in.getHost(), in.getPort(), vflow.getIngressPath())) {
-            return true;
-        }
-
-        L2Host out = hosts.getRight();
-        if (out != null) {
-            return checkHost(out.getHost(), out.getPort(),
-                             vflow.getEgressPath());
-        }
-
-        return false;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String getDescription() {
-        return macMap.toString();
     }
 
     // MacTableEntryFilter
