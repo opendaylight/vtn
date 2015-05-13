@@ -17,16 +17,17 @@ public enum ContentTypeEnum {
 
 	/** The APPLICATIO n_ xml. */
 	APPLICATION_XML("application/xml"),
-
+	APPLICATION_XML_SCVMM("text/xml"),
 	/** The APPLICATIO n_ json. */
 	APPLICATION_JSON("application/json");
+
 
 	/** The content type. */
 	private String contentType;
 
 	/**
 	 * Instantiates a new content type enum.
-	 * 
+	 *
 	 * @param type
 	 *            the type
 	 */
@@ -36,7 +37,7 @@ public enum ContentTypeEnum {
 
 	/**
 	 * Gets the content type.
-	 * 
+	 *
 	 * @return the content type
 	 */
 	public String getContentType() {
