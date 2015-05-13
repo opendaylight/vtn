@@ -19,6 +19,24 @@
     },
     {
       "key": {
+        "uuid": "3aa0d159_6aedddee",
+        "filename": "manager/implementation/src/main/java/org/opendaylight/vtn/manager/internal/VTNManagerImpl.java",
+        "patchSetId": 2
+      },
+      "lineNbr": 2417,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2015-05-13T17:48:51Z",
+      "side": 1,
+      "message": "Yes. This code determines the key for flow search.\nThe physical switch port specified by a pair of node and swport is used as the search key if both are not null.\nIf swport is null, the physical switch specified by node is used as the search key.",
+      "parentUuid": "3aa0d159_4aba6124",
+      "revId": "f8229528091b063a0e6c6c7a073d6778bcbca149",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
         "uuid": "3aa0d159_aa92059d",
         "filename": "manager/implementation/src/test/java/org/opendaylight/vtn/manager/internal/cluster/MacVlanTest.java",
         "patchSetId": 2
