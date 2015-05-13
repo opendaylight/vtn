@@ -15,8 +15,13 @@ controller_url=/interfaces/vbrifone
 vbrif_url=/interfaces/vbrifone
 logical_port_id=PP-00:00:00:00:00:00:00:03-s3-eth1
 node_id=00:00:00:00:00:00:00:03
+update_url=/interfaces/vbrifone
+url=/interfaces/
 vlan_id=1
 tagged=true
+updatedescription=first update vbrif for vbrone
+adminstatus=disable
+
 
 [VbrIfTwo]
 vbrif_name=vbriftwo
@@ -29,6 +34,10 @@ node_id=00:00:00:00:00:00:00:02
 vlan_id=1
 vlan_id=2
 tagged=false
+update_url=/interfaces/vbriftwo
+updatedescription=second update vbrif for vbrone
+adminstatus=enable
+
 
 [VbrIfThree]
 vbrif_name=vbrifthree
@@ -41,6 +50,10 @@ node_id=00:00:00:00:00:00:00:03
 vlan_id=1
 vlan_id=3
 tagged=false
+update_url=/interfaces/vbrifthree
+updatedescription=Three update vbrif for vbrtwo
+adminstatus=disable
+
 
 [VbrIfFour]
 vbrif_name=vbriffour
@@ -53,6 +66,10 @@ node_id=00:00:00:00:00:00:00:02
 vlan_id=1
 vlan_id=4
 tagged=true
+update_url=/interfaces/vbriffour
+updatedescription=second update vbrif for vbrtwo
+adminstatus=enable
+
 
 [MultiCtrVbrIfOne]
 vbrif_name=vbrifone
@@ -64,6 +81,10 @@ logical_port_id=PP-00:00:00:00:00:00:00:02-s2-eth2
 node_id=00:00:00:00:00:00:00:02
 vlan_id=1
 tagged=true
+update_url=/interfaces/vbrifone
+updatedescription=first update vbrif for vbrone
+adminstatus=disable
+
 
 [MultiCtrVbrIfThree]
 vbrif_name=vbrifthree
@@ -75,6 +96,10 @@ logical_port_id=PP-00:00:00:00:00:00:00:05-s5-eth2
 node_id=00:00:00:00:00:00:00:05
 vlan_id=1
 tagged=false
+update_url=/interfaces/vbrifthree
+updatedescription=first update vbrif for vbrtwo
+adminstatus=disable
+
 
 [VBRIFURL]
 url=/interfaces.json
