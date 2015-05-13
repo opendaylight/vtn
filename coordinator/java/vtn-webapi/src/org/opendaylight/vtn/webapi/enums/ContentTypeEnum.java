@@ -18,8 +18,10 @@ public enum ContentTypeEnum {
 	/** The APPLICATIO n_ xml. */
 	APPLICATION_XML("application/xml"),
 
+  APPLICATION_XML_SCVMM("text/xml"),
 	/** The APPLICATIO n_ json. */
 	APPLICATION_JSON("application/json");
+	
 
 	/** The content type. */
 	private String contentType;

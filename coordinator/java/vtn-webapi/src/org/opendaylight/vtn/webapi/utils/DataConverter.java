@@ -67,7 +67,9 @@ public final class DataConverter {
 		final JsonParser parser = new JsonParser();
 		try {
 			if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(
-					contentType)) {
+					contentType) ||
+          ContentTypeEnum.APPLICATION_XML_SCVMM.getContentType().equals(
+           contentType)) {
 				final Random random = new Random();
 				final String randomString = String.valueOf(random.nextInt());
 				final String randomStringSpace = String.valueOf(random
@@ -190,7 +192,9 @@ public final class DataConverter {
 				responseString = responseJson.toString();
 				// conversion is required only for XML type response type
 				if (ContentTypeEnum.APPLICATION_XML.getContentType().equals(
-						requiredContentType)) {
+						requiredContentType) ||
+            ContentTypeEnum.APPLICATION_XML_SCVMM.getContentType().equals(
+             requiredContentType)) {
 					// modify the json object to remove null and empty nested
 					// json and arrays
 					final JSONObject modifiedJson = new JSONObject(responseJson
