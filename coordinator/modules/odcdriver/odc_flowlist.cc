@@ -17,16 +17,24 @@ OdcFlowListCommand::copy(flowcondition* flow,
                          key_flowlist& key,
                          val_flowlist& val) {
   ODC_FUNC_TRACE;
-  char *flowlist_name=reinterpret_cast <char *>(key.flowlist_name);
+  char *flowlist_name = reinterpret_cast <char *>(key.flowlist_name);
   flow->name_.assign(flowlist_name);
 }
-
+void
+OdcFlowListCommand::copy(flowcondition* flow,
+                         key_flowlist& key,
+                         val_flowlist& val_old,
+                          val_flowlist& val_new) {
+  ODC_FUNC_TRACE;
+  char *flowlist_name = reinterpret_cast <char *>(key.flowlist_name);
+  flow->name_.assign(flowlist_name);
+}
 std::string
 OdcFlowListCommand::get_url_tail(key_flowlist& key,
                                  val_flowlist& val) {
   ODC_FUNC_TRACE;
-  char *flowlist_name=reinterpret_cast <char *>(key.flowlist_name);
-  std::string url_string (flowlist_name);
+  char *flowlist_name = reinterpret_cast <char *>(key.flowlist_name);
+  std::string url_string(flowlist_name);
   return url_string;
 }
 
@@ -58,8 +66,8 @@ OdcFlowListCommand::r_copy(flowConditions* in,
 
     //Addto Cache
     unc::vtndrvcache::ConfigNode *cfgptr(
-      new unc::vtndrvcache::CacheElementUtil<key_flowlist, val_flowlist, uint32_t>
-      (& key_fl,&val_fl, uint32_t(UNC_OP_READ)));
+      new unc::vtndrvcache::CacheElementUtil<key_flowlist, val_flowlist, val_flowlist, uint32_t>
+      (&key_fl,&val_fl, &val_fl, uint32_t(UNC_OP_READ)));
 
     PFC_ASSERT(cfgptr != NULL );
     cfgnode_vector.push_back(cfgptr);
@@ -107,26 +115,14 @@ OdcFlowListCommand::r_copy(flowConditions* in,
             util.convert_ip_to_inaddr(match_entry->inetMatch_->inet4_->src_,
                                       &val_fl_entry.src_ip);
             val_fl_entry.valid[UPLL_IDX_SRC_IP_FLE] = UNC_VF_VALID;
+            val_fl_entry.src_ip_prefixlen= 32;
           }
           if ( match_entry->inetMatch_->inet4_->dst_ != "" ) {
             util.convert_ip_to_inaddr(match_entry->inetMatch_->inet4_->dst_,
                                       &val_fl_entry.dst_ip);
             val_fl_entry.valid[UPLL_IDX_DST_IP_FLE] = UNC_VF_VALID;
-          }
-          if ( match_entry->inetMatch_->inet4_->srcsuffix_ != 0 ) {
-            val_fl_entry.src_ip_prefixlen=
-              (match_entry)->inetMatch_->inet4_->srcsuffix_;
             val_fl_entry.valid[UPLL_IDX_SRC_IP_PREFIX_FLE]=UNC_VF_VALID;
-          }
-          if ( match_entry->inetMatch_->inet4_->dstsuffix_ != 0 ) {
-            val_fl_entry.dst_ip_prefixlen=
-              match_entry->inetMatch_->inet4_->dstsuffix_;
-            val_fl_entry.valid[UPLL_IDX_DST_IP_PREFIX_FLE]=UNC_VF_VALID;
-          }
-          if ( match_entry->inetMatch_->inet4_->dstsuffix_ != 0 ) {
-            val_fl_entry.dst_ip_prefixlen=
-              match_entry->inetMatch_->inet4_->dstsuffix_;
-            val_fl_entry.valid[UPLL_IDX_DST_IP_PREFIX_FLE]=UNC_VF_VALID;
+            val_fl_entry.dst_ip_prefixlen= 32;
           }
           if ( match_entry->inetMatch_->inet4_->protocol_ != -1 ) {
             val_fl_entry.ip_proto=match_entry->inetMatch_->inet4_->protocol_;
@@ -178,8 +174,8 @@ OdcFlowListCommand::r_copy(flowConditions* in,
 
       // Add to Cache
       unc::vtndrvcache::ConfigNode *entry_cfgptr(
-        new unc::vtndrvcache::CacheElementUtil<key_flowlist_entry, val_flowlist_entry, uint32_t>
-        (&key_fl_entry,&val_fl_entry, uint32_t(UNC_OP_READ)));
+        new unc::vtndrvcache::CacheElementUtil<key_flowlist_entry, val_flowlist_entry, val_flowlist_entry, uint32_t>
+        (&key_fl_entry,&val_fl_entry, &val_fl_entry, uint32_t(UNC_OP_READ)));
 
       PFC_ASSERT(entry_cfgptr != NULL );
       cfgnode_vector.push_back(entry_cfgptr);
@@ -308,8 +304,243 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
   }
   flow->match_.push_back(flow_match);
 }
+//  Method to  handle two value structures during update operation
+void
+OdcFlowListEntryCommand::copy(flowcondition* flow,
+                              key_flowlist_entry& key,
+                              val_flowlist_entry& val_old,
+                              val_flowlist_entry& val_new) {
+  ODC_FUNC_TRACE;
+  PFC_ASSERT( flow != NULL );
+  char *flowlist_name = reinterpret_cast <char *>(
+                            key.flowlist_key.flowlist_name);
+  flow->name_.assign(flowlist_name);
+  unc::odcdriver::OdcUtil util;
 
 
+  match* flow_match = new match();
+  flow_match->index_= key.sequence_num;
+  // Ethernet Match Values
+  if ( val_old.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_VALID ) {
+    pfc_log_info("Filling Ethernet Match Details");
+    flow_match->ethernet_=new ethernet();
+
+    if(val_new.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_VALID &&
+          val_old.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_VALID) {
+      flow_match->ethernet_->dst_ = util.macaddress_to_string(
+                                           &val_new.mac_dst[0]);
+    } else if ( val_new.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_INVALID &&
+          val_old.valid[UPLL_IDX_MAC_DST_FLE] == UNC_VF_VALID) {
+      flow_match->ethernet_->dst_ = util.macaddress_to_string(
+                                                 &val_old.mac_dst[0]);
+    }
+    if ( val_new.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_VALID ) {
+      flow_match->ethernet_->src_ = util.macaddress_to_string(
+                                                  &val_new.mac_src[0]);
+    } else if ( val_new.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_INVALID &&
+        val_old.valid[UPLL_IDX_MAC_SRC_FLE] == UNC_VF_VALID ) {
+      flow_match->ethernet_->src_ = util.macaddress_to_string(
+                                                   &val_old.mac_src[0]);
+    }
+    if ( val_new.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_VALID ){
+      flow_match->ethernet_->type_ = val_new.mac_eth_type;
+    } else if ( val_new.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_INVALID &&
+        val_old.valid[UPLL_IDX_MAC_ETH_TYPE_FLE] == UNC_VF_VALID ){
+      flow_match->ethernet_->type_ = val_old.mac_eth_type;
+    }
+    if ( val_new.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_VALID ){
+      flow_match->ethernet_->vlanpri_ = val_new.vlan_priority;
+    } else if ( val_new.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_INVALID &&
+        val_old.valid[UPLL_IDX_VLAN_PRIORITY_FLE] == UNC_VF_VALID ){
+      flow_match->ethernet_->vlanpri_ = val_old.vlan_priority;
+    }
+  }
+
+  //Inet Match
+  if ( val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_VALID ) {
+
+    pfc_log_info("Filling Inet Match Details");
+    flow_match->inetMatch_ = new inetMatch();
+    flow_match->inetMatch_->inet4_ = new inet4();
+
+    if ((val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID) ||
+        val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED) {
+      flow_match->inetMatch_->inet4_->dst_.assign(inet_ntoa(val_new.dst_ip));
+      pfc_log_info("dst ip:%s",flow_match->inetMatch_->inet4_->dst_.c_str());
+    } else if ( val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_INVALID &&
+       val_old.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->dst_.assign(inet_ntoa(val_old.dst_ip));
+      pfc_log_info("dst ip:%s",flow_match->inetMatch_->inet4_->dst_.c_str());
+    }
+
+    if ((val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID) ||
+        val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED) {
+      flow_match->inetMatch_->inet4_->src_.assign(inet_ntoa(val_new.src_ip));
+      pfc_log_info("src ip:%s",flow_match->inetMatch_->inet4_->src_.c_str());
+    } else if (val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_INVALID &&
+        val_old.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->src_.assign(inet_ntoa(val_old.src_ip));
+      pfc_log_info("src ip:%s",flow_match->inetMatch_->inet4_->src_.c_str());
+    }
+
+    if ((val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID ) ||
+       val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALUE_NOT_MODIFIED){
+      flow_match->inetMatch_->inet4_->dstsuffix_ = val_new.dst_ip_prefixlen;
+      pfc_log_info("prefixlen :%d",val_new.dst_ip_prefixlen);
+    } else if (val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_INVALID &&
+        val_old.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->dstsuffix_ = val_old.dst_ip_prefixlen;
+      pfc_log_info("Filling Inet Match Details dst len old struct");
+    }
+
+    if ((val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID ) ||
+        val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] ==
+                                             UNC_VF_VALUE_NOT_MODIFIED) {
+      flow_match->inetMatch_->inet4_->srcsuffix_ = val_new.src_ip_prefixlen;
+      pfc_log_info("prefixlen :%d",val_new.src_ip_prefixlen);
+    } else if (val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_INVALID &&
+          val_old.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->srcsuffix_ = val_old.src_ip_prefixlen;
+    }
+
+    if (val_new.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID &&
+        val_old.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->protocol_ = val_new.ip_proto;
+    } else if (val_new.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_INVALID &&
+         val_old.valid[UPLL_IDX_IP_PROTOCOL_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->protocol_ = val_old.ip_proto;
+    }
+
+    if (val_new.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_VALID &&
+         val_old.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->dscp_ = val_new.ip_dscp;
+    } else if (val_new.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_INVALID &&
+         val_old.valid[UPLL_IDX_IP_DSCP_FLE] == UNC_VF_VALID) {
+      flow_match->inetMatch_->inet4_->dscp_ = val_old.ip_dscp;
+    }
+  }
+
+  // L4 Match
+  if (val_new.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID ||
+       val_new.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID ||
+       val_old.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID ) {
+
+    pfc_log_info("Filling L4 Match Details");
+    flow_match->l4Match_ =new l4Match();
+
+    if( val_new.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID ||
+        val_old.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID ||
+        val_new.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID ||
+        val_old.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID ) {
+
+      flow_match->l4Match_->icmp_ =new icmp();
+
+      if ( val_new.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID &&
+          val_old.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID) {
+        flow_match->l4Match_->icmp_->type_ = val_new.icmp_type;
+      } else if ( val_new.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_INVALID &&
+          val_old.valid[UPLL_IDX_ICMP_TYPE_FLE] == UNC_VF_VALID) {
+        flow_match->l4Match_->icmp_->type_ = val_old.icmp_type;
+      }
+
+      if ( val_new.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID &&
+          val_old.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID) {
+        flow_match->l4Match_->icmp_->code_ = val_new.icmp_code;
+      }  else if ( val_new.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_INVALID &&
+          val_old.valid[UPLL_IDX_ICMP_CODE_FLE] == UNC_VF_VALID) {
+        flow_match->l4Match_->icmp_->code_ = val_old.icmp_code;
+      }
+    } else {
+      flow_match->l4Match_->tcp_ = new tcp();
+      pfc_log_info("Filling L4 tcp Match Details");
+
+      if ( val_new.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID &&
+          val_old.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->dst_ == NULL)
+          flow_match->l4Match_->tcp_->dst_ = new dst();
+        flow_match->l4Match_->tcp_->dst_->from_ = val_new.l4_dst_port;
+      } else if ( val_new.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_INVALID &&
+          val_old.valid[UPLL_IDX_L4_DST_PORT_FLE] == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->dst_ == NULL )
+          flow_match->l4Match_->tcp_->dst_ = new dst();
+        flow_match->l4Match_->tcp_->dst_->from_ = val_old.l4_dst_port;
+      }
+
+      if ( val_new.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] == UNC_VF_VALID &&
+           val_old.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->dst_ == NULL )
+          flow_match->l4Match_->tcp_->dst_ = new dst();
+        flow_match->l4Match_->tcp_->dst_->to_=val_new.l4_dst_port_endpt;
+      } else if ( val_new.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE] ==
+           UNC_VF_INVALID && val_old.valid[UPLL_IDX_L4_DST_PORT_ENDPT_FLE]
+                                 == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->dst_ == NULL )
+          flow_match->l4Match_->tcp_->dst_ = new dst();
+        flow_match->l4Match_->tcp_->dst_->to_ = val_old.l4_dst_port_endpt;
+      }
+
+      if ( val_new.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID &&
+          val_old.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->src_ == NULL )
+          flow_match->l4Match_->tcp_->src_ = new src();
+        flow_match->l4Match_->tcp_->src_->from_ = val_new.l4_src_port;
+      } else if ( val_new.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_INVALID &&
+          val_old.valid[UPLL_IDX_L4_SRC_PORT_FLE] == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->src_ == NULL )
+          flow_match->l4Match_->tcp_->src_ = new src();
+        flow_match->l4Match_->tcp_->src_->from_ = val_old.l4_src_port;
+      }
+
+      if ( val_new.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] == UNC_VF_VALID &&
+          val_old.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->src_ == NULL )
+          flow_match->l4Match_->tcp_->src_ = new src();
+        flow_match->l4Match_->tcp_->src_->to_ = val_new.l4_src_port_endpt;
+      } else if ( val_new.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE] ==
+           UNC_VF_INVALID && val_old.valid[UPLL_IDX_L4_SRC_PORT_ENDPT_FLE]
+                                                         == UNC_VF_VALID) {
+        if ( flow_match->l4Match_->tcp_->src_ == NULL )
+          flow_match->l4Match_->tcp_->src_ = new src();
+        flow_match->l4Match_->tcp_->src_->to_ = val_old.l4_src_port_endpt;
+      }
+    }
+  }
+  flow->match_.push_back(flow_match);
+}
 std::string
 OdcFlowListEntryCommand::get_url_tail(key_flowlist_entry& key,
                                       val_flowlist_entry& val) {

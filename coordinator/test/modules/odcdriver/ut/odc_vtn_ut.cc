@@ -46,7 +46,8 @@ TEST(odcdriver, test_in_valid_vtnname_empty_update_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vtn_t key_vtn;
-  val_vtn_t val_vtn;
+  val_vtn_t val1_vtn;
+  val_vtn_t val2_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
@@ -62,7 +63,7 @@ TEST(odcdriver, test_in_valid_vtnname_empty_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.update_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC , obj.update_cmd(key_vtn, val1_vtn, val2_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -126,12 +127,14 @@ TEST(odcdriver, test_null_response_update_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vtn_t key_vtn;
-  val_vtn_t val_vtn;
+  val_vtn_t val1_vtn;
+  val_vtn_t val2_vtn;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
   memset(&key_vtn, 0 , sizeof(key_vtn_t));
-  memset(&val_vtn,  0,  sizeof(val_vtn_t));
+  memset(&val1_vtn,  0,  sizeof(val_vtn_t));
+  memset(&val2_vtn,  0,  sizeof(val_vtn_t));
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(key_vtn.vtn_name),
           vtnname.c_str(),  sizeof(key_vtn.vtn_name)-1);
@@ -146,7 +149,7 @@ TEST(odcdriver, test_null_response_update_cmd) {
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC ,
-            obj.update_cmd(key_vtn, val_vtn, ctr));
+            obj.update_cmd(key_vtn, val1_vtn, val2_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -276,14 +279,16 @@ TEST(odcdriver,  invalid_response_create_cmd) {
 
 TEST(odcdriver,  invalid_response_update_cmd) {
   key_vtn_t key_vtn;
-  val_vtn_t val_vtn;
+  val_vtn_t val1_vtn;
+  val_vtn_t val2_vtn;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
   memset(&key_vtn, 0 , sizeof(key_vtn_t));
-  memset(&val_vtn,  0,  sizeof(val_vtn_t));
+  memset(&val1_vtn,  0,  sizeof(val_vtn_t));
+  memset(&val2_vtn,  0,  sizeof(val_vtn_t));
   std::string INVALID_RESPONSE = "172.0.0.0";
   inet_aton(INVALID_RESPONSE.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
@@ -296,7 +301,7 @@ TEST(odcdriver,  invalid_response_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.update_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC, obj.update_cmd(key_vtn, val1_vtn, val2_vtn,  ctr));
   delete ctr;
   ctr= NULL;
 }
@@ -304,17 +309,19 @@ TEST(odcdriver,  invalid_response_update_cmd) {
 
 TEST(odcdriver,  test_update_cmd) {
   key_vtn_t key_vtn;
-  val_vtn_t val_vtn;
+  val_vtn_t val1_vtn;
+  val_vtn_t val2_vtn;
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   memset(&key_ctr, 0 , sizeof(key_ctr_t));
   memset(&val_ctr,  0,  sizeof(val_ctr_t));
 
   memset(&key_vtn, 0 , sizeof(key_vtn_t));
-  memset(&val_vtn,  0,  sizeof(val_vtn_t));
+  memset(&val1_vtn,  0,  sizeof(val_vtn_t));
+  memset(&val2_vtn,  0,  sizeof(val_vtn_t));
   std::string desc1 =  "description";
-  strncpy(reinterpret_cast<char*>(val_vtn.description),
-          desc1.c_str(),  sizeof(val_vtn.description)-1);
+  strncpy(reinterpret_cast<char*>(val1_vtn.description),
+          desc1.c_str(),  sizeof(val1_vtn.description)-1);
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
   unc::driver::controller* ctr  =
@@ -327,7 +334,7 @@ TEST(odcdriver,  test_update_cmd) {
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVtnCommand obj(conf_file);
-  EXPECT_EQ(UNC_RC_SUCCESS, obj.update_cmd(key_vtn, val_vtn, ctr));
+  EXPECT_EQ(UNC_RC_SUCCESS, obj.update_cmd(key_vtn, val1_vtn, val2_vtn, ctr));
   delete ctr;
   ctr= NULL;
 }
