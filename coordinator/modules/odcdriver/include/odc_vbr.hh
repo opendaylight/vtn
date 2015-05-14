@@ -65,7 +65,8 @@ class OdcVbrCommand: public unc::driver::vtn_driver_command
    *                                    /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vbr_t& key_vbr,
-                         val_vbr_t& val_vbr,
+                         val_vbr_t& val_old_vbr,
+                         val_vbr_t& val_new_vbr,
                          unc::driver::controller* ctr);
 
   /**

@@ -112,9 +112,9 @@ TEST(odcdriver_link, test_link_data_add) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
       std::string switch_id2 = reinterpret_cast<char*> (key_link->switch_id2);
@@ -198,9 +198,9 @@ TEST(odcdriver_link, test_link_data_add_resp) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
       std::string switch_id2 = reinterpret_cast<char*> (key_link->switch_id2);
@@ -278,9 +278,9 @@ TEST(odcdriver_link, test_link_data_add_resp_dynamically) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
       std::string switch_id2 = reinterpret_cast<char*> (key_link->switch_id2);
@@ -347,9 +347,9 @@ TEST(odcdriver_link,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+        <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+        <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
       std::string switch_id2 = reinterpret_cast<char*> (key_link->switch_id2);
@@ -428,9 +428,9 @@ TEST(odcdriver_link,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       val_link_st_t *val_link = cache_util_ptr->get_val_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
@@ -497,9 +497,9 @@ TEST(odcdriver_link, test_link_data_update_dynamically) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       val_link_st_t *val_link = cache_util_ptr->get_val_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
@@ -1065,9 +1065,9 @@ TEST(odcdriver_link,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       val_link_st_t *val_link = cache_util_ptr->get_val_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
@@ -1110,9 +1110,9 @@ TEST(odcdriver_link,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       val_link_st_t *val_link = cache_util_ptr->get_val_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
@@ -1177,9 +1177,9 @@ TEST(odcdriver_link,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+      <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+      <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       val_link_st_t *val_link = cache_util_ptr->get_val_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);
@@ -1245,9 +1245,9 @@ TEST(odcdriver_link,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * cache_util_ptr =
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
+       <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * > (cfgnode_cache);
       key_link_t *key_link = cache_util_ptr->get_key_structure();
       val_link_st_t *val_link = cache_util_ptr->get_val_structure();
       std::string switch_id1 = reinterpret_cast<char*> (key_link->switch_id1);

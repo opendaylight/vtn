@@ -64,7 +64,8 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    *                             - returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vlan_map_t& key,
-                         pfcdrv_val_vlan_map_t& val,
+                         pfcdrv_val_vlan_map_t& val_old,
+                         pfcdrv_val_vlan_map_t& val_new,
                          unc::driver::controller *conn);
 
   /**
@@ -188,7 +189,8 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    *                             - UNC_DRV_RC_ERR_GENERIC
    */
   UncRespCode create_update_cmd(key_vlan_map_t& vlanmap_key,
-                                pfcdrv_val_vlan_map_t& vlanmap_val,
+                                //pfcdrv_val_vlan_map_t& vlanmap_val_old,
+                                pfcdrv_val_vlan_map_t& vlanmap_val_new,
                                 unc::driver::controller* ctr_ptr);
   /**
    * @brief                      - Delete vlan-map configuration from controller by

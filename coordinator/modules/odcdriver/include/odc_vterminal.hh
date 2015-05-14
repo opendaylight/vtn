@@ -66,7 +66,8 @@ class OdcVterminalCommand: public unc::driver::vtn_driver_command
    *                                   updation of vtn /returns
    *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  UncRespCode update_cmd(key_vterm_t& key, val_vterm_t& val,
+  UncRespCode update_cmd(key_vterm_t& key, val_vterm_t& val_old,
+                         val_vterm_t& val_new,
                          unc::driver::controller *ctr);
 
   /**
