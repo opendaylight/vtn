@@ -83,14 +83,16 @@ TEST(odcdriver,  test_update_cmd_vbr) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
+  val_vbr_t val1_vbr;
+  val_vbr_t val2_vbr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
-  memset(&val_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val1_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val2_vbr,  0,  sizeof(val_vbr_t));
   std::string UPDATE_DELETE_200  = "172.16.0.2";
   inet_aton(UPDATE_DELETE_200.c_str(),  &val_ctr.ip_address);
-  val_vbr.valid[UPLL_IDX_DESC_VBR] = UNC_VF_VALID;
+  val1_vbr.valid[UPLL_IDX_DESC_VBR] = UNC_VF_VALID;
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::string vbrname =  "vbr1";
@@ -100,15 +102,15 @@ TEST(odcdriver,  test_update_cmd_vbr) {
   strncpy(reinterpret_cast<char*>(key_vbr.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(key_vbr.vtn_key.vtn_name)-1);
   std::string description =  "descrip";
-  strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
-          description.c_str(),  sizeof(val_vbr.vbr_description)-1);
+  strncpy(reinterpret_cast<char*>(val1_vbr.vbr_description),
+          description.c_str(),  sizeof(val1_vbr.vbr_description)-1);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(UNC_RC_SUCCESS,
-            obj.update_cmd(key_vbr,  val_vbr,  ctr));
+            obj.update_cmd(key_vbr,  val1_vbr, val2_vbr,  ctr));
   delete ctr;
   ctr = NULL;
 }
@@ -183,11 +185,13 @@ TEST(odcdriver,  test_invalid_vtnname_update_cmd) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
+  val_vbr_t val1_vbr;
+  val_vbr_t val2_vbr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
-  memset(&val_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val1_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val2_vbr,  0,  sizeof(val_vbr_t));
 
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
@@ -200,14 +204,14 @@ TEST(odcdriver,  test_invalid_vtnname_update_cmd) {
   strncpy(reinterpret_cast<char*>(key_vbr.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(key_vbr.vtn_key.vtn_name)-1);
   std::string description =  "descrip";
-  strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
-          description.c_str(),  sizeof(val_vbr.vbr_description)-1);
+  strncpy(reinterpret_cast<char*>(val1_vbr.vbr_description),
+          description.c_str(),  sizeof(val2_vbr.vbr_description)-1);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrCommand obj(conf_file);
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,  obj.update_cmd(key_vbr,  val_vbr,  ctr));
+  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,  obj.update_cmd(key_vbr,  val1_vbr, val2_vbr, ctr));
   delete ctr;
   ctr = NULL;
 }
@@ -216,11 +220,13 @@ TEST(odcdriver,  test_update_cmd_invalid_vbr_name) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
+  val_vbr_t val1_vbr;
+  val_vbr_t val2_vbr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
-  memset(&val_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val1_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val2_vbr,  0,  sizeof(val_vbr_t));
 
   std::string ip_add =  "172.16.0.2";
   inet_aton(ip_add.c_str(),  &val_ctr.ip_address);
@@ -233,15 +239,15 @@ TEST(odcdriver,  test_update_cmd_invalid_vbr_name) {
   strncpy(reinterpret_cast<char*>(key_vbr.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(key_vbr.vtn_key.vtn_name)-1);
   std::string description =  "descrip";
-  strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
-          description.c_str(),  sizeof(val_vbr.vbr_description)-1);
+  strncpy(reinterpret_cast<char*>(val1_vbr.vbr_description),
+          description.c_str(),  sizeof(val1_vbr.vbr_description)-1);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(key_vbr,  val_vbr,  ctr));
+            obj.update_cmd(key_vbr,  val1_vbr, val2_vbr,  ctr));
   delete ctr;
   ctr = NULL;
 }
@@ -387,11 +393,13 @@ TEST(odcdriver,  test_update_cmd_invalid) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
+  val_vbr_t val1_vbr;
+  val_vbr_t val2_vbr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
-  memset(&val_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val1_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val2_vbr,  0,  sizeof(val_vbr_t));
 
   std::string INVALID_RESPONSE = "172.0.0.0";
 
@@ -405,15 +413,15 @@ TEST(odcdriver,  test_update_cmd_invalid) {
   strncpy(reinterpret_cast<char*>(key_vbr.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(key_vbr.vtn_key.vtn_name)-1);
   std::string description =  "descrip";
-  strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
-          description.c_str(),  sizeof(val_vbr.vbr_description)-1);
+  strncpy(reinterpret_cast<char*>(val1_vbr.vbr_description),
+          description.c_str(),  sizeof(val1_vbr.vbr_description)-1);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(key_vbr,  val_vbr,  ctr));
+            obj.update_cmd(key_vbr,  val1_vbr, val2_vbr,  ctr));
   delete ctr;
   ctr = NULL;
 }
@@ -456,11 +464,13 @@ TEST(odcdriver,  test_update_cmd_null_resp) {
   key_ctr_t key_ctr;
   val_ctr_t val_ctr;
   key_vbr_t key_vbr;
-  val_vbr_t val_vbr;
+  val_vbr_t val1_vbr;
+  val_vbr_t val2_vbr;
   memset(&key_ctr, 0, sizeof(key_ctr_t));
   memset(&val_ctr, 0, sizeof(val_ctr_t));
   memset(&key_vbr, 0 , sizeof(key_vbr_t));
-  memset(&val_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val1_vbr,  0,  sizeof(val_vbr_t));
+  memset(&val2_vbr,  0,  sizeof(val_vbr_t));
 
   std::string NULL_RESPONSE = "172.16.0.0";
   inet_aton(NULL_RESPONSE.c_str(),  &val_ctr.ip_address);
@@ -473,15 +483,15 @@ TEST(odcdriver,  test_update_cmd_null_resp) {
   strncpy(reinterpret_cast<char*>(key_vbr.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(key_vbr.vtn_key.vtn_name)-1);
   std::string description =  "descrip";
-  strncpy(reinterpret_cast<char*>(val_vbr.vbr_description),
-          description.c_str(),  sizeof(val_vbr.vbr_description)-1);
+  strncpy(reinterpret_cast<char*>(val1_vbr.vbr_description),
+          description.c_str(),  sizeof(val1_vbr.vbr_description)-1);
   unc::restjson::ConfFileValues_t conf_file;
   conf_file.odc_port = 8080;
   conf_file.user_name = "admin";
   conf_file.password = "admin";
   unc::odcdriver::OdcVbrCommand obj(conf_file);
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(key_vbr,  val_vbr,  ctr));
+            obj.update_cmd(key_vbr,  val1_vbr, val2_vbr, ctr));
   delete ctr;
   ctr = NULL;
 }

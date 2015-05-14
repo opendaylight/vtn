@@ -72,8 +72,8 @@ TEST(print, check) {
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-                       (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn,
+        val_vtn, uint32_t>(&key_obj, &val_obj, &val_obj, operation);
   KeyTree_obj->append_audit_node(cfgptr);
 
   ConfigNode *cfgnode_obj = new ConfigNode;
@@ -98,8 +98,8 @@ TEST(add_child_to_list, UNC_RC_SUCCESS) {
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-                       (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+                       (&key_obj, &val_obj, &val_obj, operation);
   KeyTree_obj->append_audit_node(cfgptr);
 
   int ret = cfgnode_obj->add_child_to_list(cfgptr);
@@ -156,18 +156,18 @@ TEST(get_node_list, check) {
   memcpy(key2_obj.if_name, "vbrif1", sizeof(key2_obj.if_name));
   memcpy(val2_obj.vext_name, "vbrif1_des", sizeof(val2_obj.vext_name));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-                       (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+                       (&key_obj, &val_obj, &val_obj, operation);
   int ret = cfg_obj->add_child_to_list(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-                        (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr,
+                 uint32_t>(&key1_obj, &val1_obj, &val1_obj, operation);
   ret = cfg_obj->add_child_to_list(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if,
-                        uint32_t>(&key2_obj, &val2_obj, operation);
+      pfcdrv_val_vbr_if, uint32_t>(&key2_obj, &val2_obj, &val2_obj, operation);
   ret = cfg_obj->add_child_to_list(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
@@ -218,8 +218,9 @@ TEST(delete_child_node, switch_port_config_not_present) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
                                       key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
-  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-                       (&key_switch_obj, &val_switch, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st,
+       val_switch_st, uint32_t>(&key_switch_obj, &val_switch, &val_switch,
+                                                 operation);
   uint32_t ret = KeyTree_obj->node_tree_.add_child_to_list(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
@@ -232,8 +233,8 @@ TEST(delete_child_node, switch_port_config_not_present) {
 
   val_port_st val_obj;
   memset(&val_obj, 0, sizeof(val_obj));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-                       (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+                      uint32_t>(&key_obj, &val_obj, &val_obj, operation);
   ret = KeyTree_obj->node_tree_.delete_child_node(cfgptr1, erased_key_list);
   delete KeyTree_obj;
   KeyTree_obj = NULL;
@@ -255,8 +256,9 @@ TEST(delete_child_node, delete_switch) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
                                       key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
-  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-                       (&key_switch_obj, &val_switch, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st,
+       val_switch_st, uint32_t>(&key_switch_obj, &val_switch, &val_switch,
+                                                             operation);
   uint32_t ret = KeyTree_obj->node_tree_.add_child_to_list(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 

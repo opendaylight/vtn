@@ -15,27 +15,31 @@
 
 namespace unc {
 namespace vtndrvcache {
-template<typename key, typename value, typename op>
+template<typename key, typename value1, typename value2, typename op>
 class CacheElementUtil: public  ConfigNode {
  private:
   key* key_;
-  value* value_;
+  value1* value1_;
+  value2* value2_;
   op operation_;
 
  public:
   /**
    * @brief  : Constructor to set the key struct, value structure & operation_
    */
-  CacheElementUtil(key* key_ty, value* value_ty, op opet):
+  CacheElementUtil(key* key_ty, value1* value1_ty, value2* value2_ty, op opet):
       operation_(opet) {
         ODC_FUNC_TRACE;
         key_ = new key();
         PFC_ASSERT(key_ != NULL);
-        value_ = new value();
-        PFC_ASSERT(value_ != NULL);
+        value1_ = new value1();
+        PFC_ASSERT(value1_ != NULL);
+        value2_ = new value2();
+        PFC_ASSERT(value2_ != NULL);
 
         memcpy(key_, key_ty, sizeof(key));
-        memcpy(value_, value_ty, sizeof(value));
+        memcpy(value1_, value1_ty, sizeof(value1));
+        memcpy(value2_, value2_ty, sizeof(value2));
       }
 
   /**
@@ -46,8 +50,11 @@ class CacheElementUtil: public  ConfigNode {
     if (key_ != NULL)
       delete key_;
 
-    if (value_ != NULL)
-      delete value_;
+    if (value1_ != NULL)
+      delete value1_;
+
+    if (value2_ != NULL)
+      delete value2_;
   }
 
   /**
@@ -66,7 +73,7 @@ class CacheElementUtil: public  ConfigNode {
   std::string  get_key_generate() {
     ODC_FUNC_TRACE;
     if (key_ != NULL) {
-      return ConfUtil::get_search_key(*key_, *value_);
+      return ConfUtil::get_search_key(*key_, *value1_);
     }
     return "";
   }
@@ -106,23 +113,31 @@ class CacheElementUtil: public  ConfigNode {
 
   /**
    * @brief   : This method returns the value struct
-   * @retval  : key*
+   * @retval  : value*
    */
-  value* get_val_structure() {
+  value1* get_val_structure() {
     ODC_FUNC_TRACE;
-    return value_;
+    return value1_;
   }
 
+  /**
+   * @brief   : This method returns the value struct
+   * @retval  : value*
+   */
+  value2* get_old_val_structure() {
+    ODC_FUNC_TRACE;
+    return value2_;
+  }
   /**
    * @brief     : This method set the new val-structure
    * @param [in]: new_value
    * @retval    : void
    */
-  void set_val_structure(value* new_value) {
+  void set_val_structure(value1* new_value) {
     ODC_FUNC_TRACE;
-    delete value_;
-    value_ = new value;
-    memcpy(value_, new_value, sizeof(value));
+    delete value1_;
+    value1_ = new value1;
+    memcpy(value1_, new_value, sizeof(value1));
   }
 
   /**

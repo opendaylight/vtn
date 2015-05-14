@@ -332,9 +332,9 @@ UncRespCode OdcLink::add_event(unc::driver::controller *ctr_ptr,
                                    std::list<std::string> &link_list) {
   ODC_FUNC_TRACE;
 
-  unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, uint32_t>
+  unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, val_link_st_t, uint32_t>
       *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-      <key_link_t, val_link_st_t, uint32_t>*> (cfg_node);
+      <key_link_t, val_link_st_t, val_link_st_t, uint32_t>*> (cfg_node);
 
   key_link_t *key_link = cfgptr_cache->get_key_structure();
   val_link_st_t *val_link = cfgptr_cache->get_val_structure();
@@ -364,18 +364,18 @@ UncRespCode OdcLink::add_event(unc::driver::controller *ctr_ptr,
 // Update event for Link
 UncRespCode OdcLink::update_event(unc::driver::controller *ctr_ptr,
                                       unc::vtndrvcache::ConfigNode *cfg_node,
-                                      val_link_st_t *val_old_link,
+                                      val_link_st_t *val_new_link,
                                       std::list<std::string> &link_list) {
   ODC_FUNC_TRACE;
-  unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, uint32_t>
+  unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, val_link_st_t, uint32_t>
       *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-      <key_link_t, val_link_st_t, uint32_t>*> (cfg_node);
+      <key_link_t, val_link_st_t, val_link_st_t, uint32_t>*> (cfg_node);
 
   key_link_t *key_link = cfgptr_cache->get_key_structure();
   val_link_st_t *val_link = cfgptr_cache->get_val_structure();
 
   if ((NULL == key_link) || (NULL == val_link) ||
-      (NULL == val_old_link)) {
+      (NULL == val_new_link)) {
     pfc_log_error("key_link/val_link is NULL");
     return UNC_DRV_RC_ERR_GENERIC;
   }
@@ -384,7 +384,7 @@ UncRespCode OdcLink::update_event(unc::driver::controller *ctr_ptr,
   notify_physical(unc::driver::VTN_LINK_UPDATE,
                   key_link,
                   val_link,
-                  val_old_link);
+                  val_new_link);
 
   // Append to cache
   UncRespCode  ret_val =
@@ -417,9 +417,9 @@ UncRespCode OdcLink::delete_event(unc::driver::controller *ctr,
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_LINK == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t>
+          <key_link_t, val_link_st_t, val_link_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t>*> (cfgnode_cache);
+          <key_link_t, val_link_st_t, val_link_st_t, uint32_t>*> (cfgnode_cache);
 
       key_link_t *key_link_cache = cfgptr_cache->get_key_structure();
       if (NULL == key_link_cache) {
@@ -475,9 +475,9 @@ UncRespCode OdcLink::delete_link(
     }
     std::string link_id = iter->first;
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t> *cfgptr_cache =
+          <key_link_t, val_link_st_t, val_link_st_t, uint32_t> *cfgptr_cache =
           static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t>*> (cfg_node);
+          <key_link_t, val_link_st_t, val_link_st_t, uint32_t>*> (cfg_node);
 
       key_link_t *key_link = cfgptr_cache->get_key_structure();
       val_link_st_t *val_link = cfgptr_cache->get_val_structure();
@@ -520,9 +520,9 @@ UncRespCode OdcLink::verify_in_cache(
       return UNC_DRV_RC_ERR_GENERIC;
     }
 
-    unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, uint32_t>
+    unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, val_link_st_t, uint32_t>
         *cfgnode_ctr = static_cast<unc::vtndrvcache::CacheElementUtil
-        <key_link_t, val_link_st_t, uint32_t>*> (cfg_node);
+        <key_link_t, val_link_st_t, val_link_st_t, uint32_t>*> (cfg_node);
 
     val_link_st_t *val_link_ctr = cfgnode_ctr->get_val_structure();
     key_link_t *key_link = cfgnode_ctr->get_key_structure();
@@ -558,9 +558,9 @@ UncRespCode OdcLink::verify_in_cache(
     } else {
       pfc_log_trace("Link exist in cache");
       unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t>
+          <key_link_t, val_link_st_t, val_link_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_link_t, val_link_st_t, uint32_t>*> (cfgnode_cache);
+          <key_link_t, val_link_st_t, val_link_st_t, uint32_t>*> (cfgnode_cache);
 
       key_link_t *key_link = cfgptr_cache->get_key_structure();
       val_link_st_t *val_link_cache = cfgptr_cache->get_val_structure();
@@ -711,12 +711,13 @@ UncRespCode OdcLink::fill_config_node_vector(
     }
     pfc_log_debug("oper status of link is %d", val_link.oper_status);
 
-    unc::vtndrvcache::ConfigNode *cfgptr =
-    new unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t, uint32_t>
-        (&key_link, &val_link, uint32_t(UNC_OP_READ));
-    PFC_VERIFY(cfgptr != NULL);
-    cfgnode_vector.push_back(cfgptr);
-  }
+  unc::vtndrvcache::ConfigNode *cfgptr =
+      new unc::vtndrvcache::CacheElementUtil<key_link_t, val_link_st_t,
+     val_link_st_t,
+     uint32_t>(&key_link, &val_link, &val_link, uint32_t(UNC_OP_READ));
+  PFC_VERIFY(cfgptr != NULL);
+  cfgnode_vector.push_back(cfgptr);
+}  
   return UNC_RC_SUCCESS;
 }
 

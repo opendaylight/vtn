@@ -223,34 +223,34 @@ UncRespCode KeyTree:: update_physical_attribute_node(
   std::string type_check = TypeToStrFun(child_ptr->get_type_name());
   pfc_log_info("type check for port/switch %s", type_check.c_str());
   if (type_check == "UNC_KT_PORT") {
-    CacheElementUtil<key_port_t, val_port_st_t, uint32_t> *update_port_ptr =
+    CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t> *update_port_ptr =
         static_cast <CacheElementUtil
-        <key_port_t, val_port_st_t, uint32_t> * >(child_ptr);
+        <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * >(child_ptr);
 
-    CacheElementUtil<key_port_t, val_port_st_t, uint32_t> *old_port_ptr =
+    CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t> *old_port_ptr =
         static_cast <CacheElementUtil
-        <key_port_t, val_port_st_t, uint32_t> * >(old_cfgptr);
+        <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * >(old_cfgptr);
 
     old_port_ptr->set_val_structure(update_port_ptr->get_val_structure());
   } else if (type_check == "UNC_KT_SWITCH") {
-    CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t>
+    CacheElementUtil<key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
         *update_switch_ptr = static_cast <CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * >(child_ptr);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * >(child_ptr);
 
 
-    CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t> *old_switch_ptr =
+    CacheElementUtil<key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> *old_switch_ptr =
         static_cast <CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * >(old_cfgptr);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * >(old_cfgptr);
 
     old_switch_ptr->set_val_structure(update_switch_ptr->get_val_structure());
   } else if (type_check == "UNC_KT_LINK") {
-    CacheElementUtil<key_link_t, val_link_st_t, uint32_t> *update_link_ptr =
+    CacheElementUtil<key_link_t, val_link_st_t, val_link_st_t, uint32_t> *update_link_ptr =
         static_cast <CacheElementUtil
-        <key_link_t, val_link_st_t, uint32_t> * >(child_ptr);
+        <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * >(child_ptr);
 
-    CacheElementUtil<key_link_t, val_link_st_t, uint32_t> *old_link_ptr =
+    CacheElementUtil<key_link_t, val_link_st_t, val_link_st_t, uint32_t> *old_link_ptr =
         static_cast <CacheElementUtil
-        <key_link_t, val_link_st_t, uint32_t> * >(old_cfgptr);
+        <key_link_t, val_link_st_t, val_link_st_t, uint32_t> * >(old_cfgptr);
 
     old_link_ptr->set_val_structure(update_link_ptr->get_val_structure());
   } else {

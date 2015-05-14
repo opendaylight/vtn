@@ -41,7 +41,8 @@ class vtn_driver_command: public driver_command {
                          unc::driver::controller*) {
     return UNC_RC_SUCCESS;
   }
-  UncRespCode update_cmd(key_temp& key_st, val_temp& val_st,
+  UncRespCode update_cmd(key_temp& key_st, val_temp& old_val_st,
+                         val_temp& val_st,
                          unc::driver::controller*) {
     return UNC_RC_SUCCESS;
   }

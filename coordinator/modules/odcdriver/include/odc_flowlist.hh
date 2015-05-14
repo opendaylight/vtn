@@ -171,7 +171,9 @@ public:
   virtual std::string get_url_tail(key &key_in,value &val_in)=0;
 
   // Copy from Key Value Structure to FlowConditions Structure
-  virtual void copy(flowcondition *out, key &key_in, value &value_in)=0;
+  virtual void copy(flowcondition *out, key &key_in, value &value_val_in) = 0;
+  virtual void copy(flowcondition* out, key &key_in,
+                           value &value_old_in, value &value_new_in)=0;
 
   // Copy from FlowConditions List and send to platform
   virtual UncRespCode r_copy(flowConditions *in,
@@ -204,7 +206,34 @@ public:
                                         &flow_cond_request,
                                         conf_values_);
   }
+  UncRespCode run_command(key& key_in,
+                          value& val_old_in,
+                          value& val_new_in,
+                          unc::driver::controller *ctr,
+                          unc::odcdriver::OdcDriverOps Op) {
+    ODC_FUNC_TRACE;
+    flowcondition command_;
+    //Copy Contents from key and val
+    copy(&command_,key_in,val_old_in, val_new_in);
 
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append("/");
+    url.append("flowconditions");
+    url.append("/");
+    url.append(get_url_tail(key_in,val_new_in));
+
+    pfc_log_info("The Flow list URL: %s",url.c_str());
+
+    odl_flowlist_http_request flow_cond_request(&command_,url, NULL, is_entry_);
+
+    odl_http_request odl_fc_create;
+    return odl_fc_create.handle_request(ctr,
+                                        Op,
+                                        &flow_cond_request,
+                                        conf_values_);
+  }
   UncRespCode odl_flow_condition_read_all( unc::driver::controller *ctr,
       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
     ODC_FUNC_TRACE;
@@ -270,7 +299,8 @@ public:
   }
 
 
-  UncRespCode update_cmd(key_flowlist &key_in, val_flowlist &val_in,
+  UncRespCode update_cmd(key_flowlist &key_in, val_flowlist &val_old_in,
+                         val_flowlist &val_new_in,
                          unc::driver::controller *ctr) {
     ODC_FUNC_TRACE;
     return UNC_RC_SUCCESS;
@@ -295,6 +325,10 @@ public:
              key_flowlist& in_key,
              val_flowlist& in_val);
 
+  void copy (flowcondition* out,
+             key_flowlist& in_key,
+             val_flowlist& old_val,
+             val_flowlist& new_val);
   UncRespCode r_copy (flowConditions *in,
                       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector);
 
@@ -348,11 +382,13 @@ public:
 
 
   UncRespCode update_cmd(key_flowlist_entry &key_in,
-                         val_flowlist_entry &val_in,
+                         val_flowlist_entry &val_old_in,
+                         val_flowlist_entry &val_new_in,
                          unc::driver::controller *ctr) {
     ODC_FUNC_TRACE;
     return run_command(key_in,
-                       val_in,
+                       val_old_in,
+                       val_new_in,
                        ctr,
                        unc::odcdriver::CONFIG_UPDATE);
   }
@@ -376,6 +412,10 @@ public:
              key_flowlist_entry& in_key,
              val_flowlist_entry& in_val);
 
+  void copy (flowcondition* out,
+             key_flowlist_entry& in_key,
+             val_flowlist_entry& old_val,
+             val_flowlist_entry& new_val);
   UncRespCode r_copy (flowConditions *in,
                       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
     return UNC_RC_SUCCESS;
