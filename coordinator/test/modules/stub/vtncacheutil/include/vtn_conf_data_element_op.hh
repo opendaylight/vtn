@@ -16,11 +16,12 @@
 
 namespace unc {
 namespace vtndrvcache {
-template<typename key, typename value, typename op>
+template<typename key, typename value1,typename value2, typename op>
 class CacheElementUtil: public  ConfigNode {
  private:
   key* key_;
-  value* value_;
+  value1* value1_;
+  value2* value2_;
   op operation;
 
  public:
@@ -28,8 +29,8 @@ class CacheElementUtil: public  ConfigNode {
    ** Constructor to set the key struct, value structure & operation
    **/
 
-  CacheElementUtil(key* key_ty, value* value_ty, op opet):
-      key_(key_ty), value_(value_ty), operation(opet) {
+  CacheElementUtil(key* key_ty, value1* value1_ty, value2* value2_ty, op opet):
+      key_(key_ty), value1_(value1_ty), value1_(value1_ty), operation(opet) {
         pfc_log_info("In constructor %s..", PFC_FUNCNAME);
       }
 
@@ -74,9 +75,9 @@ class CacheElementUtil: public  ConfigNode {
    ** This method returns the value struct
    ** @param [out] - key*
    **/
-  value* getval() {
+  value1* getval() {
     pfc_log_info("Entering function %s..", PFC_FUNCNAME);
-    return value_;
+    return value1_;
   }
 
   /**

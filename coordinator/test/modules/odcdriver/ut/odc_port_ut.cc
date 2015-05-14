@@ -172,9 +172,9 @@ TEST(odcdriver_port, test_port_data_add) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       std::string port_id = reinterpret_cast<char*> (key_port->port_id);
       std::string node_id = reinterpret_cast<char*>
@@ -260,9 +260,9 @@ TEST(odcdriver_port, test_port_data_delete) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       std::string port_id = reinterpret_cast<char*> (key_port->port_id);
       std::string node_id =
@@ -353,9 +353,9 @@ TEST(odcdriver_port, test_port_data_update) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       std::string port_id = reinterpret_cast<char*> (key_port->port_id);
       std::string node_id =
@@ -407,9 +407,9 @@ TEST(odcdriver_port, test_port_data_update) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       val_port_st_t *val_port = cache_util_ptr->get_val_structure();
       std::string port_id = reinterpret_cast<char*> (key_port->port_id);
@@ -492,9 +492,10 @@ TEST(odcdriver_port, test_port_data_update__empty) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+          <key_port_t, val_port_st_t, val_port_st_t,
+                      uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       std::string port_id = reinterpret_cast<char*> (key_port->port_id);
       std::string node_id =
@@ -598,9 +599,9 @@ TEST(odcdriver_port, test_port_resp_one) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+        <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       std::string port_id = reinterpret_cast<char*> (key_port->port_id);
       std::string node_id =
@@ -1187,9 +1188,9 @@ TEST(odcdriver_port, test_port_resp_conf_unknown) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * cache_util_ptr =
+        <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
+       <key_port_t, val_port_st_t, val_port_st_t, uint32_t> * > (cfgnode_cache);
       key_port_t *key_port = cache_util_ptr->get_key_structure();
       val_port_st_t *val_port = cache_util_ptr->get_val_structure();
 

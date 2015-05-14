@@ -61,7 +61,8 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
    *                               successfully/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vterm_if_t& key,
-                         val_vterm_if_t& val,
+                         val_vterm_if_t& val_old,
+                         val_vterm_if_t& val_new,
                          unc::driver::controller *conn);
 
   /**
