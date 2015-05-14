@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -1484,8 +1484,6 @@ def update_vtermif_flowfilter_drop_audit():
 if __name__ == '__main__':
     print '*****VTERM FLOWFILTER TESTS******'
     test_vtermif_flowfilter_audit()
-    print '*********UPDATE AUDIT FLOWFILTER TESTS***'
-    update_vtermif_flowfilter_audit()
     print '*****VTERMIF AUDIT FLOWFILTER PASS TESTS******'
     test_vtermif_flowfilter_pass_audit()
     print '*********UPDATE AUDIT FLOWFILTER PASS TESTS***'

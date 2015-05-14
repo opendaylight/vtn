@@ -146,7 +146,7 @@ def validate_flowfilter_at_controller(blockname, controller_blockname, ff_blockn
       print flowfilter_content
       if flowfilter_content['condition']!=condition:
           return 1
-      if flowfilter_content['index']!=int(locale.atof(index)):
+      if int(flowfilter_content['index'])!= int(locale.atof(index)):
           return 1
       ret = validate_filter_type(flowfilter_content)
       if ret != 0:
@@ -163,7 +163,7 @@ def validate_filter_type(flowfilter_content):
           return 1
       if flowfilter_content['filterType']['redirect']['destination']['interface'] != interface:
           return 1
-      if flowfilter_content['filterType']['redirect']['output'] != bool(locale.atof(output)):
+      if bool(flowfilter_content['filterType']['redirect']['output']) != bool(locale.atof(output)):
           return 1
   except(NameError, KeyError):
       print "Filtertype is either PASS or DROP"
@@ -176,7 +176,7 @@ def validate_actions(flowfilter_content, ff_blockname):
 
   for index in range(length):
     print "looping:", index
-    ret = 1 
+    ret = 1
     element = flowfilter_content['actions'][index]
     print element
     if 'dscp' in element:
@@ -190,7 +190,7 @@ def validate_actions(flowfilter_content, ff_blockname):
 def validate_dscp(json_array, ff_blockname):
     print "validate_dscp"
     dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['dscp']
-    if json_array['dscp']['dscp'] == int(locale.atof(dscp)):
+    if int(json_array['dscp']['dscp']) == int(locale.atof(dscp)):
       print "dscp"
       return 0
     else:
@@ -199,7 +199,7 @@ def validate_dscp(json_array, ff_blockname):
 def validate_priority(json_array, ff_blockname):
     print "validate_priority"
     priority = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['priority']
-    if json_array['vlanpcp']['priority'] == int(locale.atof(priority)):
+    if int(json_array['vlanpcp']['priority']) == int(locale.atof(priority)):
       print "priority"
       return 0
     else:
@@ -208,7 +208,7 @@ def validate_priority(json_array, ff_blockname):
 def validate_dlsrc(json_array, ff_blockname):
     print "validate_dlsrc"
     dlsrc = vtn_testconfig.ReadValues(FLOWFILTERDATA,  ff_blockname)['dlsrc']
-    if json_arrary['dlsrc']['address'] == int(locale.atof(dlsrc)):
+    if int(json_arrary['dlsrc']['address']) == int(locale.atof(dlsrc)):
       print "dlsrc"
       return 0
     else:
@@ -276,7 +276,7 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
 
 
     if update_ff_bn == 'NegativeVTNFlowfilter':
-        priority = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['priority']        
+        priority = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['priority']
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
 
 
@@ -285,7 +285,7 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
 
     if update_ff_bn == 'NegativeFlowfilter':
-        priority = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['priority']        
+        priority = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['priority']
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
 
 
@@ -294,7 +294,7 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
 
     if update_ff_bn == 'NegativeFlowfilterOne':
-        priority = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['priority']        
+        priority = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['priority']
         dscp = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['dscp']
 
 
@@ -329,7 +329,7 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
 
         vnode_name = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['vnode_name']
         if_name = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['if_name']
-         
+
         macsrcaddr = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['macsrcaddr']
         macdstaddr = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['macdstaddr']
         direction = vtn_testconfig.ReadValues(FLOWFILTERDATA, update_ff_bn)['direction']
@@ -344,7 +344,7 @@ def update_flowfilter_entry(blockname, ff_blockname, update_ff_bn):
 
 
         redir = {'vnode_name':vnode_name, 'if_name':if_name, 'direction':direction, 'macdstaddr':macdstaddr, 'macsrcaddr':macsrcaddr}
-        
+
         flowfilter_entry_add = {'seqnum': seqnum,'fl_name':fl_name, 'action_type':action_type, 'priority':priority, 'dscp':dscp, 'redirectdst':redir}
         J_string = dict({'flowfilterentry':flowfilter_entry_add})
         print J_string

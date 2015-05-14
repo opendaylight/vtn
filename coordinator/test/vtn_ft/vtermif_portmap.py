@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -78,7 +78,7 @@ def validate_vtermif_at_controller(vtn_blockname, vterm_blockname, vtermif_block
     test_vterm_url = vtn_testconfig.ReadValues(VTNVTERMDATA,vterm_blockname)['vterm_url']
     test_vtermif_url = vtn_testconfig.ReadValues(VTERMIFDATA,'VTERMIFURL')['ctr_url']
     test_vtermif_name = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['vtermif_name']
-    test_vtermif_adminstatus = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['adminstatus']
+    test_vtermif_adminstatus = vtn_testconfig.ReadValues(VTERMIFDATA,vtermif_blockname)['admin_status']
     print test_vterm_url
     url = 'http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vterm_url+test_vtermif_url
     print url
@@ -995,7 +995,7 @@ if __name__ == '__main__':
     test_vtn_vterm_vtermif_portmap()
     test_vtn_multi_vterm_single_vtermif_portmap()
     test_multi_vtn_vterm_vtermif_portmap()
-    
+
 
 
 else:

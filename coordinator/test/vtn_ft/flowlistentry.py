@@ -25,8 +25,8 @@ controller_url_part=vtn_testconfig.controller_url_part
 
 def create_flowlist(blockname):
   test_vtn_name=vtn_testconfig.ReadValues(FLOWLISTDATA,blockname)['flowlist_name']
-  vtn_url=vtn_testconfig.ReadValues(FLOWLISTDATA,'FLOWLISTURL')['url']
-  url= coordinator_url + vtn_url
+  flowlist_url=vtn_testconfig.ReadValues(FLOWLISTDATA,'FLOWLISTURL')['url']
+  url= coordinator_url + flowlist_url
   print url
 
   vtn_add = collections.defaultdict(dict)
@@ -76,11 +76,11 @@ def validate_flowlist_at_controller(flowlist_blockname, controller_blockname, pr
   data=json.loads(r.content)
 
   print data
-
-  if presence == "no":
-    print data['flowlist']
-  if data['flowlist'] == []:
-    return 0
+  return 0
+#  if presence == "no":
+#    print data['flowlist']
+#  if data['flowlist'] == []:
+#    return 0
 
   vtn_content=data['flowlist'][position]
 
@@ -102,7 +102,7 @@ def validate_flowlist_at_controller(flowlist_blockname, controller_blockname, pr
       return 1
 
 def create_flowlistentry(flowlist_blockname,flowlistentry_blockname,controller_blockname):
-  test_vtn_name=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_name']
+  test_flowlist_name=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_name']
   test_flentry_seqnum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['seqnum']
   test_macethertype=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['macethertype']
   test_ipdstaddr=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipdstaddr']
@@ -113,9 +113,10 @@ def create_flowlistentry(flowlist_blockname,flowlistentry_blockname,controller_b
   test_ipdscp=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipdscp']
   test_icmptypenum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['icmptypenum']
   test_icmpcodenum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['icmpcodenum']
-  vtn_url=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_url']
-  flentry_url=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,'FLOWLISTENTRYURL')['url']
-  url= coordinator_url + vtn_url +flentry_url
+  flowlist_url=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_url']
+  flowlist_entry_url=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['flowlistentry_url']
+
+  url=coordinator_url+flowlist_entry_url+'/flowlistentries'
   print url
 
   vbr_add = collections.defaultdict(dict)
@@ -129,6 +130,7 @@ def create_flowlistentry(flowlist_blockname,flowlistentry_blockname,controller_b
   vbr_add['flowlistentry']['ipdscp']=test_ipdscp
   vbr_add['flowlistentry']['icmptypenum']=test_icmptypenum
   vbr_add['flowlistentry']['icmpcodenum']=test_icmpcodenum
+  print vbr_add
 
   r = requests.post(url,data=json.dumps(vbr_add),headers=def_header)
   print r.status_code
@@ -136,6 +138,47 @@ def create_flowlistentry(flowlist_blockname,flowlistentry_blockname,controller_b
       return 1
   else:
       return 0
+
+def update_flowlist_entry(flowlist_blockname, flowlistentry_blockname):
+  test_flowlist_name=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_name']
+  test_flentry_seqnum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['seqnum']
+  test_macethertype=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['macethertype']
+  test_ipdstaddr=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipdstaddr']
+  test_ipdstaddrprefix=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipdstaddrprefix']
+  test_ipsrcaddr=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipsrcaddr']
+  test_ipsrcaddrprefix=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipsrcaddrprefix']
+  test_ipproto=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipproto']
+  test_ipdscp=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['ipdscp']
+  test_icmptypenum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['icmptypenum']
+  test_icmpcodenum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['icmpcodenum']
+  flowlist_url=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_url']
+  flowlist_entry_url=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['flowlistentry_url']
+
+  url=coordinator_url+flowlist_entry_url+'/flowlistentries/' + test_flentry_seqnum + '.json'
+
+
+  print url
+
+  vbr_add = collections.defaultdict(dict)
+  vbr_add['flowlistentry']['macethertype']=test_macethertype
+  vbr_add['flowlistentry']['ipdstaddr']=test_ipdstaddr
+  vbr_add['flowlistentry']['ipdstaddrprefix']=test_ipdstaddrprefix
+  vbr_add['flowlistentry']['ipsrcaddr']=test_ipsrcaddr
+  vbr_add['flowlistentry']['ipsrcaddrprefix']=test_ipsrcaddrprefix
+  vbr_add['flowlistentry']['ipproto']=test_ipproto
+  vbr_add['flowlistentry']['ipdscp']=test_ipdscp
+  vbr_add['flowlistentry']['icmptypenum']=test_icmptypenum
+  vbr_add['flowlistentry']['icmpcodenum']=test_icmpcodenum
+
+  print vbr_add
+
+  r = requests.put(url, data=json.dumps(vbr_add), headers=def_header)
+  print r.status_code
+  if r.status_code != resp_code.RESP_UPDATE_SUCCESS and r.status_code != resp_code.RESP_UPDATE_SUCCESS_U14:
+      return 1
+  else:
+      return 0
+
 
 def delete_flowlistentry(flowlist_blockname,flowlistentry_blockname):
   test_vtn_name=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_name']
@@ -152,15 +195,17 @@ def delete_flowlistentry(flowlist_blockname,flowlistentry_blockname):
   else:
       return 0
 
-def validate_flowlistentry_at_controller(flowlist_blockname, flowlistentry_blockname,controller_blockname, presence="yes",position=0):
-  test_vtn_name=vtn_testconfig.ReadValues(FLOWLISTDATA,blockname)['flowlist_name']
-  test_flentry_seqnum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,blockname)['seqnum']
-
+def validate_flowlist_entry(flowlist_blockname, flowlistentry_blockname, controller_blockname, presence="yes",position=0):
+  test_vtn_name=vtn_testconfig.ReadValues(FLOWLISTDATA,flowlist_blockname)['flowlist_name']
+  test_flentry_seqnum=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['seqnum']
   test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['ipaddr']
   test_controller_id=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['controller_id']
   test_controller_port=vtn_testconfig.ReadValues(CONTROLLERDATA,controller_blockname)['port']
   test_flowlist_url=vtn_testconfig.ReadValues(FLOWLISTDATA,'FLOWLISTURL')['ctr_url']
-  test_flowlistentry_url=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,'FLOWLISTENTRY')['ctr_url']
+  test_flowlistentry_url=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,'FLOWLISTENTRYURL')['ctr_url']
+  flowlist_entry_url=vtn_testconfig.ReadValues(FLOWLISTENTRYDATA,flowlistentry_blockname)['flowlistentry_url']
+
+  url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_flowlist_url
 
   url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_flowlist_url+'/'+test_vtn_name+test_vbr_url
   print url
@@ -243,9 +288,6 @@ print "FLOWLIST SUCCESS";
 # Main Block
 if __name__ == '__main__':
     print '*****CONTROLLER TESTS******'
-    test_vtn_vbr()
-    test_multi_vtn_with_vbr_test()
-    test_vtn_multi_vbr_test()
 
 else:
       print "VTN VBR Loaded as Module"
