@@ -55,13 +55,15 @@ class OdcVtnCommand: public unc::driver::vtn_driver_command
    * @brief                          - Frames VTN update command and uses rest client
    *                                   interface to send it to VTN Manager
    * @param[in] key_vtn_t            - key structure of VTN
-   * @param[in] val_vtn_t            - value structure of VTN
+   * @param[in] val_vtn_t            - Old value structure of VTN
+   * @param[in] val_vtn_t            - New value structure of VTN
    * @param[in] ctr                  - Controller pointer
    * @return                         - returns UNC_RC_SUCCESS on
    *                                   updation of vtn /returns
    *                                   UNC_DRV_RC_ERR_GENERIC on failure
    */
-  UncRespCode update_cmd(key_vtn_t& key, val_vtn_t& val,
+  UncRespCode update_cmd(key_vtn_t& key, val_vtn_t& val_old,
+                         val_vtn_t& val_new,
                          unc::driver::controller *ctr);
 
   /**
