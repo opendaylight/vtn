@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -117,6 +117,15 @@ def test_vbrif_flowfilter():
   if retval != 0:
     print "FlowFilter validation at Controller Failed"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOne')
   if retval != 0:
@@ -167,7 +176,7 @@ def update_vbrif_flowfilter():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Update FLOWFILTER TEST"
+  print "TEST 2 : VBRIF->Update FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -288,6 +297,16 @@ def update_vbrif_flowfilter():
   if retval != 0:
     print "VBRFIFlowFilterEntry Updatation Validate Failed at Co-ordinator"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOne')
   if retval != 0:
@@ -339,7 +358,7 @@ def negative_vbrif_flowfilter():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Negative test scenario FLOWFILTER TEST"
+  print "TEST 9 : VBRIF->Negative test scenario FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -452,15 +471,9 @@ def negative_vbrif_flowfilter():
     exit(1)
 
   retval=flowfilter.update_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOne', 'NegativeFlowfilter')
-  if retval != 0:
+  if retval == 0:
     print "VBRFIFlowFilterEntry Negative test case DSCP,Priority  Failed"
     print "Because  DSCP range was up to (0-63) and priority range (0-7) its more than higher its showing Bad command so test failed "
-    exit(1)
-
-  retval=flowfilter.validate_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOne|NegativeFlowfilter', presence='yes', position=0)
-  if retval != 0:
-    print retval
-    print "VBRFIFlowFilterEntry Updatation Validate Failed at Co-ordinator"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOne')
@@ -512,7 +525,7 @@ def test_vbrif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->FLOWFILTER TEST"
+  print "TEST 7 : VBRIF->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -608,6 +621,16 @@ def test_vbrif_flowfilter_out():
   if retval != 0:
     print "FlowFilter validation at Controller Failed"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneOut')
   if retval != 0:
@@ -658,7 +681,7 @@ def update_vbrif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Update FLOWFILTER TEST"
+  print "TEST 8 : VBRIF->Update FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -779,6 +802,16 @@ def update_vbrif_flowfilter_out():
   if retval != 0:
     print "VBRFIFlowFilterEntry Updatation Validate Failed at Co-ordinator"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneOut')
   if retval != 0:
@@ -830,7 +863,7 @@ def negative_vbrif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VBRIF->Negative test scenario FLOWFILTER TEST"
+  print "TEST 10 : VBRIF->Negative test scenario FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -943,16 +976,9 @@ def negative_vbrif_flowfilter_out():
     exit(1)
 
   retval=flowfilter.update_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneOut', 'NegativeFlowfilterOne')
-  if retval != 0:
-
+  if retval == 0:
     print "VBRFIFlowFilterEntry Negative test case DSCP,Priority  Failed"
     print "Because  DSCP range was up to (0-63) and priority range (0-7) its more than higher its showing Bad command so test failed "
-    exit(1)
-
-  retval=flowfilter.validate_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneOut|NegativeFlowfilterOne', presence='yes', position=0)
-  if retval != 0:
-    print retval
-    print "VBRFIFlowFilterEntry Updatation Validate Failed at Co-ordinator"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneOut')
@@ -1094,6 +1120,15 @@ def test_vbrif_flowfilter_pass():
   retval=flowfilter.validate_flowfilter_at_controller('VtnOne|VbrOne|VbrIfOne', 'ControllerFirst', 'FlowfilterOnePass', presence='yes', position=0)
   if retval != 0:
     print "FlowFilter validation at Controller Failed"
+    exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOnePass')
@@ -1404,6 +1439,16 @@ def test_vbrif_flowfilter_drop():
   if retval != 0:
     print "FlowFilter validation at Controller Failed"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneDrop')
   if retval != 0:
@@ -1571,6 +1616,16 @@ def update_vbrif_flowfilter_drop():
   if retval != 0:
     print "VBRFIFlowFilterEntry Updatation Validate Failed at Co-ordinator"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VbrOne|VbrIfOne', 'FlowfilterOneDrop')
   if retval != 0:
@@ -1622,15 +1677,15 @@ if __name__ == '__main__':
     print '*****VBR FLOWFILTER IN TESTS******'
     test_vbrif_flowfilter()
     print '****** UPDATE FLOWFILTER IN TESTS**********'
-    update_vbrif_flowfilter() 
+    update_vbrif_flowfilter()
     print '*****VBR FLOWFILTER PASS TESTS******'
     test_vbrif_flowfilter_pass()
     print '****** UPDATE FLOWFILTER DROP TESTS**********'
-    update_vbrif_flowfilter_pass() 
+    update_vbrif_flowfilter_pass()
     print '*****VBR FLOWFILTER DROP TESTS******'
     test_vbrif_flowfilter_drop()
     print '****** UPDATE FLOWFILTER PASS TESTS**********'
-    update_vbrif_flowfilter_drop() 
+    update_vbrif_flowfilter_drop()
     print '*****VBR FLOWFILTER OUT TESTS******'
     test_vbrif_flowfilter_out()
     print '*****UPDATE VBR FLOWFILTER OUT TESTS******'

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -88,7 +88,6 @@ def test_vtermif_flowfilter():
   if retval != 0:
     print "VTERMIF Create Failed"
     exit(1)
-    retval=flowlistentry.create_flowlist('FlowlistOne')
 
   retval = vtermif_portmap.create_portmap('VtnOne','VTermOne','VTermIfOne');
   if retval != 0:
@@ -351,7 +350,7 @@ def negative_vtermif_flowfilter():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 2 : VTERMIF->NEGATIVE UPDATE FLOWFILTER TEST"
+  print "TEST 9 : VTERMIF->NEGATIVE UPDATE FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -470,14 +469,9 @@ def negative_vtermif_flowfilter():
     exit(1)
 
   retval=flowfilter.update_flowfilter_entry('VtnOne|VTermOne|VbrIfOne|VTermIfOne', 'FlowfilterOne', 'NegativeFlowfilter')
-  if retval != 0:
+  if retval == 0:
     print "VTERMIFFlowFilterEntry Negative Update at priority and dscp has  Failed"
     print "Because priority range should be >63 and dscp also >7 so its showing Bad command "
-    exit(1)
-
-  retval=flowfilter.validate_flowfilter_entry('VtnOne|VTermOne|VbrIfOne|VTermIfOne', 'FlowfilterOne|NegativeFlowfilter', presence='yes', position=0)
-  if retval != 0:
-    print "VTERMIFFlowFilterEntry Negative Updatation Validate Failed at Co-ordinator"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VTermOne|VbrIfOne|VTermIfOne', 'FlowfilterOne')
@@ -529,7 +523,7 @@ def test_vtermif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VTERMIF->FLOWFILTER TEST"
+  print "TEST 7 : VTERMIF->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -680,7 +674,7 @@ def update_vtermif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 2 : VTERMIF->UPDATE FLOWFILTER TEST"
+  print "TEST 8 : VTERMIF->UPDATE FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -857,7 +851,7 @@ def negative_vtermif_flowfilter_out():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 2 : VTERMIF->NEGATIVE UPDATE FLOWFILTER TEST"
+  print "TEST 10 : VTERMIF->NEGATIVE UPDATE FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -976,14 +970,9 @@ def negative_vtermif_flowfilter_out():
     exit(1)
 
   retval=flowfilter.update_flowfilter_entry('VtnOne|VTermOne|VbrIfOne|VTermIfOne', 'FlowfilterOneOut', 'NegativeFlowfilterOne')
-  if retval != 0:
+  if retval == 0:
     print "VTERMIFFlowFilterEntry Negative Update at priority and dscp has  Failed"
     print "Because priority range should be >63 and dscp also >7 so its showing Bad command "
-    exit(1)
-
-  retval=flowfilter.validate_flowfilter_entry('VtnOne|VTermOne|VbrIfOne|VTermIfOne', 'FlowfilterOneOut|NegativeFlowfilterOne', presence='yes', position=0)
-  if retval != 0:
-    print "VTERMIFFlowFilterEntry Negative Updatation Validate Failed at Co-ordinator"
     exit(1)
 
   retval=flowfilter.delete_flowfilter_entry('VtnOne|VTermOne|VbrIfOne|VTermIfOne', 'FlowfilterOneOut')
@@ -1036,7 +1025,7 @@ def test_vtermif_flowfilter_pass():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VTERMIF->FLOWFILTER TEST"
+  print "TEST 3 : VTERMIF->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -1180,7 +1169,7 @@ def update_vtermif_flowfilter_pass():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 2 : VTERMIF->UPDATE FLOWFILTER TEST"
+  print "TEST 4 : VTERMIF->UPDATE FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -1358,7 +1347,7 @@ def test_vtermif_flowfilter_drop():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 1 : VTERMIF->FLOWFILTER TEST"
+  print "TEST 5 : VTERMIF->FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -1502,7 +1491,7 @@ def update_vtermif_flowfilter_drop():
     print "Controller Create Failed"
     exit(1)
 
-  print "TEST 2 : VTERMIF->UPDATE FLOWFILTER TEST"
+  print "TEST 6 : VTERMIF->UPDATE FLOWFILTER TEST"
   # Delay for AUDIT
   retval=controller.wait_until_state('ControllerFirst', "up")
   if retval != 0:
@@ -1667,11 +1656,6 @@ def update_vtermif_flowfilter_drop():
      print "CONTROLLER delete failed"
      exit(1)
   print "VTERMIF->UPDATE FLOWFILTER TEST SUCCESS"
-
-
-
-
-
 
 
 # Main Block

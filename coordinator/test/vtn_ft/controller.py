@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -401,7 +401,8 @@ def update_controller_ex(blockname,ipaddr="",version="",auditstatus="",
 def check_controller_state(blockname,state):
     test_url =  vtn_testconfig.ReadValues(CONTROLLERDATA ,blockname)['url']
     url = coordinator_url + test_url
-
+    if state == 'down':
+       time.sleep(45)
     r = requests.get(url,headers=def_header)
     while(1):
         try:
