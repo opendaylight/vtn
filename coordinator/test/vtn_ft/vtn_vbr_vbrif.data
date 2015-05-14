@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -13,12 +13,13 @@ description=first vbrif for vbrone
 admin_status=true
 controller_url=/interfaces/vbrifone
 vbrif_url=/interfaces/vbrifone
-logical_port_id=PP-00:00:00:00:00:00:00:03-s3-eth1
+logical_port_id=PP-openflow:3-s3-eth1
 node_id=00:00:00:00:00:00:00:03
 update_url=/interfaces/vbrifone
 url=/interfaces/
 vlan_id=1
 tagged=true
+#Update
 updatedescription=first update vbrif for vbrone
 adminstatus=disable
 
@@ -29,11 +30,12 @@ description=second vbrif for vbrone
 admin_status=false
 controller_url=/interfaces/vbriftwo
 vbrif_url=/interfaces/vbriftwo
-logical_port_id=PP-00:00:00:00:00:00:00:02-s2-eth1
+logical_port_id=PP-openflow:2-s2-eth1
 node_id=00:00:00:00:00:00:00:02
 vlan_id=1
 vlan_id=2
 tagged=false
+#update
 update_url=/interfaces/vbriftwo
 updatedescription=second update vbrif for vbrone
 adminstatus=enable
@@ -45,11 +47,12 @@ description=first vbrif for vbrtwo
 admin_status=true
 controller_url=/interfaces/vbrifthree
 vbrif_url=/interfaces/vbrifthree
-logical_port_id=PP-00:00:00:00:00:00:00:03-s3-eth2
+logical_port_id=PP-openflow:3-s3-eth2
 node_id=00:00:00:00:00:00:00:03
 vlan_id=1
 vlan_id=3
 tagged=false
+#update
 update_url=/interfaces/vbrifthree
 updatedescription=Three update vbrif for vbrtwo
 adminstatus=disable
@@ -61,11 +64,12 @@ description=second vbrif for vbrtwo
 admin_status=false
 controller_url=/interfaces/vbriffour
 vbrif_url=/interfaces/vbriffour
-logical_port_id=PP-00:00:00:00:00:00:00:02-s2-eth2
+logical_port_id=PP-openflow:2-s2-eth2
 node_id=00:00:00:00:00:00:00:02
 vlan_id=1
 vlan_id=4
 tagged=true
+#update
 update_url=/interfaces/vbriffour
 updatedescription=second update vbrif for vbrtwo
 adminstatus=enable
@@ -77,10 +81,11 @@ description=first vbrif for vbrone
 admin_status=true
 controller_url=/interfaces/vbrifone
 vbrif_url=/interfaces/vbrifone
-logical_port_id=PP-00:00:00:00:00:00:00:02-s2-eth2
+logical_port_id=PP-openflow:2-s2-eth2
 node_id=00:00:00:00:00:00:00:02
 vlan_id=1
 tagged=true
+#update
 update_url=/interfaces/vbrifone
 updatedescription=first update vbrif for vbrone
 adminstatus=disable
@@ -92,10 +97,11 @@ description=first vbrif for vbrtwo
 admin_status=true
 controller_url=/interfaces/vbrifthree
 vbrif_url=/interfaces/vbrifthree
-logical_port_id=PP-00:00:00:00:00:00:00:05-s5-eth2
+logical_port_id=PP-openflow:5-s5-eth2
 node_id=00:00:00:00:00:00:00:05
 vlan_id=1
 tagged=false
+
 update_url=/interfaces/vbrifthree
 updatedescription=first update vbrif for vbrtwo
 adminstatus=disable

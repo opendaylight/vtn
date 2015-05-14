@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -60,7 +60,7 @@ def update_vbrif(vtn_blockname,vbr_blockname,vbrif_blockname):
     updatedescription=vtn_testconfig.ReadValues(VBRIFDATA,vbrif_blockname)['updatedescription']
     adminstatus=vtn_testconfig.ReadValues(VBRIFDATA,vbrif_blockname)['adminstatus']
 
-    url= coordinator_url + vtn_url + vbr_url + vbrif_url +vbrif_name + '.json' 
+    url= coordinator_url + vtn_url + vbr_url + vbrif_url +vbrif_name + '.json'
     print url
 
 
@@ -69,7 +69,7 @@ def update_vbrif(vtn_blockname,vbr_blockname,vbrif_blockname):
     vbrif_add['interface']['if_name']=vbrif_name
     vbrif_add['interface']['description']=updatedescription
     vbrif_add['interface']['adminstatus']=adminstatus
-    
+
     print vbrif_add
 
     r = requests.put(url,data=json.dumps(vbrif_add),headers=def_header)
@@ -162,7 +162,7 @@ def validate_updatevbrif_at_controller(vtn_blockname, vbr_blockname, vbrif_block
     test_vbrif_name=vtn_testconfig.ReadValues(VBRIFDATA,vbrif_blockname)['vbrif_name']
     test_vbrif_adminstatus=vtn_testconfig.ReadValues(VBRIFDATA,vbrif_blockname)['adminstatus']
     print test_vbr_url
-    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vbr_url+test_vbrif_ctr_url 
+    url='http://'+test_controller_ipaddr+':'+test_controller_port+controller_url_part+test_vtn_url+test_vbr_url+test_vbrif_ctr_url
     print url
     r = requests.get(url,headers=controller_headers,auth=('admin','admin'))
 
@@ -333,7 +333,7 @@ def test_vtn_vbr_vbrif():
     if retval != 0:
         print "VBRIF Create Failed"
         exit(1)
-    
+
     retval=validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst')
     if retval != 0:
         print "After Create VBRIF Validate Failed"
@@ -416,7 +416,7 @@ def test_multi_vbrif():
         print "VBRIFONE Create Failed"
         exit(1)
 
-       
+
 
     retval=validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',position=0)
     if retval != 0:
@@ -662,7 +662,7 @@ def test_multi_vtn_vbr_vbrif():
         print "VTN1->VBR1->VBRIF1 Validate Failed"
         exit(1)
 
-      
+
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
     if retval != 0:
@@ -956,12 +956,12 @@ def test_vtn_vbr_vbrif_portmap():
         print "After Create VBRIF Validate Failed"
         exit(1)
 
-   
+
     retval=create_portmap('VtnOne','VbrOne','VbrIfOne');
     if retval != 0:
         print "Portmap Create Failed"
         exit(1)
-    
+
     retval=validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
     if retval != 0:
         print "Portmap Validate Failed"
@@ -1193,7 +1193,7 @@ def test_vtn_vbr_multi_vbrif_portmap():
     if retval != 0:
         print "VBRIF2 Create Failed"
         exit(1)
-  
+
 
     retval=validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',position=0)
     if retval != 0:
@@ -1476,7 +1476,7 @@ def test_multi_vtn_vbr_vbrif_portmap():
     retval=create_vbrif('VtnTwo','VbrTwo','VbrIfTwo')
     if retval != 0:
         print "VBRIF2 Create Failed"
-        exit(1)  
+        exit(1)
 
     retval=validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',position=0)
     if retval != 0:
@@ -1659,7 +1659,7 @@ def test_vtn_vbr_multiple_vbrif_portmap():
     if retval != 0:
         print "VBRIF4 Create Failed"
         exit(1)
-   
+
     retval=validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',position=0)
     if retval != 0:
         print "After Create VBRIF1 Validate Failed"
@@ -1877,7 +1877,7 @@ def test_vbrif_update():
     if retval != 0:
         print "VBRIF Create Failed"
         exit(1)
-    
+
     retval=validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst')
     if retval != 0:
         print "After Create VBRIF Validate Failed"
@@ -1892,7 +1892,7 @@ def test_vbrif_update():
     retval=validate_updatevbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst')
     if retval != 0:
         print "After update  VBRIF Validate Failed"
-        
+
         exit(1)
 
 
@@ -1975,12 +1975,12 @@ def test_vbrif_update_portmap():
     if retval != 0:
         print "After Create VBRIF Validate Failed"
         exit(1)
-    
+
     retval=create_portmap('VtnOne','VbrOne','VbrIfOne');
     if retval != 0:
         print "Portmap Create Failed"
         exit(1)
-    
+
     retval=validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
     if retval != 0:
         print "Portmap Validate Failed"
@@ -2053,7 +2053,7 @@ def test_vbrif_update_portmap():
         exit(1)
     print "VTN->VBR->VBRIF->Update PORTMAP TEST SUCCESS"
 
-   
+
 # Main Block
 if __name__ == '__main__':
     print '*****VBRIF TESTS******'
@@ -2070,6 +2070,6 @@ if __name__ == '__main__':
     test_vtn_vbr_multiple_vbrif_portmap()
     test_vbrif_update()
     test_vbrif_update_portmap()
-    
+
 else:
     print "VBRIF_PORTMAP Loaded as Module"

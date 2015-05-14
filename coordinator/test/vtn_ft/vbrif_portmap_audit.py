@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -67,6 +67,10 @@ def test_audit_vtn_vbr_vbrif():
         print "VBRIF Create Failed"
         exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VBRIF Create Failed"
+        exit(1)
 
     print "****UPDATE Controller IP to Valid****"
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
@@ -168,6 +172,16 @@ def test_audit_multi_vbrif():
     retval=vbrif_portmap.create_vbrif('VtnOne','VbrOne','VbrIfTwo')
     if retval != 0:
         print "VBRIFTWO Create Failed"
+        exit(1)
+
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VBRIF Create Failed"
+        exit(1)
+
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfTwo')
+    if retval != 0:
+        print "VBRIF Create Failed"
         exit(1)
 
     print "****UPDATE Controller IP to Valid****"
@@ -284,17 +298,27 @@ def test_audit_vtn_multi_vbr_vbrif():
         print "VBRIF1 Create Failed"
         exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VBRIF Create Failed"
+        exit(1)
+
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',position=0)
     if retval != 0:
         print "VBRIF1 Validate Failed"
         exit(1)
 
-    retval=vbrif_portmap.create_vbrif('VtnOne','VbrTwo','VbrIfOne')
+    retval=vbrif_portmap.create_vbrif('VtnOne','VbrTwo','VbrIfTwo')
     if retval != 0:
         print "VBR2->VBRIF1 Create Failed"
         exit(1)
 
-    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfOne','ControllerFirst',position=0)
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo')
+    if retval != 0:
+        print "VBRIF Create Failed"
+        exit(1)
+
+    retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',position=0)
     if retval != 0:
         print "VBR2->VBRIF2 Validate Failed"
         exit(1)
@@ -316,7 +340,7 @@ def test_audit_vtn_multi_vbr_vbrif():
         print "VBR1->VBRIF1 Delete Failed"
         exit(1)
 
-    retval = vbrif_portmap.delete_vbrif('VtnOne','VbrTwo','VbrIfOne')
+    retval = vbrif_portmap.delete_vbrif('VtnOne','VbrTwo','VbrIfTwo')
     if retval != 0:
         print "VBR2->VBRIF1 Delete Failed"
         exit(1)
@@ -326,9 +350,19 @@ def test_audit_vtn_multi_vbr_vbrif():
         print "VBRIF3 Create Failed"
         exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfThree')
+    if retval != 0:
+        print "VBRIF Create Failed"
+        exit(1)
+
     retval=vbrif_portmap.create_vbrif('VtnOne','VbrTwo','VbrIfTwo')
     if retval != 0:
         print "VBR2->VBRIF2 Create Failed"
+        exit(1)
+
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo')
+    if retval != 0:
+        print "VBRIF Create Failed"
         exit(1)
 
     print "****UPDATE Controller IP to Valid****"
@@ -463,6 +497,12 @@ def test_audit_vtn_vbr_vbrif_portmap():
     if retval != 0:
         print "VBRIF Create Failed"
         exit(1)
+
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+    if retval != 0:
+        print "Portmap Create Failed"
+        exit(1)
+
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst')
     if retval != 0:
         print "After Create VBRIF Validate Failed"
@@ -480,10 +520,6 @@ def test_audit_vtn_vbr_vbrif_portmap():
       print "controller state change failed"
       exit(1)
 
-    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
-    if retval != 0:
-        print "Portmap Create Failed"
-        exit(1)
 
     print "****UPDATE Controller IP to Valid****"
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
@@ -610,6 +646,11 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
         print "VBRIF1 Portmap Create Failed"
         exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfTwo');
+    if retval != 0:
+        print "VBRIF2 Portmap Create Failed"
+        exit(1)
+
     retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes",position=0);
     if retval != 0:
         print "VBRIF1 Portmap Validate Failed"
@@ -627,10 +668,6 @@ def test_audit_vtn_multi_vbr_vbrif_portmap():
       print "controller state change failed"
       exit(1)
 
-    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfTwo');
-    if retval != 0:
-        print "VBRIF2 Portmap Create Failed"
-        exit(1)
 
     print "****UPDATE Controller IP to Valid****"
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
@@ -966,6 +1003,16 @@ def test_audit_multi_vbr_vbrif():
         print "VBRIFTWO Create Failed"
         exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VBRIFTWO Create Failed"
+        exit(1)
+
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo')
+    if retval != 0:
+        print "VBRIFTWO Create Failed"
+        exit(1)
+
     print "****UPDATE Controller IP to Valid****"
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
     retval=controller.update_controller_ex('ControllerFirst',ipaddr=test_controller_ipaddr)
@@ -977,7 +1024,7 @@ def test_audit_multi_vbr_vbrif():
     if retval != 0:
       print "controller state change failed"
       exit(1)
-        
+
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst',position=0)
     if retval != 0:
         print "VBRONE Validate Failed"
@@ -1006,7 +1053,7 @@ def test_audit_multi_vbr_vbrif():
       print "controller state change failed"
       exit(1)
 
-   
+
     retval =vbrif_portmap.delete_vbrif('VtnOne','VbrOne','VbrIfOne')
     if retval != 0:
         print "VBR1->VBRIFONE Delete Failed"
@@ -1103,6 +1150,10 @@ def test_audit_multi_vtn_vbr_vbrif():
         print "VTN1->VBR1->VBRIF1 Create Failed"
         exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VTN1->VBR1->VBRIF1 Create Failed"
+        exit(1)
 
     retval=vtn_vbr.create_vbr('VtnTwo','VbrTwo','ControllerFirst')
     if retval != 0:
@@ -1114,8 +1165,10 @@ def test_audit_multi_vtn_vbr_vbrif():
         print "VTN2->VBR2->VBRIF2 Create Failed"
         exit(1)
 
-
-      
+    retval=vbrif_portmap.create_portmap('VtnTwo','VbrTwo','VbrIfTwo')
+    if retval != 0:
+        print "VTN2->VBR2->VBRIF2 Create Failed"
+        exit(1)
 
     retval=vtn_vbr.validate_vbr_at_controller('VtnOne','VbrOne','ControllerFirst')
     if retval != 0:
@@ -1253,7 +1306,7 @@ def test_audit_vtn_multi_vbr_single_vbrif_portmap():
 
     print "TEST 9 : VTenant with Two VBridge Two VBRIF and One PORTMAP each"
   # Delay for AUDIT
-  
+
     retval = controller.wait_until_state('ControllerFirst',"up")
     if retval != 0:
       print "controller state change failed"
@@ -1455,7 +1508,7 @@ def test_audit_multi_vtn_vbr_vbrif_portmap():
     retval=vbrif_portmap.create_vbrif('VtnTwo','VbrTwo','VbrIfTwo')
     if retval != 0:
         print "VBRIF2 Create Failed"
-        exit(1)  
+        exit(1)
 
     retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
     if retval != 0:
@@ -1622,7 +1675,12 @@ def test_audit_vbrif_update():
     if retval != 0:
         print "VBRIF Create Failed"
         exit(1)
-    
+
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne')
+    if retval != 0:
+        print "VBRIF Create Failed"
+        exit(1)
+
     print "****UPDATE Controller IP to invalid****"
     test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['invalid_ipaddr']
     retval = controller.update_controller_ex('ControllerFirst',ipaddr=test_invalid_ipaddr)
@@ -1645,7 +1703,7 @@ def test_audit_vbrif_update():
     retval=vbrif_portmap.validate_updatevbrif_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst')
     if retval != 0:
         print "After update  VBRIF Validate Failed"
-        
+
         exit(1)
 
     print "****UPDATE Controller IP to Valid****"
@@ -1715,7 +1773,7 @@ def test_audit_vbrif_update_portmap():
 
     print "TEST 12 : VTenant with one VBridge one VBRIF and One UPDATE PORTMAP"
    # Delay for AUDIT
-  
+
     retval = controller.wait_until_state('ControllerFirst',"up")
     if retval != 0:
       print "controller state change failed"
@@ -1733,7 +1791,7 @@ def test_audit_vbrif_update_portmap():
       print "controller state change failed"
       exit(1)
 
- 
+
 
     retval=vtn_vbr.create_vtn('VtnOne')
     if retval != 0:
@@ -1750,12 +1808,12 @@ def test_audit_vbrif_update_portmap():
         print "VBRIF Create Failed"
         exit(1)
 
-    
+
     retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
     if retval != 0:
         print "Portmap Create Failed"
         exit(1)
-    
+
     print "****UPDATE Controller IP to Valid****"
     test_controller_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
     retval=controller.update_controller_ex('ControllerFirst',ipaddr=test_controller_ipaddr)
@@ -1843,17 +1901,12 @@ if __name__ == '__main__':
     test_audit_vtn_multi_vbr_vbrif()
     test_audit_vtn_vbr_vbrif_portmap()
     test_audit_vtn_multi_vbr_vbrif_portmap()
-    test_audit_vtn_vbr_multi_vbrif_portmap()
     test_audit_multi_vbr_vbrif()
     test_audit_multi_vtn_vbr_vbrif()
     test_audit_vtn_multi_vbr_single_vbrif_portmap()
-    test_audit_multi_vtn_vbr_vbrif_portmap()    
+    test_audit_multi_vtn_vbr_vbrif_portmap()
     test_audit_vbrif_update()
     test_audit_vbrif_update_portmap()
-
-
-
-
 
 else:
     print "VTN VBR Loaded as Module"
