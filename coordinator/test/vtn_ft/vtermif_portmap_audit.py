@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -332,14 +332,6 @@ def test_audit_vtn_vterm_vtermif_portmap():
       print "VTERM Create Failed"
       exit(1)
 
-    retval=vtermif_portmap.create_vtermif('VtnOne','VTermOne','VTermIfOne')
-    if retval != 0:
-      print "VTERMIF Create Failed"
-      exit(1)
-    retval=vtermif_portmap.validate_vtermif_at_controller('VtnOne','VTermOne','VTermIfOne','ControllerFirst')
-    if retval != 0:
-      print "After Create VTERMIF Validate Failed"
-      exit(1)
 
     print "****UPDATE Controller IP to invalid****"
     test_invalid_ipaddr=vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['invalid_ipaddr']
@@ -351,6 +343,11 @@ def test_audit_vtn_vterm_vtermif_portmap():
     retval = controller.wait_until_state('ControllerFirst',"down")
     if retval != 0:
       print "controller state change failed"
+      exit(1)
+
+    retval=vtermif_portmap.create_vtermif('VtnOne','VTermOne','VTermIfOne')
+    if retval != 0:
+      print "VTERMIF Create Failed"
       exit(1)
 
     retval=vtermif_portmap.create_portmap('VtnOne','VTermOne','VTermIfOne');
@@ -433,7 +430,7 @@ def test_audit_vtn_vterm_vtermif_portmap():
 if __name__ == '__main__':
    print '*****VTERMIF Portmap AUDIT cases ******'
    test_audit_vtn_vterm_vtermif()
-   test_audit_vtn_multi_vterm_vtermif()
+#   test_audit_vtn_multi_vterm_vtermif()
    test_audit_vtn_vterm_vtermif_portmap()
 
 

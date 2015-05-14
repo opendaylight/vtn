@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -59,6 +59,15 @@ def test_vbr_flowfilter_audit_1():
       print "VBRIF Create Failed"
       exit(1)
 
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+    if retval != 0:
+      print "Portmap Create Failed"
+      exit(1)
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+    if retval != 0:
+      print "Portmap Create Failed"
+      exit(1)
+
     retval =  vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
     if retval != 0:
         print "VTN Validate Failed"
@@ -82,6 +91,15 @@ def test_vbr_flowfilter_audit_1():
     retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst', presence = 'yes', position = 0)
     if retval != 0:
       print "After Create VBRIF Validate Failed"
+      exit(1)
+    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+    if retval != 0:
+      print "Portmap Validate Failed"
+      exit(1)
+
+    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+    if retval != 0:
+      print "Portmap Validate Failed"
       exit(1)
 
     retval=flowlistentry.create_flowlist('FlowlistOne')
@@ -223,6 +241,14 @@ def test_vbr_flowfilter_audit_2():
     if retval != 0:
       print "VBRIF Create Failed"
       exit(1)
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+    if retval != 0:
+      print "Portmap Create Failed"
+      exit(1)
+    retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+    if retval != 0:
+      print "Portmap Create Failed"
+      exit(1)
 
     retval =  vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
     if retval != 0:
@@ -238,6 +264,15 @@ def test_vbr_flowfilter_audit_2():
     if retval != 0:
         print "After Create VBRIF Validate Failed"
         exit(1)
+    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+    if retval != 0:
+      print "Portmap Validate Failed"
+      exit(1)
+
+    retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+    if retval != 0:
+      print "Portmap Validate Failed"
+      exit(1)
 
     retval=flowlistentry.create_flowlist('FlowlistOne')
     if retval != 0:
@@ -376,6 +411,14 @@ def update_vbr_flowfilter_audit():
   if retval != 0:
     print "VBRIF Create Failed"
     exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
 
   retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
   if retval != 0:
@@ -400,6 +443,16 @@ def update_vbr_flowfilter_audit():
   retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "After Create VBRIF Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
     exit(1)
 
   retval=flowlistentry.create_flowlist('FlowlistOne')
@@ -432,7 +485,7 @@ def update_vbr_flowfilter_audit():
     print "FlowFilter validation at Controller Failed"
     exit(1)
 
-    
+
     print "****UPDATE Controller IP to invalid****"
     test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['invalid_ipaddr']
     retval = controller.update_controller_ex('ControllerFirst',ipaddr=test_invalid_ipaddr)
@@ -449,7 +502,7 @@ def update_vbr_flowfilter_audit():
   if retval != 0:
     print "VTN Create Failed"
     exit(1)
- 
+
   retval=vbrif_portmap.create_vbrif('VtnOne','VbrThree', 'VbrIfThree')
   if retval != 0:
     print "VBRIF Create Failed"
@@ -570,6 +623,15 @@ def test_vbr_flowfilter_pass_audit():
   if retval != 0:
     print "VBRIF Create Failed"
     exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
+
   print "****UPDATE Controller IP to Valid****"
   test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
   retval = controller.update_controller_ex('ControllerFirst',ipaddr=test_controller_ipaddr)
@@ -606,6 +668,15 @@ def test_vbr_flowfilter_pass_audit():
   retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "After Create VBRIF Validate Failed"
+    exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
     exit(1)
 
   retval=flowlistentry.create_flowlist('FlowlistOne')
@@ -728,6 +799,14 @@ def update_vbr_flowfilter_pass_audit():
   if retval != 0:
     print "VBRIF Create Failed"
     exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
 
   retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
   if retval != 0:
@@ -752,6 +831,15 @@ def update_vbr_flowfilter_pass_audit():
   retval=vbrif_portmap.validate_vbrif_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst', presence = 'yes', position = 0)
   if retval != 0:
     print "After Create VBRIF Validate Failed"
+    exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
     exit(1)
 
   retval=flowlistentry.create_flowlist('FlowlistOne')
@@ -796,7 +884,6 @@ def update_vbr_flowfilter_pass_audit():
   if retval != 0:
     print "VBRFlowFilterEntry Update Failed"
     exit(1)
- 
 
   print "****UPDATE Controller IP to Valid****"
   test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
@@ -909,6 +996,14 @@ def test_vbr_flowfilter_drop_audit():
   if retval != 0:
     print "VBRIF Create Failed"
     exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
 
   print "****UPDATE Controller IP to Valid****"
   test_controller_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['ipaddr']
@@ -946,7 +1041,15 @@ def test_vbr_flowfilter_drop_audit():
   if retval != 0:
     print "After Create VBRIF Validate Failed"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
 
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
 
   retval=flowlistentry.create_flowlist('FlowlistOne')
   if retval != 0:
@@ -1054,6 +1157,14 @@ def update_vbr_flowfilter_drop_audit():
   if retval != 0:
     print "VBRIF Create Failed"
     exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrOne','VbrIfOne');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
+  retval=vbrif_portmap.create_portmap('VtnOne','VbrTwo','VbrIfTwo');
+  if retval != 0:
+    print "Portmap Create Failed"
+    exit(1)
 
   retval=vtn_vbr.validate_vtn_at_controller('VtnOne','ControllerFirst')
   if retval != 0:
@@ -1079,6 +1190,16 @@ def update_vbr_flowfilter_drop_audit():
   if retval != 0:
     print "After Create VBRIF Validate Failed"
     exit(1)
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrOne','VbrIfOne','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
+  retval=vbrif_portmap.validate_vbrif_portmap_at_controller('VtnOne','VbrTwo','VbrIfTwo','ControllerFirst',presence="yes");
+  if retval != 0:
+    print "Portmap Validate Failed"
+    exit(1)
+
   print "****UPDATE Controller IP to invalid****"
   test_invalid_ipaddr= vtn_testconfig.ReadValues(CONTROLLERDATA,'ControllerFirst')['invalid_ipaddr']
   retval = controller.update_controller_ex('ControllerFirst',ipaddr=test_invalid_ipaddr)
