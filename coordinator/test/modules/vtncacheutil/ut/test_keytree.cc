@@ -25,8 +25,8 @@ TEST(append_commit_node, vtn) {
   val_vtn val_obj;
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj,operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -53,13 +53,13 @@ TEST(append_commit_node, vbr) {
   memcpy(val1_obj.vbr_description, "vbr1_des",
          sizeof(val1_obj.vbr_description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, 0);
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val1_obj, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
@@ -96,25 +96,26 @@ TEST(append_commit_node, Reterive_key_val) {
   key2_obj.logical_port_id_valid = 1;
   val2_obj.vm.vlan_id = 100;
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   ConfigNode *cfgptr2 = new CacheElementUtil<key_vlan_map_t,
              pfcdrv_val_vlan_map_t,
-             uint32_t>(&key2_obj, &val2_obj, operation);
+             pfcdrv_val_vlan_map_t,
+             uint32_t>(&key2_obj, &val2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vtn, val_vtn, uint32_t> *tmp_ptr =
-      static_cast<CacheElementUtil<key_vtn, val_vtn, uint32_t>*> (cfgptr);
+  CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->vtn_name));
@@ -122,8 +123,8 @@ TEST(append_commit_node, Reterive_key_val) {
           reinterpret_cast<char*>(tmp_ptr->get_val_structure()->description));
 
   cfgptr1 = itr_ptr->NextItem();
-  CacheElementUtil<key_vbr, val_vbr, uint32_t> *tmp1_ptr =
-      static_cast<CacheElementUtil<key_vbr, val_vbr, uint32_t>*> (cfgptr1);
+  CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t> *tmp1_ptr =
+      static_cast<CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>*> (cfgptr1);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key1_obj.vbridge_name),
        reinterpret_cast<char*>(tmp1_ptr->get_key_structure()->vbridge_name));
@@ -131,9 +132,10 @@ TEST(append_commit_node, Reterive_key_val) {
       reinterpret_cast<char*>(tmp1_ptr->get_val_structure()->vbr_description));
 
   cfgptr2 = itr_ptr->NextItem();
-  CacheElementUtil<key_vlan_map, pfcdrv_val_vlan_map_t, uint32_t> *tmp2_ptr =
+  CacheElementUtil<key_vlan_map, pfcdrv_val_vlan_map_t, pfcdrv_val_vlan_map_t,
+                          uint32_t> *tmp2_ptr =
       static_cast<CacheElementUtil<key_vlan_map, pfcdrv_val_vlan_map_t,
-      uint32_t>*> (cfgptr2);
+                 pfcdrv_val_vlan_map_t, uint32_t>*> (cfgptr2);
 
   EXPECT_EQ(1, (tmp2_ptr->get_key_structure()->logical_port_id_valid));
   EXPECT_STREQ(reinterpret_cast<char*>(key2_obj.logical_port_id),
@@ -162,14 +164,15 @@ TEST(add_node_to_tree, null_parent) {
   KeyTree_obj = KeyTree::create_cache();
   int operation = 1;
   key_vbr key_obj;
-  val_vbr val_obj;
-
+  val_vbr val1_obj;
+  val_vbr val2_obj;
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   memcpy(key_obj.vbridge_name, "vbr1", sizeof(key_obj.vbridge_name));
-  memcpy(val_obj.vbr_description, "vbr1_des", sizeof(val_obj.vbr_description));
+  memcpy(val1_obj.vbr_description, "vbr1_des", sizeof(val1_obj.vbr_description));
+  memcpy(val2_obj.vbr_description, "vbr1_des", sizeof(val2_obj.vbr_description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key_obj, &val1_obj, &val2_obj, operation);
   int ret = KeyTree_obj->add_node_to_tree(cfgptr);
   delete KeyTree_obj;
   delete cfgptr;
@@ -188,8 +191,8 @@ TEST(add_node_to_tree, parent_exist) {
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->add_node_to_tree(cfgptr);
 
   key_vbr key1_obj;
@@ -200,8 +203,8 @@ TEST(add_node_to_tree, parent_exist) {
   memcpy(val1_obj.vbr_description,
          "vbr1_des", sizeof(val1_obj.vbr_description));
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj,  &val1_obj, operation);
   ret = KeyTree_obj->add_node_to_tree(cfgptr1);
   delete KeyTree_obj;
   KeyTree_obj = NULL;
@@ -220,8 +223,8 @@ TEST(add_child_to_hash, UNC_RC_SUCCESS) {
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete KeyTree_obj;
   delete cfgptr;
@@ -281,17 +284,18 @@ TEST(append_audit_node, Node_not_exist) {
   memcpy(key2_obj.if_name, "vbrif1", sizeof(key2_obj.if_name));
   memcpy(val2_obj.vext_name, "vbrif1_des", sizeof(val2_obj.vext_name));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   int ret = KeyTree_obj->append_audit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val1_obj,  operation);
   ret = KeyTree_obj->append_audit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
-  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if_t,
-             uint32_t>(&key2_obj, &val2_obj, operation);
+  ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if,
+                   pfcdrv_val_vbr_if_t,  pfcdrv_val_vbr_if_t,
+             uint32_t>(&key2_obj, &val2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   delete KeyTree_obj;
@@ -328,8 +332,8 @@ TEST(append_audit_node, parent_not_exist) {
   memcpy(val1_obj.vbr_description, "vbr1_des",
          sizeof(val1_obj.vbr_description));
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val1_obj, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr1);
 
   delete cfgptr1;
@@ -348,16 +352,18 @@ TEST(append_audit_node, parent_exist_already) {
   val_vtn val_obj;
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr);
 
   key_vtn key1_obj;
   val_vtn val1_obj;
+  val_vtn val2_obj;
   memcpy(key1_obj.vtn_name, "vtn1", sizeof(key1_obj.vtn_name));
   memcpy(val1_obj.description, "vtn1_des", sizeof(val1_obj.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  memcpy(val2_obj.description, "vtn1_des", sizeof(val2_obj.description));
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key1_obj, &val1_obj,  &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr1);
 
   delete KeyTree_obj;
@@ -380,18 +386,21 @@ TEST(append_audit_configuration_list, vector_arg_sucess) {
 
   key_vbr key1_obj;
   val_vbr val1_obj;
+  val_vbr val2_obj;
 
   memcpy(key1_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(key1_obj.vbridge_name, "vbr1", sizeof(key1_obj.vbridge_name));
   memcpy(val1_obj.vbr_description, "vbr1_des",
          sizeof(val1_obj.vbr_description));
+  memcpy(val2_obj.vbr_description, "vbr1_des",
+          sizeof(val2_obj.vbr_description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   vec.push_back(cfgptr);
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val2_obj, operation);
   vec.push_back(cfgptr1);
 
   int ret = KeyTree_obj->append_audit_configuration_list(vec);
@@ -428,14 +437,15 @@ TEST(append_audit_configuration_list, vector_arg_failure1) {
 
   key_vbr key1_obj;
   val_vbr val1_obj;
-
+  val_vbr val2_obj;
   memcpy(key1_obj.vtn_key.vtn_name, "vtn1", sizeof(key1_obj.vtn_key.vtn_name));
   memcpy(key1_obj.vbridge_name, "vbr1", sizeof(key1_obj.vbridge_name));
   memcpy(val1_obj.vbr_description, "vbr1_des",
          sizeof(val1_obj.vbr_description));
-
-  ConfigNode *cfgptr = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  memcpy(val2_obj.vbr_description, "vbr1_des",
+         sizeof(val2_obj.vbr_description));
+  ConfigNode *cfgptr = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val2_obj, operation);
   vec.push_back(cfgptr);
 
   int ret = KeyTree_obj->append_audit_configuration_list(vec);
@@ -456,8 +466,8 @@ TEST(clear_audit_commit_cache, check) {
   val_vtn val_obj;
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_commit_node(cfgptr);
 
   KeyTree_obj->clear_audit_commit_cache();
@@ -476,8 +486,8 @@ TEST(clear_root_cache, check) {
   val_vtn val_obj;
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_commit_node(cfgptr);
 
   KeyTree_obj->clear_root_cache();
@@ -497,8 +507,8 @@ TEST(get_node_from_hash, get_node) {
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr);
 
   ConfigNode *tmp_ptr = NULL;
@@ -522,8 +532,8 @@ TEST(get_node_from_hash, get_null) {
   memcpy(key_obj.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   int ret = KeyTree_obj->append_audit_node(cfgptr);
 
@@ -563,11 +573,13 @@ TEST(get_nodelist_keytree, check) {
 
   key_vbr key1_obj;
   val_vbr val1_obj;
+  val_vbr val3_obj;
   memcpy(key1_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_name));
   memcpy(key1_obj.vbridge_name, "vbr1", sizeof(key1_obj.vbridge_name));
   memcpy(val1_obj.vbr_description, "vbr1_des",
          sizeof(val1_obj.vbr_description));
-
+  memcpy(val3_obj.vbr_description, "vbr1_des",
+         sizeof(val3_obj.vbr_description));
   key_vbr_if key2_obj;
   pfcdrv_val_vbr_if_t val2_obj;
   memcpy(key2_obj.vbr_key.vtn_key.vtn_name, "vtn1",
@@ -577,18 +589,18 @@ TEST(get_nodelist_keytree, check) {
   memcpy(key2_obj.if_name, "vbrif1", sizeof(key2_obj.if_name));
   memcpy(val2_obj.vext_name, "vbrif1_des", sizeof(val2_obj.vext_name));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, uint32_t>
-      (&key1_obj, &val1_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr, val_vbr, val_vbr, uint32_t>
+      (&key1_obj, &val1_obj, &val1_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   ConfigNode *cfgptr2 = new CacheElementUtil<key_vbr_if, pfcdrv_val_vbr_if_t,
-             uint32_t>(&key2_obj, &val2_obj, operation);
+             pfcdrv_val_vbr_if_t, uint32_t>(&key2_obj, &val2_obj, &val2_obj, operation);
   ret = KeyTree_obj->append_audit_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
@@ -617,8 +629,8 @@ TEST(append_physical_attribute_configuration_list, append_single_switchNode) {
                                       key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   vec_list.push_back(cfgptr);
   uint32_t ret = KeyTree_obj->append_physical_attribute_configuration_list(
                                                                    vec_list);
@@ -645,8 +657,8 @@ TEST(append_physical_attribute_configuration_list, append_multiple_switchNode) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
                                       key_switch_obj.switch_id));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   vec_list.push_back(cfgptr);
 
   //  add switch 0000-0000-0000-0002 to cache using
@@ -660,8 +672,8 @@ TEST(append_physical_attribute_configuration_list, append_multiple_switchNode) {
                                        key_switch_obj1.switch_id));
   memset(&val_switch1, 0, sizeof(val_switch1));
   ConfigNode *cfgptrone =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj1, &val_switch1, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj1, &val_switch1, &val_switch1, operation);
   vec_list.push_back(cfgptrone);
 
   uint32_t ret = KeyTree_obj->append_physical_attribute_configuration_list(
@@ -706,8 +718,8 @@ TEST(append_physical_attribute_configuration_list,
   val_port_st val_obj;
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port", sizeof(val_obj.port.description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   vec_list.push_back(cfgptr);
   uint32_t ret = KeyTree_obj->append_physical_attribute_configuration_list(
@@ -740,8 +752,8 @@ TEST(append_physical_attribute_node, switch_port_success) {
           key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -756,8 +768,8 @@ TEST(append_physical_attribute_node, switch_port_success) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+              uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
 
@@ -794,8 +806,8 @@ TEST(append_physical_attribute_node, switch_port_failure) {
           key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0002(whcih is not present
@@ -811,8 +823,8 @@ TEST(append_physical_attribute_node, switch_port_failure) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
 
@@ -838,8 +850,8 @@ TEST(append_physical_attribute_node, switch_port_exist_success) {
           key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add another duplicate switch 0000-0000-0000-0001 to cache
@@ -851,8 +863,8 @@ TEST(append_physical_attribute_node, switch_port_exist_success) {
           key_switch_obj1.switch_id));
   memset(&val_switch1, 0, sizeof(val_switch1));
   ConfigNode *cfgptr1 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj1, &val_switch1, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj1, &val_switch1, &val_switch1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
 
@@ -877,8 +889,8 @@ TEST(update_physical_attribute_node, update_port) {
           key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -893,8 +905,8 @@ TEST(update_physical_attribute_node, update_port) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+                    uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -910,8 +922,8 @@ TEST(update_physical_attribute_node, update_port) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st,
+                 uint32_t>(&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -929,8 +941,8 @@ TEST(update_physical_attribute_node, update_port) {
   memcpy(val_obj2.port.description,
          "port-s1-eth4-description,change to new description",
          sizeof(val_obj2.port.description));
-  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj2, &val_obj2, operation);
+  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, val_port_st,
+             uint32_t>(&key_obj2, &val_obj2, &val_obj2, operation);
 
   ret = KeyTree_obj->update_physical_attribute_node(cfgptr3);
 
@@ -960,8 +972,8 @@ TEST(update_physical_attribute_node, update_switch) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+                   (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -976,8 +988,8 @@ TEST(update_physical_attribute_node, update_switch) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+                  uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -993,8 +1005,8 @@ TEST(update_physical_attribute_node, update_switch) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1010,8 +1022,8 @@ TEST(update_physical_attribute_node, update_switch) {
   memcpy(val_switch1.manufacturer, "switch-cicso-manufacturer", sizeof(
           val_switch1.manufacturer));
   ConfigNode *cfgptr3 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj1, &val_switch1, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj1, &val_switch1,  &val_switch1, operation);
 
   ret = KeyTree_obj->update_physical_attribute_node(cfgptr3);
 
@@ -1054,8 +1066,8 @@ TEST(update_physical_attribute_node, update_fail) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -1070,8 +1082,8 @@ TEST(update_physical_attribute_node, update_fail) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st,
+          val_port_st, uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1087,8 +1099,8 @@ TEST(update_physical_attribute_node, update_fail) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1105,8 +1117,8 @@ TEST(update_physical_attribute_node, update_fail) {
   memcpy(val_switch1.manufacturer, "switch-cicso-manufacturer", sizeof(
           val_switch1.manufacturer));
   ConfigNode *cfgptr3 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj1, &val_switch1, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj1, &val_switch1, &val_switch1, operation);
 
   ret = KeyTree_obj->update_physical_attribute_node(cfgptr3);
 
@@ -1137,8 +1149,8 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -1153,8 +1165,8 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+                uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1170,8 +1182,8 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1184,8 +1196,8 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
   memset(&vtn_val, 0, sizeof(vtn_val));
   memcpy(vtn_val.description, "vtn1_des", sizeof(vtn_val.description));
 
-  ConfigNode *cfgptr3 = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&vtn_key, &vtn_val, operation);
+  ConfigNode *cfgptr3 = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&vtn_key, &vtn_val, &vtn_val, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr3);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1198,8 +1210,8 @@ TEST(update_physical_attribute_node, update_fail_otherkey_type) {
   memset(&vtn_val1, 0, sizeof(vtn_val1));
   memcpy(vtn_val1.description, "vtn2_des", sizeof(vtn_val1.description));
 
-  ConfigNode *cfgptr4 = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&vtn_key1, &vtn_val1, operation);
+  ConfigNode *cfgptr4 = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&vtn_key1, &vtn_val1, &vtn_val1, operation);
   ret = KeyTree_obj->update_physical_attribute_node(cfgptr4);
 
   delete KeyTree_obj;
@@ -1241,8 +1253,8 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -1257,8 +1269,8 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+                       uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1274,8 +1286,8 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st,
+      uint32_t>(&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1291,8 +1303,8 @@ TEST(delete_physical_attribute_node, parent_not_present_fail) {
   memset(&val_obj2, 0, sizeof(val_obj2));
   memcpy(val_obj2.port.description, "port-s1-eth8-description", sizeof(
           val_obj2.port.description));
-  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj2, &val_obj2, operation);
+  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj2, &val_obj2, &val_obj2, operation);
 
   ret = KeyTree_obj->delete_physical_attribute_node(cfgptr3);
   delete KeyTree_obj;
@@ -1320,8 +1332,8 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -1336,8 +1348,8 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+                 uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1353,8 +1365,8 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st,
+             uint32_t>(&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1370,8 +1382,8 @@ TEST(delete_physical_attribute_node, child_not_present_fail) {
   memset(&val_obj2, 0, sizeof(val_obj2));
   memcpy(val_obj2.port.description, "port-s1-eth8-description", sizeof(
           val_obj2.port.description));
-  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj2, &val_obj2, operation);
+  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, val_port_st,
+                uint32_t>(&key_obj2, &val_obj2, &val_obj2, operation);
 
   ret = KeyTree_obj->delete_physical_attribute_node(cfgptr3);
   delete KeyTree_obj;
@@ -1398,8 +1410,9 @@ TEST(delete_physical_attribute_node, delete_port) {
   memset(&val_switch, 0, sizeof(val_switch));
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
-  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st,
+             val_switch_st, uint32_t>(&key_switch_obj, &val_switch,
+                                      &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -1414,8 +1427,8 @@ TEST(delete_physical_attribute_node, delete_port) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1431,8 +1444,8 @@ TEST(delete_physical_attribute_node, delete_port) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st,
+                    uint32_t>(&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1455,8 +1468,8 @@ TEST(delete_physical_attribute_node, delete_port) {
 
   val_port_st val_obj2;
   memset(&val_obj2, 0, sizeof(val_obj2));
-  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj2, &val_obj2, operation);
+  ConfigNode *cfgptr3= new CacheElementUtil<key_port, val_port_st, val_port_st,
+                      uint32_t>(&key_obj2, &val_obj2, &val_obj2, operation);
 
   ret = KeyTree_obj->delete_physical_attribute_node(cfgptr3);
   itr_ptr = KeyTree_obj->create_iterator();
@@ -1494,8 +1507,8 @@ TEST(delete_physical_attribute_node, delete_switch) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add switch 0000-0000-0000-0002 to cache
@@ -1509,8 +1522,8 @@ TEST(delete_physical_attribute_node, delete_switch) {
   memcpy(val_switch1.manufacturer, "switch-CICSO-manufacturer", sizeof(
           val_switch1.manufacturer));
   ConfigNode *cfgptr_sw2 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj1, &val_switch1, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj1, &val_switch1, &val_switch1, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_sw2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0002
@@ -1524,8 +1537,8 @@ TEST(delete_physical_attribute_node, delete_switch) {
   val_port_st val_obj_sw2;
   memset(&val_obj_sw2, 0, sizeof(val_obj_sw2));
   ConfigNode *cfgptr_sw2_port1 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj_sw2, &val_obj_sw2, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj_sw2, &val_obj_sw2, &val_obj_sw2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_sw2_port1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1541,8 +1554,8 @@ TEST(delete_physical_attribute_node, delete_switch) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+              uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1558,8 +1571,8 @@ TEST(delete_physical_attribute_node, delete_switch) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, val_port_st,
+             uint32_t>(&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1583,8 +1596,8 @@ TEST(delete_physical_attribute_node, delete_switch) {
   memcpy(val_switch1.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch1.manufacturer));
   ConfigNode *cfgptr3 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj2, &val_switch2, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st,
+            uint32_t>(&key_switch_obj2, &val_switch2, &val_switch2, operation);
 
   ret = KeyTree_obj->delete_physical_attribute_node(cfgptr3);
   itr_ptr = KeyTree_obj->create_iterator();
@@ -1624,8 +1637,8 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
   memcpy(val_switch.manufacturer, "switch-NEC-manufacturer", sizeof(
           val_switch.manufacturer));
   ConfigNode *cfgptr =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth3 to switch 0000-0000-0000-0001
@@ -1640,8 +1653,8 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(val_obj.port.description, "port-s2-eth3-description", sizeof(
           val_obj.port.description));
-  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr1 = new CacheElementUtil<key_port, val_port_st, val_port_st,
+          uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1657,8 +1670,8 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(val_obj1.port.description, "port-s1-eth4-description", sizeof(
           val_obj1.port.description));
-  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+  ConfigNode *cfgptr2= new CacheElementUtil<key_port, val_port_st,
+        val_port_st, uint32_t>(&key_obj1, &val_obj1, &val_obj1, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr2);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1673,8 +1686,8 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
   memset(&vtn_val, 0, sizeof(vtn_val));
   memcpy(vtn_val.description, "vtn1_des", sizeof(vtn_val.description));
 
-  ConfigNode *cfgptr3 = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&vtn_key, &vtn_val, operation);
+  ConfigNode *cfgptr3 = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&vtn_key, &vtn_val, &vtn_val, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr3);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -1689,8 +1702,8 @@ TEST(delete_physical_attribute_node, delete_fail_otherkey_type) {
   memset(&vtn_val1, 0, sizeof(vtn_val1));
   memcpy(vtn_val1.description, "vtn2_des", sizeof(vtn_val1.description));
 
-  ConfigNode *cfgptr4 = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&vtn_key1, &vtn_val1, operation);
+  ConfigNode *cfgptr4 = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&vtn_key1, &vtn_val1, &vtn_val1, operation);
   ret = KeyTree_obj->delete_physical_attribute_node(cfgptr4);
 
   delete KeyTree_obj;
@@ -1729,8 +1742,8 @@ TEST(compare_is_physical_node_found, switch_port_not_present_fail) {
           key_switch_obj.switch_id));
   memset(&val_switch, 0, sizeof(val_switch));
   ConfigNode *new_compare_node =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   ConfigNode *old_node_for_update = NULL;
   pfc_bool_t check = false;
   check = KeyTree_obj->compare_is_physical_node_found(new_compare_node,
@@ -1766,8 +1779,9 @@ TEST(compare_is_physical_node_found, switch_port_not_present_pass) {
           val_switch.switch_val.model));
   memcpy(val_switch.switch_val.domain_name, "DEFAULT", sizeof(
           val_switch.switch_val.domain_name));
-  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_switch, val_switch_st,
+                               val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   key_switch key_switch_obj1;
@@ -1778,15 +1792,15 @@ TEST(compare_is_physical_node_found, switch_port_not_present_pass) {
           key_switch_obj1.switch_id));
   memset(&val_switch1, 0, sizeof(val_switch1));
   ConfigNode *new_compare_node =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj1, &val_switch1, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj1, &val_switch1,  &val_switch1, operation);
 
   ConfigNode *old_node_for_update = NULL;
   pfc_bool_t check = false;
   check = KeyTree_obj->compare_is_physical_node_found(new_compare_node,
                                                       old_node_for_update);
-  CacheElementUtil<key_switch, val_switch_st, uint32_t> *tmp_ptr =
-      static_cast<CacheElementUtil<key_switch, val_switch_st, uint32_t>*> (
+  CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>*> (
           old_node_for_update);
   pfc_log_info("manufacturer= %s", reinterpret_cast<char*>(
           tmp_ptr->get_val_structure()->manufacturer));
@@ -1828,8 +1842,8 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
           key_switch_obj.switch_id));
   ConfigNode *cfgptr_switch01 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
@@ -1846,8 +1860,8 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
   memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
           val_obj.port.description));
   ConfigNode *cfgptr_switch01_port_s1eth1 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
@@ -1862,8 +1876,8 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
   memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
           key_switch_obj_sw02.switch_id));
   ConfigNode *cfgptr_switch02 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
@@ -1880,8 +1894,8 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
   memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
          sizeof(val_obj_s2eth2.port.description));
   ConfigNode *cfgptr_switch02_port_s2eth2 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, &val_obj_s2eth2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
@@ -1906,8 +1920,8 @@ TEST(append_Physical_attribute_node, single_link_sucess) {
           val_link_sw01sw02.link.description));
   val_link_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   ConfigNode* cfgnode;
@@ -1945,8 +1959,8 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
           key_switch_obj.switch_id));
   ConfigNode *cfgptr_switch01 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch,  &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
@@ -1963,8 +1977,8 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
   memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
           val_obj.port.description));
   ConfigNode *cfgptr_switch01_port_s1eth1 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
@@ -1979,8 +1993,8 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
   memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
           key_switch_obj_sw02.switch_id));
   ConfigNode *cfgptr_switch02 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
@@ -1997,8 +2011,8 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
   memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
          sizeof(val_obj_s2eth2.port.description));
   ConfigNode *cfgptr_switch02_port_s2eth2 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, &val_obj_s2eth2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
@@ -2023,8 +2037,8 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
           val_link_sw01sw02.link.description));
   val_link_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch02 to switch01
@@ -2047,8 +2061,8 @@ TEST(append_Physical_attribute_node, bidirectional_link_sucess) {
           val_link_sw02sw01.link.description));
   val_link_sw02sw01.oper_status = 1;
   ConfigNode *cfgptr_link_sw02sw01 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw02sw01, &val_link_sw02sw01, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw02sw01, &val_link_sw02sw01, &val_link_sw02sw01, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw02sw01);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   ConfigNode* cfgnode;
@@ -2087,8 +2101,8 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
           key_switch_obj.switch_id));
   ConfigNode *cfgptr_switch01 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
@@ -2105,8 +2119,8 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
   memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
           val_obj.port.description));
   ConfigNode *cfgptr_switch01_port_s1eth1 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
@@ -2121,8 +2135,8 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
   memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
           key_switch_obj_sw02.switch_id));
   ConfigNode *cfgptr_switch02 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
@@ -2139,8 +2153,8 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
   memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
          sizeof(val_obj_s2eth2.port.description));
   ConfigNode *cfgptr_switch02_port_s2eth2 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, &val_obj_s2eth2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
@@ -2165,8 +2179,8 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
           val_link_sw01sw02.link.description));
   val_link_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
@@ -2198,8 +2212,9 @@ TEST(delete_physical_attribute_node, single_link__delete_sucess) {
          sizeof(val_link_delete_sw01sw02.link.description));
   val_link_delete_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_delete_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02,
+                             &val_link_delete_sw01sw02, operation);
   ret = KeyTree_obj->delete_physical_attribute_node(
       cfgptr_link_delete_sw01sw02);
   CommonIterator* itr = KeyTree_obj->create_iterator();
@@ -2241,8 +2256,8 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
           key_switch_obj.switch_id));
   ConfigNode *cfgptr_switch01 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
@@ -2259,8 +2274,8 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
   memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
           val_obj.port.description));
   ConfigNode *cfgptr_switch01_port_s1eth1 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
@@ -2275,8 +2290,8 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
   memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
           key_switch_obj_sw02.switch_id));
   ConfigNode *cfgptr_switch02 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
@@ -2293,8 +2308,8 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
   memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
          sizeof(val_obj_s2eth2.port.description));
   ConfigNode *cfgptr_switch02_port_s2eth2 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, &val_obj_s2eth2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
@@ -2319,8 +2334,8 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
           val_link_sw01sw02.link.description));
   val_link_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02, &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   // add one link between switch02 to switch01
@@ -2343,8 +2358,8 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
           val_link_sw02sw01.link.description));
   val_link_sw02sw01.oper_status = 1;
   ConfigNode *cfgptr_link_sw02sw01 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw02sw01, &val_link_sw02sw01, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw02sw01, &val_link_sw02sw01, &val_link_sw02sw01, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw02sw01);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
@@ -2376,8 +2391,9 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
          sizeof(val_link_delete_sw01sw02.link.description));
   val_link_delete_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_delete_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_delete_sw01sw02, &val_link_delete_sw01sw02,
+                         &val_link_delete_sw01sw02, operation);
   ret = KeyTree_obj->delete_physical_attribute_node(
       cfgptr_link_delete_sw01sw02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -2401,8 +2417,9 @@ TEST(delete_physical_attribute_node, bidirectional_link_delete_sucess) {
          sizeof(val_link_delete_sw02sw01.link.description));
   val_link_delete_sw02sw01.oper_status = 1;
   ConfigNode *cfgptr_link_delete_sw02sw01 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_delete_sw02sw01, &val_link_delete_sw02sw01, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_delete_sw02sw01, &val_link_delete_sw02sw01,
+                      &val_link_delete_sw02sw01, operation);
   ret = KeyTree_obj->delete_physical_attribute_node(
       cfgptr_link_delete_sw02sw01);
   CommonIterator* itr = KeyTree_obj->create_iterator();
@@ -2447,8 +2464,8 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
   memcpy(key_switch_obj.switch_id, "0000-0000-0000-0001", sizeof(
           key_switch_obj.switch_id));
   ConfigNode *cfgptr_switch01 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj, &val_switch, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj, &val_switch, &val_switch, operation);
   uint32_t ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch01);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s1-eth1 to switch 0000-0000-0000-0001
@@ -2465,8 +2482,8 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
   memcpy(val_obj.port.description, "port-s1-eth1 connect to switch 01", sizeof(
           val_obj.port.description));
   ConfigNode *cfgptr_switch01_port_s1eth1 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch01_port_s1eth1);
@@ -2481,8 +2498,8 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
   memcpy(key_switch_obj_sw02.switch_id, "0000-0000-0000-0002", sizeof(
           key_switch_obj_sw02.switch_id));
   ConfigNode *cfgptr_switch02 =
-      new CacheElementUtil<key_switch, val_switch_st, uint32_t>
-      (&key_switch_obj_sw02, &val_switch_sw02, operation);
+      new CacheElementUtil<key_switch, val_switch_st, val_switch_st, uint32_t>
+      (&key_switch_obj_sw02, &val_switch_sw02, &val_switch_sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_switch02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   //  add port s2-eth2 to switch 0000-0000-0000-0002
@@ -2499,8 +2516,8 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
   memcpy(val_obj_s2eth2.port.description, "port-s2-eth2 connect to switch 02",
          sizeof(val_obj_s2eth2.port.description));
   ConfigNode *cfgptr_switch02_port_s2eth2 =
-      new CacheElementUtil<key_port, val_port_st, uint32_t>
-      (&key_obj_s2eth2, &val_obj_s2eth2, operation);
+      new CacheElementUtil<key_port, val_port_st, val_port_st, uint32_t>
+      (&key_obj_s2eth2, &val_obj_s2eth2, &val_obj_s2eth2, operation);
 
   ret = KeyTree_obj->append_Physical_attribute_node(
       cfgptr_switch02_port_s2eth2);
@@ -2525,13 +2542,14 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
           val_link_sw01sw02.link.description));
   val_link_sw01sw02.oper_status = 1;
   ConfigNode *cfgptr_link_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_sw01sw02, &val_link_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_sw01sw02, &val_link_sw01sw02,
+                              &val_link_sw01sw02, operation);
   ret = KeyTree_obj->append_Physical_attribute_node(cfgptr_link_sw01sw02);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
-  CacheElementUtil<key_link, val_link_st, uint32_t> *tmp_ptr_one =
-      static_cast<CacheElementUtil<key_link, val_link_st, uint32_t>*> (
-          cfgptr_link_sw01sw02);
+  CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t> *tmp_ptr_one =
+      static_cast<CacheElementUtil<key_link, val_link_st,
+             val_link_st, uint32_t>*> (cfgptr_link_sw01sw02);
   pfc_log_info("Before update link parameter");
   pfc_log_info("Description= %s", reinterpret_cast<char*>(
           tmp_ptr_one->get_val_structure()->link.description));
@@ -2558,13 +2576,14 @@ TEST(update_physical_attribute_node, single_link_update_sucess) {
           val_link_update_sw01sw02.link.description));
   val_link_update_sw01sw02.oper_status = 2;
   ConfigNode *cfgptr_link_update_sw01sw02 =
-      new CacheElementUtil<key_link, val_link_st, uint32_t>
-      (&key_link_update_sw01sw02, &val_link_update_sw01sw02, operation);
+      new CacheElementUtil<key_link, val_link_st, val_link_st, uint32_t>
+      (&key_link_update_sw01sw02, &val_link_update_sw01sw02,
+                &val_link_update_sw01sw02, operation);
   ret = KeyTree_obj->update_physical_attribute_node(
       cfgptr_link_update_sw01sw02);
-  CacheElementUtil<key_link, val_link_st, uint32_t> *tmp_ptr =
-      static_cast<CacheElementUtil<key_link, val_link_st, uint32_t>*> (
-          cfgptr_link_sw01sw02);
+  CacheElementUtil<key_link, val_link_st,  val_link_st, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_link, val_link_st,
+           val_link_st, uint32_t>*> (cfgptr_link_sw01sw02);
   pfc_log_info("After update link parameter");
   pfc_log_info("Description= %s", reinterpret_cast<char*>(
           tmp_ptr->get_val_structure()->link.description));
@@ -2593,8 +2612,8 @@ TEST(append_commit_node, FlowList) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(key_obj.flowlist_name, "flowlistone", sizeof(key_obj.flowlist_name));
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_t, val_flowlist_t,
-             uint32_t>
-      (&key_obj, &val_obj, operation);
+           val_flowlist_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -2614,17 +2633,18 @@ TEST(append_commit_node, Retrive_Flow_List) {
   memset(&val_obj, 0, sizeof(val_obj));
   memcpy(key_obj.flowlist_name, "flowlistone", sizeof(key_obj.flowlist_name));
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_t, val_flowlist_t,
-             uint32_t>
-      (&key_obj, &val_obj, operation);
+            val_flowlist_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
 
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_flowlist_t, val_flowlist_t, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_flowlist_t, val_flowlist_t,
+                val_flowlist_t, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_flowlist_t, val_flowlist_t,
-      uint32_t>*> (cfgptr);
+      val_flowlist_t, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.flowlist_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->flowlist_name));
@@ -2662,8 +2682,8 @@ TEST(append_commit_node, same_root_level) {
   val_vtn val_obj;
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
-  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -2674,14 +2694,15 @@ TEST(append_commit_node, same_root_level) {
   memset(&val_obj1, 0, sizeof(val_obj1));
   memcpy(key_obj1.flowlist_name, "flowlistone", sizeof(key_obj1.flowlist_name));
   ConfigNode *cfgptr1 = new CacheElementUtil<key_flowlist_t,
-             val_flowlist_t, uint32_t>
-      (&key_obj1, &val_obj1, operation);
+           val_flowlist_t, val_flowlist_t, uint32_t>
+      (&key_obj1, &val_obj1, &val_obj1, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vtn, val_vtn, uint32_t> *tmp_ptr =
-      static_cast<CacheElementUtil<key_vtn, val_vtn, uint32_t>*> (cfgptr);
+  CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_vtn, val_vtn,
+                     val_vtn, uint32_t>*> (cfgptr);
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->vtn_name));
   EXPECT_STREQ(reinterpret_cast<char*>(val_obj.description),
@@ -2696,9 +2717,10 @@ TEST(append_commit_node, same_root_level) {
                tmp_ptr->get_parent_key_name().c_str(),
                tmp_ptr->get_key_generate().c_str());
   cfgptr1 = itr_ptr->NextItem();
-  CacheElementUtil<key_flowlist_t, val_flowlist_t, uint32_t> *tmp_ptr1 =
+  CacheElementUtil<key_flowlist_t, val_flowlist_t,
+                  val_flowlist_t, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_flowlist_t, val_flowlist_t,
-      uint32_t>*> (cfgptr1);
+      val_flowlist_t, uint32_t>*> (cfgptr1);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj1.flowlist_name),
          reinterpret_cast<char*>(tmp_ptr1->get_key_structure()->flowlist_name));
@@ -2739,8 +2761,8 @@ TEST(append_commit_node, FlowList_Entry) {
   memcpy(key_obj.flowlist_name, "flowlistone", sizeof(key_obj.flowlist_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_t,
-             val_flowlist_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+           val_flowlist_t, val_flowlist_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -2752,8 +2774,9 @@ TEST(append_commit_node, FlowList_Entry) {
          sizeof(key_obj.flowlist_name));
   key_flolistentry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_flowlist_entry,
-             val_flowlist_entry, uint32_t>
-      (&key_flolistentry, &val_flowlistentry, operation);
+             val_flowlist_entry, val_flowlist_entry, uint32_t>
+      (&key_flolistentry, &val_flowlistentry,
+                       &val_flowlistentry, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
   KeyTree_obj = NULL;
@@ -2773,8 +2796,8 @@ TEST(append_commit_node, FlowList_Entry_Retrive) {
   memcpy(key_obj.flowlist_name, "flowlistone", sizeof(key_obj.flowlist_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_t, val_flowlist_t,
-             uint32_t>
-      (&key_obj, &val_obj, operation);
+        val_flowlist_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -2798,15 +2821,17 @@ TEST(append_commit_node, FlowList_Entry_Retrive) {
   val_flowlistentry.icmp_type = 21;
   val_flowlistentry.icmp_code = 22;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_flowlist_entry,
-             val_flowlist_entry, uint32_t>
-      (&key_flolistentry, &val_flowlistentry, operation);
+         val_flowlist_entry, val_flowlist_entry, uint32_t>
+      (&key_flolistentry, &val_flowlistentry,
+                       &val_flowlistentry, operation);
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_flowlist_t, val_flowlist_t, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_flowlist_t, val_flowlist_t,
+             val_flowlist_t, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_flowlist_t, val_flowlist_t,
-      uint32_t>*> (cfgptr);
+      val_flowlist_t, uint32_t>*> (cfgptr);
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.flowlist_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->flowlist_name));
   pfc_log_info("kt_flowlist:flowlistname= %s", reinterpret_cast<char*>(
@@ -2817,9 +2842,10 @@ TEST(append_commit_node, FlowList_Entry_Retrive) {
                tmp_ptr->get_parent_key_name().c_str(),
                tmp_ptr->get_key_generate().c_str());
   cfgptr1 = itr_ptr->NextItem();
-  CacheElementUtil<key_flowlist_entry, val_flowlist_entry, uint32_t> *tmp_ptr1 =
+  CacheElementUtil<key_flowlist_entry, val_flowlist_entry,
+               val_flowlist_entry, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_flowlist_entry, val_flowlist_entry,
-      uint32_t>*> (cfgptr1);
+      val_flowlist_entry, uint32_t>*> (cfgptr1);
   EXPECT_STREQ(reinterpret_cast<char*>(key_flolistentry.flowlist_key.
                                        flowlist_name),
          reinterpret_cast<char*>(tmp_ptr1->get_key_structure()->
@@ -2879,8 +2905,8 @@ TEST(append_audit_node, parent_not_exist_flowlist_entry) {
   memcpy(val_flowlistentry.mac_src, "11", sizeof(val_flowlistentry.mac_src));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_entry,
-             val_flowlist_entry, uint32_t>
-      (&key_flolistentry, &val_flowlistentry, operation);
+             val_flowlist_entry, val_flowlist_entry, uint32_t>
+      (&key_flolistentry, &val_flowlistentry, &val_flowlistentry, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr);
 
   delete cfgptr;
@@ -2901,8 +2927,8 @@ TEST(add_child_to_hash, FlowList_Success) {
   memcpy(key_obj.flowlist_name, "flowlistone", sizeof(key_obj.flowlist_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_t,
-             val_flowlist_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowlist_t, val_flowlist_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete KeyTree_obj;
   delete cfgptr;
@@ -2922,8 +2948,8 @@ TEST(add_child_to_hash, FlowListEntry_Success) {
   memcpy(key_obj.flowlist_name, "flowlistone", sizeof(key_obj.flowlist_name));
 
   ConfigNode *cfgptr = new CacheElementUtil<key_flowlist_t,
-             val_flowlist_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowlist_t, val_flowlist_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->add_child_to_hash(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   key_flowlist_entry  key_flolistentry;
@@ -2936,8 +2962,9 @@ TEST(add_child_to_hash, FlowListEntry_Success) {
   memcpy(val_flowlistentry.mac_dst, "10", sizeof(val_flowlistentry.mac_dst));
   memcpy(val_flowlistentry.mac_src, "11", sizeof(val_flowlistentry.mac_src));
   ConfigNode *cfgptr1 = new CacheElementUtil<key_flowlist_entry,
-             val_flowlist_entry, uint32_t>
-      (&key_flolistentry, &val_flowlistentry, operation);
+             val_flowlist_entry, val_flowlist_entry, uint32_t>
+      (&key_flolistentry, &val_flowlistentry,
+                     &val_flowlistentry, operation);
   ret = KeyTree_obj->add_child_to_hash(cfgptr1);
   delete KeyTree_obj;
   delete cfgptr;
@@ -2979,8 +3006,8 @@ TEST(append_commit_node, VtnFlowFilter) {
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   key_obj.input_direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_obj, &val_obj,  &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -3001,8 +3028,8 @@ TEST(append_commit_node, VtnFlowFilter_Entry) {
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   key_obj.input_direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_obj, &val_obj,  &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3015,8 +3042,9 @@ TEST(append_commit_node, VtnFlowFilter_Entry) {
   key_VFlowFilterEntry.flowfilter_key.input_direction = 1;
   key_VFlowFilterEntry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vtn_flowfilter_entry,
-             val_vtn_flowfilter_entry, uint32_t>
-      (&key_VFlowFilterEntry, &val_VFlowFilterEntry, operation);
+             val_vtn_flowfilter_entry,val_vtn_flowfilter_entry, uint32_t>
+      (&key_VFlowFilterEntry, &val_VFlowFilterEntry,
+                        &val_VFlowFilterEntry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
@@ -3038,15 +3066,17 @@ TEST(append_commit_node, VtnFlowFilter_Retrive) {
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   key_obj.input_direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter,
-             val_flowfilter, uint32_t>(&key_obj, &val_obj, operation);
+      val_flowfilter, val_flowfilter, uint32_t>
+        (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vtn_flowfilter, val_flowfilter, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_vtn_flowfilter, val_flowfilter,
+            val_flowfilter, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vtn_flowfilter, val_flowfilter,
-      uint32_t>*> (cfgptr);
+       val_flowfilter, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
@@ -3079,8 +3109,8 @@ TEST(append_commit_node, VtnFlowFilter_Entry_Retrive) {
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   key_obj.input_direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3093,16 +3123,18 @@ TEST(append_commit_node, VtnFlowFilter_Entry_Retrive) {
   key_VFlowFilterEntry.flowfilter_key.input_direction = 1;
   key_VFlowFilterEntry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vtn_flowfilter_entry,
-             val_vtn_flowfilter_entry, uint32_t>
-      (&key_VFlowFilterEntry, &val_VFlowFilterEntry, operation);
+        val_vtn_flowfilter_entry, val_vtn_flowfilter_entry, uint32_t>
+      (&key_VFlowFilterEntry, &val_VFlowFilterEntry,
+                      &val_VFlowFilterEntry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vtn_flowfilter, val_flowfilter, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_vtn_flowfilter, val_flowfilter,
+                    val_flowfilter, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vtn_flowfilter, val_flowfilter,
-      uint32_t>*> (cfgptr);
+      val_flowfilter, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
@@ -3118,9 +3150,10 @@ TEST(append_commit_node, VtnFlowFilter_Entry_Retrive) {
                tmp_ptr->get_key_generate().c_str());
   cfgptr1 = itr_ptr->NextItem();
   CacheElementUtil<key_vtn_flowfilter_entry, val_vtn_flowfilter_entry,
-      uint32_t> *tmp_ptr1 =
+      val_vtn_flowfilter_entry, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_vtn_flowfilter_entry,
-      val_vtn_flowfilter_entry, uint32_t>*> (cfgptr1);
+      val_vtn_flowfilter_entry,
+              val_vtn_flowfilter_entry, uint32_t>*> (cfgptr1);
   EXPECT_STREQ(reinterpret_cast<char*>(key_VFlowFilterEntry.flowfilter_key.
                                        vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr1->get_key_structure()->
@@ -3156,8 +3189,8 @@ TEST(add_child_to_hash, VtnFlowFilter_success) {
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   key_obj.input_direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   int ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete KeyTree_obj;
   delete cfgptr;
@@ -3178,8 +3211,8 @@ TEST(add_child_to_hash, VtnFlowFilterEntry_Success) {
   memcpy(key_obj.vtn_key.vtn_name, "vtn1", sizeof(key_obj.vtn_key.vtn_name));
   key_obj.input_direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3192,8 +3225,9 @@ TEST(add_child_to_hash, VtnFlowFilterEntry_Success) {
   key_VFlowFilterEntry.flowfilter_key.input_direction = 1;
   key_VFlowFilterEntry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vtn_flowfilter_entry,
-             val_vtn_flowfilter_entry, uint32_t>
-      (&key_VFlowFilterEntry, &val_VFlowFilterEntry, operation);
+             val_vtn_flowfilter_entry, val_vtn_flowfilter_entry, uint32_t>
+      (&key_VFlowFilterEntry, &val_VFlowFilterEntry,
+                                  &val_VFlowFilterEntry, operation);
 
   ret = KeyTree_obj->add_child_to_hash(cfgptr1);
   delete KeyTree_obj;
@@ -3218,8 +3252,9 @@ TEST(append_audit_node, parent_not_exist_vtnflofilter_entry) {
   key_VFlowFilterEntry.flowfilter_key.input_direction = 1;
   key_VFlowFilterEntry.sequence_num = 20;
   ConfigNode *cfgptr = new CacheElementUtil<key_vtn_flowfilter_entry,
-             val_vtn_flowfilter_entry, uint32_t>
-      (&key_VFlowFilterEntry, &val_VFlowFilterEntry, operation);
+             val_vtn_flowfilter_entry, val_vtn_flowfilter_entry, uint32_t>
+      (&key_VFlowFilterEntry, &val_VFlowFilterEntry,
+                      &val_VFlowFilterEntry, operation);
   int ret = KeyTree_obj->append_audit_node(cfgptr);
 
   delete cfgptr;
@@ -3259,8 +3294,8 @@ TEST(append_commit_node, VbrFlowFilter) {
          sizeof(key_obj.vbr_key.vbridge_name));
   key_obj.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_t,
-             val_flowfilter_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter_t, val_flowfilter_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -3284,16 +3319,17 @@ TEST(append_commit_node, VbrFlowFilter_Retrive) {
          sizeof(key_obj.vbr_key.vbridge_name));
   key_obj.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_t,
-             val_flowfilter_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter_t,  val_flowfilter_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vbr_flowfilter_t, val_flowfilter_t, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_vbr_flowfilter_t, val_flowfilter_t,
+                     val_flowfilter_t, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vbr_flowfilter_t, val_flowfilter_t,
-      uint32_t>*> (cfgptr);
+       val_flowfilter_t, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vbr_key.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
@@ -3330,8 +3366,8 @@ TEST(add_child_to_hash, VbrFlowFilter_Success) {
          sizeof(key_obj.vbr_key.vbridge_name));
   key_obj.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_t,
-             val_flowfilter_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter_t, val_flowfilter_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   int ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete KeyTree_obj;
@@ -3367,8 +3403,8 @@ TEST(append_commit_node, VbrFlowFilterEntry) {
                                                           vbridge_name));
   key_obj.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_t,
-             val_flowfilter_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter_t, val_flowfilter_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3385,8 +3421,9 @@ TEST(append_commit_node, VbrFlowFilterEntry) {
   key_vbrflowfilterentry.flowfilter_key.direction = 1;
   key_vbrflowfilterentry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vbrflowfilterentry, &val_vbrflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vbrflowfilterentry, &val_vbrflowfilterentry,
+                       &val_vbrflowfilterentry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
@@ -3411,8 +3448,8 @@ TEST(append_commit_node, VbrFlowFilterEntry_Retrive) {
          sizeof(key_obj.vbr_key.vbridge_name));
   key_obj.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_t,
-             val_flowfilter_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+             val_flowfilter_t, val_flowfilter_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3429,16 +3466,18 @@ TEST(append_commit_node, VbrFlowFilterEntry_Retrive) {
   key_vbrflowfilterentry.flowfilter_key.direction = 1;
   key_vbrflowfilterentry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vbrflowfilterentry, &val_vbrflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vbrflowfilterentry, &val_vbrflowfilterentry,
+                         &val_vbrflowfilterentry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vbr_flowfilter_t, val_flowfilter_t, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_vbr_flowfilter_t, val_flowfilter_t,
+                   val_flowfilter_t, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vbr_flowfilter_t, val_flowfilter_t,
-      uint32_t>*> (cfgptr);
+       val_flowfilter_t, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vbr_key.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
@@ -3455,9 +3494,9 @@ TEST(append_commit_node, VbrFlowFilterEntry_Retrive) {
                tmp_ptr->get_key_generate().c_str());
   cfgptr1 = itr_ptr->NextItem();
   CacheElementUtil<key_vbr_flowfilter_entry, val_flowfilter_entry,
-      uint32_t> *tmp_ptr1 =
+      val_flowfilter_entry, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_vbr_flowfilter_entry,
-      val_flowfilter_entry, uint32_t>*> (cfgptr1);
+      val_flowfilter_entry, val_flowfilter_entry, uint32_t>*> (cfgptr1);
   EXPECT_STREQ(reinterpret_cast<char*>(key_vbrflowfilterentry.flowfilter_key.
                                        vbr_key.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr1->get_key_structure()->
@@ -3499,8 +3538,8 @@ TEST(add_child_to_hash, VbrFlowFilterEntry_Success) {
          sizeof(key_obj.vbr_key.vbridge_name));
   key_obj.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_t,
-      val_flowfilter_t, uint32_t>
-      (&key_obj, &val_obj, operation);
+      val_flowfilter_t, val_flowfilter_t, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3517,8 +3556,9 @@ TEST(add_child_to_hash, VbrFlowFilterEntry_Success) {
   key_vbrflowfilterentry.flowfilter_key.direction = 1;
   key_vbrflowfilterentry.sequence_num = 20;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vbrflowfilterentry, &val_vbrflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vbrflowfilterentry, &val_vbrflowfilterentry,
+                      &val_vbrflowfilterentry, operation);
 
   ret = KeyTree_obj->add_child_to_hash(cfgptr1);
   delete KeyTree_obj;
@@ -3547,8 +3587,9 @@ TEST(append_audit_node, parent_not_exist_vbrflowfilter_entry) {
   key_vbrflowfilterentry.flowfilter_key.direction = 1;
   key_vbrflowfilterentry.sequence_num = 20;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vbrflowfilterentry, &val_vbrflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vbrflowfilterentry, &val_vbrflowfilterentry,
+                        &val_vbrflowfilterentry, operation);
   uint32_t ret = KeyTree_obj->append_audit_node(cfgptr);
   delete cfgptr;
   delete KeyTree_obj;
@@ -3583,8 +3624,8 @@ TEST(append_commit_node, VbrIfFlowFilter) {
   memcpy(key_obj.if_key.if_name, "Interface1", sizeof(key_obj.if_key.if_name));
   key_obj.direction = 2;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_if_flowfilter,
-             pfcdrv_val_vbrif_vextif, uint32_t>
-      (&key_obj, &val_obj, operation);
+          pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -3612,16 +3653,17 @@ TEST(append_commit_node, VbrIfFlowFilter_Retrive) {
   memcpy(val_obj.vexternal_name, "Vexterna1", sizeof(val_obj.vexternal_name));
   memcpy(val_obj.vext_if_name, "vextifname1", sizeof(val_obj.vext_if_name));
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_if_flowfilter,
-             pfcdrv_val_vbrif_vextif, uint32_t>
-      (&key_obj, &val_obj, operation);
+             pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
   CacheElementUtil<key_vbr_if_flowfilter, pfcdrv_val_vbrif_vextif,
-      uint32_t> *tmp_ptr = static_cast<CacheElementUtil<key_vbr_if_flowfilter,
-      pfcdrv_val_vbrif_vextif, uint32_t>*> (cfgptr);
+                 pfcdrv_val_vbrif_vextif, uint32_t> *tmp_ptr =
+                 static_cast<CacheElementUtil<key_vbr_if_flowfilter,
+      pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.if_key.vbr_key.vtn_key.
                                        vtn_name),
@@ -3668,8 +3710,8 @@ TEST(add_child_to_hash, VbrIfFlowFilter_Success) {
   memcpy(key_obj.if_key.if_name, "Interface1", sizeof(key_obj.if_key.if_name));
   key_obj.direction = 2;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_if_flowfilter,
-      pfcdrv_val_vbrif_vextif, uint32_t>
-      (&key_obj, &val_obj, operation);
+      pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete KeyTree_obj;
@@ -3706,8 +3748,8 @@ TEST(append_commit_node, VbrIfFlowFilterEntry) {
   memcpy(key_obj.if_key.if_name, "Interface1", sizeof(key_obj.if_key.if_name));
   key_obj.direction = 2;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_if_flowfilter,
-             pfcdrv_val_vbrif_vextif, uint32_t>
-      (&key_obj, &val_obj, operation);
+             pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3727,8 +3769,9 @@ TEST(append_commit_node, VbrIfFlowFilterEntry) {
   key_vbrifflowfilterentry.flowfilter_key.direction = 2;
   key_vbrifflowfilterentry.sequence_num = 3;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_if_flowfilter_entry,
-             pfcdrv_val_flowfilter_entry, uint32_t>
-      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry, operation);
+        pfcdrv_val_flowfilter_entry, pfcdrv_val_flowfilter_entry, uint32_t>
+      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry,
+                           &val_vbrifflowfilterentry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
@@ -3754,8 +3797,8 @@ TEST(append_commit_node, VbrIfFlowFilterEntry_Retrive) {
   memcpy(key_obj.if_key.if_name, "Interface1", sizeof(key_obj.if_key.if_name));
   key_obj.direction = 2;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_if_flowfilter,
-             pfcdrv_val_vbrif_vextif, uint32_t>
-      (&key_obj, &val_obj, operation);
+             pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3777,17 +3820,18 @@ TEST(append_commit_node, VbrIfFlowFilterEntry_Retrive) {
   val_vbrifflowfilterentry.val_vbrif_vextif.interface_type = 4;
   val_vbrifflowfilterentry.val_ff_entry.priority = 5;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_if_flowfilter_entry,
-             pfcdrv_val_flowfilter_entry, uint32_t>
-      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry, operation);
+             pfcdrv_val_flowfilter_entry, pfcdrv_val_flowfilter_entry, uint32_t>
+      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry,
+                 &val_vbrifflowfilterentry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
   CacheElementUtil<key_vbr_if_flowfilter,
-      pfcdrv_val_vbrif_vextif, uint32_t> *tmp_ptr =
+      pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vbr_if_flowfilter,
-      pfcdrv_val_vbrif_vextif, uint32_t>*> (cfgptr);
+      pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.if_key.vbr_key.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
@@ -3811,10 +3855,11 @@ TEST(append_commit_node, VbrIfFlowFilterEntry_Retrive) {
                tmp_ptr->get_parent_key_name().c_str(),
                tmp_ptr->get_key_generate().c_str());
   cfgptr1 = itr_ptr->NextItem();
-  CacheElementUtil<key_vbr_if_flowfilter_entry,
+  CacheElementUtil<key_vbr_if_flowfilter_entry, pfcdrv_val_flowfilter_entry,
       pfcdrv_val_flowfilter_entry, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_vbr_if_flowfilter_entry,
-      pfcdrv_val_flowfilter_entry, uint32_t>*> (cfgptr1);
+      pfcdrv_val_flowfilter_entry, pfcdrv_val_flowfilter_entry,
+                              uint32_t>*> (cfgptr1);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_vbrifflowfilterentry.flowfilter_key.
                                        if_key.vbr_key.vtn_key.vtn_name),
@@ -3865,8 +3910,8 @@ TEST(add_child_to_hash, VbrIfFlowFilterEntry_Success) {
   memcpy(key_obj.if_key.if_name, "Interface1", sizeof(key_obj.if_key.if_name));
   key_obj.direction = 2;
   ConfigNode *cfgptr = new CacheElementUtil<key_vbr_if_flowfilter,
-             pfcdrv_val_vbrif_vextif, uint32_t>
-      (&key_obj, &val_obj, operation);
+             pfcdrv_val_vbrif_vextif, pfcdrv_val_vbrif_vextif, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -3886,8 +3931,9 @@ TEST(add_child_to_hash, VbrIfFlowFilterEntry_Success) {
   key_vbrifflowfilterentry.flowfilter_key.direction = 2;
   key_vbrifflowfilterentry.sequence_num = 3;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_if_flowfilter_entry,
-             pfcdrv_val_flowfilter_entry, uint32_t>
-      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry, operation);
+             pfcdrv_val_flowfilter_entry, pfcdrv_val_flowfilter_entry, uint32_t>
+      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry,
+                          &val_vbrifflowfilterentry, operation);
 
   ret = KeyTree_obj->add_child_to_hash(cfgptr1);
   delete KeyTree_obj;
@@ -3921,8 +3967,9 @@ TEST(append_commit_node, parent_not_exist_vbrifflowfilterentry) {
   key_vbrifflowfilterentry.flowfilter_key.direction = 4;
   key_vbrifflowfilterentry.sequence_num = 5;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vbr_if_flowfilter_entry,
-             pfcdrv_val_flowfilter_entry, uint32_t>
-      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry, operation);
+             pfcdrv_val_flowfilter_entry, pfcdrv_val_flowfilter_entry, uint32_t>
+      (&key_vbrifflowfilterentry, &val_vbrifflowfilterentry,
+                    &val_vbrifflowfilterentry, operation);
 
   uint32_t ret = KeyTree_obj->append_audit_node(cfgptr1);
   delete KeyTree_obj;
@@ -3957,8 +4004,9 @@ TEST(append_commit_node, Vterminal) {
   memcpy(val_obj.domain_id, "domain1", sizeof(val_obj.domain_id));
   memcpy(val_obj.vterm_description, "VterminalDescription",
          sizeof(val_obj.vterm_description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vterm,
+                   val_vterm, val_vterm, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -3982,15 +4030,16 @@ TEST(append_commit_node, Vterminal_Retrive) {
   memcpy(val_obj.domain_id, "domain1", sizeof(val_obj.domain_id));
   memcpy(val_obj.vterm_description, "VterminalDescription",
          sizeof(val_obj.vterm_description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm,  val_vterm, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vterm, val_vterm, uint32_t> *tmp_ptr =
-      static_cast<CacheElementUtil<key_vterm, val_vterm, uint32_t>*> (cfgptr);
+  CacheElementUtil<key_vterm, val_vterm,  val_vterm, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_vterm,
+                 val_vterm,  val_vterm, uint32_t>*> (cfgptr);
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
                                  vtn_key.vtn_name));
@@ -4031,8 +4080,9 @@ TEST(add_child_to_hash, Vterminal) {
   memcpy(val_obj.domain_id, "domain1", sizeof(val_obj.domain_id));
   memcpy(val_obj.vterm_description, "VterminalDescription",
          sizeof(val_obj.vterm_description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vterm,
+                 val_vterm, val_vterm, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete KeyTree_obj;
@@ -4067,8 +4117,9 @@ TEST(append_commit_node, VterminalIf) {
   memcpy(val_obj.domain_id, "domain1", sizeof(val_obj.domain_id));
   memcpy(val_obj.vterm_description, "VterminalDescription",
          sizeof(val_obj.vterm_description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vterm,
+                       val_vterm, val_vterm, uint32_t>
+      (&key_obj, &val_obj,  &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -4084,8 +4135,8 @@ TEST(append_commit_node, VterminalIf) {
   val_vtermif.admin_status = 1;
   val_vtermif.portmap.vlan_id = 567;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if,
-             val_vterm_if, uint32_t>
-      (&key_vtermif, &val_vtermif, operation);
+             val_vterm_if, val_vterm_if, uint32_t>
+      (&key_vtermif, &val_vtermif, &val_vtermif, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
@@ -4110,15 +4161,17 @@ TEST(append_commit_node, VterminalIf_Retrive) {
   memcpy(val_obj.domain_id, "domain1", sizeof(val_obj.domain_id));
   memcpy(val_obj.vterm_description, "VterminalDescription",
          sizeof(val_obj.vterm_description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vterm,
+                    val_vterm, val_vterm, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vterm, val_vterm, uint32_t> *tmp_ptr =
-      static_cast<CacheElementUtil<key_vterm, val_vterm, uint32_t>*> (cfgptr);
+  CacheElementUtil<key_vterm, val_vterm, val_vterm, uint32_t> *tmp_ptr =
+      static_cast<CacheElementUtil<key_vterm, val_vterm,
+                          val_vterm, uint32_t>*> (cfgptr);
   EXPECT_STREQ(reinterpret_cast<char*>(key_obj.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr->get_key_structure()->
                                  vtn_key.vtn_name));
@@ -4149,15 +4202,16 @@ TEST(append_commit_node, VterminalIf_Retrive) {
   val_vtermif.admin_status = 1;
   val_vtermif.portmap.vlan_id = 567;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if,
-             val_vterm_if, uint32_t>
-      (&key_vtermif, &val_vtermif, operation);
+             val_vterm_if, val_vterm_if, uint32_t>
+      (&key_vtermif, &val_vtermif, &val_vtermif, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   cfgptr1 = itr_ptr->NextItem();
-  CacheElementUtil<key_vterm_if, val_vterm_if, uint32_t> *tmp_ptr1 =
+  CacheElementUtil<key_vterm_if, val_vterm_if,
+               val_vterm_if, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_vterm_if,
-      val_vterm_if, uint32_t>*> (cfgptr1);
+      val_vterm_if, val_vterm_if, uint32_t>*> (cfgptr1);
   EXPECT_STREQ(reinterpret_cast<char*>(key_vtermif.vterm_key.vtn_key.vtn_name),
          reinterpret_cast<char*>(tmp_ptr1->get_key_structure()->
                                  vterm_key.vtn_key.vtn_name));
@@ -4199,8 +4253,8 @@ TEST(add_child_to_hash, VterminalIf) {
   memcpy(val_obj.domain_id, "domain1", sizeof(val_obj.domain_id));
   memcpy(val_obj.vterm_description, "VterminalDescription",
          sizeof(val_obj.vterm_description));
-  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm, uint32_t>
-      (&key_obj, &val_obj, operation);
+  ConfigNode *cfgptr = new CacheElementUtil<key_vterm, val_vterm,
+           val_vterm, uint32_t>(&key_obj, &val_obj, &val_obj, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -4216,8 +4270,8 @@ TEST(add_child_to_hash, VterminalIf) {
   val_vtermif.admin_status = 1;
   val_vtermif.portmap.vlan_id = 567;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if,
-             val_vterm_if, uint32_t>
-      (&key_vtermif, &val_vtermif, operation);
+             val_vterm_if, val_vterm_if, uint32_t>
+      (&key_vtermif, &val_vtermif, &val_vtermif, operation);
 
   ret = KeyTree_obj->add_child_to_hash(cfgptr1);
   delete KeyTree_obj;
@@ -4245,8 +4299,8 @@ TEST(append_commit_node, Parent_not_exist_VterminalIf) {
   val_vtermif.admin_status = 1;
   val_vtermif.portmap.vlan_id = 567;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if,
-             val_vterm_if, uint32_t>
-      (&key_vtermif, &val_vtermif, operation);
+             val_vterm_if, val_vterm_if, uint32_t>
+      (&key_vtermif, &val_vtermif, &val_vtermif, operation);
 
   uint32_t ret = KeyTree_obj->append_audit_node(cfgptr1);
   delete KeyTree_obj;
@@ -4297,8 +4351,8 @@ TEST(append_commit_node, vterminalif_flowfilter) {
          sizeof(key_vtermifflowfilter.if_key.if_name));
   key_vtermifflowfilter.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vterm_if_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_vtermifflowfilter, &val_vtermifflowfilter, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_vtermifflowfilter, &val_vtermifflowfilter, &val_vtermifflowfilter, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   delete KeyTree_obj;
@@ -4326,8 +4380,9 @@ TEST(add_child_to_hash, vterminalif_flowfilter) {
          sizeof(key_vtermifflowfilter.if_key.if_name));
   key_vtermifflowfilter.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vterm_if_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_vtermifflowfilter, &val_vtermifflowfilter, operation);
+             val_flowfilter, val_flowfilter,  uint32_t>
+      (&key_vtermifflowfilter, &val_vtermifflowfilter,
+                         &val_vtermifflowfilter, operation);
 
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   delete cfgptr;
@@ -4356,16 +4411,18 @@ TEST(append_commit_node, Vterminalif_Flowfilter_Retrive) {
          sizeof(key_vtermifflowfilter.if_key.if_name));
   key_vtermifflowfilter.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vterm_if_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_vtermifflowfilter, &val_vtermifflowfilter, operation);
+             val_flowfilter,  val_flowfilter, uint32_t>
+      (&key_vtermifflowfilter, &val_vtermifflowfilter,
+                        &val_vtermifflowfilter, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vterm_if_flowfilter, val_flowfilter, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_vterm_if_flowfilter, val_flowfilter,
+                   val_flowfilter, uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vterm_if_flowfilter,
-      val_flowfilter, uint32_t>*> (cfgptr);
+      val_flowfilter, val_flowfilter, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_vtermifflowfilter.if_key.vterm_key.
                                        vtn_key.vtn_name),
@@ -4410,8 +4467,9 @@ TEST(append_commit_node, vterminalif_flowfilter_entry) {
          sizeof(key_vtermifflowfilter.if_key.if_name));
   key_vtermifflowfilter.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vterm_if_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_vtermifflowfilter, &val_vtermifflowfilter, operation);
+             val_flowfilter, val_flowfilter, uint32_t>
+      (&key_vtermifflowfilter, &val_vtermifflowfilter,
+                   &val_vtermifflowfilter, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -4432,8 +4490,9 @@ TEST(append_commit_node, vterminalif_flowfilter_entry) {
   key_vtermiflowfilterentry.flowfilter_key.direction = 1;
   key_vtermiflowfilterentry.sequence_num = 33;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry,
+                   &val_vtermiflowfilterentry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   delete KeyTree_obj;
@@ -4462,9 +4521,8 @@ TEST(add_child_to_hash, vterminalif_flowfilter_entry) {
          sizeof(key_vtermifflowfilter.if_key.if_name));
   key_vtermifflowfilter.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vterm_if_flowfilter,
-             val_flowfilter, uint32_t>
-      (&key_vtermifflowfilter, &val_vtermifflowfilter, operation);
-
+             val_flowfilter, val_flowfilter, uint32_t>
+   (&key_vtermifflowfilter, &val_vtermifflowfilter, &val_vtermifflowfilter, operation);
   uint32_t ret = KeyTree_obj->add_child_to_hash(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   key_vterm_if_flowfilter_entry key_vtermiflowfilterentry;
@@ -4484,8 +4542,9 @@ TEST(add_child_to_hash, vterminalif_flowfilter_entry) {
   key_vtermiflowfilterentry.flowfilter_key.direction = 1;
   key_vtermiflowfilterentry.sequence_num = 33;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry,
+                &val_vtermiflowfilterentry, operation);
 
   ret = KeyTree_obj->add_child_to_hash(cfgptr1);
   delete cfgptr;
@@ -4518,8 +4577,9 @@ TEST(append_audit_node, parent_not_exist_vterminalif_flowfilter_entry) {
   key_vtermiflowfilterentry.flowfilter_key.direction = 1;
   key_vtermiflowfilterentry.sequence_num = 33;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry,
+                        &val_vtermiflowfilterentry, operation);
 
   uint32_t ret = KeyTree_obj->append_audit_node(cfgptr1);
   delete cfgptr1;
@@ -4548,8 +4608,9 @@ TEST(append_commit_node, Vterminalif_Flowfilter_Entry_Retrive) {
          sizeof(key_vtermifflowfilter.if_key.if_name));
   key_vtermifflowfilter.direction = 1;
   ConfigNode *cfgptr = new CacheElementUtil<key_vterm_if_flowfilter,
-      val_flowfilter, uint32_t>
-      (&key_vtermifflowfilter, &val_vtermifflowfilter, operation);
+      val_flowfilter, val_flowfilter, uint32_t>
+      (&key_vtermifflowfilter, &val_vtermifflowfilter,
+                &val_vtermifflowfilter, operation);
 
   uint32_t ret = KeyTree_obj->append_commit_node(cfgptr);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
@@ -4571,16 +4632,18 @@ TEST(append_commit_node, Vterminalif_Flowfilter_Entry_Retrive) {
   key_vtermiflowfilterentry.flowfilter_key.direction = 1;
   key_vtermiflowfilterentry.sequence_num = 33;
   ConfigNode *cfgptr1 = new CacheElementUtil<key_vterm_if_flowfilter_entry,
-             val_flowfilter_entry, uint32_t>
-      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry, operation);
+             val_flowfilter_entry, val_flowfilter_entry, uint32_t>
+      (&key_vtermiflowfilterentry, &val_vtermiflowfilterentry,
+                       &val_vtermiflowfilterentry, operation);
 
   ret = KeyTree_obj->append_commit_node(cfgptr1);
   EXPECT_EQ(ret, UNC_RC_SUCCESS);
   CommonIterator* itr_ptr = KeyTree_obj->create_iterator();
   cfgptr = itr_ptr->FirstItem();
-  CacheElementUtil<key_vterm_if_flowfilter, val_flowfilter, uint32_t> *tmp_ptr =
+  CacheElementUtil<key_vterm_if_flowfilter, val_flowfilter, val_flowfilter,
+                             uint32_t> *tmp_ptr =
       static_cast<CacheElementUtil<key_vterm_if_flowfilter, val_flowfilter,
-      uint32_t>*> (cfgptr);
+         val_flowfilter, uint32_t>*> (cfgptr);
 
   EXPECT_STREQ(reinterpret_cast<char*>(key_vtermifflowfilter.if_key.vterm_key.
                                        vtn_key.vtn_name),
@@ -4601,9 +4664,9 @@ TEST(append_commit_node, Vterminalif_Flowfilter_Entry_Retrive) {
                tmp_ptr->get_key_generate().c_str());
   cfgptr1 = itr_ptr->NextItem();
   CacheElementUtil<key_vterm_if_flowfilter_entry, val_flowfilter_entry,
-                   uint32_t> *tmp_ptr1 =
+         val_flowfilter_entry, uint32_t> *tmp_ptr1 =
       static_cast<CacheElementUtil<key_vterm_if_flowfilter_entry,
-      val_flowfilter_entry, uint32_t>*> (cfgptr1);
+      val_flowfilter_entry, val_flowfilter_entry, uint32_t>*> (cfgptr1);
   EXPECT_STREQ(reinterpret_cast<char*>(key_vtermiflowfilterentry.
                                        flowfilter_key.if_key.vterm_key.
                                        vtn_key.vtn_name),

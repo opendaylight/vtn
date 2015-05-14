@@ -94,7 +94,8 @@ json_object* OdcVtnCommand::create_request_body(const val_vtn_t& val_vtn) {
 
 //  Command to update vtn  and Send request to Controller
 UncRespCode OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
-                                          val_vtn_t& val_vtn,
+                                          val_vtn_t& val_old_vtn,
+                                          val_vtn_t& val_new_vtn,
                                           unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
   char* vtnname = NULL;
@@ -112,7 +113,7 @@ UncRespCode OdcVtnCommand::update_cmd(key_vtn_t& key_vtn,
   url.append(vtnname);
   // unc::restjson::JsonBuildParse json_obj;
 
-  json_object* jobj_request = create_request_body(val_vtn);
+  json_object* jobj_request = create_request_body(val_new_vtn);
 /*  const char* request = NULL;
   if (!(json_object_is_type(jobj_request, json_type_null))) {
      json_obj.get_string(jobj_request,request);
@@ -232,8 +233,8 @@ UncRespCode OdcVtnCommand::fill_config_node_vector(
                 reinterpret_cast<char*> (val_vtn.description));
 
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn_t, val_vtn_t, uint32_t>
-      (&key_vtn, &val_vtn, uint32_t(UNC_OP_READ));
+      new unc::vtndrvcache::CacheElementUtil<key_vtn_t, val_vtn_t, val_vtn_t, uint32_t>
+      (&key_vtn, &val_vtn, &val_vtn, uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
   return UNC_RC_SUCCESS;

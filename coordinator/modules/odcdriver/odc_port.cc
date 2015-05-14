@@ -255,9 +255,9 @@ UncRespCode OdcPort::fill_config_node_vector(
 
   unc::vtndrvcache::ConfigNode *cfgptr =
       new unc::vtndrvcache::CacheElementUtil<key_port_t,
-          val_port_st_t,
+          val_port_st_t, val_port_st_t,
           uint32_t>
-      (&key_port, &val_port, uint32_t(UNC_OP_READ));
+      (&key_port, &val_port, &val_port, uint32_t(UNC_OP_READ));
   PFC_VERIFY(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
   return UNC_RC_SUCCESS;
@@ -553,9 +553,9 @@ UncRespCode OdcPort::add_event(unc::driver::controller *ctr_ptr,
                                unc::vtndrvcache::ConfigNode *cfg_node,
                                std::list<std::string> &port_list) {
   ODC_FUNC_TRACE;
-  unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+  unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
       *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-      <key_port_t, val_port_st_t, uint32_t>*> (cfg_node);
+      <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfg_node);
 
   key_port_t *key_port = cfgptr_cache->get_key_structure();
   val_port_st_t *val_port = cfgptr_cache->get_val_structure();
@@ -582,23 +582,23 @@ UncRespCode OdcPort::add_event(unc::driver::controller *ctr_ptr,
 // Update event for Port
 UncRespCode OdcPort::update_event(unc::driver::controller *ctr_ptr,
                                   unc::vtndrvcache::ConfigNode *cfg_node,
-                                  val_port_st_t *val_old_port,
+                                  val_port_st_t *val_new_port,
                                   std::list<std::string> &port_list) {
   ODC_FUNC_TRACE;
-  unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+  unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
       *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-      <key_port_t, val_port_st_t, uint32_t>*> (cfg_node);
+      <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfg_node);
 
   key_port_t *key_port = cfgptr_cache->get_key_structure();
   val_port_st_t *val_port = cfgptr_cache->get_val_structure();
 
-  if ((NULL == key_port) || (NULL == val_port) || (NULL == val_old_port)) {
+  if ((NULL == key_port) || (NULL == val_port) || (NULL == val_new_port)) {
     pfc_log_error("key_port/val_port is NULL");
     return UNC_DRV_RC_ERR_GENERIC;
   }
   // Send notification to UPPL
   notify_physical(unc::driver::VTN_PORT_UPDATE, key_port,
-                  val_port, val_old_port);
+                  val_port, val_new_port);
 
   // Append to cache
   UncRespCode  ret_val =
@@ -632,9 +632,9 @@ UncRespCode OdcPort::delete_event(unc::driver::controller *ctr_ptr,
     }
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     if (UNC_KT_PORT == key_type) {
-      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
+          <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
 
       key_port_t *key_port_cache = cfgptr_cache->get_key_structure();
       if (NULL == key_port_cache) {
@@ -682,9 +682,9 @@ UncRespCode OdcPort::delete_port(
       return UNC_DRV_RC_ERR_GENERIC;
     }
 
-    unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+    unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
         *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-        <key_port_t, val_port_st_t, uint32_t>*> (cfg_node);
+        <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfg_node);
 
     key_port_t *key_port = cfgptr_cache->get_key_structure();
     val_port_st_t *val_port = cfgptr_cache->get_val_structure();
@@ -733,9 +733,9 @@ UncRespCode OdcPort::verify_in_cache(
       pfc_log_error("cfg_node is NULL");
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+    unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
         *cfgnode_ctr = static_cast<unc::vtndrvcache::CacheElementUtil
-        <key_port_t, val_port_st_t, uint32_t>*> (cfg_node);
+        <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfg_node);
 
     val_port_st_t *val_port_ctr = cfgnode_ctr->get_val_structure();
     if (NULL == val_port_ctr) {
@@ -762,9 +762,9 @@ UncRespCode OdcPort::verify_in_cache(
       }
     } else {
       pfc_log_trace("Port %s exist in cache", port_id_ctr.c_str());
-      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
+          <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
 
       key_port_t *key_port = cfgptr_cache->get_key_structure();
       val_port_st_t *val_port_cache = cfgptr_cache->get_val_structure();
