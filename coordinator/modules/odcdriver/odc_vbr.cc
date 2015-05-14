@@ -96,7 +96,8 @@ UncRespCode OdcVbrCommand::create_cmd(key_vbr_t& key_vbr,
 
 //  Command to update vtn  and Send request to Controller
 UncRespCode OdcVbrCommand::update_cmd(key_vbr_t& key_vbr,
-                                 val_vbr_t& val_vbr,
+                                 val_vbr_t& val_old_vbr,
+                                 val_vbr_t& val_new_vbr,
                                  unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
@@ -106,7 +107,7 @@ UncRespCode OdcVbrCommand::update_cmd(key_vbr_t& key_vbr,
     pfc_log_error("vbr url is empty");
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  json_object *json_req_body = create_request_body(val_vbr);
+  json_object *json_req_body = create_request_body(val_new_vbr);
   // unc::restjson::JsonBuildParse json_obj;
 /*  const char* request = NULL;
   if (!(json_object_is_type(json_req_body, json_type_null))) {
@@ -376,9 +377,9 @@ UncRespCode OdcVbrCommand::fill_config_node_vector(
   val_vbr.valid[UPLL_IDX_DOMAIN_ID_VBR] = UNC_VF_VALID;
 
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vbr_t, val_vbr_t, uint32_t> (
+      new unc::vtndrvcache::CacheElementUtil<key_vbr_t, val_vbr_t, val_vbr_t, uint32_t> (
           &key_vbr,
-          &val_vbr,
+          &val_vbr, &val_vbr,
           uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);

@@ -79,9 +79,9 @@ TEST(odcdriver_switch, test_switch_data) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
@@ -123,9 +123,9 @@ TEST(odcdriver_switch, test_switch_data_update) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
@@ -154,9 +154,9 @@ TEST(odcdriver_switch, test_switch_data_update) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     val_switch_st_t *val_switch = cache_util_ptr->get_val_structure();
 
@@ -207,9 +207,9 @@ TEST(odcdriver_switch, test_switch_data_delete) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
@@ -236,9 +236,11 @@ TEST(odcdriver_switch, test_switch_data_delete) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t,
+             uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t,
+                        uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     val_switch_st_t *val_switch = cache_util_ptr->get_val_structure();
 
@@ -284,9 +286,11 @@ TEST(odcdriver_switch, test_switch_data_update_same) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t,
+                            uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t,
+                           uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     std::string sw_id =  reinterpret_cast<char*> (key_switch->switch_id);
     if (flag == 1) {
@@ -307,9 +311,11 @@ TEST(odcdriver_switch, test_switch_data_update_same) {
     unc_key_type_t key_type =  cfgnode_cache->get_type_name();
     EXPECT_EQ(key_type, UNC_KT_SWITCH);
     unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+        <key_switch_t, val_switch_st_t, val_switch_st_t,
+                             uint32_t> * cache_util_ptr =
         static_cast <unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+        <key_switch_t, val_switch_st_t, val_switch_st_t,
+                        uint32_t> * > (cfgnode_cache);
     key_switch_t *key_switch = cache_util_ptr->get_key_structure();
     val_switch_st_t *val_switch = cache_util_ptr->get_val_structure();
 
