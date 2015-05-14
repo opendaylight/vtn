@@ -169,8 +169,8 @@ UncRespCode OdcSwitch::fill_config_node_vector(
   val_switch.valid[VAL_OPER_STAT_ATTR] = UNC_VF_VALID;
 
   unc::vtndrvcache::ConfigNode *cfgptr = new unc::vtndrvcache::CacheElementUtil
-      <key_switch_t, val_switch_st_t, uint32_t>
-      (&key_switch, &val_switch, uint32_t(UNC_OP_READ));
+      <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
+      (&key_switch, &val_switch, &val_switch, uint32_t(UNC_OP_READ));
 
   PFC_VERIFY(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
@@ -248,9 +248,9 @@ UncRespCode OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
                                      unc::vtndrvcache::ConfigNode *cfg_node,
                                      std::list<std::string> &switch_list) {
   ODC_FUNC_TRACE;
-  unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t>
+  unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
       *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-      <key_switch_t, val_switch_st_t, uint32_t>*> (cfg_node);
+      <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>*> (cfg_node);
   key_switch_t *key_switch = cfgptr_cache->get_key_structure();
   val_switch_st_t *val_switch = cfgptr_cache->get_val_structure();
 
@@ -277,25 +277,25 @@ UncRespCode OdcSwitch::add_event(unc::driver::controller *ctr_ptr,
 // Update event for Switch
 UncRespCode OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
                                         unc::vtndrvcache::ConfigNode *cfg_node,
-                                        val_switch_st_t *val_old_switch,
+                                        val_switch_st_t *val_new_switch,
                                         std::list<std::string> &switch_list) {
   ODC_FUNC_TRACE;
-  unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t>
+  unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
       *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-      <key_switch_t, val_switch_st_t, uint32_t>*> (cfg_node);
+      <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>*> (cfg_node);
 
   key_switch_t *key_switch = cfgptr_cache->get_key_structure();
   val_switch_st_t *val_switch = cfgptr_cache->get_val_structure();
 
   if ((NULL == key_switch) || (NULL == val_switch) ||
-      (NULL == val_old_switch)) {
+      (NULL == val_new_switch)) {
     pfc_log_error("key_switch/val_switch is NULL");
     return UNC_DRV_RC_ERR_GENERIC;
   }
 
   // Send notification to UPPL
   notify_physical(unc::driver::VTN_SWITCH_UPDATE, key_switch,
-                  val_switch, val_old_switch);
+                  val_switch, val_new_switch);
 
   // Append to cache
   UncRespCode  ret_val =
@@ -329,9 +329,9 @@ UncRespCode OdcSwitch::delete_event(unc::driver::controller *ctr,
     pfc_log_debug("key_type is %d", key_type);
     if (UNC_KT_SWITCH == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t>
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t>*> (cfgnode_cache);
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>*> (cfgnode_cache);
 
       key_switch_t *key_switch_cache = cfgptr_cache->get_key_structure();
       if (NULL == key_switch_cache) {
@@ -348,9 +348,9 @@ UncRespCode OdcSwitch::delete_event(unc::driver::controller *ctr,
       }
     }
     if (UNC_KT_PORT == key_type) {
-      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
           *cfgptr_cache_port = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
+          <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfgnode_cache);
 
       key_port_t *key_port_cache = cfgptr_cache_port->get_key_structure();
       if (NULL == key_port_cache) {
@@ -400,9 +400,9 @@ UncRespCode OdcSwitch::delete_logical_port(
     }
     std::string switch_id = iter->first;
     if (switch_id.compare(0, 3, "LP-") == 0) {
-      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, uint32_t>
+      unc::vtndrvcache::CacheElementUtil<key_port_t, val_port_st_t, val_port_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_port_t, val_port_st_t, uint32_t>*> (cfg_node);
+          <key_port_t, val_port_st_t, val_port_st_t, uint32_t>*> (cfg_node);
 
       key_port_t *key_port = cfgptr_cache->get_key_structure();
       val_port_st_t *val_port = cfgptr_cache->get_val_structure();
@@ -439,9 +439,9 @@ UncRespCode OdcSwitch::delete_switch(
     std::string switch_id = iter->first;
     if (switch_id.compare(0, 3, "LP-") != 0) {
       unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t> *cfgptr_cache_sw =
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> *cfgptr_cache_sw =
           static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t>*> (cfg_node);
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>*> (cfg_node);
 
       key_switch_t *key_switch = cfgptr_cache_sw->get_key_structure();
       val_switch_st_t *val_switch = cfgptr_cache_sw->get_val_structure();
@@ -482,9 +482,9 @@ UncRespCode OdcSwitch::verify_in_cache(
       return UNC_DRV_RC_ERR_GENERIC;
     }
 
-    unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, uint32_t>
+    unc::vtndrvcache::CacheElementUtil<key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
         *cfgnode_ctr = static_cast<unc::vtndrvcache::CacheElementUtil
-        <key_switch_t, val_switch_st_t, uint32_t>*> (cfg_node);
+        <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>*> (cfg_node);
 
     val_switch_st_t *val_switch_ctr = cfgnode_ctr->get_val_structure();
     key_switch_t *key_switch = cfgnode_ctr->get_key_structure();
@@ -506,9 +506,9 @@ UncRespCode OdcSwitch::verify_in_cache(
     } else {
       pfc_log_trace("Switch  %s exists in cache", switch_id.c_str());
       unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t>
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>
           *cfgptr_cache = static_cast<unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t>*> (cfgnode_cache);
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t>*> (cfgnode_cache);
 
       key_switch_t *key_switch = cfgptr_cache->get_key_structure();
       val_switch_st_t *val_switch_cache = cfgptr_cache->get_val_structure();

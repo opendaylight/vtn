@@ -161,8 +161,10 @@ TEST(odcdriver,  update_cmd_invalid_resp) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -173,10 +175,10 @@ TEST(odcdriver,  update_cmd_invalid_resp) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1, vbrif_val2,  ctr));
   delete ctr;
 }
 TEST(odcdriver,  delete_cmd_invalid_resp) {
@@ -284,8 +286,10 @@ TEST(odcdriver,  update_cmd_null_resp) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -296,10 +300,10 @@ TEST(odcdriver,  update_cmd_null_resp) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1093,8 +1097,10 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1105,22 +1111,22 @@ TEST(odcdriver,  update_cmd_port_map_valid) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.tagged = 34;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  0;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.tagged = 34;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  std::string logical_port =  "PP-openflow:22-namendfsjdfhsdbfhsdg";
+  vbrif_val1.val_vbrif.portmap.vlan_id =  0;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_RC_SUCCESS,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 TEST(odcdriver,  update_cmd_no_port_map) {
@@ -1140,8 +1146,10 @@ TEST(odcdriver,  update_cmd_no_port_map) {
   strncpy(reinterpret_cast<char*>(val_ctr.user),
           user_name.c_str(),  sizeof(val_ctr.user));
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1154,22 +1162,22 @@ TEST(odcdriver,  update_cmd_no_port_map) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);
   std::string descp =  "desc";
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_INVALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.tagged = 34;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  0;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_INVALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.tagged = 34;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  std::string logical_port =  "PP-openflow:22-namendfsjdfhsdbfhsdg";
+  vbrif_val1.val_vbrif.portmap.vlan_id =  0;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_RC_SUCCESS,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1195,8 +1203,10 @@ TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1207,22 +1217,22 @@ TEST(odcdriver,  update_cmd_port_map_delete_resp_null) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID_NO_VALUE;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.tagged = 34;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID_NO_VALUE;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.tagged = 34;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
   std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  0;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  0;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
+  EXPECT_EQ(UNC_RC_SUCCESS,
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1246,8 +1256,10 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1258,22 +1270,22 @@ TEST(odcdriver,  update_cmd_port_map_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.tagged = 34;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.tagged = 34;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
   std::string logical_port =  "PP-00:00:00:00:00:00:00:00-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  0;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  0;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
+  EXPECT_EQ(UNC_RC_SUCCESS,
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
@@ -1295,8 +1307,10 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1307,20 +1321,20 @@ TEST(odcdriver,  update_cmd_port_map_valid_vlan) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
-  vbrif_val.val_vbrif.portmap.tagged = 34;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_INVALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_VLAN_ID_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.valid[UPLL_IDX_TAGGED_PM] = UNC_VF_VALID;
+  vbrif_val1.val_vbrif.portmap.tagged = 34;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_INVALID;
   std::string logical_port =  "PP-00:00:-0:00:00:00:00:00-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  0;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  0;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_RC_SUCCESS,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1578,8 +1592,10 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1590,17 +1606,17 @@ TEST(odcdriver,  update_cmd_port_map_portmap_invalid) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_INVALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_INVALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_RC_SUCCESS,
             obj.update_cmd
-            (vbrif_key,  vbrif_val,  ctr));
+            (vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1623,8 +1639,10 @@ TEST(odcdriver,  update_cmd_port_map_portmap) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1635,16 +1653,16 @@ TEST(odcdriver,  update_cmd_port_map_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
+  EXPECT_EQ(UNC_RC_SUCCESS,
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1667,8 +1685,10 @@ TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1679,16 +1699,16 @@ TEST(odcdriver,  update_cmd_port_map_portmap_failure) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1713,8 +1733,10 @@ TEST(odcdriver,  update_cmd_port_map_update_portmap) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1725,17 +1747,17 @@ TEST(odcdriver,  update_cmd_port_map_update_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF]  =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF]  =  UNC_VF_VALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
-  EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
+  EXPECT_EQ(UNC_RC_SUCCESS,
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1758,8 +1780,10 @@ TEST(odcdriver,  update_cmd_empty_vtnname) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1770,17 +1794,17 @@ TEST(odcdriver,  update_cmd_empty_vtnname) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID_NO_VALUE;
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID_NO_VALUE;
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1848,8 +1872,10 @@ TEST(odcdriver,  update_cmd_delete_portmap) {
   unc::driver::controller* ctr  =
       new  unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1860,17 +1886,17 @@ TEST(odcdriver,  update_cmd_delete_portmap) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID_NO_VALUE;
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID_NO_VALUE;
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_RC_SUCCESS,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1894,8 +1920,10 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
   unc::driver::controller* ctr  =  new
       unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
           vtnname.c_str(),  sizeof(vbrif_key.vbr_key.vtn_key.vtn_name)-1);
@@ -1906,17 +1934,17 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_failure) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name)-1);
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val1.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID;
+  vbrif_val1.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1,vbrif_val2,  ctr));
   delete ctr;
 }
 
@@ -1941,8 +1969,10 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
   unc::driver::controller* ctr  =  new
       unc::odcdriver::OdcController(key_ctr,  val_ctr);;
   key_vbr_if_t vbrif_key;
-  pfcdrv_val_vbr_if_t vbrif_val;
-  memset(&vbrif_val,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  pfcdrv_val_vbr_if_t vbrif_val1;
+  pfcdrv_val_vbr_if_t vbrif_val2;
+  memset(&vbrif_val1,  0,  sizeof(pfcdrv_val_vbr_if_t));
+  memset(&vbrif_val2,  0,  sizeof(pfcdrv_val_vbr_if_t));
   memset(&vbrif_key,  0,  sizeof(key_vbr_if_t));
   std::string vtnname =  "vtn1_v";
   strncpy(reinterpret_cast<char*>(vbrif_key.vbr_key.vtn_key.vtn_name),
@@ -1954,18 +1984,18 @@ TEST(odcdriver,  update_cmd_vbrif_success_portmap_delete_failure) {
   strncpy(reinterpret_cast<char*>(vbrif_key.if_name),
           intfname.c_str(),  sizeof(vbrif_key.if_name));
   std::string descp =  "desc";
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.description),
-          descp.c_str(),  sizeof(vbrif_val.val_vbrif.description)-1);
-  vbrif_val.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID_NO_VALUE;
-  vbrif_val.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.description),
+          descp.c_str(),  sizeof(vbrif_val2.val_vbrif.description)-1);
+  vbrif_val1.val_vbrif.valid[UPLL_IDX_PM_VBRI] =  UNC_VF_VALID_NO_VALUE;
+  vbrif_val2.valid[PFCDRV_IDX_VAL_VBRIF] =  UNC_VF_VALID;
 
   std::string logical_port =  "PP-1111-2222-3333-4444-namendfsjdfhsdbfhsdg";
-  vbrif_val.val_vbrif.portmap.vlan_id =  10;
-  strncpy(reinterpret_cast<char*>(vbrif_val.val_vbrif.portmap.logical_port_id),
+  vbrif_val1.val_vbrif.portmap.vlan_id =  10;
+  strncpy(reinterpret_cast<char*>(vbrif_val1.val_vbrif.portmap.logical_port_id),
           logical_port.c_str(),
-          sizeof(vbrif_val.val_vbrif.portmap.logical_port_id));
+          sizeof(vbrif_val1.val_vbrif.portmap.logical_port_id));
   EXPECT_EQ(UNC_DRV_RC_ERR_GENERIC,
-            obj.update_cmd(vbrif_key,  vbrif_val,  ctr));
+            obj.update_cmd(vbrif_key,  vbrif_val1, vbrif_val2,  ctr));
   delete ctr;
 }
 TEST(odcdriver,  fetch_config) {

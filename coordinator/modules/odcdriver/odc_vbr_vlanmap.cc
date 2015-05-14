@@ -471,8 +471,8 @@ UncRespCode OdcVbrVlanMapCommand::fill_config_node_vector(void *parent_key,
   // Cache the parsed vlanmap configurations
   unc::vtndrvcache::ConfigNode *cfgptr =
       new unc::vtndrvcache::CacheElementUtil
-      <key_vlan_map_t, pfcdrv_val_vlan_map_t, uint32_t>
-      (&key_vlan_map, &val_vlan_map, uint32_t(UNC_OP_READ));
+      <key_vlan_map_t, pfcdrv_val_vlan_map_t, pfcdrv_val_vlan_map_t, uint32_t>
+      (&key_vlan_map, &val_vlan_map,  &val_vlan_map, uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfgnode_vector.push_back(cfgptr);
 
@@ -567,11 +567,13 @@ UncRespCode OdcVbrVlanMapCommand::create_cmd(
 // Update Command for vbr vlanmap
 UncRespCode OdcVbrVlanMapCommand::update_cmd(
     key_vlan_map_t& vlanmap_key,
-    pfcdrv_val_vlan_map_t& vlanmap_val,
+    pfcdrv_val_vlan_map_t& vlanmap_val_old,
+    pfcdrv_val_vlan_map_t& vlanmap_val_new,
     unc::driver::controller* ctr_ptr) {
 
   ODC_FUNC_TRACE;
-  return create_update_cmd(vlanmap_key, vlanmap_val, ctr_ptr);
+  return create_update_cmd(vlanmap_key, vlanmap_val_new,
+                                   ctr_ptr);
 }
 
 // Delete vlan-map from controller

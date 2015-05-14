@@ -98,7 +98,8 @@ class vtn_driver_command: public driver_command {
    * @retval   - UNC_RC_SUCCESS/UNC_DRV_RC_ERR_GENERIC
    */
   virtual UncRespCode update_cmd(key_cmd& key_st,
-                                 val_cmd& val_st,
+                                 val_cmd& val_old_st,
+                                 val_cmd& val_new_st,
                                  unc::driver::controller*)=0;
 
   /**

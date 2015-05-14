@@ -641,57 +641,6 @@ TEST(KT_VTN, Validate_Request2) {
 
   EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
-
-TEST(KT_VTN, Validate_Request3) {
-  unc::driver::kt_handler_map kt_map;
-  unc::driver::odl_drv_request_header_t driver_data;
-  unc::driver::ControllerFramework* ctrl_int =
-      new unc::driver::ControllerFramework;
-
-  unc::driver::KtHandler* vtn_req =
-      new unc::driver::KtRequestHandler<key_vtn_t, val_vtn_t>(&kt_map);
-
-  pfc::core::ipc::ServerSession sess;
-
-  sess.clearStubData();
-  sess.stub_setArgument_(0);
-  sess.stub_setArgument_(1);
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(1));
-
-  driver_data.header.session_id     = 1;
-  driver_data.header.config_id      = 0;
-  driver_data.header.operation      = UNC_OP_UPDATE;
-  driver_data.header.max_rep_count  = 0;
-  driver_data.header.option1        = 0;
-  driver_data.header.option2        = 0;
-  driver_data.header.data_type      = UNC_DT_CANDIDATE;
-
-  snprintf(reinterpret_cast<char*>(driver_data.controller_name),
-           32, "%s", "odcdriver");
-
-  driver_data.key_type              = UNC_KT_VTN;
-
-  uint32_t ret_val = vtn_req->handle_request(sess, driver_data, ctrl_int);
-  delete ctrl_int;
-  delete vtn_req;
-  ctrl_int = NULL;
-  vtn_req = NULL;
-
-  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
-}
-
 TEST(KT_VBR, Validate_Request1) {
   unc::driver::kt_handler_map kt_map;
   unc::driver::odl_drv_request_header_t driver_data;
@@ -791,57 +740,6 @@ TEST(KT_VBR, Validate_Request2) {
 
   EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
 }
-
-TEST(KT_VBR, Validate_Request3) {
-  unc::driver::kt_handler_map kt_map;
-  unc::driver::odl_drv_request_header_t driver_data;
-  unc::driver::ControllerFramework* ctrl_int =
-      new unc::driver::ControllerFramework;
-
-  unc::driver::KtHandler* vbr_req =
-      new unc::driver::KtRequestHandler<key_vbr_t, val_vbr_t>(&kt_map);
-
-  pfc::core::ipc::ServerSession sess;
-
-  sess.clearStubData();
-  sess.stub_setArgument_(0);
-  sess.stub_setArgument_(1);
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(0));
-  sess.stub_setAddOutput(uint32_t(1));
-
-  driver_data.header.session_id     = 1;
-  driver_data.header.config_id      = 0;
-  driver_data.header.operation      = UNC_OP_UPDATE;
-  driver_data.header.max_rep_count  = 0;
-  driver_data.header.option1        = 0;
-  driver_data.header.option2        = 0;
-  driver_data.header.data_type      = UNC_DT_CANDIDATE;
-
-  snprintf(reinterpret_cast<char*>(driver_data.controller_name),
-           32, "%s", "odcdriver");
-
-  driver_data.key_type              = UNC_KT_VBRIDGE;
-
-  uint32_t ret_val = vbr_req->handle_request(sess, driver_data, ctrl_int);
-  delete ctrl_int;
-  delete vbr_req;
-  ctrl_int = NULL;
-  vbr_req = NULL;
-
-  EXPECT_EQ(ret_val, UNC_RC_SUCCESS);
-}
-
 TEST(KT_VBR_IF, Validate_Request1) {
   unc::driver::kt_handler_map kt_map;
   unc::driver::odl_drv_request_header_t driver_data;
@@ -1527,8 +1425,8 @@ TEST(GLOBAL_CREATE, execute_cmd1) {
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   unc::driver::controller *ctr = NULL;
   unc::driver::driver *drv = NULL;
   std::string ctr_name = "odc1";
@@ -1561,8 +1459,8 @@ TEST(GLOBAL_DELETE, execute_cmd2) {
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   unc::driver::controller *ctr = NULL;
   unc::driver::driver *drv = NULL;
   std::string ctr_name = "odc1";
@@ -1595,8 +1493,8 @@ TEST(GLOBAL_UPDATE, execute_cmd3) {
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   unc::driver::controller *ctr = NULL;
   unc::driver::driver *drv = NULL;
   std::string ctr_name = "odc1";
@@ -1629,8 +1527,8 @@ TEST(GLOBAL_DEFAULT, execute_cmd4) {
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
 
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, val_vtn, uint32_t>
+      (&key_obj, &val_obj, &val_obj, operation);
   unc::driver::controller *ctr = NULL;
   unc::driver::driver *drv = NULL;
   std::string ctr_name = "odc1";

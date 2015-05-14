@@ -359,8 +359,8 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitVoteCacheSuccess) {
   val_vtn val_obj;
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn,
+            val_vtn, uint32_t>(&key_obj, &val_obj, &val_obj, operation);
   uint32_t ret =  ctrl_ptr->controller_cache->append_commit_node(cfgptr);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
   typedef std::map <unc_key_type_t, unc::driver::KtHandler*> kt_handler_map;
@@ -423,8 +423,8 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitCacheSuccess) {
   val_vtn val_obj;
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, val_vtn,
+        uint32_t>(&key_obj, &val_obj, &val_obj, operation);
   uint32_t ret =  ctrl_ptr->controller_cache->append_commit_node(cfgptr);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
   typedef std::map <unc_key_type_t, unc::driver::KtHandler*> kt_handler_map;
@@ -465,8 +465,8 @@ TEST_F(DriverTxnInterfaceTest, HandleCommitCacheCmdFailure) {
   val_vtn val_obj;
   memcpy(val_obj.description, "vtn1_des", sizeof(val_obj.description));
   unc::vtndrvcache::ConfigNode *cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, uint32_t>
-      (&key_obj, &val_obj, operation);
+      new unc::vtndrvcache::CacheElementUtil<key_vtn, val_vtn, val_vtn,
+              uint32_t>(&key_obj, &val_obj, &val_obj, operation);
   uint32_t ret =  ctrl_ptr->controller_cache->append_commit_node(cfgptr);
   EXPECT_EQ(UNC_RC_SUCCESS, ret);
   typedef std::map <unc_key_type_t, unc::driver::KtHandler*> kt_handler_map;

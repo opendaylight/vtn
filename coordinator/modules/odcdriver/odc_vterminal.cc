@@ -151,7 +151,8 @@ UncRespCode OdcVterminalCommand::get_vterminal_list(std::string vtnname,
 
 
 // Update Vterminal
-UncRespCode OdcVterminalCommand::update_cmd(key_vterm_t& key, val_vterm_t& val,
+UncRespCode OdcVterminalCommand::update_cmd(key_vterm_t& key, val_vterm_t& val_old,
+                                            val_vterm_t& val_new,
                                             unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
@@ -333,9 +334,10 @@ UncRespCode OdcVterminalCommand::fill_config_node_vector(
 
   unc::vtndrvcache::ConfigNode *cfgptr =
       new unc::vtndrvcache::CacheElementUtil<key_vterm_t, val_vterm_t,
+          val_vterm_t,
           uint32_t> (
           &key_vterm,
-          &val_vterm,
+          &val_vterm, &val_vterm,
           uint32_t(UNC_OP_READ));
   PFC_ASSERT(cfgptr != NULL);
   cfg_node_vector.push_back(cfgptr);
