@@ -67,9 +67,6 @@
             </goals>
             <configuration>
               <executable>make</executable>
-              <arguments>
-                <argument>-j${vtn.build.jobs}</argument>
-              </arguments>
             </configuration>
       </execution>
 
