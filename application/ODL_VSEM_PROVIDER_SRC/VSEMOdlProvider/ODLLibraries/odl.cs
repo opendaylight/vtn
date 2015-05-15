@@ -321,7 +321,7 @@ namespace ODL.VSEMProvider.CTRLibraries
             ODLVSEMETW.EventWriteCreateUri(MethodBase.GetCurrentMethod().Name,
                     "Creating URI for getting webapi version from VTNCoordinator.");
             string requestUri = string.Format(CultureInfo.CurrentCulture,
-                {0}/vtn-webapi/api_version.xml",
+                "{0}/vtn-webapi/api_version.xml",
                 this.Base_uri);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(requestUri);
