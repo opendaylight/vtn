@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -32,7 +32,7 @@ public class IcmpType {
     /**
      * getDscp - function to get the type value for this object.
      *
-     * @return {@link int}
+     * @return The ICMP type.
      */
     public int getType() {
         return type;

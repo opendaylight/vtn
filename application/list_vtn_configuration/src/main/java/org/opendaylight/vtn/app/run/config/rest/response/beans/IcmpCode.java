@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -32,7 +32,7 @@ public class IcmpCode {
     /**
      * getCode - function to get the code value for this object.
      *
-     * @return {@link int}
+     * @return The ICMP code.
      */
     public int getCode() {
         return code;

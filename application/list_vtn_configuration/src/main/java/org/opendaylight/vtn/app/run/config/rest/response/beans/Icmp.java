@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.app.run.config.rest.response.beans;
 
 import org.opendaylight.vtn.app.run.config.json.annotations.JsonElement;
@@ -45,7 +46,7 @@ public class Icmp {
     /**
      * getIndex - function to get the type value for this object.
      *
-     * @return {@link int}
+     * @return The ICMP type.
      */
     public int getType() {
         return type;
@@ -63,7 +64,7 @@ public class Icmp {
     /**
      * getCode - function to get the code values for this object.
      *
-     * @return {@link int}
+     * @return The ICMP code.
      */
     public int getCode() {
         return code;

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -72,7 +72,7 @@ public class VBridgeInterface {
     /**
      * getState - function to get the state for this object.
      *
-     * @return {@link int}
+     * @return The state of the interface.
      */
     public int getState() {
         return state;
@@ -90,7 +90,7 @@ public class VBridgeInterface {
     /**
      * getEntityState - function to get the entity state for this object.
      *
-     * @return {@link int}
+     * @return The entity state.
      */
     public int getEntityState() {
         return entityState;
@@ -126,7 +126,7 @@ public class VBridgeInterface {
     /**
      * getEnabled - function to get the enabled state for this object.
      *
-     * @return {@link boolean}
+     * @return  A boolean value which indicates the enabled state.
      */
     public boolean getEnabled() {
         return enabled;

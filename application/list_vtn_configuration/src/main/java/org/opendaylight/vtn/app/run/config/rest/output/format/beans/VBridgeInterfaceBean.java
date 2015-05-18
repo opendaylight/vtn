@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -95,7 +95,7 @@ public class VBridgeInterfaceBean {
     /**
      * get the state of the VBridge.
      *
-     * @return {@link int}
+     * @return The state of the vBridge.
      */
     public int getState() {
         return state;
@@ -104,8 +104,7 @@ public class VBridgeInterfaceBean {
     /**
      * set the state of the VBridge.
      *
-     * @param state
-     *        {@link int}
+     * @param state  The state of the vBridge.
      */
     public void setState(int state) {
         this.state = state;
@@ -114,7 +113,7 @@ public class VBridgeInterfaceBean {
     /**
      * get the Entitystate of the VBridge.
      *
-     * @return {@link int}
+     * @return The entity state.
      */
     public int getEntityState() {
         return entityState;
@@ -123,8 +122,7 @@ public class VBridgeInterfaceBean {
     /**
      * set the Entitystate of the VBridge.
      *
-     * @param entityState
-     *        {@link int}
+     * @param entityState  The entity state.
      */
     public void setEntityState(int entityState) {
         this.entityState = entityState;
@@ -152,7 +150,7 @@ public class VBridgeInterfaceBean {
     /**
      * Check if VBridge isEnabled
      *
-     * @return {@link boolean}
+     * @return A boolean value which indicates the enabled state.
      */
     public boolean isEnabled() {
         return enabled;
@@ -161,8 +159,7 @@ public class VBridgeInterfaceBean {
     /**
      * Enable or Disable VBridge
      *
-     * @param enabled
-     *        {@link boolean}
+     * @param enabled  A boolean value which indicates the enabled state.
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;

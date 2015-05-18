@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -31,7 +31,7 @@ public class Allow {
 
     /**
      * getMachost - function to get the machost.
-     * @return {@link machost}
+     * @return  A list of {@link MacHost}
      */
     public List<MacHost> getMachost() {
         return machost;

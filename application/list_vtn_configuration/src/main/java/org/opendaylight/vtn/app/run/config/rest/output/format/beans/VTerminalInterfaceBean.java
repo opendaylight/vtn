@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -75,7 +75,7 @@ public class VTerminalInterfaceBean {
     /**
      * get the state of the VTermainal.
      *
-     * @return {@link int}
+     * @return The state of the vTerminal.
      */
     public int getState() {
         return state;
@@ -84,8 +84,7 @@ public class VTerminalInterfaceBean {
     /**
      * set the state of the VTermainal.
      *
-     * @param state
-     *        {@link int}
+     * @param state  The state of the vTerminal.
      */
     public void setState(int state) {
         this.state = state;
@@ -94,7 +93,7 @@ public class VTerminalInterfaceBean {
     /**
      * get the Entitystate of the VTermainal.
      *
-     * @return {@link int}
+     * @return The entity state.
      */
     public int getEntityState() {
         return entityState;
@@ -103,8 +102,7 @@ public class VTerminalInterfaceBean {
     /**
      * set the Entitystate of the VTermainal.
      *
-     * @param entityState
-     *        {@link int}
+     * @param entityState  The entity state.
      */
     public void setEntityState(int entityState) {
         this.entityState = entityState;
@@ -132,7 +130,7 @@ public class VTerminalInterfaceBean {
     /**
      * Check if VTermainal isEnabled
      *
-     * @return {@link boolean}
+     * @return A boolean value which indicates the enabled state.
      */
     public boolean isEnabled() {
         return enabled;
@@ -141,8 +139,7 @@ public class VTerminalInterfaceBean {
     /**
      * Enable or Disable VTermainal
      *
-     * @param enabled
-     *        {@link boolean}
+     * @param enabled  A boolean value which indicates the enabled state.
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;

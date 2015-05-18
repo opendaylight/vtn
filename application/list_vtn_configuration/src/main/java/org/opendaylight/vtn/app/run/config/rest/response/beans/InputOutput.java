@@ -1,11 +1,12 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.app.run.config.rest.response.beans;
 
 import org.opendaylight.vtn.app.run.config.json.annotations.JsonElement;
@@ -40,7 +41,7 @@ public class InputOutput {
     /**
      * getId - function to get the id for this object.
      *
-     * @return {@link int}
+     * @return The identifier of the switch port.
      */
     public String getId() {
         return id;
