@@ -38,7 +38,8 @@ public:
   }
 
   UncRespCode
-  update_cmd(key_vtn_flowfilter& key, val_flowfilter& val,
+  update_cmd(key_vtn_flowfilter& key, val_flowfilter& val_old,
+             val_flowfilter& val_new,
              unc::driver::controller *ctr) {
     if ( key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
       return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
@@ -86,6 +87,12 @@ public:
     // Do Nothing as No Request Body is REquired
   }
 
+  void copy(flowfilter *out, key_vtn_flowfilter &key_in,
+            val_flowfilter &value_old_in,
+           val_flowfilter &value_new_in) {
+    // Do Nothing as No Request Body is REquired
+  }
+
   UncRespCode r_copy(flowfilterlist* in,
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
 
@@ -110,8 +117,9 @@ public:
 
     //Add to Cache
     unc::vtndrvcache::ConfigNode *filter_cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vtn_flowfilter, val_flowfilter, uint32_t>
-    (&key_filter,&val_filter,uint32_t(UNC_OP_READ));
+      new unc::vtndrvcache::CacheElementUtil<key_vtn_flowfilter, val_flowfilter,
+                                   val_flowfilter, uint32_t>
+    (&key_filter,&val_filter,&val_filter, uint32_t(UNC_OP_READ));
 
     cfgnode_vector.push_back(filter_cfgptr);
 
@@ -171,8 +179,9 @@ public:
         action_iter++;
       }
       unc::vtndrvcache::ConfigNode *entry_cfgptr=
-        new unc::vtndrvcache::CacheElementUtil<key_vtn_flowfilter_entry, val_vtn_flowfilter_entry, uint32_t>
-      (&key_entry,&val_entry,uint32_t(UNC_OP_READ));
+        new unc::vtndrvcache::CacheElementUtil<key_vtn_flowfilter_entry,
+              val_vtn_flowfilter_entry, val_vtn_flowfilter_entry, uint32_t>
+      (&key_entry, &val_entry, &val_entry, uint32_t(UNC_OP_READ));
       cfgnode_vector.push_back(entry_cfgptr);
       entry_iter++;
     }
@@ -204,11 +213,12 @@ public:
   }
 
   UncRespCode
-  update_cmd(key_vtn_flowfilter_entry& key, val_vtn_flowfilter_entry& val,
+  update_cmd(key_vtn_flowfilter_entry& key, val_vtn_flowfilter_entry& val_old,
+              val_vtn_flowfilter_entry& val_new,
              unc::driver::controller *ctr) {
     if ( key.flowfilter_key.input_direction == UPLL_FLOWFILTER_DIR_OUT)
       return UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR;
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_UPDATE);
+    return run_command(key,val_old,val_new,ctr,unc::odcdriver::CONFIG_UPDATE);
   }
 
   UncRespCode
@@ -261,7 +271,6 @@ public:
       out->filterType_->pass_=new pass();
     }
 
-
     if ( value_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID ) {
       action *new_action = new action();
       new_action->dscp_ = new dscp();
@@ -273,6 +282,69 @@ public:
       new_action->vlanpcp_ = new vlanpcp();
       new_action->vlanpcp_->priority_ = value_in.priority;
       out->action_.push_back(new_action);
+    }
+  }
+ //  Method to  handle two value structures during update operation
+ void copy(flowfilter *out, key_vtn_flowfilter_entry &key_in,
+                      val_vtn_flowfilter_entry &value_old_in,
+                      val_vtn_flowfilter_entry &value_new_in) {
+
+    ODC_FUNC_TRACE;
+    PFC_ASSERT(out != NULL);
+
+    out->index_=key_in.sequence_num;
+
+    out->condition_.assign(reinterpret_cast<char*>(value_old_in.flowlist_name));
+
+    if ( value_new_in.valid[UPLL_IDX_ACTION_VFFE] == UNC_VF_VALID ) {
+      out->filterType_=new filterType();
+      if ( value_new_in.action == UPLL_FLOWFILTER_ACT_PASS ) {
+        out->filterType_->pass_=new pass();
+      } else if ( value_new_in.action == UPLL_FLOWFILTER_ACT_DROP ) {
+        out->filterType_->drop_=new drop();
+      }
+    } else if ( value_old_in.valid[UPLL_IDX_ACTION_VFFE] == UNC_VF_VALID ) {
+      out->filterType_=new filterType();
+      if ( value_old_in.action == UPLL_FLOWFILTER_ACT_PASS ) {
+        out->filterType_->pass_=new pass();
+      } else if ( value_old_in.action == UPLL_FLOWFILTER_ACT_DROP ) {
+        out->filterType_->drop_=new drop();
+      }
+    }  else {
+      //Make FilterType as pass by default
+      out->filterType_=new filterType();
+      out->filterType_->pass_=new pass();
+    }
+
+   if ( value_new_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID &&
+                 value_old_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID) {
+      action *new_action = new action();
+      new_action->dscp_ = new dscp();
+      new_action->dscp_->dscp_=value_new_in.dscp;
+      out->action_.push_back(new_action);
+    } else if (value_new_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_INVALID &&
+                 value_old_in.valid[UPLL_IDX_DSCP_VFFE] == UNC_VF_VALID ) {
+      action *new_action = new action();
+      new_action->dscp_ = new dscp();
+      new_action->dscp_->dscp_=value_old_in.dscp;
+      out->action_.push_back(new_action);
+      } else {
+      pfc_log_info("INVALID for new and old val structures of dscp attribute");
+    }
+    if ( value_new_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_VALID &&
+                 value_old_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_VALID) {
+      action *new_action = new action();
+      new_action->vlanpcp_ = new vlanpcp();
+      new_action->vlanpcp_->priority_=value_new_in.priority;
+      out->action_.push_back(new_action);
+    } else if (value_new_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_INVALID &&
+                 value_old_in.valid[UPLL_IDX_PRIORITY_VFFE] == UNC_VF_VALID ) {
+      action *new_action = new action();
+      new_action->vlanpcp_ = new vlanpcp();
+      new_action->vlanpcp_->priority_=value_old_in.priority;
+      out->action_.push_back(new_action);
+      } else {
+      pfc_log_info("INVALID for new and old value structures of PRIORITY");
     }
   }
 

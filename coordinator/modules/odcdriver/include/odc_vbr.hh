@@ -59,13 +59,15 @@ class OdcVbrCommand: public unc::driver::vtn_driver_command
    * @brief                           - Constructs VBR update command and send
    *                                    it to rest interface
    * @param[in] key_vbr               - key structure of VBR
-   * @param[in] val_vbr               - value structure of VBR
+   * @param[in] val_vbr               - old value structure of VBR
+   * @param[in] val_vbr               - New value structure of VBR
    * @param[in] ctr                   - Controller pointer
    * @return UncRespCode              - returns UNC_RC_SUCCESS on updating vbr successfully
    *                                    /returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vbr_t& key_vbr,
-                         val_vbr_t& val_vbr,
+                         val_vbr_t& val_old_vbr,
+                         val_vbr_t& val_new_vbr,
                          unc::driver::controller* ctr);
 
   /**
