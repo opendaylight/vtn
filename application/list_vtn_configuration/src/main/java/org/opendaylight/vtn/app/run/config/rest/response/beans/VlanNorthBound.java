@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,7 +45,7 @@ public class VlanNorthBound {
     /**
      * getId - function to get the id for this object.
      *
-     * @return {@link int}
+     * @return  The identifier for the VLAN map.
      */
     public String getId() {
         return id;
@@ -63,7 +63,7 @@ public class VlanNorthBound {
     /**
      * getVlan - function to get the vlan for this object.
      *
-     * @return {@link int}
+     * @return  The VLAN ID.
      */
     public int getVlan() {
         return vlan;
@@ -72,7 +72,7 @@ public class VlanNorthBound {
     /**
      * setVlan - function to set the vlan for this object.
      *
-     * @param vlan.
+     * @param vlan
      */
     public void setVlan(int vlan) {
         this.vlan = vlan;
@@ -90,7 +90,7 @@ public class VlanNorthBound {
     /**
      * setNode - function to set the node for this object.
      *
-     * @param node.
+     * @param node
      */
     public void setNode(NodeDetails node) {
         this.node = node;

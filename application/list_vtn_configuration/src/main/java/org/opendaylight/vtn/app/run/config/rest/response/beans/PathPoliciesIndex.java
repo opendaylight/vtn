@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,7 +45,7 @@ public class PathPoliciesIndex implements Serializable, Cloneable {
     /**
      * getIntegers - Method returns the index valus for this object.
      *
-     * @return {@link int}
+     * @return A list of path policy indices.
      */
     public List<Index> getIntegers() {
         return integers;

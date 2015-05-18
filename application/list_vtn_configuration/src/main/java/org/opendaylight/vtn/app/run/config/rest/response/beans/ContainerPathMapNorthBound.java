@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -80,7 +80,7 @@ public class ContainerPathMapNorthBound implements Serializable, Cloneable {
     /**
      * getIndex - function to get the index values.
      *
-     * @return {@link int}
+     * @return The index for the path map.
      */
     public int getIndex() {
         return index;
@@ -117,7 +117,7 @@ public class ContainerPathMapNorthBound implements Serializable, Cloneable {
     /**
      * getPolicy - function to get the policy set.
      *
-     * @return {@link int}
+     * @return The identifier for the path policy.
      */
     public int getPolicy() {
         return policy;
@@ -135,7 +135,7 @@ public class ContainerPathMapNorthBound implements Serializable, Cloneable {
     /**
      * getIdleTimeout - function to get the idleTimeout set.
      *
-     * @return {@link int}
+     * @return The idle timeout.
      */
     public int getIdleTimeout() {
         return idleTimeout;
@@ -153,7 +153,7 @@ public class ContainerPathMapNorthBound implements Serializable, Cloneable {
     /**
      * getHardTimeout - function to get the hardTimeout set.
      *
-     * @return {@link int}
+     * @return The hard timeout.
      */
     public int getHardTimeout() {
         return hardTimeout;

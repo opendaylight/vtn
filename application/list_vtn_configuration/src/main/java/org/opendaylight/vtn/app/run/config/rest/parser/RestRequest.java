@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -90,7 +90,7 @@ public class RestRequest {
 
     /**
      * setResponse - to set the response.
-     * @param response.
+     * @param response
      */
     public void setResponse(String response) {
         this.response = response;
@@ -108,7 +108,8 @@ public class RestRequest {
 
     /**
      * setResponse - to set the response.
-     * @param paramName, paramValue
+     * @param paramName
+     * @param paramValue
      */
     public void setURLParam(String paramName, String paramValue) {
         if (url.contains(PARAM_DELIM_START + paramName + PARAM_DELIM_END)) {

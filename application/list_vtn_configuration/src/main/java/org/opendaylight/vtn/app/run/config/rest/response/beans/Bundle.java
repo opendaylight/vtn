@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -48,7 +48,7 @@ public class Bundle {
 
     /**
      * getMajor - function to get the major values.
-     * @return {@link int}
+     * @return The major version of the bundle.
      */
     public int getMajor() {
         return major;
@@ -56,7 +56,7 @@ public class Bundle {
 
     /**
      * setMajor - function to set a value for major.
-     * @param major {@link int}
+     * @param major The major version of the bundle.
      */
     public void setMajor(int major) {
         this.major = major;
@@ -64,7 +64,7 @@ public class Bundle {
 
     /**
      * getMinor - function to get the value for minor.
-     * @return {@link int}
+     * @return  The minor version of the bundle.
      */
     public int getMinor() {
         return minor;
@@ -72,7 +72,7 @@ public class Bundle {
 
     /**
      * setMinor - function to set a value for minor.
-     * @param minor
+     * @param minor  The minor version of the bundle.
      */
     public void setMinor(int minor) {
         this.minor = minor;
@@ -80,7 +80,7 @@ public class Bundle {
 
     /**
      * getMicro - function to get the value for micro.
-     * @return {@link int}
+     * @return The micro version of the bundle.
      */
     public int getMicro() {
         return micro;
@@ -88,7 +88,7 @@ public class Bundle {
 
     /**
      * setMicro - function to set a value for micro.
-     * @param micro {@link int}
+     * @param micro The micro version of the bundle.
      */
     public void setMicro(int micro) {
         this.micro = micro;

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -73,7 +73,7 @@ public class CostDetails implements Serializable, Cloneable {
     /**
      * getCost - function to get the cost values.
      *
-     * @return {@link int}
+     * @return The link cost value.
      */
     public int getCost() {
         return cost;

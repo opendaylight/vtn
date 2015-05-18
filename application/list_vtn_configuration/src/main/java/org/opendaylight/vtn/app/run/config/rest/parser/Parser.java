@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -41,9 +41,9 @@ public class Parser {
     /**
      * Type conversion of parsed json object.
      *
-     * @param obj
-     * @param json
-     *
+     * @param object
+     * @param field
+     * @param fieldValue
      */
     private void parseToRespectiveObject(Object object, Field field,
             String fieldValue) {

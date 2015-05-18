@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -49,7 +49,10 @@ public class VTerminalNorthBound {
     }
     /**
      * Parameterized Constructor.
-     * @param name,description,faults
+     * @param name
+     * @param description
+     * @param faults
+     * @param state
      */
     public VTerminalNorthBound(String name, String description, int faults,
         int state) {
@@ -98,7 +101,7 @@ public class VTerminalNorthBound {
     /**
      * getFaults - function to get the faults for this object.
      *
-     * @return {@link int}
+     * @return The number of path faults.
      */
     public int getFaults() {
         return faults;
@@ -116,7 +119,7 @@ public class VTerminalNorthBound {
     /**
      * getState - function to get the state for this object.
      *
-     * @return {@link int}
+     * @return The state of the vTerminal.
      */
     public int getState() {
         return state;

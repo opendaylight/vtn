@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -42,7 +42,7 @@ public class Statistics {
     /**
      * getBytes - function to get the bytes for this object.
      *
-     * @return {@link int}
+     * @return The number of bytes.
      */
     public int getBytes() {
         return bytes;
@@ -51,7 +51,7 @@ public class Statistics {
     /**
      * setBytes - function to set the bytes for this object.
      *
-     * @param bytes
+     * @param bytes  The number of bytes.
      */
     public void setBytes(int bytes) {
         this.bytes = bytes;
@@ -60,7 +60,7 @@ public class Statistics {
     /**
      * getPackets - function to get the packets for this object.
      *
-     * @return {@link int}
+     * @return The number of packets.
      */
     public int getPackets() {
         return packets;
@@ -69,7 +69,7 @@ public class Statistics {
     /**
      * setPackets - function to set the packets for this object.
      *
-     * @param packets {@link int}
+     * @param packets  The number of packets.
      */
     public void setPackets(int packets) {
         this.packets = packets;
@@ -78,7 +78,7 @@ public class Statistics {
     /**
      * getDuration - function to get the duration for this object.
      *
-     * @return {@link int}
+     * @return The duration of the data flow.
      */
     public int getDuration() {
         return duration;
@@ -87,7 +87,7 @@ public class Statistics {
     /**
      * setDuration - function to set the duration for this object.
      *
-     * @param duration {@link int}
+     * @param duration The duration of the data flow.
      */
     public void setDuration(int duration) {
         this.duration = duration;

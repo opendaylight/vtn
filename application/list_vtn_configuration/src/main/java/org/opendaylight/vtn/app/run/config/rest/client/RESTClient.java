@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -31,7 +31,7 @@ import org.json.JSONObject;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.opendaylight.vtn.app.run.config.rest.enumgroups.APPLICATION_TYPE;
+import org.opendaylight.vtn.app.run.config.rest.enumgroups.ApplicationType;
 import org.opendaylight.vtn.app.run.config.rest.enumgroups.RestURL;
 import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VBridgeBean;
 import org.opendaylight.vtn.app.run.config.rest.output.format.beans.VBridgeInterfaceBean;
@@ -128,7 +128,7 @@ public class RESTClient {
             LOG.warn("Invalid server URL : {}", serverUrl);
             throw new VTNClientException("Invalid server URL");
         }
-        client = new CRUDImpl(APPLICATION_TYPE.JSON, userName, password);
+        client = new CRUDImpl(ApplicationType.JSON, userName, password);
         parser = new Parser();
     }
 
@@ -188,7 +188,6 @@ public class RESTClient {
      * @param restObject
      * @param headers
      * @param paramName
-     * @param restObject
      * @param paramValue
      * @return {@link Object}
      * @throws Exception
@@ -237,7 +236,7 @@ public class RESTClient {
      * GET - get operation method to communicate the server to fetch the result for requested URI.
      * @param restObject
      * @param paramMap
-     * @return
+     * @return The value of the requested URI.
      * @throws JSONException
      * @throws Exception
      * @throws IllegalArgumentException
@@ -261,7 +260,7 @@ public class RESTClient {
      * @param value1
      * @param param2
      * @param value2
-     * @return
+     * @return The value of the requested URI.
      * @throws JSONException
      * @throws Exception
      * @throws IllegalArgumentException
@@ -289,7 +288,7 @@ public class RESTClient {
      * @param value1
      * @param param2
      * @param value2
-     * @return
+     * @return The value of the requested URI.
      * @throws JSONException
      * @throws Exception
      * @throws IllegalArgumentException
@@ -315,7 +314,7 @@ public class RESTClient {
      * @param restObject
      * @param paramMap
      * @param headers
-     * @return
+     * @return The value of the requested URI.
      * @throws Exception
      * @throws JSONException
      * @throws IllegalArgumentException
@@ -402,7 +401,7 @@ public class RESTClient {
      * parseResponse - parse response which received from the get opertaion.
      * @param target
      * @param request
-     * @return
+     * @return The parsed response.
      * @throws JSONException
      * @throws IllegalArgumentException
      * @throws IllegalAccessException
@@ -430,7 +429,7 @@ public class RESTClient {
 
     /**
      * getserverUrl - to get the server URL.
-     * @return
+     * @return  The server URL.
      */
     public String getServerUrl() {
         return serverUrl;

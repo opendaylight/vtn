@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -32,7 +32,7 @@ public class Dscp {
     /**
      * getDscp - function to get the dscp value for this object.
      *
-     * @return {@link int}
+     * @return The DSCP field value.
      */
     public int getDscp() {
         return dscp;

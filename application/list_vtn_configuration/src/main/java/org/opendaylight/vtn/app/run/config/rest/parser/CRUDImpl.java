@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -27,8 +27,8 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.api.client.filter.HTTPBasicAuthFilter;
 import org.opendaylight.vtn.app.run.config.rest.client.CRUDOperation;
 import org.opendaylight.vtn.app.run.config.rest.client.VTNClientException;
-import org.opendaylight.vtn.app.run.config.rest.enumgroups.APPLICATION_TYPE;
-import org.opendaylight.vtn.app.run.config.rest.enumgroups.HTTP_RESPONSE;
+import org.opendaylight.vtn.app.run.config.rest.enumgroups.ApplicationType;
+import org.opendaylight.vtn.app.run.config.rest.enumgroups.HttpResponse;
 
 public class CRUDImpl implements CRUDOperation {
 
@@ -41,7 +41,7 @@ public class CRUDImpl implements CRUDOperation {
 
     public static final String HTTP_STATUS_DESCR  = "response_description";
     public static final String HTTP_STATUS  = "response_status";
-    private APPLICATION_TYPE appType = null;
+    private ApplicationType appType = null;
     private String userName;
     private String password;
 
@@ -51,7 +51,7 @@ public class CRUDImpl implements CRUDOperation {
      * @param userName - username of the controller to connect to the server.
      * @param password - password of the controller to connect to the server.
      */
-    public CRUDImpl(APPLICATION_TYPE appType, String userName, String password) {
+    public CRUDImpl(ApplicationType appType, String userName, String password) {
         this.appType = appType;
         this.client = Client.create();
         this.userName = userName;
@@ -108,12 +108,12 @@ public class CRUDImpl implements CRUDOperation {
     /**
      * To create a JSON object for a particular HTTP response
      * @param response
-     *         HTTP_RESPONSE
+     *         HttpResponse
      * @return
      *         JSONObject
      * @throws JSONException
      */
-    private JSONObject getHttpResponseObject(HTTP_RESPONSE response) throws JSONException {
+    private JSONObject getHttpResponseObject(HttpResponse response) throws JSONException {
         JSONObject object = new JSONObject();
         object.put(HTTP_STATUS_DESCR, response.getDescription());
         object.put(HTTP_STATUS, response.getStatus());
@@ -133,15 +133,15 @@ public class CRUDImpl implements CRUDOperation {
     public String doGET(String url, Map<String, Object> headers) throws VTNClientException, JSONException, ConnectException {
         try {
             ClientResponse response = getWebResource(url, null, headers).accept(appType.getType()).get(ClientResponse.class);
-            if (response.getStatus() == HTTP_RESPONSE.NO_CONTENT.getStatus()) {
-                return getHttpResponseObject(HTTP_RESPONSE.NO_CONTENT).toString();
+            if (response.getStatus() == HttpResponse.NO_CONTENT.getStatus()) {
+                return getHttpResponseObject(HttpResponse.NO_CONTENT).toString();
             } else {
-                if (response.getStatus() == HTTP_RESPONSE.UNAUTHORIZED.getStatus()) {
+                if (response.getStatus() == HttpResponse.UNAUTHORIZED.getStatus()) {
                     LOG.error("Unauthorized access :HTTP error code : {}", response.getStatus());
-                    LOG.error(getHttpResponseObject(HTTP_RESPONSE.UNAUTHORIZED).toString());
+                    LOG.error(getHttpResponseObject(HttpResponse.UNAUTHORIZED).toString());
                     throw new VTNClientException("\n\nFailed to connect to ODL Controller due to unauthorized access..."
                                                     + "\nPlease check Username/Password...");
-                } else if (response.getStatus() != HTTP_RESPONSE.OPERATION_SUCCESS.getStatus()) {
+                } else if (response.getStatus() != HttpResponse.OPERATION_SUCCESS.getStatus()) {
                     LOG.error("GET RequestFailed :HTTP error code : {}", response.getStatus());
                     throw new VTNClientException("\n\nPage not found - " + response.getStatus());
                 }

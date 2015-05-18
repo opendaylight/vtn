@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,7 @@ public class PathPolicy implements Serializable, Cloneable {
     /**
      * getId - Id value can be obtained from this method
      *
-     * @return {@link int}
+     * @return The identifier for the path policy.
      */
     public int getId() {
         return id;
@@ -76,7 +76,7 @@ public class PathPolicy implements Serializable, Cloneable {
     /**
      * getDefaultInt - default value can be obtained from this method
      *
-     * @return {@link int}
+     * @return The default cost.
      */
     public int getDefaultInt() {
         return defaultInt;
