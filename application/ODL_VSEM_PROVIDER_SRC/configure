@@ -19,11 +19,12 @@ MONO_VERSION_COMPAT_MINOR=10
 MONO_TESTED_VERISON=3.10.1
 
 #TARGET Diretory related
-OUT_TARGET_DIR="dist/odl_vsem_provider"
-DEFS_MK_FILE="defs.mk"
+OUTDIR=target
+OUT_TARGET_DIR=$OUTDIR/odl_vsem_provider
+DEFS_MK_FILE=$OUTDIR/defs.mk
 
 #CONFIG_STATUS_RELEATED
-CONFIG_STATUS="dist/config.done"
+CONFIG_STATUS=$OUTDIR/config.done
 
 #list of reference assemblies
 
@@ -88,11 +89,11 @@ create_output_directory () {
 
 write_mcs_path_to_def () {
   mcs_path=`which mcs`
-  echo "MCS := $mcs_path" >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+  echo "MCS := $mcs_path" >> $DEFS_MK_FILE
 }
 
 write_cs_options_path () {
-  echo CS_OPTIONS := "-warn:4 -target:library -platform:anycpu -noconfig -unsafe+" >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+  echo CS_OPTIONS := "-warn:4 -target:library -platform:anycpu -noconfig -unsafe+" >> $DEFS_MK_FILE
   }
 
 write_reference_string () {
@@ -104,12 +105,12 @@ write_reference_string () {
 
   reference_string="$reference_string -r:$OUT_TARGET_DIR/Libraries/NetworkServiceInterfaces.dll"
   reference_string="$reference_string -r:$OUT_TARGET_DIR/Libraries/System.Management.Automation.dll"
-  echo REF_STRING := $reference_string >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+  echo REF_STRING := $reference_string >> $DEFS_MK_FILE
 }
 
 write_zip_path_to_def () {
   zip_path=`which zip`
-  echo "ZIP := $zip_path" >> $OUT_TARGET_DIR/$DEFS_MK_FILE
+  echo "ZIP := $zip_path" >> $DEFS_MK_FILE
   }
 
 fetch_scvmm_sdk_and_copy_assemblies () {
@@ -151,10 +152,8 @@ touch_config_status () {
 # Main Script
 echo "Configure for VSEM Provider Build in Linux!!"
 
-echo "Clear dist directory if exists"
-if [ -d dist ]; then
-  rm -rf dist
-fi
+echo "Clear target directory if exists"
+rm -rf $OUTDIR
 echo "Checking the version of mono compiler"
 check_mono_version
 echo "Checking if zip will work"

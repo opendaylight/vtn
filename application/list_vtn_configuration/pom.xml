@@ -20,7 +20,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>application.vtnmanager-listconfig</artifactId>
+  <artifactId>vtnmanager-listconfig</artifactId>
   <packaging>jar</packaging>
 
   <scm>

@@ -28,31 +28,16 @@
     <relativePath>..</relativePath>
   </parent>
 
-  <artifactId>application.vtnmanager-vsemprovider</artifactId>
+  <artifactId>vtnmanager-vsemprovider</artifactId>
   <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <properties>
-    <!-- Version of VTN VSEMProvider. -->
-    <vtn.VSEMProvider.version>1.0.0</vtn.VSEMProvider.version>
-
-    <!-- The number of GNU make jobs -->
-    <vtn.build.jobs>1</vtn.build.jobs>
-
-    <vtn.pkg.classifier>bin</vtn.pkg.classifier>
-    <vtn.pkg.type>zip</vtn.pkg.type>
-    <vtn.pkg.name>${project.artifactId}-${build.suffix}</vtn.pkg.name>
-    <vtn.pkg.filename>
-      ${vtn.pkg.name}-${vtn.pkg.classifier}.${vtn.pkg.type}
-    </vtn.pkg.filename>
-    <vtn.pkg.path>${basedir}/target/${vtn.pkg.filename}</vtn.pkg.path>
-
-    <vtn.readme.classifier>README</vtn.readme.classifier>
-    <vtn.readme.type>txt</vtn.readme.type>
-    <vtn.readme.filename>
-      ${vtn.pkg.name}-${vtn.readme.classifier}.${vtn.readme.type}
-    </vtn.readme.filename>
-    <vtn.readme.path>${basedir}/target/${vtn.readme.filename}</vtn.readme.path>
+    <vtn.vsem.pkg.classifier>bin</vtn.vsem.pkg.classifier>
+    <vtn.vsem.pkg.type>zip</vtn.vsem.pkg.type>
+    <vtn.vsem.pkg.path>
+      ${project.build.directory}/ODL_SCVMM_PROVIDER.zip
+    </vtn.vsem.pkg.path>
   </properties>
 
   <build>
@@ -63,29 +48,60 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>${execplugin.version}</version>
         <executions>
+          <!-- Run configure script. -->
           <execution>
-            <id>exe</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <executable>make</executable>
-            </configuration>
-          </execution>
-
-          <!-- Clean up build environment. -->
-          <execution>
-            <id>clean</id>
-            <phase>pre-clean</phase>
+            <id>vsem-configure</id>
+            <phase>generate-sources</phase>
             <goals>
               <goal>exec</goal>
             </goals>
             <configuration>
               <executable>make</executable>
               <arguments>
-                <argument>clean</argument>
+                <argument>run_configure</argument>
               </arguments>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>vsem-exe</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <configuration>
+              <executable>make</executable>
+              <arguments>
+                <argument>install</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!--
+          Add binary distribution package to artifacts.
+          This must be defined after exec-maven-plugin to force execution
+          order.
+      -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>vsem-attach-artifacts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${vtn.vsem.pkg.path}</file>
+                  <type>${vtn.vsem.pkg.type}</type>
+                  <classifier>${vtn.vsem.pkg.classifier}</classifier>
+                </artifact>
+              </artifacts>
             </configuration>
           </execution>
         </executions>
