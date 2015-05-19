@@ -7,46 +7,60 @@
 # distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
 #
 
+OUTDIR			= target
+DEFS_MK			= $(OUTDIR)/defs.mk
+CONFIG_DONE		= $(OUTDIR)/config.done
+CONFIGURE		= configure
 
-VSEM_PROVIDER_OUT_DIR     := dist/odl_vsem_provider/ODL_VSEM_PROVIDER
-VSEM_PROVIDER_UI_OUT_DIR  := dist/odl_vsem_provider/ODL_VSEM_PROVIDER_UI
-CONFIGURE_OUT_DIR         := dist/odl_vsem_provider
-CONFIGURE 		  := "./configure"
-ODL_SCVMM_PROVIDER        := dist/odl_vsem_provider/ODL_SCVMM_PROVIDER
-EXECUTE			  := $(shell bash configure)
+VSEM_DIR		= $(OUTDIR)/odl_vsem_provider
+VSEM_PROVIDER_DIR	= $(VSEM_DIR)/ODL_VSEM_PROVIDER
+VSEM_PROVIDER_UI_DIR	= $(VSEM_DIR)/ODL_VSEM_PROVIDER_UI
 
+ODL_SCVMM_PROVIDER	= ODL_SCVMM_PROVIDER
+DIST_DIR		= $(VSEM_DIR)/$(ODL_SCVMM_PROVIDER)
+DIST_REGISTER_DIR	= $(DIST_DIR)/Register_settings
+SCVMM_PROVIDER_ZIP	= $(ODL_SCVMM_PROVIDER).zip
+DIST_ODL_SCVMM_PROVIDER	= $(OUTDIR)/$(SCVMM_PROVIDER_ZIP)
 
-ifneq  ($(realpath $(CONFIGURE_OUT_DIR)/defs.mk),)
-include $(CONFIGURE_OUT_DIR)/defs.mk
-endif # defs.mk does not exist
+VSEM_ODL_PROVIDER_SOURCES	:= $(shell find VSEMOdlProvider -name '*.cs')
+VSEM_ODL_DLL			= $(VSEM_PROVIDER_DIR)/VSEMOdl.dll
 
-all:run_configure vsemodlprovider vsemodlui Register_entry install
+VSEM_ODL_PROVIDER_UI_SOURCES	:= $(shell find VSEMOdlUI -name '*.cs')
+VSEM_ODL_PROVIDER_UI_DLL	= $(VSEM_PROVIDER_UI_DIR)/VSEMOdlUI.dll
 
-run_configure:
-	bash configure
+-include $(DEFS_MK)
 
-install:
-	mkdir -p $(ODL_SCVMM_PROVIDER);
-	$(ZIP) -r $(VSEM_PROVIDER_OUT_DIR).zip $(VSEM_PROVIDER_OUT_DIR)
-	$(ZIP) -r $(VSEM_PROVIDER_UI_OUT_DIR).zip $(VSEM_PROVIDER_UI_OUT_DIR)
-	cd dist/odl_vsem_provider;rm -rf ODL_VSEM_PROVIDER.zip;mv ODL_VSEM_PROVIDER ODL_SCVMM_PROVIDER;
-	cd dist/odl_vsem_provider;rm -rf ODL_VSEM_PROVIDER_UI.zip;mv ODL_VSEM_PROVIDER_UI ODL_SCVMM_PROVIDER;
-	cd dist/odl_vsem_provider;mkdir -p Register_settings;mv reg_entry.reg Register_settings;mv Register_settings ODL_SCVMM_PROVIDER;
-	cd dist/odl_vsem_provider;$(ZIP) -r ODL_SCVMM_PROVIDER.zip ODL_SCVMM_PROVIDER
+all:	vsemodlui
 
-VSEM_ODL_PROVIDER_SOURCES = $(shell find VSEMOdlProvider -name '*.cs')
-VSEM_ODL_PROVIDER_UI_SOURCES = $(shell find VSEMOdlUI -name '*.cs')
+install:	$(DIST_ODL_SCVMM_PROVIDER)
 
-vsemodlprovider:
-	mkdir -p $(VSEM_PROVIDER_OUT_DIR)
-	$(MCS) $(CS_OPTIONS) "-out:$(VSEM_PROVIDER_OUT_DIR)/VSEMOdl.dll" $(VSEM_ODL_PROVIDER_SOURCES) $(REF_STRING)
+run_configure:	$(CONFIG_DONE)
 
-vsemodlui: vsemodlprovider
-	mkdir -p $(VSEM_PROVIDER_UI_OUT_DIR)
-	$(MCS) $(CS_OPTIONS) "-out:$(VSEM_PROVIDER_UI_OUT_DIR)/VSEMOdlUI.dll" $(VSEM_ODL_PROVIDER_UI_SOURCES) $(REF_STRING) "-r:$(VSEM_PROVIDER_OUT_DIR)/VSEMOdl.dll"
+$(CONFIG_DONE):	$(CONFIGURE)
+	bash $(CONFIGURE)
 
-Register_entry:
-	cp reg_entry.reg dist/odl_vsem_provider
+$(DIST_DIR):	vsemodlui
+	mkdir -p $@
+	cp -a $(VSEM_PROVIDER_DIR) $@
+	cp -a $(VSEM_PROVIDER_UI_DIR) $@
+	mkdir -p $(DIST_REGISTER_DIR)
+	cp -a reg_entry.reg $(DIST_REGISTER_DIR)
+
+$(DIST_ODL_SCVMM_PROVIDER):	$(DIST_DIR)
+	out=$(abspath $@); cd $(VSEM_DIR); \
+	$(ZIP) -r $$out $(ODL_SCVMM_PROVIDER)
+
+vsemodlprovider:	$(VSEM_ODL_DLL)
+
+$(VSEM_ODL_DLL):	$(VSEM_ODL_PROVIDER_SOURCES)
+	mkdir -p $(VSEM_PROVIDER_DIR)
+	$(MCS) $(CS_OPTIONS) "-out:$@" $(VSEM_ODL_PROVIDER_SOURCES) $(REF_STRING)
+
+vsemodlui:	$(VSEM_ODL_PROVIDER_UI_DLL)
+
+$(VSEM_ODL_PROVIDER_UI_DLL):	$(VSEM_ODL_PROVIDER_UI_SOURCES) $(VSEM_ODL_DLL)
+	mkdir -p $(VSEM_PROVIDER_UI_DIR)
+	$(MCS) $(CS_OPTIONS) "-out:$@" $(VSEM_ODL_PROVIDER_UI_SOURCES) $(REF_STRING) "-r:$(VSEM_ODL_DLL)"
 
 clean:
-	rm -rf dist
+	$(RM) -f $(OUTDIR)
