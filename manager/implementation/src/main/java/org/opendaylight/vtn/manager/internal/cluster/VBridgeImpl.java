@@ -826,8 +826,9 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
 
         // Ensure that the outgoing network is mapped to this bridge.
         NodeConnector outgoing = tent.getPort();
+        long mac = key.longValue();
         short outVlan = tent.getVlan();
-        VBridgeNode bnode = match(mgr, key.longValue(), outgoing, outVlan);
+        VBridgeNode bnode = match(mgr, mac, outgoing, outVlan);
         if (bnode == null) {
             LOG.warn("{}:{}: Unexpected MAC address entry: {}",
                      getContainerName(), getNodePath(), tent);
@@ -858,8 +859,8 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
             return null;
         }
 
-        VBridgePath bpath = bnode.getPath();
-        pctx.setEgressVNodeRoute(new VNodeRoute(bpath,
+        VNodePath mapPath = bnode.getPath(mac, outVlan);
+        pctx.setEgressVNodeRoute(new VNodeRoute(mapPath,
                                                 VirtualRouteReason.FORWARDED));
 
         // Evaluate flow filters for outgoing packets.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,9 @@ import java.util.List;
 
 import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VBridgePath;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfoBuilder;
 
 /**
  * {@code VlanMapPath} class describes fully-qualified name of the VLAN mapping
@@ -28,7 +31,7 @@ public class VlanMapPath extends VBridgeMapPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6513566104230130855L;
+    private static final long serialVersionUID = 6661593756302180645L;
 
     /**
      * A string which represents that the node type is VLAN mapping.
@@ -63,6 +66,22 @@ public class VlanMapPath extends VBridgeMapPath {
         return mapId;
     }
 
+    // VBridgeMapPath
+
+    /**
+     * Return a {@link BridgeMapInfo} instance which represents the virtual
+     * network mapping information.
+     *
+     * @return  A {@link BridgeMapInfo} instance which contains the VLAN
+     *          mapping information.
+     */
+    @Override
+    public BridgeMapInfo getBridgeMapInfo() {
+        return new BridgeMapInfoBuilder().setVlanMapId(mapId).build();
+    }
+
+    // VTenantPath
+
     /**
      * {@inheritDoc}
      *
@@ -79,6 +98,7 @@ public class VlanMapPath extends VBridgeMapPath {
      *
      * @return  A {@link StringBuilder} object.
      */
+    @Override
     protected StringBuilder toStringBuilder() {
         StringBuilder builder = super.toStringBuilder();
         builder.append('.').append(mapId);
@@ -119,6 +139,8 @@ public class VlanMapPath extends VBridgeMapPath {
         components.add(mapId);
         return components;
     }
+
+    // Object
 
     /**
      * Return the hash code of this object.

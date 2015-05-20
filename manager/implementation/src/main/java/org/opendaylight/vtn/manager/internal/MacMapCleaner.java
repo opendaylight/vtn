@@ -11,12 +11,14 @@ package org.opendaylight.vtn.manager.internal;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
 
+import org.opendaylight.vtn.manager.internal.cluster.MacMappedHostPath;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.MapReference;
@@ -25,8 +27,11 @@ import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.cluster.PortVlan;
 import org.opendaylight.vtn.manager.internal.flow.remove.TenantScanFlowRemover;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
+import org.opendaylight.vtn.manager.internal.util.vnode.VNodeUtils;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRoute;
 
 /**
  * An instance of this class purges network resources superseded by a
@@ -97,6 +102,7 @@ public final class MacMapCleaner
                 return false;
             }
 
+            // Check ingress mapping.
             L2Host in = hosts.getLeft();
             MacMapCleaner cl = MacMapCleaner.this;
             if (cl.checkHost(in.getHost(), in.getPort().getAdNodeConnector(),
@@ -104,11 +110,26 @@ public final class MacMapCleaner
                 return true;
             }
 
+            // Check egress mapping.
             L2Host out = hosts.getRight();
-            if (out != null) {
-                return cl.checkHost(out.getHost(),
-                                    out.getPort().getAdNodeConnector(),
-                                    fc.getEgressPath());
+            if (out != null &&
+                cl.checkHost(out.getHost(), out.getPort().getAdNodeConnector(),
+                             fc.getEgressPath())) {
+                return true;
+            }
+
+            // Check redirections made by flow filters.
+            List<VirtualRoute> vroutes = fc.getVirtualRoute();
+            for (int i = 1; i < vroutes.size() - 1; i++) {
+                VirtualRoute vr = vroutes.get(i);
+                VNodePath path = VNodeUtils.
+                    toVNodePath(vr.getVirtualNodePath());
+                if (path instanceof MacMappedHostPath) {
+                    MacMappedHostPath mpath = (MacMappedHostPath)path;
+                    if (cl.checkHost(mpath.getMappedHost(), mpath)) {
+                        return true;
+                    }
+                }
             }
 
             return false;
@@ -168,7 +189,7 @@ public final class MacMapCleaner
 
     /**
      * Determine whether network resources corresponding to the specified
-     * host should be purged or not.
+     * host and switch port should be purged or not.
      *
      * @param mvlan  A {@link MacVlan} instance which represents L2 host
      *               information.
@@ -181,15 +202,29 @@ public final class MacMapCleaner
     private boolean checkHost(MacVlan mvlan, NodeConnector port,
                               VNodePath mpath) {
         short vlan = mvlan.getVlan();
-        PortVlan pvlan = new PortVlan(port, vlan);
+        PortVlan pvlan = new PortVlan(port, mvlan.getVlan());
         MapReference ref = resourceManager.getMapReference(pvlan);
         if (ref != null && ref.getMapType() == MapType.PORT) {
             // Resources cached by a port mapping should never be changed.
             return false;
         }
 
+        return checkHost(mvlan, mpath);
+    }
+
+    /**
+     * Determine whether network resources corresponding to the specified
+     * host should be purged or not.
+     *
+     * @param mvlan  A {@link MacVlan} instance which represents L2 host
+     *               information.
+     * @param mpath  A path to virtual node which maps the specified host.
+     * @return  {@code true} is returned only if network resources
+     *          corresponding to the specified host should be purged.
+     */
+    private boolean checkHost(MacVlan mvlan, VNodePath mpath) {
         // Check hosts newly added to the MAC mapping.
-        Short vid = Short.valueOf(vlan);
+        Short vid = Short.valueOf(mvlan.getVlan());
         if (mappedHosts.contains(mvlan)) {
             return true;
         }
@@ -199,7 +234,7 @@ public final class MacMapCleaner
         }
 
         // Check hosts removed from the MAC mapping.
-        if (macMap.getPath().equals(mpath)) {
+        if (macMap.getPath().contains(mpath)) {
             if (unmappedHosts.contains(mvlan)) {
                 return true;
             }

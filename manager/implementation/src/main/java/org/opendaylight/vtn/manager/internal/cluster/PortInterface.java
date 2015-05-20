@@ -74,7 +74,7 @@ public abstract class PortInterface extends AbstractInterface
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -503140432578419418L;
+    private static final long serialVersionUID = 3346949601083788579L;
 
     /**
      * Port mapping configuration.
@@ -924,13 +924,27 @@ public abstract class PortInterface extends AbstractInterface
     }
 
     /**
+     * Return path to the virtual mapping which maps the given host.
+     *
+     * @param mac   Unused.
+     * @param vlan  Unused.
+     * @return  Path to this interface.
+     */
+    @Override
+    public VNodePath getPath(long mac, short vlan) {
+        return getPath();
+    }
+
+    /**
      * Return a {@link VNodeRoute} instance which indicates the packet was
      * mapped by the port mapping.
      *
+     * @param mac   Unused.
+     * @param vlan  Unused.
      * @return  A {@link VNodeRoute} instance.
      */
     @Override
-    public final VNodeRoute getIngressRoute() {
+    public final VNodeRoute getIngressRoute(long mac, short vlan) {
         return new VNodeRoute((VNodePath)getInterfacePath(),
                               VirtualRouteReason.PORTMAPPED);
     }
@@ -973,7 +987,7 @@ public abstract class PortInterface extends AbstractInterface
 
         VTNFlowBuilder builder =
             new VTNFlowBuilder(tname, mac, vmatch, pri, idle, hard);
-        builder.addVirtualRoute(getIngressRoute()).
+        builder.addVirtualRoute(getIngressRoute(MacVlan.UNDEFINED, (short)0)).
             setEgressVNodeRoute(null).
             addDropFlow(mapped);
         provider.addFlow(builder);

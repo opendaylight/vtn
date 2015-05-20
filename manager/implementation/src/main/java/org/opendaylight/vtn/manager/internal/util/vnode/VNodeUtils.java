@@ -16,10 +16,16 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTerminalIfPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 
+import org.opendaylight.vtn.manager.internal.cluster.MacMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacMappedHostPath;
+import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.cluster.VBridgeMapPath;
+import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VnodePathFields;
 
 /**
@@ -46,13 +52,20 @@ public final class VNodeUtils {
         }
 
         VNodeLocation vloc = path.toVNodeLocation();
-        return new VirtualNodePathBuilder().
+        VirtualNodePathBuilder builder = new VirtualNodePathBuilder().
             setTenantName(vloc.getTenantName()).
             setBridgeName(vloc.getBridgeName()).
             setRouterName(vloc.getRouterName()).
             setTerminalName(vloc.getTerminalName()).
-            setInterfaceName(vloc.getInterfaceName()).
-            build();
+            setInterfaceName(vloc.getInterfaceName());
+
+        if (path instanceof VBridgeMapPath) {
+            VBridgeMapPath bmpath = (VBridgeMapPath)path;
+            builder.addAugmentation(BridgeMapInfo.class,
+                                    bmpath.getBridgeMapInfo());
+        }
+
+        return builder.build();
     }
 
     /**
@@ -89,5 +102,43 @@ public final class VNodeUtils {
 
         throw RpcException.getBadArgumentException(
             "Unexpected virtual node path: " + vpath);
+    }
+
+    /**
+     * Convert the given {@link VirtualNodePath} into a {@link VNodePath}
+     * instance.
+     *
+     * @param vpath  A {@link VirtualNodePath} instance to be converted.
+     * @return  A {@link VNodePath} instance if {@code vpath} is not
+     *          {@code null}. {@code null} if {@code vpath} is {@code null}.
+     * @throws RpcException
+     *    Unable to convert the given instance.
+     */
+    public static VNodePath toVNodePath(VirtualNodePath vpath)
+        throws RpcException {
+        VNodePath p = toVNodePath((VnodePathFields)vpath);
+        if (p != null && p.getClass().equals(VBridgePath.class)) {
+            BridgeMapInfo minfo = vpath.getAugmentation(BridgeMapInfo.class);
+            if (minfo != null) {
+                // Restore virtual network mapping information.
+                VBridgePath bpath = (VBridgePath)p;
+                String mapId = minfo.getVlanMapId();
+                if (mapId != null) {
+                    return new VlanMapPath(bpath, mapId);
+                }
+
+                Long host = minfo.getMacMappedHost();
+                if (host != null) {
+                    long l = host.longValue();
+                    if (l >= 0) {
+                        return new MacMappedHostPath(bpath, new MacVlan(l));
+                    } else {
+                        return new MacMapPath(bpath);
+                    }
+                }
+            }
+        }
+
+        return p;
     }
 }

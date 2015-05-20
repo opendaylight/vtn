@@ -13,8 +13,8 @@ import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.MacAddressFilter;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetSource;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatch;
 
@@ -65,16 +65,24 @@ public final class FlowMatchUtils {
      */
     public static MacAddress getSourceMacAddress(Match match) {
         EthernetMatch ether = match.getEthernetMatch();
-        if (ether == null) {
-            return null;
-        }
+        return (ether == null)
+            ? null
+            : getMacAddress(ether.getEthernetSource());
+    }
 
-        EthernetSource src = ether.getEthernetSource();
-        if (src == null) {
-            return null;
-        }
-
-        return (src.getMask() == null) ? src.getAddress() : null;
+    /**
+     * Return the destination MAC address specified by the given match.
+     *
+     * @param match  A {@link Match} instance.
+     * @return  A {@link MacAddress} instance which specifies the destination
+     *          MAC address. {@code null} if the given match does not specify
+     *          the destination MAC address.
+     */
+    public static MacAddress getDestinationMacAddress(Match match) {
+        EthernetMatch ether = match.getEthernetMatch();
+        return (ether == null)
+            ? null
+            : getMacAddress(ether.getEthernetDestination());
     }
 
     /**
@@ -112,5 +120,21 @@ public final class FlowMatchUtils {
      */
     public static NodeConnectorId getIngressPort(Match match) {
         return (match == null) ? null : match.getInPort();
+    }
+
+    /**
+     * Return the MAC address configured in the given instance.
+     *
+     * @param mf  A {@link MacAddressFilter} instance.
+     * @return  A {@link MacAddress} instance if found.
+     *          {@code null} if not found.
+     */
+    private static MacAddress getMacAddress(MacAddressFilter mf) {
+        if (mf == null) {
+            return null;
+        }
+
+        // MAC address mask is not supported.
+        return (mf.getMask() == null) ? mf.getAddress() : null;
     }
 }
