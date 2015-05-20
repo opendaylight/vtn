@@ -12,8 +12,8 @@ package org.opendaylight.vtn.manager.internal.util.flow;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -33,7 +33,6 @@ import org.opendaylight.vtn.manager.flow.FlowStats;
 import org.opendaylight.vtn.manager.util.NumberUtils;
 
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeMapPath;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
@@ -75,13 +74,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.ten
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.SourceHostFlowsKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlowKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.FlowMapList;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.FlowMapListBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTable;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTableKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlowTimeoutConfig;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
@@ -255,13 +253,11 @@ public final class FlowUtils {
      * {@link VirtualRoute} instances.
      *
      * @param routes  A list of {@link VNodeRoute} instances.
-     * @param maps    A set to store {@link FlowMapList} instances which
-     *                indicate virtual network mappings.x
      * @return  A list of {@link VirtualRoute} instances.
      *          {@code null} if the given list is {@code null} or empty.
      */
     public static List<VirtualRoute> toVirtualRouteList(
-        List<VNodeRoute> routes, Set<FlowMapList> maps) {
+        List<VNodeRoute> routes) {
         if (routes == null || routes.isEmpty()) {
             return null;
         }
@@ -277,13 +273,6 @@ public final class FlowUtils {
                 build();
             list.add(vroute);
             order++;
-
-            if (vpath instanceof VBridgeMapPath) {
-                // Preserve identifier for virtual network mapping as string.
-                FlowMapList fml = new FlowMapListBuilder().
-                    setFlowMapId(vpath.toString()).build();
-                maps.add(fml);
-            }
         }
 
         return list;
@@ -371,14 +360,14 @@ public final class FlowUtils {
      * {@link VNodeRoute} instances.
      *
      * @param vroutes  A list of {@link VirtualRoute} instances.
-     * @param comp     An {@link OrderedComparator} instance.
+     * @param comp     A comparator for {@link Ordered} instance.
      * @return  A list of {@link VNodeRoute} instances.
      *          {@code null} if {@code vroutes} is {@code null}.
      * @throws RpcException
      *    Unable to convert the given list.
      */
-    private static List<VNodeRoute> toVNodeRoutes(List<VirtualRoute> vroutes,
-                                                  OrderedComparator comp)
+    public static List<VNodeRoute> toVNodeRoutes(List<VirtualRoute> vroutes,
+                                                 Comparator<Ordered> comp)
         throws RpcException {
         if (vroutes == null) {
             return null;
@@ -406,12 +395,12 @@ public final class FlowUtils {
      * </p>
      *
      * @param proutes  A list of {@link PhysicalRoute} instances.
-     * @param comp     An {@link OrderedComparator} instance.
+     * @param comp     A comparator for {@link Ordered} instance.
      * @return  A list of {@link NodeRoute} instances.
      *          {@code null} if {@code proutes} is {@code null}.
      */
     public static List<NodeRoute> toNodeRoutes(List<PhysicalRoute> proutes,
-                                               OrderedComparator comp) {
+                                               Comparator<Ordered> comp) {
         if (proutes == null) {
             return null;
         }
@@ -680,7 +669,7 @@ public final class FlowUtils {
 
         return new RemoveFlowInputBuilder().
             setNode(snode.getNodeRef()).
-            setTableId(Short.valueOf(TABLE_ID)).
+            setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri("remove-flow:all")).
             setCookie(COOKIE_VTN).
@@ -754,46 +743,6 @@ public final class FlowUtils {
     }
 
     /**
-     * Construct an RPC input to uninstall flow entries that match packets
-     * received from the specified switch port.
-     *
-     * @param snode    A {@link SalNode} instance which specifies the target
-     *                 switch.
-     * @param ingress  A {@link SalPort} instance which specifies the ingress
-     *                 switch port.
-     * @param reader   A {@link InventoryReader} instance.
-     * @return  A {@link RemoveFlowInput} instance on success.
-     *          {@code null} if the target node is not present.
-     * @throws VTNException  An error occurred.
-     */
-    public static RemoveFlowInput createRemoveFlowInput(
-        SalNode snode, SalPort ingress, InventoryReader reader)
-        throws VTNException {
-        if (reader.get(snode) == null) {
-            return null;
-        }
-
-        StringBuilder ub = new StringBuilder("remove-flow:node=").
-            append(snode).append(",IN_PORT=").append(ingress);
-        Short table = Short.valueOf(TABLE_ID);
-        FlowTableRef tref =
-            new FlowTableRef(snode.getFlowTableIdentifier(table));
-
-        MatchBuilder mb = new MatchBuilder().
-            setInPort(ingress.getNodeConnectorId());
-
-        return new RemoveFlowInputBuilder().
-            setNode(snode.getNodeRef()).
-            setTableId(Short.valueOf(TABLE_ID)).
-            setFlowTable(tref).
-            setTransactionUri(new Uri(ub.toString())).
-            setMatch(mb.build()).
-            setStrict(false).
-            setBarrier(true).
-            build();
-    }
-
-    /**
      * Construct an RPC input to uninstall flow entries related to the given
      * switch port.
      *
@@ -819,10 +768,9 @@ public final class FlowUtils {
      * @param sport   A {@link SalPort} instance which specifies the switch
      *                port.
      * @return  A list of {@link RemoveFlowInput} instances.
-     * @throws VTNException  An error occurred.
      */
     public static List<RemoveFlowInput> createRemoveFlowInput(
-        SalNode snode, SalPort sport) throws VTNException {
+        SalNode snode, SalPort sport) {
         assert snode.getNodeNumber() == sport.getNodeNumber();
         StringBuilder ub = new StringBuilder("remove-flow:IN_PORT=").
             append(sport);
@@ -837,7 +785,7 @@ public final class FlowUtils {
         List<RemoveFlowInput> list = new ArrayList<>();
         RemoveFlowInput ingress = new RemoveFlowInputBuilder().
             setNode(nref).
-            setTableId(Short.valueOf(TABLE_ID)).
+            setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri(ub.toString())).
             setMatch(mb.build()).
@@ -849,7 +797,7 @@ public final class FlowUtils {
         ub = new StringBuilder("remove-flow:OUT_PORT=").append(sport);
         RemoveFlowInput egress = new RemoveFlowInputBuilder().
             setNode(nref).
-            setTableId(Short.valueOf(TABLE_ID)).
+            setTableId(table).
             setFlowTable(tref).
             setTransactionUri(new Uri(ub.toString())).
             setOutPort(NumberUtils.getUnsigned(sport.getPortNumber())).

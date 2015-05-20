@@ -64,7 +64,7 @@ public final class VlanMapImpl implements VBridgeNode {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -6214731407046228448L;
+    private static final long serialVersionUID = -8379366464925651620L;
 
     /**
      * Logger instance.
@@ -524,6 +524,18 @@ public final class VlanMapImpl implements VBridgeNode {
     }
 
     /**
+     * Return path to the virtual mapping which maps the given host.
+     *
+     * @param mac   Unused.
+     * @param vlan  Unused.
+     * @return  Path to this VLAN mapping.
+     */
+    @Override
+    public VlanMapPath getPath(long mac, short vlan) {
+        return mapPath;
+    }
+
+    /**
      * Determine whether this VLAN mapping is administravely enabled or not.
      *
      * @return {@code true} is always returned because the VLAN mapping can not
@@ -538,10 +550,12 @@ public final class VlanMapImpl implements VBridgeNode {
      * Return a {@link VNodeRoute} instance which indicates the packet was
      * mapped by the VLAN mapping.
      *
+     * @param mac   Unused.
+     * @param vlan  Unused.
      * @return  A {@link VNodeRoute} instance.
      */
     @Override
-    public VNodeRoute getIngressRoute() {
+    public VNodeRoute getIngressRoute(long mac, short vlan) {
         return new VNodeRoute(mapPath, VirtualRouteReason.VLANMAPPED);
     }
 

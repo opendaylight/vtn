@@ -259,7 +259,7 @@ public abstract class PortBridge<T extends PortInterface>
             }
 
             if (vnode.isEnabled()) {
-                pctx.addVNodeRoute(vnode.getIngressRoute());
+                pctx.addVNodeRoute(vnode.getIngressRoute(mac, vlan));
 
                 // Evaluate flow filters configured in the virtual mapping.
                 // Actually this evaluates virtual interface flow filters for

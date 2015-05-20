@@ -15,13 +15,11 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.VTenantPath;
 
-import org.opendaylight.vtn.manager.internal.cluster.VBridgeMapPath;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.vnode.VNodeUtils;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.FlowMapList;
 
 /**
  * An implementation of
@@ -40,12 +38,6 @@ public final class VNodeFlowRemover extends TenantScanFlowRemover {
     private final VTenantPath  nodePath;
 
     /**
-     * Identifier for the virtual network mapping specified by
-     * {@link #nodePath}.
-     */
-    private final String  mapId;
-
-    /**
      * Construct a new instance.
      *
      * @param path  A path to the virtual node.
@@ -54,7 +46,6 @@ public final class VNodeFlowRemover extends TenantScanFlowRemover {
     public VNodeFlowRemover(VTenantPath path) {
         super(path.getTenantName());
         nodePath = path;
-        mapId = (path instanceof VBridgeMapPath) ? path.toString() : null;
     }
 
     // ScanFlowRemover
@@ -72,19 +63,6 @@ public final class VNodeFlowRemover extends TenantScanFlowRemover {
                     VNodeUtils.toVNodePath(vr.getVirtualNodePath());
                 if (nodePath.contains(vnpath)) {
                     return true;
-                }
-            }
-        }
-
-        if (mapId != null) {
-            // Select if the given data flow was established by the specified
-            // virtual network mapping.
-            List<FlowMapList> maps = vdf.getFlowMapList();
-            if (maps != null) {
-                for (FlowMapList fml: maps) {
-                    if (mapId.equals(fml.getFlowMapId())) {
-                        return true;
-                    }
                 }
             }
         }

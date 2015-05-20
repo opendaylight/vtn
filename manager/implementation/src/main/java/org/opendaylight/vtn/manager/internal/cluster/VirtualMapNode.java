@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -36,6 +36,17 @@ public interface VirtualMapNode extends Serializable {
     VNodePath getPath();
 
     /**
+     * Return path to the virtual mapping which maps the given host.
+     *
+     * @param mac   A long value which represents the MAC address of the mapped
+     *              host. {@link MacVlan#UNDEFINED} should be treated as if
+     *              the mapped host is not specified.
+     * @param vlan  VLAN ID of the mapped host.
+     * @return  Path to the virtual network mapping.
+     */
+    VNodePath getPath(long mac, short vlan);
+
+    /**
      * Determine whether this node is enabled or not.
      *
      * @return  {@code true} is returned only if this node is enabled.
@@ -46,9 +57,13 @@ public interface VirtualMapNode extends Serializable {
      * Return a {@link VNodeRoute} instance which represents the ingress
      * virtual node.
      *
+     * @param mac   A long value which represents the MAC address of the mapped
+     *              host. {@link MacVlan#UNDEFINED} should be treated as if
+     *              the mapped host is not specified.
+     * @param vlan  VLAN ID of the mapped host.
      * @return  A {@link VNodeRoute} instance.
      */
-    VNodeRoute getIngressRoute();
+    VNodeRoute getIngressRoute(long mac, short vlan);
 
     /**
      * Install a flow entry which drops every incoming packet.

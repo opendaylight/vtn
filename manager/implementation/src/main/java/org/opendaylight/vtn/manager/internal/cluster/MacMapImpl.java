@@ -81,7 +81,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 7427407992720900842L;
+    private static final long serialVersionUID = 2918828473485462927L;
 
     /**
      * Logger instance.
@@ -1470,6 +1470,24 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
     }
 
     /**
+     * Return path to the virtual mapping which maps the given host.
+     *
+     * @param mac   A long value which represents the MAC address of the mapped
+     *              host. {@link MacVlan#UNDEFINED} should be treated as if
+     *              the mapped host is not specified.
+     * @param vlan  VLAN ID of the mapped host.
+     * @return  Path to the given layer 2 host mapped by this MAC mapping.
+     */
+    @Override
+    public MacMapPath getPath(long mac, short vlan) {
+        MacMapPath path = mapPath;
+        if (mac != MacVlan.UNDEFINED) {
+            path = new MacMappedHostPath(path, new MacVlan(mac, vlan));
+        }
+        return path;
+    }
+
+    /**
      * Determine whether this MAC mapping is administravely enabled or not.
      *
      * @return {@code true} is always returned because the MAC mapping can not
@@ -1484,11 +1502,16 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      * Return a {@link VNodeRoute} instance which indicates the packet was
      * mapped by the MAC mapping.
      *
+     * @param mac   A long value which represents the MAC address of the mapped
+     *              host. {@link MacVlan#UNDEFINED} should be treated as if
+     *              the mapped host is not specified.
+     * @param vlan  VLAN ID of the mapped host.
      * @return  A {@link VNodeRoute} instance.
      */
     @Override
-    public VNodeRoute getIngressRoute() {
-        return new VNodeRoute(mapPath, VirtualRouteReason.MACMAPPED);
+    public VNodeRoute getIngressRoute(long mac, short vlan) {
+        return new VNodeRoute(getPath(mac, vlan),
+                              VirtualRouteReason.MACMAPPED);
     }
 
     /**

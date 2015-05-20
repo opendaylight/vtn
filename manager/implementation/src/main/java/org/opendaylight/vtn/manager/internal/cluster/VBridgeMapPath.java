@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.internal.cluster;
 
 import org.opendaylight.vtn.manager.VBridgePath;
 
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
+
 /**
  * {@code VBridgeMapPath} class describes the location of the virtual mapping
  * configured to the vBridge.
@@ -19,7 +21,7 @@ public abstract class VBridgeMapPath extends VBridgePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3196286445070810527L;
+    private static final long serialVersionUID = -4610294464507994162L;
 
     /**
      * Construct a path to the virtual mapping to the vBridge.
@@ -40,4 +42,12 @@ public abstract class VBridgeMapPath extends VBridgePath {
     public final VBridgePath getBridgePath() {
         return new VBridgePath(getTenantName(), getBridgeName());
     }
+
+    /**
+     * Return a {@link BridgeMapInfo} instance which represents the virtual
+     * network mapping information.
+     *
+     * @return  A {@link BridgeMapInfo} instance.
+     */
+    public abstract BridgeMapInfo getBridgeMapInfo();
 }

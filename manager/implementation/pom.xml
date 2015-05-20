@@ -141,6 +141,10 @@
       <groupId>org.opendaylight.yangtools.model</groupId>
       <artifactId>opendaylight-l2-types</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.opendaylight.yangtools.model</groupId>
+      <artifactId>yang-ext</artifactId>
+    </dependency>
 
     <!-- OpenDaylight AD-SAL -->
     <dependency>

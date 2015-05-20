@@ -38,13 +38,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
  */
 public class FlowMatchUtilsTest extends TestBase {
     /**
-     * Test case for the following methods.
-     *
-     * <ul>
-     *   <li>{@link FlowMatchUtils#getSourceHost(Match)}</li>
-     *   <li>{@link FlowMatchUtils#getSourceMacAddress(Match)}</li>
-     *   <li>{@link FlowMatchUtils#getVlanId(Match)}</li>
-     * </ul>
+     * Test case for {@link FlowMatchUtils#getSourceHost(Match)}.
      */
     @Test
     public void testSourceHost() {
@@ -52,8 +46,6 @@ public class FlowMatchUtilsTest extends TestBase {
         MatchBuilder mb = new MatchBuilder();
         Match match = mb.build();
         assertEquals(null, FlowMatchUtils.getSourceHost(match));
-        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(null, FlowMatchUtils.getVlanId(match));
 
         // Only destination address is specified.
         MacAddress dst = new EtherAddress(0x12345678L).getMacAddress();
@@ -63,43 +55,42 @@ public class FlowMatchUtilsTest extends TestBase {
             setEthernetDestination(edst);
         match = mb.setEthernetMatch(emb.build()).build();
         assertEquals(null, FlowMatchUtils.getSourceHost(match));
-        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(null, FlowMatchUtils.getVlanId(match));
 
         // Set the ingress port.
         SalPort port = new SalPort(1L, 10L);
         match = mb.setInPort(port.getNodeConnectorId()).build();
         assertEquals(null, FlowMatchUtils.getSourceHost(match));
-        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(null, FlowMatchUtils.getVlanId(match));
 
-        // Source address is specified.
+        // Source address with mask is specified.
         EtherAddress eaddr = new EtherAddress(0xaabbccddeeL);
         MacAddress src = eaddr.getMacAddress();
+        MacAddress mask = new MacAddress("ff:ff:ff:ff:00:00");
         EthernetSource esrc = new EthernetSourceBuilder().
-            setAddress(src).build();
+            setAddress(src).setMask(mask).build();
         emb.setEthernetSource(esrc);
         match = mb.setEthernetMatch(emb.build()).build();
         assertEquals(null, FlowMatchUtils.getSourceHost(match));
-        assertEquals(src, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(null, FlowMatchUtils.getVlanId(match));
 
         // Set an empty VLAN match.
         VlanMatchBuilder vmb = new VlanMatchBuilder();
         match = mb.setVlanMatch(vmb.build()).build();
         assertEquals(null, FlowMatchUtils.getSourceHost(match));
-        assertEquals(src, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(null, FlowMatchUtils.getVlanId(match));
 
         // Specify untagged frame.
         VlanId vid = new VlanId(0);
-        L2Host host = new L2Host(eaddr.getAddress(), (short)0,
-                                 port.getAdNodeConnector());
+        L2Host host = new L2Host((MacAddress)null, 0, port);
         VlanIdBuilder vib = new VlanIdBuilder().setVlanIdPresent(false);
         match = mb.setVlanMatch(vmb.setVlanId(vib.build()).build()).build();
         assertEquals(host, FlowMatchUtils.getSourceHost(match));
-        assertEquals(src, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(vid, FlowMatchUtils.getVlanId(match));
+
+        // Clear MAC address mask.
+        esrc = new EthernetSourceBuilder().
+            setAddress(src).build();
+        emb.setEthernetSource(esrc);
+        host = new L2Host(eaddr.getAddress(), (short)0,
+                          port.getAdNodeConnector());
+        match = mb.setEthernetMatch(emb.build()).build();
+        assertEquals(host, FlowMatchUtils.getSourceHost(match));
 
         // Specify VLAN ID 4095.
         vid = new VlanId(4095);
@@ -108,8 +99,6 @@ public class FlowMatchUtilsTest extends TestBase {
         vib.setVlanIdPresent(true).setVlanId(vid);
         match = mb.setVlanMatch(vmb.setVlanId(vib.build()).build()).build();
         assertEquals(host, FlowMatchUtils.getSourceHost(match));
-        assertEquals(src, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(vid, FlowMatchUtils.getVlanId(match));
 
         // Clear source address.
         host = new L2Host((MacAddress)null, 4095, port);
@@ -117,16 +106,116 @@ public class FlowMatchUtilsTest extends TestBase {
         emb.setEthernetSource(esrc);
         match = mb.setEthernetMatch(emb.build()).build();
         assertEquals(host, FlowMatchUtils.getSourceHost(match));
-        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
-        assertEquals(vid, FlowMatchUtils.getVlanId(match));
 
         // Set the source MAC address again, and clear VLAN match.
         esrc = new EthernetSourceBuilder().setAddress(src).build();
         emb.setEthernetSource(esrc);
         match = mb.setEthernetMatch(emb.build()).setVlanMatch(null).build();
         assertEquals(null, FlowMatchUtils.getSourceHost(match));
+    }
+
+    /**
+     * Test case for {@link FlowMatchUtils#getSourceMacAddress(Match)}.
+     */
+    @Test
+    public void testGetSourceMacAddress() {
+        // No Ethernet match.
+        MatchBuilder mb = new MatchBuilder();
+        Match match = mb.build();
+        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
+
+        // Only destination address is specified.
+        MacAddress dst = new EtherAddress(0x777777777L).getMacAddress();
+        EthernetDestination edst = new EthernetDestinationBuilder().
+            setAddress(dst).build();
+        EthernetMatchBuilder emb = new EthernetMatchBuilder().
+            setEthernetDestination(edst);
+        match = mb.setEthernetMatch(emb.build()).build();
+        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
+
+        // Source address with mask is specified.
+        MacAddress src = new EtherAddress(0xdeadbeef1234L).getMacAddress();
+        MacAddress mask = new MacAddress("ff:ff:ff:ff:ff:ff");
+        EthernetSource esrc = new EthernetSourceBuilder().
+            setAddress(src).setMask(mask).build();
+        emb.setEthernetSource(esrc);
+        match = mb.setEthernetMatch(emb.build()).build();
+        assertEquals(null, FlowMatchUtils.getSourceMacAddress(match));
+
+        // Clear MAC address mask.
+        esrc = new EthernetSourceBuilder().
+            setAddress(src).build();
+        emb.setEthernetSource(esrc);
+        match = mb.setEthernetMatch(emb.build()).build();
         assertEquals(src, FlowMatchUtils.getSourceMacAddress(match));
+    }
+
+    /**
+     * Test case for {@link FlowMatchUtils#getDestinationMacAddress(Match)}.
+     */
+    @Test
+    public void testGetDestinationMacAddress() {
+        // No Ethernet match.
+        MatchBuilder mb = new MatchBuilder();
+        Match match = mb.build();
+        assertEquals(null, FlowMatchUtils.getDestinationMacAddress(match));
+
+        // Only source address is specified.
+        MacAddress src = new EtherAddress(0x3141592L).getMacAddress();
+        EthernetSource esrc = new EthernetSourceBuilder().
+            setAddress(src).build();
+        EthernetMatchBuilder emb = new EthernetMatchBuilder().
+            setEthernetSource(esrc);
+        match = mb.setEthernetMatch(emb.build()).build();
+        assertEquals(null, FlowMatchUtils.getDestinationMacAddress(match));
+
+        // Destination address with mask is specified.
+        MacAddress dst = new EtherAddress(0x112233445566L).getMacAddress();
+        MacAddress mask = new MacAddress("ff:ff:ff:ff:ff:f0");
+        EthernetDestination edst = new EthernetDestinationBuilder().
+            setAddress(dst).setMask(mask).build();
+        emb.setEthernetDestination(edst);
+        match = mb.setEthernetMatch(emb.build()).build();
+        assertEquals(null, FlowMatchUtils.getDestinationMacAddress(match));
+
+        // Clear MAC address mask.
+        edst = new EthernetDestinationBuilder().
+            setAddress(dst).build();
+        emb.setEthernetDestination(edst);
+        match = mb.setEthernetMatch(emb.build()).build();
+        assertEquals(dst, FlowMatchUtils.getDestinationMacAddress(match));
+    }
+
+    /**
+     * Test case for {@link FlowMatchUtils#getVlanId(Match)}.
+     */
+    @Test
+    public void testGetVlanId() {
+        // No VLAN match.
+        MatchBuilder mb = new MatchBuilder();
+        Match match = mb.build();
         assertEquals(null, FlowMatchUtils.getVlanId(match));
+
+        // Empty VLAN match.
+        VlanMatchBuilder vmb = new VlanMatchBuilder();
+        match = mb.setVlanMatch(vmb.build()).build();
+        assertEquals(null, FlowMatchUtils.getVlanId(match));
+
+        // Specify untagged frame.
+        VlanId vid = new VlanId(0);
+        VlanIdBuilder vib = new VlanIdBuilder().setVlanIdPresent(false);
+        match = mb.setVlanMatch(vmb.setVlanId(vib.build()).build()).build();
+        assertEquals(vid, FlowMatchUtils.getVlanId(match));
+
+        // Set VLAN ID.
+        int[] vids = {1, 3, 100, 500, 3000, 4094, 4095};
+        for (int vlan: vids) {
+            vid = new VlanId(vlan);
+            vib.setVlanIdPresent(true).setVlanId(vid);
+            match = mb.setVlanMatch(vmb.setVlanId(vib.build()).build()).
+                build();
+            assertEquals(vid, FlowMatchUtils.getVlanId(match));
+        }
     }
 
     /**

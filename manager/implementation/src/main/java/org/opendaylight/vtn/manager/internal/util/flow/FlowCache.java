@@ -22,7 +22,6 @@ import org.opendaylight.vtn.manager.VNodePath;
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.L2Host;
-import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
 import org.opendaylight.vtn.manager.internal.cluster.ObjectPair;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
@@ -42,7 +41,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalIngressPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.physical.route.info.PhysicalIngressPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePath;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.virtual.route.info.VirtualNodePathBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRoute;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.common.VirtualRouteBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressNodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPort;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataEgressPortBuilder;
@@ -52,6 +53,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataIngressPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.PhysicalRoute;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.PhysicalRouteBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.SourceHostFlowsKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlowKey;
@@ -61,6 +63,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPort
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
+
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 
 /**
  * {@code FlowCache} describes a set of cached attributes for a data flow.
@@ -281,10 +285,14 @@ public final class FlowCache implements VTNDataFlow {
             if (src == null) {
                 dst = null;
             } else {
-                MacVlan mv = src.getHost();
+                // Ingress flow entry should never be null because the source
+                // host is specified by the ingress flow match.
+                VtnFlowEntry ingress = getIngressFlow();
+                MacAddress dmac = FlowMatchUtils.getDestinationMacAddress(
+                    ingress.getMatch());
                 List<Action> actions = getEgressActions();
                 dst = FlowActionUtils.getDestinationHost(
-                    actions, mv.getMdMacAddress(), (int)mv.getVlan());
+                    actions, dmac, (int)src.getHost().getVlan());
             }
             edges = new ObjectPair<>(src, dst);
             edgeHosts = edges;
@@ -469,11 +477,36 @@ public final class FlowCache implements VTNDataFlow {
             List<DataFlowAction> dfacts = FlowActionUtils.
                 toDataFlowActions(actions, comparator, ipproto);
             builder.setDataFlowMatch(vmatch.toDataFlowMatchBuilder().build()).
+                setVirtualRoute(getPublicVirtualRoute(vroutes)).
                 setDataFlowAction(dfacts).
                 setPhysicalRoute(getPhysicalRoute(inv));
         }
 
         return builder;
+    }
+
+    /**
+     * Eliminate internal information from the given {@link VirtualRoute} list.
+     *
+     * @param vroutes  A list of {@link VirtualRoute} instances.
+     * @return  A list of {@link VirtualRoute} instances to be exported.
+     */
+    private List<VirtualRoute> getPublicVirtualRoute(
+        List<VirtualRoute> vroutes) {
+        List<VirtualRoute> ret = new ArrayList<VirtualRoute>(vroutes.size());
+        for (VirtualRoute vr: vroutes) {
+            VirtualRouteBuilder builder = new VirtualRouteBuilder(vr);
+            VirtualNodePath path = vr.getVirtualNodePath();
+            if (path != null) {
+                VirtualNodePath newPath = new VirtualNodePathBuilder(path).
+                    removeAugmentation(BridgeMapInfo.class).
+                    build();
+                builder.setVirtualNodePath(newPath);
+            }
+            ret.add(builder.build());
+        }
+
+        return ret;
     }
 
     /**

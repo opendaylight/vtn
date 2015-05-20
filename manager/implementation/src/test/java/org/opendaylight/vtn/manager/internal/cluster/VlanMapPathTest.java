@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,6 +20,8 @@ import org.opendaylight.vtn.manager.VTenantPath;
 import org.opendaylight.vtn.manager.VTerminalPath;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.BridgeMapInfo;
 
 /**
  * JUnit test for {@link VlanMapPath}.
@@ -42,6 +44,22 @@ public class VlanMapPathTest extends TestBase {
                     assertEquals("VlanMap", path.getNodeType());
                 }
             }
+        }
+    }
+
+    /**
+     * Test case for {@link VlanMapPath#getBridgeMapInfo()}.
+     */
+    @Test
+    public void testGetBridgeMapInfo() {
+        String tname = "vtn";
+        String bname = "vbr";
+        VBridgePath bpath = new VBridgePath(tname, bname);
+        for (String mapId: createStrings("mapId", false)) {
+            VlanMapPath path = new VlanMapPath(bpath, mapId);
+            BridgeMapInfo minfo = path.getBridgeMapInfo();
+            assertEquals(mapId, minfo.getVlanMapId());
+            assertEquals(null, minfo.getMacMappedHost());
         }
     }
 

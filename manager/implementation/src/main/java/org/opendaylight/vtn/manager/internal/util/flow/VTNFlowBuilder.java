@@ -36,7 +36,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.ten
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlowKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.FlowMapList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntryBuilder;
 
@@ -326,14 +325,9 @@ public final class VTNFlowBuilder implements VTNDataFlow {
             }
 
             // Configure VTN data flow.
-            Set<FlowMapList> maps = new HashSet<>();
             flowBuilder.setFlowId(fid).
-                setVirtualRoute(FlowUtils.
-                                toVirtualRouteList(virtualRoute, maps)).
+                setVirtualRoute(FlowUtils.toVirtualRouteList(virtualRoute)).
                 setVtnFlowEntry(entries);
-            if (!maps.isEmpty()) {
-                flowBuilder.setFlowMapList(new ArrayList<FlowMapList>(maps));
-            }
         }
 
         // Update the creation time.
