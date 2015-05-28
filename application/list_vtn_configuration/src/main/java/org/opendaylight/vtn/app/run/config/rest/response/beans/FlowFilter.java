@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -60,7 +60,7 @@ public class FlowFilter implements Cloneable, Serializable {
     /**
      * getIndex - function to get the index values for this object.
      *
-     * @return {@link int}
+     * @return The index for the flow filter.
      */
     public int getIndex() {
         return index;

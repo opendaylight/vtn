@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -92,7 +92,7 @@ public class VTNConfiguration {
     /**
      * getVtn - function to get the vtn for this object.
      *
-     * @return {@link vtn }
+     * @return A list of VTNs.
      */
     public List<VTNConfigurationBean> getVtn() {
         return vtn;
@@ -110,7 +110,7 @@ public class VTNConfiguration {
     /**
      * getPathmap - function to get the pathmap for this object.
      *
-     * @return {@link pathmap }
+     * @return pathmap
      */
     public ContainerPathMapNorthBoundList getPathmap() {
         return pathmap;

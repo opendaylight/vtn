@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -51,7 +51,10 @@ public class VTenantNorthBound {
 
     /**
      * Parameterized Constructor.
-     *  @param vtnName,vtnDesc,idleTimeout
+     * @param vtnName
+     * @param vtnDesc
+     * @param idleTimeout
+     * @param hardTimeout
      */
     public VTenantNorthBound(String vtnName, String vtnDesc, int idleTimeout,
             int hardTimeout) {
@@ -100,7 +103,7 @@ public class VTenantNorthBound {
     /**
      * getIdleTimeout - function to get the idleTimeout for this object.
      *
-     * @return {@link int }
+     * @return The idle timeout value.
      */
     public int getIdleTimeout() {
         return idleTimeout;
@@ -118,7 +121,7 @@ public class VTenantNorthBound {
     /**
      * getHardTimeout - function to get the hardTimeout for this object.
      *
-     * @return {@link int }
+     * @return The hard timeout value.
      */
     public int getHardTimeout() {
         return hardTimeout;

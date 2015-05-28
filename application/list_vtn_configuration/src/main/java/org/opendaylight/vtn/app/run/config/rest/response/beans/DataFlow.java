@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -105,7 +105,7 @@ public class DataFlow {
     /**
      * getId - function to get the id.
      *
-     * @return {@link int}
+     * @return The identifier of the data flow.
      */
     public long getId() {
         return id;
@@ -123,7 +123,7 @@ public class DataFlow {
     /**
      * getCreationTime - function to get the creationTime.
      *
-     * @return {@link int}
+     * @return The system time when the data flow was created.
      */
     public long getCreationTime() {
         return creationTime;
@@ -141,7 +141,7 @@ public class DataFlow {
     /**
      * getIdleTimeout - function to get the idleTimeout.
      *
-     * @return {@link int}
+     * @return The idle timeout value.
      */
     public int getIdleTimeout() {
         return idleTimeout;
@@ -159,7 +159,7 @@ public class DataFlow {
     /**
      * getHardTimeout - function to get the hardTimeout.
      *
-     * @return {@link int}
+     * @return The hard timeout value.
      */
     public int getHardTimeout() {
         return hardTimeout;
@@ -177,7 +177,7 @@ public class DataFlow {
     /**
      * getInNode - function to get the inNode.
      *
-     * @return {@link int}
+     * @return {@link IngressNode}
      */
     public IngressNode getInNode() {
         return inNode;
@@ -249,7 +249,7 @@ public class DataFlow {
     /**
      * getId - function to get the id.
      *
-     * @return {@link int}
+     * @return {@link Match}
      */
     public Match getMatchobj() {
         return matchobj;

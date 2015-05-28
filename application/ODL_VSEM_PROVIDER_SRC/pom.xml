@@ -21,16 +21,20 @@
     <tag>HEAD</tag>
   </scm>
 
-    <groupId>org.opendaylight.vtn</groupId>
-    <artifactId>application.vtnmanager-vsemprovider</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+  <parent>
+    <groupId>org.opendaylight.vtn.application</groupId>
+    <artifactId>dist</artifactId>
+    <version>1.0.1-SNAPSHOT</version>
+    <relativePath>..</relativePath>
+  </parent>
 
+  <artifactId>application.vtnmanager-vsemprovider</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
 
   <properties>
     <!-- Version of VTN VSEMProvider. -->
     <vtn.VSEMProvider.version>1.0.0</vtn.VSEMProvider.version>
-
 
     <!-- The number of GNU make jobs -->
     <vtn.build.jobs>1</vtn.build.jobs>
@@ -54,13 +58,13 @@
   <build>
     <defaultGoal>package</defaultGoal>
     <plugins>
-    <plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <version>1.1</version>
-    <executions>
-     <execution>
-         <id>exe</id>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${execplugin.version}</version>
+        <executions>
+          <execution>
+            <id>exe</id>
             <phase>compile</phase>
             <goals>
               <goal>exec</goal>
@@ -68,11 +72,11 @@
             <configuration>
               <executable>make</executable>
             </configuration>
-      </execution>
+          </execution>
 
-    <!-- Clean up build environment. -->
-    <execution>
-         <id>clean</id>
+          <!-- Clean up build environment. -->
+          <execution>
+            <id>clean</id>
             <phase>pre-clean</phase>
             <goals>
               <goal>exec</goal>
@@ -83,9 +87,9 @@
                 <argument>clean</argument>
               </arguments>
             </configuration>
-     </execution>
-     </executions>
-     </plugin>
-     </plugins>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 </project>

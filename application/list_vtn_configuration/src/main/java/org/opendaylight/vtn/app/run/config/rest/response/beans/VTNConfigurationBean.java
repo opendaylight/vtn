@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -178,7 +178,7 @@ public class VTNConfigurationBean {
     /**
      * getPath - function to get the IdleTimeout .
      *
-     * @return {@link int }
+     * @return The idle timeout value.
      */
     public int getIdleTimeout() {
         return idleTimeout;
@@ -196,7 +196,7 @@ public class VTNConfigurationBean {
     /**
      * getHardTimeout - function to get the hardTimeout .
      *
-     * @return {@link int }
+     * @return The hard timeout value.
      */
     public int getHardTimeout() {
         return hardTimeout;

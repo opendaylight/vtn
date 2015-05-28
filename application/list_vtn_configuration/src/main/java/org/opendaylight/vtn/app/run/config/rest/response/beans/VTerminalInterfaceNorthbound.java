@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -76,7 +76,7 @@ public class VTerminalInterfaceNorthbound {
     /**
      * getState - function to get the state for this object.
      *
-     * @return {@link int}
+     * @return The state of the interface.
      */
     public int getState() {
         return state;
@@ -94,7 +94,7 @@ public class VTerminalInterfaceNorthbound {
     /**
      * getEntityState - function to get the entity state for this object.
      *
-     * @return {@link int}
+     * @return The entity state.
      */
     public int getEntityState() {
         return entityState;
@@ -130,7 +130,7 @@ public class VTerminalInterfaceNorthbound {
     /**
      * getEnabled - function to get the enabled state for this object.
      *
-     * @return {@link boolean}
+     * @return A boolean value which indicates the enabled state.
      */
     public boolean getEnabled() {
         return enabled;

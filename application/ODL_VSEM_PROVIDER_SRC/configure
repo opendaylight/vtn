@@ -1,4 +1,3 @@
-
 #!/bin/bash
 
 #
@@ -48,7 +47,8 @@ check_mono_version () {
     exit 1
   fi
 
-  if [[ $minor_version -lt $MONO_VERSION_COMPAT_MINOR ]]; then
+  if [[ $major_version -eq $MONO_VERSION_COMPAT_MAJOR && \
+        $minor_version -lt $MONO_VERSION_COMPAT_MINOR ]]; then
     echo "Minor Version Mismatch"
     echo "expected:$MONO_VERSION_COMPAT_MINOR"
     echo "installed:$minor_version"

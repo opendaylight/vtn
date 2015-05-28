@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -35,7 +35,7 @@ public class NodeDetails {
     /**
      * getType - function to get the type for this object.
      *
-     * @return {@link type}
+     * @return  The type of the node.
      */
     public String getType() {
         return type;
@@ -53,7 +53,7 @@ public class NodeDetails {
     /**
      * getType - function to get the value of id for this object.
      *
-     * @return {@link int}
+     * @return The identifier of the node.
      */
     public String getId() {
         return id;

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,20 +10,20 @@
 package org.opendaylight.vtn.app.run.config.rest.enumgroups;
 
 /**
- * APPLICATIOM_TYPE - enum which helps to set the content type of the request.
+ * ApplicationType - enum which helps to set the content type of the request.
  *
  */
-public enum APPLICATION_TYPE {
+public enum ApplicationType {
     /**
      * Content type formats either String /json format.
      */
     STRING("application/string"), JSON("application/json");
 
     /**
-     * APPLICATION_TYPE - parameterized constructor.
+     * ApplicationType - parameterized constructor.
      * @param type {@link String}
      */
-    private APPLICATION_TYPE(String type) {
+    private ApplicationType(String type) {
         this.type = type;
     }
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2014 NEC Corporation
+/*
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -55,7 +55,10 @@ public class VTenantPathMapNorthBound {
 
     /**
      * Parameterized Constructor.
-     * @param index, condition, idleTimeout, hardTimeout
+     * @param index
+     * @param condition
+     * @param idleTimeout
+     * @param hardTimeout
      */
     public VTenantPathMapNorthBound(int index, String condition,
             int idleTimeout, int hardTimeout) {
@@ -66,9 +69,9 @@ public class VTenantPathMapNorthBound {
     }
 
     /**
-     * getPolicy - function to get the policy for this object.
+     * getPolicy - function to get the index for this object.
      *
-     * @return {@link int }
+     * @return  The index for this object.
      */
     public int getIndex() {
         return index;
@@ -86,7 +89,7 @@ public class VTenantPathMapNorthBound {
     /**
      * getCondition - function to get the condition for this object.
      *
-     * @return {@link int }
+     * @return  The name of the flow condition.
      */
     public String getCondition() {
         return condition;
@@ -104,7 +107,7 @@ public class VTenantPathMapNorthBound {
     /**
      * getPolicy - function to get the policy for this object.
      *
-     * @return {@link int }
+     * @return  The path policy identifier.
      */
     public int getPolicy() {
         return policy;
@@ -122,7 +125,7 @@ public class VTenantPathMapNorthBound {
     /**
      * getIdleTimeout - function to get the idleTimeout for this object.
      *
-     * @return {@link int }
+     * @return The idle timeout value.
      */
     public int getIdleTimeout() {
         return idleTimeout;
@@ -140,7 +143,7 @@ public class VTenantPathMapNorthBound {
     /**
      * getVtnName - function to get the hardTimeout for this object.
      *
-     * @return {@link int }
+     * @return The hard timeout value.
      */
     public int getHardTimeout() {
         return hardTimeout;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
@@ -92,7 +92,7 @@ public class VBridgeNorthBound {
     /**
      * getFaults - function to get the faults  for this object.
      *
-     * @return {@link int}
+     * @return The number of path faults.
      */
     public int getFaults() {
         return faults;
