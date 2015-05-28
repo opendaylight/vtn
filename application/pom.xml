@@ -89,9 +89,7 @@
 
   <modules>
     <module>list_vtn_configuration</module>
-    <!--
     <module>ODL_VSEM_PROVIDER_SRC</module>
-    -->
   </modules>
 
 </project>
