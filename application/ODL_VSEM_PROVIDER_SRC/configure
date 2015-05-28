@@ -31,13 +31,14 @@ CONFIG_STATUS=$OUTDIR/config.done
 ref_assemblies=( System.Xml.dll System.Web.Extensions.dll System.Management.dll  System.Net.dll System.Core.dll System.dll System.Xml.Linq.dll System.Runtime.dll System.Linq.dll System.Runtime.Serialization.dll System.Security.dll System.Data.dll System.Data.DataSetExtensions.dll )
 
 check_mono_version () {
-  version_available=`mcs --version | awk '{print $5}'`
+  which mcs >/dev/null 2>&1
   if [[ $? -ne 0 ]]; then
     echo "Mono Compiler is not identifiable"
     echo "Please install or check the PATH variable"
     exit 1
   fi
 
+  version_available=`mcs --version | awk '{print $5}'`
   major_version=`echo $version_available | cut -d. -f1`
   minor_version=`echo $version_available | cut -d. -f2`
 
@@ -59,7 +60,7 @@ check_mono_version () {
 }
 
 check_zip_version () {
-  check=`zip --help 2>/dev/null`
+  which zip >/dev/null 2>&1
   if [[ $? -ne 0 ]]; then
     echo "zip does not exist, Please install zip or check PATH varaible"
     exit 1
@@ -68,7 +69,7 @@ check_zip_version () {
 }
 
 check_nuget_command () {
-  check='nuget help'
+  which nuget > /dev/null 2>&1
   if [[ $? -ne 0 ]] ; then
     echo "nuget does not exist, Please install nuget or check PATH varaible"
     echo "This Project needs to fetch some asemblies from https://nuget.org"
