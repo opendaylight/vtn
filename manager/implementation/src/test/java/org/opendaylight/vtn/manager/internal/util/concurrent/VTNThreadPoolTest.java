@@ -22,7 +22,6 @@ import org.opendaylight.vtn.manager.internal.TestBase;
  * JUnit test for {@link VTNThreadPool}
  */
 public class VTNThreadPoolTest extends TestBase {
-
     /**
      * task Thread class used for test.
      * this task wait until a latch is counted down to zero.
@@ -107,23 +106,23 @@ public class VTNThreadPoolTest extends TestBase {
     }
 
     /**
-     * Test method for
-     * {@link VTNThreadPool#VTNThreadPool(String, int, long)}.
+     * Test method for {@link VTNThreadPool#VTNThreadPool(String)}.
      *
      * <p>
-     * This also tests
-     * {@link VTNThreadPool#execute(Runnable)},
-     * {@link VTNThreadPool#executeTask(Runnable)},
-     * {@link VTNThreadPool#shutdown()},
-     * {@link VTNThreadPool#terminate()}.
+     *   This also tests the following methods.
      * </p>
+     * <ul>
+     *   <li>{@link VTNThreadPool#execute(Runnable)}</li>
+     *   <li>{@link VTNThreadPool#executeTask(Runnable)}</li>
+     *   <li>{@link VTNThreadPool#shutdown()}</li>
+     *   <li>{@link VTNThreadPool#terminate()}</li>
+     * </ul>
      */
     @Test
-    public void testVTNThreadPool() {
-
+    public void testSingleThreadPool() {
         // 1 task on 1 worker.
         CountDownLatch latch = new CountDownLatch(1);
-        VTNThreadPool pool = new VTNThreadPool("test", 1, 1000L);
+        VTNThreadPool pool = new VTNThreadPool("test");
         ThreadTask task1 = new ThreadTask(10000L, latch);
         pool.execute(task1);
         assertTrue(task1.await(10L, TimeUnit.SECONDS));
@@ -148,12 +147,29 @@ public class VTNThreadPoolTest extends TestBase {
         assertFalse(task2.await(100L, TimeUnit.MILLISECONDS));
 
         pool.terminate();
+    }
 
+    /**
+     * Test method for
+     * {@link VTNThreadPool#VTNThreadPool(String, int, long)}.
+     *
+     * <p>
+     *   This also tests the following methods.
+     * </p>
+     * <ul>
+     *   <li>{@link VTNThreadPool#execute(Runnable)}</li>
+     *   <li>{@link VTNThreadPool#executeTask(Runnable)}</li>
+     *   <li>{@link VTNThreadPool#shutdown()}</li>
+     *   <li>{@link VTNThreadPool#terminate()}</li>
+     * </ul>
+     */
+    @Test
+    public void testVTNThreadPool() {
         // 2 tasks on 2 workers.
-        pool = new VTNThreadPool("test2", 2, 1000L);
-        latch = new CountDownLatch(2);
-        task1 = new ThreadTask(1000L, latch);
-        task2 = new ThreadTask(1000L, latch);
+        VTNThreadPool pool = new VTNThreadPool("test2", 2, 1000L);
+        CountDownLatch latch = new CountDownLatch(2);
+        ThreadTask task1 = new ThreadTask(1000L, latch);
+        ThreadTask task2 = new ThreadTask(1000L, latch);
 
         assertTrue(pool.executeTask(task1));
         assertFalse(task1.await(500L, TimeUnit.MILLISECONDS));
@@ -202,8 +218,8 @@ public class VTNThreadPoolTest extends TestBase {
 
         // in case one thread throw Exception.
         pool = new VTNThreadPool("test_exception", 1, 10000L);
-        latch1 = new CountDownLatch(1);
-        latch2 = new CountDownLatch(1);
+        CountDownLatch latch1 = new CountDownLatch(1);
+        CountDownLatch latch2 = new CountDownLatch(1);
         ExpThreadTask etask = new ExpThreadTask(1000L, latch1);
         task1 = new ThreadTask(10000L, latch2);
 
@@ -311,7 +327,6 @@ public class VTNThreadPoolTest extends TestBase {
         pool.execute(task2);
 
         assertFalse(pool.join(1L));
-
 
         // in case join is interrupted.
         pool = new VTNThreadPool("test3", 2, 10000L);

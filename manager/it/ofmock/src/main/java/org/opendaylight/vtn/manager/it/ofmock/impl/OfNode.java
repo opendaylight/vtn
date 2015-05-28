@@ -58,6 +58,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.Swit
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.UpdateFlowOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.FlowsStatisticsUpdateBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForAllFlowsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForAllFlowsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForGivenMatchInput;
@@ -68,11 +69,15 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.G
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowsStatisticsFromAllFlowTablesOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetFlowStatisticsFromFlowTableOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapList;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapListBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.GetFlowTablesStatisticsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.GetFlowTablesStatisticsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.table.statistics.rev131215.OpendaylightFlowTableStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.transaction.rev150304.TransactionId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.RemovedReasonFlags;
@@ -122,6 +127,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.
 import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetMeterStatisticsInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.GetMeterStatisticsOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.statistics.rev131111.OpendaylightMeterStatisticsService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.Duration;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.DurationBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.module.config.rev141015.NodeConfigService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.module.config.rev141015.SetConfigInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.module.config.rev141015.SetConfigOutput;
@@ -150,6 +157,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.table.service.rev131026.Upd
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Ipv4Address;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
 
 /**
  * {@code OfNode} describes a mock-up of OpenFlow switch.
@@ -174,26 +183,24 @@ public final class OfNode
     private static final long  NODE_BUFSIZE = 256L;
 
     /**
-     * The number of packets to be notified by a FLOW_REMOVED message.
+     * The number of packets to be set in flow statistics.
      */
-    private static final long  FRM_PACKET_COUNT = 5555555L;
+    private static final long  PACKET_COUNT = 5555555L;
 
     /**
-     * The number of bytes to be notified by a FLOW_REMOVED message.
+     * The number of bytes to be set in flow statistics.
      */
-    private static final long  FRM_BYTE_COUNT = 1234567890L;
+    private static final long  BYTE_COUNT = 1234567890L;
 
     /**
-     * Duration (in seconds) of a flow entry to be notified by a FLOW_REMOVED
-     * message.
+     * Duration (in seconds) of a flow entry to be set in flow statistics.
      */
-    private static final long  FRM_DURATION_SEC = 12345L;
+    private static final long  DURATION_SEC = 12345L;
 
     /**
-     * Duration (in nanoseconds) of a flow entry to be notified by a
-     * FLOW_REMOVED message.
+     * Duration (in nanoseconds) of a flow entry to be set in flow statistics.
      */
-    private static final long  FRM_DURATION_NANOSEC = 666777888L;
+    private static final long  DURATION_NANOSEC = 666777888L;
 
     /**
      * Capabilities of the switch.
@@ -257,6 +264,128 @@ public final class OfNode
         List<Class<? extends FeatureCapability>> cap = new ArrayList<>();
         cap.add(FlowFeatureCapabilityFlowStats.class);
         CAPABILITIES = Collections.unmodifiableList(cap);
+    }
+
+    /**
+     * A thread that notifies flow statistics.
+     */
+    private final class FlowStatsThread extends Thread
+        implements FlowTableScanner {
+        /**
+         * The transaction ID associated with the flow statistics request.
+         */
+        private final TransactionId  transactionId;
+
+        /**
+         * The condition to select flow entries to be notified.
+         */
+        private final Flow  condition;
+
+        /**
+         * A list of flow statistics.
+         */
+        private final List<FlowAndStatisticsMapList>  flowStats =
+            new ArrayList<>();
+
+        /**
+         * Construct a new instance.
+         *
+         * @param xid
+         * @param cond  The MD-SAL flow entry which specifies the condition to
+         *              select flow entries.
+         */
+        private FlowStatsThread(TransactionId xid, Flow cond) {
+            super("FlowStatsThread: xid=" + xid.getValue());
+            transactionId = xid;
+            condition = cond;
+        }
+
+        /**
+         * Convert the given flow entry into a {@link FlowAndStatisticsMapList}
+         * instance.
+         *
+         * @param ofent  The flow entry to be converted.
+         * @return  A {@link FlowAndStatisticsMapList} instance.
+         */
+        private FlowAndStatisticsMapList toFlowAndStatisticsMapList(
+            OfMockFlowEntry ofent) {
+            Duration duration = new DurationBuilder().
+                setSecond(new Counter32(DURATION_SEC)).
+                setNanosecond(new Counter32(DURATION_NANOSEC)).
+                build();
+
+            return new FlowAndStatisticsMapListBuilder().
+                setPacketCount(new Counter64(BigInteger.valueOf(PACKET_COUNT))).
+                setByteCount(new Counter64(BigInteger.valueOf(BYTE_COUNT))).
+                setDuration(duration).
+                setPriority(Integer.valueOf(ofent.getPriority())).
+                setTableId(Short.valueOf((short)ofent.getTableId())).
+                setCookie(new FlowCookie(ofent.getCookie())).
+                setMatch(ofent.getMatch()).
+                setInstructions(ofent.getInstructions()).
+                setFlags(ofent.getFlowModFlags()).
+                setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
+                setHardTimeout(Integer.valueOf(ofent.getHardTimeout())).
+                build();
+        }
+
+        // Runnable
+
+        /**
+         * Scan the flow table, and notify flow statistics.
+         */
+        @Override
+        public void run() {
+            try {
+                scanFlowTable(condition, this);
+
+                // Publish a flows-statistics-update notification.
+                FlowsStatisticsUpdateBuilder builder =
+                    new FlowsStatisticsUpdateBuilder();
+                builder.setId(new NodeId(nodeIdentifier)).
+                    setMoreReplies(false).
+                    setTransactionId(transactionId).
+                    setFlowAndStatisticsMapList(flowStats);
+
+                ofMockProvider.publish(builder.build());
+            } catch (RuntimeException e) {
+                BigInteger xid = transactionId.getValue();
+                LOG.error("Unexpected exception: xid=" + xid, e);
+            }
+        }
+
+        // FlowTableScanner
+
+        /**
+         * Invoked when a flow entry to be notified has been found.
+         *
+         * @param ofent  The flow entry to be notified.
+         * @return  {@code false}.
+         */
+        @Override
+        public boolean flowEntryFound(OfMockFlowEntry ofent) {
+            Duration duration = new DurationBuilder().
+                setSecond(new Counter32(DURATION_SEC)).
+                setNanosecond(new Counter32(DURATION_NANOSEC)).
+                build();
+
+            FlowAndStatisticsMapList fs = new FlowAndStatisticsMapListBuilder().
+                setPacketCount(new Counter64(BigInteger.valueOf(PACKET_COUNT))).
+                setByteCount(new Counter64(BigInteger.valueOf(BYTE_COUNT))).
+                setDuration(duration).
+                setPriority(Integer.valueOf(ofent.getPriority())).
+                setTableId(Short.valueOf((short)ofent.getTableId())).
+                setCookie(new FlowCookie(ofent.getCookie())).
+                setMatch(ofent.getMatch()).
+                setInstructions(ofent.getInstructions()).
+                setFlags(ofent.getFlowModFlags()).
+                setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
+                setHardTimeout(Integer.valueOf(ofent.getHardTimeout())).
+                build();
+            flowStats.add(fs);
+
+            return false;
+        }
     }
 
     /**
@@ -773,21 +902,24 @@ public final class OfNode
     }
 
     /**
-     * Process a bulk flow remove request.
+     * Scan the flow table.
      *
-     * @param removed  A list to store removed flow entries.
-     * @param input    An input of this RPC.
+     * @param cond     The MD-SAL flow entry which specifies the condition to
+     *                 select flow entries.
+     * @param scanner  A {@link FlowTableScanner} instance.
+     *                 Flow entries that satisfies the condition specified by
+     *                 {@code flow} will be passed to this instance.
      */
-    private synchronized void removeFlows(List<OfMockFlowEntry> removed,
-                                          RemoveFlowInput input) {
-        Short table = input.getTableId();
-        Match match = input.getMatch();
-        BigInteger oport = input.getOutPort();
-        String out = (oport == null)
+    private synchronized void scanFlowTable(Flow cond,
+                                            FlowTableScanner scanner) {
+        Short table = cond.getTableId();
+        Match match = cond.getMatch();
+        BigInteger oport = cond.getOutPort();
+        String outPort = (oport == null)
             ? null
             : OfMockUtils.getPortIdentifier(nodeIdentifier, oport);
-        FlowCookie cookie = input.getCookie();
-        FlowCookie cookieMask = input.getCookieMask();
+        FlowCookie cookie = cond.getCookie();
+        FlowCookie cookieMask = cond.getCookieMask();
 
         for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
              it.hasNext();) {
@@ -800,8 +932,8 @@ public final class OfNode
                 continue;
             }
 
-            if (out != null &&
-                !OfMockUtils.hasOutput(ofent.getInstructions(), out)) {
+            if (outPort != null &&
+                !OfMockUtils.hasOutput(ofent.getInstructions(), outPort)) {
                 continue;
             }
 
@@ -809,13 +941,29 @@ public final class OfNode
                 continue;
             }
 
-            it.remove();
-            removed.add(ofent);
+            if (scanner.flowEntryFound(ofent)) {
+                it.remove();
+            }
         }
+    }
 
+    /**
+     * Process a bulk flow remove request.
+     *
+     * @param input  An input of this RPC.
+     * @return  A list of flow entries removed from the flow table.
+     */
+    private synchronized List<OfMockFlowEntry> removeFlows(
+        RemoveFlowInput input) {
+        FlowEntryRemover remover = new FlowEntryRemover();
+        scanFlowTable(input, remover);
+
+        List<OfMockFlowEntry> removed = remover.getRemovedFlows();
         if (!removed.isEmpty()) {
             notifyAll();
         }
+
+        return removed;
     }
 
     /**
@@ -836,10 +984,10 @@ public final class OfNode
             new org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.mod.removed.MatchBuilder(ofent.getMatch()).build();
 
         SwitchFlowRemovedBuilder builder = new SwitchFlowRemovedBuilder().
-            setPacketCount(BigInteger.valueOf(FRM_PACKET_COUNT)).
-            setByteCount(BigInteger.valueOf(FRM_BYTE_COUNT)).
-            setDurationSec(Long.valueOf(FRM_DURATION_SEC)).
-            setDurationNsec(Long.valueOf(FRM_DURATION_NANOSEC)).
+            setPacketCount(BigInteger.valueOf(PACKET_COUNT)).
+            setByteCount(BigInteger.valueOf(BYTE_COUNT)).
+            setDurationSec(Long.valueOf(DURATION_SEC)).
+            setDurationNsec(Long.valueOf(DURATION_NANOSEC)).
             setPriority(Integer.valueOf(ofent.getPriority())).
             setTableId(Short.valueOf((short)ofent.getTableId())).
             setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
@@ -912,8 +1060,11 @@ public final class OfNode
     @Override
     public Future<RpcResult<RemoveFlowOutput>> removeFlow(
         RemoveFlowInput input) {
-        List<OfMockFlowEntry> removed = new ArrayList<>();
+        List<OfMockFlowEntry> removed;
         if (Boolean.TRUE.equals(input.isStrict())) {
+            removed = new ArrayList<>();
+            FlowCookie cookie = input.getCookie();
+            FlowCookie cookieMask = input.getCookieMask();
             OfMockFlowEntry target;
             try {
                 target = new OfMockFlowEntry(nodeIdentifier, input);
@@ -927,7 +1078,8 @@ public final class OfNode
                 for (Iterator<OfMockFlowEntry> it = flowEntries.iterator();
                      it.hasNext();) {
                     OfMockFlowEntry ofent = it.next();
-                    if (ofent.equals(target)) {
+                    if (ofent.equals(target) &&
+                        checkCookie(ofent.getCookie(), cookie, cookieMask)) {
                         it.remove();
                         removed.add(ofent);
                     }
@@ -938,7 +1090,7 @@ public final class OfNode
                 }
             }
         } else {
-            removeFlows(removed, input);
+            removed = removeFlows(input);
         }
 
         RemovedReasonFlags reason =
@@ -1294,7 +1446,16 @@ public final class OfNode
     @Override
     public Future<RpcResult<GetFlowStatisticsFromFlowTableOutput>> getFlowStatisticsFromFlowTable(
         GetFlowStatisticsFromFlowTableInput input) {
-        return createUnsupported(GetFlowStatisticsFromFlowTableOutput.class);
+        // Start flow statistics read transaction.
+        TransactionId xid = createTransactionId();
+        FlowStatsThread t = new FlowStatsThread(xid, input);
+        t.start();
+
+        // Return the transaction ID only.
+        GetFlowStatisticsFromFlowTableOutputBuilder builder =
+            new GetFlowStatisticsFromFlowTableOutputBuilder();
+        builder.setTransactionId(xid);
+        return createRpcResult(builder.build());
     }
 
     // OpendaylightPortStatisticsService

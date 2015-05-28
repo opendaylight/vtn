@@ -201,7 +201,6 @@ public final class MacMapCleaner
      */
     private boolean checkHost(MacVlan mvlan, NodeConnector port,
                               VNodePath mpath) {
-        short vlan = mvlan.getVlan();
         PortVlan pvlan = new PortVlan(port, mvlan.getVlan());
         MapReference ref = resourceManager.getMapReference(pvlan);
         if (ref != null && ref.getMapType() == MapType.PORT) {

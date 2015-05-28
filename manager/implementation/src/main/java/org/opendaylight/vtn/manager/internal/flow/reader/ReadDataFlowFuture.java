@@ -25,6 +25,8 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.flow.stats.FlowStatsReader;
+import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
@@ -154,18 +156,13 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
          */
         @Override
         public void onSuccess(List<Optional<VtnDataFlow>> result) {
-            List<DataFlowInfo> flows = new ArrayList<>();
+            int size = result.size();
+            List<DataFlowInfo> flows = new ArrayList<>(size);
             int index = 0;
+            FlowStatsReader stReader = getFlowStatsReader(result.size());
             for (Optional<VtnDataFlow> opt: result) {
                 if (opt.isPresent()) {
-                    FlowCache fc = new FlowCache(opt.get());
-                    if (select(fc)) {
-                        DataFlowInfo df = toDataFlowInfo(fc, null);
-                        if (df == null) {
-                            return;
-                        }
-                        flows.add(df);
-                    }
+                    addDataFlowInfo(flows, opt.get(), stReader);
                 } else {
                     // This should never happen.
                     Logger logger = LoggerFactory.
@@ -198,15 +195,17 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
      * @param ctx    A {@link TxContext} instance.
      * @param txq    A {@link TxQueue} instance used to update the MD-SAL
      *               datastore.
+     * @param srs    The flow statistics reader service.
      * @param input  Input of the RPC call.
      * @throws VTNException  An error occurred.
      */
     public ReadDataFlowFuture(TxContext ctx, TxQueue txq,
-                              GetDataFlowInput input) throws VTNException {
-        super(ctx, txq, input);
+                              StatsReaderService srs, GetDataFlowInput input)
+        throws VTNException {
+        super(ctx, txq, srs, input);
 
         // Determine flow index to be used.
-        if (readIndex(input) == null) {
+        if (!isDone() && readIndex(input) == null) {
             // Scan all the data flows present in the VTN.
             ReadTransaction rtx = getTxContext().getTransaction();
             LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
@@ -224,39 +223,66 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
      *          index read operation. {@code null} if no index should be used.
      */
     private IndexCallback<?> readIndex(GetDataFlowInput input) {
-        if (!isDone()) {
-            MacVlan src = getSourceHost();
-            if (src != null) {
-                // Use source host inedx.
-                SourceHostFlowsKey hostId = src.getSourceHostFlowsKey();
-                clearSourceHost();
-                InstanceIdentifier<SourceHostFlows> path =
-                    FlowUtils.getIdentifier(input.getTenantName(), hostId);
-                return new IndexCallback<SourceHostFlows>(path);
-            }
+        MacVlan src = getSourceHost();
+        if (src != null) {
+            // Use source host inedx.
+            SourceHostFlowsKey hostId = src.getSourceHostFlowsKey();
+            clearSourceHost();
+            InstanceIdentifier<SourceHostFlows> path =
+                FlowUtils.getIdentifier(input.getTenantName(), hostId);
+            return new IndexCallback<SourceHostFlows>(path);
+        }
 
-            SalPort sport = getFlowPort();
-            if (sport != null) {
-                // Use switch port index.
-                clearFlowPort();
-                InstanceIdentifier<PortFlows> path =
-                    FlowUtils.getIdentifier(input.getTenantName(),
-                                            sport.getNodeConnectorId());
-                return new IndexCallback<PortFlows>(path);
-            }
+        SalPort sport = getFlowPort();
+        if (sport != null) {
+            // Use switch port index.
+            clearFlowPort();
+            InstanceIdentifier<PortFlows> path = FlowUtils.getIdentifier(
+                input.getTenantName(), sport.getNodeConnectorId());
+            return new IndexCallback<PortFlows>(path);
+        }
 
-            SalNode snode = getFlowNode();
-            if (snode != null) {
-                // Use switch index.
-                clearFlowNode();
-                InstanceIdentifier<NodeFlows> path =
-                    FlowUtils.getIdentifier(input.getTenantName(),
-                                            snode.getNodeId());
-                return new IndexCallback<NodeFlows>(path);
-            }
+        SalNode snode = getFlowNode();
+        if (snode != null) {
+            // Use switch index.
+            clearFlowNode();
+            InstanceIdentifier<NodeFlows> path = FlowUtils.getIdentifier(
+                input.getTenantName(), snode.getNodeId());
+            return new IndexCallback<NodeFlows>(path);
         }
 
         return null;
+    }
+
+    /**
+     * Return a flow statistics reader.
+     *
+     * @param count  The estimated number of flow entries present in switches.
+     * @return  A {@link FlowStatsReader} service.
+     */
+    private FlowStatsReader getFlowStatsReader(int count) {
+        StatsReaderService srs = getStatsReaderService();
+        return FlowStatsReader.getInstance(srs, count);
+    }
+
+    /**
+     * Convert the given VTN data flow into a {@link DataFlowInfo} instance,
+     * and add it to the given list.
+     *
+     * @param list      A list to store converted instances.
+     * @param vdf       A {@link VtnDataFlow} instance.
+     * @param stReader  A {@link FlowStatsReader} instance used to update
+     *                  flow statistics.
+     */
+    private void addDataFlowInfo(List<DataFlowInfo> list, VtnDataFlow vdf,
+                                 FlowStatsReader stReader) {
+        FlowCache fc = new FlowCache(vdf);
+        if (select(fc)) {
+            DataFlowInfo df = toDataFlowInfo(fc, stReader.get(fc));
+            if (df != null) {
+                list.add(df);
+            }
+        }
     }
 
     // FutureCallback
@@ -273,16 +299,11 @@ public final class ReadDataFlowFuture extends ReadFlowFuture
             // Select data flows which meet the condition.
             List<VtnDataFlow> flows = result.get().getVtnDataFlow();
             if (flows != null) {
-                List<DataFlowInfo> list = new ArrayList<>();
+                int size = flows.size();
+                FlowStatsReader stReader = getFlowStatsReader(size);
+                List<DataFlowInfo> list = new ArrayList<>(size);
                 for (VtnDataFlow vdf: flows) {
-                    FlowCache fc = new FlowCache(vdf);
-                    if (select(fc)) {
-                        DataFlowInfo df = toDataFlowInfo(fc, null);
-                        if (df == null) {
-                            return;
-                        }
-                        list.add(df);
-                    }
+                    addDataFlowInfo(list, vdf, stReader);
                 }
                 set(list);
                 return;
