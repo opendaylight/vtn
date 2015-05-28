@@ -145,13 +145,15 @@ public:
 
   // Copy from Key Value Structure to FlowFilter Structure
   virtual void copy(flowfilter* out, key &key_in, value &value_in)=0;
+  virtual void copy(flowfilter* out, key &key_in,
+                           value &value_old_in, value &value_new_in)=0;
 
   // Copy from FlowFilter List and send to platform
   virtual UncRespCode r_copy(flowfilterlist* in,
-                             std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) =0;
+               std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) =0;
 
 
-  // Method to CREATE/UPDATE/DELETE
+  // Method to CREATE/DELETE
   UncRespCode run_command(key& key_in,
                           value& val_in,
                           unc::driver::controller *ctr,
@@ -159,6 +161,7 @@ public:
     ODC_FUNC_TRACE;
     flowfilter command_;
     //Copy Contents from key and val
+    pfc_log_error("CREATE FLOWFILTER ENTRY ENTERED!!");
     copy(&command_,key_in,val_in);
 
     std::string url = "";
@@ -167,7 +170,32 @@ public:
     url.append(VTNS);
     url.append("/");
     url.append(get_url_tail(key_in,val_in));
+    odl_flowfilter_http_request flow_filter_request(&command_,
+        url,NULL);
+    odl_http_request odl_fc_create;
+    return odl_fc_create.handle_request(ctr,
+                                        Op,
+                                        &flow_filter_request,
+                                        conf_values_);
+  }
+  // Method to UPDATE
+  UncRespCode run_command(key& key_in,
+                          value& val_old_in,
+                          value& val_new_in,
+                          unc::driver::controller *ctr,
+                          unc::odcdriver::OdcDriverOps Op) {
+    ODC_FUNC_TRACE;
+    flowfilter command_;
+    //Copy Contents from key and val
+    copy(&command_,key_in,val_old_in, val_new_in);
 
+    std::string url = "";
+    url.append(BASE_URL);
+    url.append(CONTAINER_NAME);
+    url.append(VTNS);
+    url.append("/");
+    //url.append(get_url_tail(key_in,val_old_in));
+    url.append(get_url_tail(key_in,val_new_in));
     odl_flowfilter_http_request flow_filter_request(&command_,
         url,NULL);
 
@@ -177,10 +205,9 @@ public:
                                         &flow_filter_request,
                                         conf_values_);
   }
-
   //Method to read all for AUDIT
   UncRespCode odl_flow_filter_read_all( unc::driver::controller *ctr,
-                                        std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
+                       std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector,
                                         std::string url) {
     ODC_FUNC_TRACE;
     flowfilterlist read_all_;

@@ -43,7 +43,8 @@ public:
   }
 
   UncRespCode
-  update_cmd(key_vbr_flowfilter& key, val_flowfilter& val,
+  update_cmd(key_vbr_flowfilter& key, val_flowfilter& val_old,
+             val_flowfilter& val_new,
              unc::driver::controller *ctr) {
     return UNC_RC_SUCCESS;
   }
@@ -124,6 +125,12 @@ public:
     // Do Nothing as No Request Body is REquired
   }
 
+  void copy(flowfilter *out, key_vbr_flowfilter &key_in,
+            val_flowfilter &value_old_in,
+             val_flowfilter &value_new_in) {
+    // Do Nothing as No Request Body is REquired
+  }
+
   UncRespCode r_copy(flowfilterlist* in,
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
 
@@ -153,8 +160,9 @@ public:
 
     //Add to Cache
     unc::vtndrvcache::ConfigNode *filter_cfgptr =
-      new unc::vtndrvcache::CacheElementUtil<key_vbr_flowfilter, val_flowfilter, uint32_t>
-    (&key_filter,&val_filter,uint32_t(UNC_OP_READ));
+      new unc::vtndrvcache::CacheElementUtil<key_vbr_flowfilter,
+                    val_flowfilter, val_flowfilter, uint32_t>
+    (&key_filter, &val_filter, &val_filter, uint32_t(UNC_OP_READ));
 
     cfgnode_vector.push_back(filter_cfgptr);
 
@@ -255,8 +263,9 @@ public:
         action_iter++;
       }
       unc::vtndrvcache::ConfigNode *entry_cfgptr=
-        new unc::vtndrvcache::CacheElementUtil<key_vbr_flowfilter_entry, val_flowfilter_entry, uint32_t>
-      (&key_entry,&val_entry,uint32_t(UNC_OP_READ));
+        new unc::vtndrvcache::CacheElementUtil<key_vbr_flowfilter_entry,
+                   val_flowfilter_entry,val_flowfilter_entry, uint32_t>
+      (&key_entry, &val_entry, &val_entry, uint32_t(UNC_OP_READ));
       cfgnode_vector.push_back(entry_cfgptr);
       entry_iter++;
     }
@@ -299,7 +308,8 @@ public:
   }
 
   UncRespCode
-  update_cmd(key_vbr_flowfilter_entry& key, val_flowfilter_entry& val,
+  update_cmd(key_vbr_flowfilter_entry& key, val_flowfilter_entry& val_old,
+                 val_flowfilter_entry& val_new,
              unc::driver::controller *ctr) {
     std::string vtn_name(reinterpret_cast<char*>(key.flowfilter_key.vbr_key.vtn_key.vtn_name));
     unc::odcdriver::odlutils::get_vbridge_names(ctr,
@@ -311,7 +321,7 @@ public:
         conf_values_,
         vtn_name,
         &terminals_);
-    return run_command(key,val,ctr,unc::odcdriver::CONFIG_UPDATE);
+    return run_command(key, val_old, val_new, ctr, unc::odcdriver::CONFIG_UPDATE);
   }
 
   UncRespCode
@@ -401,17 +411,17 @@ public:
     }
 
     pfc_log_info("check DSCP Valid %d",  value_in.valid[UPLL_IDX_DSCP_FFE]);
-    pfc_log_info("check DSCP Valid %d",  value_in.valid[UPLL_IDX_PRIORITY_FFE]);
+    pfc_log_info("check Priority Valid %d",  value_in.valid[UPLL_IDX_PRIORITY_FFE]);
 
     if ( value_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID ) {
-      pfc_log_info("New DSCP Action Createed");
+      pfc_log_info("New DSCP Action Created");
       action *new_action = new action();
       new_action->dscp_ = new dscp();
       new_action->dscp_->dscp_=value_in.dscp;
       out->action_.push_back(new_action);
     }
     if ( value_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID ) {
-      pfc_log_info("New Priority Action Createed");
+      pfc_log_info("New Priority Action Created");
       action *new_action = new action();
       new_action->vlanpcp_ = new vlanpcp();
       new_action->vlanpcp_->priority_ = value_in.priority;
@@ -432,6 +442,163 @@ public:
       out->action_.push_back(new_action);
     }
   }
+   //  Method to  handle two value structures during update operation
+   void copy(flowfilter *out, key_vbr_flowfilter_entry &key_in,
+       val_flowfilter_entry &value_old_in, val_flowfilter_entry &value_new_in) {
+
+    ODC_FUNC_TRACE;
+    PFC_ASSERT(out != NULL);
+
+    out->index_=key_in.sequence_num;
+
+    out->condition_.assign(reinterpret_cast<char*>(value_old_in.flowlist_name));
+
+    if (value_new_in.valid[UPLL_IDX_ACTION_FFE] == UNC_VF_VALID) {
+      out->filterType_=new filterType();
+      if ( value_new_in.action == UPLL_FLOWFILTER_ACT_PASS ) {
+        out->filterType_->pass_=new pass();
+      } else if ( value_new_in.action == UPLL_FLOWFILTER_ACT_DROP ) {
+        out->filterType_->drop_=new drop();
+      } else if ( value_new_in.action == UPLL_FLOWFILTER_ACT_REDIRECT ) {
+        out->filterType_->redirect_=new redirect();
+        if ( value_new_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID ) {
+          out->filterType_->redirect_->destination_ = new destination();
+          std::string redirect_node(reinterpret_cast <char *>(
+                                 value_new_in.redirect_node));
+          std::set <std::string>::iterator find_iter;
+          find_iter = std::find (bridges_.begin(),bridges_.end(),redirect_node);
+          if ( find_iter != bridges_.end()) {
+            out->filterType_->redirect_->destination_->bridge_.assign(
+              reinterpret_cast <char *>(value_new_in.redirect_node));
+          } else {
+            find_iter = std::find (terminals_.begin(),terminals_.end(),redirect_node);
+            if ( find_iter != terminals_.end() )
+              out->filterType_->redirect_->destination_->terminal_.assign(
+                reinterpret_cast <char *>(value_new_in.redirect_node));
+          }
+          out->filterType_->redirect_->destination_->tenant_.assign(
+            reinterpret_cast<char*>(key_in.flowfilter_key.
+                                    vbr_key.vtn_key.vtn_name));
+        }
+        if ( value_new_in.valid[UPLL_IDX_REDIRECT_PORT_FFE] == UNC_VF_VALID ) {
+          out->filterType_->redirect_->destination_->interface_.assign(
+            reinterpret_cast <char *>(value_new_in.redirect_port));
+        }
+        if ( value_new_in.redirect_direction == UPLL_FLOWFILTER_DIR_IN )
+          out->filterType_->redirect_->output_=false;
+        else
+          out->filterType_->redirect_->output_=true;
+      }
+    } else if( value_old_in.valid[UPLL_IDX_ACTION_FFE] == UNC_VF_VALID ) {
+      out->filterType_=new filterType();
+      if ( value_old_in.action == UPLL_FLOWFILTER_ACT_PASS ) {
+        out->filterType_->pass_=new pass();
+      } else if (value_old_in.action == UPLL_FLOWFILTER_ACT_DROP ) {
+        out->filterType_->drop_=new drop();
+      } else if ( value_old_in.action == UPLL_FLOWFILTER_ACT_REDIRECT ) {
+        out->filterType_->redirect_=new redirect();
+        if ( value_old_in.valid[UPLL_IDX_REDIRECT_NODE_FFE] == UNC_VF_VALID ) {
+          out->filterType_->redirect_->destination_ = new destination();
+          std::string redirect_node(reinterpret_cast <char *>(value_old_in.redirect_node));
+          std::set <std::string>::iterator find_iter;
+          find_iter = std::find (bridges_.begin(),bridges_.end(),redirect_node);
+          if ( find_iter != bridges_.end()) {
+            out->filterType_->redirect_->destination_->bridge_.assign(
+              reinterpret_cast <char *>(value_old_in.redirect_node));
+          } else {
+            find_iter = std::find (terminals_.begin(),terminals_.end(),redirect_node);
+            if ( find_iter != terminals_.end() )
+              out->filterType_->redirect_->destination_->terminal_.assign(
+                reinterpret_cast <char *>(value_old_in.redirect_node));
+          }
+          out->filterType_->redirect_->destination_->tenant_.assign(
+            reinterpret_cast<char*>(key_in.flowfilter_key.
+                                    vbr_key.vtn_key.vtn_name));
+        }
+        if ( value_old_in.valid[UPLL_IDX_REDIRECT_PORT_FFE] == UNC_VF_VALID ) {
+          out->filterType_->redirect_->destination_->interface_.assign(
+            reinterpret_cast <char *>(value_old_in.redirect_port));
+        }
+        if ( value_old_in.redirect_direction == UPLL_FLOWFILTER_DIR_IN )
+          out->filterType_->redirect_->output_=false;
+        else
+          out->filterType_->redirect_->output_=true;
+      }
+    } else {
+      //Make FilterType as pass by default
+      out->filterType_=new filterType();
+      out->filterType_->pass_=new pass();
+    }
+
+    if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID &&
+                 value_old_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID) {
+      action *new_action = new action();
+      new_action->dscp_ = new dscp();
+      new_action->dscp_->dscp_=value_new_in.dscp;
+      out->action_.push_back(new_action);
+    } else if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_INVALID &&
+                 value_old_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID ) {
+        action *new_action = new action();
+        new_action->dscp_ = new dscp();
+        new_action->dscp_->dscp_=value_old_in.dscp;
+        out->action_.push_back(new_action);
+      } else {
+    pfc_log_info("INVALID for new and old value structures of dscp attribute ");
+    }
+    if ( value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID &&
+                 value_old_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID) {
+      action *new_action = new action();
+      new_action->vlanpcp_ = new vlanpcp();
+      new_action->vlanpcp_->priority_=value_new_in.priority;
+      out->action_.push_back(new_action);
+    } else if (value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_INVALID &&
+                 value_old_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID ) {
+        action *new_action = new action();
+        new_action->vlanpcp_ = new vlanpcp();
+        new_action->vlanpcp_->priority_=value_old_in.priority;
+        out->action_.push_back(new_action);
+      } else {
+        pfc_log_info("INVALID for new and old value structures of PRIORITY ");
+    }
+   if ( value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID &&
+              value_old_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID) {
+      action *new_action = new action();
+      new_action->dldst_ = new dldst();
+      unc::odcdriver::OdcUtil util_;
+      new_action->dldst_->address_= util_.macaddress_to_string(
+                                    &value_new_in.modify_dstmac[0]);
+      out->action_.push_back(new_action);
+    } else if(value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_INVALID
+         && value_old_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID ) {
+      action *new_action = new action();
+      new_action->dldst_ = new dldst();
+      unc::odcdriver::OdcUtil util_;
+      new_action->dldst_->address_= util_.macaddress_to_string(
+                                &value_old_in.modify_dstmac[0]);
+      out->action_.push_back(new_action);
+     }else {
+      pfc_log_info("INVALID for new and old valstruct of DSTMACADDR attribute");
+    }
+   if (value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID &&
+             value_old_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID) {
+      action *new_action = new action();
+      new_action->dlsrc_ = new dlsrc();
+      unc::odcdriver::OdcUtil util_;
+      new_action->dlsrc_->address_=util_.macaddress_to_string(
+                                     &value_new_in.modify_srcmac[0]);
+      out->action_.push_back(new_action);
+    } else if(value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_INVALID
+          && value_old_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID ) {
+      action *new_action = new action();
+      new_action->dlsrc_ = new dlsrc();
+      unc::odcdriver::OdcUtil util_;
+      new_action->dlsrc_->address_=util_.macaddress_to_string(
+                               &value_old_in.modify_srcmac[0]);
+      out->action_.push_back(new_action);
+    } else {
+      pfc_log_info("INVALID for new and old val structs of SRCMAC ADDR attribute");
+    }
+  }
 
   UncRespCode r_copy(flowfilterlist* in,
                      std::vector<unc::vtndrvcache::ConfigNode *> &cfgnode_vector) {
@@ -439,7 +606,6 @@ public:
     return UNC_RC_SUCCESS;
   }
 };
-
 }
 }
 

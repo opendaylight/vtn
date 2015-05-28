@@ -55,13 +55,15 @@ class OdcVtermIfCommand: public unc::driver::vtn_driver_command
   /**
    * @brief                      - Updates VBRIf
    * @param[in] key              - key structure of VBRIf
-   * @param[in] val              - value structure of VBRIf
+   * @param[in] val              - Old value structure of VBRIf
+   * @param[in] val              - New value structure of VBRIf
    * @param[in] conn             - Controller connection information
    * @retval UncRespCode         - returns UNC_RC_SUCCESS on updation of VBRIf
    *                               successfully/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vterm_if_t& key,
-                         val_vterm_if_t& val,
+                         val_vterm_if_t& val_old,
+                         val_vterm_if_t& val_new,
                          unc::driver::controller *conn);
 
   /**

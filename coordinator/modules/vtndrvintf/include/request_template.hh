@@ -91,7 +91,8 @@ class KtRequestHandler : public KtHandler {
       parse_request(pfc::core::ipc::ServerSession &sess,
                     unc::driver::odl_drv_request_header_t &request_header,
                     key &key_generic_,
-                    val &val_generic_);
+                    val &val_generic1_,
+                    val &val_generic2_);
 
   /**
    * @brief    - This method executes the Create, Delete, Update and Read requests of
@@ -105,7 +106,8 @@ class KtRequestHandler : public KtHandler {
               unc::driver::odl_drv_request_header_t &request_header,
               unc::driver::ControllerFramework* ctrl_int,
               key &key_generic_,
-              val &val_generic_);
+              val &val_generic1_,
+              val &val_generic2_);
 
   /**
    * @brief     - This method handles response from controller
@@ -163,8 +165,8 @@ KtRequestHandler<key, val>::~KtRequestHandler() {}
 template<typename key, typename val>
 void* KtRequestHandler<key, val>::
 get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
-  unc::vtndrvcache::CacheElementUtil <key, val, uint32_t> * cache_util_ptr =
-      static_cast <unc::vtndrvcache::CacheElementUtil<key, val, uint32_t> * >
+  unc::vtndrvcache::CacheElementUtil <key, val, val, uint32_t> * cache_util_ptr =
+      static_cast <unc::vtndrvcache::CacheElementUtil<key, val, val, uint32_t> * >
       (cfgptr);
 
   if (cache_util_ptr == NULL) {
@@ -183,9 +185,9 @@ get_key_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
 template<typename key, typename val>
 void* KtRequestHandler<key, val>::
 get_val_struct(unc::vtndrvcache::ConfigNode *cfgptr) {
-  unc::vtndrvcache::CacheElementUtil<key, val, uint32_t> * cache_util_ptr =
+  unc::vtndrvcache::CacheElementUtil<key, val, val, uint32_t> * cache_util_ptr =
       static_cast <unc::vtndrvcache::CacheElementUtil
-      <key, val, uint32_t> * >(cfgptr);
+      <key, val, val, uint32_t> * >(cfgptr);
 
   if (cache_util_ptr == NULL) {
     pfc_log_error("%s: cache_util_ptr is null for get_val_struct",
@@ -208,16 +210,21 @@ KtRequestHandler<key, val>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key &key_generic_,
-    val &val_generic_) {
+    val &val_generic1_,
+    val &val_generic2_) {
   if (sess.getArgument(INPUT_KEY_STRUCT_INDEX, key_generic_)) {
     pfc_log_debug("%s: Exting Function.getArg Failed to read key struct."
                   " rc=%u", PFC_FUNCNAME, 2);
     return UNC_DRV_RC_MISSING_KEY_STRUCT;
   }
-  if (sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic_)) {
+  if (sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic1_)) {
     pfc_log_debug("%s: No value struct present.", PFC_FUNCNAME);
   }
-
+ if (request_header.header.operation == UNC_OP_UPDATE) {
+   if (sess.getArgument(INPUT_VAL_STRUCT_INDEX+1, val_generic2_)) {
+     pfc_log_debug("%s: No odl value struct present.", PFC_FUNCNAME);
+   }
+ }
   return UNC_RC_SUCCESS;
 }
 
@@ -235,7 +242,8 @@ KtRequestHandler<key, val>::execute(
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
     key &key_generic_,
-    val &val_generic_) {
+    val &val_generic1_,
+    val &val_generic2_) {
   ODC_FUNC_TRACE;
 
   std::string ctrl_name = std::string(request_header.controller_name);
@@ -286,9 +294,10 @@ KtRequestHandler<key, val>::execute(
       ctrl_ptr->controller_cache = unc::vtndrvcache::KeyTree::create_cache();
     }
     unc::vtndrvcache::ConfigNode *cfgptr =
-        new unc::vtndrvcache::CacheElementUtil<key, val, uint32_t> (
+        new unc::vtndrvcache::CacheElementUtil<key, val, val, uint32_t> (
             &key_generic_,
-            &val_generic_,
+            &val_generic1_,
+            &val_generic2_,
             request_header.header.operation);
     if (cfgptr == NULL) {
       pfc_log_debug("%s:Exiting Function. Not able to create ConfigNode",
@@ -323,7 +332,7 @@ KtRequestHandler<key, val>::execute(
       case UNC_OP_CREATE:
         pfc_log_debug("%s: Translate Create Command string", PFC_FUNCNAME);
         resp_code_ = command_ptr_->create_cmd(key_generic_,
-                                              val_generic_,
+                                              val_generic1_,
                                               ctrl_ptr);
 
         break;
@@ -332,7 +341,7 @@ KtRequestHandler<key, val>::execute(
         pfc_log_debug("%s: Translate Delete Command string", PFC_FUNCNAME);
 
         resp_code_ = command_ptr_->delete_cmd(key_generic_,
-                                              val_generic_,
+                                              val_generic1_,
                                               ctrl_ptr);
 
         break;
@@ -341,7 +350,8 @@ KtRequestHandler<key, val>::execute(
         pfc_log_debug("%s: Translate Update Command string", PFC_FUNCNAME);
 
         resp_code_ = command_ptr_->update_cmd(key_generic_,
-                                              val_generic_,
+                                              val_generic2_,
+                                              val_generic1_,
                                               ctrl_ptr);
 
         break;
@@ -371,7 +381,8 @@ KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_ctr_t &key_generic_,
-    val_ctr_commit_ver_t &val_generic_) {
+    val_ctr_commit_ver_t &val_generic1_,
+    val_ctr_commit_ver_t &val_generic2_) {
   ODC_FUNC_TRACE;
   uint32_t ret_value = 0;
   ret_value = sess.getArgument(INPUT_KEY_STRUCT_INDEX, key_generic_);
@@ -384,7 +395,7 @@ KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::parse_request(
 
   if ((request_header.header.operation == UNC_OP_CREATE)
       || (request_header.header.operation == UNC_OP_UPDATE)) {
-    ret_value = sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic_);
+    ret_value = sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic1_);
     if (ret_value != 0) {
       pfc_log_error("%s: GetArgument failed to read value struct "
                     "for UNC_KT_CONTROLLER (err = %u)",
@@ -408,7 +419,8 @@ KtRequestHandler<key_root_t, val_root_t>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_root_t &key_generic_,
-    val_root_t &val_generic_) {
+    val_root_t &val_generic1_,
+    val_root_t &val_generic2_) {
   request_header.key_type = UNC_KT_ROOT;
   return UNC_RC_SUCCESS;
 }
@@ -423,13 +435,14 @@ KtRequestHandler<key_vtn_flowfilter_t, val_flowfilter_t>::parse_request(
     pfc::core::ipc::ServerSession &sess,
     unc::driver::odl_drv_request_header_t &request_header,
     key_vtn_flowfilter_t &key_generic_,
-    val_flowfilter_t &val_generic_) {
+    val_flowfilter_t &val_generic1_,
+    val_flowfilter_t &val_generic2_) {
   if (sess.getArgument(INPUT_KEY_STRUCT_INDEX, key_generic_)) {
     pfc_log_debug("%s: Exting Function.getArg Failed to read key struct."
                   " rc=%u", PFC_FUNCNAME, 2);
     return UNC_DRV_RC_MISSING_KEY_STRUCT;
   }
-  if (sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic_)) {
+  if (sess.getArgument(INPUT_VAL_STRUCT_INDEX, val_generic1_)) {
     pfc_log_debug("%s: No value struct present.", PFC_FUNCNAME);
   }
   if ( key_generic_.input_direction == UPLL_FLOWFILTER_DIR_OUT)
@@ -451,7 +464,8 @@ KtRequestHandler<key_root_t, val_root_t>::execute(
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
     key_root_t &key_generic_,
-    val_root_t &val_generic_) {
+    val_root_t &val_generic1_,
+    val_root_t &val_generic2_) {
   ODC_FUNC_TRACE;
 
   std::string ctrl_name = std::string(request_header.controller_name);
@@ -592,7 +606,8 @@ KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::execute(
     unc::driver::odl_drv_request_header_t &request_header,
     unc::driver::ControllerFramework* ctrl_int,
     key_ctr_t &key_generic_,
-    val_ctr_commit_ver_t &val_generic_) {
+    val_ctr_commit_ver_t &val_generic1_,
+    val_ctr_commit_ver_t &val_generic2_) {
   ODC_FUNC_TRACE;
   unc::driver::driver *drv_ptr = NULL;
   unc::driver::controller* ctl_ptr = NULL;
@@ -603,10 +618,10 @@ KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::execute(
     case UNC_OP_CREATE: {
       pfc_log_debug("%s: Creates new controller ", PFC_FUNCNAME);
       controller_operation util_obj(ctrl_int, CONTROLLER_ADD, ctrl_name,
-                            (unc_keytype_ctrtype_t) val_generic_.controller.type);
+                            (unc_keytype_ctrtype_t) val_generic1_.controller.type);
       drv_ptr = util_obj.get_driver_handle();
       PFC_ASSERT(drv_ptr != NULL);
-      ctl_ptr = drv_ptr->add_controller(key_generic_, val_generic_.controller);
+      ctl_ptr = drv_ptr->add_controller(key_generic_, val_generic1_.controller);
       if (ctl_ptr != NULL) {
         resp_code_ = UNC_RC_SUCCESS;
       } else {
@@ -627,7 +642,7 @@ KtRequestHandler<key_ctr_t, val_ctr_commit_ver_t>::execute(
       PFC_ASSERT(ctl_ptr != NULL);
 
       resp_code_ = ctrl_int->UpdateControllerConfiguration(ctrl_name,
-                             ctl_ptr, drv_ptr, key_generic_, val_generic_.controller);
+                             ctl_ptr, drv_ptr, key_generic_, val_generic1_.controller);
       break;
     }
 
@@ -671,18 +686,22 @@ KtRequestHandler<key, val>::handle_request(
 
   UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
   key key_generic_;
-  val val_generic_;
+  val val_generic1_;
+  val val_generic2_;
   memset(&key_generic_, 0, sizeof(key));
-  memset(&val_generic_, 0, sizeof(val));
+  memset(&val_generic1_, 0, sizeof(val));
+  memset(&val_generic2_, 0, sizeof(val));
 
   PFC_ASSERT(ctrl_int != NULL);
 
 
-  resp_code_ = parse_request(sess, request_header, key_generic_, val_generic_);
+  resp_code_ = parse_request(sess, request_header, key_generic_, val_generic1_,
+                             val_generic2_);
 
   if (resp_code_ == UNC_RC_SUCCESS) {
     resp_code_ = execute(sess, request_header, ctrl_int,
-                         key_generic_, val_generic_);
+                         key_generic_, val_generic1_,
+                         val_generic2_);
     if (resp_code_ != UNC_RC_SUCCESS) {
        pfc_log_error("%s: execute return err with resp_code(err = %u)",
                PFC_FUNCNAME, resp_code_);
@@ -693,7 +712,7 @@ KtRequestHandler<key, val>::handle_request(
   }
 
   resp_code_ = handle_response(sess, request_header, ctrl_int,
-                       key_generic_, val_generic_, resp_code_);
+                       key_generic_, val_generic1_, resp_code_);
 
   if (resp_code_ != UNC_RC_SUCCESS) {
     pfc_log_error("%s:. Failed to send response(err = %u)",
@@ -715,9 +734,9 @@ KtRequestHandler<key, val>::execute_cmd(
     unc::driver::controller* conn,
     unc::driver::driver* drv_ptr) {
   ODC_FUNC_TRACE;
-  unc::vtndrvcache::CacheElementUtil<key, val, uint32_t> * cache_element_ptr =
+  unc::vtndrvcache::CacheElementUtil<key, val, val, uint32_t> * cache_element_ptr =
       dynamic_cast <unc::vtndrvcache::CacheElementUtil
-      <key, val, uint32_t> * > (cfgptr);
+      <key, val, val, uint32_t> * > (cfgptr);
 
   UncRespCode resp_code_ = UNC_DRV_RC_ERR_GENERIC;
 
@@ -754,7 +773,9 @@ KtRequestHandler<key, val>::execute_cmd(
 
       resp_code_ = config_cmd_ptr->update_cmd(
                               *(cache_element_ptr->get_key_structure()),
-                              *(cache_element_ptr->get_val_structure()), conn);
+                              *(cache_element_ptr->get_old_val_structure()),
+                              *(cache_element_ptr->get_val_structure()),
+                              conn);
 
       break;
     default:

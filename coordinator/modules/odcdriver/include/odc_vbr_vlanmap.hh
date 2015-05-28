@@ -57,14 +57,16 @@ class OdcVbrVlanMapCommand: public unc::driver::vtn_driver_command
    * @brief                      - Forms VBR_VLANMAP command and send it to
    *                               restclient interface to update vbrvlanmap
    * @param[in] key              - key structure of VBR_VLANMAP
-   * @param[in] val              - value structure of VBR_VLANMAP
+   * @param[in] val              - Old value structure of VBR_VLANMAP
+   * @param[in] val              - New value structure of VBR_VLANMAP
    * @param[in] conn             - Controller pointer
    * @retval UncRespCode         - returns UNC_RC_SUCCESS on
    *                             - updation of VBR_VLANMAP successfully
    *                             - returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vlan_map_t& key,
-                         pfcdrv_val_vlan_map_t& val,
+                         pfcdrv_val_vlan_map_t& val_old,
+                         pfcdrv_val_vlan_map_t& val_new,
                          unc::driver::controller *conn);
 
   /**

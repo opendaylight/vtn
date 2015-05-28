@@ -54,13 +54,15 @@ class OdcVbrIfCommand: public unc::driver::vtn_driver_command
   /**
    * @brief                      - Updates VBRIf
    * @param[in] key              - key structure of VBRIf
-   * @param[in] val              - value structure of VBRIf
+   * @param[in] val              - Old value structure of VBRIf
+   * @param[in] val              - New value structure of VBRIf
    * @param[in] conn             - Controller connection information
    * @retval UncRespCode         - returns UNC_RC_SUCCESS on updation of VBRIf
    *                               successfully/returns UNC_DRV_RC_ERR_GENERIC on failure
    */
   UncRespCode update_cmd(key_vbr_if_t& key,
-                         pfcdrv_val_vbr_if_t& val,
+                         pfcdrv_val_vbr_if_t& val_old,
+                         pfcdrv_val_vbr_if_t& val_new,
                          unc::driver::controller *conn);
 
   /**
