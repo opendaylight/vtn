@@ -169,11 +169,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnFlow
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnSwitchPort;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.Ordered;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.Instructions;
@@ -198,7 +200,7 @@ public class FlowUtilsTest extends TestBase {
     /**
      * Bits in a flow cookie which identifies the VTN flows.
      */
-    private static final long  VTN_FLOW_COOKIE = 0x7f56000000000000L;
+    public static final long  VTN_FLOW_COOKIE = 0x7f56000000000000L;
 
     /**
      * An implementation of {@link VtnFlowTimeoutConfig} for test.
@@ -648,10 +650,7 @@ public class FlowUtilsTest extends TestBase {
         long duration = System.currentTimeMillis() - created;
         long sec = duration / 1000L;
         long nsec = (duration % 1000L) * 1000000L;
-        Duration d = new DurationBuilder().
-            setSecond(new Counter32(sec)).
-            setNanosecond(new Counter32(nsec)).
-            build();
+        Duration d = createDuration(sec, nsec);
         DataFlowStats dfs = new DataFlowStatsBuilder().
             setPacketCount(new Counter64(BigInteger.valueOf(packets))).
             setByteCount(new Counter64(BigInteger.valueOf(bytes))).
@@ -793,6 +792,51 @@ public class FlowUtilsTest extends TestBase {
                 assertEquals(expected, FlowUtils.toMillis(d));
             }
         }
+    }
+
+    /**
+     * Test case for {@link FlowUtils#compare(Duration,Duration)}.
+     */
+    @Test
+    public void testCompareDuration() {
+        Duration min = createDuration(0L, 0L);
+        Duration max = createDuration(0xffffffffL, 999999999L);
+        assertEquals(0, FlowUtils.compare(min, min));
+        assertEquals(0, FlowUtils.compare(max, max));
+        assertTrue(FlowUtils.compare(min, max) < 0);
+        assertTrue(FlowUtils.compare(max, min) > 0);
+
+        Duration d1 = createDuration(0L, 1L);
+        Duration d2 = createDuration(1L, 0L);
+        Duration d3 = createDuration(1L, 2L);
+        Duration d4 = createDuration(1L, 999999999L);
+        Duration d5 = createDuration(99L, 499999998L);
+        Duration d6 = createDuration(99L, 499999999L);
+        Duration d7 = createDuration(99L, 500000000L);
+        Duration d8 = createDuration(99L, 500000001L);
+        Duration d9 = createDuration(100L, 500000000L);
+        Duration d10 = createDuration(101L, 500000000L);
+        Duration d11 = createDuration(101L, 500000001L);
+        Duration d12 = createDuration(12345L, 888888888L);
+        Duration d13 = createDuration(12345L, 888888889L);
+        Duration d14 = createDuration(0xffffffffL, 0L);
+        Duration d15 = createDuration(0xffffffffL, 999999998L);
+        List<Duration> list = new ArrayList<>();
+        Collections.addAll(list, d10, max, d7, d1, d4, d9, min, d5, d2, d13,
+                           d15, d6, d14, d8, d11, d3, d12);
+        List<Duration> expected = new ArrayList<>();
+        Collections.addAll(expected, min, d1, d2, d3, d4, d5, d6, d7, d8, d9,
+                           d10, d11, d12, d13, d14, d15, max);
+
+        Comparator<Duration> comp = new Comparator<Duration>() {
+            @Override
+            public int compare(Duration dr1, Duration dr2) {
+                return FlowUtils.compare(dr1, dr2);
+            }
+        };
+
+        Collections.sort(list, comp);
+        assertEquals(expected, list);
     }
 
     /**
@@ -1222,7 +1266,7 @@ public class FlowUtilsTest extends TestBase {
                         build();
                     String value = String.format("%s%x-%s", prefix, c, order);
                     assertEquals(new Uri(value),
-                                 FlowUtils.createTxUri(vfent,  prefix));
+                                 FlowUtils.createTxUri(vfent, prefix));
                 }
             }
         }
@@ -1257,6 +1301,11 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(Boolean.TRUE, input.isStrict());
         assertEquals(Boolean.TRUE, input.isBarrier());
         assertEquals(null, input.getOutPort());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -1296,6 +1345,11 @@ public class FlowUtilsTest extends TestBase {
             assertEquals(Boolean.FALSE, input.isStrict());
             assertEquals(Boolean.TRUE, input.isBarrier());
             assertEquals(null, input.getOutPort());
+            assertEquals(null, input.getOutGroup());
+            assertEquals(null, input.getBufferId());
+            assertEquals(null, input.getContainerName());
+            assertEquals(null, input.getFlowName());
+            assertEquals(null, input.isInstallHw());
         }
     }
 
@@ -1341,6 +1395,11 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(Boolean.TRUE, input.isStrict());
         assertEquals(Boolean.TRUE, input.isBarrier());
         assertEquals(null, input.getOutPort());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -1396,6 +1455,11 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(Boolean.TRUE, input.isStrict());
         assertEquals(Boolean.TRUE, input.isBarrier());
         assertEquals(null, input.getOutPort());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -1424,7 +1488,6 @@ public class FlowUtilsTest extends TestBase {
         long c = flowId | VTN_FLOW_COOKIE;
         FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
         FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
-        VtnNode vnode = new VtnNodeBuilder().setId(snode.getNodeId()).build();
 
         RemoveFlowInput input =
             FlowUtils.createRemoveFlowInput(snode, vfent);
@@ -1441,6 +1504,11 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(Boolean.TRUE, input.isStrict());
         assertEquals(Boolean.TRUE, input.isBarrier());
         assertEquals(null, input.getOutPort());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(ingress.getFlowTableIdentifier(table));
@@ -1478,6 +1546,11 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(Boolean.FALSE, input.isStrict());
         assertEquals(Boolean.TRUE, input.isBarrier());
         assertEquals(null, input.getOutPort());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
 
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
@@ -1507,12 +1580,64 @@ public class FlowUtilsTest extends TestBase {
         assertEquals(Boolean.FALSE, input.isStrict());
         assertEquals(Boolean.TRUE, input.isBarrier());
         assertEquals(tref, input.getFlowTable());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
 
         uri = new Uri(String.format("remove-flow:OUT_PORT=%s", sport));
         assertEquals(uri, input.getTransactionUri());
 
         BigInteger portNum = NumberUtils.getUnsigned(sport.getPortNumber());
         assertEquals(portNum, input.getOutPort());
+    }
+
+    /**
+     * Test case for
+     * {@link FlowUtils#createRemoveFlowInput(SalNode,Flow,Uri)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testCreateRemoveFlowInput6() throws Exception {
+        long flowId = 0x7777777777L;
+        int order = 123;
+        SalPort ingress = new SalPort(345L, 88L);
+        SalNode snode = ingress.getSalNode();
+        Short table = 0;
+        VtnFlowEntry vfent = createVtnFlowEntry(flowId, order, ingress);
+        Flow flow = new FlowBuilder(vfent).build();
+        long c = flowId | VTN_FLOW_COOKIE;
+        FlowCookie cookie = new FlowCookie(NumberUtils.getUnsigned(c));
+        FlowCookie cookieMask = new FlowCookie(NumberUtils.getUnsigned(-1L));
+        Uri uri = new Uri("remove-flow-input-5:" + flowId);
+
+        RemoveFlowInput input =
+            FlowUtils.createRemoveFlowInput(snode, flow, uri);
+        assertEquals(ingress.getNodeRef(), input.getNode());
+        assertEquals(vfent.getPriority(), input.getPriority());
+        assertEquals(table, input.getTableId());
+        assertEquals(vfent.getIdleTimeout(), input.getIdleTimeout());
+        assertEquals(vfent.getHardTimeout(), input.getHardTimeout());
+        assertEquals(cookie, input.getCookie());
+        assertEquals(cookieMask, input.getCookieMask());
+        assertEquals(vfent.getMatch(), input.getMatch());
+        assertEquals(vfent.getFlags(), input.getFlags());
+        assertEquals(vfent.getInstructions(), input.getInstructions());
+        assertEquals(Boolean.TRUE, input.isStrict());
+        assertEquals(Boolean.TRUE, input.isBarrier());
+        assertEquals(null, input.getOutPort());
+        assertEquals(null, input.getOutGroup());
+        assertEquals(null, input.getBufferId());
+        assertEquals(null, input.getContainerName());
+        assertEquals(null, input.getFlowName());
+        assertEquals(null, input.isInstallHw());
+        assertEquals(uri, input.getTransactionUri());
+
+        FlowTableRef tref =
+            new FlowTableRef(ingress.getFlowTableIdentifier(table));
+        assertEquals(tref, input.getFlowTable());
     }
 
     /**
@@ -2608,8 +2733,8 @@ public class FlowUtilsTest extends TestBase {
      *                 switch port.
      * @throws Exception  An error occurred.
      */
-    private VtnFlowEntry createVtnFlowEntry(long id, int order,
-                                            SalPort ingress) throws Exception {
+    public static VtnFlowEntry createVtnFlowEntry(
+        long id, int order, SalPort ingress) throws Exception {
         SalPort egress = new SalPort(ingress.getNodeNumber(), 9999L);
         NodeId node = ingress.getNodeId();
         Integer pri = 15;
@@ -2671,5 +2796,23 @@ public class FlowUtilsTest extends TestBase {
             setFlags(flags).
             setInstructions(insts).
             build();
+    }
+
+    /**
+     * Create a {@link Duration} instance.
+     *
+     * @param sec   The number of seconds.
+     * @param nsec  The number of nanoseconds.
+     */
+    public static Duration createDuration(Long sec, Long nsec) {
+        DurationBuilder builder = new DurationBuilder();
+        if (sec != null) {
+            builder.setSecond(new Counter32(sec));
+        }
+        if (nsec != null) {
+            builder.setNanosecond(new Counter32(nsec));
+        }
+
+        return builder.build();
     }
 }

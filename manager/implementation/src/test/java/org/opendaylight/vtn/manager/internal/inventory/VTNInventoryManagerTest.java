@@ -8,44 +8,52 @@
  */
 package org.opendaylight.vtn.manager.internal.inventory;
 
-import org.junit.Test;
 import org.slf4j.Logger;
-import org.junit.Assert;
-import org.mockito.Mockito;
+
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.junit.Test;
+
+import org.mockito.Mockito;
+
 import org.opendaylight.vtn.manager.internal.VTNManagerImpl;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
-import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
-import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
+import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
+import org.opendaylight.vtn.manager.internal.util.IdentifierTargetComparator;
+
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnNodes;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 
 /**
- * JUnit test for {@link VTNInventoryManager}
+ * JUnit test for {@link VTNInventoryManager}.
  */
 public class VTNInventoryManagerTest {
+    /**
+     * Static instance of VTNInventoryManager to perform unit testing.
+     */
+    private static VTNInventoryManager vtnInventoryManager;
 
     /**
-      * Static instance of VTNInventoryManager to perform unit testing.
-      */
-    private static VTNInventoryManager vtnInventoryManager;
-    /**
-      * Static instance of VTNManagerProvider to perform unit testing.
-      */
+     * Static instance of VTNManagerProvider to perform unit testing.
+     */
     private static VTNManagerProvider vtnManagerProvider;
+
     /**
-      * Static instance of VTNInventoryListener to perform unit testing.
-      */
+     * Static instance of VTNInventoryListener to perform unit testing.
+     */
     private static VTNInventoryListener vtnInventoryListener;
 
     /**
@@ -79,7 +87,7 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#addListener()}.
+     * {@link VTNInventoryManager#addListener(VTNInventoryListener)}.
      */
     @Test
     public void testAddListener() {
@@ -128,7 +136,7 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#getComparatpr()}.
+     * {@link VTNInventoryManager#getComparator()}.
      */
     @Test
     public void testGetComparator() {
@@ -138,17 +146,18 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#getOrder()}.
+     * {@link VTNInventoryManager#getOrder(VtnUpdateType)}.
      */
     @Test
     public void testGetOrder() {
-        Assert.assertFalse(vtnInventoryManager.getOrder(VtnUpdateType.CREATED));
-        Assert.assertTrue(vtnInventoryManager.getOrder(VtnUpdateType.REMOVED));
+        Assert.assertTrue(vtnInventoryManager.getOrder(VtnUpdateType.CREATED));
+        Assert.assertTrue(vtnInventoryManager.getOrder(VtnUpdateType.CHANGED));
+        Assert.assertFalse(vtnInventoryManager.getOrder(VtnUpdateType.REMOVED));
     }
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#enterEvent()}.
+     * {@link VTNInventoryManager#enterEvent(AsyncDataChangeEvent)}.
      */
     @Test
     public void testEnterEvent() {
@@ -157,7 +166,7 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#exitEvent()}.
+     * {@link VTNInventoryManager#exitEvent(Void)}.
      */
     @Test
     public void testExitEvent() {
@@ -170,7 +179,7 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#onCreated()}.
+     * {@link VTNInventoryManager#onCreated(Void,IdentifiedData)}.
      */
     @Test
     public void testOnCreated() {
@@ -183,7 +192,7 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#onUpdated()}.
+     * {@link VTNInventoryManager#onUpdated(Void,ChangedData)}.
      */
     @Test
     public void testOnUpdated() {
@@ -206,7 +215,7 @@ public class VTNInventoryManagerTest {
 
     /**
      * Test method for
-     * {@link VTNInventoryManager#onRemoved()}.
+     * {@link VTNInventoryManager#onRemoved(Void,IdentifiedData)}.
      */
     @Test
     public void testOnRemoved() {

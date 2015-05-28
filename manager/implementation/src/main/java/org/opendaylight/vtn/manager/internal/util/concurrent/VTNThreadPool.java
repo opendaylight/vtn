@@ -120,6 +120,15 @@ public class VTNThreadPool extends AbstractExecutorService
     private int  poolState = STATE_RUNNING;
 
     /**
+     * Construct a new thread pool which has a single worker thread.
+     *
+     * @param prefix  A prefix for the name of worker threads.
+     */
+    public VTNThreadPool(String prefix) {
+        this(prefix, 1, 0);
+    }
+
+    /**
      * Construct a new thread pool.
      *
      * @param prefix  A prefix for the name of worker threads.
@@ -381,7 +390,7 @@ public class VTNThreadPool extends AbstractExecutorService
          * Main routine of worker thread.
          */
         @Override
-        public void run() {
+        public final void run() {
             LOG.trace("Start");
 
             for (Runnable r = waitFor(); r != null; r = waitFor()) {
@@ -399,13 +408,13 @@ public class VTNThreadPool extends AbstractExecutorService
     /**
      * {@code MainThread} class implements the main thread of the pool.
      */
-    protected class MainThread extends WorkerThread {
+    private final class MainThread extends WorkerThread {
         /**
          * Construct a main thread.
          *
          * @param name  The name of this thread.
          */
-        protected MainThread(String name) {
+        private MainThread(String name) {
             super(name);
         }
 

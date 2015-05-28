@@ -86,8 +86,8 @@ public final class VTNInventoryManager
      */
     static {
         PATH_COMPARATOR = new IdentifierTargetComparator().
-            setOrder(VtnPort.class, 1).
-            setOrder(VtnNode.class, 2);
+            setOrder(VtnNode.class, 1).
+            setOrder(VtnPort.class, 2);
     }
 
     /**
@@ -282,9 +282,9 @@ public final class VTNInventoryManager
      */
     @Override
     protected boolean getOrder(VtnUpdateType type) {
-        // Creation events should be processed from outer to inner.
-        // Other events should be processed from inner to outer.
-        return (type != VtnUpdateType.CREATED);
+        // Removal events should be processed from inner to outer.
+        // Other events should be processed from outer to inner.
+        return (type != VtnUpdateType.REMOVED);
     }
 
     /**

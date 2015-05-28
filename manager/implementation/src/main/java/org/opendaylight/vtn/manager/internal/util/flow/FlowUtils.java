@@ -119,19 +119,19 @@ public final class FlowUtils {
     /**
      * A flow cookie which contains the {@link #VTN_FLOW_COOKIE} bits.
      */
-    private static final FlowCookie  COOKIE_VTN =
+    public static final FlowCookie  COOKIE_VTN =
         new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE));
 
     /**
      * A flow cookie mask which specifies all bits in the cookie.
      */
-    private static final FlowCookie  COOKIE_MASK_ALL =
+    public static final FlowCookie  COOKIE_MASK_ALL =
         new FlowCookie(NumberUtils.getUnsigned(-1L));
 
     /**
      * A flow cookie mask which specifies the {@link #VTN_FLOW_COOKIE} bits.
      */
-    private static final FlowCookie  COOKIE_MASK_VTN =
+    public static final FlowCookie  COOKIE_MASK_VTN =
         new FlowCookie(NumberUtils.getUnsigned(VTN_FLOW_COOKIE_MASK));
 
     /**
@@ -353,6 +353,28 @@ public final class FlowUtils {
         }
 
         return 0;
+    }
+
+    /**
+     * Compare the given two {@link Duration} instances.
+     *
+     * @param d1  The first instance to be compared.
+     * @param d2  The second instance to be compared.
+     * @return  A negative integer, zero, or a positive integer as the first
+     *          instance is less than, equal to, or greater than the second
+     *          instance.
+     */
+    public static int compare(Duration d1, Duration d2) {
+        long s1 = MiscUtils.longValue(d1.getSecond());
+        long s2 = MiscUtils.longValue(d2.getSecond());
+        int ret = Long.compare(s1, s2);
+        if (ret == 0) {
+            long n1 = MiscUtils.longValue(d1.getNanosecond());
+            long n2 = MiscUtils.longValue(d2.getNanosecond());
+            ret = Long.compare(n1, n2);
+        }
+
+        return ret;
     }
 
     /**
@@ -723,19 +745,37 @@ public final class FlowUtils {
      * @param snode   A {@link SalNode} instance which specifies the target
      *                switch.
      * @param vfent   A {@link VtnFlowEntry} instance.
-     * @return  A {@link RemoveFlowInput} instance on success.
-     *          {@code null} if the target node is not present.
+     * @return  A {@link RemoveFlowInput} instance.
      */
     public static RemoveFlowInput createRemoveFlowInput(
         SalNode snode, VtnFlowEntry vfent) {
-        Short table = vfent.getTableId();
+        Uri uri = createTxUri(vfent, "remove-flow:");
+        return createRemoveFlowInput(snode, vfent, uri);
+    }
+
+    /**
+     * Construct an RPC input to uninstall the specified MD-SAL flow entry.
+     *
+     * <p>
+     *   Note that the caller must ensure that the specified switch is present.
+     * </p>
+     *
+     * @param snode  A {@link SalNode} instance which specifies the target
+     *               switch.
+     * @param flow   A {@link Flow} instance.
+     * @param uri    A {@link Uri} to be assigned to the input.
+     * @return  A {@link RemoveFlowInput} instance.
+     */
+    public static RemoveFlowInput createRemoveFlowInput(
+        SalNode snode, Flow flow, Uri uri) {
+        Short table = flow.getTableId();
         FlowTableRef tref =
             new FlowTableRef(snode.getFlowTableIdentifier(table));
 
-        return new RemoveFlowInputBuilder((Flow)vfent).
+        return new RemoveFlowInputBuilder(flow).
             setNode(snode.getNodeRef()).
             setFlowTable(tref).
-            setTransactionUri(createTxUri(vfent, "remove-flow:")).
+            setTransactionUri(uri).
             setCookieMask(COOKIE_MASK_ALL).
             setStrict(true).
             setBarrier(true).

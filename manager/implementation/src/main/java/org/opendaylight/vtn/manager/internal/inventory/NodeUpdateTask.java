@@ -11,6 +11,8 @@ package org.opendaylight.vtn.manager.internal.inventory;
 
 import org.slf4j.Logger;
 
+import com.google.common.base.Optional;
+
 import org.opendaylight.vtn.manager.VTNException;
 
 import org.opendaylight.vtn.manager.internal.TxContext;
@@ -24,9 +26,10 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.nodes.VtnNodeBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 
 /**
  * A MD-SAL datastore transaction task that updates VTN node information.
@@ -60,11 +63,21 @@ final class NodeUpdateTask
     protected void add(TxContext ctx, ReadWriteTransaction tx, SalNode snode,
                        InstanceIdentifier<FlowCapableNode> path,
                        FlowCapableNode fcn) throws VTNException {
+        // Read MD-SAL node.
+        InstanceIdentifier<Node> npath = snode.getNodeIdentifier();
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        Optional<Node> opt = DataStoreUtils.read(tx, oper, npath);
+        VtnNodeBuilder builder;
+        if (opt.isPresent()) {
+            builder = InventoryUtils.toVtnNodeBuilder(opt.get());
+        } else {
+            // The given MD-SAL node is no longer present.
+            // VTN node will be removed soon.
+            builder = InventoryUtils.toVtnNodeBuilder(snode.getNodeId());
+        }
+
         // Create a VTN node.
-        VtnNode vnode = InventoryUtils.toVtnNodeBuilder(snode.getNodeId()).
-            build();
-        tx.merge(LogicalDatastoreType.OPERATIONAL,
-                 snode.getVtnNodeIdentifier(), vnode, true);
+        tx.merge(oper, snode.getVtnNodeIdentifier(), builder.build(), true);
     }
 
     /**

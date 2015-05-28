@@ -42,8 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.ten
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.FlowStatsHistory;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.VtnFlowEntry;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecord;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecordBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.flows.VtnFlowTable;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
@@ -152,20 +150,14 @@ public final class StatsTimerTask extends TimerTask implements AutoCloseable {
             }
 
             // Update the hisotry of flow statistics if needed.
-            FlowStatsRecord fsr = new FlowStatsRecordBuilder(fstats).
-                setTime(systemTime).setPeriodic(true).build();
-            FlowStatsHistory history =
-                FlowStatsUtils.update(vdf.getFlowStatsHistory(), fsr);
-            if (history == null) {
-                traceLog("Skip flow entry: %s: Too rapid.", id);
-            } else {
-                traceLog("Flow statistics has been updated: %s, %s",
-                         id, fid.getValue());
-                InstanceIdentifier<FlowStatsHistory> path =
-                    FlowStatsUtils.getIdentifier(tname, key);
-                LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
-                tx.put(oper, path, history, false);
-            }
+            FlowStatsHistory history = FlowStatsUtils.addPeriodic(
+                vdf.getFlowStatsHistory(), systemTime, fstats);
+            InstanceIdentifier<FlowStatsHistory> path =
+                FlowStatsUtils.getIdentifier(tname, key);
+            LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+            tx.put(oper, path, history, false);
+            traceLog("Flow statistics has been updated: %s, %s",
+                     id, fid.getValue());
         }
 
         /**

@@ -1,5 +1,4 @@
-
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -7,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal;
 
 import org.junit.Assert;
@@ -15,17 +15,14 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev15020
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
-
 /**
- * JUnit test for {@ SpecificPortFilter}
+ * JUnit test for {@link SpecificPortFilter}
  */
-
 public class SpecificPortFilterTest extends TestBase {
- /**
-   * Test method for
-   * {@link SpecificPortFilter#accepts(NodeConnecter,VtnPort)}
-   */
-
+    /**
+     * Test method for
+     * {@link SpecificPortFilter#accept(NodeConnector,VtnPort)}
+     */
     @Test
     public void testAccept() {
         SpecificPortFilter specificPortFilter = null;

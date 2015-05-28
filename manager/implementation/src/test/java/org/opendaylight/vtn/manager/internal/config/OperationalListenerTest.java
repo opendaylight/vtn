@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 /**
  * JUnit test for {@link OperationalListener}.
  */
-
 public class OperationalListenerTest extends TestBase {
 
      /**
@@ -97,7 +96,7 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OperationalListener#awaitConfig()}.
+     * {@link OperationalListener#awaitConfig(long)}.
      */
     @Test
     public void awaitConfigTest() {
@@ -115,7 +114,7 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OperationalListener#enterEvent()}.
+     * {@link OperationalListener#enterEvent(AsyncDataChangeEvent)}.
      */
     @Test
     public void enterEventTest() {
@@ -124,7 +123,7 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OperationalListener#exitEvent()}.
+     * {@link OperationalListener#exitEvent(Void)}.
      */
     @Test
     public void exitEventTest() {
@@ -133,7 +132,7 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OperationalListener#onCreated()}.
+     * {@link OperationalListener#onCreated(Void,IdentifiedData)}.
      */
     @Test
     public void onCreatedTest() {
@@ -152,7 +151,7 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OperationalListener#onUpdated()}.
+     * {@link OperationalListener#onUpdated(Void,ChangedData)}.
      */
     @Test
     public void onUpdatedTest() {
@@ -171,7 +170,7 @@ public class OperationalListenerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link OperationalListener#onRemoved()}.
+     * {@link OperationalListener#onRemoved(Void,IdentifiedData)}.
      */
     @Test
     public void onRemovedTest() {

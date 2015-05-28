@@ -38,11 +38,11 @@ public class FutureCancellerTest extends TestBase {
 
     /**
      * Test method for
-     * {@link FutureCanceller#Set()}.
+     * {@link FutureCanceller#set(Timer,long,ListenableFuture)} and
+     * {@link FutureCanceller#set(Timer,long,ListenableFuture,boolean)}.
      */
     @Test
     public void testSet() {
-
         listenableFuture = SettableFuture.create();
         FutureCanceller.set(timer, 10L, listenableFuture);
         FutureCanceller.set(timer, 0, listenableFuture);

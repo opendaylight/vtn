@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.routing;
 
 import org.junit.Test;
@@ -50,7 +51,7 @@ import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 
 /**
- * JUnit test for {@link VTNRoutingManager}
+ * JUnit test for {@link VTNRoutingManager}.
  */
 public class VTNRoutingManagerTest {
     /**
@@ -145,7 +146,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#addListener()}.
+     * {@link VTNRoutingManager#addListener(VTNRoutingListener)}.
      */
     @Test
     public void testAddListener() {
@@ -158,7 +159,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#getRouteResolver()}.
+     * {@link VTNRoutingManager#getRouteResolver(Integer)}.
      */
     @Test
     public void testGetRouteResolver() {
@@ -180,7 +181,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#enterEvent()}.
+     * {@link VTNRoutingManager#enterEvent(AsyncDataChangeEvent)}.
      */
     @Test
     public void testEnterEvent() {
@@ -189,7 +190,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#exitEvent()}.
+     * {@link VTNRoutingManager#exitEvent(TopologyEventContext)}.
      */
     @Test
     public void testExitEvent() {
@@ -203,7 +204,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#onCreated()}.
+     * {@link VTNRoutingManager#onCreated(TopologyEventContext,IdentifiedData)}.
      */
     @Test
     public void testOnCreated() {
@@ -218,7 +219,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#onUpdated()}.
+     * {@link VTNRoutingManager#onUpdated(TopologyEventContext,ChangedData)}.
      */
     @Test
     public void testOnUpdated() {
@@ -231,7 +232,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#onRemoved()}.
+     * {@link VTNRoutingManager#onRemoved(TopologyEventContext,IdentifiedData)}.
      */
     @Test
     public void testOnRemoved() {
@@ -277,7 +278,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#initConfig()}.
+     * {@link VTNRoutingManager#initConfig(boolean)}.
      */
     @Test
     public void testInitConfig() {
@@ -291,7 +292,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#initRpcService()}.
+     * {@link VTNRoutingManager#initRpcServices(RpcProviderRegistry,CompositeAutoCloseable)}.
      */
     @Test
     public void testInitRpcServices() {
@@ -304,7 +305,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#setPathPolicy()}.
+     * {@link VTNRoutingManager#setPathPolicy(SetPathPolicyInput)}.
      */
     @Test
     public void testSetPathPolicy() {
@@ -319,7 +320,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#removePathPolicy()}.
+     * {@link VTNRoutingManager#removePathPolicy(RemovePathPolicyInput)}.
      */
     @Test
     public void testRemovePathPolicy() {
@@ -334,7 +335,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#setPathCost()}.
+     * {@link VTNRoutingManager#setPathCost(SetPathCostInput)}.
      */
     @Test
     public void testSetPathCost() {
@@ -349,7 +350,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#removePathCost()}.
+     * {@link VTNRoutingManager#removePathCost(RemovePathCostInput)}.
      */
     @Test
     public void testRemovePathCost() {
@@ -364,7 +365,7 @@ public class VTNRoutingManagerTest {
 
     /**
      * Test method for
-     * {@link VTNRoutingManager#clearPathCost()}.
+     * {@link VTNRoutingManager#clearPathPolicy()}.
      */
     @Test
     public void testClearPathPolicy() {

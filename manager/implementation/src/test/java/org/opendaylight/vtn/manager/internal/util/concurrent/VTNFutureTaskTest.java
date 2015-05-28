@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -82,27 +82,19 @@ public class VTNFutureTaskTest extends TestBase {
 
     /**
      * Test method for
-     * {@link VTNFutureTask#AddListener()}.
-     *
+     * {@link VTNFutureTask#addListener(Runnable,Executor)}.
      */
     @Test
     public void testAddListener() {
-
-    /**
-     * creating runnable object used for test.
-     *
-     */
+        // creating runnable object used for test.
         RunnableThread listener = new RunnableThread(1);
-    /**
-     * creating executor object used for test.
-     *
-     */
+
+        // creating executor object used for test.
         Executor executor = new SequentialExecutor();
         int i = 2;
         VTNFutureTask vtnFutureTask = new VTNFutureTask(listener, i);
 
         vtnFutureTask.addListener(listener, executor);
-
     }
 
     /**
@@ -125,7 +117,7 @@ public class VTNFutureTaskTest extends TestBase {
 
     /**
      * Test method for
-     * {@link VTNFutureTask#CheckedGet(long,timeunit)}.
+     * {@link VTNFutureTask#checkedGet(long,TimeUnit)}.
      */
     @Test
     public void testcheckedGetinTime() {

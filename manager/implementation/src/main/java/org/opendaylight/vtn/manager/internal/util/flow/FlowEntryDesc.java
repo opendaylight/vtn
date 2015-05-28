@@ -39,12 +39,31 @@ public final class FlowEntryDesc {
     private final VtnFlowEntry  flowEntry;
 
     /**
-     * Construct a new instance.
+     * Determine whether flow instructions should be embedded into a log
+     * record or not.
+     */
+    private final boolean  needInstruction;
+
+    /**
+     * Construct a new instance which describes a log record including
+     * flow instructions.
      *
      * @param vfent  A {@link VtnFlowEntry} instance.
      */
     public FlowEntryDesc(VtnFlowEntry vfent) {
+        this(vfent, true);
+    }
+
+    /**
+     * Construct a new instance which describes a log record.
+     *
+     * @param vfent  A {@link VtnFlowEntry} instance.
+     * @param inst   Flow instructions are embedded into a log record
+     *               if {@code true}.
+     */
+    public FlowEntryDesc(VtnFlowEntry vfent, boolean inst) {
         flowEntry = vfent;
+        needInstruction = inst;
     }
 
     // Object
@@ -83,18 +102,20 @@ public final class FlowEntryDesc {
             append(',').append(flowEntry.getHardTimeout()).
             append("), node=").append(flowEntry.getNode().getValue()).
             append(", ingress=").append(ingress).
-            append(", cond={").append(cond).
-            append("}, actions={");
+            append(", cond={").append(cond);
 
-        FlowActionConverter converter = FlowActionConverter.getInstance();
-        OrderedComparator comp = new OrderedComparator();
-        List<Action> actions = FlowActionUtils.
-            getActions(flowEntry.getInstructions(), comp);
-        String sep = "";
-        for (Action action: actions) {
-            builder.append(sep).
-                append(converter.getDescription(action.getAction()));
-            sep = ", ";
+        if (needInstruction) {
+            builder.append("}, actions={");
+            FlowActionConverter converter = FlowActionConverter.getInstance();
+            OrderedComparator comp = new OrderedComparator();
+            List<Action> actions = FlowActionUtils.
+                getActions(flowEntry.getInstructions(), comp);
+            String sep = "";
+            for (Action action: actions) {
+                builder.append(sep).
+                    append(converter.getDescription(action.getAction()));
+                sep = ", ";
+            }
         }
 
         return builder.append('}').toString();

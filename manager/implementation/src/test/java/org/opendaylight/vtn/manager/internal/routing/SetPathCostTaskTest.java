@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.routing;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
@@ -29,6 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.se
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathCostOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnPortDesc;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.pathpolicy.rev150209.SetPathCostInputBuilder;
+
  /**
  * SetPathCostTask test class is to test  the MD-SAL transaction task that set
  * all the specified link cost configurations into the path policy
@@ -208,7 +210,7 @@ public class SetPathCostTaskTest extends TestBase {
 
     /**
      * Test method for
-     * {@link SetPathCostTask#OnStarted()}.
+     * {@link SetPathCostTask#onStarted(TxContext)}.
      */
     @Test
     public void testOnStarted() {
@@ -235,7 +237,7 @@ public class SetPathCostTaskTest extends TestBase {
 
     /**
      * Test method for
-     * {@link SetPathCostTask#OnSuccess()}.
+     * {@link SetPathCostTask#onSuccess(VTNManagerProvider,List)}.
      */
     @Test
     public void testOnSuccess() {

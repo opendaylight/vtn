@@ -25,7 +25,10 @@ import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxQueue;
 import org.opendaylight.vtn.manager.internal.cluster.MacVlan;
+import org.opendaylight.vtn.manager.internal.flow.stats.AddFlowStatsTask;
+import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
+import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowCache;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
@@ -43,6 +46,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.get.data
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.AveragedDataFlowStats;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.AveragedDataFlowStatsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowStatsBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.FlowStatsHistory;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.vtn.data.flow.fields.flow.stats.history.FlowStatsRecord;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanHost;
@@ -61,7 +65,7 @@ public abstract class ReadFlowFuture
     /**
      * Default value for the averaged statistics interval.
      */
-    private static final long  DEFAULT_AVERAGE_INTERVAL = 10;
+    private static final long  DEFAULT_AVERAGE_INTERVAL = 10L;
 
     /**
      * The number of milliseconds in a second.
@@ -69,9 +73,20 @@ public abstract class ReadFlowFuture
     private static final double  MILLISEC = 1000D;
 
     /**
+     * The number of milliseconds to wait for completion of transaction for
+     * getting flow statistics.
+     */
+    private static final long  STATS_READ_TIMEOUT = 10000L;
+
+    /**
      * The MD-SAL transaction queue used to update the MD-SAL datastore.
      */
     private final TxQueue  txQueue;
+
+    /**
+     * Flow statistics reader service.
+     */
+    private final StatsReaderService  statsReader;
 
     /**
      * A {@link SalNode} instance which specifies the physical switch.
@@ -105,11 +120,13 @@ public abstract class ReadFlowFuture
      * @param ctx    A {@link TxContext} instance.
      * @param txq    A {@link TxQueue} instance used to update the MD-SAL
      *               datastore.
+     * @param srs    The flow statistics reader service.
      * @param input  Input of the RPC call.
      * @return  A {@link ReadFlowFuture} instance.
      * @throws VTNException  An error occurred.
      */
     public static final ReadFlowFuture create(TxContext ctx, TxQueue txq,
+                                              StatsReaderService srs,
                                               GetDataFlowInput input)
         throws VTNException {
         if (input == null) {
@@ -117,8 +134,8 @@ public abstract class ReadFlowFuture
         }
 
         return (input.getFlowId() == null)
-            ? new ReadDataFlowFuture(ctx, txq, input)
-            : new ReadSingleFlowFuture(ctx, txq, input);
+            ? new ReadDataFlowFuture(ctx, txq, srs, input)
+            : new ReadSingleFlowFuture(ctx, txq, srs, input);
     }
 
     /**
@@ -127,11 +144,13 @@ public abstract class ReadFlowFuture
      * @param ctx    A {@link TxContext} instance.
      * @param txq    A {@link TxQueue} instance used to update the MD-SAL
      *               datastore.
+     * @param srs    The flow statistics reader service.
      * @param input  Input of the RPC call.
      * @throws VTNException  An error occurred.
      */
     protected ReadFlowFuture(TxContext ctx, TxQueue txq,
-                             GetDataFlowInput input) throws VTNException {
+                             StatsReaderService srs, GetDataFlowInput input)
+        throws VTNException {
         super(ctx, input.getTenantName());
         txQueue = txq;
 
@@ -142,6 +161,9 @@ public abstract class ReadFlowFuture
         }
         flowMode = mode;
 
+        statsReader = (mode == DataFlowMode.UPDATESTATS)
+            ? srs : null;
+
         Integer interval = input.getAverageInterval();
         long ival = (interval == null) ? 0 : interval.longValue();
         if (ival <= 0) {
@@ -150,6 +172,17 @@ public abstract class ReadFlowFuture
         averageInterval = ival;
 
         setCondition(ctx, input);
+    }
+
+    /**
+     * Return the flow statistics reader service.
+     *
+     * @return  A {@link StatsReaderService} instance if flow statistics
+     *          information needs to be fetched from switches.
+     *          Otherwise {@code null}.
+     */
+    protected final StatsReaderService getStatsReaderService() {
+        return statsReader;
     }
 
     /**
@@ -248,14 +281,14 @@ public abstract class ReadFlowFuture
      * </p>
      *
      * @param fc       A {@link FlowCache} instance.
-     * @param current  A {@link FlowStatsRecord} that contains the current
-     *                 statistics information. If {@code null}, only flow
+     * @param current  A future which will return the current flow statistics
+     *                 for the given data flow. If {@code null}, only flow
      *                 statistics cached in {@code fc} are used.
      * @return  A {@link DataFlowInfo} instance on success.
      *          {@code null} on failure.
      */
-    protected final DataFlowInfo toDataFlowInfo(FlowCache fc,
-                                                FlowStatsRecord current) {
+    protected final DataFlowInfo toDataFlowInfo(
+        FlowCache fc, VTNFuture<FlowStatsRecord> current) {
         try {
             InventoryReader reader = getTxContext().getInventoryReader();
             DataFlowInfoBuilder builder =
@@ -334,38 +367,84 @@ public abstract class ReadFlowFuture
     }
 
     /**
+     * Return a list of flow statistics history records in the given VTN
+     * data flow.
+     *
+     * @param vdf  The target VTN data flow.
+     * @return  A list of {@link FlowStatsRecord} instance.
+     */
+    private List<FlowStatsRecord> getFlowStatsRecords(VtnDataFlow vdf) {
+        FlowStatsHistory history = vdf.getFlowStatsHistory();
+        if (history != null) {
+            List<FlowStatsRecord> list = history.getFlowStatsRecord();
+            if (list != null) {
+                return list;
+            }
+        }
+
+        // No statistics information is available.
+        return Collections.<FlowStatsRecord>emptyList();
+    }
+
+    /**
+     * Return the flow statistics record from the given future.
+     *
+     * @param vdf      The target VTN data flow.
+     * @param current  A future which will return the current flow statistics
+     *                 for the given data flow. Note that {@code null} is
+     *                 returned if {@code null} is specified.
+     * @return  A {@link FlowStatsRecord} instance returned by the given
+     *          future. {@code null} if the flow statistics is not available.
+     */
+    private FlowStatsRecord getFlowStatsRecord(
+        VtnDataFlow vdf, VTNFuture<FlowStatsRecord> current) {
+        if (current != null) {
+            try {
+                return current.checkedGet(STATS_READ_TIMEOUT,
+                                          TimeUnit.MILLISECONDS);
+            } catch (VTNException | RuntimeException e) {
+                Logger logger = LoggerFactory.getLogger(getClass());
+                String msg = "Flow statistics is unavailable: flowId={}" +
+                    vdf.getFlowId().getValue();
+                logger.warn(msg, e);
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Set the flow statistics information into the given data flow info
      * builder.
      *
      * @param builder  A {@link DataFlowInfoBuilder} instance.
      * @param fc       A {@link FlowCache} instance.
-     * @param current  A {@link FlowStatsRecord} that contains the current
-     *                 statistics information. If {@code null}, only flow
+     * @param current  A future which will return the current flow statistics
+     *                 for the given data flow. If {@code null}, only flow
      *                 statistics cached in {@code fc} are used.
      */
     private void setStatistics(DataFlowInfoBuilder builder, FlowCache fc,
-                               FlowStatsRecord current) {
-        FlowStatsHistory history = fc.getDataFlow().getFlowStatsHistory();
-        if (history == null) {
-            // No statistics information is available.
-            return;
-        }
-
-        List<FlowStatsRecord> list = history.getFlowStatsRecord();
-        if (list == null || list.isEmpty()) {
-            // No statistics information is available.
-            return;
-        }
-
+                               VTNFuture<FlowStatsRecord> current) {
         // Sort history records in ascending order of the system time.
+        VtnDataFlow vdf = fc.getDataFlow();
+        List<FlowStatsRecord> list = getFlowStatsRecords(vdf);
         TreeMap<Long, FlowStatsRecord> map = new TreeMap<>();
         for (FlowStatsRecord fsr: list) {
             map.put(fsr.getTime(), fsr);
         }
 
         // Add the current statistics if specified.
-        if (current != null) {
-            map.put(current.getTime(), current);
+        FlowStatsRecord cfsr = getFlowStatsRecord(vdf, current);
+        if (cfsr != null) {
+            map.put(cfsr.getTime(), cfsr);
+            AddFlowStatsTask task = new AddFlowStatsTask(
+                getTenantName(), vdf.getFlowId(), cfsr);
+            txQueue.post(task);
+        }
+
+        if (map.isEmpty()) {
+            // No statistics information is available.
+            return;
         }
 
         FlowStatsRecord latest = map.lastEntry().getValue();
