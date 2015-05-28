@@ -36,12 +36,14 @@ import org.opendaylight.vtn.manager.internal.flow.add.FlowAddContext;
 import org.opendaylight.vtn.manager.internal.flow.add.PutFlowTxTask;
 import org.opendaylight.vtn.manager.internal.flow.reader.FlowCountFuture;
 import org.opendaylight.vtn.manager.internal.flow.reader.ReadFlowFuture;
+import org.opendaylight.vtn.manager.internal.flow.remove.ClearNodeFlowsTask;
 import org.opendaylight.vtn.manager.internal.flow.remove.DeleteFlowTxTask;
 import org.opendaylight.vtn.manager.internal.flow.remove.FlowRemoveContext;
 import org.opendaylight.vtn.manager.internal.flow.remove.NodeFlowRemover;
 import org.opendaylight.vtn.manager.internal.flow.remove.PortFlowRemover;
 import org.opendaylight.vtn.manager.internal.flow.remove.RemovedFlowRemover;
 import org.opendaylight.vtn.manager.internal.flow.stats.SalFlowIdResolver;
+import org.opendaylight.vtn.manager.internal.flow.stats.StatsReaderService;
 import org.opendaylight.vtn.manager.internal.flow.stats.StatsTimerTask;
 import org.opendaylight.vtn.manager.internal.inventory.VTNInventoryListener;
 import org.opendaylight.vtn.manager.internal.inventory.VtnNodeEvent;
@@ -57,7 +59,6 @@ import org.opendaylight.vtn.manager.internal.util.flow.FlowFinder;
 import org.opendaylight.vtn.manager.internal.util.flow.FlowUtils;
 import org.opendaylight.vtn.manager.internal.util.flow.VTNFlowBuilder;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalNode;
-import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorCallback;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcFuture;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcUtils;
@@ -85,23 +86,18 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.Nex
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlows;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.VtnFlowsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.flow.rev150313.tenant.flow.info.VtnDataFlow;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.VtnOpenflowVersion;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VtnUpdateType;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowAdded;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowRemoved;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowUpdated;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeErrorNotification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.NodeExperimenterErrorNotification;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SwitchFlowRemoved;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 
 /**
  * Flow entry manager.
@@ -157,6 +153,11 @@ public final class VTNFlowManager extends SalNotificationListener
      */
     private final ConcurrentMap<FlowCookie, VtnFlowId>  removedCookies =
         new ConcurrentHashMap<>();
+
+    /**
+     * Flow statistics reader service.
+     */
+    private final StatsReaderService  statsReader;
 
     /**
      * MD-SAL transaction task to initialize internal flow containers.
@@ -335,7 +336,7 @@ public final class VTNFlowManager extends SalNotificationListener
         vtnProvider = provider;
         txQueue = new TxQueueImpl("VTN Flow DS", provider);
         addCloseable(txQueue);
-        flowThread = new VTNThreadPool("VTN Flow Thread", 1, 0);
+        flowThread = new VTNThreadPool("VTN Flow Thread");
         addCloseable(flowThread);
 
         try {
@@ -347,6 +348,10 @@ public final class VTNFlowManager extends SalNotificationListener
 
             // Register MD-SAL flow ID resolver.
             addCloseable(new SalFlowIdResolver(provider, txQueue));
+
+            // Start flow statistics reader service.
+            statsReader = new StatsReaderService(provider, nsv);
+            addCloseable(statsReader);
         } catch (Exception e) {
             String msg = "Failed to initialize VTN flow service.";
             LOG.error(msg, e);
@@ -358,26 +363,12 @@ public final class VTNFlowManager extends SalNotificationListener
     /**
      * Shut down the VTN flow service.
      */
-    public synchronized void shutdown() {
-        if (flowService != null) {
-            // No more flow transaction will be accepted.
-            flowService = null;
+    public void shutdown() {
+        shutdownFlowService();
 
-            // Wait for all flow transactions to complete.
-            TimeoutCounter tc = TimeoutCounter.
-                newTimeout(SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
-            try {
-                while (txCount > 0) {
-                    tc.await(this);
-                }
-                return;
-            } catch (TimeoutException e) {
-                if (txCount > 0) {
-                    LOG.warn("Flow transaction did not complete: {}", txCount);
-                }
-            } catch (InterruptedException e) {
-                LOG.warn("Shutdown wait has been interrupted.");
-            }
+        StatsReaderService srs = statsReader;
+        if (srs != null) {
+            srs.shutdown();
         }
     }
 
@@ -426,13 +417,29 @@ public final class VTNFlowManager extends SalNotificationListener
     }
 
     /**
-     * Return the MD-SAL flow service.
-     *
-     * @return  The MD-SAL flow service.
-     *          {@code null} if the flow service is already closed.
+     * Shut down the VTN flow service.
      */
-    private synchronized SalFlowService getFlowService() {
-        return flowService;
+    private synchronized void shutdownFlowService() {
+        if (flowService != null) {
+            // No more flow transaction will be accepted.
+            flowService = null;
+
+            // Wait for all flow transactions to complete.
+            TimeoutCounter tc = TimeoutCounter.
+                newTimeout(SHUTDOWN_TIMEOUT, TimeUnit.SECONDS);
+            try {
+                while (txCount > 0) {
+                    tc.await(this);
+                }
+                return;
+            } catch (TimeoutException e) {
+                if (txCount > 0) {
+                    LOG.warn("Flow transaction did not complete: {}", txCount);
+                }
+            } catch (InterruptedException e) {
+                LOG.warn("Shutdown wait has been interrupted.");
+            }
+        }
     }
 
     /**
@@ -476,6 +483,40 @@ public final class VTNFlowManager extends SalNotificationListener
     }
 
     /**
+     * Clear the flow table in the specified switch.
+     *
+     * @param snode  A {@link SalNode} instance which specifies the target
+     *               switch.
+     * @param ofver  A {@link VtnOpenflowVersion} instance which specifies the
+     *               OpenFlow protocol version. {@code null} means the protocol
+     *               version is not yet determined.
+     */
+    private synchronized void clearFlowTable(SalNode snode,
+                                             VtnOpenflowVersion ofver) {
+        SalFlowService sfs = flowService;
+        if (sfs == null) {
+            return;
+        }
+
+        // Increment the transaction counter.
+        assert txCount >= 0;
+        txCount++;
+
+        // Start ClearNodeFlowsTask.
+        ClearNodeFlowsTask task = new ClearNodeFlowsTask(
+            vtnProvider, sfs, statsReader, snode, ofver);
+        VTNFuture<Void> f = task.getFuture();
+        if (!flowThread.executeTask(task)) {
+            f.cancel(false);
+        }
+
+        // Add callback which will decrement the transaction counter when
+        // the future completes.
+        TxCounterCallback<Void> cb = new TxCounterCallback<>();
+        Futures.addCallback(f, cb);
+    }
+
+    /**
      * Search for the VTN data flow associated with the given ID.
      *
      * @param flowId  Identifier for the VTN data flow.
@@ -499,7 +540,7 @@ public final class VTNFlowManager extends SalNotificationListener
     // AutoCloseable
 
     /**
-     * Close the internal packet service.
+     * Close the VTN flow manager service.
      */
     @Override
     public void close() {
@@ -553,29 +594,8 @@ public final class VTNFlowManager extends SalNotificationListener
         VtnUpdateType type = ev.getUpdateType();
         if (type == VtnUpdateType.CREATED) {
             // Clear the flow table in the new switch.
-            SalFlowService sfs = getFlowService();
-            if (sfs != null) {
-                SalNode snode = ev.getSalNode();
-                LOG.debug("{}: Clean up the flow table.", snode);
-                Short tid = Short.valueOf(FlowUtils.TABLE_ID);
-                FlowTableRef tref = new FlowTableRef(
-                    snode.getFlowTableIdentifier(tid));
-                StringBuilder sb = new StringBuilder("clean-up:").
-                    append(snode);
-                RemoveFlowInput input = new RemoveFlowInputBuilder().
-                    setNode(snode.getNodeRef()).
-                    setFlowTable(tref).
-                    setTransactionUri(new Uri(sb.toString())).
-                    setTableId(tid).
-                    setStrict(false).
-                    setBarrier(true).
-                    build();
-                Future<RpcResult<RemoveFlowOutput>> f = sfs.removeFlow(input);
-                RpcErrorCallback<RemoveFlowOutput> cb = new RpcErrorCallback<>(
-                    LOG, "clean-up-flow",
-                    "Failed to clean up the flow table: %s", snode);
-                vtnProvider.setCallback(f, cb);
-            }
+            VtnOpenflowVersion ofver = ev.getVtnNode().getOpenflowVersion();
+            clearFlowTable(ev.getSalNode(), ofver);
         }
 
         // Uninstall VTN flows affected by the node.
@@ -607,7 +627,8 @@ public final class VTNFlowManager extends SalNotificationListener
         GetDataFlowInput input) {
         TxContext ctx = vtnProvider.newTxContext();
         try {
-            ReadFlowFuture f = ReadFlowFuture.create(ctx, txQueue, input);
+            ReadFlowFuture f =
+                ReadFlowFuture.create(ctx, txQueue, statsReader, input);
             return new RpcFuture<List<DataFlowInfo>, GetDataFlowOutput>(f, f);
         } catch (VTNException | RuntimeException e) {
             ctx.cancelTransaction();

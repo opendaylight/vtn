@@ -6,47 +6,58 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.util.tx;
 
-import org.junit.Assert;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.List;
-import java.util.ArrayList;
+import org.junit.experimental.categories.Category;
+
+import org.opendaylight.vtn.manager.internal.TxContext;
 import org.opendaylight.vtn.manager.internal.TxTask;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFuture;
 import org.opendaylight.vtn.manager.internal.util.concurrent.VTNFutureTask;
-import java.util.concurrent.Callable;
-import org.opendaylight.vtn.manager.internal.TxContext;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import org.opendaylight.vtn.manager.internal.SlowTest;
 
 /**
  * JUnit test for {@link TxSyncFuture}
  */
+@Category(SlowTest.class)
 public class TxSyncFutureTest {
     /**
-      * Static instance of TxTask to perform unit testing.
-      */
+     * Static instance of TxTask to perform unit testing.
+     */
     public static TxTask<Integer> txTask;
+
     /**
-      * Static instance of VTNFuture to perform unit testing.
-      */
+     * Static instance of VTNFuture to perform unit testing.
+     */
     public static VTNFuture<Integer> vtnFuture;
+
     /**
-      * Static instance of Callable to perform unit testing.
-      */
+     * Static instance of Callable to perform unit testing.
+     */
     public static Callable<Integer> callable;
+
     /**
-      * Static instance of CompositeTxTask to perform unit testing.
-      */
+     * Static instance of CompositeTxTask to perform unit testing.
+     */
     public static CompositeTxTask compostiteTxTask;
+
     /**
-      * Static instance of TxSyncFuture to perform unit testing.
-      */
+     * Static instance of TxSyncFuture to perform unit testing.
+     */
     public static TxSyncFuture<Integer> txSyncFuture;
 
     /**
@@ -98,7 +109,7 @@ public class TxSyncFutureTest {
 
     /**
      * Test method for
-     * {@link TxSyncFuture#cancel()}.
+     * {@link TxSyncFuture#cancel(boolean)}.
      */
     @Test
     public void testCancel() {
@@ -145,7 +156,7 @@ public class TxSyncFutureTest {
     /**
      * Test method for
      * {@link TxSyncFuture#get()} and
-     * {@link TxSyncFuture#ger(long, TimeUnit}.
+     * {@link TxSyncFuture#get(long, TimeUnit)}.
      */
     @Test
     public void testGet() {

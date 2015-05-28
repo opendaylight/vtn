@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal.inventory;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,6 +76,19 @@ abstract class InventoryUpdateTask<T extends DataObject, L>
      */
     final boolean hasUpdates() {
         return !updated.isEmpty();
+    }
+
+    /**
+     * Return a map which keeps updated inventories.
+     *
+     * <p>
+     *   This method is used only for test.
+     * </p>
+     *
+     * @return  A map which keeps updated inventories.
+     */
+    final Map<L, InstanceIdentifier<T>> getUpdatedMap() {
+        return Collections.unmodifiableMap(updated);
     }
 
     /**
