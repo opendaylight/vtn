@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -187,7 +187,7 @@ do_lock(const char *path, uint32_t flags, uint32_t holdtime)
 	pfc_flock_t	lk;
 	int		err;
 	pid_t		pid = getppid();
-	char		*contents;
+	char		*contents = NULL;
 	size_t		contents_size = 0;
 
 	err = pfc_flock_open(&lk, path, O_RDWR | O_CREAT, 0644);
