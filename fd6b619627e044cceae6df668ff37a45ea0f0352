@@ -1,0 +1,50 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a9dcd25_8eee70eb",
+        "filename": "application/ODL_VSEM_PROVIDER_SRC/README.txt",
+        "patchSetId": 2
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2015-06-01T09:55:04Z",
+      "side": 1,
+      "message": "I commented that this should be \"application/ODL_VSEM_PROVIDER_SRC/target\".\nSee comment on the previous patch.",
+      "range": {
+        "startLine": 46,
+        "startChar": 63,
+        "endLine": 46,
+        "endChar": 132
+      },
+      "revId": "fd6b619627e044cceae6df668ff37a45ea0f0352",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a9dcd25_6ef1a4cc",
+        "filename": "application/ODL_VSEM_PROVIDER_SRC/README.txt",
+        "patchSetId": 2
+      },
+      "lineNbr": 49,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2015-06-01T09:55:04Z",
+      "side": 1,
+      "message": "Typo?",
+      "range": {
+        "startLine": 49,
+        "startChar": 10,
+        "endLine": 49,
+        "endChar": 15
+      },
+      "revId": "fd6b619627e044cceae6df668ff37a45ea0f0352",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
