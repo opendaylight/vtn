@@ -241,13 +241,7 @@ public final class VTNRoutingManager
     @Override
     protected void onCreated(TopologyEventContext ectx,
                              IdentifiedData<VtnLink> data) {
-        VtnLink vlink = data.getValue();
-        try {
-            ectx.addCreated(vlink);
-        } catch (IllegalArgumentException e) {
-            LOG.debug("Ignore unsupported inter-switch link creation: " +
-                      vlink, e);
-        }
+        ectx.addCreated(data.getValue());
     }
 
     /**
@@ -265,13 +259,7 @@ public final class VTNRoutingManager
     @Override
     protected void onRemoved(TopologyEventContext ectx,
                              IdentifiedData<VtnLink> data) {
-        VtnLink vlink = data.getValue();
-        try {
-            ectx.addRemoved(vlink);
-        } catch (IllegalArgumentException e) {
-            LOG.debug("Ignore unsupported inter-switch link deletion: " +
-                      vlink, e);
-        }
+        ectx.addRemoved(data.getValue());
     }
 
     /**
