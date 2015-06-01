@@ -1,0 +1,44 @@
+{
+  "comments": [
+    {
+      "key": {
+        "uuid": "1a9dcd25_ceda3878",
+        "filename": "application/ODL_VSEM_PROVIDER_SRC/README.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 46,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2015-06-01T09:19:47Z",
+      "side": 1,
+      "message": "This should be \"application/ODL_VSEM_PROVIDER_SRC/target\".\nAbsolute path to VSEM provider build directory depends on user environment. In addition, current VSEM provider build environment generates files under \"target\" directory.",
+      "range": {
+        "startLine": 46,
+        "startChar": 63,
+        "endLine": 46,
+        "endChar": 130
+      },
+      "revId": "be000e5586d387baa18dfcb8ffea547f383c43d8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    },
+    {
+      "key": {
+        "uuid": "1a9dcd25_2e387c9f",
+        "filename": "application/ODL_VSEM_PROVIDER_SRC/README.txt",
+        "patchSetId": 1
+      },
+      "lineNbr": 47,
+      "author": {
+        "id": 527
+      },
+      "writtenOn": "2015-06-01T09:19:47Z",
+      "side": 1,
+      "message": "I think we need to describe how to install ODL_SCVMM_PROVIDER.zip into SCVMM in detail.\nWhere is the destination directory?\nDo we need to extract ODL_SCVMM_PROVIDER.zip?",
+      "revId": "be000e5586d387baa18dfcb8ffea547f383c43d8",
+      "serverId": "7fc14799-209e-464c-9743-7a06c2c21a81",
+      "unresolved": false
+    }
+  ]
+}
