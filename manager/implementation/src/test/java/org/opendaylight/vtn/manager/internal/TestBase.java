@@ -9,19 +9,24 @@
 
 package org.opendaylight.vtn.manager.internal;
 
+import static org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag.MISSING_ELEMENT;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.xml.bind.JAXBContext;
@@ -67,6 +72,7 @@ import org.opendaylight.vtn.manager.internal.cluster.VTenantImpl;
 import org.opendaylight.vtn.manager.internal.cluster.VlanMapPath;
 import org.opendaylight.vtn.manager.internal.packet.PacketInEvent;
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
+import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 
@@ -86,6 +92,9 @@ import org.opendaylight.controller.sal.utils.GlobalConstants;
 import org.opendaylight.controller.sal.core.UpdateType;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
+import org.opendaylight.yangtools.yang.common.RpcError.ErrorType;
+import org.opendaylight.yangtools.yang.common.RpcError;
+import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.node.info.VtnPortBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.inventory.rev150209.vtn.port.info.PortLink;
@@ -2318,6 +2327,85 @@ public abstract class TestBase extends Assert {
             //ex.printStackTrace();
             return null;
         }
+    }
+
+    /**
+     * Return the value of the field configured in the given object.
+     *
+     * @param obj   The target object.
+     * @param type  A class which specifies the type of the field value.
+     * @param name  The name of the field.
+     * @param <T>   The type of the field value.
+     * @return  The value of the field configured in the given object.
+     * @throws Exception  An error occurred.
+     */
+    public static <T> T getFieldValue(Object obj, Class<T> type, String name)
+        throws Exception {
+        return getFieldValue(obj, obj.getClass(), type, name);
+    }
+
+    /**
+     * Return the value of the field configured in the given object.
+     *
+     * @param obj      The target object.
+     * @param objType  A class which contains the declaration of the specified
+     *                 field.
+     * @param type     A class which specifies the type of the field value.
+     * @param name     The name of the field.
+     * @param <T>      The type of the field value.
+     * @return  The value of the field configured in the given object.
+     * @throws Exception  An error occurred.
+     */
+    public static <T> T getFieldValue(Object obj, Class<?> objType,
+                                      Class<T> type, String name)
+        throws Exception {
+        Field field = objType.getDeclaredField(name);
+        field.setAccessible(true);
+        Object value = field.get(obj);
+
+        assertTrue(type.isInstance(value));
+        return type.cast(value);
+    }
+
+    /**
+     * Ensure that the given future associated with RPC contains an error state
+     * caused by a null RPC input.
+     *
+     * @param future  A future associated with RPC.
+     * @param <T>     The type of RPC output.
+     * @throws Exception  An error occurred.
+     */
+    public static <T> void verifyRpcInputNull(Future<RpcResult<T>> future)
+        throws Exception {
+        verifyRpcFailure(future, MISSING_ELEMENT, "BADREQUEST",
+                         "RPC input cannot be null");
+    }
+
+    /**
+     * Ensure that the given future associated with RPC contains an error
+     * state.
+     *
+     * @param future  A future associated with RPC.
+     * @param tag     The expected error tag.
+     * @param apTag   The expected application error tag.
+     * @param msg     The expected error message.
+     * @param <T>     The type of RPC output.
+     * @throws Exception  An error occurred.
+     */
+    public static <T> void verifyRpcFailure(Future<RpcResult<T>> future,
+                                            RpcErrorTag tag, String apTag,
+                                            String msg) throws Exception {
+        RpcResult<T> result = future.get(1L, TimeUnit.SECONDS);
+        assertEquals(false, result.isSuccessful());
+
+        Collection<RpcError> errors = result.getErrors();
+        assertEquals(1, errors.size());
+
+        RpcError error = errors.iterator().next();
+        assertEquals(ErrorType.APPLICATION, error.getErrorType());
+        assertEquals(tag.toString(), error.getTag());
+        assertEquals(apTag, error.getApplicationTag());
+        assertEquals(msg, error.getMessage());
     }
 
     /**
