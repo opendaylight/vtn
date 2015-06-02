@@ -1,10 +1,7 @@
-#These source files are used to build the VSEM Provider that can be used with SCVMM to enable OpenDayLight as a Network Service
+#These source files are used to build the VSEM Provider that can be used with SCVMM to enable OpenDaylight as a Network Service
 
-#To Enable HTTPS in VTN Coordinator, Please go through the below link,
-https://wiki.opendaylight.org/view/OpenDaylight_Virtual_Tenant_Network_(VTN):VTN_Coordinator:Enable_HTTPS_in_VTN_Coordinator#APR_Installation_Step
-
-MONO and NUGET Installation Steps
-=================================
+Prerequisites to build VSEM Provider in your machine
+====================================================
 
 1. Platforms
    * CentOS/CentOS 6
@@ -40,11 +37,10 @@ MONO and NUGET Installation Steps
    Installing MONO and NUGET in Ubuntu
    * sudo apt-get install mono-complete nuget
 
-4. Get the source code
+4. Installing maven in Fedora/CentOS/RHEL.
+   * Download maven from the following page "http://maven.apache.org/download.cgi" and follow the instructions in the page to install maven in your machine.
 
-5. Install maven in your machine using the below command
-   * mvn install
+5. To build VSEM Provider in your machine, Please run the "mvn install" command on top of the vtn.git directory.
 
-6. Run the following commands to generate assemblies to be copied to SCVMM and use
-   * ./configure
-   * make install
+6. The below generated zip file needs to be copied to SCVMM machine
+   * ODL_SCVMM_PROVIDER.zip(This zip file is generated inside "/root/vtn/application/ODL_VSEM_PROVIDER_SRC/dist/odl_vsem_provider/" directory.)
