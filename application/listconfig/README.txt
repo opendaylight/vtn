@@ -36,7 +36,7 @@ https://wiki.opendaylight.org/view/Release/Helium/VTN/User_Guide/OpenStack_Suppo
 
 4. After Build Success, please Navigate to the target folder with following
 command:
-    cd list_vtn_configuration/target/
+    cd listconfig/target/
 
 5. List the files in the target directory:
     ls
