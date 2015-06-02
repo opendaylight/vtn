@@ -43,15 +43,15 @@ Prerequisites to build VSEM Provider in your machine
 5. To build VSEM Provider in your machine, Please run the "mvn install" command on top of the vtn.git directory.
 
 6. The below generated zip file needs to be copied to SCVMM machine
-   * ODL_SCVMM_PROVIDER.zip(This zip file is generated inside "application/ODL_VSEM_PROVIDER_SRC/target/" directory.)
+   * ODL_SCVMM_PROVIDER.zip(This zip file is generated inside "application/vsemprovider/target/" directory.)
    * ODL_SCVMM_PROVIDER.zip file needs to be copied to SCVMM machine.
    * Unzip the ODL_SCVMM_PROVIDER.zip file anywhere in your SCVMM machine.
    * Stop SCVMM service from "service manager->tools->servers->select system center virtual machine manager" and click stop.
    * Go to "C:/Program Files" in your SCVMM machine. Inside "C:/Program Files", create a folder named as "ODLProvider".
    * Inside "C:/Program Files/ODLProvider", create a folder named as "Module" in your SCVMM machine.
    * Inside "C:/Program Files/ODLProvider/Module", Create two folders named as "Odl.VSEMProvider" and "VSEMOdlUI" in your SCVMM machine.
-   * Copy the "VSEMOdl.dll" file from "ODL_SCVMM_Provider/ODL_VSEM_PROVIDER" to "C:/Program Files/ODLProvider/Module/Odl.VSEMProvider" in your SCVMM machine.
-   * Copy the "VSEMOdlUI.dll" file from "ODL_SCVMM_Provider/ODL_VSEM_PROVIDER_UI" to "C:/Program Files/ODLProvider/Module/VSEMOdlUI" in your SCVMM machine.
-   * Copy the "reg_entry.reg" file from "ODL_SCVMM_Provider/Register_settings" to your SCVMM desktop and double click the "reg_entry.reg" file to install registry entry in your SCVMM machine.
+   * Copy the "VSEMOdl.dll" file from "ODL_SCVMM_PROVIDER/ODL_VSEM_PROVIDER" to "C:/Program Files/ODLProvider/Module/Odl.VSEMProvider" in your SCVMM machine.
+   * Copy the "VSEMOdlUI.dll" file from "ODL_SCVMM_PROVIDER/ODL_VSEM_PROVIDER_UI" to "C:/Program Files/ODLProvider/Module/VSEMOdlUI" in your SCVMM machine.
+   * Copy the "reg_entry.reg" file from "ODL_SCVMM_PROVIDER/Register_settings" to your SCVMM desktop and double click the "reg_entry.reg" file to install registry entry in your SCVMM machine.
    * Download "PF1000.msi" from this link "https://www.pf-info.com/License/en/index.php?url=index/index_non_buyer" and place into "C:/Program Files/Switch Extension Drivers" in your SCVMM machine.
    * Start SCVMM service from "service manager->tools->servers->select system center virtual machine manager" and click start.

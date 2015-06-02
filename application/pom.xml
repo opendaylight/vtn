@@ -88,8 +88,8 @@
   </build>
 
   <modules>
-    <module>list_vtn_configuration</module>
-    <module>ODL_VSEM_PROVIDER_SRC</module>
+    <module>listconfig</module>
+    <module>vsemprovider</module>
   </modules>
 
 </project>
