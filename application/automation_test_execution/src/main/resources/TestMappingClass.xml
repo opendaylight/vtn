@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+#
+# Copyright (c) 2015 NEC Corporation
+# All rights reserved.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License v1.0 which accompanies this
+# distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
+#
+-->
+<TestMappingClass>
+    <TestSuite Name="TestSuite1">
+        <TestCases>
+            <TestCase Name="CreateVTenant">
+                <Classes>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VTenantConfig</Class>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VTenantConfig</Class>
+                    <Class>org.opendaylight.vtn.app.run.config.rest.response.beans.VTenantNorthBound</Class>
+                </Classes>
+            </TestCase>
+        </TestCases>
+    </TestSuite>
+    <TestSuite Name="TestSuite2">
+        <TestCases>
+            <TestCase Name="CreateVBridge">
+                <Classes>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VTenantConfig</Class>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VBridgeConfig</Class>
+                </Classes>
+            </TestCase>
+        </TestCases>
+    </TestSuite>
+    <TestSuite Name="TestSuite3">
+        <TestCases>
+          <TestCase Name="CreateVTerminal">
+            <Classes>
+              <Class>org.opendaylight.vtn.app.ate.beans.response.VTenantConfig</Class>
+              <Class>org.opendaylight.vtn.app.ate.beans.response.VTerminalConfig</Class>
+            </Classes>
+          </TestCase>
+        </TestCases>
+      </TestSuite>
+     <TestSuite Name="TestSuite4">
+        <TestCases>
+            <TestCase Name="CreateVbrIfConfig">
+                <Classes>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VTenantConfig</Class>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VBridgeConfig</Class>
+                    <Class>org.opendaylight.vtn.app.ate.beans.response.VbrInterface</Class>
+                </Classes>
+            </TestCase>
+        </TestCases>
+    </TestSuite>
+</TestMappingClass>
