@@ -90,6 +90,7 @@
   <modules>
     <module>listconfig</module>
     <module>vsemprovider</module>
+    <module>automation_test_execution</module>
   </modules>
 
 </project>
