@@ -40,7 +40,7 @@ Prerequisites to build VSEM Provider in your machine
 4. Installing maven in Fedora/CentOS/RHEL.
    * Download maven from the following page "http://maven.apache.org/download.cgi" and follow the instructions in the page to install maven in your machine.
 
-5. To build VSEM Provider in your machine, Please run the "mvn install" command on top of the vtn.git directory.
+5. To build VSEM Provider in your machine, Please run the "mvn install" command on top of the "application/vsemprovider" directory.
 
 6. The below generated zip file needs to be copied to SCVMM machine
    * ODL_SCVMM_PROVIDER.zip(This zip file is generated inside "application/vsemprovider/target/" directory.)
