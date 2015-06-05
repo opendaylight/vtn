@@ -59,6 +59,14 @@
             <module>
               <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">prefix:binding-notification-broker</type>
               <name>binding-notification-broker</name>
+              <notification-adapter xmlns="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">
+                <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">prefix:binding-new-notification-service</type>
+                <name>binding-notification-adapter</name>
+              </notification-adapter>
+              <notification-publish-adapter xmlns="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">
+                <type  xmlns:prefix="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">prefix:binding-new-notification-publish-service</type>
+                <name>binding-notification-publish-adapter</name>
+              </notification-publish-adapter>
             </module>
             <module>
               <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding:impl">prefix:binding-broker-impl</type>
@@ -198,26 +206,33 @@
               </binding-forwarded-data-broker>
             </module>
 
-            <!-- forwardingrules-manager configuration -->
+            <!-- inventory-manager configuration -->
             <module>
-              <type xmlns:frm="urn:opendaylight:params:xml:ns:yang:openflowplugin:app:forwardingrules-manager">
-                frm:forwardingrules-manager
+              <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:inventory-manager:impl">
+                prefix:inventory-manager-impl
               </type>
-              <name>forwardingrules-manager</name>
+              <name>inventory-manager-default</name>
 
-              <data-broker>
+              <broker>
                 <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-                  binding:binding-async-data-broker
+                  binding:binding-broker-osgi-registry
                 </type>
-                <name>binding-data-broker</name>
-              </data-broker>
+                <name>binding-osgi-broker</name>
+              </broker>
+            </module>
 
-              <rpc-registry>
+            <!-- topology-manager configuration -->
+            <module>
+              <type xmlns:prefix="urn:opendaylight:params:xml:ns:yang:topology-manager:impl">
+                prefix:topology-manager-impl
+              </type>
+              <name>topology-manager-default</name>
+              <broker>
                 <type xmlns:binding="urn:opendaylight:params:xml:ns:yang:controller:md:sal:binding">
-                  binding:binding-rpc-registry
+                  binding:binding-broker-osgi-registry
                 </type>
-                <name>binding-rpc-broker</name>
-              </rpc-registry>
+                <name>binding-osgi-broker</name>
+              </broker>
             </module>
 
             <!-- openflowplugin mock-up configuration -->
@@ -399,10 +414,57 @@
         <capability>urn:opendaylight:params:xml:ns:yang:controller:md:sal:core:spi:operational-dom-store?module=opendaylight-operational-dom-datastore&amp;revision=2014-06-17</capability>
         <capability>urn:opendaylight:params:xml:ns:yang:controller:inmemory-datastore-provider?module=opendaylight-inmemory-datastore-provider&amp;revision=2014-06-17</capability>
 
-        <!-- forwardingrules-manager capabilities -->
+        <!-- Required YANG models: yangtools -->
+        <capability>urn:TBD:params:xml:ns:yang:network-topology?module=network-topology&amp;revision=2013-10-21</capability>
+
+        <!-- Required YANG models: controller -->
+        <capability>urn:opendaylight:inventory?module=opendaylight-inventory&amp;revision=2013-08-19</capability>
+
+        <!-- Required YANG models: openflowplugin -->
+        <capability>urn:opendaylight:flow:inventory?module=flow-node-inventory&amp;revision=2013-08-19</capability>
+        <capability>urn:opendaylight:flow:topology:discovery?module=flow-topology-discovery&amp;revision=2013-08-19</capability>
+        <capability>urn:opendaylight:flow:types?module=opendaylight-flow-types&amp;revision=2013-10-26</capability>
+        <capability>urn:opendaylight:flow:service?module=sal-flow&amp;revision=2013-08-19</capability>
+        <capability>urn:opendaylight:group:service?module=sal-group&amp;revision=2013-09-18</capability>
+        <capability>urn:opendaylight:meter:service?module=sal-meter&amp;revision=2013-09-18</capability>
+        <capability>urn:opendaylight:port:service?module=sal-port&amp;revision=2013-11-07</capability>
+        <capability>urn:opendaylight:queue:service?module=sal-queue&amp;revision=2015-03-05</capability>
+        <capability>urn:opendaylight:table:service?module=sal-table&amp;revision=2013-10-26</capability>
+        <capability>urn:opendaylight:packet:service?module=packet-processing&amp;revision=2013-07-09</capability>
+        <capability>urn:opendaylight:flow:statistics?module=opendaylight-flow-statistics&amp;revision=2013-08-19</capability>
+
+        <!-- Required YANG models: VTN -->
         <capability>
-          urn:opendaylight:params:xml:ns:yang:openflowplugin:app:forwardingrules-manager?module=forwardingrules-manager&amp;revision=2014-09-25
+          urn:opendaylight:vtn?module=vtn&amp;revision=2015-03-28
         </capability>
+        <capability>
+          urn:opendaylight:vtn:config?module=vtn-config&amp;revision=2015-02-09
+        </capability>
+        <capability>
+          urn:opendaylight:vtn:pathmap?module=vtn-path-map&amp;revision=2015-03-28
+        </capability>
+        <capability>
+          urn:opendaylight:vtn:pathpolicy?module=vtn-path-policy&amp;revision=2015-02-09
+        </capability>
+        <capability>
+          urn:opendaylight:vtn:impl:flow?module=vtn-flow-impl&amp;revision=2015-03-13
+        </capability>
+        <capability>
+          urn:opendaylight:vtn:impl:inventory?module=vtn-inventory&amp;revision=2015-02-09
+        </capability>
+        <capability>
+          urn:opendaylight:vtn:impl:topology?module=vtn-topology&amp;revision=2015-02-09
+        </capability>
+
+        <!-- inventory-manager capabilities -->
+        <capability>
+          urn:opendaylight:params:xml:ns:yang:inventory-manager:impl?module=inventory-manager-impl&amp;revision=2015-05-30
+        </capability>
+
+        <!-- topology-manager capabilities -->
+        <capability>
+          urn:opendaylight:params:xml:ns:yang:topology-manager:impl?module=topology-manager-impl&amp;revision=2015-05-30
+       </capability>
 
         <!-- openflowplugin mock-up capabilities -->
         <capability>

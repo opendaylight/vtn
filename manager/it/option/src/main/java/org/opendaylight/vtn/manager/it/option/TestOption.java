@@ -382,7 +382,6 @@ public final class TestOption {
             mavenBundle(OPENFLOW, "openflowplugin-common"),
             mavenBundle(OPENFLOW_APPS, "inventory-manager"),
             mavenBundle(OPENFLOW_APPS, "topology-manager"),
-            mavenBundle(OPENFLOW_APPS, "forwardingrules-manager"),
 
             // VTN Manager bundels.
             mavenBundle(VTN, "manager"),

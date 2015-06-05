@@ -4148,7 +4148,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
 
         // Create port 1.
         // This will establish port mapping on bipathNode2Port1.
-        pids[2][1] = ofMockService.addPort(nid2, 1L, false);
+        pids[2][1] = ofMockService.addPort(nid2, 1L);
         waiter.set(bipathNode2Port1, VnodeState.DOWN, VnodeState.DOWN).await();
 
         // Enable port 1.
@@ -4966,6 +4966,31 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         // Cause path fault.
         unicastTest(bridge, islPorts, false);
 
+        // Packet processing for previous test may not complete.
+        // So we need to install a valid flow entry here in order to
+        // synchronize packet processing.
+        Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
+        Set<String> edgeNodes = new HashSet<>();
+        for (Map.Entry<String, List<TestHost>> entry: hostMap.entrySet()) {
+            List<TestHost> hosts = entry.getValue();
+            if (hosts.size() >= 2) {
+                edgeNodes.add(entry.getKey());
+                TestHost src = hosts.get(0);
+                TestHost dst = hosts.get(1);
+                ArpFlowFactory factory = new ArpFlowFactory(ofMockService);
+                List<OfMockLink> route = Collections.<OfMockLink>emptyList();
+                UnicastFlow unicast = factory.create(src, dst, route);
+                unicast.runTest();
+                assertEquals(1, unicast.getFlowCount());
+            }
+        }
+        assertFalse(edgeNodes.isEmpty());
+
+        for (String nid: ofMockService.getNodes()) {
+            int expected = (edgeNodes.contains(nid)) ? 1 : 0;
+            assertEquals(expected, ofMockService.getFlowCount(nid));
+        }
+
         // Resolve path fault.
         unicastTest(bridge, islPorts, true);
 
@@ -5255,7 +5280,7 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             for (int j = 1; j <= numNodes; j++) {
                 String pid = ofMockService.addPort(nid, (long)j, false);
                 assertEquals(null, allPorts.put(pid, null));
-                ofMockService.setPortState(pid, true, false);
+                ofMockService.setPortState(pid, true);
             }
         }
 

@@ -162,11 +162,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     private VtnConfig  vtnConfig;
 
     /**
-     * Keep {@code true} if inventory information is not yet initialized.
-     */
-    private boolean  firstRun = true;
-
-    /**
      * Construct a new instance.
      *
      * @param broker  A {@link DataBroker} service instance.
@@ -199,7 +194,9 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * @param n  A {@link Notification} instance.
      */
     public void publish(Notification n) {
-        notificationService.publish(n, globalExecutor);
+        if (serviceAvailable) {
+            notificationService.publish(n, globalExecutor);
+        }
     }
 
     /**
@@ -384,12 +381,16 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      *
      * @param allPorts  A list of {@link OfPort} instances which represents
      *                  all the physical ports present in the test environment.
+     * @param links     A map that keeps inter-switch links to be configured.
+     *                  {@code null} is specified if inventory information is
+     *                  already initialized.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    private void initInventory(List<OfPort> allPorts)
+    private void initInventory(List<OfPort> allPorts,
+                               Map<String, String> links)
         throws InterruptedException {
-        if (!firstRun) {
+        if (links == null) {
             for (OfPort port: allPorts) {
                 String src = port.getPortIdentifier();
                 String peer = port.getPeerIdentifier();
@@ -403,21 +404,26 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
             return;
         }
 
-        firstRun = false;
-
-        // OpenFlow application, such as topology manager, may not be started.
-        // So we need to resend inventory and topology notifications for
-        // missing inventories.
+        // MD-SAL inventory manager may not be started.
+        // So we need to resend notifications for missing inventories.
         for (OfNode node: switches.values()) {
             verify(node);
         }
 
-        List<OfPort> isl = new ArrayList<>();
+        // We need to ensure that all the switch ports are registered into
+        // MD-SAL nodes container before notifying link discovery.
+        // MD-SAL topology manager will delete links on newly created ports.
         for (OfPort port: allPorts) {
             verify(port);
+        }
 
-            String peer = port.getPeerIdentifier();
-            if (peer != null && port.isUp()) {
+        // Set up inter-switch links.
+        List<OfPort> isl = new ArrayList<>();
+        for (OfPort port: allPorts) {
+            String pid = port.getPortIdentifier();
+            String peer = links.get(pid);
+            if (peer != null) {
+                port.setPeerIdentifier(this, peer);
                 isl.add(port);
             }
         }
@@ -574,10 +580,13 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
     public void initialize() throws InterruptedException {
         boolean done = false;
         List<OfPort> allPorts = new ArrayList<>();
+        Map<String, String> links = null;
+
         Lock wrlock = rwLock.writeLock();
         wrlock.lock();
         try {
             if (switches.isEmpty()) {
+                links = new HashMap<>();
                 VtnOpenflowVersion of13 = VtnOpenflowVersion.OF13;
                 VtnOpenflowVersion[] vers = {
                     VtnOpenflowVersion.OF10,
@@ -601,8 +610,10 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
                     OfPort peer = node1.addPort((long)(i + 1));
                     allPorts.add(port);
                     allPorts.add(peer);
-                    port.setPeerIdentifier(this, peer.getPortIdentifier());
-                    peer.setPeerIdentifier(this, port.getPortIdentifier());
+                    String portId = port.getPortIdentifier();
+                    String peerId = peer.getPortIdentifier();
+                    links.put(portId, peerId);
+                    links.put(peerId, portId);
 
                     // Create 2 edge ports.
                     for (long p = MIN_EDGE_PORT_ID; p <= MAX_EDGE_PORT_ID;
@@ -630,7 +641,7 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         }
 
         // Ensure that all inventory events have been notified.
-        initInventory(allPorts);
+        initInventory(allPorts, links);
 
         LOG.debug("Test environment has been initialized.");
     }
