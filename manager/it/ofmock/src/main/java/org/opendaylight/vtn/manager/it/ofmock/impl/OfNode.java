@@ -290,7 +290,7 @@ public final class OfNode
         /**
          * Construct a new instance.
          *
-         * @param xid
+         * @param xid   OpenFlow transaction ID.
          * @param cond  The MD-SAL flow entry which specifies the condition to
          *              select flow entries.
          */
