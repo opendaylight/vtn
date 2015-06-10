@@ -444,13 +444,9 @@ public class NodeUtilsTest extends TestBase {
                 String type = (id == null)
                     ? null : NodeConnectorIDType.OPENFLOW;
                 for (String name: names) {
-                    DataIngressPortBuilder builder =
-                        new DataIngressPortBuilder();
-                    if (name != null) {
-                        builder.setPortName(name);
-                    }
-                    VtnPortLocation vploc = builder.
-                        setNode(nodeId).setPortId(id).build();
+                    VtnPortLocation vploc = new DataIngressPortBuilder().
+                        setNode(nodeId).setPortId(id).setPortName(name).
+                        build();
                     SwitchPort swport = (id == null && name == null)
                         ? null : new SwitchPort(name, type, id);
                     PortLocation expected = new PortLocation(node, swport);
@@ -477,12 +473,8 @@ public class NodeUtilsTest extends TestBase {
         for (String id: ids) {
             String type = (id == null) ? null : NodeConnectorIDType.OPENFLOW;
             for (String name: names) {
-                PhysicalIngressPortBuilder builder =
-                    new PhysicalIngressPortBuilder();
-                if (name != null) {
-                    builder.setPortName(name);
-                }
-                VtnSwitchPort vswp = builder.setPortId(id).build();
+                VtnSwitchPort vswp = new PhysicalIngressPortBuilder().
+                    setPortId(id).setPortName(name).build();
                 SwitchPort expected = (id == null && name == null)
                     ? null : new SwitchPort(name, type, id);
                 assertEquals(expected, NodeUtils.toSwitchPort(vswp));
