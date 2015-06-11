@@ -4166,6 +4166,10 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 ofMockService.setPortState(ports[j], true, false);
             }
         }
+
+        // Need to synchronize background tasks triggered by port state events.
+        sleep(BGTASK_DELAY);
+
         for (int i = 1; i < pids.length; i++) {
             String[] ports = pids[i];
             for (int j = 1; j < ports.length; j++) {
@@ -4324,6 +4328,10 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
                 ofMockService.awaitLinkState(ports[j], true);
             }
         }
+
+        // Need to synchronize background tasks triggered by port state events.
+        sleep(BGTASK_DELAY);
+
         for (MacAddressEntry ment: bpathVlan0Hosts) {
             sendBroadcast(ofMockService, ment);
         }
@@ -5118,11 +5126,20 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
         Map<String, List<TestHost>> hostMap = bridge.getTestHosts();
         factory.addPortSet(bridge.getMappedVlans().keySet());
 
+        boolean changed = false;
         for (String pid: islPorts) {
-            ofMockService.setPortState(pid, up);
+            if (ofMockService.setPortState(pid, up)) {
+                changed = true;
+            }
         }
         for (String pid: islPorts) {
             ofMockService.awaitLink(pid, null, up);
+        }
+
+        if (changed) {
+            // remove-flow operation is triggered when port state is changed.
+            // So we need to wait for its completion.
+            sleep(BGTASK_DELAY);
         }
 
         List<UnicastFlow> flows = new ArrayList<>();
@@ -5301,6 +5318,9 @@ public final class VTNManagerIT extends ModelDrivenTestBase {
             }
         }
         assertEquals(numNodes * (numNodes - 1), allLinks.size());
+
+        // Need to synchronize background tasks triggered by port state events.
+        sleep(BGTASK_DELAY);
 
         // Wait for network topology to be established.
         for (Map.Entry<String, String> entry: allLinks.entrySet()) {

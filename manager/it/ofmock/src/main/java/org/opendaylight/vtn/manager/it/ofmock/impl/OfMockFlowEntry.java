@@ -171,9 +171,13 @@ public final class OfMockFlowEntry implements OfMockFlow {
      */
     @Override
     public String toString() {
+        String cookie = Long.toHexString(flowCookie.longValue());
         StringBuilder builder = new StringBuilder("OfMockFlowEntry[node=").
             append(nodeIdentifier).append(",table=").append(tableId).
             append(",pri=").append(priority).
+            append(",cookie=0x").append(cookie).
+            append(",idle=").append(idleTimeout).
+            append(",hard=").append(hardTimeout).
             append(",match=").append(flowMatch).
             append(",inst=").append(flowInstructions).
             append(",flags=").append(flowModFlags).

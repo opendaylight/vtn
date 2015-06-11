@@ -300,35 +300,6 @@ public final class OfNode
             condition = cond;
         }
 
-        /**
-         * Convert the given flow entry into a {@link FlowAndStatisticsMapList}
-         * instance.
-         *
-         * @param ofent  The flow entry to be converted.
-         * @return  A {@link FlowAndStatisticsMapList} instance.
-         */
-        private FlowAndStatisticsMapList toFlowAndStatisticsMapList(
-            OfMockFlowEntry ofent) {
-            Duration duration = new DurationBuilder().
-                setSecond(new Counter32(DURATION_SEC)).
-                setNanosecond(new Counter32(DURATION_NANOSEC)).
-                build();
-
-            return new FlowAndStatisticsMapListBuilder().
-                setPacketCount(new Counter64(BigInteger.valueOf(PACKET_COUNT))).
-                setByteCount(new Counter64(BigInteger.valueOf(BYTE_COUNT))).
-                setDuration(duration).
-                setPriority(Integer.valueOf(ofent.getPriority())).
-                setTableId(Short.valueOf((short)ofent.getTableId())).
-                setCookie(new FlowCookie(ofent.getCookie())).
-                setMatch(ofent.getMatch()).
-                setInstructions(ofent.getInstructions()).
-                setFlags(ofent.getFlowModFlags()).
-                setIdleTimeout(Integer.valueOf(ofent.getIdleTimeout())).
-                setHardTimeout(Integer.valueOf(ofent.getHardTimeout())).
-                build();
-        }
-
         // Runnable
 
         /**
