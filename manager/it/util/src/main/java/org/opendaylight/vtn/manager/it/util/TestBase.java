@@ -46,12 +46,17 @@ public abstract class TestBase extends Assert {
     /**
      * The number of milliseconds to wait for OSGi service.
      */
-    public static final long  OSGI_TIMEOUT = 60000L;
+    public static final long  OSGI_TIMEOUT = 120000L;
 
     /**
      * The number of milliseconds to sleep for short delay.
      */
     public static final long  SHORT_DELAY = 100L;
+
+    /**
+     * The number of milliseconds to wait for background tasks to complete.
+     */
+    public static final long  BGTASK_DELAY = 3000L;
 
     /**
      * The number of seconds to wait for completion of asynchronous task.

@@ -285,9 +285,13 @@ public final class OfPort {
      *
      * @param provider  The ofmock provider service.
      * @param state     New link state.
+     * @return  {@code true} if the port state has been changed.
+     *          {@code false} not changed.
      */
-    public void setPortState(OfMockProvider provider, boolean state) {
-        if (linkUp != state) {
+    public boolean setPortState(OfMockProvider provider, boolean state) {
+        boolean changed = (linkUp != state);
+
+        if (changed) {
             linkUp = state;
             provider.publish(getNodeConnectorUpdated());
 
@@ -300,6 +304,8 @@ public final class OfPort {
                 }
             }
         }
+
+        return changed;
     }
 
     /**

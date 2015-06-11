@@ -1055,15 +1055,6 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         rdlock.lock();
         try {
             checkPort(ingress);
-
-            // Synchronize AD-SAL inventory information only for AD-SAL FRM.
-            for (OfNode node: switches.values()) {
-                String nid = node.getNodeIdentifier();
-
-                for (OfPort port: node.getOfPorts()) {
-                    String pid = port.getPortIdentifier();
-                }
-            }
         } finally {
             rdlock.unlock();
         }
@@ -1081,22 +1072,23 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
      * {@inheritDoc}
      */
     @Override
-    public void setPortState(String pid, boolean state)
+    public boolean setPortState(String pid, boolean state)
         throws InterruptedException {
-        setPortState(pid, state, true);
+        return setPortState(pid, state, true);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void setPortState(String pid, boolean state, boolean sync)
+    public boolean setPortState(String pid, boolean state, boolean sync)
         throws InterruptedException {
+        boolean changed;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
             OfPort port = checkPort(pid);
-            port.setPortState(this, state);
+            changed = port.setPortState(this, state);
         } finally {
             rdlock.unlock();
         }
@@ -1104,6 +1096,8 @@ public class OfMockProvider implements AutoCloseable, Executor, OfMockService {
         if (sync) {
             portListener.awaitLinkState(pid, state);
         }
+
+        return changed;
     }
 
     /**

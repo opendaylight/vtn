@@ -220,7 +220,7 @@ public final class OfMockUtils {
      *          Otherwise {@code false}.
      */
     public static boolean hasOutput(List<Action> actions, String pid) {
-        if (actions != null) {
+        if (actions == null) {
             return false;
         }
 

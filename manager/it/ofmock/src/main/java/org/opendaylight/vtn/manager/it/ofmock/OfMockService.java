@@ -351,10 +351,13 @@ public interface OfMockService {
      * @param pid    The identifier of the MD-SAL node connector.
      * @param state  The port is up if {@code true} is specified.
      *               The port is down if {@code false} is specified.
+     * @return  {@code true} if the port state has been changed.
+     *          {@code false} not changed.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    void setPortState(String pid, boolean state) throws InterruptedException;
+    boolean setPortState(String pid, boolean state)
+        throws InterruptedException;
 
     /**
      * Set the state of the given physical switch port.
@@ -365,10 +368,12 @@ public interface OfMockService {
      * @param sync   If {@code true}, this method blocks the calling thread
      *               until the VTN Manager detects the change of the
      *               inventory information.
+     * @return  {@code true} if the port state has been changed.
+     *          {@code false} not changed.
      * @throws InterruptedException
      *    The calling thread was interrupted.
      */
-    void setPortState(String pid, boolean state, boolean sync)
+    boolean setPortState(String pid, boolean state, boolean sync)
         throws InterruptedException;
 
     /**
