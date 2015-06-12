@@ -311,7 +311,7 @@ public class VTNSetDlDstActionTest extends TestBase {
         vad = new org.opendaylight.vtn.manager.flow.action.
             SetDlDstAction(new byte[]{0x00, 0x01});
         etag = RpcErrorTag.BAD_ELEMENT;
-        emsg = "Invalid address: 00:01";
+        emsg = "Invalid address: 00:01: Invalid byte array length: 2";
         try {
             new VTNSetDlDstAction(vad, 1);
             unexpected();

@@ -162,8 +162,8 @@ public final class AveragedFlowStats implements Serializable {
         }
 
         AveragedFlowStats stats = (AveragedFlowStats)o;
-        return (NumberUtils.equals(packetCount, stats.packetCount) &&
-                NumberUtils.equals(byteCount, stats.byteCount) &&
+        return (NumberUtils.equalsDouble(packetCount, stats.packetCount) &&
+                NumberUtils.equalsDouble(byteCount, stats.byteCount) &&
                 startTime == stats.startTime &&
                 endTime == stats.endTime);
     }

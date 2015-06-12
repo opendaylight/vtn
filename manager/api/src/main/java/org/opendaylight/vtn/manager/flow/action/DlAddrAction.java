@@ -73,9 +73,9 @@ public abstract class DlAddrAction extends FlowAction {
     DlAddrAction(byte[] addr) {
         if (addr != null) {
             try {
-                address = new EtherAddress(addr);
+                address = new EtherAddress(addr.clone());
             } catch (RuntimeException e) {
-                setInvalidAddress(ByteUtils.toHexString(addr));
+                setInvalidAddress(ByteUtils.toHexString(addr), e);
             }
         }
     }
@@ -172,7 +172,7 @@ public abstract class DlAddrAction extends FlowAction {
         try {
             address = new EtherAddress(addr);
         } catch (RuntimeException e) {
-            setInvalidAddress(addr);
+            setInvalidAddress(addr, e);
         }
     }
 
@@ -181,10 +181,11 @@ public abstract class DlAddrAction extends FlowAction {
      * specified.
      *
      * @param desc  A brief description about invalid address.
+     * @param e     An exception which indicates the cause of error.
      */
-    private void setInvalidAddress(String desc) {
-        StringBuilder builder = new StringBuilder("Invalid address: ");
-        builder.append(desc);
+    private void setInvalidAddress(String desc, Exception e) {
+        StringBuilder builder = new StringBuilder("Invalid address: ").
+            append(desc).append(": ").append(e.getMessage());
         validationStatus =
             new Status(StatusCode.BADREQUEST, builder.toString());
     }
