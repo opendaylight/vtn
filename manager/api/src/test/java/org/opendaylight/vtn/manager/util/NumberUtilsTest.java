@@ -427,22 +427,22 @@ public class NumberUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link NumberUtils#equals(double, double)}.
+     * Test case for {@link NumberUtils#equalsDouble(double, double)}.
      */
     @Test
     public void testEqualsDouble() {
         Random rand = new Random();
         for (int i = 0; i < 50; i++) {
             double d = rand.nextDouble();
-            assertEquals(true, NumberUtils.equals(d, d));
+            assertEquals(true, NumberUtils.equalsDouble(d, d));
 
             double[] values = {
                 d + 0.0001,
                 d - 0.00001,
             };
             for (double d1: values) {
-                assertEquals(false, NumberUtils.equals(d, d1));
-                assertEquals(false, NumberUtils.equals(d1, d));
+                assertEquals(false, NumberUtils.equalsDouble(d, d1));
+                assertEquals(false, NumberUtils.equalsDouble(d1, d));
             }
         }
     }

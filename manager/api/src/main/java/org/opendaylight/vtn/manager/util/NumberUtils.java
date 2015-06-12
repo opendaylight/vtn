@@ -249,7 +249,7 @@ public final class NumberUtils {
      *          identical.
      * @see Double#equals(Object)
      */
-    public static boolean equals(double d1, double d2) {
+    public static boolean equalsDouble(double d1, double d2) {
         return (Double.doubleToLongBits(d1) == Double.doubleToLongBits(d2));
     }
 }

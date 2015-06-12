@@ -34,6 +34,11 @@ public class Parser {
     static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
     /**
+     * Error message.
+     */
+    private static final String  ERROR_MESSAGE = "\n\nAn error has occured...";
+
+    /**
      * Default constructor
      */
     public Parser() {}
@@ -68,10 +73,8 @@ public class Parser {
             } else if (fieldTypeName.equals("java.lang.String")) {
                 field.set(object, fieldValue);
             }
-        } catch (IllegalArgumentException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
+        } catch (IllegalArgumentException | IllegalAccessException e) {
+            LOG.error("Exception in parseToRespectiveObject()", e);
         }
     }
 
@@ -121,24 +124,19 @@ public class Parser {
                                 parseJsonObject(listObj, (JSONObject)jsonArray.get(i));
                             }
                         }
-                    } else if (jsonObjectRef != null) {
+                    } else if (jsonObjectRef != null &&
+                               json.has(jsonObjectRef.name())) {
 
-                        if (json.has(jsonObjectRef.name())) {
-
-                            parseJsonObject(field.get(obj), (JSONObject)json.getJSONObject(jsonObjectRef.name()));
-                        }
+                        parseJsonObject(field.get(obj), (JSONObject)json.getJSONObject(jsonObjectRef.name()));
                     }
                 }
             } else {
                 LOG.warn("JsonObject is null");
                 LOG.debug("EMPTY");
             }
-        } catch (SecurityException e) {
+        } catch (SecurityException | JSONException e) {
             LOG.error("An exception occured - {}", e);
-            throw new VTNClientException("\n\nAn error has occured...");
-        } catch (JSONException e) {
-            LOG.error("An exception occured - {}", e);
-            throw new VTNClientException("\n\nAn error has occured...");
+            throw new VTNClientException(ERROR_MESSAGE);
         }
 
         LOG.debug("PARSER OUT:" + obj);
@@ -173,7 +171,7 @@ public class Parser {
             }
         } catch (Exception e) {
             LOG.error("An exception occured - ", e);
-            throw new VTNClientException("\n\nAn error has occured...");
+            throw new VTNClientException(ERROR_MESSAGE);
         }
         return obj;
     }

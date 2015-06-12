@@ -712,7 +712,7 @@ public class MiscUtilsTest extends TestBase {
     }
 
     /**
-     * Test case for {@link MiscUtils#equals(Uri,Uri)}.
+     * Test case for {@link MiscUtils#equalsUri(Uri,Uri)}.
      */
     @Test
     public void testEqualsUri() {
@@ -724,21 +724,21 @@ public class MiscUtilsTest extends TestBase {
             "uri:3",
         };
 
-        assertEquals(true, MiscUtils.equals(nullUri, nullUri));
+        assertEquals(true, MiscUtils.equalsUri(nullUri, nullUri));
 
         for (String s1: strings) {
             Uri u1 = new Uri(new String(s1));
-            assertEquals(false, MiscUtils.equals(u1, nullUri));
-            assertEquals(false, MiscUtils.equals(nullUri, u1));
+            assertEquals(false, MiscUtils.equalsUri(u1, nullUri));
+            assertEquals(false, MiscUtils.equalsUri(nullUri, u1));
 
             for (String s2: strings) {
                 Uri u2 = new Uri(new String(s2));
-                assertEquals(false, MiscUtils.equals(u2, nullUri));
-                assertEquals(false, MiscUtils.equals(nullUri, u2));
+                assertEquals(false, MiscUtils.equalsUri(u2, nullUri));
+                assertEquals(false, MiscUtils.equalsUri(nullUri, u2));
 
                 boolean expected = s1.equals(s2);
-                assertEquals(expected, MiscUtils.equals(u1, u2));
-                assertEquals(expected, MiscUtils.equals(u2, u1));
+                assertEquals(expected, MiscUtils.equalsUri(u1, u2));
+                assertEquals(expected, MiscUtils.equalsUri(u2, u1));
             }
         }
     }
