@@ -58,6 +58,79 @@ public class VTerminalPathTest extends TestBase {
     }
 
     /**
+     * Test case for {@link VTerminalPath#clone()}.
+     */
+    @Test
+    public void testClone() {
+        for (String tname: createStrings("tenant")) {
+            VTenantPath tpath = new VTenantPath(tname);
+            for (String mname: createStrings("term")) {
+                // In case where the hash code is cached.
+                VTerminalPath path = new VTerminalPath(tname, mname);
+                int hash = path.hashCode();
+
+                VTenantPath clone = path.clone();
+                assertNotSame(path, clone);
+                assertEquals(path, clone);
+                assertEquals(hash, clone.hashCode());
+                checkVirtualNodePath(clone);
+                assertEquals(VTerminalPath.class, clone.getClass());
+                VTerminalPath p = (VTerminalPath)clone;
+                assertEquals(tname, p.getTenantName());
+                assertEquals(mname, p.getTerminalName());
+
+                // In case where the hash code is not cached.
+                path = new VTerminalPath(tname, mname);
+                clone = path.clone();
+                assertNotSame(path, clone);
+                assertEquals(path, clone);
+                assertEquals(hash, clone.hashCode());
+                checkVirtualNodePath(clone);
+                assertEquals(VTerminalPath.class, clone.getClass());
+                p = (VTerminalPath)clone;
+                assertEquals(tname, p.getTenantName());
+                assertEquals(mname, p.getTerminalName());
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VTerminalPath#replaceTenantName(String)}.
+     */
+    @Test
+    public void testReplaceTenantName() {
+        for (String tname: createStrings("tenant")) {
+            VTenantPath tpath = new VTenantPath(tname);
+            for (String mname: createStrings("term")) {
+                // In case where the hash code is cached.
+                VTerminalPath path = new VTerminalPath(tname, mname);
+                int hash = path.hashCode();
+
+                String name = tname + "_new";
+                VTerminalPath path1 =
+                    (VTerminalPath)path.replaceTenantName(name);
+                assertEquals(name, path1.getTenantName());
+                assertEquals(mname, path1.getTerminalName());
+                assertEquals("vTerminal", path1.getNodeType());
+                assertEquals(VTerminalPath.class, path1.getClass());
+                checkVirtualNodePath(path1);
+                int hash1 = path1.hashCode();
+                assertNotEquals(hash, hash1);
+
+                // In case where the hash code is not cached.
+                path = new VTerminalPath(tname, mname);
+                path1 = (VTerminalPath)path.replaceTenantName(name);
+                assertEquals(name, path1.getTenantName());
+                assertEquals(mname, path1.getTerminalName());
+                assertEquals("vTerminal", path1.getNodeType());
+                assertEquals(VTerminalPath.class, path1.getClass());
+                checkVirtualNodePath(path1);
+                assertEquals(hash1, path1.hashCode());
+            }
+        }
+    }
+
+    /**
      * Ensure that {@link VTenantPath#contains(VTenantPath)} works.
      */
     @Test

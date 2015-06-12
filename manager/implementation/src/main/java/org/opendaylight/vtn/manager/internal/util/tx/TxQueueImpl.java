@@ -381,14 +381,14 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
                 future.execute(attempts);
                 break;
             } catch (OptimisticLockFailedException e) {
-                // Transaction failed due to data conflict.
-                // In that case the transaction should be retried.
+                // In this case the transaction should be retried.
+                LOG.trace("Transaction failed due to data conflict.", e);
                 if (future.isTxEvent()) {
                     LOG.warn("{}: Event will be dispatched again because of " +
                              "data conflict.", future.getSimpleTaskName());
                 }
-            } catch (Throwable t) {
-                future.setFailure(t);
+            } catch (Exception e) {
+                future.setFailure(e);
                 break;
             } finally {
                 future.cancelTransaction();

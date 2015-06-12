@@ -175,12 +175,8 @@ public final class FutureCallbackTask<T> implements Runnable {
             return true;
         } catch (TimeoutException e) {
             // The future is still running.
-        } catch (Throwable t) {
-            callback.onFailure(t);
-            if (t instanceof Error) {
-                // An fatal error should be thrown.
-                throw (Error)t;
-            }
+        } catch (Exception e) {
+            callback.onFailure(e);
         }
 
         return false;

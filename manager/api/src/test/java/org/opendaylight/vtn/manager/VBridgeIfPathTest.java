@@ -10,8 +10,11 @@
 package org.opendaylight.vtn.manager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.junit.Test;
 
@@ -55,13 +58,69 @@ public class VBridgeIfPathTest extends TestBase {
                     assertEquals("vBridge-IF", path.getNodeType());
                     checkRedirectFilter(path);
                     checkVirtualNodePath(path);
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VBridgeIfPath#clone()}.
+     */
+    @Test
+    public void testClone() {
+        for (String tname: createStrings("tenant")) {
+            for (String bname: createStrings("bridge")) {
+                VBridgePath bpath = new VBridgePath(tname, bname);
+                for (String iname: createStrings("ifname")) {
+                    // In case where the hash code is cached.
+                    VBridgeIfPath path =
+                        new VBridgeIfPath(tname, bname, iname);
+                    int hash = path.hashCode();
 
                     VTenantPath clone = path.clone();
                     assertNotSame(path, clone);
                     assertEquals(path, clone);
+                    assertEquals(hash, clone.hashCode());
                     checkVirtualNodePath(clone);
+                    assertEquals(VBridgeIfPath.class, clone.getClass());
+                    VBridgeIfPath p = (VBridgeIfPath)clone;
+                    assertEquals(tname, p.getTenantName());
+                    assertEquals(bname, p.getBridgeName());
+                    assertEquals(iname, p.getInterfaceName());
 
-                    for (String name: new String[]{null, tname + "_new"}) {
+                    // In case where the hash code is not cached.
+                    path = new VBridgeIfPath(tname, bname, iname);
+                    clone = path.clone();
+                    p = (VBridgeIfPath)clone;
+                    assertNotSame(path, clone);
+                    assertEquals(tname, p.getTenantName());
+                    assertEquals(bname, p.getBridgeName());
+                    assertEquals(iname, p.getInterfaceName());
+                    assertEquals(path, clone);
+                    assertEquals(hash, clone.hashCode());
+                    checkVirtualNodePath(clone);
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VBridgeIfPath#replaceTenantName(String)}.
+     */
+    @Test
+    public void testReplaceTenantName() {
+        for (String tname: createStrings("tenant")) {
+            for (String bname: createStrings("bridge")) {
+                VBridgePath bpath = new VBridgePath(tname, bname);
+                for (String iname: createStrings("ifname")) {
+                    // In case where the hash code is cached.
+                    VBridgeIfPath path =
+                        new VBridgeIfPath(tname, bname, iname);
+                    int hash = path.hashCode();
+
+                    Map<String, Integer> hashCodes = new HashMap<>();
+                    String[] names = {null, tname + "_new"};
+                    for (String name: names) {
                         VBridgeIfPath path1 = path.replaceTenantName(name);
                         assertEquals(name, path1.getTenantName());
                         assertEquals(bname, path1.getBridgeName());
@@ -69,6 +128,27 @@ public class VBridgeIfPathTest extends TestBase {
                         assertEquals("vBridge-IF", path1.getNodeType());
                         checkRedirectFilter(path1);
                         checkVirtualNodePath(path1);
+                        int hash1 = path1.hashCode();
+                        assertEquals(null, hashCodes.put(name, hash1));
+                        if (Objects.equals(name, tname)) {
+                            assertEquals(hash, hash1);
+                        } else {
+                            assertNotEquals(hash, hash1);
+                        }
+                    }
+
+                    // In case where the hash code is not cached.
+                    path = new VBridgeIfPath(tname, bname, iname);
+                    for (String name: names) {
+                        VBridgeIfPath path1 = path.replaceTenantName(name);
+                        assertEquals(name, path1.getTenantName());
+                        assertEquals(bname, path1.getBridgeName());
+                        assertEquals(iname, path1.getInterfaceName());
+                        assertEquals("vBridge-IF", path1.getNodeType());
+                        checkRedirectFilter(path1);
+                        checkVirtualNodePath(path1);
+                        assertEquals(hashCodes.get(name).intValue(),
+                                     path1.hashCode());
                     }
                 }
             }

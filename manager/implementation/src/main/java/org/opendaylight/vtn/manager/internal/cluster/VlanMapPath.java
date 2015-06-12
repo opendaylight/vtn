@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.cluster;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.util.List;
 
 import org.opendaylight.vtn.manager.VTenantPath;
@@ -31,7 +33,7 @@ public class VlanMapPath extends VBridgeMapPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 6661593756302180645L;
+    private static final long serialVersionUID = -6594224353793282012L;
 
     /**
      * A string which represents that the node type is VLAN mapping.
@@ -127,6 +129,16 @@ public class VlanMapPath extends VBridgeMapPath {
     }
 
     /**
+     * Calculate the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    @Override
+    protected int getHash() {
+        return (super.getHash() * HASH_PRIME) + mapId.hashCode();
+    }
+
+    /**
      * Return a string list which contains all path components configured in
      * this instance.
      *
@@ -138,17 +150,5 @@ public class VlanMapPath extends VBridgeMapPath {
         List<String> components = super.getComponents();
         components.add(mapId);
         return components;
-    }
-
-    // Object
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        return super.hashCode() ^ mapId.hashCode();
     }
 }

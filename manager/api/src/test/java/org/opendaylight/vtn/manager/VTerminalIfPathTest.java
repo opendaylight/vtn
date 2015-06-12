@@ -10,8 +10,11 @@
 package org.opendaylight.vtn.manager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.junit.Test;
 
@@ -55,13 +58,70 @@ public class VTerminalIfPathTest extends TestBase {
                     assertEquals("vTerminal-IF", path.getNodeType());
                     checkRedirectFilter(path);
                     checkVirtualNodePath(path);
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VTerminalIfPath#clone()}.
+     */
+    @Test
+    public void testClone() {
+        for (String tname: createStrings("tenant")) {
+            for (String vtname: createStrings("term")) {
+                VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+                for (String iname: createStrings("ifname")) {
+                    // In case where the hash code is cached.
+                    VTerminalIfPath path =
+                        new VTerminalIfPath(tname, vtname, iname);
+                    int hash = path.hashCode();
 
                     VTenantPath clone = path.clone();
                     assertNotSame(path, clone);
                     assertEquals(path, clone);
+                    assertEquals(hash, clone.hashCode());
                     checkVirtualNodePath(clone);
+                    assertEquals(VTerminalIfPath.class, clone.getClass());
+                    VTerminalIfPath p = (VTerminalIfPath)clone;
+                    assertEquals(tname, p.getTenantName());
+                    assertEquals(vtname, p.getTerminalName());
+                    assertEquals(iname, p.getInterfaceName());
 
-                    for (String name: new String[]{null, tname + "_new"}) {
+                    // In case where the hash code is not cached.
+                    path = new VTerminalIfPath(tname, vtname, iname);
+                    clone = path.clone();
+                    assertNotSame(path, clone);
+                    assertEquals(path, clone);
+                    assertEquals(hash, clone.hashCode());
+                    checkVirtualNodePath(clone);
+                    assertEquals(VTerminalIfPath.class, clone.getClass());
+                    p = (VTerminalIfPath)clone;
+                    assertEquals(tname, p.getTenantName());
+                    assertEquals(vtname, p.getTerminalName());
+                    assertEquals(iname, p.getInterfaceName());
+                }
+            }
+        }
+    }
+
+    /**
+     * Test case for {@link VTerminalIfPath#replaceTenantName(String)}.
+     */
+    @Test
+    public void testReplaceTenantName() {
+        for (String tname: createStrings("tenant")) {
+            for (String vtname: createStrings("term")) {
+                VTerminalPath vtpath = new VTerminalPath(tname, vtname);
+                for (String iname: createStrings("ifname")) {
+                    // In case where the hash code is cached.
+                    VTerminalIfPath path =
+                        new VTerminalIfPath(tname, vtname, iname);
+                    int hash = path.hashCode();
+
+                    Map<String, Integer> hashCodes = new HashMap<>();
+                    String[] names = {null, tname + "_new"};
+                    for (String name: names) {
                         VTerminalIfPath path1 = path.replaceTenantName(name);
                         assertEquals(name, path1.getTenantName());
                         assertEquals(vtname, path1.getTerminalName());
@@ -69,6 +129,27 @@ public class VTerminalIfPathTest extends TestBase {
                         assertEquals("vTerminal-IF", path1.getNodeType());
                         checkRedirectFilter(path1);
                         checkVirtualNodePath(path1);
+                        int hash1 = path1.hashCode();
+                        assertEquals(null, hashCodes.put(name, hash1));
+                        if (Objects.equals(name, tname)) {
+                            assertEquals(hash, hash1);
+                        } else {
+                            assertNotEquals(hash, hash1);
+                        }
+                    }
+
+                    // In case where the hash code is not cached.
+                    path = new VTerminalIfPath(tname, vtname, iname);
+                    for (String name: names) {
+                        VTerminalIfPath path1 = path.replaceTenantName(name);
+                        assertEquals(name, path1.getTenantName());
+                        assertEquals(vtname, path1.getTerminalName());
+                        assertEquals(iname, path1.getInterfaceName());
+                        assertEquals("vTerminal-IF", path1.getNodeType());
+                        checkRedirectFilter(path1);
+                        checkVirtualNodePath(path1);
+                        assertEquals(hashCodes.get(name).intValue(),
+                                     path1.hashCode());
                     }
                 }
             }

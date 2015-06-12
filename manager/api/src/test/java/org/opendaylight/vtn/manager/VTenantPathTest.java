@@ -49,17 +49,62 @@ public class VTenantPathTest extends TestBase {
             assertEquals(tname, path.getTenantName());
             assertEquals("VTN", path.getNodeType());
             checkVirtualNodePath(path);
+        }
+    }
 
+    /**
+     * Test case for {@link VTenantPath#clone()}.
+     */
+    @Test
+    public void testClone() {
+        for (String tname: createStrings("tenant_name")) {
+            // In case where the hash code is cached.
+            VTenantPath path = new VTenantPath(tname);
+            int hash = path.hashCode();
             VTenantPath clone = path.clone();
             assertNotSame(path, clone);
+            assertEquals(tname, clone.getTenantName());
             assertEquals(path, clone);
+            assertEquals(hash, clone.hashCode());
             checkVirtualNodePath(clone);
+
+            // In case where the hash code is not cached.
+            path = new VTenantPath(tname);
+            clone = path.clone();
+            assertNotSame(path, clone);
+            assertEquals(tname, clone.getTenantName());
+            assertEquals(path, clone);
+            assertEquals(hash, clone.hashCode());
+            checkVirtualNodePath(clone);
+        }
+    }
+
+    /**
+     * Test case for {@link VTenantPath#replaceTenantName(String)}.
+     */
+    @Test
+    public void testReplaceTenantName() {
+        for (String tname: createStrings("tenant_name")) {
+            // In case where the hash code is cached.
+            VTenantPath path = new VTenantPath(tname);
+            int hash = path.hashCode();
 
             String name = tname + "_new";
             VTenantPath path1 = path.replaceTenantName(name);
             assertEquals(name, path1.getTenantName());
             assertEquals("VTN", path1.getNodeType());
             assertEquals(VTenantPath.class, path1.getClass());
+            int hash1 = path1.hashCode();
+            assertNotEquals(hash, hash1);
+            checkVirtualNodePath(path1);
+
+            // In case where the hash code is not cached.
+            path = new VTenantPath(tname);
+            path1 = path.replaceTenantName(name);
+            assertEquals(name, path1.getTenantName());
+            assertEquals("VTN", path1.getNodeType());
+            assertEquals(VTenantPath.class, path1.getClass());
+            assertEquals(hash1, path1.hashCode());
             checkVirtualNodePath(path1);
         }
     }
