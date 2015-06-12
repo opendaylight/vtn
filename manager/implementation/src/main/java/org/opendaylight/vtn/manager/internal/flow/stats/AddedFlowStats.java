@@ -212,7 +212,7 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             FlowMatchUtils.getIngressPort(vfent.getMatch());
         NodeConnectorId port =
             FlowMatchUtils.getIngressPort(flow.getMatch());
-        if (!MiscUtils.equals(vport, port)) {
+        if (!MiscUtils.equalsUri(vport, port)) {
             log(warnLogger,
                 "Ignore flow statistics: %s: IN_PORT does not match: %s, %s",
                 vdf.getFlowId().getValue(), vport, port);
