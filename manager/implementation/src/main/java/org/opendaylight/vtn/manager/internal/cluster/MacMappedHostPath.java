@@ -44,7 +44,7 @@ public class MacMappedHostPath extends MacMapPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -3353438636803746573L;
+    private static final long serialVersionUID = -111389535169763497L;
 
     /**
      * A string which represents that the node type is MAC mapped host.
@@ -149,6 +149,20 @@ public class MacMappedHostPath extends MacMapPath {
     }
 
     /**
+     * Calculate the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    @Override
+    protected int getHash() {
+        int h = super.getHash();
+        if (mappedHost != null) {
+            h = h * HASH_PRIME + mappedHost.hashCode();
+        }
+        return h;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -159,21 +173,5 @@ public class MacMappedHostPath extends MacMapPath {
             : Long.toString(mappedHost.getEncodedValue());
         components.add(host);
         return components;
-    }
-
-    // Object
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        int h = super.hashCode();
-        if (mappedHost != null) {
-            h = h * HASH_PRIME + mappedHost.hashCode();
-        }
-        return h;
     }
 }

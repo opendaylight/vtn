@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,8 @@
  */
 
 package org.opendaylight.vtn.manager;
+
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
 
 import java.util.List;
 
@@ -29,7 +31,7 @@ public abstract class VNodePath extends VTenantPath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 569227328812607675L;
+    private static final long serialVersionUID = 2181493384255939593L;
 
     /**
      * The name of the virtual node inside the VTN.
@@ -90,6 +92,8 @@ public abstract class VNodePath extends VTenantPath {
      */
     public abstract VNodeLocation toVNodeLocation();
 
+    // VTenantPath
+
     /**
      * {@inheritDoc}
      */
@@ -133,24 +137,22 @@ public abstract class VNodePath extends VTenantPath {
      * {@inheritDoc}
      */
     @Override
+    protected int getHash() {
+        int h = super.getHash();
+        if (tenantNodeName != null) {
+            h = h * HASH_PRIME + tenantNodeName.hashCode();
+        }
+
+        return h;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected List<String> getComponents() {
         List<String> components = super.getComponents();
         components.add(tenantNodeName);
         return components;
-    }
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        int h = super.hashCode();
-        if (tenantNodeName != null) {
-            h ^= tenantNodeName.hashCode();
-        }
-
-        return h;
     }
 }

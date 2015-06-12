@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.util.List;
 
 import org.opendaylight.vtn.manager.flow.filter.RedirectFilter;
@@ -38,7 +40,7 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3954665694272437194L;
+    private static final long serialVersionUID = -2584323115570440182L;
 
     /**
      * A string which represents that the node type is vBridge interface.
@@ -170,6 +172,19 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
      * {@inheritDoc}
      */
     @Override
+    protected int getHash() {
+        int h = super.getHash();
+        if (ifName != null) {
+            h = h * HASH_PRIME + ifName.hashCode();
+        }
+
+        return h;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     protected List<String> getComponents() {
         List<String> components = super.getComponents();
         components.add(ifName);
@@ -186,23 +201,6 @@ public class VBridgeIfPath extends VBridgePath implements VInterfacePath {
     @Override
     public VNodeLocation toVNodeLocation() {
         return new VNodeLocation(this);
-    }
-
-    // Object
-
-    /**
-     * Return the hash code of this object.
-     *
-     * @return  The hash code.
-     */
-    @Override
-    public int hashCode() {
-        int h = super.hashCode();
-        if (ifName != null) {
-            h ^= ifName.hashCode();
-        }
-
-        return h;
     }
 
     // VInterfacePath
