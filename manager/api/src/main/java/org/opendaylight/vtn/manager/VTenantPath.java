@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import static org.opendaylight.vtn.manager.util.NumberUtils.HASH_PRIME;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,7 @@ public class VTenantPath
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2864472628337433470L;
+    private static final long serialVersionUID = -5047395248346635881L;
 
     /**
      * A string which represents that the node type is VTN.
@@ -44,6 +46,11 @@ public class VTenantPath
      * The name of the {@linkplain <a href="package-summary.html#VTN">VTN</a>}.
      */
     private String  tenantName;
+
+    /**
+     * Cache for the hash code of this instance.
+     */
+    private int  hash;
 
     /**
      * Construct a new object which represents the position of the
@@ -116,6 +123,9 @@ public class VTenantPath
         try {
             VTenantPath path = (VTenantPath)super.clone();
             path.tenantName = tenantName;
+
+            // Need to clear cache for the hash code.
+            path.hash = 0;
             return path;
         } catch (CloneNotSupportedException e) {
             // This should never happen.
@@ -171,6 +181,20 @@ public class VTenantPath
     }
 
     /**
+     * Calculate the hash code of this object.
+     *
+     * @return  The hash code.
+     */
+    protected int getHash() {
+        int h = getClass().getName().hashCode();
+        if (tenantName != null) {
+            h = h * HASH_PRIME + tenantName.hashCode();
+        }
+
+        return h;
+    }
+
+    /**
      * Return a string list which contains all path components configured in
      * this instance.
      *
@@ -221,10 +245,11 @@ public class VTenantPath
      * @return  The hash code.
      */
     @Override
-    public int hashCode() {
-        int h = getClass().getName().hashCode();
-        if (tenantName != null) {
-            h ^= tenantName.hashCode();
+    public final int hashCode() {
+        int h = hash;
+        if (h == 0) {
+            h = getHash();
+            hash = h;
         }
 
         return h;
