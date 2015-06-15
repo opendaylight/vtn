@@ -483,7 +483,7 @@ public final class MiscUtils {
      * @param u2  The second instance to be compared.
      * @return  {@code true} only if {@code vh1} and {@code vh2} are identical.
      */
-    public static boolean equals(Uri u1, Uri u2) {
+    public static boolean equalsUri(Uri u1, Uri u2) {
         if (u1 == null) {
             return (u2 == null);
         } else if (u2 == null) {

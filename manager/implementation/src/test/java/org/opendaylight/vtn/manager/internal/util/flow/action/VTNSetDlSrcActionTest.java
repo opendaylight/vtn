@@ -312,7 +312,7 @@ public class VTNSetDlSrcActionTest extends TestBase {
         vad = new org.opendaylight.vtn.manager.flow.action.
             SetDlSrcAction(new byte[]{0x00, 0x01});
         etag = RpcErrorTag.BAD_ELEMENT;
-        emsg = "Invalid address: 00:01";
+        emsg = "Invalid address: 00:01: Invalid byte array length: 2";
         try {
             new VTNSetDlSrcAction(vad, 1);
             unexpected();

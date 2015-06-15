@@ -777,8 +777,8 @@ public class RESTClient {
      */
     private boolean jsonFormating(Object jsonVal) throws VTNClientException {
         Object json  = jsonVal;
-        try {
-            if (!(json.equals(null))) {
+        if (json != null) {
+            try {
                 System.out.println("Process completed...");
                 System.out.println("Creating output file - runConfig_output.json");
                 Gson gson = new GsonBuilder().setPrettyPrinting().create();
@@ -786,10 +786,10 @@ public class RESTClient {
                 FileWriter fw = new FileWriter(new File("runConfig_output.json"));
                 fw.write(prettyJson);
                 fw.close();
+            } catch (IOException ex) {
+                LOG.error("An exception occured - ", ex);
+                throw new VTNClientException("\n\nAn error has occured in writing output file...");
             }
-        } catch (IOException ex) {
-            LOG.error("An exception occured - ", ex);
-            throw new VTNClientException("\n\nAn error has occured in writing output file...");
         }
         return true;
     }
