@@ -154,12 +154,12 @@ public class VTNThreadPool extends AbstractExecutorService
      * @param task  A task to be executed on this thread pool.
      * @return  {@code true} is returned if the specified task was submitted.
      *          {@code false} is returned if the specified tas was rejected.
-     * @throws NullPointerException
+     * @throws IllegalArgumentException
      *    {@code task} is {@code null}.
      */
     public synchronized boolean executeTask(Runnable task) {
         if (task == null) {
-            throw new NullPointerException("Task cannot be null.");
+            throw new IllegalArgumentException("Task cannot be null.");
         }
         if (poolState != STATE_RUNNING) {
             return false;
@@ -338,6 +338,7 @@ public class VTNThreadPool extends AbstractExecutorService
         try {
             wait(timeout);
         } catch (InterruptedException e) {
+            // Ignore interruption.
         } finally {
             waiting--;
             int pending = pendingSignals - 1;
@@ -545,6 +546,7 @@ public class VTNThreadPool extends AbstractExecutorService
 
             return true;
         } catch (TimeoutException e) {
+            // One more check should be done.
         }
 
         return (workerThreads.size() == 0);

@@ -412,7 +412,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
             LOG.error("No OF port associated with interface {}", intf);
             return;
         }
-        int result = setPortMapForInterface(node, intf, neutronPort, switchId, ofPort);
+        int result = setPortMapForInterface(intf, neutronPort, switchId, ofPort);
         if (result != HttpURLConnection.HTTP_OK) {
             LOG.error("Set Port mapping failed for interface {}", intf);
         }
@@ -570,15 +570,14 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
 
     /**
      * Set PortMap for an Interface.
-     * @param node An instance of Node object.
+     *
      * @param intf An instance of Interface object.
      * @param neutronPort An instance of NeutronPort object.
      * @param switchId the switch id .
      * @param ofPort ofport value .
      * @return A HTTP status code to the PortMap request.
      */
-    private int setPortMapForInterface(Node node,
-                                       Interface intf,
+    private int setPortMapForInterface(Interface intf,
                                        NeutronPort neutronPort,
                                        String switchId,
                                        String ofPort) {
@@ -719,7 +718,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
         try {
             this.createInternalNetworkForNeutron(node);
             LOG.trace("Process internal neutron network ,node {}", node);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             LOG.error("Error while creating internal network for node " +  node,
                       e);
         }
@@ -730,7 +729,7 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      * @param node Instance of Node object.
      * @throws Exception while Neutron network create.
      */
-    public void createInternalNetworkForNeutron(Node node) throws Exception {
+    public void createInternalNetworkForNeutron(Node node) {
         getSystemProperties();
         String brInt = getIntegrationBridgeName();
         LOG.trace("createInternalNetworkForNeutron() - node ={}, integration bridge ={}", node.toString(), brInt);
@@ -779,9 +778,8 @@ public class OVSDBPluginEventHandler extends VTNNeutronUtils implements OvsdbInv
      * @param node Instance of Node object.
      * @param bridgeName name of the bridge.
      * @return A StatusCode from the defined enumeration list.
-     * @throws Exception any exception occurred while bridge add.
      */
-    private Status addInternalBridge(Node node, String bridgeName) throws Exception {
+    private Status addInternalBridge(Node node, String bridgeName) {
         LOG.trace("Added InternalBridge  bridgeName - {}, for the node - {}",
                   bridgeName, node);
         String bridgeUUID = this.getInternalBridgeUUID(node, bridgeName);

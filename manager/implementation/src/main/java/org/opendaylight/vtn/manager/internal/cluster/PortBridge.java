@@ -303,17 +303,12 @@ public abstract class PortBridge<T extends PortInterface>
 
         // Writer lock is required because this method may change the state
         // of the bridge.
+        boolean found = false;
         Lock wrlock = writeLock();
         try {
             // Determine the destination of the redirection.
-            T vif;
-            try {
-                vif = getInterfaceImpl(path);
-            } catch (VTNException e) {
-                String emsg = e.getStatus().getDescription();
-                rex.destinationNotFound(pctx, emsg);
-                throw new DropFlowException(e);
-            }
+            T vif = getInterfaceImpl(path);
+            found = true;
 
             if (!vif.isEnabled()) {
                 rex.destinationDisabled(pctx);
@@ -345,8 +340,14 @@ public abstract class PortBridge<T extends PortInterface>
             // Forward the packet to the bridge.
             handlePacket(mgr, pctx, vif);
         } catch (VTNException e) {
-            // This should never happen.
-            mgr.logException(getLogger(), getNodePath(), e);
+            if (found) {
+                // This should never happen.
+                mgr.logException(getLogger(), getNodePath(), e);
+            } else {
+                String emsg = e.getStatus().getDescription();
+                rex.destinationNotFound(pctx, emsg);
+                throw new DropFlowException(e);
+            }
         } finally {
             wrlock.unlock();
         }

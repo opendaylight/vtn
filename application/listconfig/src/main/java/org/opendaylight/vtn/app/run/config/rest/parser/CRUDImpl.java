@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.app.run.config.rest.parser;
 
-import java.net.ConnectException;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -127,10 +126,10 @@ public class CRUDImpl implements CRUDOperation {
      * @return
      *         Response as String
      * @throws VTNClientException if request does not return 'success'
-     * @throws JSONException
-     * @throws ConnectException
      */
-    public String doGET(String url, Map<String, Object> headers) throws VTNClientException, JSONException, ConnectException {
+    @Override
+    public String doGET(String url, Map<String, Object> headers)
+        throws VTNClientException {
         try {
             ClientResponse response = getWebResource(url, null, headers).accept(appType.getType()).get(ClientResponse.class);
             if (response.getStatus() == HttpResponse.NO_CONTENT.getStatus()) {
@@ -164,10 +163,9 @@ public class CRUDImpl implements CRUDOperation {
      *         Headers
      * @return
      *         Response as String
-     * @throws VTNClientException if request does not return 'success'
-     * @throws JSONException
      */
-    public String doPOST(String url, Object obj, Map<String, Object> headers) throws VTNClientException, ConnectException, JSONException {
+    @Override
+    public String doPOST(String url, Object obj, Map<String, Object> headers) {
         return "";
     }
 
@@ -181,10 +179,9 @@ public class CRUDImpl implements CRUDOperation {
      *         Headers
      * @return
      *         Response as String
-     * @throws VTNClientException if request does not return 'success'
-     * @throws JSONException
      */
-    public String doPUT(String url, Object obj, Map<String, Object> headers) throws VTNClientException, ConnectException, JSONException {
+    @Override
+    public String doPUT(String url, Object obj, Map<String, Object> headers) {
         return "";
     }
 
@@ -198,10 +195,9 @@ public class CRUDImpl implements CRUDOperation {
      *         Headers
      * @return
      *         Response as String
-     * @throws VTNClientException if request does not return 'success'
-     * @throws JSONException
      */
-    public String doDELETE(String url, Object obj, Map<String, Object> headers) throws VTNClientException, ConnectException, JSONException {
+    @Override
+    public String doDELETE(String url, Object obj, Map<String, Object> headers) {
         return "";
     }
 }

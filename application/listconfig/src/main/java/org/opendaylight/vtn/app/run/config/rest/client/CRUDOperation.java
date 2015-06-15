@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,7 +10,6 @@
 package org.opendaylight.vtn.app.run.config.rest.client;
 
 
-import java.net.ConnectException;
 import java.util.Map;
 
 /**
@@ -28,9 +27,10 @@ public interface CRUDOperation {
      *         Headers
      * @return
      *         Response as String.
-     * @throws ConnectException
+     * @throws VTNClientException
      */
-    String doGET(String url, Map<String, Object> headers) throws Exception, ConnectException;
+    String doGET(String url, Map<String, Object> headers)
+        throws VTNClientException;
 
     /**
      * Send a POST request.
@@ -42,9 +42,10 @@ public interface CRUDOperation {
      *         Headers
      * @return
      *         Response as String
-     * @throws ConnectException
+     * @throws VTNClientException
      */
-    String doPOST(String url, Object obj, Map<String, Object> headers) throws Exception, ConnectException;
+    String doPOST(String url, Object obj, Map<String, Object> headers)
+        throws VTNClientException;
 
     /**
      * Send PUT request.
@@ -56,21 +57,23 @@ public interface CRUDOperation {
      *         Headers
      * @return
      *         Response as String
-     * @throws ConnectException
+     * @throws VTNClientException
      */
-    String doPUT(String url, Object obj, Map<String, Object> headers) throws Exception, ConnectException;
+    String doPUT(String url, Object obj, Map<String, Object> headers)
+        throws VTNClientException;
 
     /**
-      * Send a DELETE request.
+     * Send a DELETE request.
      * @param url
      *         URL
      * @param obj
      *         Object to send along DELETE request
      * @param headers
      *         Headers
-      * @return
+     * @return
      *         Response as String
-     * @throws ConnectException
+     * @throws VTNClientException
      */
-    String doDELETE(String url, Object obj, Map<String, Object> headers) throws Exception, ConnectException;
+    String doDELETE(String url, Object obj, Map<String, Object> headers)
+        throws VTNClientException;
 }

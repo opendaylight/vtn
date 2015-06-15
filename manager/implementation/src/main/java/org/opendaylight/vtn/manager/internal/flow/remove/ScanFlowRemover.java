@@ -67,10 +67,8 @@ public abstract class ScanFlowRemover implements FlowRemover {
             String tname = table.getTenantName();
             for (VtnDataFlow vdf: flows) {
                 FlowCache fc = new FlowCache(vdf);
-                if (select(fc)) {
-                    if (FlowUtils.removeDataFlow(tx, tname, fc)) {
-                        removed.add(fc);
-                    }
+                if (select(fc) && FlowUtils.removeDataFlow(tx, tname, fc)) {
+                    removed.add(fc);
                 }
             }
         }

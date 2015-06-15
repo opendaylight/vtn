@@ -286,6 +286,7 @@ public final class VTNThreadData {
                 try {
                     future.checkedGet();
                 } catch (VTNException e) {
+                    // Ignore any error.
                 }
             }
         }

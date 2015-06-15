@@ -408,6 +408,7 @@ public class VTNManagerImpl
                 try {
                     wait();
                 } catch (InterruptedException e) {
+                    // Ignore interruption.
                 }
             }
 

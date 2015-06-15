@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -100,7 +100,8 @@ public abstract class CacheTransaction<T> {
                           RETRY_DELAY, e);
                 try {
                     Thread.sleep(RETRY_DELAY);
-                } catch (Exception ex) {
+                } catch (InterruptedException ex) {
+                    // Ignore interruption.
                 }
             } catch (VTNException e) {
                 throw e;
