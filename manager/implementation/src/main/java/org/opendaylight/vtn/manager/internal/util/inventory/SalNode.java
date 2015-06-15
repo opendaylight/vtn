@@ -136,8 +136,7 @@ public class SalNode {
             return null;
         }
 
-        SalNode snode = new SalNode(bi.longValue(), id);
-        return snode;
+        return new SalNode(bi.longValue(), id);
     }
 
     /**

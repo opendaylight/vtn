@@ -606,15 +606,14 @@ public abstract class PortInterface extends AbstractInterface
      * Determine whether the node connector satisfies the condition specified
      * by the port map configuration.
      *
-     * @param mgr     VTN Manager service.
      * @param pmconf  Port mapping configuration.
      * @param sport   A {@link SalPort} instance.
      * @param vport   A {@link VtnPort} instance.
      * @return  {@code true} is returned only if the given node connector
      *          satisfies the condition.
      */
-    private boolean portMatch(VTNManagerImpl mgr, PortMapConfig pmconf,
-                              SalPort sport, VtnPort vport) {
+    private boolean portMatch(PortMapConfig pmconf, SalPort sport,
+                              VtnPort vport) {
         Node pnode = pmconf.getNode();
         SwitchPort port = pmconf.getPort();
         String type = port.getType();
@@ -796,7 +795,7 @@ public abstract class PortInterface extends AbstractInterface
         VtnPort vport = ev.getVtnPort();
         switch (ev.getUpdateType()) {
         case CREATED:
-            if (mapped != null || !portMatch(mgr, pmconf, sport, vport)) {
+            if (mapped != null || !portMatch(pmconf, sport, vport)) {
                 return cur;
             }
 
@@ -812,7 +811,7 @@ public abstract class PortInterface extends AbstractInterface
                 // Check whether the port name was changed.
                 // Map the port if its name matches the configuration.
                 if (pmconf.getPort().getName() == null ||
-                    !portMatch(mgr, pmconf, sport, vport) ||
+                    !portMatch(pmconf, sport, vport) ||
                     !mapPort(mgr, db, ist, sport, false)) {
                     return cur;
                 }
@@ -820,7 +819,7 @@ public abstract class PortInterface extends AbstractInterface
                 state = getNewState(ist, vport);
             } else if (sport.getAdNodeConnector().equals(mapped)) {
                 if (pmconf.getPort().getName() != null &&
-                    !portMatch(mgr, pmconf, sport, vport)) {
+                    !portMatch(pmconf, sport, vport)) {
                     // This port should be unmapped because its name has been
                     // changed. In this case flow and MAC address table entries
                     // need to be purged.

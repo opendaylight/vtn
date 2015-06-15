@@ -13,7 +13,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.gson.Gson;
@@ -144,18 +142,13 @@ public class RESTClient {
      * GET - get operation method to communicate the server to fetch the result for requested URI.
      * @param restObject
      * @return {@link Object}
-     * @throws Exception
-     * @throws JSONException
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
-    public Object get(Object restObject) throws Exception,
-            JSONException, IllegalArgumentException,
-            IllegalAccessException, InstantiationException, ConnectException,
-            VTNClientException {
+    public Object get(Object restObject)
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         Map<String, Object> headers = new HashMap<String, Object>();
         return this.get(restObject, paramMap, headers);
@@ -166,19 +159,13 @@ public class RESTClient {
      * @param restObject
      * @param headers
      * @return {@link Object}
-     * @throws Exception
-     * @throws JSONException
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers)
-        throws Exception, JSONException,
-            IllegalArgumentException, IllegalAccessException,
-            InstantiationException, ConnectException,
-            VTNClientException {
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         return this.get(restObject, paramMap, headers);
     }
@@ -190,19 +177,14 @@ public class RESTClient {
      * @param paramName
      * @param paramValue
      * @return {@link Object}
-     * @throws Exception
-     * @throws JSONException
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers,
-            String paramName, String paramValue) throws Exception,
-            JSONException, IllegalArgumentException,
-            IllegalAccessException, InstantiationException, ConnectException,
-            VTNClientException {
+            String paramName, String paramValue)
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         paramMap.put(paramName, paramValue);
         return this.get(restObject, paramMap, headers);
@@ -214,19 +196,13 @@ public class RESTClient {
      * @param paramName {@link String}
      * @param paramValue {@link String}
      * @return {@link Object}
-     * @throws JSONException
-     * @throws Exception
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, String paramName, String paramValue)
-        throws JSONException, Exception,
-            IllegalArgumentException, IllegalAccessException,
-            InstantiationException, ConnectException,
-            VTNClientException {
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         paramMap.put(paramName, paramValue);
         return this.get(restObject, paramMap, null);
@@ -237,19 +213,13 @@ public class RESTClient {
      * @param restObject
      * @param paramMap
      * @return The value of the requested URI.
-     * @throws JSONException
-     * @throws Exception
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, HashMap<String, String> paramMap)
-        throws JSONException, Exception,
-            IllegalArgumentException, IllegalAccessException,
-            InstantiationException, ConnectException,
-            VTNClientException {
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         return this.get(restObject, paramMap, null);
     }
 
@@ -261,19 +231,14 @@ public class RESTClient {
      * @param param2
      * @param value2
      * @return The value of the requested URI.
-     * @throws JSONException
-     * @throws Exception
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, String param1, String value1,
-            String param2, String value2) throws
-            JSONException, Exception, IllegalArgumentException,
-            IllegalAccessException, InstantiationException, ConnectException,
-            VTNClientException {
+            String param2, String value2)
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         paramMap.put(param1, value1);
         paramMap.put(param2, value2);
@@ -289,20 +254,14 @@ public class RESTClient {
      * @param param2
      * @param value2
      * @return The value of the requested URI.
-     * @throws JSONException
-     * @throws Exception
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, Object> headers,
         String param1, String value1, String param2, String value2)
-        throws JSONException, Exception,
-            IllegalArgumentException, IllegalAccessException,
-            InstantiationException, ConnectException,
-            VTNClientException {
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         Map<String, String> paramMap = new HashMap<String, String>();
         paramMap.put(param1, value1);
         paramMap.put(param2, value2);
@@ -315,19 +274,14 @@ public class RESTClient {
      * @param paramMap
      * @param headers
      * @return The value of the requested URI.
-     * @throws Exception
-     * @throws JSONException
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
-     * @throws ConnectException
      * @throws VTNClientException
      */
     public Object get(Object restObject, Map<String, String> paramMap,
-            Map<String, Object> headers) throws Exception,
-            JSONException, IllegalArgumentException,
-            IllegalAccessException, InstantiationException, ConnectException,
-            VTNClientException {
+            Map<String, Object> headers)
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         RestRequest request = getRestRequest(restObject, paramMap);
         if (request != null) {
             request.setResponse(client.doGET(request.getUrl(), headers));
@@ -402,14 +356,13 @@ public class RESTClient {
      * @param target
      * @param request
      * @return The parsed response.
-     * @throws JSONException
-     * @throws IllegalArgumentException
      * @throws IllegalAccessException
      * @throws InstantiationException
+     * @throws VTNClientException
      */
     private Object parseResponse(Object target, RestRequest request)
-        throws JSONException, IllegalArgumentException,
-            IllegalAccessException, InstantiationException, VTNClientException {
+        throws IllegalAccessException, InstantiationException,
+               VTNClientException {
         if (request.getResponse() != null && !request.getResponse().equals("")
                 && !request.getResponse().equals("null")) {
             LOG.debug(request.getResponse());

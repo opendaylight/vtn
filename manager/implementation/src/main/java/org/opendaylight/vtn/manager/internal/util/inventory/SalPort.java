@@ -71,7 +71,8 @@ public final class SalPort extends SalNode {
                 parse(str);
             } catch (NumberFormatException e) {
                 return true;
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
+                // Unexpected format.
             }
         }
 

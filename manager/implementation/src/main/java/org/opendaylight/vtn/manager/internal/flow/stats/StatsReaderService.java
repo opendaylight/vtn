@@ -68,11 +68,6 @@ public final class StatsReaderService extends SalNotificationListener
         LoggerFactory.getLogger(StatsReaderService.class);
 
     /**
-     * The capacity of the task queue.
-     */
-    private static final int  TASK_CAPACITY = 1000000;
-
-    /**
      * The maximum number of milliseconds to wait for completion of RPC.
      */
     private static final long  RPC_TIMEOUT = 5000L;
@@ -81,11 +76,6 @@ public final class StatsReaderService extends SalNotificationListener
      * The timeout for transaction in milliseconds.
      */
     private static final long  TX_TIMEOUT = 10000L;
-
-    /**
-     * The number of milliseconds to wait for completion of the task thread.
-     */
-    private static final long  SHUTDOWN_TIMEOUT = 10000L;
 
     /**
      * MD-SAL flow statistics service.

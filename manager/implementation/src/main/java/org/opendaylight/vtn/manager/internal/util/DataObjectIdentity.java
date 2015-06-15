@@ -62,11 +62,6 @@ public final class DataObjectIdentity {
     private static final String METHOD_GET_IMPL = "getImplementedInterface";
 
     /**
-     * Suffix of the class name which represents the key.
-     */
-    private static final String  CLASS_SUFFIX_KEY = "Key";
-
-    /**
      * A map that keeps values in the target {@link DataObject} instance.
      */
     private final Map<String, Object>  dataMap = new HashMap<>();

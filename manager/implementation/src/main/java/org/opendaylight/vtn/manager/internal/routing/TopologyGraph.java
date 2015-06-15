@@ -473,10 +473,8 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
         Collection<LinkEdge> in = getInEdges(snode);
         if (in == null || in.size() == 0) {
             Collection<LinkEdge> out = getOutEdges(snode);
-            if (out == null || out.size() == 0) {
-                if (removeVertex(snode)) {
-                    LOG.trace("Node removed: {}", snode);
-                }
+            if ((out == null || out.size() == 0) && removeVertex(snode)) {
+                LOG.trace("Node removed: {}", snode);
             }
         }
     }

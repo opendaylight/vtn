@@ -256,7 +256,6 @@ public final class TxSyncFuture<T> extends AbstractVTNFuture<T> {
          */
         private boolean cancel() {
             int state;
-            int newState;
 
             do {
                 state = getState();

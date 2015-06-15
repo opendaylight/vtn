@@ -463,7 +463,7 @@ public abstract class VTNInetMatch {
      *
      * @throws RpcException  Verifycation failed.
      */
-    public void verify() throws RpcException {
+    public final void verify() throws RpcException {
         if (protocol != null) {
             ProtocolUtils.checkIpProtocol(protocol.shortValue());
         }

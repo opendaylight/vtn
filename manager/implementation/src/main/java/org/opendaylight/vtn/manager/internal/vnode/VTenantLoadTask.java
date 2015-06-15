@@ -108,14 +108,13 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> {
     /**
      * Resume the VTN from the VTN configuration.
      *
-     * @param ctx   A {@link TxContext} instance.
      * @param name  The name of the VTN.
      * @param xvtn  A {@link XmlVTenant} instance that contains the VTN
      *              configuration.
      * @return  A {@link Vtn} instance corresponding to the given VTN.
      * @throws VTNException  An error occurred.
      */
-    private Vtn resume(TxContext ctx, String name, XmlVTenant xvtn)
+    private Vtn resume(String name, XmlVTenant xvtn)
         throws VTNException {
         VtnBuilder builder = xvtn.toVtnBuilder();
         VnodeName vname = builder.getName();
@@ -198,7 +197,7 @@ class VTenantLoadTask extends AbstractTxTask<Vtns> {
             XmlVTenant xvtn = XmlConfigFile.load(ftype, key, XmlVTenant.class);
             if (xvtn != null) {
                 try {
-                    Vtn vtn = resume(ctx, key, xvtn);
+                    Vtn vtn = resume(key, xvtn);
                     vlist.add(vtn);
                 } catch (Exception e) {
                     logger.warn(key + ": Ignore broken VTN configuration.", e);

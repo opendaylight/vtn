@@ -359,6 +359,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
             try {
                 wait();
             } catch (InterruptedException e) {
+                // Ignore interruption.
             }
         }
 
@@ -475,6 +476,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
         try {
             runnerThread.join(CLOSE_TIMEOUT);
         } catch (InterruptedException e) {
+            // Ignore interruption.
         }
 
         if (runnerThread.isAlive()) {
@@ -499,6 +501,7 @@ public final class TxQueueImpl implements TxQueue, Runnable, AutoCloseable {
         try {
             runnerThread.join(SHUTDOWN_TIMEOUT);
         } catch (InterruptedException e) {
+            // Ignore interruption.
         }
 
         return !runnerThread.isAlive();

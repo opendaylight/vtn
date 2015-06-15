@@ -162,7 +162,6 @@ public final class VTNInventoryManager
      */
     private void onCreatedOrRemoved(IdentifiedData<?> data,
                                     VtnUpdateType type) {
-        String unexpected = null;
         IdentifiedData<VtnNode> nodeData = data.checkType(VtnNode.class);
         if (nodeData != null) {
             VtnNode vnode = nodeData.getValue();
@@ -316,7 +315,6 @@ public final class VTNInventoryManager
      */
     @Override
     protected void onUpdated(Void ectx, ChangedData<?> data) {
-        String unexpected = null;
         ChangedData<VtnNode> nodeData = data.checkType(VtnNode.class);
         if (nodeData != null) {
             onChanged(nodeData.getOldValue(), nodeData.getValue());

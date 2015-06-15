@@ -60,6 +60,11 @@ public final class FlowActionConverter {
      */
     private static class Holder {
         /**
+         * Private constructor that protects this class from instantiating.
+         */
+        private Holder() {}
+
+        /**
          * The single global instance of {@link FlowActionConverter}.
          */
         private static final FlowActionConverter  INSTANCE =
