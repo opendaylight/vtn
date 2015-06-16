@@ -145,13 +145,12 @@ public final class ClearNodeFlowsTask
         return taskFuture;
     }
 
-    // Runnable
-
     /**
      * Wait for all VTN flows in the target switch to be uninstalled.
+     *
+     * @throws VTNException  An error occurred.
      */
-    @Override
-    public void run() {
+    private void uninstall() throws VTNException {
         // Wait for remove-flow request to be sent to the target switch.
         try {
             rpcFuture.checkedGet(STATS_READ_TIMEOUT, TimeUnit.SECONDS);
@@ -161,7 +160,7 @@ public final class ClearNodeFlowsTask
                 // transaction will be timed out in 10 seconds.
                 LOG.error("Failed to determine flow entries to be removed: " +
                           targetNode, e);
-                return;
+                throw e;
             }
         }
 
@@ -198,6 +197,25 @@ public final class ClearNodeFlowsTask
         } else {
             LOG.error("Failed to remove VTN flows in " + targetNode,
                       firstError);
+            throw firstError;
+        }
+    }
+
+    // Runnable
+
+    /**
+     * Wait for all VTN flows in the target switch to be uninstalled.
+     */
+    @Override
+    public void run() {
+        try {
+            uninstall();
+            taskFuture.set(null);
+        } catch (VTNException e) {
+            taskFuture.setException(e);
+        } catch (RuntimeException e) {
+            LOG.error("Caught an unexpected exception", e);
+            taskFuture.setException(e);
         }
     }
 
