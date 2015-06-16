@@ -137,7 +137,7 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
                 }
             } else {
                 // Save current configuration into file.
-                saveConfig = new VTNConfigImpl(vcfg, macAddress);
+                saveConfig = new VTNConfigImpl(vcfg);
             }
 
             // Read current VTN configuration in operational view.

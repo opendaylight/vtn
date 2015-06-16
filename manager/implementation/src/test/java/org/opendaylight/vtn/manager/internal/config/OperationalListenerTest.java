@@ -251,7 +251,8 @@ public class OperationalListenerTest extends TestBase {
         // initState should not be changed to false.
         is = getFieldValue(operListener, Boolean.class, "initState");
         assertEquals(null, is);
-        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
+        VTNConfigImpl cur = currentConfig.get();
+        assertEquals(new VTNConfigImpl(vcfg), cur);
 
         state = true;
         old = vcfg;
@@ -261,7 +262,7 @@ public class OperationalListenerTest extends TestBase {
 
         is = getFieldValue(operListener, Boolean.class, "initState");
         assertEquals(state, is);
-        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
+        assertSame(cur, currentConfig.get());
     }
 
     /**

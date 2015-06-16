@@ -42,6 +42,7 @@ import org.junit.Assert;
 import com.google.common.base.Optional;
 import com.google.common.util.concurrent.CheckedFuture;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.opendaylight.vtn.manager.DataLinkHost;
 import org.opendaylight.vtn.manager.EthernetHost;
@@ -75,6 +76,7 @@ import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
 
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
+import org.opendaylight.controller.md.sal.common.api.data.TransactionCommitFailedException;
 
 import org.opendaylight.controller.sal.core.Edge;
 import org.opendaylight.controller.sal.core.Node;
@@ -2427,7 +2429,6 @@ public abstract class TestBase extends Assert {
                                (short)-1, null, null, null, null);
     }
 
-
     /**
      * Create a response of read request on a MD-SAL transaction.
      *
@@ -2440,6 +2441,34 @@ public abstract class TestBase extends Assert {
         Optional<T> opt = Optional.fromNullable(obj);
         return Futures.<Optional<T>, ReadFailedException>
             immediateCheckedFuture(opt);
+    }
+
+    /**
+     * Create a future associated with successful completion of the MD-SAL
+     * datastore submit procedure.
+     *
+     * @return  A {@link CheckedFuture} instance.
+     */
+    protected static CheckedFuture<Void, TransactionCommitFailedException> getSubmitFuture() {
+        ListenableFuture<Void> f = Futures.immediateFuture(null);
+        DataStoreExceptionMapper mapper =
+            DataStoreExceptionMapper.getInstance();
+        return Futures.makeChecked(f, mapper);
+    }
+
+    /**
+     * Create a future associated with the MD-SAL datastore submit procedure
+     * with failure.
+     *
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  A {@link CheckedFuture} instance.
+     */
+    protected static CheckedFuture<Void, TransactionCommitFailedException> getSubmitFuture(
+        Throwable cause) {
+        ListenableFuture<Void> f = Futures.immediateFailedFuture(cause);
+        DataStoreExceptionMapper mapper =
+            DataStoreExceptionMapper.getInstance();
+        return Futures.makeChecked(f, mapper);
     }
 
     /**
