@@ -308,6 +308,8 @@ public class NodeListenerTest extends TestBase {
 
     /**
      * Return a wildcard path to the MD-SAL data model to listen.
+     *
+     * @return  A wildcard path to the MD-SAL data model to listen.
      */
     private InstanceIdentifier<FlowCapableNode> getPath() {
         return InstanceIdentifier.builder(Nodes.class).

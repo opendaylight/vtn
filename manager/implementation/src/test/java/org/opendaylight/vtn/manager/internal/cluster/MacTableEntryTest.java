@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import org.opendaylight.vtn.manager.MacAddressEntry;
 import org.opendaylight.vtn.manager.VBridgeIfPath;
@@ -26,6 +27,7 @@ import org.opendaylight.vtn.manager.VTNException;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
+import org.opendaylight.vtn.manager.internal.SlowTest;
 
 import org.opendaylight.controller.sal.core.Node.NodeIDType;
 import org.opendaylight.controller.sal.core.Node;
@@ -36,6 +38,7 @@ import org.opendaylight.controller.sal.packet.address.EthernetAddress;
 /**
  * JUnit test for {@link MacTableEntry}
  */
+@Category(SlowTest.class)
 public class MacTableEntryTest extends TestBase {
     /**
      * A list of {@link VBridgePath} instances for test.
