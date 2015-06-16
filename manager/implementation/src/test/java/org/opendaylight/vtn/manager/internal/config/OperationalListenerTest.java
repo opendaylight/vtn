@@ -9,205 +9,299 @@
 
 package org.opendaylight.vtn.manager.internal.config;
 
-import org.junit.Test;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
+
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
-import org.opendaylight.vtn.manager.internal.TestBase;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.mockito.Mockito;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
+
+import org.slf4j.Logger;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import org.mockito.Mock;
+
+import org.opendaylight.vtn.manager.util.EtherAddress;
+
 import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.opendaylight.vtn.manager.internal.TestBase;
+
+import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
+import org.opendaylight.controller.md.sal.common.api.data.AsyncDataChangeEvent;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.config.rev150209.VtnConfigBuilder;
 
 /**
  * JUnit test for {@link OperationalListener}.
  */
 public class OperationalListenerTest extends TestBase {
-
-     /**
-     * Static final Instance of Logger to perform unit testing.
+    /**
+     * Mock-up of {@link DataBroker}.
      */
-    private static final Logger  LOG = LoggerFactory.getLogger(OperationalListenerTest.class);
+    @Mock
+    private DataBroker  dataBroker;
 
     /**
-     * Instance of AtomicReference to perform unit testing.
+     * Registration to be associated with {@link OperationalListener}.
      */
-    AtomicReference<VTNConfigImpl> atomicRef = new AtomicReference<VTNConfigImpl>();
+    @Mock
+    private ListenerRegistration  listenerReg;
 
     /**
-     * Instance of Void to perform unit testing.
+     * Reference to current configuration.
      */
-    Void vd = null;
+    private AtomicReference<VTNConfigImpl>  currentConfig =
+        new AtomicReference<>(new VTNConfigImpl());
 
     /**
-     * Instance of DataBroker to perform unit testing.
+     * An {@link OperationalListener} instance for test.
      */
-    DataBroker dataBroker = Mockito.mock(DataBroker.class);
+    private OperationalListener  operListener;
 
     /**
-     * Instance of VTNConfigImpl to perform unit testing.
+     * Set up test environment.
      */
-    VTNConfigImpl vtnConfigImpl1 = new VTNConfigImpl();
+    @Before
+    public void setUp() {
+        initMocks(this);
 
-    /**
-     * Instance of VTNConfigImpl to perform unit testing.
-     */
-    VTNConfigImpl vtnConfigImpl2 = new VTNConfigImpl();
-
-    /**
-     * Instance of VtnConfig to perform unit testing.
-     */
-    VtnConfig vtnc1 = vtnConfigImpl1.toVtnConfig();
-
-    /**
-     * Instance of VtnConfig to perform unit testing.
-     */
-    VtnConfig vtnc2 = vtnConfigImpl2.toVtnConfig();
-
-    /**
-     * Instance of OperationalListener to perform unit testing.
-     */
-    OperationalListener opnListener1 = new OperationalListener(dataBroker, atomicRef);
-
-    /**
-     * Instance of InstanceIdentifier to perform unit testing.
-     */
-    InstanceIdentifier<VtnConfig> path = opnListener1.getWildcardPath();
-
-    /**
-     * Instance of IdentifiedData to perform unit testing.
-     */
-    IdentifiedData<VtnConfig> identifiedData;
-
-    /**
-     * Instance of ChangedData to perform unit testing.
-     */
-    ChangedData<VtnConfig> changedData;
-
-    /**
-     * Instance of AsyncDataChangeEvent to perform unit testing.
-     */
-    AsyncDataChangeEvent asyncDataChangeEvent = Mockito.mock(AsyncDataChangeEvent.class);
-
-
-    /**
-     * Test method for
-     * {@link OperationalListener#awaitConfig(long)}.
-     */
-    @Test
-    public void awaitConfigTest() {
-
-        try {
-            opnListener1.awaitConfig(10L);
-
-        } catch (InterruptedException e) {
-
-        } catch (TimeoutException e) {
-
-        }
-
+        when(dataBroker.registerDataChangeListener(
+                 any(LogicalDatastoreType.class), any(InstanceIdentifier.class),
+                 isA(OperationalListener.class), any(DataChangeScope.class))).
+            thenReturn(listenerReg);
+        operListener = new OperationalListener(dataBroker, currentConfig);
     }
 
     /**
-     * Test method for
+     * Test case for
+     * {@link OperationalListener#OperationalListener(DataBroker,AtomicReference)}.
+     */
+    @Test
+    public void testConstructor() {
+        LogicalDatastoreType oper = LogicalDatastoreType.OPERATIONAL;
+        DataChangeScope scope = DataChangeScope.SUBTREE;
+
+        // Ensure that OperationalListener has been registered as data change
+        // listener.
+        verify(dataBroker).registerDataChangeListener(
+            eq(oper), eq(getPath()), eq(operListener), eq(scope));
+        verifyZeroInteractions(listenerReg);
+    }
+
+    /**
+     * Test case for {@link OperationalListener#close()}.
+     */
+    @Test
+    public void testClose() {
+        verifyZeroInteractions(listenerReg);
+
+        // Close the listener.
+        operListener.close();
+        verify(listenerReg).close();
+
+        // Listener registrations should never be closed twice.
+        operListener.close();
+        verify(listenerReg).close();
+    }
+
+    /**
+     * Test case for {@link OperationalListener#awaitConfig(long)}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testAwaitConfig() throws Exception {
+        // In case where the configuration is not initialized.
+        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(null, is);
+        long start = 0;
+        long end = 0;
+        long timeout = 500;
+        try {
+            start = System.nanoTime();
+            operListener.awaitConfig(timeout);
+            unexpected();
+        } catch (TimeoutException e) {
+            end = System.nanoTime();
+        }
+        assertTrue(TimeUnit.NANOSECONDS.toMillis(end - start) >= timeout);
+
+        // In case where the configuration is initialized.
+        timeout = 10000;
+        EtherAddress eaddr = new EtherAddress(0x1122334455L);
+        Boolean state = true;
+        VtnConfig vcfg = VTNConfigImpl.
+            fillDefault(new VtnConfigBuilder(), eaddr).
+            setInitState(state).
+            build();
+        InstanceIdentifier<VtnConfig> path = getPath();
+        final IdentifiedData<VtnConfig> data =
+            new IdentifiedData<>(path, vcfg);
+        Thread t = new Thread() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    unexpected();
+                }
+                operListener.onCreated(null, data);
+            }
+        };
+        t.start();
+        operListener.awaitConfig(timeout);
+        is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(state, is);
+        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
+
+        // In case where the configuration is already initialized.
+        operListener.awaitConfig(1L);
+    }
+
+    /**
+     * Test case for
      * {@link OperationalListener#enterEvent(AsyncDataChangeEvent)}.
      */
     @Test
-    public void enterEventTest() {
-        assertEquals(null, opnListener1.enterEvent(asyncDataChangeEvent));
+    public void testEnterEvent() {
+        AsyncDataChangeEvent ev = null;
+        assertEquals(null, operListener.enterEvent(ev));
     }
 
     /**
-     * Test method for
-     * {@link OperationalListener#exitEvent(Void)}.
+     * Test case for {@link OperationalListener#exitEvent(Void)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void exitEventTest() {
-        opnListener1.exitEvent(vd);
+    public void testExitEvent() throws Exception {
+        // This should do nothing.
+        operListener.exitEvent(null);
+        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(null, is);
+        assertEquals(new VTNConfigImpl(), currentConfig.get());
     }
 
     /**
-     * Test method for
-     * {@link OperationalListener#onCreated(Void,IdentifiedData)}.
+     * Test case for {@link OperationalListener#onCreated(Void,IdentifiedData)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void onCreatedTest() {
-        try {
-            identifiedData = new IdentifiedData<VtnConfig>(path, vtnc1);
-        } catch (Exception ex) {
+    public void testOnCreated() throws Exception {
+        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(null, is);
+        assertEquals(new VTNConfigImpl(), currentConfig.get());
 
-        }
+        EtherAddress eaddr = new EtherAddress(0x123456789abL);
+        Boolean state = true;
+        VtnConfig vcfg = VTNConfigImpl.
+            fillDefault(new VtnConfigBuilder(), eaddr).
+            setInitTimeout(5000).
+            setInitState(state).
+            build();
+        InstanceIdentifier<VtnConfig> path = getPath();
+        IdentifiedData<VtnConfig> data = new IdentifiedData<>(path, vcfg);
+        operListener.onCreated(null, data);
 
-        try {
-            opnListener1.onCreated(vd, identifiedData);
-        } catch (Exception ex) {
-
-        }
+        is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(state, is);
+        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
     }
 
     /**
-     * Test method for
-     * {@link OperationalListener#onUpdated(Void,ChangedData)}.
+     * Test case for {@link OperationalListener#onUpdated(Void,ChangedData)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void onUpdatedTest() {
-        try {
-            changedData = new ChangedData<VtnConfig>(path, vtnc1, vtnc2);
-        } catch (Exception ex) {
+    public void testOnUpdated() throws Exception {
+        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(null, is);
+        assertEquals(new VTNConfigImpl(), currentConfig.get());
 
-        }
+        EtherAddress eaddr = new EtherAddress(0xaabbccddeeL);
+        Boolean state = false;
+        VtnConfigBuilder builder = VTNConfigImpl.
+            fillDefault(new VtnConfigBuilder(), eaddr);
+        VtnConfig old = builder.build();
+        VtnConfig vcfg = builder.
+            setInitState(state).
+            setFlowModTimeout(6000).
+            build();
+        InstanceIdentifier<VtnConfig> path = getPath();
+        ChangedData<VtnConfig> data = new ChangedData<>(path, vcfg, old);
+        operListener.onUpdated(null, data);
 
-        try {
-            opnListener1.onUpdated(vd, changedData);
-        } catch (Exception ex) {
+        // initState should not be changed to false.
+        is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(null, is);
+        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
 
-        }
+        state = true;
+        old = vcfg;
+        vcfg = builder.setInitState(state).build();
+        data = new ChangedData<>(path, vcfg, old);
+        operListener.onUpdated(null, data);
+
+        is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(state, is);
+        assertEquals(new VTNConfigImpl(vcfg), currentConfig.get());
     }
 
     /**
-     * Test method for
-     * {@link OperationalListener#onRemoved(Void,IdentifiedData)}.
+     * Test case for {@link OperationalListener#onRemoved(Void,IdentifiedData)}.
+     *
+     * @throws Exception  An error occurred.
      */
     @Test
-    public void onRemovedTest() {
-        try {
-            opnListener1.onRemoved(vd, identifiedData);
-        } catch (Exception ex) {
-
-        }
-
+    public void testOnRemoved() throws Exception {
+        // This should do nothing.
+        operListener.onRemoved(null, null);
+        Boolean is = getFieldValue(operListener, Boolean.class, "initState");
+        assertEquals(null, is);
+        assertEquals(new VTNConfigImpl(), currentConfig.get());
     }
 
     /**
-     * Test method for
+     * Test case for
      * {@link OperationalListener#getWildcardPath()}.
      */
     @Test
-    public void getWildcardPathTest() {
-        try {
-            assertTrue(opnListener1.getWildcardPath() instanceof InstanceIdentifier);
-        } catch (Exception ex) {
-
-        }
-
+    public void testGetWildcardPath() {
+        assertEquals(getPath(), operListener.getWildcardPath());
     }
 
     /**
-     * Test method for
-     * {@link OperationalListener#getLogger()}.
+     * Test case for {@link OperationalListener#getLogger()}.
      */
     @Test
-    public void getLoggerTest() {
-        try {
-
-            assertTrue(opnListener1.getLogger() instanceof Logger);
-        } catch (Exception ex) {
-
-        }
+    public void testGetLogger() {
+        Logger logger = operListener.getLogger();
+        assertEquals(OperationalListener.class.getName(), logger.getName());
     }
 
+    /**
+     * Return a wildcard path to the MD-SAL data model to listen.
+     *
+     * @return  A wildcard path to the MD-SAL data model to listen.
+     */
+    private InstanceIdentifier<VtnConfig> getPath() {
+        return InstanceIdentifier.create(VtnConfig.class);
+    }
 }

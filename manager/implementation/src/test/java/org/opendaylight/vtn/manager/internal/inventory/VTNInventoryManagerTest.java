@@ -1064,6 +1064,8 @@ public class VTNInventoryManagerTest extends TestBase {
 
     /**
      * Return a wildcard path to the MD-SAL data model to listen.
+     *
+     * @return  A wildcard path to the MD-SAL data model to listen.
      */
     private InstanceIdentifier<VtnNode> getPath() {
         return InstanceIdentifier.builder(VtnNodes.class).

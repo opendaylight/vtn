@@ -2363,7 +2363,7 @@ public abstract class TestBase extends Assert {
         field.setAccessible(true);
         Object value = field.get(obj);
 
-        assertTrue(type.isInstance(value));
+        assertTrue(value == null || type.isInstance(value));
         return type.cast(value);
     }
 
