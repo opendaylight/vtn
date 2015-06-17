@@ -294,7 +294,12 @@ public:
 
     out->index_=key_in.sequence_num;
 
+    if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
+    out->condition_.assign(reinterpret_cast<char*>(value_new_in.flowlist_name));
+    } else if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_INVALID
+           ||  value_old_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
     out->condition_.assign(reinterpret_cast<char*>(value_old_in.flowlist_name));
+    }
 
     if ( value_new_in.valid[UPLL_IDX_ACTION_VFFE] == UNC_VF_VALID ) {
       out->filterType_=new filterType();
