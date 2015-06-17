@@ -35,9 +35,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.pcp.action._case.VtnSetVlanPcpAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.pcp.action._case.VtnSetVlanPcpActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -84,7 +85,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
      * <ul>
      *   <li>{@link VTNSetVlanPcpAction#VTNSetVlanPcpAction(short)}</li>
      *   <li>{@link VTNSetVlanPcpAction#VTNSetVlanPcpAction(org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction, int)}</li>
-     *   <li>{@link VTNSetVlanPcpAction#VTNSetVlanPcpAction(VtnSetVlanPcpAction, Integer)}</li>
+     *   <li>{@link VTNSetVlanPcpAction#VTNSetVlanPcpAction(VtnSetVlanPcpActionCase, Integer)}</li>
      *   <li>{@link VTNSetVlanPcpAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetVlanPcpAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetVlanPcpAction#getPriority()}</li>
@@ -107,6 +108,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetVlanPcpActionCaseBuilder vacBuilder =
+            new VtnSetVlanPcpActionCaseBuilder();
         org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction vad;
         for (Integer order: orders) {
             for (short pcp = 0; pcp <= 7; pcp++) {
@@ -115,6 +118,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                     SetVlanPcpAction((byte)pcp);
                 VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
                     setVlanPcp(vpcp).build();
+                VtnSetVlanPcpActionCase vac = vacBuilder.
+                    setVtnSetVlanPcpAction(vact).build();
                 SetVlanPcpAction ma = new SetVlanPcpActionBuilder().
                     setVlanPcp(vpcp).build();
                 SetVlanPcpActionCase mact = new SetVlanPcpActionCaseBuilder().
@@ -130,7 +135,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                     assertEquals(order, va.getIdentifier());
                     assertEquals(pcp, va.getPriority());
 
-                    va = new VTNSetVlanPcpAction(vact, order);
+                    va = new VTNSetVlanPcpAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
                 assertEquals(order, va.getIdentifier());
@@ -139,7 +144,7 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
                 assertEquals(order, va.getIdentifier());
 
                 ActionBuilder mbuilder = va.toActionBuilder(anotherOrder);
@@ -150,9 +155,16 @@ public class VTNSetVlanPcpActionTest extends TestBase {
 
             if (order != null) {
                 // Default priority test.
+                VtnSetVlanPcpActionCase vac = vacBuilder.
+                    setVtnSetVlanPcpAction(null).build();
+                VTNSetVlanPcpAction va = new VTNSetVlanPcpAction(vac, order);
+                assertEquals(order, va.getIdentifier());
+                assertEquals((short)0, va.getPriority());
+
                 VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
                     build();
-                VTNSetVlanPcpAction va = new VTNSetVlanPcpAction(vact, order);
+                vac = vacBuilder.setVtnSetVlanPcpAction(vact).build();
+                va = new VTNSetVlanPcpAction(vac, order);
                 assertEquals(order, va.getIdentifier());
                 assertEquals((short)0, va.getPriority());
             }
@@ -164,17 +176,17 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             VlanPcp vpcp = new VlanPcp(pcp);
             vad = new org.opendaylight.vtn.manager.flow.action.
                 SetVlanPcpAction((byte)pcp);
-            VtnAction vaction = new VtnSetVlanPcpActionBuilder().
+            VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
                 setVlanPcp(vpcp).build();
-            assertEquals(vad, va.toFlowAction(vaction));
+            VtnAction vac = vacBuilder.setVtnSetVlanPcpAction(vact).build();
+            assertEquals(vad, va.toFlowAction(vac));
 
-            vaction = new VtnSetIcmpTypeActionBuilder().
-                setType(pcp).build();
+            vac = VTNSetIcmpTypeAction.newVtnAction(pcp);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
-            String emsg = "VTNSetVlanPcpAction: Unexpected type: " + vaction;
+            String emsg = "VTNSetVlanPcpAction: Unexpected type: " + vac;
             try {
-                va.toFlowAction(vaction);
+                va.toFlowAction(vac);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
@@ -191,9 +203,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 setVlanPcp(vpcp).build();
             Action action = new SetVlanPcpActionCaseBuilder().
                 setSetVlanPcpAction(ma).build();
-            vaction = new VtnSetVlanPcpActionBuilder().
-                setVlanPcp(vpcp).build();
-            assertEquals(vaction, va.toVtnAction(action));
+            vac = vacBuilder.setVtnSetVlanPcpAction(vact).build();
+            assertEquals(vac, va.toVtnAction(action));
 
             action = new SetTpDstActionCaseBuilder().build();
             emsg = "VTNSetVlanPcpAction: Unexpected type: " + action;
@@ -276,8 +287,10 @@ public class VTNSetVlanPcpActionTest extends TestBase {
         String emsg = "VTNSetVlanPcpAction: Action order cannot be null";
         VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
             setVlanPcp(vpcp).build();
+        VtnSetVlanPcpActionCase vac = vacBuilder.
+            setVtnSetVlanPcpAction(vact).build();
         try {
-            new VTNSetVlanPcpAction(vact, (Integer)null);
+            new VTNSetVlanPcpAction(vac, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -306,6 +319,35 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 assertEquals(emsg, st.getDescription());
             }
         }
+
+        // Default value test for toFlowAction().
+        vad = new org.opendaylight.vtn.manager.flow.action.
+            SetVlanPcpAction((byte)0);
+        vac = vacBuilder.setVtnSetVlanPcpAction(null).build();
+        assertEquals(vad, va.toFlowAction(vac));
+
+        vac = vacBuilder.
+            setVtnSetVlanPcpAction(new VtnSetVlanPcpActionBuilder().build()).
+            build();
+        assertEquals(vad, va.toFlowAction(vac));
+    }
+
+    /**
+     * Test case for {@link VTNSetVlanPcpAction#newVtnAction(VlanPcp)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        List<VlanPcp> pcps = new ArrayList<>();
+        pcps.add(null);
+        for (short i = 0; i <= 7; i++) {
+            pcps.add(new VlanPcp(i));
+        }
+
+        for (VlanPcp pcp: pcps) {
+            VtnSetVlanPcpActionCase ac = VTNSetVlanPcpAction.newVtnAction(pcp);
+            VtnSetVlanPcpAction vaction = ac.getVtnSetVlanPcpAction();
+            assertEquals(pcp, vaction.getVlanPcp());
+        }
     }
 
     /**
@@ -326,6 +368,8 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetVlanPcpActionCaseBuilder vacBuilder =
+            new VtnSetVlanPcpActionCaseBuilder();
         for (short pcp = 0; pcp <= 7; pcp++) {
             VTNSetVlanPcpAction va1 = new VTNSetVlanPcpAction(pcp);
             VTNSetVlanPcpAction va2 = new VTNSetVlanPcpAction(pcp);
@@ -336,8 +380,12 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                     setVlanPcp(new VlanPcp(pcp)).build();
                 VtnSetVlanPcpAction vact2 = new VtnSetVlanPcpActionBuilder().
                     setVlanPcp(new VlanPcp(pcp)).build();
-                va1 = new VTNSetVlanPcpAction(vact1, order);
-                va2 = new VTNSetVlanPcpAction(vact2, order);
+                VtnSetVlanPcpActionCase vac1 = vacBuilder.
+                    setVtnSetVlanPcpAction(vact1).build();
+                VtnSetVlanPcpActionCase vac2 = vacBuilder.
+                    setVtnSetVlanPcpAction(vact2).build();
+                va1 = new VTNSetVlanPcpAction(vac1, order);
+                va2 = new VTNSetVlanPcpAction(vac2, order);
                 testEquals(set, va1, va2);
             }
         }
@@ -357,6 +405,9 @@ public class VTNSetVlanPcpActionTest extends TestBase {
             null, Integer.MIN_VALUE, -1000, -1,
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
+        VtnSetVlanPcpActionCaseBuilder vacBuilder =
+            new VtnSetVlanPcpActionCaseBuilder();
+
         for (Integer order: orders) {
             for (short pcp = 0; pcp <= 7; pcp++) {
                 VTNSetVlanPcpAction va;
@@ -367,7 +418,9 @@ public class VTNSetVlanPcpActionTest extends TestBase {
                 } else {
                     VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
                         setVlanPcp(new VlanPcp(pcp)).build();
-                    va = new VTNSetVlanPcpAction(vact, order);
+                    VtnSetVlanPcpActionCase vac = vacBuilder.
+                        setVtnSetVlanPcpAction(vact).build();
+                    va = new VTNSetVlanPcpAction(vac, order);
                     expected = "VTNSetVlanPcpAction[pcp=" + pcp +
                         ",order=" + order + "]";
                 }
@@ -387,7 +440,11 @@ public class VTNSetVlanPcpActionTest extends TestBase {
         short pcp = 7;
         VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
             setVlanPcp(new VlanPcp(pcp)).build();
-        VTNSetVlanPcpAction va = new VTNSetVlanPcpAction(vact, order);
+        VtnSetVlanPcpActionCaseBuilder vacBuilder =
+            new VtnSetVlanPcpActionCaseBuilder();
+        VtnSetVlanPcpActionCase vac = vacBuilder.
+            setVtnSetVlanPcpAction(vact).build();
+        VTNSetVlanPcpAction va = new VTNSetVlanPcpAction(vac, order);
 
         FlowActionContext ctx = Mockito.mock(FlowActionContext.class);
         EtherHeader ether = Mockito.mock(EtherHeader.class);

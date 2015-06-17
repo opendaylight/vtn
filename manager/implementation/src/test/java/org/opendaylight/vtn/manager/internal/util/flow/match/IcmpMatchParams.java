@@ -188,7 +188,9 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
      */
     @Override
     public VtnIcmpMatch toVtnLayer4Match(boolean comp) {
-        return new VtnIcmpMatchBuilder().setType(icmpType).setCode(icmpCode).
+        return new VtnIcmpMatchBuilder().
+            setIcmpType(icmpType).
+            setIcmpCode(icmpCode).
             build();
     }
 
@@ -265,8 +267,8 @@ public final class IcmpMatchParams extends Layer4MatchParams<IcmpMatchParams>
         } else {
             assertTrue(vl4 instanceof VtnIcmpMatch);
             VtnIcmpMatch vim = (VtnIcmpMatch)vl4;
-            assertEquals(icmpType, vim.getType());
-            assertEquals(icmpCode, vim.getCode());
+            assertEquals(icmpType, vim.getIcmpType());
+            assertEquals(icmpCode, vim.getIcmpCode());
             assertEquals(imatch, VTNLayer4Match.create(vl4));
         }
 

@@ -192,6 +192,43 @@ public class VTNMatchTest extends TestBase {
     }
 
     /**
+     * Test case for {@link VTNMatch#getInetProtocol()}.
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testGetInetProtocol() throws Exception {
+        VTNMatch vmatch = new VTNMatch();
+        assertEquals(null, vmatch.getInetProtocol());
+
+        VTNEtherMatch em = new VTNEtherMatch(EtherTypes.IPv4.intValue());
+        vmatch = new VTNMatch(em, null, null);
+        assertEquals(null, vmatch.getInetProtocol());
+
+        IpNetwork ipSrc = IpNetwork.create("10.20.30.40");
+        IpNetwork ipDst = IpNetwork.create("192.168.10.1");
+        Short[] protocols = {
+            null, 1, 2, 6, 14, 63, 64, 126, 127,
+        };
+        for (Short proto: protocols) {
+            VTNInet4Match im =
+                new VTNInet4Match(ipSrc, ipDst, proto, (short)10);
+            vmatch = new VTNMatch(null, im, null);
+            assertEquals(proto, vmatch.getInetProtocol());
+        }
+
+        VTNTcpMatch tmatch = new VTNTcpMatch();
+        vmatch = new VTNMatch(null, null, tmatch);
+        assertEquals(IPProtocols.TCP.shortValue(),
+                     vmatch.getInetProtocol().shortValue());
+
+        VTNUdpMatch umatch = new VTNUdpMatch();
+        vmatch = new VTNMatch(null, null, umatch);
+        assertEquals(IPProtocols.UDP.shortValue(),
+                     vmatch.getInetProtocol().shortValue());
+    }
+
+    /**
      * Test case for object identity.
      *
      * <ul>

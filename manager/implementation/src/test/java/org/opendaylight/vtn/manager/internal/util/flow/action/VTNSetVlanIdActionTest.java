@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import java.util.HashSet;
+
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -20,9 +22,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -66,9 +69,13 @@ public class VTNSetVlanIdActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetVlanIdActionCaseBuilder vacBuilder =
+            new VtnSetVlanIdActionCaseBuilder();
         for (int vid: vlanIds) {
             VtnSetVlanIdAction vact = new VtnSetVlanIdActionBuilder().
                 setVlanId(vid).build();
+            VtnSetVlanIdActionCase vac = vacBuilder.
+                setVtnSetVlanIdAction(vact).build();
             SetVlanIdAction ma = new SetVlanIdActionBuilder().
                 setVlanId(new VlanId(vid)).build();
             SetVlanIdActionCase mact = new SetVlanIdActionCaseBuilder().
@@ -80,7 +87,7 @@ public class VTNSetVlanIdActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(order);
                 assertEquals(order, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
 
                 ActionBuilder mbuilder = va.toActionBuilder(order);
                 assertEquals(order, mbuilder.getOrder());
@@ -89,16 +96,43 @@ public class VTNSetVlanIdActionTest extends TestBase {
 
             // toFlowAction() test.
             va = new VTNSetVlanIdAction();
-            VtnAction vaction = vact;
+            VtnAction vaction = vac;
             org.opendaylight.vtn.manager.flow.action.SetVlanIdAction vad =
                 new org.opendaylight.vtn.manager.flow.action.
                 SetVlanIdAction((short)vid);
             assertEquals(vad, va.toFlowAction(vaction));
 
-            vaction = new VtnPushVlanActionBuilder().build();
+            vaction = VTNPopVlanAction.newVtnAction();
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
             String emsg = "VTNSetVlanIdAction: Unexpected type: " + vaction;
+            try {
+                va.toFlowAction(vaction);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(ecode, st.getCode());
+                assertEquals(emsg, st.getDescription());
+            }
+
+            etag = RpcErrorTag.MISSING_ELEMENT;
+            vaction = vacBuilder.setVtnSetVlanIdAction(null).build();
+            emsg = "VTNSetVlanIdAction: No VLAN ID: " + vaction;
+            try {
+                va.toFlowAction(vaction);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(ecode, st.getCode());
+                assertEquals(emsg, st.getDescription());
+            }
+
+            vaction = vacBuilder.
+                setVtnSetVlanIdAction(new VtnSetVlanIdActionBuilder().build()).
+                build();
+            emsg = "VTNSetVlanIdAction: No VLAN ID: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
@@ -114,9 +148,10 @@ public class VTNSetVlanIdActionTest extends TestBase {
 
             // toVtnAction() test.
             Action action = mact;
-            vaction = vact;
+            vaction = vac;
             assertEquals(vaction, va.toVtnAction(action));
 
+            etag = RpcErrorTag.BAD_ELEMENT;
             action = new PushVlanActionCaseBuilder().build();
             emsg = "VTNSetVlanIdAction: Unexpected type: " + action;
             try {
@@ -189,6 +224,48 @@ public class VTNSetVlanIdActionTest extends TestBase {
             build();
         assertEquals(desc, va.getDescription(action));
         assertEquals(0, va.getVlanId());
+    }
+
+    /**
+     * Test case for {@link VTNSetVlanIdAction#newVtnAction(Integer)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        Integer[] vids = {
+            null, 1, 2, 99, 100, 1000, 2000, 3000, 4000, 4094, 4095,
+        };
+
+        for (Integer vid: vids) {
+            VtnSetVlanIdActionCase ac = VTNSetVlanIdAction.newVtnAction(vid);
+            VtnSetVlanIdAction vaction = ac.getVtnSetVlanIdAction();
+            assertEquals(vid, vaction.getVlanId());
+        }
+    }
+
+    /**
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link VTNSetVlanIdAction#equals(Object)}</li>
+     *   <li>{@link VTNSetVlanIdAction#hashCode()}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testEquals() throws Exception {
+        HashSet<Object> set = new HashSet<>();
+        int[] vids = {
+            1, 2, 99, 100, 1000, 2000, 3000, 4000, 4094, 4095,
+        };
+
+        for (int vid: vids) {
+            VTNSetVlanIdAction va1 = new VTNSetVlanIdAction(vid);
+            VTNSetVlanIdAction va2 = new VTNSetVlanIdAction(vid);
+            testEquals(set, va1, va2);
+        }
+
+        assertEquals(vids.length, set.size());
     }
 
     /**

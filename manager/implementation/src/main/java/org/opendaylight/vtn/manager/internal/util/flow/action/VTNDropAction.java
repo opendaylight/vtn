@@ -14,8 +14,10 @@ import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.drop.action._case.VtnDropAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.drop.action._case.VtnDropActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -30,6 +32,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
  */
 public final class VTNDropAction extends VTNFlowAction {
     /**
+     * Create a new {@link VtnDropActionCase} instance.
+     *
+     * @return  A {@link VtnDropActionCase} instance.
+     */
+    public static VtnDropActionCase newVtnAction() {
+        VtnDropAction vaction = new VtnDropActionBuilder().build();
+        return new VtnDropActionCaseBuilder().
+            setVtnDropAction(vaction).build();
+    }
+
+    /**
      * Construct a new instance without specifying action order.
      */
     public VTNDropAction() {
@@ -42,7 +55,7 @@ public final class VTNDropAction extends VTNFlowAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        cast(VtnDropAction.class, vact);
+        cast(VtnDropActionCase.class, vact);
         return new org.opendaylight.vtn.manager.flow.action.DropAction();
     }
 
@@ -50,9 +63,9 @@ public final class VTNDropAction extends VTNFlowAction {
      * {@inheritDoc}
      */
     @Override
-    public VtnDropAction toVtnAction(Action act) throws RpcException {
+    public VtnDropActionCase toVtnAction(Action act) throws RpcException {
         cast(DropActionCase.class, act);
-        return new VtnDropActionBuilder().build();
+        return newVtnAction();
     }
 
     /**
@@ -69,7 +82,7 @@ public final class VTNDropAction extends VTNFlowAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        return builder.setVtnAction(new VtnDropActionBuilder().build());
+        return builder.setVtnAction(newVtnAction());
     }
 
     /**

@@ -156,12 +156,12 @@ module vtn-flow-condition {
         description
           "Describes the ICMP header fields to match against packets.";
 
-        leaf type {
+        leaf icmp-type {
             description "The ICMP type.";
             type uint8;
         }
 
-        leaf code {
+        leaf icmp-code {
             description "The ICMP code.";
             type uint8;
         }

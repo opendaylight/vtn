@@ -38,6 +38,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.ArpMatchBuilder;
 
 /**
  * JUnit test for {@link VTNInet4Match}.
@@ -333,9 +334,26 @@ public class VTNInet4MatchTest extends TestBase {
             }
         }
 
-        Match empty = new MatchBuilder().build();
-        assertEquals(null, VTNInetMatch.create(empty));
+        MatchBuilder mb = new MatchBuilder();
+        Match match = mb.build();
+        assertEquals(null, VTNInetMatch.create(match));
         assertEquals(null, VTNInetMatch.create((InetMatch)null));
+
+        // Unsupported L3 match type.
+        mb.setLayer3Match(new ArpMatchBuilder().build());
+        match = mb.build();
+        RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+        StatusCode code = StatusCode.BADREQUEST;
+        String msg = "Unsupported layer 3 match: " + mb.getLayer3Match();
+        try {
+            VTNInetMatch.create(match);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
+        }
     }
 
     /**

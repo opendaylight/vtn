@@ -106,8 +106,8 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
      *    {@code vimatch} contains invalid value.
      */
     public VTNIcmpMatch(VtnIcmpMatchFields vimatch) throws RpcException {
-        icmpType = vimatch.getType();
-        icmpCode = vimatch.getCode();
+        icmpType = vimatch.getIcmpType();
+        icmpCode = vimatch.getIcmpCode();
 
         // Below restriction check can be removed when RESTCONF implements the
         // restriction check.
@@ -241,11 +241,11 @@ public final class VTNIcmpMatch extends VTNLayer4Match {
     public VtnIcmpMatch toVtnLayer4Match() {
         VtnIcmpMatchBuilder vimatch = null;
         if (icmpType != null) {
-            vimatch = create(vimatch).setType(icmpType);
+            vimatch = create(vimatch).setIcmpType(icmpType);
         }
 
         if (icmpCode != null) {
-            vimatch = create(vimatch).setCode(icmpCode);
+            vimatch = create(vimatch).setIcmpCode(icmpCode);
         }
 
         return (vimatch == null) ? null : vimatch.build();

@@ -318,8 +318,8 @@ module vtn-flow {
                egress flow entry.
 
                This list is omitted if a list of flow actions is not
-               configured. An empty list is configured if this data flow
-               forwards packets without any modification.
+               configured, or if this data flow forwards packets without
+               any modification.
 
                Note that elements in this list needs to be sorted by `order'
                field in ascending order.";

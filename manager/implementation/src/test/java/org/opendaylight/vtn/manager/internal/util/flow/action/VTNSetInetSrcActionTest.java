@@ -38,10 +38,11 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.src.action._case.VtnSetInetSrcAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.src.action._case.VtnSetInetSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -92,7 +93,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
      * <ul>
      *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(IpNetwork)}</li>
      *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(SetInet4SrcAction, int)}</li>
-     *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(VtnSetInetSrcAction, Integer)}</li>
+     *   <li>{@link VTNSetInetSrcAction#VTNSetInetSrcAction(VtnSetInetSrcActionCase, Integer)}</li>
      *   <li>{@link VTNSetInetSrcAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetInetSrcAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetInetSrcAction#toFlowAction(VtnAction)}</li>
@@ -121,6 +122,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetInetSrcActionCaseBuilder vacBuilder =
+            new VtnSetInetSrcActionCaseBuilder();
         for (Integer order: orders) {
             for (IpNetwork iaddr: addresses) {
                 Address mdaddr = new Ipv4Builder().
@@ -130,6 +133,8 @@ public class VTNSetInetSrcActionTest extends TestBase {
                     new SetInet4SrcAction(iaddr.getInetAddress());
                 VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
                     setAddress(mdaddr).build();
+                VtnSetInetSrcActionCase vac = vacBuilder.
+                    setVtnSetInetSrcAction(vact).build();
                 SetNwSrcAction ma = new SetNwSrcActionBuilder().
                     setAddress(mdaddr).build();
                 SetNwSrcActionCase mact = new SetNwSrcActionCaseBuilder().
@@ -146,7 +151,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
                     assertEquals(iaddr, va.getAddress());
                     assertEquals(mdaddr, va.getMdAddress());
 
-                    va = new VTNSetInetSrcAction(vact, order);
+                    va = new VTNSetInetSrcAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
                 assertEquals(order, va.getIdentifier());
@@ -156,7 +161,7 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
                 assertEquals(order, va.getIdentifier());
 
                 ActionBuilder mbuilder = va.toActionBuilder(anotherOrder);
@@ -174,15 +179,44 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 build();
             SetInet4SrcAction vad =
                 new SetInet4SrcAction(iaddr.getInetAddress());
-            VtnAction vaction = new VtnSetInetSrcActionBuilder().
+            VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
                 setAddress(mdaddr).build();
+            VtnAction vaction = vacBuilder.
+                setVtnSetInetSrcAction(vact).build();
             assertEquals(vad, va.toFlowAction(vaction));
 
-            vaction = new VtnSetInetDstActionBuilder().
-                setAddress(mdaddr).build();
+            vaction = VTNSetInetDstAction.newVtnAction(mdaddr);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
             String emsg = "VTNSetInetSrcAction: Unexpected type: " + vaction;
+            try {
+                va.toFlowAction(vaction);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(ecode, st.getCode());
+                assertEquals(emsg, st.getDescription());
+            }
+
+            etag = RpcErrorTag.MISSING_ELEMENT;
+            vaction = vacBuilder.
+                setVtnSetInetSrcAction(new VtnSetInetSrcActionBuilder().
+                                       build()).
+                build();
+            emsg = "VTNSetInetSrcAction: No IP address: " + vaction;
+            try {
+                va.toFlowAction(vaction);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(ecode, st.getCode());
+                assertEquals(emsg, st.getDescription());
+            }
+
+            vaction = vacBuilder.setVtnSetInetSrcAction(null).build();
+            emsg = "VTNSetInetSrcAction: No IP address: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
@@ -201,10 +235,10 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 setAddress(mdaddr).build();
             Action action = new SetNwSrcActionCaseBuilder().
                 setSetNwSrcAction(ma).build();
-            vaction = new VtnSetInetSrcActionBuilder().
-                setAddress(mdaddr).build();
+            vaction = vacBuilder.setVtnSetInetSrcAction(vact).build();
             assertEquals(vaction, va.toVtnAction(action));
 
+            etag = RpcErrorTag.BAD_ELEMENT;
             action = new SetNwDstActionCaseBuilder().build();
             emsg = "VTNSetInetSrcAction: Unexpected type: " + action;
             try {
@@ -312,8 +346,10 @@ public class VTNSetInetSrcActionTest extends TestBase {
         String emsg = "VTNSetInetSrcAction: Action order cannot be null";
         VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
             setAddress(iaddr.getMdAddress()).build();
+        VtnSetInetSrcActionCase vac = vacBuilder.
+            setVtnSetInetSrcAction(vact).build();
         try {
-            new VTNSetInetSrcAction(vact, (Integer)null);
+            new VTNSetInetSrcAction(vac, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -336,8 +372,20 @@ public class VTNSetInetSrcActionTest extends TestBase {
         }
 
         vact = new VtnSetInetSrcActionBuilder().build();
+        vac = vacBuilder.setVtnSetInetSrcAction(vact).build();
         try {
-            new VTNSetInetSrcAction(vact, 1);
+            new VTNSetInetSrcAction(vac, 1);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(ecode, st.getCode());
+            assertEquals(emsg, st.getDescription());
+        }
+
+        vac = vacBuilder.setVtnSetInetSrcAction(null).build();
+        try {
+            new VTNSetInetSrcAction(vac, 1);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -348,8 +396,9 @@ public class VTNSetInetSrcActionTest extends TestBase {
 
         vact = new VtnSetInetSrcActionBuilder().
             setAddress(new Ipv4Builder().build()).build();
+        vac = vacBuilder.setVtnSetInetSrcAction(vact).build();
         try {
-            new VTNSetInetSrcAction(vact, 1);
+            new VTNSetInetSrcAction(vac, 1);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -366,8 +415,9 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 iaddr;
             vact = new VtnSetInetSrcActionBuilder().
                 setAddress(iaddr.getMdAddress()).build();
+            vac = vacBuilder.setVtnSetInetSrcAction(vact).build();
             try {
-                new VTNSetInetSrcAction(vact, 1);
+                new VTNSetInetSrcAction(vac, 1);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
@@ -375,6 +425,28 @@ public class VTNSetInetSrcActionTest extends TestBase {
                 assertEquals(ecode, st.getCode());
                 assertEquals(emsg, st.getDescription());
             }
+        }
+    }
+
+    /**
+     * Test case for {@link VTNSetInetSrcAction#newVtnAction(Address)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        IpNetwork[] addrs = {
+            null,
+            new Ip4Network("10.20.30.40"),
+            new Ip4Network("192.168.0.1"),
+            new Ip4Network("172.16.100.200"),
+            new Ip4Network("1.2.3.4"),
+        };
+
+        for (IpNetwork ipn: addrs) {
+            Address addr = (ipn == null) ? null : ipn.getMdAddress();
+            VtnSetInetSrcActionCase ac =
+                VTNSetInetSrcAction.newVtnAction(addr);
+            VtnSetInetSrcAction vaction = ac.getVtnSetInetSrcAction();
+            assertEquals(addr, vaction.getAddress());
         }
     }
 
@@ -417,17 +489,17 @@ public class VTNSetInetSrcActionTest extends TestBase {
             testEquals(set, vdst1, vdst2);
 
             for (Integer order: orders) {
-                VtnSetInetSrcAction src1 = new VtnSetInetSrcActionBuilder().
-                    setAddress(iaddr.getMdAddress()).build();
-                VtnSetInetSrcAction src2 = new VtnSetInetSrcActionBuilder().
-                    setAddress(iaddr1.getMdAddress()).build();
+                VtnSetInetSrcActionCase src1 = VTNSetInetSrcAction.
+                    newVtnAction(iaddr.getMdAddress());
+                VtnSetInetSrcActionCase src2 = VTNSetInetSrcAction.
+                    newVtnAction(iaddr1.getMdAddress());
                 vsrc1 = new VTNSetInetSrcAction(src1, order);
                 vsrc2 = new VTNSetInetSrcAction(src2, order);
 
-                VtnSetInetDstAction dst1 = new VtnSetInetDstActionBuilder().
-                    setAddress(iaddr.getMdAddress()).build();
-                VtnSetInetDstAction dst2 = new VtnSetInetDstActionBuilder().
-                    setAddress(iaddr1.getMdAddress()).build();
+                VtnSetInetDstActionCase dst1 = VTNSetInetDstAction.
+                    newVtnAction(iaddr.getMdAddress());
+                VtnSetInetDstActionCase dst2 = VTNSetInetDstAction.
+                    newVtnAction(iaddr1.getMdAddress());
                 vdst1 = new VTNSetInetDstAction(dst1, order);
                 vdst2 = new VTNSetInetDstAction(dst2, order);
 
@@ -451,17 +523,16 @@ public class VTNSetInetSrcActionTest extends TestBase {
     public void testToString() throws Exception {
         Integer order = 10;
         IpNetwork iaddr = new Ip4Network("192.168.100.200");
-        VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
-            setAddress(iaddr.getMdAddress()).build();
-        VTNSetInetSrcAction va = new VTNSetInetSrcAction(vact, order);
+        VtnSetInetSrcActionCase vac = VTNSetInetSrcAction.
+            newVtnAction(iaddr.getMdAddress());
+        VTNSetInetSrcAction va = new VTNSetInetSrcAction(vac, order);
         String expected = "VTNSetInetSrcAction[addr=192.168.100.200,order=10]";
         assertEquals(expected, va.toString());
 
         order = 123;
         iaddr = new Ip4Network("1.2.3.4");
-        vact = new VtnSetInetSrcActionBuilder().
-            setAddress(iaddr.getMdAddress()).build();
-        va = new VTNSetInetSrcAction(vact, order);
+        vac = VTNSetInetSrcAction.newVtnAction(iaddr.getMdAddress());
+        va = new VTNSetInetSrcAction(vac, order);
         expected = "VTNSetInetSrcAction[addr=1.2.3.4,order=123]";
         assertEquals(expected, va.toString());
 
@@ -479,9 +550,9 @@ public class VTNSetInetSrcActionTest extends TestBase {
     public void testApply() throws Exception {
         Integer order = 10;
         IpNetwork iaddr = new Ip4Network("192.168.0.1");
-        VtnSetInetSrcAction vact = new VtnSetInetSrcActionBuilder().
-            setAddress(iaddr.getMdAddress()).build();
-        VTNSetInetSrcAction va = new VTNSetInetSrcAction(vact, order);
+        VtnSetInetSrcActionCase vac = VTNSetInetSrcAction.
+            newVtnAction(iaddr.getMdAddress());
+        VTNSetInetSrcAction va = new VTNSetInetSrcAction(vac, order);
 
         // In case of IPv4 packet.
         FlowActionContext ctx = Mockito.mock(FlowActionContext.class);

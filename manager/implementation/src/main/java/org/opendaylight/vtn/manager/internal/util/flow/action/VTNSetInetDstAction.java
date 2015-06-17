@@ -21,8 +21,10 @@ import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dst.action._case.VtnSetInetDstAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dst.action._case.VtnSetInetDstActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -40,6 +42,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.addr
 @XmlRootElement(name = "vtn-set-inet-dst-action")
 @XmlAccessorType(XmlAccessType.NONE)
 public final class VTNSetInetDstAction extends VTNInetAddrAction {
+    /**
+     * Create a new {@link VtnSetInetDstActionCase} instance.
+     *
+     * @param addr  An {@link Address} instance which specifies the
+     *              IP address.
+     * @return  A {@link VtnSetInetDstActionCase} instance.
+     */
+    public static VtnSetInetDstActionCase newVtnAction(Address addr) {
+        VtnSetInetDstAction vaction = new VtnSetInetDstActionBuilder().
+            setAddress(addr).build();
+        return new VtnSetInetDstActionCaseBuilder().
+            setVtnSetInetDstAction(vaction).build();
+    }
+
     /**
      * Construct an empty instance.
      */
@@ -72,14 +88,14 @@ public final class VTNSetInetDstAction extends VTNInetAddrAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link VtnSetInetDstAction} instance.
+     * @param ac   A {@link VtnSetInetDstActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
      * @throws RpcException  An invalid argument is specified.
      */
-    public VTNSetInetDstAction(VtnSetInetDstAction act, Integer ord)
+    public VTNSetInetDstAction(VtnSetInetDstActionCase ac, Integer ord)
         throws RpcException {
-        super(act, ord);
+        super(ac.getVtnSetInetDstAction(), ord);
     }
 
     // VTNFlowAction
@@ -89,28 +105,34 @@ public final class VTNSetInetDstAction extends VTNInetAddrAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetInetDstAction vdst = cast(VtnSetInetDstAction.class, vact);
-        IpNetwork addr = IpNetwork.create(vdst.getAddress());
-        try {
-            return new SetInet4DstAction(addr);
-        } catch (RuntimeException e) {
-            String msg = getErrorMessage("Invalid IP address", vact);
-            throw RpcException.getBadArgumentException(msg);
+        VtnSetInetDstActionCase ac = cast(VtnSetInetDstActionCase.class, vact);
+        VtnSetInetDstAction vaction = ac.getVtnSetInetDstAction();
+        if (vaction != null) {
+            IpNetwork addr = IpNetwork.create(vaction.getAddress());
+            if (addr != null) {
+                try {
+                    return new SetInet4DstAction(addr);
+                } catch (RuntimeException e) {
+                    String msg = getErrorMessage("Invalid IP address", vact);
+                    throw RpcException.getBadArgumentException(msg);
+                }
+            }
         }
+
+        throw noIpAddress(ac);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public VtnSetInetDstAction toVtnAction(Action act) throws RpcException {
+    public VtnSetInetDstActionCase toVtnAction(Action act) throws RpcException {
         SetNwDstActionCase ac = cast(SetNwDstActionCase.class, act);
         SetNwDstAction action = ac.getSetNwDstAction();
         if (action != null) {
             Address addr = action.getAddress();
             if (addr != null) {
-                return new VtnSetInetDstActionBuilder().
-                    setAddress(addr).build();
+                return newVtnAction(addr);
             }
         }
 
@@ -133,9 +155,7 @@ public final class VTNSetInetDstAction extends VTNInetAddrAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetInetDstAction vact = new VtnSetInetDstActionBuilder().
-            setAddress(getMdAddress()).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(getMdAddress()));
     }
 
     /**

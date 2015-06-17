@@ -37,9 +37,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dscp.action._case.VtnSetInetDscpAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dscp.action._case.VtnSetInetDscpActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -85,7 +86,7 @@ public class VTNSetInetDscpActionTest extends TestBase {
      * <ul>
      *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(short)}</li>
      *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(SetDscpAction, int)}</li>
-     *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(VtnSetInetDscpAction, Integer)}</li>
+     *   <li>{@link VTNSetInetDscpAction#VTNSetInetDscpAction(VtnSetInetDscpActionCase, Integer)}</li>
      *   <li>{@link VTNSetInetDscpAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetInetDscpAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetInetDscpAction#getDscp()}</li>
@@ -110,6 +111,8 @@ public class VTNSetInetDscpActionTest extends TestBase {
             0, 1, 2, 11, 22, 33, 44, 55, 60, 62, 63,
         };
 
+        VtnSetInetDscpActionCaseBuilder vacBuilder =
+            new VtnSetInetDscpActionCaseBuilder();
         for (Integer order: orders) {
             for (short dscp: dscps) {
                 Dscp mdscp = new Dscp(dscp);
@@ -117,6 +120,8 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 SetDscpAction vad = new SetDscpAction((byte)dscp);
                 VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
                     setDscp(mdscp).build();
+                VtnSetInetDscpActionCase vac = vacBuilder.
+                    setVtnSetInetDscpAction(vact).build();
                 SetNwTosAction ma = new SetNwTosActionBuilder().
                     setTos(tos).build();
                 SetNwTosActionCase mact = new SetNwTosActionCaseBuilder().
@@ -132,7 +137,7 @@ public class VTNSetInetDscpActionTest extends TestBase {
                     assertEquals(order, va.getIdentifier());
                     assertEquals(dscp, va.getDscp());
 
-                    va = new VTNSetInetDscpAction(vact, order);
+                    va = new VTNSetInetDscpAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
                 assertEquals(order, va.getIdentifier());
@@ -141,7 +146,7 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
                 assertEquals(order, va.getIdentifier());
 
                 ActionBuilder mbuilder = va.toActionBuilder(anotherOrder);
@@ -154,7 +159,14 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 // Default DSCP test.
                 VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
                     build();
-                VTNSetInetDscpAction va = new VTNSetInetDscpAction(vact, order);
+                VtnSetInetDscpActionCase vac = vacBuilder.
+                    setVtnSetInetDscpAction(vact).build();
+                VTNSetInetDscpAction va = new VTNSetInetDscpAction(vac, order);
+                assertEquals(order, va.getIdentifier());
+                assertEquals((short)0, va.getDscp());
+
+                vac = vacBuilder.setVtnSetInetDscpAction(null).build();
+                va = new VTNSetInetDscpAction(vac, order);
                 assertEquals(order, va.getIdentifier());
                 assertEquals((short)0, va.getDscp());
             }
@@ -164,16 +176,18 @@ public class VTNSetInetDscpActionTest extends TestBase {
         for (short dscp: dscps) {
             // toFlowAction() test.
             SetDscpAction vad = new SetDscpAction((byte)dscp);
-            VtnAction vaction = new VtnSetInetDscpActionBuilder().
+            VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
                 setDscp(new Dscp(dscp)).build();
-            assertEquals(vad, va.toFlowAction(vaction));
+            VtnAction vac = vacBuilder.
+                setVtnSetInetDscpAction(vact).build();
+            assertEquals(vad, va.toFlowAction(vac));
 
-            vaction = new VtnSetIcmpTypeActionBuilder().setType(dscp).build();
+            vac = VTNSetIcmpTypeAction.newVtnAction(dscp);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
-            String emsg = "VTNSetInetDscpAction: Unexpected type: " + vaction;
+            String emsg = "VTNSetInetDscpAction: Unexpected type: " + vac;
             try {
-                va.toFlowAction(vaction);
+                va.toFlowAction(vac);
                 unexpected();
             } catch (RpcException e) {
                 assertEquals(etag, e.getErrorTag());
@@ -191,9 +205,8 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 setTos(tos).build();
             Action action = new SetNwTosActionCaseBuilder().
                 setSetNwTosAction(ma).build();
-            vaction = new VtnSetInetDscpActionBuilder().
-                setDscp(new Dscp(dscp)).build();
-            assertEquals(vaction, va.toVtnAction(action));
+            vac = vacBuilder.setVtnSetInetDscpAction(vact).build();
+            assertEquals(vac, va.toVtnAction(action));
 
             action = new SetTpSrcActionCaseBuilder().build();
             emsg = "VTNSetInetDscpAction: Unexpected type: " + action;
@@ -275,8 +288,10 @@ public class VTNSetInetDscpActionTest extends TestBase {
         String emsg = "VTNSetInetDscpAction: Action order cannot be null";
         VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
             setDscp(mdscp).build();
+        VtnSetInetDscpActionCase vac = vacBuilder.
+            setVtnSetInetDscpAction(vact).build();
         try {
-            new VTNSetInetDscpAction(vact, (Integer)null);
+            new VTNSetInetDscpAction(vac, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -303,6 +318,33 @@ public class VTNSetInetDscpActionTest extends TestBase {
                 assertEquals(ecode, st.getCode());
                 assertEquals(emsg, st.getDescription());
             }
+        }
+
+        // Default value test for toFlowAction().
+        SetDscpAction vad = new SetDscpAction((byte)0);
+        vac = vacBuilder.setVtnSetInetDscpAction(null).build();
+        assertEquals(vad, va.toFlowAction(vac));
+
+        vac = vacBuilder.
+            setVtnSetInetDscpAction(new VtnSetInetDscpActionBuilder().build()).
+            build();
+        assertEquals(vad, va.toFlowAction(vac));
+    }
+
+    /**
+     * Test case for {@link VTNSetInetDscpAction#newVtnAction(Short)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        Short[] values = {
+            0, 1, 11, 22, 33, 44, 55, 62, 63,
+        };
+
+        for (Short dscp: values) {
+            VtnSetInetDscpActionCase ac =
+                VTNSetInetDscpAction.newVtnAction(dscp);
+            VtnSetInetDscpAction vaction = ac.getVtnSetInetDscpAction();
+            assertEquals(new Dscp(dscp), vaction.getDscp());
         }
     }
 
@@ -333,12 +375,12 @@ public class VTNSetInetDscpActionTest extends TestBase {
             testEquals(set, va1, va2);
 
             for (Integer order: orders) {
-                VtnSetInetDscpAction vact1 = new VtnSetInetDscpActionBuilder().
-                    setDscp(new Dscp(dscp)).build();
-                VtnSetInetDscpAction vact2 = new VtnSetInetDscpActionBuilder().
-                    setDscp(new Dscp(dscp)).build();
-                va1 = new VTNSetInetDscpAction(vact1, order);
-                va2 = new VTNSetInetDscpAction(vact2, order);
+                VtnSetInetDscpActionCase vac1 =
+                    VTNSetInetDscpAction.newVtnAction(dscp);
+                VtnSetInetDscpActionCase vac2 =
+                    VTNSetInetDscpAction.newVtnAction(dscp);
+                va1 = new VTNSetInetDscpAction(vac1, order);
+                va2 = new VTNSetInetDscpAction(vac2, order);
                 testEquals(set, va1, va2);
             }
         }
@@ -370,9 +412,9 @@ public class VTNSetInetDscpActionTest extends TestBase {
                     va = new VTNSetInetDscpAction(dscp);
                     expected = "VTNSetInetDscpAction[dscp=" + dscp + "]";
                 } else {
-                    VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
-                        setDscp(new Dscp(dscp)).build();
-                    va = new VTNSetInetDscpAction(vact, order);
+                    VtnSetInetDscpActionCase vac = VTNSetInetDscpAction.
+                        newVtnAction(dscp);
+                    va = new VTNSetInetDscpAction(vac, order);
                     expected = "VTNSetInetDscpAction[dscp=" + dscp +
                         ",order=" + order + "]";
                 }
@@ -390,9 +432,9 @@ public class VTNSetInetDscpActionTest extends TestBase {
     public void testApply() throws Exception {
         Integer order = 10;
         short dscp = 33;
-        VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
-            setDscp(new Dscp(dscp)).build();
-        VTNSetInetDscpAction va = new VTNSetInetDscpAction(vact, order);
+        VtnSetInetDscpActionCase vac = VTNSetInetDscpAction.
+            newVtnAction(dscp);
+        VTNSetInetDscpAction va = new VTNSetInetDscpAction(vac, order);
 
         // In case of IP packet.
         FlowActionContext ctx = Mockito.mock(FlowActionContext.class);

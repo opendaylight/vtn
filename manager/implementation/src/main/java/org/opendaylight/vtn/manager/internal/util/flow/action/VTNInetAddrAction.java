@@ -98,7 +98,9 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
     protected VTNInetAddrAction(VtnIpaddrActionFields act, Integer ord)
         throws RpcException {
         super(ord);
-        address = IpNetwork.create(act.getAddress());
+        if (act != null) {
+            address = IpNetwork.create(act.getAddress());
+        }
         verify();
     }
 

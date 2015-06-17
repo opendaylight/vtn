@@ -23,8 +23,10 @@ import org.opendaylight.vtn.manager.internal.util.packet.InetHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dscp.action._case.VtnSetInetDscpAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.inet.dscp.action._case.VtnSetInetDscpActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -53,6 +55,19 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      */
     @XmlElement
     private short  dscp;
+
+    /**
+     * Create a new {@link VtnSetInetDscpActionCase} instance.
+     *
+     * @param d  A {@link Short} instance which specifies the DSCP value.
+     * @return   A {@link VtnSetInetDscpActionCase} instance.
+     */
+    public static VtnSetInetDscpActionCase newVtnAction(Short d) {
+        VtnSetInetDscpAction vaction = new VtnSetInetDscpActionBuilder().
+            setDscp(new Dscp(d)).build();
+        return new VtnSetInetDscpActionCaseBuilder().
+            setVtnSetInetDscpAction(vaction).build();
+    }
 
     /**
      * Construct an empty instance.
@@ -87,15 +102,15 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link VtnSetInetDscpAction} instance.
+     * @param ac   A {@link VtnSetInetDscpActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
      * @throws RpcException  An invalid argument is specified.
      */
-    public VTNSetInetDscpAction(VtnSetInetDscpAction act, Integer ord)
+    public VTNSetInetDscpAction(VtnSetInetDscpActionCase ac, Integer ord)
         throws RpcException {
         super(ord);
-        dscp = getDscpValue(act.getDscp());
+        dscp = getDscpValue(ac.getVtnSetInetDscpAction());
         verify();
     }
 
@@ -111,14 +126,17 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
     /**
      * Return the IP DSCP value in the given instance.
      *
-     * @param d A {@link Dscp} instance.
+     * @param vaction  A {@link VtnSetInetDscpAction} instance.
      * @return  IP DSCP value.
      */
-    private short getDscpValue(Dscp d) {
-        if (d != null) {
-            Short v = d.getValue();
-            if (v != null) {
-                return v.shortValue();
+    private short getDscpValue(VtnSetInetDscpAction vaction) {
+        if (vaction != null) {
+            Dscp d = vaction.getDscp();
+            if (d != null) {
+                Short v = d.getValue();
+                if (v != null) {
+                    return v.shortValue();
+                }
             }
         }
 
@@ -132,8 +150,9 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetInetDscpAction vdscp = cast(VtnSetInetDscpAction.class, vact);
-        short arg = getDscpValue(vdscp.getDscp());
+        VtnSetInetDscpActionCase ac =
+            cast(VtnSetInetDscpActionCase.class, vact);
+        short arg = getDscpValue(ac.getVtnSetInetDscpAction());
         return new SetDscpAction((byte)arg);
     }
 
@@ -141,15 +160,14 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      * {@inheritDoc}
      */
     @Override
-    public VtnSetInetDscpAction toVtnAction(Action act) throws RpcException {
+    public VtnSetInetDscpActionCase toVtnAction(Action act)
+        throws RpcException {
         SetNwTosActionCase ac = cast(SetNwTosActionCase.class, act);
         SetNwTosAction action = ac.getSetNwTosAction();
         if (action != null) {
             Integer tos = action.getTos();
             if (tos != null) {
-                Short d = Short.valueOf(ProtocolUtils.tosToDscp(tos));
-                return new VtnSetInetDscpActionBuilder().
-                    setDscp(new Dscp(d)).build();
+                return newVtnAction(ProtocolUtils.tosToDscp(tos));
             }
         }
 
@@ -181,9 +199,7 @@ public final class VTNSetInetDscpAction extends FlowFilterAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetInetDscpAction vact = new VtnSetInetDscpActionBuilder().
-            setDscp(new Dscp(Short.valueOf(dscp))).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(dscp));
     }
 
     /**
