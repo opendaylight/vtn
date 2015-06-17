@@ -452,8 +452,12 @@ public:
     PFC_ASSERT(out != NULL);
 
     out->index_=key_in.sequence_num;
-
+    if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
+    out->condition_.assign(reinterpret_cast<char*>(value_new_in.flowlist_name));
+    } else if (value_new_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_INVALID
+           ||  value_old_in.valid[UPLL_IDX_FLOWLIST_NAME_FFE] == UNC_VF_VALID) {
     out->condition_.assign(reinterpret_cast<char*>(value_old_in.flowlist_name));
+    }
     if (value_new_in.valid[UPLL_IDX_ACTION_FFE] == UNC_VF_VALID) {
       out->filterType_=new filterType();
       if ( value_new_in.action == UPLL_FLOWFILTER_ACT_PASS ) {
@@ -542,8 +546,7 @@ public:
       out->filterType_->pass_=new pass();
     }
 
-    if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID &&
-                 value_old_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID) {
+    if (value_new_in.valid[UPLL_IDX_DSCP_FFE] == UNC_VF_VALID ) {
       action *new_action = new action();
       new_action->dscp_ = new dscp();
       new_action->dscp_->dscp_=value_new_in.dscp;
@@ -557,8 +560,7 @@ public:
       } else {
     pfc_log_info("INVALID for new and old value structures of dscp attribute ");
     }
-    if ( value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID &&
-                 value_old_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID) {
+    if ( value_new_in.valid[UPLL_IDX_PRIORITY_FFE] == UNC_VF_VALID ) {
       action *new_action = new action();
       new_action->vlanpcp_ = new vlanpcp();
       new_action->vlanpcp_->priority_=value_new_in.priority;
@@ -572,8 +574,7 @@ public:
       } else {
         pfc_log_info("INVALID for new and old value structures of PRIORITY ");
     }
-   if ((value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID &&
-              value_old_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID) ||
+   if (value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] == UNC_VF_VALID  ||
                   value_new_in.valid[UPLL_IDX_MODIFY_DST_MAC_FFE] ==
                          UNC_VF_VALUE_NOT_MODIFIED ){
       action *new_action = new action();
@@ -593,8 +594,7 @@ public:
      }else {
       pfc_log_info("INVALID for new and old valstruct of DSTMACADDR attribute");
     }
-   if ((value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID &&
-            value_old_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID) ||
+   if (value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] == UNC_VF_VALID ||
          value_new_in.valid[UPLL_IDX_MODIFY_SRC_MAC_FFE] ==
                                                 UNC_VF_VALUE_NOT_MODIFIED) {
       action *new_action = new action();
