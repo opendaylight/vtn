@@ -14,8 +14,10 @@ import org.opendaylight.vtn.manager.flow.action.FlowAction;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.pop.vlan.action._case.VtnPopVlanAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.pop.vlan.action._case.VtnPopVlanActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -31,6 +33,17 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
  */
 public final class VTNPopVlanAction extends VTNFlowAction {
     /**
+     * Create a new {@link VtnPopVlanActionCase} instance.
+     *
+     * @return  A {@link VtnPopVlanActionCase} instance.
+     */
+    public static VtnPopVlanActionCase newVtnAction() {
+        VtnPopVlanAction vaction = new VtnPopVlanActionBuilder().build();
+        return new VtnPopVlanActionCaseBuilder().
+            setVtnPopVlanAction(vaction).build();
+    }
+
+    /**
      * Construct a new instance without specifying action order.
      */
     public VTNPopVlanAction() {
@@ -43,7 +56,7 @@ public final class VTNPopVlanAction extends VTNFlowAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        cast(VtnPopVlanAction.class, vact);
+        cast(VtnPopVlanActionCase.class, vact);
         return new org.opendaylight.vtn.manager.flow.action.PopVlanAction();
     }
 
@@ -51,9 +64,9 @@ public final class VTNPopVlanAction extends VTNFlowAction {
      * {@inheritDoc}
      */
     @Override
-    public VtnPopVlanAction toVtnAction(Action act) throws RpcException {
+    public VtnPopVlanActionCase toVtnAction(Action act) throws RpcException {
         cast(PopVlanActionCase.class, act);
-        return new VtnPopVlanActionBuilder().build();
+        return newVtnAction();
     }
 
     /**
@@ -70,7 +83,7 @@ public final class VTNPopVlanAction extends VTNFlowAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        return builder.setVtnAction(new VtnPopVlanActionBuilder().build());
+        return builder.setVtnAction(newVtnAction());
     }
 
     /**

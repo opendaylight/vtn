@@ -16,8 +16,10 @@ import org.opendaylight.vtn.manager.internal.util.ProtocolUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.id.action._case.VtnSetVlanIdActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -38,6 +40,19 @@ public final class VTNSetVlanIdAction extends VTNFlowAction {
      * The VLAN ID to be set.
      */
     private int  vlanId;
+
+    /**
+     * Create a new {@link VtnSetVlanIdActionCase} instance.
+     *
+     * @param vid  An {@link Integer} instance which specifies the VLAN ID.
+     * @return  A {@link VtnSetVlanIdActionCase} instance.
+     */
+    public static VtnSetVlanIdActionCase newVtnAction(Integer vid) {
+        VtnSetVlanIdAction vaction = new VtnSetVlanIdActionBuilder().
+            setVlanId(vid).build();
+        return new VtnSetVlanIdActionCaseBuilder().
+            setVtnSetVlanIdAction(vaction).build();
+    }
 
     /**
      * Construct an empty instance.
@@ -70,28 +85,31 @@ public final class VTNSetVlanIdAction extends VTNFlowAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetVlanIdAction vid = cast(VtnSetVlanIdAction.class, vact);
-        Integer arg = vid.getVlanId();
-        if (arg == null) {
-            String msg = getErrorMessage("No VLAN ID", vact);
-            throw RpcException.getMissingArgumentException(msg);
+        VtnSetVlanIdActionCase ac = cast(VtnSetVlanIdActionCase.class, vact);
+        VtnSetVlanIdAction vaction = ac.getVtnSetVlanIdAction();
+        if (vaction != null) {
+            Integer arg = vaction.getVlanId();
+            if (arg != null) {
+                return new org.opendaylight.vtn.manager.flow.action.
+                    SetVlanIdAction(arg.shortValue());
+            }
         }
 
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetVlanIdAction(arg.shortValue());
+        String msg = getErrorMessage("No VLAN ID", vact);
+        throw RpcException.getMissingArgumentException(msg);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public VtnSetVlanIdAction toVtnAction(Action act) throws RpcException {
+    public VtnSetVlanIdActionCase toVtnAction(Action act) throws RpcException {
         SetVlanIdActionCase ac = cast(SetVlanIdActionCase.class, act);
         SetVlanIdAction action = ac.getSetVlanIdAction();
         if (action != null) {
             Integer vid = ProtocolUtils.getVlanId(action.getVlanId());
             if (vid != null) {
-                return new VtnSetVlanIdActionBuilder().setVlanId(vid).build();
+                return newVtnAction(vid);
             }
         }
 
@@ -121,9 +139,7 @@ public final class VTNSetVlanIdAction extends VTNFlowAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetVlanIdAction vact = new VtnSetVlanIdActionBuilder().
-            setVlanId(vlanId).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(vlanId));
     }
 
     /**

@@ -40,8 +40,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.cond.rev150313.vtn
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.Match;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.VlanMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.vlan.match.fields.VlanIdBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 
 /**
  * JUnit test for {@link VTNEtherMatch}.
@@ -351,6 +354,37 @@ public class VTNEtherMatchTest extends TestBase {
 
         Match empty = new MatchBuilder().build();
         assertEquals(null, VTNEtherMatch.create(empty));
+
+        // Invalid VLAN ID match.
+        VlanIdBuilder vb = new VlanIdBuilder().
+            setVlanIdPresent(true);
+        VlanMatchBuilder vmb = new VlanMatchBuilder().
+            setVlanId(vb.build());
+        RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
+        StatusCode code = StatusCode.BADREQUEST;
+        String msg = "Unsupported VLAN ID match: " + vmb.getVlanId();
+        try {
+            new VTNEtherMatch(null, vmb.build());
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
+        }
+
+        vb.setVlanId(new VlanId(0));
+        vmb.setVlanId(vb.build());
+        msg = "Unsupported VLAN ID match: " + vmb.getVlanId();
+        try {
+            new VTNEtherMatch(null, vmb.build());
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(code, st.getCode());
+            assertEquals(msg, st.getDescription());
+        }
     }
 
     /**

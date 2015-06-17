@@ -20,8 +20,10 @@ import org.opendaylight.vtn.manager.internal.util.packet.Layer4PortHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.port.dst.action._case.VtnSetPortDstAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.port.dst.action._case.VtnSetPortDstActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -40,6 +42,20 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 @XmlRootElement(name = "vtn-set-port-dst-action")
 @XmlAccessorType(XmlAccessType.NONE)
 public final class VTNSetPortDstAction extends VTNPortAction {
+    /**
+     * Create a new {@link VtnSetPortDstActionCase} instance.
+     *
+     * @param port  A {@link PortNumber} instance which specifies the port
+     *              number.
+     * @return  A {@link VtnSetPortDstActionCase} instance.
+     */
+    public static VtnSetPortDstActionCase newVtnAction(PortNumber port) {
+        VtnSetPortDstAction vaction = new VtnSetPortDstActionBuilder().
+            setPort(port).build();
+        return new VtnSetPortDstActionCaseBuilder().
+            setVtnSetPortDstAction(vaction).build();
+    }
+
     /**
      * Construct an empty instance.
      */
@@ -74,14 +90,14 @@ public final class VTNSetPortDstAction extends VTNPortAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link VtnSetPortDstAction} instance.
+     * @param ac   A {@link VtnSetPortDstActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
      * @throws RpcException  An invalid argument is specified.
      */
-    public VTNSetPortDstAction(VtnSetPortDstAction act, Integer ord)
+    public VTNSetPortDstAction(VtnSetPortDstActionCase ac, Integer ord)
         throws RpcException {
-        super(act, ord);
+        super(ac.getVtnSetPortDstAction(), ord);
     }
 
     // VTNFlowAction
@@ -91,8 +107,8 @@ public final class VTNSetPortDstAction extends VTNPortAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetPortDstAction vdst = cast(VtnSetPortDstAction.class, vact);
-        int arg = getPortNumber(vdst.getPort());
+        VtnSetPortDstActionCase ac = cast(VtnSetPortDstActionCase.class, vact);
+        int arg = getPortNumber(ac.getVtnSetPortDstAction());
         return new org.opendaylight.vtn.manager.flow.action.
             SetTpDstAction(arg);
     }
@@ -101,13 +117,13 @@ public final class VTNSetPortDstAction extends VTNPortAction {
      * {@inheritDoc}
      */
     @Override
-    public VtnSetPortDstAction toVtnAction(Action act) throws RpcException {
+    public VtnSetPortDstActionCase toVtnAction(Action act) throws RpcException {
         SetTpDstActionCase ac = cast(SetTpDstActionCase.class, act);
         SetTpDstAction action = ac.getSetTpDstAction();
         if (action != null) {
             PortNumber port = action.getPort();
             if (port != null) {
-                return new VtnSetPortDstActionBuilder().setPort(port).build();
+                return newVtnAction(port);
             }
         }
 
@@ -130,9 +146,7 @@ public final class VTNSetPortDstAction extends VTNPortAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetPortDstAction vact = new VtnSetPortDstActionBuilder().
-            setPort(getPortNumber()).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(getPortNumber()));
     }
 
     /**

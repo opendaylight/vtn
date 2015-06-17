@@ -25,8 +25,10 @@ import org.opendaylight.vtn.manager.internal.util.packet.Layer4Header;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.code.action._case.VtnSetIcmpCodeAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.code.action._case.VtnSetIcmpCodeActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -46,10 +48,28 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 @XmlAccessorType(XmlAccessType.NONE)
 public final class VTNSetIcmpCodeAction extends FlowFilterAction {
     /**
+     * Default ICMP code.
+     */
+    private static final short  DEFAULT_VALUE = 0;
+
+    /**
      * The ICMP code value to be set.
      */
     @XmlElement
     private short  code;
+
+    /**
+     * Create a new {@link VtnSetIcmpCodeActionCase} instance.
+     *
+     * @param icmpCode  A {@link Short} instance which specifies the ICMP code.
+     * @return  A {@link VtnSetIcmpCodeActionCase} instance.
+     */
+    public static VtnSetIcmpCodeActionCase newVtnAction(Short icmpCode) {
+        VtnSetIcmpCodeAction vaction = new VtnSetIcmpCodeActionBuilder().
+            setCode(icmpCode).build();
+        return new VtnSetIcmpCodeActionCaseBuilder().
+            setVtnSetIcmpCodeAction(vaction).build();
+    }
 
     /**
      * Construct an empty instance.
@@ -84,18 +104,15 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link VtnSetIcmpCodeAction} instance.
+     * @param ac   A {@link VtnSetIcmpCodeActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
      * @throws RpcException  An invalid argument is specified.
      */
-    public VTNSetIcmpCodeAction(VtnSetIcmpCodeAction act, Integer ord)
+    public VTNSetIcmpCodeAction(VtnSetIcmpCodeActionCase ac, Integer ord)
         throws RpcException {
         super(ord);
-        Short icmpCode = act.getCode();
-        if (icmpCode != null) {
-            code = icmpCode.shortValue();
-        }
+        code = getIcmpCode(ac.getVtnSetIcmpCodeAction());
         verify();
     }
 
@@ -108,6 +125,23 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
         return code;
     }
 
+    /**
+     * Return the ICMP code configured in the given instance.
+     *
+     * @param vaction  A {@link VtnSetIcmpCodeAction} instance.
+     * @return  ICMP code.
+     */
+    private short getIcmpCode(VtnSetIcmpCodeAction vaction) {
+        if (vaction != null) {
+            Short t = vaction.getCode();
+            if (t != null) {
+                return t.shortValue();
+            }
+        }
+
+        return DEFAULT_VALUE;
+    }
+
     // VTNFlowAction
 
     /**
@@ -115,28 +149,24 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetIcmpCodeAction vcode = cast(VtnSetIcmpCodeAction.class, vact);
-        Short arg = vcode.getCode();
-        if (arg == null) {
-            String msg = getErrorMessage("No ICMP code", vact);
-            throw RpcException.getMissingArgumentException(msg);
-        }
-
-        return new SetIcmpCodeAction(arg.shortValue());
+        VtnSetIcmpCodeActionCase ac =
+            cast(VtnSetIcmpCodeActionCase.class, vact);
+        short icmpCode = getIcmpCode(ac.getVtnSetIcmpCodeAction());
+        return new SetIcmpCodeAction(icmpCode);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public VtnSetIcmpCodeAction toVtnAction(Action act) throws RpcException {
+    public VtnSetIcmpCodeActionCase toVtnAction(Action act)
+        throws RpcException {
         SetTpDstActionCase ac = cast(SetTpDstActionCase.class, act);
         SetTpDstAction action = ac.getSetTpDstAction();
         if (action != null) {
             Integer c = ProtocolUtils.getPortNumber(action.getPort());
             if (c != null) {
-                return new VtnSetIcmpCodeActionBuilder().
-                    setCode(NumberUtils.toShort(c)).build();
+                return newVtnAction(NumberUtils.toShort(c));
             }
         }
 
@@ -161,9 +191,7 @@ public final class VTNSetIcmpCodeAction extends FlowFilterAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetIcmpCodeAction vact = new VtnSetIcmpCodeActionBuilder().
-            setCode(Short.valueOf(code)).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(code));
     }
 
     /**

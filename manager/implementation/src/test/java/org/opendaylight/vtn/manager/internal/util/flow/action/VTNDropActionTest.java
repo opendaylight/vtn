@@ -22,9 +22,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.drop.action._case.VtnDropAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.drop.action._case.VtnDropActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -63,6 +64,10 @@ public class VTNDropActionTest extends TestBase {
         };
 
         VtnDropAction vact = new VtnDropActionBuilder().build();
+        VtnDropActionCaseBuilder vacBuilder =
+            new VtnDropActionCaseBuilder();
+        VtnDropActionCase vac = vacBuilder.
+            setVtnDropAction(vact).build();
         DropAction ma = new DropActionBuilder().build();
         DropActionCase mact = new DropActionCaseBuilder().
             setDropAction(ma).build();
@@ -71,7 +76,7 @@ public class VTNDropActionTest extends TestBase {
         for (Integer order: orders) {
             VtnFlowActionBuilder vbuilder = va.toVtnFlowActionBuilder(order);
             assertEquals(order, vbuilder.getOrder());
-            assertEquals(vact, vbuilder.getVtnAction());
+            assertEquals(vac, vbuilder.getVtnAction());
 
             ActionBuilder mbuilder = va.toActionBuilder(order);
             assertEquals(order, mbuilder.getOrder());
@@ -80,14 +85,14 @@ public class VTNDropActionTest extends TestBase {
 
         org.opendaylight.vtn.manager.flow.action.DropAction vad =
             new org.opendaylight.vtn.manager.flow.action.DropAction();
-        VtnAction vaction = vact;
+        VtnAction vaction = vac;
         assertEquals(vad, va.toFlowAction(vaction));
 
         Action action = mact;
-        assertEquals(vact, va.toVtnAction(action));
+        assertEquals(vac, va.toVtnAction(action));
         assertEquals("DROP", va.getDescription(action));
 
-        vaction = new VtnPopVlanActionBuilder().build();
+        vaction = VTNPopVlanAction.newVtnAction();
         RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
         StatusCode ecode = StatusCode.BADREQUEST;
         String emsg = "VTNDropAction: Unexpected type: " + vaction;
@@ -122,6 +127,17 @@ public class VTNDropActionTest extends TestBase {
             assertEquals(ecode, st.getCode());
             assertEquals(emsg, st.getDescription());
         }
+    }
+
+    /**
+     * Test case for {@link VTNDropAction#newVtnAction()}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        VtnDropActionCase ac = VTNDropAction.newVtnAction();
+        assertNotNull(ac);
+        VtnDropAction vaction = ac.getVtnDropAction();
+        assertNotNull(vaction);
     }
 
     /**

@@ -19,20 +19,20 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCase;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.DropActionCase;
@@ -58,7 +58,7 @@ public final class FlowActionConverter {
      * An innter class that holds the single global instance of
      * {@link FlowActionConverter}.
      */
-    private static class Holder {
+    private static final class Holder {
         /**
          * Private constructor that protects this class from instantiating.
          */
@@ -130,20 +130,20 @@ public final class FlowActionConverter {
 
         // Initialize adapters for conversion from VtnAction into FlowAction.
         Map<Class<?>, VTNFlowAction> map = new HashMap<>();
-        map.put(VtnDropAction.class, drop);
-        map.put(VtnPopVlanAction.class, popVlan);
-        map.put(VtnPushVlanAction.class, pushVlan);
-        map.put(VtnSetDlDstAction.class, dlDst);
-        map.put(VtnSetDlSrcAction.class, dlSrc);
-        map.put(VtnSetIcmpCodeAction.class, icmpCode);
-        map.put(VtnSetIcmpTypeAction.class, icmpType);
-        map.put(VtnSetInetDscpAction.class, dscp);
-        map.put(VtnSetInetDstAction.class, inetDst);
-        map.put(VtnSetInetSrcAction.class, inetSrc);
-        map.put(VtnSetPortDstAction.class, portDst);
-        map.put(VtnSetPortSrcAction.class, portSrc);
-        map.put(VtnSetVlanIdAction.class, vlanId);
-        map.put(VtnSetVlanPcpAction.class, vlanPcp);
+        map.put(VtnDropActionCase.class, drop);
+        map.put(VtnPopVlanActionCase.class, popVlan);
+        map.put(VtnPushVlanActionCase.class, pushVlan);
+        map.put(VtnSetDlDstActionCase.class, dlDst);
+        map.put(VtnSetDlSrcActionCase.class, dlSrc);
+        map.put(VtnSetIcmpCodeActionCase.class, icmpCode);
+        map.put(VtnSetIcmpTypeActionCase.class, icmpType);
+        map.put(VtnSetInetDscpActionCase.class, dscp);
+        map.put(VtnSetInetDstActionCase.class, inetDst);
+        map.put(VtnSetInetSrcActionCase.class, inetSrc);
+        map.put(VtnSetPortDstActionCase.class, portDst);
+        map.put(VtnSetPortSrcActionCase.class, portSrc);
+        map.put(VtnSetVlanIdActionCase.class, vlanId);
+        map.put(VtnSetVlanPcpActionCase.class, vlanPcp);
         flowConverters = map;
 
         // Initialize adapters for conversion from MD-SAL action into

@@ -17,8 +17,10 @@ import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
 
@@ -38,6 +40,20 @@ public final class VTNPushVlanAction extends VTNFlowAction {
      * The Ethernet type for a new VLAN tag.
      */
     private VlanType  vlanType;
+
+    /**
+     * Create a new {@link VtnPushVlanActionCase} instance.
+     *
+     * @param vtype  A {@link VlanType} instance which specifies the type of
+     *               the VLAN tag.
+     * @return  A {@link VtnPushVlanActionCase} instance.
+     */
+    public static VtnPushVlanActionCase newVtnAction(VlanType vtype) {
+        VtnPushVlanAction vaction = new VtnPushVlanActionBuilder().
+            setVlanType(vtype).build();
+        return new VtnPushVlanActionCaseBuilder().
+            setVtnPushVlanAction(vaction).build();
+    }
 
     /**
      * Construct a new instance that adds an IEEE 802.1q VLAN tag.
@@ -82,21 +98,24 @@ public final class VTNPushVlanAction extends VTNFlowAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnPushVlanAction vpush = cast(VtnPushVlanAction.class, vact);
-        VlanType arg = vpush.getVlanType();
-        if (arg == null) {
-            throw noVlanType(vact);
+        VtnPushVlanActionCase ac = cast(VtnPushVlanActionCase.class, vact);
+        VtnPushVlanAction vaction = ac.getVtnPushVlanAction();
+        if (vaction != null) {
+            VlanType vtype = vaction.getVlanType();
+            if (vtype != null) {
+                return new org.opendaylight.vtn.manager.flow.action.
+                    PushVlanAction(vtype.getIntValue());
+            }
         }
 
-        return new org.opendaylight.vtn.manager.flow.action.
-            PushVlanAction(arg.getIntValue());
+        throw noVlanType(ac);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public VtnPushVlanAction toVtnAction(Action act) throws RpcException {
+    public VtnPushVlanActionCase toVtnAction(Action act) throws RpcException {
         PushVlanActionCase ac = cast(PushVlanActionCase.class, act);
         PushVlanAction action = ac.getPushVlanAction();
         if (action != null) {
@@ -109,8 +128,7 @@ public final class VTNPushVlanAction extends VTNFlowAction {
                     throw RpcException.getBadArgumentException(msg);
                 }
 
-                return new VtnPushVlanActionBuilder().
-                    setVlanType(vtype).build();
+                return newVtnAction(vtype);
             }
         }
 
@@ -141,9 +159,7 @@ public final class VTNPushVlanAction extends VTNFlowAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnPushVlanAction vact = new VtnPushVlanActionBuilder().
-            setVlanType(vlanType).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(vlanType));
     }
 
     /**

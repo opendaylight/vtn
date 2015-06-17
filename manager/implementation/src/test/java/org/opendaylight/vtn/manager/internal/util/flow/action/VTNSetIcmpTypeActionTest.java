@@ -37,9 +37,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.type.action._case.VtnSetIcmpTypeAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.icmp.type.action._case.VtnSetIcmpTypeActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -85,7 +86,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
      * <ul>
      *   <li>{@link VTNSetIcmpTypeAction#VTNSetIcmpTypeAction(short)}</li>
      *   <li>{@link VTNSetIcmpTypeAction#VTNSetIcmpTypeAction(SetIcmpTypeAction, int)}</li>
-     *   <li>{@link VTNSetIcmpTypeAction#VTNSetIcmpTypeAction(VtnSetIcmpTypeAction, Integer)}</li>
+     *   <li>{@link VTNSetIcmpTypeAction#VTNSetIcmpTypeAction(VtnSetIcmpTypeActionCase, Integer)}</li>
      *   <li>{@link VTNSetIcmpTypeAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetIcmpTypeAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetIcmpTypeAction#getType()}</li>
@@ -110,12 +111,16 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetIcmpTypeActionCaseBuilder vacBuilder =
+            new VtnSetIcmpTypeActionCaseBuilder();
         for (Integer order: orders) {
             for (short type: types) {
                 PortNumber pnum = new PortNumber((int)type);
                 SetIcmpTypeAction vad = new SetIcmpTypeAction(type);
                 VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
                     setType(type).build();
+                VtnSetIcmpTypeActionCase vac = vacBuilder.
+                    setVtnSetIcmpTypeAction(vact).build();
                 SetTpSrcAction ma = new SetTpSrcActionBuilder().
                     setPort(pnum).build();
                 SetTpSrcActionCase mact = new SetTpSrcActionCaseBuilder().
@@ -131,7 +136,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                     assertEquals(order, va.getIdentifier());
                     assertEquals(type, va.getType());
 
-                    va = new VTNSetIcmpTypeAction(vact, order);
+                    va = new VTNSetIcmpTypeAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
                 assertEquals(order, va.getIdentifier());
@@ -140,7 +145,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
                 assertEquals(order, va.getIdentifier());
 
                 ActionBuilder mbuilder = va.toActionBuilder(anotherOrder);
@@ -153,7 +158,14 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 // Default type test.
                 VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
                     build();
-                VTNSetIcmpTypeAction va = new VTNSetIcmpTypeAction(vact, order);
+                VtnSetIcmpTypeActionCase vac = vacBuilder.
+                    setVtnSetIcmpTypeAction(vact).build();
+                VTNSetIcmpTypeAction va = new VTNSetIcmpTypeAction(vac, order);
+                assertEquals(order, va.getIdentifier());
+                assertEquals((short)0, va.getType());
+
+                vac = vacBuilder.setVtnSetIcmpTypeAction(null).build();
+                va = new VTNSetIcmpTypeAction(vac, order);
                 assertEquals(order, va.getIdentifier());
                 assertEquals((short)0, va.getType());
             }
@@ -163,11 +175,13 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
         for (short type: types) {
             // toFlowAction() test.
             SetIcmpTypeAction vad = new SetIcmpTypeAction(type);
-            VtnAction vaction = new VtnSetIcmpTypeActionBuilder().
+            VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
                 setType(type).build();
+            VtnAction vaction = vacBuilder.
+                setVtnSetIcmpTypeAction(vact).build();
             assertEquals(vad, va.toFlowAction(vaction));
 
-            vaction = new VtnSetIcmpCodeActionBuilder().setCode(type).build();
+            vaction = VTNSetIcmpCodeAction.newVtnAction(type);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
             String emsg = "VTNSetIcmpTypeAction: Unexpected type: " + vaction;
@@ -189,7 +203,7 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 setPort(new PortNumber((int)type)).build();
             Action action = new SetTpSrcActionCaseBuilder().
                 setSetTpSrcAction(ma).build();
-            vaction = new VtnSetIcmpTypeActionBuilder().setType(type).build();
+            vaction = vacBuilder.setVtnSetIcmpTypeAction(vact).build();
             assertEquals(vaction, va.toVtnAction(action));
 
             action = new SetTpDstActionCaseBuilder().build();
@@ -251,8 +265,10 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
         String emsg = "VTNSetIcmpTypeAction: Action order cannot be null";
         VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
             setType((short)0).build();
+        VtnSetIcmpTypeActionCase vac = vacBuilder.
+            setVtnSetIcmpTypeAction(vact).build();
         try {
-            new VTNSetIcmpTypeAction(vact, (Integer)null);
+            new VTNSetIcmpTypeAction(vac, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -279,6 +295,32 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                 assertEquals(ecode, st.getCode());
                 assertEquals(emsg, st.getDescription());
             }
+        }
+
+        // Default value test for toFlowAction().
+        SetIcmpTypeAction vad = new SetIcmpTypeAction((short)0);
+        vac = vacBuilder.setVtnSetIcmpTypeAction(null).build();
+        assertEquals(vad, va.toFlowAction(vac));
+
+        vac = vacBuilder.
+            setVtnSetIcmpTypeAction(new VtnSetIcmpTypeActionBuilder().build()).
+            build();
+        assertEquals(vad, va.toFlowAction(vac));
+    }
+
+    /**
+     * Test case for {@link VTNSetIcmpTypeAction#newVtnAction(Short)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        Short[] values = {
+            null, 0, 1, 11, 22, 99, 111, 155, 234, 254, 255,
+        };
+
+        for (Short v: values) {
+            VtnSetIcmpTypeActionCase ac = VTNSetIcmpTypeAction.newVtnAction(v);
+            VtnSetIcmpTypeAction vaction = ac.getVtnSetIcmpTypeAction();
+            assertEquals(v, vaction.getType());
         }
     }
 
@@ -309,12 +351,12 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
             testEquals(set, va1, va2);
 
             for (Integer order: orders) {
-                VtnSetIcmpTypeAction vact1 = new VtnSetIcmpTypeActionBuilder().
-                    setType(type).build();
-                VtnSetIcmpTypeAction vact2 = new VtnSetIcmpTypeActionBuilder().
-                    setType(type).build();
-                va1 = new VTNSetIcmpTypeAction(vact1, order);
-                va2 = new VTNSetIcmpTypeAction(vact2, order);
+                VtnSetIcmpTypeActionCase vac1 = VTNSetIcmpTypeAction.
+                    newVtnAction(type);
+                VtnSetIcmpTypeActionCase vac2 = VTNSetIcmpTypeAction.
+                    newVtnAction(type);
+                va1 = new VTNSetIcmpTypeAction(vac1, order);
+                va2 = new VTNSetIcmpTypeAction(vac2, order);
                 testEquals(set, va1, va2);
             }
         }
@@ -346,9 +388,9 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
                     va = new VTNSetIcmpTypeAction(type);
                     expected = "VTNSetIcmpTypeAction[type=" + type + "]";
                 } else {
-                    VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
-                        setType(type).build();
-                    va = new VTNSetIcmpTypeAction(vact, order);
+                    VtnSetIcmpTypeActionCase vac = VTNSetIcmpTypeAction.
+                        newVtnAction(type);
+                    va = new VTNSetIcmpTypeAction(vac, order);
                     expected = "VTNSetIcmpTypeAction[type=" + type +
                         ",order=" + order + "]";
                 }
@@ -366,9 +408,8 @@ public class VTNSetIcmpTypeActionTest extends TestBase {
     public void testApply() throws Exception {
         Integer order = 10;
         short type = 1;
-        VtnSetIcmpTypeAction vact = new VtnSetIcmpTypeActionBuilder().
-            setType(type).build();
-        VTNSetIcmpTypeAction va = new VTNSetIcmpTypeAction(vact, order);
+        VtnSetIcmpTypeActionCase vac = VTNSetIcmpTypeAction.newVtnAction(type);
+        VTNSetIcmpTypeAction va = new VTNSetIcmpTypeAction(vac, order);
 
         // In case of TCP packet.
         FlowActionContext ctx = Mockito.mock(FlowActionContext.class);

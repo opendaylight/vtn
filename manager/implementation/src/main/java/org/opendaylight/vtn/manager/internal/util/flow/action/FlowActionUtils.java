@@ -25,7 +25,6 @@ import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.VtnOrderedFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowActionBuilder;
 
@@ -213,7 +212,7 @@ public final class FlowActionUtils {
         int order = MiscUtils.ORDER_MIN;
         if (actions == null || actions.isEmpty()) {
             DataFlowAction dfa = new DataFlowActionBuilder().
-                setVtnAction(new VtnDropActionBuilder().build()).
+                setVtnAction(VTNDropAction.newVtnAction()).
                 setOrder(order).build();
             return Collections.singletonList(dfa);
         }

@@ -22,8 +22,10 @@ import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.pcp.action._case.VtnSetVlanPcpAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.vlan.pcp.action._case.VtnSetVlanPcpActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -52,6 +54,20 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
      */
     @XmlElement
     private short  priority;
+
+    /**
+     * Create a new {@link VtnSetVlanPcpActionCase} instance.
+     *
+     * @param pcp  A {@link VlanPcp} instance which specifies the
+     *             VLAN priority.
+     * @return  A {@link VtnSetVlanPcpActionCase} instance.
+     */
+    public static VtnSetVlanPcpActionCase newVtnAction(VlanPcp pcp) {
+        VtnSetVlanPcpAction vaction = new VtnSetVlanPcpActionBuilder().
+            setVlanPcp(pcp).build();
+        return new VtnSetVlanPcpActionCaseBuilder().
+            setVtnSetVlanPcpAction(vaction).build();
+    }
 
     /**
      * Construct an empty instance.
@@ -89,15 +105,15 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link VtnSetVlanPcpAction} instance.
+     * @param ac   A {@link VtnSetVlanPcpActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
      * @throws RpcException  An invalid argument is specified.
      */
-    public VTNSetVlanPcpAction(VtnSetVlanPcpAction act, Integer ord)
+    public VTNSetVlanPcpAction(VtnSetVlanPcpActionCase ac, Integer ord)
         throws RpcException {
         super(ord);
-        priority = getVlanPriority(act.getVlanPcp());
+        priority = getVlanPriority(ac.getVtnSetVlanPcpAction());
         verify();
     }
 
@@ -113,14 +129,17 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
     /**
      * Return the VLAN priority in the given instance.
      *
-     * @param pcp  A {@link VlanPcp} instance.
+     * @param vaction  A {@link VtnSetVlanPcpAction} instance.
      * @return  The VLAN priority.
      */
-    private short getVlanPriority(VlanPcp pcp) {
-        if (pcp != null) {
-            Short value = pcp.getValue();
-            if (value != null) {
-                return value.shortValue();
+    private short getVlanPriority(VtnSetVlanPcpAction vaction) {
+        if (vaction != null) {
+            VlanPcp pcp = vaction.getVlanPcp();
+            if (pcp != null) {
+                Short value = pcp.getValue();
+                if (value != null) {
+                    return value.shortValue();
+                }
             }
         }
 
@@ -134,8 +153,8 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetVlanPcpAction vpcp = cast(VtnSetVlanPcpAction.class, vact);
-        short pri = getVlanPriority(vpcp.getVlanPcp());
+        VtnSetVlanPcpActionCase ac = cast(VtnSetVlanPcpActionCase.class, vact);
+        short pri = getVlanPriority(ac.getVtnSetVlanPcpAction());
         return new org.opendaylight.vtn.manager.flow.action.
             SetVlanPcpAction((byte)pri);
     }
@@ -144,14 +163,13 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
      * {@inheritDoc}
      */
     @Override
-    public VtnSetVlanPcpAction toVtnAction(Action act) throws RpcException {
+    public VtnSetVlanPcpActionCase toVtnAction(Action act) throws RpcException {
         SetVlanPcpActionCase ac = cast(SetVlanPcpActionCase.class, act);
         SetVlanPcpAction action = ac.getSetVlanPcpAction();
         if (action != null) {
             VlanPcp pcp = action.getVlanPcp();
             if (pcp != null) {
-                return new VtnSetVlanPcpActionBuilder().
-                    setVlanPcp(pcp).build();
+                return newVtnAction(pcp);
             }
         }
 
@@ -181,9 +199,8 @@ public final class VTNSetVlanPcpAction extends FlowFilterAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetVlanPcpAction vact = new VtnSetVlanPcpActionBuilder().
-            setVlanPcp(new VlanPcp(Short.valueOf(priority))).build();
-        return builder.setVtnAction(vact);
+        VlanPcp pcp = new VlanPcp(Short.valueOf(priority));
+        return builder.setVtnAction(newVtnAction(pcp));
     }
 
     /**

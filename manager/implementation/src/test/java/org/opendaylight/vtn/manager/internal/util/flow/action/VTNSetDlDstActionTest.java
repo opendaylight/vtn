@@ -36,9 +36,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.dl.dst.action._case.VtnSetDlDstAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.dl.dst.action._case.VtnSetDlDstActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -85,7 +86,7 @@ public class VTNSetDlDstActionTest extends TestBase {
      * <ul>
      *   <li>{@link VTNSetDlDstAction#VTNSetDlDstAction(EtherAddress)}</li>
      *   <li>{@link VTNSetDlDstAction#VTNSetDlDstAction(org.opendaylight.vtn.manager.flow.action.SetDlDstAction, int)}</li>
-     *   <li>{@link VTNSetDlDstAction#VTNSetDlDstAction(VtnSetDlDstAction, Integer)}</li>
+     *   <li>{@link VTNSetDlDstAction#VTNSetDlDstAction(VtnSetDlDstActionCase, Integer)}</li>
      *   <li>{@link VTNSetDlDstAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetDlDstAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetDlDstAction#toFlowAction(VtnAction)}</li>
@@ -114,6 +115,8 @@ public class VTNSetDlDstActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetDlDstActionCaseBuilder vacBuilder =
+            new VtnSetDlDstActionCaseBuilder();
         org.opendaylight.vtn.manager.flow.action.SetDlDstAction vad;
         for (Integer order: orders) {
             for (EtherAddress eaddr: addresses) {
@@ -122,6 +125,8 @@ public class VTNSetDlDstActionTest extends TestBase {
                     SetDlDstAction(eaddr);
                 VtnSetDlDstAction vact = new VtnSetDlDstActionBuilder().
                     setAddress(mac).build();
+                VtnSetDlDstActionCase vac = vacBuilder.
+                    setVtnSetDlDstAction(vact).build();
                 SetDlDstAction ma = new SetDlDstActionBuilder().
                     setAddress(mac).build();
                 SetDlDstActionCase mact = new SetDlDstActionCaseBuilder().
@@ -138,7 +143,7 @@ public class VTNSetDlDstActionTest extends TestBase {
                     assertEquals(eaddr, va.getAddress());
                     assertEquals(mac, va.getMacAddress());
 
-                    va = new VTNSetDlDstAction(vact, order);
+                    va = new VTNSetDlDstAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
                 assertEquals(order, va.getIdentifier());
@@ -148,7 +153,7 @@ public class VTNSetDlDstActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
                 assertEquals(order, va.getIdentifier());
 
                 ActionBuilder mbuilder = va.toActionBuilder(anotherOrder);
@@ -164,14 +169,44 @@ public class VTNSetDlDstActionTest extends TestBase {
             MacAddress mac = eaddr.getMacAddress();
             vad = new org.opendaylight.vtn.manager.flow.action.
                 SetDlDstAction(eaddr);
-            VtnAction vaction = new VtnSetDlDstActionBuilder().
+            VtnSetDlDstAction vact = new VtnSetDlDstActionBuilder().
                 setAddress(mac).build();
+            VtnAction vaction = vacBuilder.
+                setVtnSetDlDstAction(vact).build();
             assertEquals(vad, va.toFlowAction(vaction));
 
-            vaction = new VtnSetDlSrcActionBuilder().setAddress(mac).build();
+            vaction = VTNSetDlSrcAction.newVtnAction(mac);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
             String emsg = "VTNSetDlDstAction: Unexpected type: " + vaction;
+            try {
+                va.toFlowAction(vaction);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(ecode, st.getCode());
+                assertEquals(emsg, st.getDescription());
+            }
+
+            etag = RpcErrorTag.MISSING_ELEMENT;
+            vaction = vacBuilder.
+                setVtnSetDlDstAction(null).build();
+            emsg = "VTNSetDlDstAction: No MAC address: " + vaction;
+            try {
+                va.toFlowAction(vaction);
+                unexpected();
+            } catch (RpcException e) {
+                assertEquals(etag, e.getErrorTag());
+                Status st = e.getStatus();
+                assertEquals(ecode, st.getCode());
+                assertEquals(emsg, st.getDescription());
+            }
+
+            vaction = vacBuilder.
+                setVtnSetDlDstAction(new VtnSetDlDstActionBuilder().build()).
+                build();
+            emsg = "VTNSetDlDstAction: No MAC address: " + vaction;
             try {
                 va.toFlowAction(vaction);
                 unexpected();
@@ -190,9 +225,10 @@ public class VTNSetDlDstActionTest extends TestBase {
                 setAddress(mac).build();
             Action action = new SetDlDstActionCaseBuilder().
                 setSetDlDstAction(ma).build();
-            vaction = new VtnSetDlDstActionBuilder().setAddress(mac).build();
+            vaction = vacBuilder.setVtnSetDlDstAction(vact).build();
             assertEquals(vaction, va.toVtnAction(action));
 
+            etag = RpcErrorTag.BAD_ELEMENT;
             action = new SetDlSrcActionCaseBuilder().build();
             emsg = "VTNSetDlDstAction: Unexpected type: " + action;
             try {
@@ -272,8 +308,10 @@ public class VTNSetDlDstActionTest extends TestBase {
         String emsg = "VTNSetDlDstAction: Action order cannot be null";
         VtnSetDlDstAction vact = new VtnSetDlDstActionBuilder().
             setAddress(eaddr.getMacAddress()).build();
+        VtnSetDlDstActionCase vac = vacBuilder.
+            setVtnSetDlDstAction(vact).build();
         try {
-            new VTNSetDlDstAction(vact, (Integer)null);
+            new VTNSetDlDstAction(vac, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -297,8 +335,20 @@ public class VTNSetDlDstActionTest extends TestBase {
         }
 
         vact = new VtnSetDlDstActionBuilder().build();
+        vac = vacBuilder.setVtnSetDlDstAction(vact).build();
         try {
-            new VTNSetDlDstAction(vact, 1);
+            new VTNSetDlDstAction(vac, 1);
+            unexpected();
+        } catch (RpcException e) {
+            assertEquals(etag, e.getErrorTag());
+            Status st = e.getStatus();
+            assertEquals(ecode, st.getCode());
+            assertEquals(emsg, st.getDescription());
+        }
+
+        vac = vacBuilder.setVtnSetDlDstAction(null).build();
+        try {
+            new VTNSetDlDstAction(vac, 1);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -339,8 +389,9 @@ public class VTNSetDlDstActionTest extends TestBase {
 
         vact = new VtnSetDlDstActionBuilder().
             setAddress(eaddr.getMacAddress()).build();
+        vac = vacBuilder.setVtnSetDlDstAction(vact).build();
         try {
-            new VTNSetDlDstAction(vact, 1);
+            new VTNSetDlDstAction(vac, 1);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -367,8 +418,9 @@ public class VTNSetDlDstActionTest extends TestBase {
 
         vact = new VtnSetDlDstActionBuilder().
             setAddress(eaddr.getMacAddress()).build();
+        vac = vacBuilder.setVtnSetDlDstAction(vact).build();
         try {
-            new VTNSetDlDstAction(vact, 1);
+            new VTNSetDlDstAction(vac, 1);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -394,14 +446,33 @@ public class VTNSetDlDstActionTest extends TestBase {
 
         vact = new VtnSetDlDstActionBuilder().
             setAddress(eaddr.getMacAddress()).build();
+        vac = vacBuilder.setVtnSetDlDstAction(vact).build();
         try {
-            new VTNSetDlDstAction(vact, 1);
+            new VTNSetDlDstAction(vac, 1);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
             Status st = e.getStatus();
             assertEquals(ecode, st.getCode());
             assertEquals(emsg, st.getDescription());
+        }
+    }
+
+    /**
+     * Test case for {@link VTNSetDlDstAction#newVtnAction(MacAddress)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        MacAddress[] maddrs = {
+            null,
+            new MacAddress("00:11:22:33:44:55"),
+            new MacAddress("0a:bc:de:f0:12:34"),
+        };
+
+        for (MacAddress mac: maddrs) {
+            VtnSetDlDstActionCase ac = VTNSetDlDstAction.newVtnAction(mac);
+            VtnSetDlDstAction vaction = ac.getVtnSetDlDstAction();
+            assertEquals(mac, vaction.getAddress());
         }
     }
 
@@ -414,17 +485,16 @@ public class VTNSetDlDstActionTest extends TestBase {
     public void testToString() throws Exception {
         Integer order = 10;
         EtherAddress eaddr = new EtherAddress(0x123L);
-        VtnSetDlDstAction vact = new VtnSetDlDstActionBuilder().
-            setAddress(eaddr.getMacAddress()).build();
-        VTNSetDlDstAction va = new VTNSetDlDstAction(vact, order);
+        VtnSetDlDstActionCase vac = VTNSetDlDstAction.
+            newVtnAction(eaddr.getMacAddress());
+        VTNSetDlDstAction va = new VTNSetDlDstAction(vac, order);
         String expected = "VTNSetDlDstAction[addr=00:00:00:00:01:23,order=10]";
         assertEquals(expected, va.toString());
 
         order = 123;
         eaddr = new EtherAddress(0xf8ffffffabcdL);
-        vact = new VtnSetDlDstActionBuilder().
-            setAddress(eaddr.getMacAddress()).build();
-        va = new VTNSetDlDstAction(vact, order);
+        vac = VTNSetDlDstAction.newVtnAction(eaddr.getMacAddress());
+        va = new VTNSetDlDstAction(vac, order);
         expected = "VTNSetDlDstAction[addr=f8:ff:ff:ff:ab:cd,order=123]";
         assertEquals(expected, va.toString());
 
@@ -442,9 +512,9 @@ public class VTNSetDlDstActionTest extends TestBase {
     public void testApply() throws Exception {
         Integer order = 10;
         EtherAddress eaddr = new EtherAddress(0x12345678L);
-        VtnSetDlDstAction vact = new VtnSetDlDstActionBuilder().
-            setAddress(eaddr.getMacAddress()).build();
-        VTNSetDlDstAction va = new VTNSetDlDstAction(vact, order);
+        VtnSetDlDstActionCase vac = VTNSetDlDstAction.
+            newVtnAction(eaddr.getMacAddress());
+        VTNSetDlDstAction va = new VTNSetDlDstAction(vac, order);
 
         FlowActionContext ctx = Mockito.mock(FlowActionContext.class);
         EtherHeader ether = Mockito.mock(EtherHeader.class);

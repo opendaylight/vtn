@@ -93,7 +93,9 @@ public abstract class VTNDlAddrAction extends FlowFilterAction {
     protected VTNDlAddrAction(VtnDladdrActionFields act, Integer ord)
         throws RpcException {
         super(ord);
-        address = MiscUtils.toEtherAddress(act.getAddress());
+        if (act != null) {
+            address = MiscUtils.toEtherAddress(act.getAddress());
+        }
         verify();
     }
 

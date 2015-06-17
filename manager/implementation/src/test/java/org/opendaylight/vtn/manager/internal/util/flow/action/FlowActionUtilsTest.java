@@ -36,27 +36,15 @@ import org.opendaylight.vtn.manager.flow.action.SetVlanPcpAction;
 import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.util.Ip4Network;
 
+import org.opendaylight.vtn.manager.internal.L2Host;
 import org.opendaylight.vtn.manager.internal.util.OrderedComparator;
+import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
 
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 import org.opendaylight.controller.sal.utils.IPProtocols;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnDropActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlDstActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpCodeActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetIcmpTypeActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDstActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetSrcActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanPcpActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowAction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.vtn.data.flow.info.DataFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
@@ -102,7 +90,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instru
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Dscp;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.PortNumber;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
@@ -167,8 +154,11 @@ public class FlowActionUtilsTest extends TestBase {
      */
     public static Action createOutputAction(int order, String port) {
         OutputActionBuilder ab = new OutputActionBuilder().
-            setOutputNodeConnector(new NodeConnectorId(port)).
             setMaxLength(0xffff);
+        if (port != null) {
+            ab.setOutputNodeConnector(new NodeConnectorId(port));
+        }
+
         return new ActionBuilder().
             setOrder(order).
             setAction(new OutputActionCaseBuilder().
@@ -345,7 +335,7 @@ public class FlowActionUtilsTest extends TestBase {
     public static DataFlowAction createVtnDropAction(int order) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnDropActionBuilder().build()).
+            setVtnAction(VTNDropAction.newVtnAction()).
             build();
     }
 
@@ -358,7 +348,7 @@ public class FlowActionUtilsTest extends TestBase {
     public static DataFlowAction createVtnPopVlanAction(int order) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnPopVlanActionBuilder().build()).
+            setVtnAction(VTNPopVlanAction.newVtnAction()).
             build();
     }
 
@@ -371,8 +361,7 @@ public class FlowActionUtilsTest extends TestBase {
     public static DataFlowAction createVtnPushVlanAction(int order) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnPushVlanActionBuilder().
-                         setVlanType(VlanType.VLAN).build()).
+            setVtnAction(VTNPushVlanAction.newVtnAction(VlanType.VLAN)).
             build();
     }
 
@@ -387,8 +376,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                          MacAddress mac) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetDlDstActionBuilder().
-                         setAddress(mac).build()).
+            setVtnAction(VTNSetDlDstAction.newVtnAction(mac)).
             build();
     }
 
@@ -403,8 +391,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                          MacAddress mac) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetDlSrcActionBuilder().
-                         setAddress(mac).build()).
+            setVtnAction(VTNSetDlSrcAction.newVtnAction(mac)).
             build();
     }
 
@@ -419,8 +406,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                             int code) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetIcmpCodeActionBuilder().
-                         setCode((short)code).build()).
+            setVtnAction(VTNSetIcmpCodeAction.newVtnAction((short)code)).
             build();
     }
 
@@ -436,8 +422,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                             int type) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetIcmpTypeActionBuilder().
-                         setType((short)type).build()).
+            setVtnAction(VTNSetIcmpTypeAction.newVtnAction((short)type)).
             build();
     }
 
@@ -452,8 +437,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                             int dscp) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetInetDscpActionBuilder().
-                         setDscp(new Dscp((short)dscp)).build()).
+            setVtnAction(VTNSetInetDscpAction.newVtnAction((short)dscp)).
             build();
     }
 
@@ -468,8 +452,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                            Address addr) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetInetDstActionBuilder().
-                         setAddress(addr).build()).
+            setVtnAction(VTNSetInetDstAction.newVtnAction(addr)).
             build();
     }
 
@@ -484,8 +467,7 @@ public class FlowActionUtilsTest extends TestBase {
                                                            Address addr) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetInetSrcActionBuilder().
-                         setAddress(addr).build()).
+            setVtnAction(VTNSetInetSrcAction.newVtnAction(addr)).
             build();
     }
 
@@ -498,10 +480,10 @@ public class FlowActionUtilsTest extends TestBase {
      */
     public static DataFlowAction createVtnSetPortDstAction(int order,
                                                            int port) {
+        PortNumber pnum = new PortNumber(port);
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetPortDstActionBuilder().
-                         setPort(new PortNumber(port)).build()).
+            setVtnAction(VTNSetPortDstAction.newVtnAction(pnum)).
             build();
     }
 
@@ -514,10 +496,10 @@ public class FlowActionUtilsTest extends TestBase {
      */
     public static DataFlowAction createVtnSetPortSrcAction(int order,
                                                            int port) {
+        PortNumber pnum = new PortNumber(port);
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetPortSrcActionBuilder().
-                         setPort(new PortNumber(port)).build()).
+            setVtnAction(VTNSetPortSrcAction.newVtnAction(pnum)).
             build();
     }
 
@@ -531,8 +513,7 @@ public class FlowActionUtilsTest extends TestBase {
     public static DataFlowAction createVtnSetVlanIdAction(int order, int vid) {
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetVlanIdActionBuilder().
-                         setVlanId(vid).build()).
+            setVtnAction(VTNSetVlanIdAction.newVtnAction(vid)).
             build();
     }
 
@@ -544,10 +525,10 @@ public class FlowActionUtilsTest extends TestBase {
      * @return  A VTN SET_VLAN_PCP action.
      */
     public static DataFlowAction createVtnSetVlanPcpAction(int order, int pri) {
+        VlanPcp pcp = new VlanPcp((short)pri);
         return new DataFlowActionBuilder().
             setOrder(order).
-            setVtnAction(new VtnSetVlanPcpActionBuilder().
-                         setVlanPcp(new VlanPcp((short)pri)).build()).
+            setVtnAction(VTNSetVlanPcpAction.newVtnAction(pcp)).
             build();
     }
 
@@ -628,6 +609,217 @@ public class FlowActionUtilsTest extends TestBase {
 
     /**
      * Test case for
+     * {@link FlowActionUtils#getDestinationHost(List,MacAddress,int)}.
+     */
+    @Test
+    public void testGetDestinationHost() {
+        List<Action> actions = new ArrayList<>();
+        EtherAddress dlDst = new EtherAddress(0xaabbccddee11L);
+        MacAddress dstMac = dlDst.getMacAddress();
+        int vlan = 1;
+
+        // Empty action.
+        L2Host expected = null;
+        L2Host lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        // No OUTPUT action.
+        EtherAddress newDst = new EtherAddress(0xdeadbeef123L);
+        MacAddress newMac = newDst.getMacAddress();
+        int newVlan = 10;
+        int order = 0;
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, newMac),
+            createSetVlanPcpAction(order++, 3));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, newMac),
+            createDropAction(order++));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        // Null output port.
+        String outPort = null;
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, newMac),
+            createSetVlanPcpAction(order++, 3),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        // Unsupported output port.
+        outPort = "unknown:10:1";
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, newMac),
+            createSetVlanPcpAction(order++, 3),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        // SetDlDstAction is null.
+        Action act = new ActionBuilder().
+            setOrder(1).
+            setAction(new SetDlDstActionCaseBuilder().build()).
+            build();
+        outPort = "openflow:3:5";
+        SalPort sport = SalPort.create(outPort);
+        assertNotNull(sport);
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(0, newVlan),
+            act,
+            createSetVlanPcpAction(2, 3),
+            createOutputAction(3, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(null, newVlan, sport);
+        assertEquals(expected, lh);
+
+        // Null in SetDlDstAction.
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, null),
+            createSetVlanPcpAction(order++, 3),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        // Both MAC address and VLAN ID are changed.
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, newMac),
+            createSetVlanPcpAction(order++, 3),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(newMac, newVlan, sport);
+        assertEquals(expected, lh);
+
+        // SetVlanIdAction is null.
+        act = new ActionBuilder().
+            setOrder(0).
+            setAction(new SetVlanIdActionCaseBuilder().build()).
+            build();
+        actions.clear();
+        Collections.addAll(
+            actions,
+            act,
+            createSetDlDstAction(1, newMac),
+            createSetVlanPcpAction(2, 3),
+            createOutputAction(3, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(newMac, vlan, sport);
+        assertEquals(expected, lh);
+
+        // Null in SetVlanIdAction.
+        act = new ActionBuilder().
+            setOrder(0).
+            setAction(new SetVlanIdActionCaseBuilder().
+                      setSetVlanIdAction(new SetVlanIdActionBuilder().build()).
+                      build()).
+            build();
+        actions.clear();
+        Collections.addAll(
+            actions,
+            act,
+            createSetDlDstAction(1, newMac),
+            createSetVlanPcpAction(2, 3),
+            createOutputAction(3, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        assertEquals(expected, lh);
+
+        // Destination MAC address is not changed.
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanIdAction(order++, newVlan),
+            createSetVlanPcpAction(order++, 3),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(dstMac, newVlan, sport);
+        assertEquals(expected, lh);
+
+        // VLAN ID is not changed.
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanPcpAction(order++, 3),
+            createSetDlDstAction(order++, newMac),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(newMac, vlan, sport);
+        assertEquals(expected, lh);
+
+        // VLAN tag is stripped.
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanPcpAction(order++, 3),
+            createPopVlanAction(order++),
+            createSetDlDstAction(order++, newMac),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(newMac, 0, sport);
+        assertEquals(expected, lh);
+
+        // VLAN tag is pushed.
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createPushVlanAction(order++),
+            createSetVlanPcpAction(order++, 7),
+            createSetVlanIdAction(order++, newVlan),
+            createSetDlDstAction(order++, newMac),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, 0);
+        expected = new L2Host(newMac, newVlan, sport);
+        assertEquals(expected, lh);
+
+        // Neither destination MAC address nor VLAN ID are changed.
+        Ip4Network nwSrc = new Ip4Network("192.168.100.200");
+        Ip4Network nwDst = new Ip4Network("127.0.0.1");
+        order = 0;
+        actions.clear();
+        Collections.addAll(
+            actions,
+            createSetVlanPcpAction(order++, 7),
+            createSetDlSrcAction(order++, newMac),
+            createSetNwTosAction(order++, 45),
+            createSetNwDstAction(order++, nwDst.getMdAddress()),
+            createSetNwSrcAction(order++, nwSrc.getMdAddress()),
+            createOutputAction(order++, outPort));
+        lh = FlowActionUtils.getDestinationHost(actions, dstMac, vlan);
+        expected = new L2Host(dstMac, vlan, sport);
+        assertEquals(expected, lh);
+    }
+
+    /**
+     * Test case for
      * {@link FlowActionUtils#getActions(InstructionList,Comparator)}.
      */
     @Test
@@ -653,6 +845,14 @@ public class FlowActionUtilsTest extends TestBase {
             setInstruction(new WriteActionsCaseBuilder().build()).
             build();
         ilist.add(write);
+        insts = new InstructionsBuilder().setInstruction(ilist).build();
+        assertEquals(empty, FlowActionUtils.getActions(insts, comp));
+
+        // Empty APPLY action.
+        Instruction apply = new InstructionBuilder().
+            setInstruction(new ApplyActionsCaseBuilder().build()).
+            build();
+        ilist.add(apply);
         insts = new InstructionsBuilder().setInstruction(ilist).build();
         assertEquals(empty, FlowActionUtils.getActions(insts, comp));
 
@@ -684,7 +884,7 @@ public class FlowActionUtilsTest extends TestBase {
         }
         assertEquals(actions.size(), actionMap.size());
 
-        Instruction apply = new InstructionBuilder().
+        apply = new InstructionBuilder().
             setOrder(0).
             setInstruction(new ApplyActionsCaseBuilder().
                            setApplyActions(

@@ -88,7 +88,7 @@ public abstract class VTNPortAction extends FlowFilterAction {
     protected VTNPortAction(VtnPortActionFields act, Integer ord)
         throws RpcException {
         super(ord);
-        port = getPortNumber(act.getPort());
+        port = getPortNumber(act);
         verify();
     }
 
@@ -111,17 +111,20 @@ public abstract class VTNPortAction extends FlowFilterAction {
     }
 
     /**
-     * Return the port number configured in the given {@link PortNumber}
-     * instance.
+     * Return the port number configured in the given
+     * {@link VtnPortActionFields} instance.
      *
-     * @param pnum  A {@link PortNumber} instance.
+     * @param vport  A {@link VtnPortActionFields} instance.
      * @return  The port number.
      */
-    protected final int getPortNumber(PortNumber pnum) {
-        if (pnum != null) {
-            Integer v = pnum.getValue();
-            if (v != null) {
-                return v.intValue();
+    protected final int getPortNumber(VtnPortActionFields vport) {
+        if (vport != null) {
+            PortNumber pnum = vport.getPort();
+            if (pnum != null) {
+                Integer v = pnum.getValue();
+                if (v != null) {
+                    return v.intValue();
+                }
             }
         }
 

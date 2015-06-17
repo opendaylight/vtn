@@ -74,6 +74,7 @@ import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetDstActio
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetInetSrcAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortDstAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetPortSrcAction;
+import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanIdAction;
 import org.opendaylight.vtn.manager.internal.util.flow.action.VTNSetVlanPcpAction;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNEtherMatch;
 import org.opendaylight.vtn.manager.internal.util.flow.match.VTNInet4Match;
@@ -105,8 +106,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetInetDscpActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetVlanIdActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.DataFlowMode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VirtualRouteReason;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.rev150410.VtnDataFlowInfo;
@@ -186,7 +185,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.Duration;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.statistics.types.rev130925.duration.DurationBuilder;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Dscp;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev100924.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter32;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev100924.Counter64;
@@ -625,8 +623,7 @@ public class FlowUtilsTest extends TestBase {
 
         List<DataFlowAction> vactions = new ArrayList<>();
         List<FlowAction> factions = new ArrayList<>();
-        VtnAction vact = new VtnSetVlanIdActionBuilder().
-            setVlanId(dstVlan).build();
+        VtnAction vact = VTNSetVlanIdAction.newVtnAction(dstVlan);
         DataFlowAction dfact = new DataFlowActionBuilder().
             setVtnAction(vact).
             setOrder(vactions.size()).
@@ -635,9 +632,7 @@ public class FlowUtilsTest extends TestBase {
         factions.add(new SetVlanIdAction((short)dstVlan));
 
         short dscp = 59;
-        vact = new VtnSetInetDscpActionBuilder().
-            setDscp(new Dscp(dscp)).
-            build();
+        vact = VTNSetInetDscpAction.newVtnAction(dscp);
         dfact = new DataFlowActionBuilder().
             setVtnAction(vact).
             setOrder(vactions.size()).

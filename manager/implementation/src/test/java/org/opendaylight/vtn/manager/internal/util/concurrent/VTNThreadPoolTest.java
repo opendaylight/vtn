@@ -6,6 +6,7 @@
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 package org.opendaylight.vtn.manager.internal.util.concurrent;
 
 import java.util.Timer;
@@ -14,8 +15,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import ch.qos.logback.classic.Level;
+
 import org.junit.Test;
 
+import org.opendaylight.vtn.manager.internal.LoggerUtils;
 import org.opendaylight.vtn.manager.internal.TestBase;
 
 /**
@@ -223,11 +227,16 @@ public class VTNThreadPoolTest extends TestBase {
         ExpThreadTask etask = new ExpThreadTask(1000L, latch1);
         task1 = new ThreadTask(10000L, latch2);
 
-        pool.execute(etask);
-        assertTrue(etask.await(10L, TimeUnit.SECONDS));
+        Level lvl = LoggerUtils.setLevel(VTNThreadPool.class, Level.OFF);
+        try {
+            pool.execute(etask);
+            assertTrue(etask.await(10L, TimeUnit.SECONDS));
 
-        pool.execute(task1);
-        assertTrue(task1.await(10L, TimeUnit.SECONDS));
+            pool.execute(task1);
+            assertTrue(task1.await(10L, TimeUnit.SECONDS));
+        } finally {
+            LoggerUtils.setLevel(VTNThreadPool.class, lvl);
+        }
 
         // test shutdown()
         pool = new VTNThreadPool("test3", 2, 1000L);
@@ -280,95 +289,99 @@ public class VTNThreadPoolTest extends TestBase {
      */
     @Test
     public void testJoin() {
+        Level lvl = LoggerUtils.setLevel(VTNThreadPool.class, Level.OFF);
+        try {
+            // in case all worker end normally.
+            VTNThreadPool pool = new VTNThreadPool("test1", 3, 10000L);
+            CountDownLatch latch = new CountDownLatch(3);
+            ThreadTask task1 = new ThreadTask(10000L, latch);
+            ThreadTask task2 = new ThreadTask(10000L, latch);
+            ThreadTask task3 = new ThreadTask(10000L, latch);
 
-        // in case all worker end normally.
-        VTNThreadPool pool = new VTNThreadPool("test1", 3, 10000L);
-        CountDownLatch latch = new CountDownLatch(3);
-        ThreadTask task1 = new ThreadTask(10000L, latch);
-        ThreadTask task2 = new ThreadTask(10000L, latch);
-        ThreadTask task3 = new ThreadTask(10000L, latch);
+            pool.execute(task1);
+            pool.execute(task2);
+            pool.execute(task3);
 
-        pool.execute(task1);
-        pool.execute(task2);
-        pool.execute(task3);
+            assertTrue(task1.await(10L, TimeUnit.SECONDS));
+            assertTrue(task2.await(10L, TimeUnit.SECONDS));
+            assertTrue(task3.await(10L, TimeUnit.SECONDS));
 
-        assertTrue(task1.await(10L, TimeUnit.SECONDS));
-        assertTrue(task2.await(10L, TimeUnit.SECONDS));
-        assertTrue(task3.await(10L, TimeUnit.SECONDS));
+            pool.close();
+            assertTrue(pool.join(10000L));
 
-        pool.close();
-        assertTrue(pool.join(10000L));
+            // in case all worker end normally.
+            pool = new VTNThreadPool("test2", 3, 10000L);
+            latch = new CountDownLatch(3);
+            task1 = new ThreadTask(10000L, latch);
+            task2 = new ThreadTask(10000L, latch);
+            task3 = new ThreadTask(10000L, latch);
 
-        // in case all worker end normally.
-        pool = new VTNThreadPool("test2", 3, 10000L);
-        latch = new CountDownLatch(3);
-        task1 = new ThreadTask(10000L, latch);
-        task2 = new ThreadTask(10000L, latch);
-        task3 = new ThreadTask(10000L, latch);
+            pool.execute(task1);
+            pool.execute(task2);
+            pool.execute(task3);
 
-        pool.execute(task1);
-        pool.execute(task2);
-        pool.execute(task3);
+            assertTrue(task1.await(10L, TimeUnit.SECONDS));
+            assertTrue(task2.await(10L, TimeUnit.SECONDS));
+            assertTrue(task3.await(10L, TimeUnit.SECONDS));
 
-        assertTrue(task1.await(10L, TimeUnit.SECONDS));
-        assertTrue(task2.await(10L, TimeUnit.SECONDS));
-        assertTrue(task3.await(10L, TimeUnit.SECONDS));
+            assertTrue(pool.join(0L));
 
-        assertTrue(pool.join(0L));
+            // in case all worker don't end.
+            pool = new VTNThreadPool("test2", 2, 10000L);
 
-        // in case all worker don't end.
-        pool = new VTNThreadPool("test2", 2, 10000L);
+            latch = new CountDownLatch(3);
+            task1 = new ThreadTask(10000L, latch);
+            task2 = new ThreadTask(10000L, latch);
 
-        latch = new CountDownLatch(3);
-        task1 = new ThreadTask(10000L, latch);
-        task2 = new ThreadTask(10000L, latch);
+            pool.execute(task1);
+            pool.execute(task2);
 
-        pool.execute(task1);
-        pool.execute(task2);
+            assertFalse(pool.join(1L));
 
-        assertFalse(pool.join(1L));
+            // in case join is interrupted.
+            pool = new VTNThreadPool("test3", 2, 10000L);
 
-        // in case join is interrupted.
-        pool = new VTNThreadPool("test3", 2, 10000L);
+            latch = new CountDownLatch(3);
+            task1 = new ThreadTask(10000L, latch);
+            task2 = new ThreadTask(10000L, latch);
 
-        latch = new CountDownLatch(3);
-        task1 = new ThreadTask(10000L, latch);
-        task2 = new ThreadTask(10000L, latch);
+            pool.execute(task1);
+            pool.execute(task2);
 
-        pool.execute(task1);
-        pool.execute(task2);
+            CountDownLatch latch1 = new CountDownLatch(1);
+            InterruptTask itask = new InterruptTask(Thread.currentThread(),
+                                                    10000L, latch1);
+            Timer timer = new Timer();
+            timer.schedule(itask, 1L);
 
-        CountDownLatch latch1 = new CountDownLatch(1);
-        InterruptTask itask = new InterruptTask(Thread.currentThread(),
-                                                10000L, latch1);
-        Timer timer = new Timer();
-        timer.schedule(itask, 1L);
+            assertFalse(pool.join(10000L));
 
-        assertFalse(pool.join(10000L));
+            itask.cancel();
 
-        itask.cancel();
+            pool = new VTNThreadPool("test3", 2, 10000L);
 
-        pool = new VTNThreadPool("test3", 2, 10000L);
+            latch = new CountDownLatch(3);
+            task1 = new ThreadTask(10000L, latch);
+            task2 = new ThreadTask(10000L, latch);
 
-        latch = new CountDownLatch(3);
-        task1 = new ThreadTask(10000L, latch);
-        task2 = new ThreadTask(10000L, latch);
+            pool.execute(task1);
+            pool.execute(task2);
 
-        pool.execute(task1);
-        pool.execute(task2);
+            latch1 = new CountDownLatch(1);
+            itask = new InterruptTask(Thread.currentThread(), 10000L, latch1);
+            timer.schedule(itask, 1L);
 
-        latch1 = new CountDownLatch(1);
-        itask = new InterruptTask(Thread.currentThread(), 10000L, latch1);
-        timer.schedule(itask, 1L);
+            assertFalse(pool.join(0L));
 
-        assertFalse(pool.join(0L));
+            itask.cancel();
 
-        itask.cancel();
+            //
+            pool = new VTNThreadPool("test4", 2, 10000L);
+            assertTrue(pool.join(0));
 
-        //
-        pool = new VTNThreadPool("test4", 2, 10000L);
-        assertTrue(pool.join(0));
-
-        timer.cancel();
+            timer.cancel();
+        } finally {
+            LoggerUtils.setLevel(VTNThreadPool.class, lvl);
+        }
     }
 }

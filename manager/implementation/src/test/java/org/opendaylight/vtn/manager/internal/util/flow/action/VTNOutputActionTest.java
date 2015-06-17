@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import java.util.HashSet;
+
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.util.inventory.SalPort;
@@ -152,6 +154,38 @@ public class VTNOutputActionTest extends TestBase {
             setOutputAction(new OutputActionBuilder().build()).build();
         assertEquals(desc, vout.getDescription(action));
         assertEquals(null, vout.getOutputPort());
+    }
+
+    /**
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link VTNOutputAction#equals(Object)}</li>
+     *   <li>{@link VTNOutputAction#hashCode()}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testEquals() throws Exception {
+        HashSet<Object> set = new HashSet<>();
+        String[] ports = {
+            "openflow:1:1",
+            "openflow:1:2",
+            "openflow:2:1",
+            "openflow:2:2",
+            "openflow:18446744073709551615:0",
+            "openflow:18446744073709551615:1",
+            "openflow:18446744073709551615:4294967040",
+        };
+
+        for (String portId: ports) {
+            VTNOutputAction va1 = new VTNOutputAction(SalPort.create(portId));
+            VTNOutputAction va2 = new VTNOutputAction(SalPort.create(portId));
+            testEquals(set, va1, va2);
+        }
+
+        assertEquals(ports.length, set.size());
     }
 
     /**

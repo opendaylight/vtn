@@ -35,10 +35,11 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortDstActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetPortSrcActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.port.src.action._case.VtnSetPortSrcAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.port.src.action._case.VtnSetPortSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -84,7 +85,7 @@ public class VTNSetPortSrcActionTest extends TestBase {
      * <ul>
      *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(int)}</li>
      *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(org.opendaylight.vtn.manager.flow.action.SetTpSrcAction, int)}</li>
-     *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(VtnSetPortSrcAction, Integer)}</li>
+     *   <li>{@link VTNSetPortSrcAction#VTNSetPortSrcAction(VtnSetPortSrcActionCase, Integer)}</li>
      *   <li>{@link VTNSetPortSrcAction#set(VtnFlowActionBuilder)}</li>
      *   <li>{@link VTNSetPortSrcAction#set(ActionBuilder)}</li>
      *   <li>{@link VTNSetPortSrcAction#toFlowAction(VtnAction)}</li>
@@ -111,6 +112,8 @@ public class VTNSetPortSrcActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnSetPortSrcActionCaseBuilder vacBuilder =
+            new VtnSetPortSrcActionCaseBuilder();
         org.opendaylight.vtn.manager.flow.action.SetTpSrcAction vad;
         for (Integer order: orders) {
             for (int port: ports) {
@@ -119,6 +122,8 @@ public class VTNSetPortSrcActionTest extends TestBase {
                     SetTpSrcAction(port);
                 VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
                     setPort(pnum).build();
+                VtnSetPortSrcActionCase vac = vacBuilder.
+                    setVtnSetPortSrcAction(vact).build();
                 SetTpSrcAction ma = new SetTpSrcActionBuilder().
                     setPort(pnum).build();
                 SetTpSrcActionCase mact = new SetTpSrcActionCaseBuilder().
@@ -135,7 +140,7 @@ public class VTNSetPortSrcActionTest extends TestBase {
                     assertEquals(port, va.getPort());
                     assertEquals(pnum, va.getPortNumber());
 
-                    va = new VTNSetPortSrcAction(vact, order);
+                    va = new VTNSetPortSrcAction(vac, order);
                     anotherOrder = order.intValue() + 1;
                 }
                 assertEquals(order, va.getIdentifier());
@@ -145,7 +150,7 @@ public class VTNSetPortSrcActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(anotherOrder);
                 assertEquals(anotherOrder, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
                 assertEquals(order, va.getIdentifier());
 
                 ActionBuilder mbuilder = va.toActionBuilder(anotherOrder);
@@ -158,7 +163,14 @@ public class VTNSetPortSrcActionTest extends TestBase {
             if (order != null) {
                 VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
                     build();
-                VTNSetPortSrcAction va = new VTNSetPortSrcAction(vact, order);
+                VtnSetPortSrcActionCase vac = vacBuilder.
+                    setVtnSetPortSrcAction(vact).build();
+                VTNSetPortSrcAction va = new VTNSetPortSrcAction(vac, order);
+                assertEquals(order, va.getIdentifier());
+                assertEquals(0, va.getPort());
+
+                vac = vacBuilder.setVtnSetPortSrcAction(null).build();
+                va = new VTNSetPortSrcAction(vac, order);
                 assertEquals(order, va.getIdentifier());
                 assertEquals(0, va.getPort());
             }
@@ -170,11 +182,13 @@ public class VTNSetPortSrcActionTest extends TestBase {
             PortNumber pnum = new PortNumber(port);
             vad = new org.opendaylight.vtn.manager.flow.action.
                 SetTpSrcAction(port);
-            VtnAction vaction = new VtnSetPortSrcActionBuilder().
+            VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
                 setPort(pnum).build();
+            VtnAction vaction = vacBuilder.
+                setVtnSetPortSrcAction(vact).build();
             assertEquals(vad, va.toFlowAction(vaction));
 
-            vaction = new VtnSetPortDstActionBuilder().setPort(pnum).build();
+            vaction = VTNSetPortDstAction.newVtnAction(pnum);
             RpcErrorTag etag = RpcErrorTag.BAD_ELEMENT;
             StatusCode ecode = StatusCode.BADREQUEST;
             String emsg = "VTNSetPortSrcAction: Unexpected type: " + vaction;
@@ -196,8 +210,7 @@ public class VTNSetPortSrcActionTest extends TestBase {
                 setPort(pnum).build();
             Action action = new SetTpSrcActionCaseBuilder().
                 setSetTpSrcAction(ma).build();
-            vaction = new VtnSetPortSrcActionBuilder().
-                setPort(pnum).build();
+            vaction = vacBuilder.setVtnSetPortSrcAction(vact).build();
             assertEquals(vaction, va.toVtnAction(action));
 
             action = new SetTpDstActionCaseBuilder().build();
@@ -280,8 +293,10 @@ public class VTNSetPortSrcActionTest extends TestBase {
         String emsg = "VTNSetPortSrcAction: Action order cannot be null";
         VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
             setPort(pnum).build();
+        VtnSetPortSrcActionCase vac = vacBuilder.
+            setVtnSetPortSrcAction(vact).build();
         try {
-            new VTNSetPortSrcAction(vact, (Integer)null);
+            new VTNSetPortSrcAction(vac, (Integer)null);
             unexpected();
         } catch (RpcException e) {
             assertEquals(etag, e.getErrorTag());
@@ -309,6 +324,40 @@ public class VTNSetPortSrcActionTest extends TestBase {
                 assertEquals(ecode, st.getCode());
                 assertEquals(emsg, st.getDescription());
             }
+        }
+
+        // Default value test for toFlowAction().
+        vad = new org.opendaylight.vtn.manager.flow.action.SetTpSrcAction(0);
+        vac = vacBuilder.setVtnSetPortSrcAction(null).build();
+        assertEquals(vad, va.toFlowAction(vac));
+
+        vac = vacBuilder.
+            setVtnSetPortSrcAction(new VtnSetPortSrcActionBuilder().build()).
+            build();
+        assertEquals(vad, va.toFlowAction(vac));
+    }
+
+    /**
+     * Test case for {@link VTNSetPortSrcAction#newVtnAction(PortNumber)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        PortNumber[] values = {
+            null,
+            new PortNumber(0),
+            new PortNumber(1),
+            new PortNumber(9999),
+            new PortNumber(32767),
+            new PortNumber(32768),
+            new PortNumber(65534),
+            new PortNumber(65535),
+        };
+
+        for (PortNumber pnum: values) {
+            VtnSetPortSrcActionCase ac =
+                VTNSetPortSrcAction.newVtnAction(pnum);
+            VtnSetPortSrcAction vaction = ac.getVtnSetPortSrcAction();
+            assertEquals(pnum, vaction.getPort());
         }
     }
 
@@ -347,19 +396,19 @@ public class VTNSetPortSrcActionTest extends TestBase {
             testEquals(set, vdst1, vdst2);
 
             for (Integer order: orders) {
-                VtnSetPortSrcAction src1 = new VtnSetPortSrcActionBuilder().
-                    setPort(new PortNumber(port)).build();
-                VtnSetPortSrcAction src2 = new VtnSetPortSrcActionBuilder().
-                    setPort(new PortNumber(port)).build();
+                VtnSetPortSrcActionCase src1 = VTNSetPortSrcAction.
+                    newVtnAction(new PortNumber(port));
+                VtnSetPortSrcActionCase src2 = VTNSetPortSrcAction.
+                    newVtnAction(new PortNumber(port));
                 vsrc1 = new VTNSetPortSrcAction(src1, order);
                 vsrc2 = new VTNSetPortSrcAction(src2, order);
 
-                VtnSetPortDstAction dst1 = new VtnSetPortDstActionBuilder().
-                    setPort(new PortNumber(port)).build();
-                VtnSetPortDstAction dst2 = new VtnSetPortDstActionBuilder().
-                    setPort(new PortNumber(port)).build();
+                VtnSetPortDstActionCase dst1 = VTNSetPortDstAction.
+                    newVtnAction(new PortNumber(port));
+                VtnSetPortDstActionCase dst2 = VTNSetPortDstAction.
+                    newVtnAction(new PortNumber(port));
                 vdst1 = new VTNSetPortDstAction(dst1, order);
-                vdst2 = new VTNSetPortDstAction(dst1, order);
+                vdst2 = new VTNSetPortDstAction(dst2, order);
 
                 // VTNSetPortSrcAction should be distinguished from
                 // VTNSetPortDstAction.
@@ -395,9 +444,9 @@ public class VTNSetPortSrcActionTest extends TestBase {
                     va = new VTNSetPortSrcAction(port);
                     expected = "VTNSetPortSrcAction[port=" + port + "]";
                 } else {
-                    VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
-                        setPort(new PortNumber(port)).build();
-                    va = new VTNSetPortSrcAction(vact, order);
+                    VtnSetPortSrcActionCase vac = VTNSetPortSrcAction.
+                        newVtnAction(new PortNumber(port));
+                    va = new VTNSetPortSrcAction(vac, order);
                     expected = "VTNSetPortSrcAction[port=" + port +
                         ",order=" + order + "]";
                 }
@@ -415,9 +464,9 @@ public class VTNSetPortSrcActionTest extends TestBase {
     public void testApply() throws Exception {
         Integer order = 10;
         int port = 33333;
-        VtnSetPortSrcAction vact = new VtnSetPortSrcActionBuilder().
-            setPort(new PortNumber(port)).build();
-        VTNSetPortSrcAction va = new VTNSetPortSrcAction(vact, order);
+        VtnSetPortSrcActionCase vac = VTNSetPortSrcAction.
+            newVtnAction(new PortNumber(port));
+        VTNSetPortSrcAction va = new VTNSetPortSrcAction(vac, order);
 
         // In case of TCP packet.
         FlowActionContext ctx = Mockito.mock(FlowActionContext.class);

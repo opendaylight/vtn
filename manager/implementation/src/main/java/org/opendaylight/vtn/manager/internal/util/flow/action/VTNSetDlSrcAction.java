@@ -21,8 +21,10 @@ import org.opendaylight.vtn.manager.internal.util.packet.EtherHeader;
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnSetDlSrcActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.dl.src.action._case.VtnSetDlSrcAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.set.dl.src.action._case.VtnSetDlSrcActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.Action;
@@ -41,6 +43,20 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 @XmlRootElement(name = "vtn-set-dl-src-action")
 @XmlAccessorType(XmlAccessType.NONE)
 public final class VTNSetDlSrcAction extends VTNDlAddrAction {
+    /**
+     * Create a new {@link VtnSetDlSrcActionCase} instance.
+     *
+     * @param mac  A {@link MacAddress} instance which specifies the MAC
+     *             address.
+     * @return  A {@link VtnSetDlSrcActionCase} instance.
+     */
+    public static VtnSetDlSrcActionCase newVtnAction(MacAddress mac) {
+        VtnSetDlSrcAction vaction = new VtnSetDlSrcActionBuilder().
+            setAddress(mac).build();
+        return new VtnSetDlSrcActionCaseBuilder().
+            setVtnSetDlSrcAction(vaction).build();
+    }
+
     /**
      * Construct an empty instance.
      */
@@ -76,14 +92,14 @@ public final class VTNSetDlSrcAction extends VTNDlAddrAction {
     /**
      * Construct a new instance.
      *
-     * @param act  A {@link VtnSetDlSrcAction} instance.
+     * @param ac   A {@link VtnSetDlSrcActionCase} instance.
      * @param ord  An integer which determines the order of flow actions
      *             in a flow entry.
      * @throws RpcException  An invalid argument is specified.
      */
-    public VTNSetDlSrcAction(VtnSetDlSrcAction act, Integer ord)
+    public VTNSetDlSrcAction(VtnSetDlSrcActionCase ac, Integer ord)
         throws RpcException {
-        super(act, ord);
+        super(ac.getVtnSetDlSrcAction(), ord);
     }
 
     // VTNFlowAction
@@ -93,23 +109,30 @@ public final class VTNSetDlSrcAction extends VTNDlAddrAction {
      */
     @Override
     public FlowAction toFlowAction(VtnAction vact) throws RpcException {
-        VtnSetDlSrcAction vsrc = cast(VtnSetDlSrcAction.class, vact);
-        EtherAddress addr = MiscUtils.toEtherAddress(vsrc.getAddress());
-        return new org.opendaylight.vtn.manager.flow.action.
-            SetDlSrcAction(addr);
+        VtnSetDlSrcActionCase ac = cast(VtnSetDlSrcActionCase.class, vact);
+        VtnSetDlSrcAction vaction = ac.getVtnSetDlSrcAction();
+        if (vaction != null) {
+            EtherAddress addr = MiscUtils.toEtherAddress(vaction.getAddress());
+            if (addr != null) {
+                return new org.opendaylight.vtn.manager.flow.action.
+                    SetDlSrcAction(addr);
+            }
+        }
+
+        throw noMacAddress(ac);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public VtnSetDlSrcAction toVtnAction(Action act) throws RpcException {
+    public VtnSetDlSrcActionCase toVtnAction(Action act) throws RpcException {
         SetDlSrcActionCase ac = cast(SetDlSrcActionCase.class, act);
         SetDlSrcAction action = ac.getSetDlSrcAction();
         if (action != null) {
             MacAddress mac = action.getAddress();
             if (mac != null) {
-                return new VtnSetDlSrcActionBuilder().setAddress(mac).build();
+                return newVtnAction(mac);
             }
         }
 
@@ -132,9 +155,7 @@ public final class VTNSetDlSrcAction extends VTNDlAddrAction {
      */
     @Override
     protected VtnFlowActionBuilder set(VtnFlowActionBuilder builder) {
-        VtnSetDlSrcAction vact = new VtnSetDlSrcActionBuilder().
-            setAddress(getMacAddress()).build();
-        return builder.setVtnAction(vact);
+        return builder.setVtnAction(newVtnAction(getMacAddress()));
     }
 
     /**

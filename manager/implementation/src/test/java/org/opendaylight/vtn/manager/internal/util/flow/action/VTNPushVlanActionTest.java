@@ -9,6 +9,10 @@
 
 package org.opendaylight.vtn.manager.internal.util.flow.action;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+
 import org.junit.Test;
 
 import org.opendaylight.vtn.manager.internal.util.rpc.RpcErrorTag;
@@ -20,9 +24,10 @@ import org.opendaylight.controller.sal.utils.Status;
 import org.opendaylight.controller.sal.utils.StatusCode;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.VtnAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPopVlanActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanAction;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCase;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.VtnPushVlanActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanAction;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.action.fields.vtn.action.vtn.push.vlan.action._case.VtnPushVlanActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.flow.action.rev150410.vtn.flow.action.list.VtnFlowActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.types.rev150209.VlanType;
 
@@ -63,9 +68,13 @@ public class VTNPushVlanActionTest extends TestBase {
             0, 1, 2, 32000, Integer.MAX_VALUE,
         };
 
+        VtnPushVlanActionCaseBuilder vacBuilder =
+            new VtnPushVlanActionCaseBuilder();
         for (VlanType vtype: vtypes) {
             VtnPushVlanAction vact = new VtnPushVlanActionBuilder().
                 setVlanType(vtype).build();
+            VtnPushVlanActionCase vac = vacBuilder.
+                setVtnPushVlanAction(vact).build();
             Integer etype = (vtype == null) ? null : vtype.getIntValue();
             PushVlanAction ma = new PushVlanActionBuilder().
                 setEthernetType(etype).build();
@@ -78,7 +87,7 @@ public class VTNPushVlanActionTest extends TestBase {
                 VtnFlowActionBuilder vbuilder =
                     va.toVtnFlowActionBuilder(order);
                 assertEquals(order, vbuilder.getOrder());
-                assertEquals(vact, vbuilder.getVtnAction());
+                assertEquals(vac, vbuilder.getVtnAction());
 
                 ActionBuilder mbuilder = va.toActionBuilder(order);
                 assertEquals(order, mbuilder.getOrder());
@@ -90,7 +99,7 @@ public class VTNPushVlanActionTest extends TestBase {
             assertEquals(VlanType.VLAN, va.getVlanType());
             assertEquals(0x8100, va.getVlanType().getIntValue());
 
-            VtnAction vaction = vact;
+            VtnAction vaction = vac;
             if (vtype == null) {
                 RpcErrorTag etag = RpcErrorTag.MISSING_ELEMENT;
                 StatusCode ecode = StatusCode.BADREQUEST;
@@ -105,7 +114,22 @@ public class VTNPushVlanActionTest extends TestBase {
                     assertEquals(emsg, st.getDescription());
                 }
 
-                vaction = new VtnPopVlanActionBuilder().build();
+                vaction = vacBuilder.
+                    setVtnPushVlanAction(new VtnPushVlanActionBuilder().
+                                         build()).
+                    build();
+                emsg = "VTNPushVlanAction: No VLAN type: " + vaction;
+                try {
+                    va.toFlowAction(vaction);
+                    unexpected();
+                } catch (RpcException e) {
+                    assertEquals(etag, e.getErrorTag());
+                    Status st = e.getStatus();
+                    assertEquals(ecode, st.getCode());
+                    assertEquals(emsg, st.getDescription());
+                }
+
+                vaction = VTNPopVlanAction.newVtnAction();
                 etag = RpcErrorTag.BAD_ELEMENT;
                 ecode = StatusCode.BADREQUEST;
                 emsg = "VTNPushVlanAction: Unexpected type: " + vaction;
@@ -196,7 +220,7 @@ public class VTNPushVlanActionTest extends TestBase {
                     assertEquals(emsg, st.getDescription());
                 }
             } else {
-                assertEquals(vact, va.toVtnAction(action));
+                assertEquals(vac, va.toVtnAction(action));
             }
 
             // toVtnAction() should never affect instance variables.
@@ -215,6 +239,52 @@ public class VTNPushVlanActionTest extends TestBase {
             assertEquals(VlanType.VLAN, va.getVlanType());
             assertEquals(0x8100, va.getVlanType().getIntValue());
         }
+    }
+
+    /**
+     * Test case for {@link VTNPushVlanAction#newVtnAction(VlanType)}.
+     */
+    @Test
+    public void testNewVtnAction() {
+        List<VlanType> vtypes = new ArrayList<>();
+        vtypes.add(null);
+        for (VlanType vtype: VlanType.values()) {
+            vtypes.add(vtype);
+        }
+
+        for (VlanType vtype: vtypes) {
+            VtnPushVlanActionCase ac = VTNPushVlanAction.newVtnAction(vtype);
+            VtnPushVlanAction vaction = ac.getVtnPushVlanAction();
+            assertEquals(vtype, vaction.getVlanType());
+        }
+    }
+
+    /**
+     * Test case for the following methods.
+     *
+     * <ul>
+     *   <li>{@link VTNPushVlanAction#equals(Object)}</li>
+     *   <li>{@link VTNPushVlanAction#hashCode()}</li>
+     * </ul>
+     *
+     * @throws Exception  An error occurred.
+     */
+    @Test
+    public void testEquals() throws Exception {
+        HashSet<Object> set = new HashSet<>();
+        List<VlanType> vtypes = new ArrayList<>();
+        vtypes.add(null);
+        for (VlanType vtype: VlanType.values()) {
+            vtypes.add(vtype);
+        }
+
+        for (VlanType vtype: vtypes) {
+            VTNPushVlanAction va1 = new VTNPushVlanAction(vtype);
+            VTNPushVlanAction va2 = new VTNPushVlanAction(vtype);
+            testEquals(set, va1, va2);
+        }
+
+        assertEquals(vtypes.size(), set.size());
     }
 
     /**
