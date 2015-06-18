@@ -118,7 +118,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             MacMap mcmap = mgr.getMacMap(path);
             return (mcmap == null) ? null : new MacMapInfo(mcmap);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1747,7 +1747,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             List<MacAddressEntry> list = mgr.getMacMappedHosts(path);
             return (list == null) ? null : new MacEntryList(list);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1814,7 +1814,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             MacAddressEntry entry = mgr.getMacMappedHost(path, dladdr);
             return (entry == null) ? null : new MacEntry(entry);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1839,7 +1839,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
             Set<DataLinkHost> dlhosts = mgr.getMacMapConfig(path, aclType);
             return (dlhosts == null) ? null : new MacHostSet(dlhosts);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1873,7 +1873,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
 
             return null;
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1909,7 +1909,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1948,7 +1948,7 @@ public class MacMapNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

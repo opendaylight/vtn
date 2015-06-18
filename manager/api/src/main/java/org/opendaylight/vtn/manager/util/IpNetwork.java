@@ -41,7 +41,7 @@ public abstract class IpNetwork implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = -2990530738095387571L;
+    private static final long serialVersionUID = 3737221435886671810L;
 
     /**
      * A character that separates prefix length from IP address in CIDR
@@ -138,7 +138,7 @@ public abstract class IpNetwork implements Serializable {
             return InetAddress.getByAddress(bytes);
         } catch (Exception e) {
             throw new IllegalArgumentException(
-                "Invalid raw IP address: " + ByteUtils.toHexString(bytes));
+                "Invalid raw IP address: " + ByteUtils.toHexString(bytes), e);
         }
     }
 
@@ -160,7 +160,8 @@ public abstract class IpNetwork implements Serializable {
         try {
             return InetAddress.getByName(text);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid IP address: " + text);
+            throw new IllegalArgumentException(
+                "Invalid IP address: " + text, e);
         }
     }
 

@@ -322,14 +322,16 @@ public class VTenantPath
             String other = otherComps.get(i);
             if (comp == null) {
                 if (other != null) {
-                    return -1;
+                    ret = -1;
+                    break;
                 }
             } else if (other == null) {
-                return 1;
+                ret = 1;
+                break;
             } else {
                 ret = comp.compareTo(other);
                 if (ret != 0) {
-                    return ret;
+                    break;
                 }
             }
         }

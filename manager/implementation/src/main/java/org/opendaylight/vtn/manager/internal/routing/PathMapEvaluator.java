@@ -156,25 +156,25 @@ public final class PathMapEvaluator {
         if (rr == null) {
             LOG.debug("{}.{}: Ignore path map: path policy not found: {}",
                       tname, vpm.getIndex(), policy);
-            return null;
-        }
-
-        if (vfcond.match(packetContext)) {
-            Integer idle = vpm.getIdleTimeout();
-            if (idle != null) {
-                // Set flow timeout.
-                Integer hard = vpm.getHardTimeout();
-                packetContext.setFlowTimeout(idle.intValue(), hard.intValue());
-            }
         } else {
-            rr = null;
-        }
+            if (vfcond.match(packetContext)) {
+                Integer idle = vpm.getIdleTimeout();
+                if (idle != null) {
+                    // Set flow timeout.
+                    Integer hard = vpm.getHardTimeout();
+                    packetContext.setFlowTimeout(idle.intValue(),
+                                                 hard.intValue());
+                }
+            } else {
+                rr = null;
+            }
 
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("{}.{}: Path map {}: cond={}, policy={}, " +
-                      "packet={}", tname, vpm.getIndex(),
-                      (rr == null) ? "not matched" : "matched",
-                      cond, policy, packetContext.getDescription());
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("{}.{}: Path map {}: cond={}, policy={}, " +
+                          "packet={}", tname, vpm.getIndex(),
+                          (rr == null) ? "not matched" : "matched",
+                          cond, policy, packetContext.getDescription());
+            }
         }
 
         return rr;

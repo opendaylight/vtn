@@ -272,10 +272,7 @@ public final class VTNFlowBuilder implements VTNDataFlow {
         VNodePath path = (vroute == null) ? null : vroute.getPath();
         if (path == null) {
             // Append an empty route which represents a negative flow.
-            if (lastIndex < 0 ||
-                virtualRoute.get(lastIndex).getPath() != null) {
-                virtualRoute.add(new VNodeRoute());
-            }
+            addEmptyVNodeRoute(lastIndex);
             return this;
         }
 
@@ -392,6 +389,18 @@ public final class VTNFlowBuilder implements VTNDataFlow {
         hardTimeout = INTER_FLOW_TIMEOUT;
 
         return builder;
+    }
+
+    /**
+     * Append an empty virtual node route to the virtual route path.
+     *
+     * @param lastIndex  The index of the last element in the virtual route
+     *                   path.
+     */
+    private void addEmptyVNodeRoute(int lastIndex) {
+        if (lastIndex < 0 || virtualRoute.get(lastIndex).getPath() != null) {
+            virtualRoute.add(new VNodeRoute());
+        }
     }
 
     // VTNDataFlow

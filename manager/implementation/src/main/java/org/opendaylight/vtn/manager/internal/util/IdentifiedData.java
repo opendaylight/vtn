@@ -120,11 +120,10 @@ public class IdentifiedData<T extends DataObject> {
      * @return  This instance if the given type matches the target type of
      *          this instance. Otherwise {@code null}.
      */
+    @SuppressWarnings("unchecked")
     public <D extends DataObject> IdentifiedData<D> checkType(Class<D> type) {
         if (type.equals(identifier.getTargetType())) {
-            @SuppressWarnings("unchecked")
-            IdentifiedData<D> ret = (IdentifiedData<D>)this;
-            return ret;
+            return (IdentifiedData<D>)this;
         }
 
         return null;

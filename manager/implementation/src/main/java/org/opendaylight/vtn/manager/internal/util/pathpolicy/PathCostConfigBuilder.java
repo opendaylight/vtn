@@ -30,7 +30,7 @@ public abstract class PathCostConfigBuilder<T> {
     /**
      * Construct an empty builder instance.
      */
-    private PathCostConfigBuilder() {}
+    PathCostConfigBuilder() {}
 
     /**
      * Set the contents of the given {@link PathCost} instance into this
@@ -125,7 +125,9 @@ public abstract class PathCostConfigBuilder<T> {
         try {
             setCostImpl(cost);
         } catch (IllegalArgumentException e) {
-            throw PathPolicyUtils.getInvalidCostException(value);
+            RpcException re = PathPolicyUtils.getInvalidCostException(value);
+            re.initCause(e);
+            throw re;
         }
 
         return this;

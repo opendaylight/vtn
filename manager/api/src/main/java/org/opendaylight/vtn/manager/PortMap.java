@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 
@@ -130,19 +131,8 @@ public class PortMap implements Serializable {
         }
 
         PortMap pmap = (PortMap)o;
-        if (config == null) {
-            if (pmap.config != null) {
-                return false;
-            }
-        } else if (!config.equals(pmap.config)) {
-            return false;
-        }
-
-        if (nodeConnector == null) {
-            return (pmap.nodeConnector == null);
-        }
-
-        return nodeConnector.equals(pmap.nodeConnector);
+        return (Objects.equals(config, pmap.config) &&
+                Objects.equals(nodeConnector, pmap.nodeConnector));
     }
 
     /**

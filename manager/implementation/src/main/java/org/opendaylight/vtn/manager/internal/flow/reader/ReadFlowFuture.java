@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
@@ -346,6 +347,15 @@ public abstract class ReadFlowFuture
             }
         }
 
+        setSourceHostCondition(input);
+    }
+
+    /**
+     * Set up the search condition for the source host.
+     *
+     * @param input  Input of the RPC call.
+     */
+    private void setSourceHostCondition(GetDataFlowInput input) {
         VlanHost vh = input.getDataFlowSource();
         if (vh != null) {
             // Try to convert VlanHost instance into MacVlan instance.
@@ -428,7 +438,7 @@ public abstract class ReadFlowFuture
         // Sort history records in ascending order of the system time.
         VtnDataFlow vdf = fc.getDataFlow();
         List<FlowStatsRecord> list = getFlowStatsRecords(vdf);
-        TreeMap<Long, FlowStatsRecord> map = new TreeMap<>();
+        NavigableMap<Long, FlowStatsRecord> map = new TreeMap<>();
         for (FlowStatsRecord fsr: list) {
             map.put(fsr.getTime(), fsr);
         }
@@ -503,7 +513,7 @@ public abstract class ReadFlowFuture
      *          {@code null} if not found.
      */
     private FlowStatsRecord getStartRecord(
-        TreeMap<Long, FlowStatsRecord> history, long end) {
+        NavigableMap<Long, FlowStatsRecord> history, long end) {
         long startTime = end - TimeUnit.SECONDS.toMillis(averageInterval);
         Long key = Long.valueOf(startTime);
         Map.Entry<Long, FlowStatsRecord> floorEntry = history.floorEntry(key);

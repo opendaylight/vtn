@@ -201,7 +201,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @return  A list of virtual interface information.
      */
     final List<VInterface> getInterfaces(VTNManagerImpl mgr) {
-        ArrayList<VInterface> list;
+        List<VInterface> list;
         Lock rdlock = readLock();
         try {
             list = new ArrayList<VInterface>(vInterfaces.size());
@@ -533,7 +533,7 @@ public abstract class AbstractBridge<T extends AbstractInterface>
      * @see #hashCode()
      */
     protected List<Object> getContentsList(boolean copy) {
-        ArrayList<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<Object>();
         if (copy) {
             list.add(new TreeMap<String, T>(vInterfaces));
         } else {

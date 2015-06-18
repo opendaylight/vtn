@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.Objects;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -300,18 +302,8 @@ public class VBridge extends VBridgeConfig implements VTNIdentifiable<String> {
         }
 
         VBridge vbridge = (VBridge)o;
-        if (state != vbridge.state) {
-            return false;
-        }
-        if (faults != vbridge.faults) {
-            return false;
-        }
-
-        if (name == null) {
-            return (vbridge.name == null);
-        }
-
-        return name.equals(vbridge.name);
+        return (state == vbridge.state && faults == vbridge.faults &&
+                Objects.equals(name, vbridge.name));
     }
 
     /**

@@ -12,6 +12,7 @@ package org.opendaylight.vtn.manager.internal.util;
 import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -311,19 +312,16 @@ public final class XmlConfigFile {
     public static boolean deleteAll(Type type, Set<String> retain) {
         File dir = getDirectory(type);
         File[] files = dir.listFiles();
+        boolean result;
         if (files == null) {
-            return false;
-        }
-
-        boolean result = true;
-        if (retain == null) {
-            // Delete all files unconditionally.
-            for (File f: files) {
-                if (!delete(f)) {
-                    result = false;
-                }
-            }
+            result = false;
         } else {
+            result = true;
+            Set<String> rset = retain;
+            if (rset == null) {
+                // Delete all files unconditionally.
+                rset = Collections.<String>emptySet();
+            }
             for (File f: files) {
                 String key = getMapKey(f);
                 if (key == null) {
@@ -333,14 +331,7 @@ public final class XmlConfigFile {
                     } else {
                         result = false;
                     }
-                    continue;
-                }
-
-                if (retain.contains(key)) {
-                    continue;
-                }
-
-                if (!deleteFile(f)) {
+                } else if (!rset.contains(key) && !deleteFile(f)) {
                     result = false;
                 }
             }

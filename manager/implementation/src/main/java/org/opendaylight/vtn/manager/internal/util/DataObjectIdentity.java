@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.opendaylight.yangtools.yang.binding.DataObject;
 
@@ -191,6 +192,39 @@ public final class DataObjectIdentity {
      */
     private Object fetchDataObjectList(ParameterizedType pt, Method m,
                                        Object value) {
+        // We need to fetch DataObject instances as a set because a list of
+        // DataObject instances may be reorder by the MD-SAL.
+        List<?> list = checkDataObjectList(pt, m, value);
+        Set<Object> set = new HashSet<>();
+        for (Object o: list) {
+            Object elem = o;
+            if (o instanceof DataObject) {
+                elem = new DataObjectIdentity((DataObject)o);
+            }
+
+            if (!set.add(elem)) {
+                String msg = String.format(
+                    "List in DataObject should have no duplicate: type=%s, " +
+                    "method=%s, duplicate=%s", dataType, m.getName(), o);
+                throw new IllegalArgumentException(msg);
+            }
+        }
+
+        return set;
+    }
+
+    /**
+     * Ensure that the given object is a list of {@link DataObject} instances.
+     *
+     * @param pt     A {@link ParameterizedType} instance which indicates the
+     *               type of a {@link DataObject} list.
+     * @param m      A {@link Method} associated with a getter method.
+     * @param value  A value returned by the getter method specified by
+     *               {@code m}.
+     * @return  {@code value} casted as a list.
+     */
+    private List<?> checkDataObjectList(ParameterizedType pt, Method m,
+                                        Object value) {
         if (!(value instanceof List)) {
             String msg = String.format(
                 "Unexpected return type: type=%s, method=%s, type=%s, value=%s",
@@ -214,25 +248,7 @@ public final class DataObjectIdentity {
             throw new IllegalArgumentException(msg);
         }
 
-        // We need to fetch DataObject instances as a set because a list of
-        // DataObject instances may be reorder by the MD-SAL.
-        List<?> list = (List<?>)value;
-        HashSet<Object> set = new HashSet<>();
-        for (Object o: list) {
-            Object elem = o;
-            if (o instanceof DataObject) {
-                elem = new DataObjectIdentity((DataObject)o);
-            }
-
-            if (!set.add(elem)) {
-                String msg = String.format(
-                    "List in DataObject should have no duplicate: type=%s, " +
-                    "method=%s, duplicate=%s", dataType, m.getName(), o);
-                throw new IllegalArgumentException(msg);
-            }
-        }
-
-        return set;
+        return (List<?>)value;
     }
 
     /**

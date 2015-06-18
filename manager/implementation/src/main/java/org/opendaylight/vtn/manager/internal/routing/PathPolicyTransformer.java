@@ -72,6 +72,55 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
     private InventoryReader  reader;
 
     /**
+     * A class which holds inventory reader and local DS transaction.
+     */
+    private final class InventoryReaderHolder {
+        /**
+         * An inventory reader.
+         */
+        private final InventoryReader  localReader;
+
+        /**
+         * A read-only MD-SAL DS transaction.
+         */
+        private final ReadOnlyTransaction  localTx;
+
+        /**
+         * Construct a new instance.
+         */
+        private InventoryReaderHolder() {
+            InventoryReader rdr = reader;
+            if (rdr == null) {
+                // Create a new reader using local transaction.
+                localTx = dataBroker.newReadOnlyTransaction();
+                rdr = new InventoryReader(localTx);
+            } else {
+                localTx = null;
+            }
+
+            localReader = rdr;
+        }
+
+        /**
+         * Return an inventory reader.
+         *
+         * @return  A {@link InventoryReader} instance.
+         */
+        private InventoryReader getReader() {
+            return localReader;
+        }
+
+        /**
+         * Close the MD-SAL DS transaction.
+         */
+        private void close() {
+            if (localTx != null) {
+                localTx.close();
+            }
+        }
+    }
+
+    /**
      * Construct a new instance.
      *
      * @param broker  A {@link DataBroker} service.
@@ -150,6 +199,20 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
         }
 
         // Use default cost.
+        return getDefaultCost(vpp, sport, vport);
+    }
+
+    /**
+     * Return the default path cost.
+     *
+     * @param vpp    A {@link VtnPathPolicy} instance.
+     * @param sport  A {@link SalPort} instance.
+     * @param vport  A {@link VtnPort} instance.
+     * @return  A {@link Long} instance which represents the cost.
+     *          {@code null} is returned if the default cost should be used.
+     */
+    private Long getDefaultCost(VtnPathPolicy vpp, SalPort sport,
+                                VtnPort vport) {
         Long cost = vpp.getDefaultCost();
         if (cost == null || cost.longValue() == PathPolicy.COST_UNDEF) {
             cost = vport.getCost();
@@ -185,29 +248,24 @@ final class PathPolicyTransformer implements Transformer<LinkEdge, Long> {
         }
 
         // Prepare MD-SAL datastore transaction.
-        InventoryReader rdr = reader;
-        ReadOnlyTransaction localTx;
-        if (rdr == null) {
-            localTx = dataBroker.newReadOnlyTransaction();
-            rdr = new InventoryReader(localTx);
-        } else {
-            localTx = null;
-        }
-
+        InventoryReaderHolder holder = new InventoryReaderHolder();
+        Long cost;
         try {
-            Long c = getCost(rdr, sport);
-            return (c == null) ? PathPolicyUtils.DEFAULT_LINK_COST : c;
+            cost = getCost(holder.getReader(), sport);
+            if (cost == null) {
+                cost = PathPolicyUtils.DEFAULT_LINK_COST;
+            }
         } catch (Exception e) {
             StringBuilder builder = new StringBuilder();
             builder.append(policyId).
                 append(": Failed to determine path cost for ").
                 append(le).append('.');
             LOG.warn(builder.toString(), e);
-            return Long.valueOf(Long.MAX_VALUE);
+            cost = Long.valueOf(Long.MAX_VALUE);
         } finally {
-            if (localTx != null) {
-                localTx.close();
-            }
+            holder.close();
         }
+
+        return cost;
     }
 }

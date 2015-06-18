@@ -35,7 +35,7 @@ public abstract class PathPolicyConfigBuilder<T> {
     /**
      * Construct an empty builder instance.
      */
-    private PathPolicyConfigBuilder() {}
+    PathPolicyConfigBuilder() {}
 
     /**
      * Set the contents of the given {@link PathPolicy} instance into this
@@ -147,7 +147,10 @@ public abstract class PathPolicyConfigBuilder<T> {
         try {
             setIdImpl(value);
         } catch (IllegalArgumentException e) {
-            throw PathPolicyUtils.getInvalidPolicyIdException(value);
+            RpcException re = PathPolicyUtils.
+                getInvalidPolicyIdException(value);
+            re.initCause(e);
+            throw re;
         }
 
         return this;
@@ -167,7 +170,10 @@ public abstract class PathPolicyConfigBuilder<T> {
         try {
             setDefaultCostImpl(value);
         } catch (IllegalArgumentException e) {
-            throw PathPolicyUtils.getInvalidDefaultCostException(value);
+            RpcException re = PathPolicyUtils.
+                getInvalidDefaultCostException(value);
+            re.initCause(e);
+            throw re;
         }
 
         return this;

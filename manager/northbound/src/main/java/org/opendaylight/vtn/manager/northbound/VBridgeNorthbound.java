@@ -99,7 +99,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             List<VBridge> list = mgr.getBridges(path);
             return new VBridgeList(list);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -143,7 +143,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getBridge(path);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -411,7 +411,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             List<VlanMap> list = mgr.getVlanMaps(path);
             return new VlanMapList(list);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -525,7 +525,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             URI vmapUri = uriInfo.getAbsolutePathBuilder().path(id).build();
             return Response.created(vmapUri).build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -619,7 +619,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getVlanMap(path, mapId);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -714,7 +714,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getVlanMap(path, vlconf);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -760,7 +760,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             List<MacAddressEntry> list = mgr.getMacEntries(path);
             return new MacEntryList(list);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -868,7 +868,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             }
             return new MacEntry(entry);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -930,7 +930,7 @@ public class VBridgeNorthbound extends VTNNorthBoundBase {
             }
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 }

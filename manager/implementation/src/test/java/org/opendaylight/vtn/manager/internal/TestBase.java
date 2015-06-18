@@ -1794,6 +1794,9 @@ public abstract class TestBase extends Assert {
                 Throwable cause = e.getCause();
                 if (cause != null) {
                     while (true) {
+                        if (cause instanceof IllegalArgumentException) {
+                            return;
+                        }
                         Throwable c = cause.getCause();
                         if (c == null) {
                             rootCause = cause;

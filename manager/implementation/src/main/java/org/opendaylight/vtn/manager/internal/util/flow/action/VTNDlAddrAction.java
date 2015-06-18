@@ -118,7 +118,7 @@ public abstract class VTNDlAddrAction extends FlowFilterAction {
     }
 
     /**
-     * Return an exception which indicatse no MAC address is specified.
+     * Return an exception which indicates no MAC address is specified.
      *
      * @param obj  An object to be added to the error message.
      * @return  An {@link RpcException} instance.

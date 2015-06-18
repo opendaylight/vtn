@@ -104,7 +104,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
         try {
             return new XmlLongIntegerList(mgr.getPathPolicyIds());
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -183,7 +183,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getPathPolicy(policyId);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -299,7 +299,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -394,7 +394,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
         try {
             return new XmlLongInteger(mgr.getPathPolicyDefaultCost(policyId));
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -474,7 +474,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
 
             return Response.noContent().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1672,7 +1672,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
                 ? null
                 : new XmlLongInteger(cost);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -1722,7 +1722,7 @@ public class PathPolicyNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

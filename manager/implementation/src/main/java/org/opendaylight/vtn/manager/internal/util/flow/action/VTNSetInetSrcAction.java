@@ -113,8 +113,7 @@ public final class VTNSetInetSrcAction extends VTNInetAddrAction {
                 try {
                     return new SetInet4SrcAction(addr);
                 } catch (RuntimeException e) {
-                    String msg = getErrorMessage("Invalid IP address", vact);
-                    throw RpcException.getBadArgumentException(msg);
+                    throw invalidIpAddress(vact, e);
                 }
             }
         }

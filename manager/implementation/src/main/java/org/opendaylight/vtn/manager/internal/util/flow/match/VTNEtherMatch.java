@@ -403,50 +403,21 @@ public final class VTNEtherMatch {
     public boolean match(FlowMatchContext ctx) {
         EtherHeader eth = ctx.getEtherHeader();
 
-        // Check the source MAC address.
-        if (sourceAddress != null) {
-            ctx.addMatchField(FlowMatchType.DL_SRC);
-            if (sourceAddress.getAddress() !=
-                eth.getSourceAddress().getAddress()) {
-                return false;
-            }
-        }
-
-        // Check the destination address.
-        if (destinationAddress != null) {
-            ctx.addMatchField(FlowMatchType.DL_DST);
-            if (destinationAddress.getAddress() !=
-                eth.getDestinationAddress().getAddress()) {
-                return false;
-            }
-        }
-
-        // Check the ether type.
-        if (etherType != null) {
-            ctx.addMatchField(FlowMatchType.DL_TYPE);
-            if (etherType.intValue() != eth.getEtherType()) {
-                return false;
-            }
-        }
-
-        // Check the VLAN ID.
-        // We don't need to set DL_VLAN into the FlowMatchContext because
-        // it is mandatory.
-        if (vlanId != null) {
-            if (vlanId.intValue() != eth.getVlanId()) {
-                return false;
-            }
-
-            // Check the VLAN priority only if a VLAN ID is specified.
-            if (vlanPriority != null) {
-                ctx.addMatchField(FlowMatchType.DL_VLAN_PCP);
-                if (vlanPriority.shortValue() != eth.getVlanPriority()) {
+        // Check the source and destination MAC addresses.
+        if (matchAddress(ctx, eth)) {
+            // Check the ether type.
+            if (etherType != null) {
+                ctx.addMatchField(FlowMatchType.DL_TYPE);
+                if (etherType.intValue() != eth.getEtherType()) {
                     return false;
                 }
             }
+
+            // Check VLAN ID and priority.
+            return matchVlan(ctx, eth);
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -657,6 +628,91 @@ public final class VTNEtherMatch {
         return (vmatch == null) ? new VlanMatchBuilder() : vmatch;
     }
 
+    /**
+     * Determine whether the given ethernet match contains the same condition
+     * for MAC address.
+     *
+     * @param em  The ethernet match object to be compared.
+     * @return  {@code true} only if the given object contains the same
+     *          condition for MAC address.
+     */
+    private boolean equalsAddress(VTNEtherMatch em) {
+        return (Objects.equals(sourceAddress, em.sourceAddress) &&
+                Objects.equals(destinationAddress, em.destinationAddress));
+    }
+
+    /**
+     * Determine whether the given ethernet match contains the same condition
+     * for VLAN.
+     *
+     * @param em  The ethernet match object to be compared.
+     * @return  {@code true} only if the given object contains the same
+     *          condition for VLAN.
+     */
+    private boolean equalsVlan(VTNEtherMatch em) {
+        return (Objects.equals(vlanId, em.vlanId) &&
+                Objects.equals(vlanPriority, em.vlanPriority));
+    }
+
+    /**
+     * Determine whether the given Ethernet header matches the condition
+     * for MAC address configured in this instance.
+     *
+     * @param ctx  A {@link FlowMatchContext} instance.
+     * @param eth  An {@link EtherHeader} instance.
+     * @return  {@code true} only if the given Ethernet header matches all
+     *          the conditions for MAC address configured in this instance.
+     */
+    private boolean matchAddress(FlowMatchContext ctx, EtherHeader eth) {
+        if (sourceAddress != null) {
+            ctx.addMatchField(FlowMatchType.DL_SRC);
+            if (sourceAddress.getAddress() !=
+                eth.getSourceAddress().getAddress()) {
+                return false;
+            }
+        }
+
+        // Check the destination MAC address.
+        if (destinationAddress != null) {
+            ctx.addMatchField(FlowMatchType.DL_DST);
+            if (destinationAddress.getAddress() !=
+                eth.getDestinationAddress().getAddress()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine whether the given Ethernet header matches the condition
+     * for VLAN configured in this instance.
+     *
+     * @param ctx  A {@link FlowMatchContext} instance.
+     * @param eth  An {@link EtherHeader} instance.
+     * @return  {@code true} only if the given Ethernet header matches all
+     *          the conditions for VLAN configured in this instance.
+     */
+    private boolean matchVlan(FlowMatchContext ctx, EtherHeader eth) {
+        // We don't need to set DL_VLAN into the FlowMatchContext because
+        // it is mandatory.
+        if (vlanId != null) {
+            if (vlanId.intValue() != eth.getVlanId()) {
+                return false;
+            }
+
+            // Check the VLAN priority only if a VLAN ID is specified.
+            if (vlanPriority != null) {
+                ctx.addMatchField(FlowMatchType.DL_VLAN_PCP);
+                if (vlanPriority.shortValue() != eth.getVlanPriority()) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     // Objects
 
     /**
@@ -675,11 +731,8 @@ public final class VTNEtherMatch {
         }
 
         VTNEtherMatch em = (VTNEtherMatch)o;
-        return (Objects.equals(sourceAddress, em.sourceAddress) &&
-                Objects.equals(destinationAddress, em.destinationAddress) &&
-                Objects.equals(etherType, em.etherType) &&
-                Objects.equals(vlanId, em.vlanId) &&
-                Objects.equals(vlanPriority, em.vlanPriority));
+        return (equalsAddress(em) && equalsVlan(em) &&
+                Objects.equals(etherType, em.etherType));
     }
 
     /**

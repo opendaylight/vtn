@@ -9,7 +9,6 @@
 
 package org.opendaylight.vtn.manager.internal.util.concurrent;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -42,38 +41,43 @@ public abstract class AbstractVTNFuture<T> implements VTNFuture<T> {
      * @return  A {@link VTNException} which represents the given throwable.
      */
     public static final VTNException getException(Throwable t) {
-        if (t instanceof VTNException) {
-            return (VTNException)t;
+        Throwable cause = t;
+        while (cause instanceof ExecutionException) {
+            Throwable c = cause.getCause();
+            if (c == null) {
+                break;
+            }
+            cause = c;
         }
 
-        Throwable cause = t;
-        Status status;
-        if (t instanceof ExecutionException) {
-            cause = t.getCause();
-            if (cause instanceof VTNException) {
-                return (VTNException)cause;
-            }
+        VTNException converted;
+        if (cause instanceof VTNException) {
+            converted = (VTNException)cause;
+        } else {
+            Status status;
 
             if (cause instanceof OptimisticLockFailedException) {
                 status = new Status(StatusCode.CONFLICT, cause.getMessage());
             } else if (cause instanceof TimeoutException) {
                 status = new Status(StatusCode.TIMEOUT, cause.getMessage());
-            } else {
+            } else if (cause instanceof InterruptedException) {
+                String msg = cause.getMessage();
+                if (msg == null) {
+                    msg = "Interrupted.";
+                }
+                status = new Status(StatusCode.INTERNALERROR, msg);
+            } else if (cause != null) {
                 status = new Status(StatusCode.INTERNALERROR,
                                     cause.getMessage());
+            } else {
+                status = new Status(StatusCode.INTERNALERROR,
+                                    "Failed to wait for the computation.");
             }
-        } else if (cause instanceof CancellationException) {
-            status = new Status(StatusCode.INTERNALERROR, cause.getMessage());
-        } else if (cause instanceof TimeoutException) {
-            status = new Status(StatusCode.TIMEOUT, cause.getMessage());
-        } else if (cause instanceof InterruptedException) {
-            status = new Status(StatusCode.INTERNALERROR, "Interrupted.");
-        } else {
-            status = new Status(StatusCode.INTERNALERROR,
-                                "Failed to wait for the computation.");
+
+            converted = new VTNException(status, cause);
         }
 
-        return new VTNException(status, cause);
+        return converted;
     }
 
     /**

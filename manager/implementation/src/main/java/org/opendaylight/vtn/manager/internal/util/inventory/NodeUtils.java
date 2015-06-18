@@ -167,7 +167,7 @@ public final class NodeUtils {
      * Check whether the given {@link SwitchPort} instance is valid or not.
      *
      * @param port  A {@link SwitchPort} instance to be tested.
-     * @param node  A {@link Node} instance corresponding to a switch port.
+     * @param node  A {@link Node} instance corresponding to a switch.
      * @throws RpcException  The specified instance contains invalid value.
      */
     public static void checkSwitchPort(SwitchPort port, Node node)
@@ -176,39 +176,23 @@ public final class NodeUtils {
             throw MiscUtils.getNullArgumentException("Switch port");
         }
 
+        // Check a pair of the port type and ID.
         String type = port.getType();
-        if (type != null) {
-            String id = port.getId();
-            if (id == null) {
-                String msg = "Port type must be specified with port ID";
-                throw RpcException.getBadArgumentException(msg);
+        String id = port.getId();
+        String msg = checkPortTypeId(type, id, node);
+        if (msg == null) {
+            // Check the port name.
+            String name = port.getName();
+            if (name == null) {
+                if (type == null) {
+                    msg = "Switch port cannot be empty";
+                }
+            } else if (name.isEmpty()) {
+                msg = "Port name cannot be empty";
             }
-
-            // Currently only OpenFlow node connector is supported.
-            if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
-                String msg = "Unsupported node connector type";
-                throw RpcException.getBadArgumentException(msg);
-            }
-
-            // Ensure that we can construct a NodeConnector instance.
-            NodeConnector nc = NodeConnector.fromStringNoNode(type, id, node);
-            if (nc == null) {
-                String msg = "Broken node connector is specified";
-                throw RpcException.getBadArgumentException(msg);
-            }
-        } else if (port.getId() != null) {
-            String msg = "Port ID must be specified with port type";
-            throw RpcException.getBadArgumentException(msg);
         }
 
-        String name = port.getName();
-        if (name == null) {
-            if (type == null) {
-                String msg = "Switch port cannot be empty";
-                throw RpcException.getBadArgumentException(msg);
-            }
-        } else if (name.isEmpty()) {
-            String msg = "Port name cannot be empty";
+        if (msg != null) {
             throw RpcException.getBadArgumentException(msg);
         }
     }
@@ -347,53 +331,20 @@ public final class NodeUtils {
      * @return  A {@link PortLocation} instance or {@code null}.
      */
     public static PortLocation toPortLocation(VtnPortDesc vdesc) {
-        if (vdesc == null) {
-            return null;
+        if (vdesc != null) {
+            // Parse node-id field.
+            String value = vdesc.getValue();
+            int idx = value.indexOf(PORT_DESC_SEPARATOR);
+            if (idx >= 0) {
+                String nodeId = value.substring(0, idx);
+                SalNode snode = SalNode.create(nodeId);
+                if (snode != null) {
+                    return createPortLocation(snode.getAdNode(), value, idx);
+                }
+            }
         }
 
-        // Parse node-id field.
-        String value = vdesc.getValue();
-        int idx = value.indexOf(PORT_DESC_SEPARATOR);
-        if (idx < 0) {
-            return null;
-        }
-        String nodeId = value.substring(0, idx);
-        SalNode snode = SalNode.create(nodeId);
-        if (snode == null) {
-            return null;
-        }
-        Node node = snode.getAdNode();
-
-        // Parse port ID field.
-        int idStart = idx + 1;
-        if (idStart >= value.length()) {
-            return null;
-        }
-        int idEnd = value.indexOf(PORT_DESC_SEPARATOR, idStart);
-        if (idStart < 0) {
-            return null;
-        }
-
-        String id;
-        String type;
-        if (idStart == idEnd) {
-            id = null;
-            type = null;
-        } else {
-            id = value.substring(idStart, idEnd);
-
-            // We can use AD-SAL node type string as AD-SAL port type.
-            type = node.getType();
-        }
-
-        // Parse port name field.
-        int nameStart = idEnd + 1;
-        String name = (nameStart >= value.length())
-            ? null : value.substring(nameStart);
-
-        SwitchPort swport = (id == null && name == null)
-            ? null : new SwitchPort(name, type, id);
-        return new PortLocation(node, swport);
+        return null;
     }
 
     /**
@@ -446,5 +397,83 @@ public final class NodeUtils {
         }
 
         return new SwitchPort(name, type, id);
+    }
+
+    /**
+     * Verify a pair of switch port type and ID.
+     *
+     * @param type  The type of the switch port.
+     * @param id    The identifier of the switch port.
+     * @param node  A {@link Node} instance corresponding to a switch.
+     * @return  {@code null} on success.
+     *          Otherwise an error message which indicates the cause of
+     *          failure.
+     */
+    private static String checkPortTypeId(String type, String id, Node node) {
+        if (type != null) {
+            if (id == null) {
+                return "Port type must be specified with port ID";
+            }
+
+            // Currently only OpenFlow node connector is supported.
+            if (!NodeConnector.NodeConnectorIDType.OPENFLOW.equals(type)) {
+                return "Unsupported node connector type";
+            }
+
+            // Ensure that we can construct a NodeConnector instance.
+            NodeConnector nc = NodeConnector.fromStringNoNode(type, id, node);
+            if (nc == null) {
+                return "Broken node connector is specified";
+            }
+        } else if (id != null) {
+            return "Port ID must be specified with port type";
+        }
+
+        return null;
+    }
+
+    /**
+     * Create a new {@link PortLocation} instance.
+     *
+     * @param node     A {@link Node} instance corresponding to a switch port.
+     * @param vdesc    A string configured in a {@link VtnPortDesc} instance.
+     * @param portIdx  A index into {@code vdesc} which specifies the start
+     *                 of port ID field in {@code vdesc}.
+     * @return  A {@link PortLocation} instance on success.
+     *          {@code null} on failure.
+     */
+    private static PortLocation createPortLocation(Node node, String vdesc,
+                                                   int portIdx) {
+        // Parse port ID field.
+        int idStart = portIdx + 1;
+        if (idStart >= vdesc.length()) {
+            return null;
+        }
+        int idEnd = vdesc.indexOf(PORT_DESC_SEPARATOR, idStart);
+        if (idEnd < 0) {
+            // This should never happen.
+            return null;
+        }
+
+        String id;
+        String type;
+        if (idStart == idEnd) {
+            id = null;
+            type = null;
+        } else {
+            id = vdesc.substring(idStart, idEnd);
+
+            // We can use AD-SAL node type string as AD-SAL port type.
+            type = node.getType();
+        }
+
+        // Parse port name field.
+        int nameStart = idEnd + 1;
+        String name = (nameStart >= vdesc.length())
+            ? null : vdesc.substring(nameStart);
+
+        SwitchPort swport = (id == null && name == null)
+            ? null : new SwitchPort(name, type, id);
+        return new PortLocation(node, swport);
     }
 }

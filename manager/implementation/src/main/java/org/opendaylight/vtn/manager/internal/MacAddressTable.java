@@ -34,6 +34,7 @@ import org.opendaylight.vtn.manager.util.EtherAddress;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntry;
 import org.opendaylight.vtn.manager.internal.cluster.MacTableEntryId;
 import org.opendaylight.vtn.manager.internal.cluster.VBridgeNode;
+import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 
 import org.opendaylight.controller.hosttracker.hostAware.HostNodeConnector;
@@ -1135,9 +1136,10 @@ public class MacAddressTable {
                 return InetAddress.getByAddress(sip);
             } catch (UnknownHostException e) {
                 // This should never happen.
-                LOG.error("{}: Invalid IP address: {}, ipaddr={}",
-                          getTableName(), pctx.getDescription(),
-                          ByteUtils.toHexString(sip));
+                FixedLogger logger = new FixedLogger.Error(LOG);
+                logger.log(e, "%s: Invalid IP address: %s, ipaddr=%s",
+                           getTableName(), pctx.getDescription(),
+                           ByteUtils.toHexString(sip));
             }
         }
 

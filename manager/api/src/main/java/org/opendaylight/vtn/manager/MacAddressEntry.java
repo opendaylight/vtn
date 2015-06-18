@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,8 +11,8 @@ package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
 import java.net.InetAddress;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 import org.opendaylight.controller.sal.core.NodeConnector;
 import org.opendaylight.controller.sal.packet.address.DataLinkAddress;
@@ -195,17 +195,9 @@ public class MacAddressEntry implements Serializable {
         }
 
         MacAddressEntry mac = (MacAddressEntry)o;
-        if (vlan != mac.vlan) {
-            return false;
-        }
-        if (!address.equals(mac.address)) {
-            return false;
-        }
-        if (!nodeConnector.equals(mac.nodeConnector)) {
-            return false;
-        }
-
-        return inetAddresses.equals(mac.inetAddresses);
+        return (vlan == mac.vlan && address.equals(mac.address) &&
+                nodeConnector.equals(mac.nodeConnector) &&
+                inetAddresses.equals(mac.inetAddresses));
     }
 
     /**

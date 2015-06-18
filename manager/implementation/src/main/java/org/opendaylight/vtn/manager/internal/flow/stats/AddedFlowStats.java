@@ -259,36 +259,16 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
     }
 
     /**
-     * Resolve the MD-SAL flow ID corresponding to the given MD-SAL flow.
+     * Try to associate the given MD-SAL flow with the VTN data flow.
      *
-     * @param tx    A {@link ReadWriteTransaction} instance.
-     * @param data  An {@link IdentifiedData} instance which contains
-     *              flow statistics.
+     * @param tx     A {@link ReadWriteTransaction} instance.
+     * @param node   A MD-SAL node identifier.
+     * @param flow   A MD-SAL flow entry.
+     * @param vtnId  Identifier of the VTN data flow.
      * @throws VTNException  An error occurred.
      */
-    private void resolve(ReadWriteTransaction tx, IdentifiedData<Flow> data)
-        throws VTNException {
-        // Verify the node and the table ID.
-        NodeId node = getNodeId(data);
-        if (node == null) {
-            return;
-        }
-
-        Flow flow = data.getValue();
-        FlowCookie cookie = flow.getCookie();
-        FlowId fid = flow.getId();
-        if (fid == null) {
-            log(warnLogger, "No MD-SAL flow ID is assigned: %s", cookie);
-            return;
-        }
-
-        VtnFlowId vtnId = FlowUtils.getVtnFlowId(cookie);
-        if (vtnId == null) {
-            log(traceLogger, "Ignore flow statistics: Unexpected cookie: %s",
-                cookie);
-            return;
-        }
-
+    private void resolve(ReadWriteTransaction tx, NodeId node, Flow flow,
+                         VtnFlowId vtnId) throws VTNException {
         IdentifiedData<VtnDataFlow> vdata = finder.find(vtnId);
         if (vdata == null) {
             log(warnLogger, "Ignore flow statistics: %s: Data flow not found.",
@@ -296,8 +276,17 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             return;
         }
 
-        // Ensure that this data flow is installed by this controller.
         VtnDataFlow vdf = vdata.getValue();
+        FlowId id = vdf.getSalFlowId();
+        FlowId mdId = flow.getId();
+        if (mdId.equals(id)) {
+            log(traceLogger,
+                "Ignore flow statistics: %s: Already resolved: %s",
+                vtnId.getValue(), id.getValue());
+            return;
+        }
+
+        // Ensure that this data flow is installed by this controller.
         Long mac = vdf.getControllerAddress();
         if (!controllerAddress.equals(mac)) {
             String maddr = (mac == null)
@@ -305,23 +294,11 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
                 : Long.toHexString(mac.longValue());
             log(traceLogger, "Ignore flow statistics: %s: Not owner: %s",
                 vtnId.getValue(), maddr);
-            return;
-        }
-
-        FlowId id = vdf.getSalFlowId();
-        if (fid.equals(id)) {
-            log(traceLogger,
-                "Ignore flow statistics: %s: Already resolved: %s",
-                vtnId.getValue(), id.getValue());
-            return;
-        }
-
-        // Check to see if the given flow is the ingress flow of the target
-        // data flow.
-        if (isIngressFlow(vdf, flow, node)) {
+        } else if (isIngressFlow(vdf, flow, node)) {
+            // The given flow is the ingress flow of the target data flow.
             // Copy statistics if available.
             VtnDataFlowBuilder builder = new VtnDataFlowBuilder().
-                setFlowId(vtnId).setSalFlowId(fid);
+                setFlowId(vtnId).setSalFlowId(mdId);
             setStatistics(builder, flow);
 
             // Associate the VTN data flow with this MD-SAL flow ID.
@@ -330,11 +307,11 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
             tx.merge(oper, path, builder.build(), false);
             if (id == null) {
                 log(debugLogger, "%s: Associated with MD-SAL flow ID: %s",
-                    vtnId.getValue(), fid.getValue());
+                    vtnId.getValue(), mdId.getValue());
             } else {
                 log(debugLogger,
                     "%s: MD-SAL flow ID has been changed: %s -> %s",
-                    vtnId.getValue(), id.getValue(), fid.getValue());
+                    vtnId.getValue(), id.getValue(), mdId.getValue());
             }
         }
     }
@@ -369,7 +346,26 @@ public final class AddedFlowStats extends AbstractTxTask<Void> {
         }
 
         for (IdentifiedData<Flow> data: addedFlows) {
-            resolve(tx, data);
+            // Verify the node and the table ID.
+            NodeId node = getNodeId(data);
+            if (node == null) {
+                continue;
+            }
+
+            Flow flow = data.getValue();
+            FlowCookie cookie = flow.getCookie();
+            if (flow.getId() == null) {
+                log(warnLogger, "No MD-SAL flow ID is assigned: %s", cookie);
+                continue;
+            }
+
+            VtnFlowId vtnId = FlowUtils.getVtnFlowId(cookie);
+            if (vtnId == null) {
+                log(traceLogger,
+                    "Ignore flow statistics: Unexpected cookie: %s", cookie);
+            } else {
+                resolve(tx, node, flow, vtnId);
+            }
         }
 
         return null;

@@ -250,20 +250,16 @@ public final class VTNManagerProviderImpl implements VTNManagerProvider {
             }
         }
 
-        if (!globalTimer.isAvailable()) {
-            return false;
-        }
-
         VTNInventoryManager vim = inventoryManager.get();
+        boolean alive;
         if (vim == null || !vim.isAlive()) {
-            return false;
+            alive = false;
+        } else {
+            alive = (!subSystems.isRpcClosed() && globalTimer.isAvailable() &&
+                     globalExecutor.isAlive());
         }
 
-        if (subSystems.isClosed() || subSystems.isRpcClosed()) {
-            return false;
-        }
-
-        return globalExecutor.isAlive();
+        return alive;
     }
 
     // VTNManagerProvider

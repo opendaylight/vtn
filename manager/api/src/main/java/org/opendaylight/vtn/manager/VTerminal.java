@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.Objects;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -268,15 +270,8 @@ public class VTerminal extends VTerminalConfig
         }
 
         VTerminal vterm = (VTerminal)o;
-        if (state != vterm.state || faults != vterm.faults) {
-            return false;
-        }
-
-        if (name == null) {
-            return (vterm.name == null);
-        }
-
-        return name.equals(vterm.name);
+        return (state == vterm.state && faults == vterm.faults &&
+                Objects.equals(name, vterm.name));
     }
 
     /**

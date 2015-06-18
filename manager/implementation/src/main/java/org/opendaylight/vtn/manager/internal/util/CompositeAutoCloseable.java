@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.internal.util;
 
+import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Set;
@@ -93,7 +94,7 @@ public final class CompositeAutoCloseable implements AutoCloseable {
         Set<AutoCloseable> set = closeables.getAndSet(null);
         if (set != null) {
             // Close all closeables in reverse order.
-            LinkedList<AutoCloseable> list = new LinkedList<>(set);
+            Deque<AutoCloseable> list = new LinkedList<>(set);
             while (!list.isEmpty()) {
                 close(list.removeLast());
             }

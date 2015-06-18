@@ -190,6 +190,39 @@ public final class VTNPacketService extends SalNotificationListener
         }
     }
 
+    /**
+     * Construct a new PACKET_IN event.
+     *
+     * @param listener      A PACKET_IN event listener.
+     * @param notification  A PACKET_IN notification.
+     * @param ingress       A {@link SalPort} instance which specifies the
+     *                      ingress switch port.
+     * @return  A {@link PacketInEvent} instance if the given notification
+     *          should be delivered to listeners.
+     *          {@code null} if the given notification should be ignored.
+     */
+    private PacketInEvent newPacketInEvent(
+        VTNPacketListener listener, PacketReceived notification,
+        SalPort ingress) {
+        PacketInEvent ev;
+        try {
+            ev = new PacketInEvent(listener, notification, ingress);
+        } catch (IllegalArgumentException e) {
+            LOG.debug("Ignore received packet.", e);
+            return null;
+        } catch (Exception e) {
+            LOG.error("Failed to create PacketInEvent: " + notification, e);
+            return null;
+        }
+
+        if (ev.getEthernet().getEtherType() == EtherTypes.LLDP.shortValue()) {
+            // Ignore LLDP packet.
+            return null;
+        }
+
+        return ev;
+    }
+
     // AutoCloseable
 
     /**
@@ -236,30 +269,16 @@ public final class VTNPacketService extends SalNotificationListener
             return;
         }
 
-        PacketInEvent ev = null;
-        for (VTNPacketListener l: listeners) {
-            if (ev == null) {
-                try {
-                    ev = new PacketInEvent(l, notification, ingress);
-                } catch (IllegalArgumentException e) {
-                    LOG.debug("Ignore received packet: {}", e.getMessage());
-                    return;
-                } catch (Exception e) {
-                    LOG.error("Failed to create PacketInEvent: " +
-                              notification, e);
-                    return;
+        Iterator<VTNPacketListener> it = listeners.iterator();
+        if (it.hasNext()) {
+            PacketInEvent ev =
+                newPacketInEvent(it.next(), notification, ingress);
+            if (ev != null) {
+                vtnProvider.post(ev);
+                while (it.hasNext()) {
+                    vtnProvider.post(new PacketInEvent(it.next(), ev));
                 }
-
-                if (ev.getEthernet().getEtherType() ==
-                    EtherTypes.LLDP.shortValue()) {
-                    // Ignore LLDP packet.
-                    return;
-                }
-            } else {
-                ev = new PacketInEvent(l, ev);
             }
-
-            vtnProvider.post(ev);
         }
     }
 

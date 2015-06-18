@@ -868,11 +868,14 @@ public class PathPolicyUtilsTest extends TestBase {
                     assertTrue(t instanceof RpcException);
                     RpcException cause = (RpcException)t;
                     assertEquals(RpcErrorTag.BAD_ELEMENT, cause.getErrorTag());
-                    assertEquals(null, cause.getCause());
                     st = cause.getStatus();
                     msg = "Invalid path policy ID: " + i;
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     assertEquals(msg, st.getDescription());
+
+                    t = cause.getCause();
+                    assertTrue("Unexpected cause: " + t,
+                               t instanceof IllegalArgumentException);
                 }
             }
         }

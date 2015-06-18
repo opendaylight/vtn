@@ -9,6 +9,8 @@
 
 package org.opendaylight.vtn.manager;
 
+import java.util.Objects;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -348,18 +350,8 @@ public class VInterface extends VInterfaceConfig
         }
 
         VInterface viface = (VInterface)o;
-        if (state != viface.state) {
-            return false;
-        }
-        if (entityState != viface.entityState) {
-            return false;
-        }
-
-        if (name == null) {
-            return (viface.name == null);
-        }
-
-        return name.equals(viface.name);
+        return (state == viface.state && entityState == viface.entityState &&
+                Objects.equals(name, viface.name));
     }
 
     /**

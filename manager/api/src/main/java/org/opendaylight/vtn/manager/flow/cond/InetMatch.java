@@ -462,6 +462,21 @@ public abstract class InetMatch implements Serializable {
     }
 
     /**
+     * Create a string which indicates an invalid IP address is specified.
+     *
+     * @param ip     A string representation of the IP address.
+     * @param desc   A brief description about the IP address.
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  A string which indicates an invalid IP address is specified.
+     */
+    private String invalidAddress(String ip, String desc, Throwable cause) {
+        return new StringBuilder("Invalid ").
+            append(desc).append(" IP address: ").append(ip).
+            append(": ").append(cause.getMessage()).
+            toString();
+    }
+
+    /**
      * Convert the given string into an {@link InetAddress} instance.
      *
      * @param ip    A string representation of the IP address.
@@ -489,14 +504,27 @@ public abstract class InetMatch implements Serializable {
                 }
                 return iaddr;
             } catch (Exception e) {
-                StringBuilder builder = new StringBuilder("Invalid ");
-                builder.append(desc).append(" IP address: ").append(ip);
-                validationStatus =
-                    new Status(StatusCode.BADREQUEST, builder.toString());
+                String msg = invalidAddress(ip, desc, e);
+                validationStatus = new Status(StatusCode.BADREQUEST, msg);
             }
         }
 
         return null;
+    }
+
+    /**
+     * Determine whether the given match contains the same condition for
+     * IP address.
+     *
+     * @param im  The object to be compared.
+     * @return  {@code true} only if the given match contains the same
+     *          condition for IP address.
+     */
+    private boolean equalsAddress(InetMatch im) {
+        return (Objects.equals(sourceAddress, im.sourceAddress) &&
+                Objects.equals(destinationAddress, im.destinationAddress) &&
+                Objects.equals(sourceSuffix, im.sourceSuffix) &&
+                Objects.equals(destinationSuffix, im.destinationSuffix));
     }
 
     /**
@@ -524,11 +552,7 @@ public abstract class InetMatch implements Serializable {
         }
 
         InetMatch im = (InetMatch)o;
-        return (Objects.equals(sourceAddress, im.sourceAddress) &&
-                Objects.equals(destinationAddress, im.destinationAddress) &&
-                Objects.equals(sourceSuffix, im.sourceSuffix) &&
-                Objects.equals(destinationSuffix, im.destinationSuffix) &&
-                Objects.equals(protocol, im.protocol) &&
+        return (equalsAddress(im) && Objects.equals(protocol, im.protocol) &&
                 Objects.equals(dscp, im.dscp));
     }
 
