@@ -46,17 +46,6 @@ void ConfigVal::AppendCfgVal(ConfigVal *cfg_val) {
   prev_val->next_cfg_val_ = cfg_val;
 }
 
-void ConfigVal::DeleteNextCfgVal() {
-  ConfigVal *cv = next_cfg_val_;
-  while (cv != NULL) {
-    ConfigVal *tmp_cv = cv->next_cfg_val_;
-    cv->next_cfg_val_ = NULL;
-    delete cv;
-    cv = tmp_cv;
-  }
-  next_cfg_val_ = NULL;
-}
-
 std::string ConfigVal::ToStr() const {
   std::stringstream ss;
   ss  << "  -------------ConfigVal--------------" << std::endl
@@ -83,15 +72,6 @@ void ConfigKeyVal::AppendCfgKeyVal(ConfigKeyVal *cfg_kv) {
   prev_kv->next_ckv_ = cfg_kv;
 }
 
-void ConfigKeyVal::DeleteNextCfgKeyVal() {
-  ConfigKeyVal *ckv = next_ckv_;
-  while (ckv != NULL) {
-    ConfigKeyVal *tmp_ckv = ckv->next_ckv_;
-    ckv->next_ckv_ = NULL;
-    delete ckv;
-    ckv = tmp_ckv;
-  }
-}
 
 ConfigKeyVal *ConfigKeyVal::FindNext(unc_key_type_t keytype) {
   for (ConfigKeyVal *ckv = next_ckv_; ckv != NULL; ckv = ckv->next_ckv_) {
@@ -312,8 +292,8 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
             // case UNC_DRV_RC_ERR_GENERIC: move to default case
             // case UNC_RC_INTERNAL_ERR: move to default case
           case UNC_RC_CTRLAPI_FAILURE:
-          // TODO: need to check with Driver on whether this is possible 
-          // for these operations. If so, what should it get converted in upll. 
+          // TODO: need to check with Driver on whether this is possible
+          // for these operations. If so, what should it get converted in upll.
           // In U10 we were sending GENERIC error, so we can convert to default case
           default:
             UPLL_LOG_INFO("Received error %d from driver,"
@@ -1481,12 +1461,12 @@ bool IpcUtil::ReadKtResponse(pfc::core::ipc::ClientSession *sess,
 std::string IpcUtil::IpcRequestToStr(const IpcReqRespHeader &msghdr) {
   std::stringstream ss;
   ss << "-------------IpcRequest--------------" << std::endl
-     << "  Hdr=clnt_sess_id:" << msghdr.clnt_sess_id 
-     << ",  config_id:" << msghdr.config_id 
-     << ",  operation:" << msghdr.operation 
-     << ",  max_rep_count:" << msghdr.rep_count 
-     << ",  option1:" << msghdr.option1 
-     << ",  option2:" << msghdr.option2 
+     << "  Hdr=clnt_sess_id:" << msghdr.clnt_sess_id
+     << ",  config_id:" << msghdr.config_id
+     << ",  operation:" << msghdr.operation
+     << ",  max_rep_count:" << msghdr.rep_count
+     << ",  option1:" << msghdr.option1
+     << ",  option2:" << msghdr.option2
      << ",  datatype:" << msghdr.datatype;
   return ss.str();
 }
@@ -1494,13 +1474,13 @@ std::string IpcUtil::IpcRequestToStr(const IpcReqRespHeader &msghdr) {
 std::string IpcUtil::IpcResponseToStr(const IpcReqRespHeader &msghdr) {
   std::stringstream ss;
   ss << "-------------IpcResponse--------------" << std::endl
-     << "  Hdr=clnt_sess_id:" << msghdr.clnt_sess_id 
-     << ",  config_id:" << msghdr.config_id 
-     << ",  operation:" << msghdr.operation 
-     << ",  rep_count:" << msghdr.rep_count 
-     << ",  option1:" << msghdr.option1 
-     << ",  option2:" << msghdr.option2 
-     << ",  datatype:" << msghdr.datatype 
+     << "  Hdr=clnt_sess_id:" << msghdr.clnt_sess_id
+     << ",  config_id:" << msghdr.config_id
+     << ",  operation:" << msghdr.operation
+     << ",  rep_count:" << msghdr.rep_count
+     << ",  option1:" << msghdr.option1
+     << ",  option2:" << msghdr.option2
+     << ",  datatype:" << msghdr.datatype
      << ",  result_code:" << msghdr.result_code;
   return ss.str();
 }
