@@ -94,7 +94,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
         try {
             return new PathMapList(mgr.getPathMaps(path));
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -186,7 +186,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getPathMap(path, index);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -317,7 +317,7 @@ public class VTenantPathMapNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

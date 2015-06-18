@@ -377,7 +377,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * @return  A list of vbridge information.
      */
     public List<VBridge> getBridges(VTNManagerImpl mgr) {
-        ArrayList<VBridge> list;
+        List<VBridge> list;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {
@@ -528,7 +528,7 @@ public final class VTenantImpl implements FlowFilterNode {
      * @return  A list of vTerminal information.
      */
     public List<VTerminal> getTerminals(VTNManagerImpl mgr) {
-        ArrayList<VTerminal> list;
+        List<VTerminal> list;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {

@@ -413,9 +413,7 @@ public class MacMapState implements Serializable, Cloneable {
      * @return  A copy of {@link #mappedPorts}.
      */
     private synchronized Map<PortVlan, Set<MacVlan>> copyMappedPorts() {
-        HashMap<PortVlan, Set<MacVlan>> copy =
-            new HashMap<PortVlan, Set<MacVlan>>();
-
+        Map<PortVlan, Set<MacVlan>> copy = new HashMap<>();
         for (Entry<PortVlan, Set<MacVlan>> entry: mappedPorts.entrySet()) {
             PortVlan pvlan = entry.getKey();
             Set<MacVlan> mvSet = new HashSet<MacVlan>(entry.getValue());
@@ -519,11 +517,8 @@ public class MacMapState implements Serializable, Cloneable {
     public synchronized MacMapState clone() {
         try {
             MacMapState mst = (MacMapState)super.clone();
-
-            HashMap<PortVlan, Set<MacVlan>> mapped =
-                new HashMap<PortVlan, Set<MacVlan>>();
-            TreeMap<MacVlan, NodeConnector> active =
-                new TreeMap<MacVlan, NodeConnector>();
+            Map<PortVlan, Set<MacVlan>> mapped = new HashMap<>();
+            NavigableMap<MacVlan, NodeConnector> active = new TreeMap<>();
 
             for (Entry<PortVlan, Set<MacVlan>> entry: mappedPorts.entrySet()) {
                 PortVlan pvlan = entry.getKey();

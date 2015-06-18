@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -185,15 +186,8 @@ public class BundleVersion implements Serializable {
         }
 
         BundleVersion bv = (BundleVersion)o;
-        if (major != bv.major || minor != bv.minor || micro != bv.micro) {
-            return false;
-        }
-
-        if (qualifier == null) {
-            return (bv.qualifier == null);
-        }
-
-        return qualifier.equals(bv.qualifier);
+        return (major == bv.major && minor == bv.minor && micro == bv.micro &&
+                Objects.equals(qualifier, bv.qualifier));
     }
 
     /**

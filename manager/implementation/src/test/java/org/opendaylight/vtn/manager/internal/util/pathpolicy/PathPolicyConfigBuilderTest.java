@@ -235,7 +235,9 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     assertEquals(msg, st.getDescription());
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    assertEquals(null, e.getCause());
+                    Throwable t = e.getCause();
+                    assertTrue("Unexpected cause: " + t,
+                               t instanceof IllegalArgumentException);
                 }
 
                 try {
@@ -247,7 +249,9 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     assertEquals(msg, st.getDescription());
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    assertEquals(null, e.getCause());
+                    Throwable t = e.getCause();
+                    assertTrue("Unexpected cause: " + t,
+                               t instanceof IllegalArgumentException);
                 }
             }
         }
@@ -262,7 +266,14 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     ppcb.set(pp);
                     unexpected();
                 } catch (RpcException e) {
-                    assertEquals(null, e.getCause());
+                    Throwable t = e.getCause();
+                    if (badId == null) {
+                        assertEquals(null, t);
+                    } else {
+                        assertTrue("Unexpected cause: " + t,
+                                   t instanceof IllegalArgumentException);
+                    }
+
                     Status st = e.getStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     if (badId == null) {
@@ -281,7 +292,14 @@ public class PathPolicyConfigBuilderTest extends TestBase {
                     ppcb.setId(badId);
                     unexpected();
                 } catch (RpcException e) {
-                    assertEquals(null, e.getCause());
+                    Throwable t = e.getCause();
+                    if (badId == null) {
+                        assertEquals(null, t);
+                    } else {
+                        assertTrue("Unexpected cause: " + t,
+                                   t instanceof IllegalArgumentException);
+                    }
+
                     Status st = e.getStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     if (badId == null) {

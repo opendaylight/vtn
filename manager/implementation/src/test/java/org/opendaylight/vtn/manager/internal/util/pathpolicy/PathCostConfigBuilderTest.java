@@ -357,11 +357,13 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    assertEquals(null, e.getCause());
                     Status st = e.getStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     String msg = "Invalid cost value: " + c;
                     assertEquals(msg, st.getDescription());
+                    Throwable t = e.getCause();
+                    assertTrue("Unexpected cause: " + t,
+                               t instanceof IllegalArgumentException);
                 }
 
                 try {
@@ -369,11 +371,13 @@ public class PathCostConfigBuilderTest extends TestBase {
                     unexpected();
                 } catch (RpcException e) {
                     assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
-                    assertEquals(null, e.getCause());
                     Status st = e.getStatus();
                     assertEquals(StatusCode.BADREQUEST, st.getCode());
                     String msg = "Invalid cost value: " + c;
                     assertEquals(msg, st.getDescription());
+                    Throwable t = e.getCause();
+                    assertTrue("Unexpected cause: " + t,
+                               t instanceof IllegalArgumentException);
                 }
             }
         }

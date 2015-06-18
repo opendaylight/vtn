@@ -83,7 +83,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         try {
             return new FlowConditionList(mgr.getFlowConditions());
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -160,7 +160,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getFlowCondition(condName);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -286,7 +286,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -373,7 +373,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getFlowConditionMatch(condName, index);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -501,7 +501,7 @@ public class FlowConditionNorthbound extends VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

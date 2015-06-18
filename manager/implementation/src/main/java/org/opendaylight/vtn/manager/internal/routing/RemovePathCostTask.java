@@ -64,15 +64,7 @@ public final class RemovePathCostTask
     public static RemovePathCostTask create(TopologyGraph topo,
                                             RemovePathCostInput input)
         throws RpcException {
-        if (input == null) {
-            throw RpcUtils.getNullInputException();
-        }
-
-        Integer id = input.getId();
-        if (id == null) {
-            throw PathPolicyUtils.getNullPolicyIdException();
-        }
-
+        Integer id = getPathPolicyId(input);
         List<VtnPortDesc> portList = input.getPortDesc();
         if (portList == null || portList.isEmpty()) {
             throw PathPolicyUtils.getNoSwitchPortException();
@@ -97,6 +89,28 @@ public final class RemovePathCostTask
 
         List<RemoveCostTask> taskList = new ArrayList<>(taskMap.values());
         return new RemovePathCostTask(topo, id, taskList);
+    }
+
+    /**
+     * Return the path policy ID configured in the given RPC input.
+     *
+     * @param input  A {@link RemovePathCostInput} instance.
+     * @return  The path policy identifier in the given input.
+     * @throws RpcException
+     *     The given input contains invalid value.
+     */
+    private static Integer getPathPolicyId(RemovePathCostInput input)
+        throws RpcException {
+        if (input == null) {
+            throw RpcUtils.getNullInputException();
+        }
+
+        Integer id = input.getId();
+        if (id == null) {
+            throw PathPolicyUtils.getNullPolicyIdException();
+        }
+
+        return id;
     }
 
     /**

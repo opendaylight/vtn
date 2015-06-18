@@ -108,11 +108,10 @@ public final class ChangedData<T extends DataObject>
      *          this instance. Otherwise {@code null}.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public <D extends DataObject> ChangedData<D> checkType(Class<D> type) {
         if (type.equals(getIdentifier().getTargetType())) {
-            @SuppressWarnings("unchecked")
-            ChangedData<D> ret = (ChangedData<D>)this;
-            return ret;
+            return (ChangedData<D>)this;
         }
 
         return null;

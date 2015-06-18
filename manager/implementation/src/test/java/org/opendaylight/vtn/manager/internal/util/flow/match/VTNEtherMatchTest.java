@@ -216,8 +216,11 @@ public class VTNEtherMatchTest extends TestBase {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 Status st = e.getStatus();
                 assertEquals(StatusCode.BADREQUEST, st.getCode());
-                assertEquals("Invalid source MAC address: " + addr,
-                             st.getDescription());
+
+                String msg = "Invalid source MAC address: " + addr + ": ";
+                String desc = st.getDescription();
+                assertTrue("Unexpected error message: " + desc,
+                           desc.startsWith(msg));
             }
         }
 

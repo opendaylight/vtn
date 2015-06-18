@@ -29,6 +29,7 @@ import org.apache.commons.collections15.Transformer;
 
 import org.opendaylight.vtn.manager.internal.RouteResolver;
 import org.opendaylight.vtn.manager.internal.VTNManagerProvider;
+import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.concurrent.TimeoutCounter;
 import org.opendaylight.vtn.manager.internal.util.inventory.InventoryReader;
 import org.opendaylight.vtn.manager.internal.util.inventory.LinkEdge;
@@ -154,8 +155,9 @@ final class TopologyGraph extends SparseMultigraph<SalNode, LinkEdge> {
                         return path;
                     }
                 } catch (Exception e) {
-                    LOG.trace("{}: A vertex is not yet known: {} -> {}",
-                              index, src, dst);
+                    FixedLogger logger = new FixedLogger.Trace(LOG);
+                    logger.log(e, "%d: A vertex is not yet known: %s -> %s",
+                               index, src, dst);
                 } finally {
                     setReader(old);
                 }

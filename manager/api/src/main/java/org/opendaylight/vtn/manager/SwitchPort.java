@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -299,27 +300,9 @@ public class SwitchPort implements Serializable {
         }
 
         SwitchPort swport = (SwitchPort)o;
-        if (name == null) {
-            if (swport.name != null) {
-                return false;
-            }
-        } else if (!name.equals(swport.name)) {
-            return false;
-        }
-
-        if (type == null) {
-            if (swport.type != null) {
-                return false;
-            }
-        } else if (!type.equals(swport.type)) {
-            return false;
-        }
-
-        if (id == null) {
-            return (swport.id == null);
-        }
-
-        return id.equals(swport.id);
+        return (Objects.equals(name, swport.name) &&
+                Objects.equals(type, swport.type) &&
+                Objects.equals(id, swport.id));
     }
 
     /**

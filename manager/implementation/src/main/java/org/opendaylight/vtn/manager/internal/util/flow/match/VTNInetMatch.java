@@ -382,44 +382,31 @@ public abstract class VTNInetMatch {
      *          the conditions configured in this instance.
      */
     public final boolean match(FlowMatchContext ctx) {
+        boolean result = false;
         InetHeader iph = ctx.getInetHeader();
-        if (iph == null) {
-            return false;
-        }
 
-        // Check the source IP address.
-        if (sourceNetwork != null) {
-            ctx.addMatchField(FlowMatchType.IP_SRC);
-            if (!sourceNetwork.contains(iph.getSourceAddress())) {
-                return false;
+        // Check the source and destination IP addresses.
+        if (iph != null && matchAddress(ctx, iph)) {
+            // Check the IP protocol number.
+            if (protocol != null) {
+                ctx.addMatchField(FlowMatchType.IP_PROTO);
+                if (protocol.shortValue() != iph.getProtocol()) {
+                    return false;
+                }
             }
-        }
 
-        // Check the destination IP address.
-        if (destinationNetwork != null) {
-            ctx.addMatchField(FlowMatchType.IP_DST);
-            if (!destinationNetwork.contains(iph.getDestinationAddress())) {
-                return false;
+            // Check the IP DSCP value.
+            if (dscp != null) {
+                ctx.addMatchField(FlowMatchType.IP_DSCP);
+                if (dscp.shortValue() != iph.getDscp()) {
+                    return false;
+                }
             }
+
+            result = true;
         }
 
-        // Check the IP protocol number.
-        if (protocol != null) {
-            ctx.addMatchField(FlowMatchType.IP_PROTO);
-            if (protocol.shortValue() != iph.getProtocol()) {
-                return false;
-            }
-        }
-
-        // Check the IP DSCP value.
-        if (dscp != null) {
-            ctx.addMatchField(FlowMatchType.IP_DSCP);
-            if (dscp.shortValue() != iph.getDscp()) {
-                return false;
-            }
-        }
-
-        return true;
+        return result;
     }
 
     /**
@@ -631,6 +618,35 @@ public abstract class VTNInetMatch {
      */
     private IpMatchBuilder create(IpMatchBuilder imatch) {
         return (imatch == null) ? new IpMatchBuilder() : imatch;
+    }
+
+    /**
+     * Determine whether the given IP header matches the condition for
+     * IP address configured in this instance.
+     *
+     * @param ctx  A {@link FlowMatchContext} instance.
+     * @param iph  An {@link InetHeader} instance.
+     * @return  {@code true} only if the given IP header matches all the
+     *          conditions for IP address configured in this instance.
+     */
+    private boolean matchAddress(FlowMatchContext ctx, InetHeader iph) {
+        // Check the source IP address.
+        if (sourceNetwork != null) {
+            ctx.addMatchField(FlowMatchType.IP_SRC);
+            if (!sourceNetwork.contains(iph.getSourceAddress())) {
+                return false;
+            }
+        }
+
+        // Check the destination IP address.
+        if (destinationNetwork != null) {
+            ctx.addMatchField(FlowMatchType.IP_DST);
+            if (!destinationNetwork.contains(iph.getDestinationAddress())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

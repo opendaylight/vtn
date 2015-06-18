@@ -47,7 +47,7 @@ public final class EthernetMatch implements Serializable {
     /**
      * Version number for serialization.
      */
-    private static final long serialVersionUID = 3985178322341719720L;
+    private static final long serialVersionUID = -3985178322341719720L;
 
     /**
      * Status of JAXB binding validation.
@@ -480,6 +480,21 @@ public final class EthernetMatch implements Serializable {
     }
 
     /**
+     * Create a string which indicates an invalid MAC address is specified.
+     *
+     * @param mac    A string representation of the MAC address.
+     * @param desc   A brief description about the MAC address.
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  A string which indicates an invalid MAC address is specified.
+     */
+    private String invalidAddress(String mac, String desc, Throwable cause) {
+        return new StringBuilder("Invalid ").
+            append(desc).append(" MAC address: ").append(mac).
+            append(": ").append(cause.getMessage()).
+            toString();
+    }
+
+    /**
      * Convert the given string into an {@link EtherAddress} instance.
      *
      * @param mac   A string representation of the MAC address.
@@ -490,13 +505,37 @@ public final class EthernetMatch implements Serializable {
         try {
             return EtherAddress.create(mac);
         } catch (Exception e) {
-            StringBuilder builder = new StringBuilder("Invalid ");
-            builder.append(desc).append(" MAC address: ").append(mac);
-            validationStatus =
-                new Status(StatusCode.BADREQUEST, builder.toString());
+            String msg = invalidAddress(mac, desc, e);
+            validationStatus = new Status(StatusCode.BADREQUEST, msg);
         }
 
         return null;
+    }
+
+    /**
+     * Determine whether the given ethernet match contains the same condition
+     * for MAC address.
+     *
+     * @param em  The ethernet match object to be compared.
+     * @return  {@code true} only if the given object contains the same
+     *          condition for MAC address.
+     */
+    private boolean equalsAddress(EthernetMatch em) {
+        return (Objects.equals(sourceAddress, em.sourceAddress) &&
+                Objects.equals(destinationAddress, em.destinationAddress));
+    }
+
+    /**
+     * Determine whether the given ethernet match contains the same condition
+     * for VLAN.
+     *
+     * @param em  The ethernet match object to be compared.
+     * @return  {@code true} only if the given object contains the same
+     *          condition for VLAN.
+     */
+    private boolean equalsVlan(EthernetMatch em) {
+        return (Objects.equals(vlan, em.vlan) &&
+                Objects.equals(priority, em.priority));
     }
 
     /**
@@ -515,11 +554,8 @@ public final class EthernetMatch implements Serializable {
         }
 
         EthernetMatch em = (EthernetMatch)o;
-        return (Objects.equals(sourceAddress, em.sourceAddress) &&
-                Objects.equals(destinationAddress, em.destinationAddress) &&
-                Objects.equals(type, em.type) &&
-                Objects.equals(vlan, em.vlan) &&
-                Objects.equals(priority, em.priority));
+        return (equalsAddress(em) && equalsVlan(em) &&
+                Objects.equals(type, em.type));
     }
 
     /**

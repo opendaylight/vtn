@@ -212,7 +212,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             return new DataFlowList(
                 mgr.getDataFlows(path, DataFlowMode.SUMMARY, filter, -1));
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -273,7 +273,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getDataFlow(path, flowId, DataFlowMode.SUMMARY, -1);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -463,7 +463,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
             return new DataFlowList(mgr.getDataFlows(path, mode, filter,
                                                      interval));
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -549,7 +549,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getDataFlow(path, flowId, mode, interval);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -588,7 +588,7 @@ public class FlowNorthbound extends VTNNorthBoundBase {
         try {
             return new XmlLongInteger(mgr.getDataFlowCount(path));
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

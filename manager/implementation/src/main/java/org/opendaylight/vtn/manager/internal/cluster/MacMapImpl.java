@@ -369,8 +369,8 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         protected void setImpl(Set<? extends DataLinkHost> dlhosts)
             throws VTNException {
             Set<MacVlan> added = getAddedSet();
-            HashSet<MacVlan> retained = new HashSet<MacVlan>();
-            HashSet<Long> macSet = new HashSet<Long>();
+            Set<MacVlan> retained = new HashSet<MacVlan>();
+            Set<Long> macSet = new HashSet<Long>();
             for (DataLinkHost dlhost: dlhosts) {
                 MacVlan mvlan = new MacVlan(dlhost);
                 if (allowedHosts.contains(mvlan)) {
@@ -404,7 +404,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         protected void add(Set<? extends DataLinkHost> dlhosts)
             throws VTNException {
             Set<MacVlan> added = getAddedSet();
-            HashSet<Long> macSet = new HashSet<Long>();
+            Set<Long> macSet = new HashSet<Long>();
             for (DataLinkHost dlhost: dlhosts) {
                 MacVlan mvlan = new MacVlan(dlhost);
                 if (!allowedHosts.contains(mvlan)) {
@@ -465,7 +465,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
         protected void setImpl(Set<? extends DataLinkHost> dlhosts)
             throws VTNException {
             Set<MacVlan> added = getAddedSet();
-            HashSet<MacVlan> retained = new HashSet<MacVlan>();
+            Set<MacVlan> retained = new HashSet<MacVlan>();
             for (DataLinkHost dlhost: dlhosts) {
                 MacVlan mvlan = createMacVlan(dlhost);
                 if (deniedHosts.contains(mvlan)) {
@@ -751,7 +751,7 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
      */
     List<MacAddressEntry> getMacMappedHosts(VTNManagerImpl mgr)
         throws VTNException {
-        ArrayList<MacAddressEntry> list = new ArrayList<>();
+        List<MacAddressEntry> list = new ArrayList<>();
         IVTNResourceManager resMgr = mgr.getResourceManager();
         Map<MacVlan, NodeConnector> map =
             resMgr.getMacMappedHosts(mgr, mapPath);
@@ -762,7 +762,6 @@ public final class MacMapImpl implements VBridgeNode, Cloneable {
                 list.add(createMacAddressEntry(mgr, mvlan, port));
             }
         }
-        list.trimToSize();
 
         return list;
     }

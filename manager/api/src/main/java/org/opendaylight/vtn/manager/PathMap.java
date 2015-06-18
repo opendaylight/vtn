@@ -406,6 +406,18 @@ public final class PathMap
         return hardTimeout;
     }
 
+    /**
+     * Determine whether the given object contains the same flow timeout.
+     *
+     * @param ptmap  The object to be compared.
+     * @return  {@code true} only if the given object contains the same flow
+     *          timeout.
+     */
+    private boolean equalsFlowTimeout(PathMap ptmap) {
+        return (Objects.equals(idleTimeout, ptmap.idleTimeout) &&
+                Objects.equals(hardTimeout, ptmap.hardTimeout));
+    }
+
     // Objects
 
     /**
@@ -427,8 +439,7 @@ public final class PathMap
         return (Objects.equals(mapIndex, ptmap.mapIndex) &&
                 policyId == ptmap.policyId &&
                 Objects.equals(condition, ptmap.condition) &&
-                Objects.equals(idleTimeout, ptmap.idleTimeout) &&
-                Objects.equals(hardTimeout, ptmap.hardTimeout));
+                equalsFlowTimeout(ptmap));
     }
 
     /**

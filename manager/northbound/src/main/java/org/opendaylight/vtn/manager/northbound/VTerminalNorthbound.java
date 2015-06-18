@@ -114,7 +114,7 @@ public class VTerminalNorthbound extends VTNNorthBoundBase {
             List<VTerminal> list = mgr.getTerminals(path);
             return new VTerminalList(list);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -158,7 +158,7 @@ public class VTerminalNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getTerminal(path);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

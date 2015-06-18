@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -246,6 +246,20 @@ public final class VNodeLocation implements Serializable {
     }
 
     /**
+     * Determine whether the given object contains the same virtual node name
+     * inside the VTN.
+     *
+     * @param loc  The object to be compared.
+     * @return  {@code true} only if the given object contains the same virtual
+     *          node name inside the VTN.
+     */
+    private boolean equalsTenantNodeName(VNodeLocation loc) {
+        return (Objects.equals(bridgeName, loc.bridgeName) &&
+                Objects.equals(routerName, loc.routerName) &&
+                Objects.equals(terminalName, loc.terminalName));
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -262,9 +276,7 @@ public final class VNodeLocation implements Serializable {
 
         VNodeLocation loc = (VNodeLocation)o;
         return (Objects.equals(tenantName, loc.tenantName) &&
-                Objects.equals(bridgeName, loc.bridgeName) &&
-                Objects.equals(routerName, loc.routerName) &&
-                Objects.equals(terminalName, loc.terminalName) &&
+                equalsTenantNodeName(loc) &&
                 Objects.equals(interfaceName, loc.interfaceName));
     }
 

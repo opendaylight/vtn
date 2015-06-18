@@ -9,6 +9,7 @@
 
 package org.opendaylight.yang.gen.v1.urn.opendaylight.vtn.impl.provider.rev150209;
 
+import java.util.Dictionary;
 import java.util.Hashtable;
 
 import org.osgi.framework.Bundle;
@@ -150,7 +151,7 @@ public final class VTNProviderModule extends AbstractVTNProviderModule {
                                  VTNManagerProviderImpl provider) {
         BundleContext bc = bundle.getBundleContext();
         if (isOsgiServiceRequired(bc, provider)) {
-            Hashtable<String, Object> prop = new Hashtable<>();
+            Dictionary<String, Object> prop = new Hashtable<>();
             prop.put("containerName", GlobalConstants.DEFAULT.toString());
             try {
                 osgiRegistration = bc.

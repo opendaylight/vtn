@@ -190,11 +190,8 @@ public abstract class InetAddressAction extends FlowAction {
                 }
                 address = ipn;
             } catch (RuntimeException e) {
-                StringBuilder builder =
-                    new StringBuilder(getClass().getSimpleName());
-                builder.append(": Invalid address: ").append(addr);
-                validationStatus =
-                    new Status(StatusCode.BADREQUEST, builder.toString());
+                String msg = invalidAddress(addr, e);
+                validationStatus = new Status(StatusCode.BADREQUEST, msg);
             }
         }
     }
@@ -209,6 +206,20 @@ public abstract class InetAddressAction extends FlowAction {
         StringBuilder builder = new StringBuilder(getClass().getSimpleName()).
             append(": Unexpected address: ").append(addr);
         return builder.toString();
+    }
+
+    /**
+     * Create a string which indicates an invalid IP address is specified.
+     *
+     * @param addr   A string representation of the IP address.
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  A string which indicates an invalid IP address is specified.
+     */
+    private String invalidAddress(String addr, Throwable cause) {
+        return new StringBuilder(getClass().getSimpleName()).
+            append(": Invalid address: ").append(addr).
+            append(": ").append(cause.getMessage()).
+            toString();
     }
 
     /**

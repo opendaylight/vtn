@@ -127,6 +127,7 @@ public class SettableVTNFuture<T> extends AbstractVTNFuture<T> {
          */
         private boolean unmaskCancel(SettableVTNFuture future)
             throws InterruptedException {
+            boolean result = true;
             for (;;) {
                 int state = getState();
                 if (state == STATE_CANCEL_MASKED) {
@@ -145,15 +146,12 @@ public class SettableVTNFuture<T> extends AbstractVTNFuture<T> {
                 }
                 if (state == STATE_COMPLETED) {
                     // Already completed.
-                    return false;
+                    result = false;
+                    break;
                 }
                 if (state == STATE_CANCEL_PENDING) {
                     // Activate pending cancel request.
-                    InterruptedException e = interrupted();
-                    if (done(state, STATE_CANCELED, null, e)) {
-                        future.onCanceled();
-                        throw interrupted();
-                    }
+                    activatePendingCancel(future);
 
                     // Lost the race.
                     continue;
@@ -166,7 +164,28 @@ public class SettableVTNFuture<T> extends AbstractVTNFuture<T> {
                 awaitCompletion(state);
             }
 
-            return true;
+            return result;
+        }
+
+        /**
+         * Activate pending cancel request.
+         *
+         * <p>
+         *   This method must be called only if the current state is
+         *   {@link #STATE_CANCEL_PENDING}.
+         * </p>
+         *
+         * @param future  A {@link SettableVTNFuture} instance.
+         * @throws InterruptedException
+         *    The task has been canceled.
+         */
+        private void activatePendingCancel(SettableVTNFuture future)
+            throws InterruptedException {
+            InterruptedException e = interrupted();
+            if (done(STATE_CANCEL_PENDING, STATE_CANCELED, null, e)) {
+                future.onCanceled();
+                throw e;
+            }
         }
 
         /**

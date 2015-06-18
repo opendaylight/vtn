@@ -123,7 +123,7 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
     }
 
     /**
-     * Return an exception which indicatse no IP address is specified.
+     * Return an exception which indicates no IP address is specified.
      *
      * @param obj  An object to be added to the error message.
      * @return  An {@link RpcException} instance.
@@ -131,6 +131,20 @@ public abstract class VTNInetAddrAction extends FlowFilterAction {
     protected final RpcException noIpAddress(Object obj) {
         String msg = getErrorMessage("No IP address", obj);
         return RpcException.getMissingArgumentException(msg);
+    }
+
+    /**
+     * Return an exception which indicates an invalid IP address is specified.
+     *
+     * @param obj    An object to be added to the error message.
+     * @param cause  A throwable which indicates the cause of error.
+     * @return  An {@link RpcException} instance.
+     */
+    protected final RpcException invalidIpAddress(Object obj, Throwable cause) {
+        String msg = getErrorMessage("Invalid IP address", obj);
+        RpcException re = RpcException.getMissingArgumentException(msg);
+        re.initCause(cause);
+        return re;
     }
 
     /**

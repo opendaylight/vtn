@@ -444,36 +444,28 @@ public final class InventoryUtils {
      * @return  A link speed in bps.
      */
     public static long getLinkSpeed(PortFeatures pf) {
+        // Use 1Gbps as default.
+        long speed = LINK_SPEED_1G;
+
         if (pf != null) {
             if (Boolean.TRUE.equals(pf.isTenMbHd()) ||
                 Boolean.TRUE.equals(pf.isTenMbFd())) {
-                return LINK_SPEED_10M;
-            }
-
-            if (Boolean.TRUE.equals(pf.isHundredMbHd()) ||
-                Boolean.TRUE.equals(pf.isHundredMbFd())) {
-                return LINK_SPEED_100M;
-            }
-
-            if (Boolean.TRUE.equals(pf.isTenGbFd())) {
-                return LINK_SPEED_10G;
-            }
-
-            if (Boolean.TRUE.equals(pf.isFortyGbFd())) {
-                return LINK_SPEED_40G;
-            }
-
-            if (Boolean.TRUE.equals(pf.isHundredGbFd())) {
-                return LINK_SPEED_100G;
-            }
-
-            if (Boolean.TRUE.equals(pf.isOneTbFd())) {
-                return LINK_SPEED_1T;
+                speed = LINK_SPEED_10M;
+            } else if (Boolean.TRUE.equals(pf.isHundredMbHd()) ||
+                       Boolean.TRUE.equals(pf.isHundredMbFd())) {
+                speed = LINK_SPEED_100M;
+            } else if (Boolean.TRUE.equals(pf.isTenGbFd())) {
+                speed = LINK_SPEED_10G;
+            } else if (Boolean.TRUE.equals(pf.isFortyGbFd())) {
+                speed = LINK_SPEED_40G;
+            } else if (Boolean.TRUE.equals(pf.isHundredGbFd())) {
+                speed = LINK_SPEED_100G;
+            } else if (Boolean.TRUE.equals(pf.isOneTbFd())) {
+                speed = LINK_SPEED_1T;
             }
         }
 
-        // Use 1Gbps as default.
-        return LINK_SPEED_1G;
+        return speed;
     }
 
     /**

@@ -30,6 +30,7 @@ import org.opendaylight.vtn.manager.internal.util.ChangedData;
 import org.opendaylight.vtn.manager.internal.util.CompositeAutoCloseable;
 import org.opendaylight.vtn.manager.internal.util.DataStoreListener;
 import org.opendaylight.vtn.manager.internal.util.DataStoreUtils;
+import org.opendaylight.vtn.manager.internal.util.FixedLogger;
 import org.opendaylight.vtn.manager.internal.util.IdentifiedData;
 import org.opendaylight.vtn.manager.internal.util.MiscUtils;
 import org.opendaylight.vtn.manager.internal.util.XmlConfigFile;
@@ -281,9 +282,10 @@ public final class PathMapManager
             PathMap pmap = PathMapUtils.toPathMap(vpm);
             ectx.addUpdated(pmap.getIndex(), pmap, created);
         } catch (Exception e) {
-            LOG.warn("Ignore broken {} event: path={}, value={}",
-                     (created) ? "creation" : "update", data.getIdentifier(),
-                     vpm);
+            FixedLogger logger = new FixedLogger.Warn(LOG);
+            logger.log(e, "Ignore broken %s event: path=%s, value=%s",
+                       (created) ? "creation" : "update",
+                       data.getIdentifier(), vpm);
         }
     }
 

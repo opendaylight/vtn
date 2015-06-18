@@ -84,7 +84,7 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         try {
             return new VTenantList(mgr.getTenants());
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -121,7 +121,7 @@ public class VTenantNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getTenant(path);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

@@ -878,25 +878,58 @@ public final class FlowMatchBuilder {
      *          is configured.
      */
     private L4Match buildL4Match() {
+        L4Match l4m;
         if (l4Class == null) {
-            return null;
+            l4m = null;
+        } else if (l4Class.equals(TcpMatch.class)) {
+            l4m = buildTcpMatch();
+        } else if (l4Class.equals(UdpMatch.class)) {
+            l4m = buildUdpMatch();
+        } else if (l4Class.equals(IcmpMatch.class)) {
+            l4m = buildIcmpMatch();
+        } else {
+            // This should never happen.
+            throw new IllegalStateException("Unexpected L4Match class: " +
+                                            l4Class);
         }
 
-        if (l4Class.equals(TcpMatch.class)) {
-            return (sourcePort == null && destinationPort == null)
-                ? null : new TcpMatch(sourcePort, destinationPort);
-        }
-        if (l4Class.equals(UdpMatch.class)) {
-            return (sourcePort == null && destinationPort == null)
-                ? null : new UdpMatch(sourcePort, destinationPort);
-        }
-        if (l4Class.equals(IcmpMatch.class)) {
-            return (icmpType == null && icmpCode == null)
-                ? null : new IcmpMatch(icmpType, icmpCode);
-        }
+        return l4m;
+    }
 
-        // This should never happen.
-        throw new IllegalStateException("Unexpected L4Match class: " +
-                                        l4Class);
+    /**
+     * Build a new {@link TcpMatch} instance which specifies conditions
+     * configured in this instance.
+     *
+     * @return  A {@link TcpMatch} instance.
+     *          {@code null} is returned if no condition for TCP is configured.
+     */
+    private TcpMatch buildTcpMatch() {
+        return (sourcePort == null && destinationPort == null)
+            ? null : new TcpMatch(sourcePort, destinationPort);
+    }
+
+    /**
+     * Build a new {@link UdpMatch} instance which specifies conditions
+     * configured in this instance.
+     *
+     * @return  An {@link UdpMatch} instance.
+     *          {@code null} is returned if no condition for UDP is configured.
+     */
+    private UdpMatch buildUdpMatch() {
+        return (sourcePort == null && destinationPort == null)
+            ? null : new UdpMatch(sourcePort, destinationPort);
+    }
+
+    /**
+     * Build a new {@link IcmpMatch} instance which specifies conditions
+     * configured in this instance.
+     *
+     * @return  An {@link IcmpMatch} instance.
+     *          {@code null} is returned if no condition for ICMP is
+     *          configured.
+     */
+    private IcmpMatch buildIcmpMatch() {
+        return (icmpType == null && icmpCode == null)
+            ? null : new IcmpMatch(icmpType, icmpCode);
     }
 }

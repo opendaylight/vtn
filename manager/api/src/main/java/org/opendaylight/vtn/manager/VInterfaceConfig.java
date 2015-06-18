@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -203,19 +204,8 @@ public class VInterfaceConfig implements Serializable {
         }
 
         VInterfaceConfig iconf = (VInterfaceConfig)o;
-        if (description == null) {
-            if (iconf.description != null) {
-                return false;
-            }
-        } else if (!description.equals(iconf.description)) {
-            return false;
-        }
-
-        if (enabled == null) {
-            return (iconf.enabled == null);
-        }
-
-        return enabled.equals(iconf.enabled);
+        return (Objects.equals(description, iconf.description) &&
+                Objects.equals(enabled, iconf.enabled));
     }
 
     /**

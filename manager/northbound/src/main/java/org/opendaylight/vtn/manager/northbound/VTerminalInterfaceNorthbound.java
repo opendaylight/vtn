@@ -107,7 +107,7 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
             List<VInterface> list = mgr.getInterfaces(path);
             return new VInterfaceList(list);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -156,7 +156,7 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
         try {
             return mgr.getInterface(path);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -447,7 +447,7 @@ public class VTerminalInterfaceNorthbound extends VTNNorthBoundBase {
             NodeConnector nc = pmap.getNodeConnector();
             return new PortMapInfo(pmconf, nc);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 

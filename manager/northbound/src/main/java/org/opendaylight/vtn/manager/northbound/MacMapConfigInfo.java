@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,6 +9,7 @@
 
 package org.opendaylight.vtn.manager.northbound;
 
+import java.util.Objects;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -157,19 +158,8 @@ public class MacMapConfigInfo {
         }
 
         MacMapConfigInfo mci = (MacMapConfigInfo)o;
-        if (allowedHosts == null) {
-            if (mci.allowedHosts != null) {
-                return false;
-            }
-        } else if (!allowedHosts.equals(mci.allowedHosts)) {
-            return false;
-        }
-
-        if (deniedHosts == null) {
-            return (mci.deniedHosts == null);
-        }
-
-        return deniedHosts.equals(mci.deniedHosts);
+        return (Objects.equals(allowedHosts, mci.allowedHosts) &&
+                Objects.equals(deniedHosts, mci.deniedHosts));
     }
 
     /**

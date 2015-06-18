@@ -178,29 +178,26 @@ public final class FlowStatsUtils {
      *          An error message if the given flow statistics is invalid.
      */
     public static String check(GenericStatistics fstats) {
+        String msg = null;
+
         if (fstats == null) {
-            return "flow statistics is null.";
-        }
-        if (fstats.getPacketCount() == null) {
-            return "No packet count.";
-        }
-        if (fstats.getByteCount() == null) {
-            return "No byte count.";
-        }
-
-        Duration duration = fstats.getDuration();
-        if (duration == null) {
-            return "No duration.";
-        }
-
-        if (duration.getSecond() == null) {
-            return "No second in duration.";
-        }
-        if (duration.getNanosecond() == null) {
-            return "No nanosecond in duration.";
+            msg = "flow statistics is null.";
+        } else if (fstats.getPacketCount() == null) {
+            msg = "No packet count.";
+        } else if (fstats.getByteCount() == null) {
+            msg = "No byte count.";
+        } else {
+            Duration duration = fstats.getDuration();
+            if (duration == null) {
+                msg = "No duration.";
+            } else if (duration.getSecond() == null) {
+                msg = "No second in duration.";
+            } else if (duration.getNanosecond() == null) {
+                msg = "No nanosecond in duration.";
+            }
         }
 
-        return null;
+        return msg;
     }
 
     /**
@@ -217,7 +214,7 @@ public final class FlowStatsUtils {
      */
     public static NavigableMap<Long, FlowStatsRecord> toNavigableMap(
         FlowStatsHistory history) {
-        TreeMap<Long, FlowStatsRecord> map = new TreeMap<>();
+        NavigableMap<Long, FlowStatsRecord> map = new TreeMap<>();
         if (history != null) {
             List<FlowStatsRecord> list = history.getFlowStatsRecord();
             if (list != null) {

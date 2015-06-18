@@ -763,6 +763,63 @@ public final class DataFlow implements Serializable {
     }
 
     /**
+     * Determine whether the given data flow contains the same flow
+     * attributes.
+     *
+     * @param df  The data flow to be compared.
+     * @return  {@code true} only if the given data flow contains the same
+     *          flow attributes.
+     */
+    private boolean equalsFlowAttributes(DataFlow df) {
+        if (flowId != df.flowId || creationTime != df.creationTime ||
+            idleTimeout != df.idleTimeout ||
+            hardTimeout != df.hardTimeout) {
+            return false;
+        }
+
+        return (Objects.equals(match, df.match) &&
+                Objects.equals(actions, df.actions));
+    }
+
+    /**
+     * Determine whether the given data flow contains the same flow statistics.
+     *
+     * @param df  The data flow to be compared.
+     * @return  {@code true} only if the given data flow contains the same
+     *          flow statistics.
+     */
+    private boolean equalsFlowStats(DataFlow df) {
+        return (Objects.equals(statistics, df.statistics) &&
+                Objects.equals(averagedStats, df.averagedStats));
+    }
+
+    /**
+     * Determine whether the given data flow contains the same virtual route.
+     *
+     * @param df  The data flow to be compared.
+     * @return  {@code true} only if the given data flow contains the same
+     *          virtual route.
+     */
+    private boolean equalsVirtualRoute(DataFlow df) {
+        return (Objects.equals(ingressNodePath, df.ingressNodePath) &&
+                Objects.equals(egressNodePath, df.egressNodePath) &&
+                Objects.equals(virtualRoute, df.virtualRoute));
+    }
+
+    /**
+     * Determine whether the given data flow contains the same physical route.
+     *
+     * @param df  The data flow to be compared.
+     * @return  {@code true} only if the given data flow contains the same
+     *          physical route.
+     */
+    private boolean equalsPhysicalRoute(DataFlow df) {
+        return (Objects.equals(ingressPort, df.ingressPort) &&
+                Objects.equals(egressPort, df.egressPort) &&
+                Objects.equals(physicalRoute, df.physicalRoute));
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -778,20 +835,8 @@ public final class DataFlow implements Serializable {
         }
 
         DataFlow flow = (DataFlow)o;
-        return (flowId == flow.flowId &&
-                creationTime == flow.creationTime &&
-                idleTimeout == flow.idleTimeout &&
-                hardTimeout == flow.hardTimeout &&
-                Objects.equals(ingressNodePath, flow.ingressNodePath) &&
-                Objects.equals(ingressPort, flow.ingressPort) &&
-                Objects.equals(egressNodePath, flow.egressNodePath) &&
-                Objects.equals(egressPort, flow.egressPort) &&
-                Objects.equals(match, flow.match) &&
-                Objects.equals(actions, flow.actions) &&
-                Objects.equals(virtualRoute, flow.virtualRoute) &&
-                Objects.equals(physicalRoute, flow.physicalRoute) &&
-                Objects.equals(statistics, flow.statistics) &&
-                Objects.equals(averagedStats, flow.averagedStats));
+        return (equalsFlowAttributes(flow) && equalsFlowStats(flow) &&
+                equalsVirtualRoute(flow) && equalsPhysicalRoute(flow));
     }
 
     /**

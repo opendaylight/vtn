@@ -734,7 +734,7 @@ public class GlobalResourceManager
         private void inactivate(MacMapState mst, MapReference ref,
                                 MacVlan mvlan)
             throws VTNException {
-            HashSet<PortVlan> rels = new HashSet<PortVlan>();
+            Set<PortVlan> rels = new HashSet<PortVlan>();
             NodeConnector oldPort = mst.inactivate(mvlan, rels);
             if (oldPort == null) {
                 return;
@@ -955,7 +955,7 @@ public class GlobalResourceManager
             MacMapState mst = mapState;
             if (!(mst == null || unmappedVlans.isEmpty())) {
                 // Inactivate MAC mappings which are no longer valid.
-                HashSet<PortVlan> rels = new HashSet<PortVlan>();
+                Set<PortVlan> rels = new HashSet<PortVlan>();
                 Map<MacVlan, NodeConnector> unmapped =
                     mst.inactivate(macMapAllowed, ref, unmappedVlans, rels);
                 releasePort(rels, ref);
@@ -1022,7 +1022,7 @@ public class GlobalResourceManager
                 return false;
             }
 
-            HashSet<PortVlan> rels = new HashSet<PortVlan>();
+            Set<PortVlan> rels = new HashSet<PortVlan>();
             unmapped = mst.inactivate(filter, rels);
             releasePort(rels, ref);
             active = mst.hasMapping();
@@ -1165,14 +1165,14 @@ public class GlobalResourceManager
         try {
             cs.createCache(cacheName, cmode);
         } catch (CacheExistException e) {
-            LOG.warn("{}: Cache already exists", cacheName);
+            LOG.warn("Cache already exists: name=" + cacheName, e);
         } catch (CacheConfigException e) {
-            LOG.error("{}: Invalid cache configuration: {}", cacheName, cmode);
+            String msg = "Invalid cache configuration: name=" + cacheName +
+                ", mode=" + cmode;
+            LOG.error(msg, e);
         } catch (Exception e) {
-            if (LOG.isErrorEnabled()) {
-                String msg = cacheName + ": Failed to create cache";
-                LOG.error(msg, e);
-            }
+            String msg = "Failed to create cache: name=" + cacheName;
+            LOG.error(msg, e);
         }
     }
 

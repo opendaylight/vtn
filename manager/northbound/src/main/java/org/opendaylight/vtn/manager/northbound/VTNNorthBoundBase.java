@@ -88,7 +88,7 @@ public abstract class VTNNorthBoundBase {
      *
      * @return  User name.
      */
-    protected String getUserName() {
+    protected final String getUserName() {
         return userName;
     }
 
@@ -99,7 +99,7 @@ public abstract class VTNNorthBoundBase {
      * @throws UnauthorizedException
      *    A client is not authorized.
      */
-    protected void checkPrivilege(Privilege priv) {
+    protected final void checkPrivilege(Privilege priv) {
         String name = getUserName();
         String cname = GlobalConstants.DEFAULT.toString();
         if (!NorthboundUtils.isAuthorized(name, cname, priv, this)) {
@@ -115,9 +115,20 @@ public abstract class VTNNorthBoundBase {
      * @param service  The name of unavailable service.
      * @return  A {@link ServiceUnavailableException} instance.
      */
-    protected ServiceUnavailableException serviceUnavailable(String service) {
+    protected final ServiceUnavailableException serviceUnavailable(
+        String service) {
         String msg = service + ": " + RestMessages.SERVICEUNAVAILABLE;
         return new ServiceUnavailableException(msg);
+    }
+
+    /**
+     * Convert the given VTN exception into web application exception.
+     *
+     * @param e  A {@link VTNException} instance.
+     * @return   An exception.
+     */
+    protected final WebApplicationException getException(VTNException e) {
+        return getException(e.getStatus());
     }
 
     /**
@@ -127,7 +138,7 @@ public abstract class VTNNorthBoundBase {
      * @param status  Failure status.
      * @return  An exception.
      */
-    protected WebApplicationException getException(Status status) {
+    protected final WebApplicationException getException(Status status) {
         assert !status.isSuccess();
 
         StatusCode code = status.getCode();
@@ -157,7 +168,7 @@ public abstract class VTNNorthBoundBase {
      * @throws ServiceUnavailableException
      *    Unable to get VTN manager service.
      */
-    protected IVTNManager getVTNManager() {
+    protected final IVTNManager getVTNManager() {
         String cname = GlobalConstants.DEFAULT.toString();
         IVTNManager mgr = (IVTNManager)ServiceHelper.
             getInstance(IVTNManager.class, cname, this);
@@ -177,7 +188,7 @@ public abstract class VTNNorthBoundBase {
      * @throws ServiceUnavailableException
      *    Unable to get VTN manager service.
      */
-    protected IVTNFlowDebugger getVTNFlowDebugger() {
+    protected final IVTNFlowDebugger getVTNFlowDebugger() {
         String cname = GlobalConstants.DEFAULT.toString();
         IVTNFlowDebugger debugger = (IVTNFlowDebugger)ServiceHelper.
             getInstance(IVTNFlowDebugger.class, cname, this);
@@ -196,7 +207,7 @@ public abstract class VTNNorthBoundBase {
      * @throws BadRequestException
      *    Invalid string is passed to {@code str}.
      */
-    protected EthernetAddress parseEthernetAddress(String str) {
+    protected final EthernetAddress parseEthernetAddress(String str) {
         try {
             byte[] b = ByteUtils.toBytes(str);
             return new EthernetAddress(b);
@@ -217,7 +228,7 @@ public abstract class VTNNorthBoundBase {
      * @throws BadRequestException
      *    Invalid string is passed to {@code str}.
      */
-    protected short parseVlanId(String str) {
+    protected final short parseVlanId(String str) {
         if (str == null) {
             return (short)0;
         }
@@ -237,7 +248,7 @@ public abstract class VTNNorthBoundBase {
      * @throws BadRequestException
      *    Invalid string is passed to {@code str}.
      */
-    protected Node parseNode(String str) {
+    protected final Node parseNode(String str) {
         Node node = Node.fromString(str);
         if (node == null) {
             throw new BadRequestException("Invalid node: " + str);
@@ -256,7 +267,7 @@ public abstract class VTNNorthBoundBase {
      * @throws BadRequestException
      *    Invalid string is passed to {@code type} or {@code id}.
      */
-    protected Node parseNode(String type, String id) {
+    protected final Node parseNode(String type, String id) {
         Node node = Node.fromString(type, id);
         if (node == null) {
             StringBuilder builder = new StringBuilder("Invalid node: ");
@@ -278,7 +289,7 @@ public abstract class VTNNorthBoundBase {
      * @throws BadRequestException
      *    Invalid string was passed to {@code listType}.
      */
-    protected boolean getFlowFilterType(String listType) {
+    protected final boolean getFlowFilterType(String listType) {
         if (FF_LIST_INCOMING.equalsIgnoreCase(listType)) {
             return false;
         }
@@ -295,14 +306,14 @@ public abstract class VTNNorthBoundBase {
      * @param fid  Flow filter identifier.
      * @return  A {@link FlowFilterList} instance.
      */
-    protected FlowFilterList getFlowFilters(FlowFilterId fid) {
+    protected final FlowFilterList getFlowFilters(FlowFilterId fid) {
         checkPrivilege(Privilege.READ);
 
         IVTNManager mgr = getVTNManager();
         try {
             return new FlowFilterList(mgr.getFlowFilters(fid));
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -313,14 +324,14 @@ public abstract class VTNNorthBoundBase {
      * @param index  The index which specifies the flow filter.
      * @return  A {@link FlowFilter} instance.
      */
-    protected FlowFilter getFlowFilter(FlowFilterId fid, int index) {
+    protected final FlowFilter getFlowFilter(FlowFilterId fid, int index) {
         checkPrivilege(Privilege.READ);
 
         IVTNManager mgr = getVTNManager();
         try {
             return mgr.getFlowFilter(fid, index);
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -333,8 +344,8 @@ public abstract class VTNNorthBoundBase {
      * @param filter   A {@link FlowFilter} instance.
      * @return  Response as dictated by the HTTP Response Status code.
      */
-    protected Response putFlowFilter(UriInfo uriInfo, FlowFilterId fid,
-                                     int index, FlowFilter filter) {
+    protected final Response putFlowFilter(UriInfo uriInfo, FlowFilterId fid,
+                                           int index, FlowFilter filter) {
         checkPrivilege(Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager();
@@ -350,7 +361,7 @@ public abstract class VTNNorthBoundBase {
 
             return Response.ok().build();
         } catch (VTNException e) {
-            throw getException(e.getStatus());
+            throw getException(e);
         }
     }
 
@@ -360,7 +371,7 @@ public abstract class VTNNorthBoundBase {
      * @param fid  Flow filter identifier.
      * @return  Response as dictated by the HTTP Response Status code.
      */
-    protected Response deleteFlowFilters(FlowFilterId fid) {
+    protected final Response deleteFlowFilters(FlowFilterId fid) {
         checkPrivilege(Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager();
@@ -382,7 +393,7 @@ public abstract class VTNNorthBoundBase {
      * @param index  The index which specifies the flow filter.
      * @return  Response as dictated by the HTTP Response Status code.
      */
-    protected Response deleteFlowFilter(FlowFilterId fid, int index) {
+    protected final Response deleteFlowFilter(FlowFilterId fid, int index) {
         checkPrivilege(Privilege.WRITE);
 
         IVTNManager mgr = getVTNManager();

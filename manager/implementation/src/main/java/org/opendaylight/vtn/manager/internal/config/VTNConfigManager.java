@@ -232,48 +232,48 @@ public final class VTNConfigManager implements AutoCloseable, VTNConfig {
      */
     private static EtherAddress getMacAddress(
         Enumeration<NetworkInterface> nifs) {
-        if (nifs == null) {
-            return null;
-        }
+        EtherAddress result = null;
+        if (nifs != null) {
+            NetworkInterface altIf = null;
+            EtherAddress altAddr = null;
+            while (nifs.hasMoreElements()) {
+                NetworkInterface nif = nifs.nextElement();
+                try {
+                    if (nif.isLoopback()) {
+                        continue;
+                    }
 
-        NetworkInterface altIf = null;
-        EtherAddress altAddr = null;
-        while (nifs.hasMoreElements()) {
-            NetworkInterface nif = nifs.nextElement();
-            try {
-                if (nif.isLoopback()) {
-                    continue;
-                }
+                    byte[] mac = nif.getHardwareAddress();
+                    if (mac == null) {
+                        continue;
+                    }
 
-                byte[] mac = nif.getHardwareAddress();
-                if (mac == null) {
-                    continue;
-                }
+                    EtherAddress ea = new EtherAddress(mac);
+                    if (nif.isUp()) {
+                        LOG.debug("Use HW address of {} as local address: {}",
+                                  nif.getName(), ea.getText());
+                        result = ea;
+                        break;
+                    }
 
-                EtherAddress ea = new EtherAddress(mac);
-                if (nif.isUp()) {
-                    LOG.debug("Use HW address of {} as local address: {}",
-                              nif.getName(), ea.getText());
-                    return ea;
+                    if (altIf == null) {
+                        altIf = nif;
+                        altAddr = ea;
+                    }
+                } catch (Exception e) {
+                    LOG.debug("Ignore network interface: " + nif.getName(),
+                              e);
                 }
+            }
 
-                if (altIf == null) {
-                    altIf = nif;
-                    altAddr = ea;
-                }
-            } catch (Exception e) {
-                LOG.debug("Ignore network interface: " + nif.getName(),
-                          e);
+            if (altAddr != null) {
+                LOG.debug("Use inactive HW address of {} as local address: ",
+                          altIf.getName(), altAddr.getText());
+                result = altAddr;
             }
         }
 
-        if (altAddr != null) {
-            LOG.debug("Use inactive HW address of {} as local address: ",
-                      altIf.getName(), altAddr.getText());
-            return altAddr;
-        }
-
-        return null;
+        return result;
     }
 
     /**

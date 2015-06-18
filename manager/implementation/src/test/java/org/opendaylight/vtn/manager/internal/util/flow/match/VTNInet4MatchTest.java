@@ -218,16 +218,18 @@ public class VTNInet4MatchTest extends TestBase {
                 assertEquals(RpcErrorTag.BAD_ELEMENT, e.getErrorTag());
                 Status st = e.getStatus();
                 assertEquals(StatusCode.BADREQUEST, st.getCode());
-                String msg;
+                String desc = st.getDescription();
                 if (addr.isEmpty()) {
-                    msg = "Empty source address.";
+                    assertEquals("Empty source address.", desc);
                 } else if (addr.equals(v6addr)) {
-                    msg = "Unexpected source address type: addr=" + addr +
-                        ", expected=Inet4Address";
+                    String msg = "Unexpected source address type: addr=" +
+                        addr + ", expected=Inet4Address";
+                    assertEquals(msg, desc);
                 } else {
-                    msg = "Invalid source IP address: " + addr;
+                    String msg = "Invalid source IP address: " + addr + ": ";
+                    assertTrue("Unexpected error message: " + desc,
+                               desc.startsWith(msg));
                 }
-                assertEquals(msg, st.getDescription());
             }
         }
 

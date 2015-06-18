@@ -131,13 +131,12 @@ public final class DataStoreUtils {
      * @return  An {@link InstanceIdentifier} instance on sucecss.
      *          {@code null} on failure.
      */
+    @SuppressWarnings("unchecked")
     public static <T extends DataObject> InstanceIdentifier<T> cast(
         Class<T> type, InstanceIdentifier<?> path) {
         Class<?> target = path.getTargetType();
         if (target.equals(type)) {
-            @SuppressWarnings("unchecked")
-            InstanceIdentifier<T> ret = (InstanceIdentifier<T>)path;
-            return ret;
+            return (InstanceIdentifier<T>)path;
         }
 
         return null;

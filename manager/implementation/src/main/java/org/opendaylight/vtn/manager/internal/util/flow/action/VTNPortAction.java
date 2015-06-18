@@ -129,7 +129,7 @@ public abstract class VTNPortAction extends FlowFilterAction {
     }
 
     /**
-     * Return an exception which indicatse no port number is specified.
+     * Return an exception which indicates no port number is specified.
      *
      * @param obj  An object to be added to the error message.
      * @return  An {@link RpcException} instance.

@@ -690,17 +690,14 @@ public class VTNManagerImpl
         try {
             cs.createCache(cacheName, cmode);
         } catch (CacheExistException e) {
-            LOG.debug("{}: {}: Cache already exists", containerName,
-                      cacheName);
+            LOG.debug("Cache already exists: name=", cacheName, e);
         } catch (CacheConfigException e) {
-            LOG.error("{}: {}: Invalid cache configuration: {}",
-                      containerName, cacheName, cmode);
+            String msg = "Invalid cache configuration: name=" + cacheName +
+                ", mode=" + cmode;
+            LOG.error(msg, e);
         } catch (Exception e) {
-            if (LOG.isErrorEnabled()) {
-                String msg = containerName + ": " + cacheName +
-                    ": Failed to create cache";
-                LOG.error(msg, e);
-            }
+            String msg = "Failed to create cache: name=" + cacheName;
+            LOG.error(msg, e);
         }
     }
 
@@ -1502,7 +1499,7 @@ public class VTNManagerImpl
      * Deliver cluster events queued in the event delivery queue.
      */
     private void flushEventQueue() {
-        ArrayList<ClusterEvent> list;
+        List<ClusterEvent> list;
         synchronized (clusterEventQueue) {
             list = new ArrayList<ClusterEvent>(clusterEventQueue);
             clusterEventQueue.clear();
@@ -1515,7 +1512,7 @@ public class VTNManagerImpl
             }
         } else {
             // Call event handlers for local node.
-            final ArrayList<ClusterEventId> ids =
+            final List<ClusterEventId> ids =
                 new ArrayList<ClusterEventId>();
             for (ClusterEvent cev: list) {
                 cev.received(this, true);
@@ -2340,6 +2337,8 @@ public class VTNManagerImpl
         try {
             code = StatusCode.valueOf(appTag);
         } catch (Exception e) {
+            LOG.trace("Unknown status code in RpcError.", e);
+
             Throwable cause = rerr.getCause();
             String m = "RPC failed due to unexpected error: type=";
             StringBuilder builder = new StringBuilder(m).
@@ -2430,7 +2429,7 @@ public class VTNManagerImpl
                         build();
                     builder.setDataFlowPort(dfp);
                 } catch (IllegalArgumentException e) {
-                    // Invalid port name is specified.
+                    LOG.trace("Invalid port name is specified: " + swport, e);
                     return false;
                 }
             }
@@ -2443,6 +2442,7 @@ public class VTNManagerImpl
         } catch (RpcException e) {
             // The source host is specified by unsupported address type,
             // or an invalid VLAN ID is specified.
+            LOG.trace("Unsupported source host: " + filter.getSourceHost(), e);
             return false;
         }
 
@@ -2652,6 +2652,8 @@ public class VTNManagerImpl
                     vtn.updateBridgeState(VTNManagerImpl.this, path);
                 } catch (VTNException e) {
                     // Ignore.
+                    LOG.debug("Caught an exception while updating VBridge.",
+                              e);
                 } finally {
                     unlock(rdlock);
                 }
@@ -2683,7 +2685,7 @@ public class VTNManagerImpl
     public List<VTenant> getTenants() throws VTNException {
         checkDefault();
 
-        ArrayList<VTenant> list;
+        List<VTenant> list;
         Lock rdlock = rwLock.readLock();
         rdlock.lock();
         try {

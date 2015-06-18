@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,7 @@
 package org.opendaylight.vtn.manager.northbound;
 
 import java.net.InetAddress;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -229,6 +230,18 @@ public class MacEntry {
     }
 
     /**
+     * Determine whether the given object contains the same inventory
+     * information with this object.
+     *
+     * @param entry  A {@link MacEntry} instance to be compared.
+     * @return  {@code true} only if the given object contains the same
+     *          inventory information.
+     */
+    private boolean equalsInventory(MacEntry entry) {
+        return (node.equals(entry.node) && port.equals(entry.port));
+    }
+
+    /**
      * Determine whether the given object is identical to this object.
      *
      * @param o  An object to be compared.
@@ -244,24 +257,9 @@ public class MacEntry {
         }
 
         MacEntry entry = (MacEntry)o;
-        if (vlan != entry.vlan) {
-            return false;
-        }
-        if (!address.equals(entry.address)) {
-            return false;
-        }
-        if (!node.equals(entry.node)) {
-            return false;
-        }
-        if (!port.equals(entry.port)) {
-            return false;
-        }
-
-        if (inetAddresses == null) {
-            return (entry.inetAddresses == null);
-        }
-
-        return inetAddresses.equals(entry.inetAddresses);
+        return (vlan == entry.vlan && address.equals(entry.address) &&
+                equalsInventory(entry) &&
+                Objects.equals(inetAddresses, entry.inetAddresses));
     }
 
     /**

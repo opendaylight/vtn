@@ -229,8 +229,8 @@ public abstract class FlowFilterImpl implements Serializable {
             }
         } catch (UnsupportedPacketException e) {
             Logger logger = getLogger();
-            String msg = e.getMessage();
             if (logger.isDebugEnabled()) {
+                String msg = e.getMessage();
                 logger.debug("{}: Ignore flow filter: {}: {}",
                              ffmap.getLogPrefix(index), msg, condition);
             }

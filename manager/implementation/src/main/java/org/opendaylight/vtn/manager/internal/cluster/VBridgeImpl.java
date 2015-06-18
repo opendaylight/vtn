@@ -298,7 +298,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
     List<VlanMap> getVlanMaps() {
         Lock rdlock = readLock();
         try {
-            ArrayList<VlanMap> list = new ArrayList<VlanMap>(vlanMaps.size());
+            List<VlanMap> list = new ArrayList<VlanMap>(vlanMaps.size());
             for (Map.Entry<String, VlanMapImpl> entry: vlanMaps.entrySet()) {
                 String id = entry.getKey();
                 VlanMapImpl vmap = entry.getValue();
@@ -892,7 +892,7 @@ public final class VBridgeImpl extends PortBridge<VBridgeIfImpl>
 
         try {
             // Don't send the packet to the incoming network.
-            HashSet<PortVlan> sent = new HashSet<PortVlan>();
+            Set<PortVlan> sent = new HashSet<PortVlan>();
             PortVlan innw = pctx.getIncomingNetwork();
             if (innw != null) {
                 sent.add(innw);
