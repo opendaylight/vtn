@@ -380,8 +380,8 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
     flow_match->inetMatch_ = new inetMatch();
     flow_match->inetMatch_->inet4_ = new inet4();
 
-    if (val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID ||
-        val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED) {
+    if ((val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALID) ||
+        (val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED)) {
       flow_match->inetMatch_->inet4_->dst_.assign(inet_ntoa(val_new.dst_ip));
       pfc_log_info("dst ip:%s",flow_match->inetMatch_->inet4_->dst_.c_str());
     } else if ( val_new.valid[UPLL_IDX_DST_IP_FLE] == UNC_VF_INVALID &&
@@ -390,8 +390,8 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
       pfc_log_info("dst ip:%s",flow_match->inetMatch_->inet4_->dst_.c_str());
     }
 
-    if (val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID ||
-        val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED) {
+    if ((val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALID) ||
+        (val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_VALUE_NOT_MODIFIED)) {
       flow_match->inetMatch_->inet4_->src_.assign(inet_ntoa(val_new.src_ip));
       pfc_log_info("src ip:%s",flow_match->inetMatch_->inet4_->src_.c_str());
     } else if (val_new.valid[UPLL_IDX_SRC_IP_FLE] == UNC_VF_INVALID &&
@@ -400,8 +400,8 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
       pfc_log_info("src ip:%s",flow_match->inetMatch_->inet4_->src_.c_str());
     }
 
-    if (val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID ||
-       val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALUE_NOT_MODIFIED){
+    if ((val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALID) ||
+       (val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_VALUE_NOT_MODIFIED)){
       flow_match->inetMatch_->inet4_->dstsuffix_ = val_new.dst_ip_prefixlen;
       pfc_log_info("prefixlen :%d",val_new.dst_ip_prefixlen);
     } else if (val_new.valid[UPLL_IDX_DST_IP_PREFIX_FLE] == UNC_VF_INVALID &&
@@ -410,9 +410,9 @@ OdcFlowListEntryCommand::copy(flowcondition* flow,
       pfc_log_info("Filling Inet Match Details dst len old struct");
     }
 
-    if (val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID ||
-        val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] ==
-                                             UNC_VF_VALUE_NOT_MODIFIED) {
+    if ((val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_VALID) ||
+        (val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] ==
+                                             UNC_VF_VALUE_NOT_MODIFIED)) {
       flow_match->inetMatch_->inet4_->srcsuffix_ = val_new.src_ip_prefixlen;
       pfc_log_info("prefixlen :%d",val_new.src_ip_prefixlen);
     } else if (val_new.valid[UPLL_IDX_SRC_IP_PREFIX_FLE] == UNC_VF_INVALID &&
