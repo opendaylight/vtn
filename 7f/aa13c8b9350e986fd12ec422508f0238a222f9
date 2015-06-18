@@ -1,0 +1,8 @@
+Verified+1: jenkins-releng <jenkins-releng@opendaylight.org>
+Code-Review+1: Venkatrangan Govindarajan <venkatrangang@hcl.com>
+Code-Review+2: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-by: Hideyuki Tai <Hideyuki.Tai@necam.com>
+Submitted-at: Thu, 18 Jun 2015 23:53:10 +0000
+Reviewed-on: https://git.opendaylight.org/gerrit/22868
+Project: vtn
+Branch: refs/heads/stable/lithium
