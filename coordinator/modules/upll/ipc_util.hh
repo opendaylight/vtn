@@ -95,7 +95,16 @@ class ConfigVal {
     AppendCfgVal(new ConfigVal(st_num, val));
   }
   void AppendCfgVal(ConfigVal *cfg_val);
-  void DeleteNextCfgVal();
+  inline void DeleteNextCfgVal() {
+	  ConfigVal *cv = next_cfg_val_;
+	  while (cv != NULL) {
+		  ConfigVal *tmp_cv = cv->next_cfg_val_;
+		  cv->next_cfg_val_ = NULL;
+		  delete cv;
+		  cv = tmp_cv;
+	  }
+	  next_cfg_val_ = NULL;
+  }
   // user_data is not freed on deleting this object or resetting its value
   inline void *get_user_data() const { return user_data_; }
   inline void set_user_data(void *user_data) { user_data_ = user_data; }
@@ -201,7 +210,15 @@ class ConfigKeyVal {
   inline void set_next_cfg_key_val(ConfigKeyVal *ckv) { next_ckv_ = ckv; }
   inline void set_cfg_val(ConfigVal *cfg) { cfg_val_ = cfg; }
 
-  void DeleteNextCfgKeyVal();
+  inline void DeleteNextCfgKeyVal() {
+  ConfigKeyVal *ckv = next_ckv_;
+  while (ckv != NULL) {
+	  ConfigKeyVal *tmp_ckv = ckv->next_ckv_;
+	  ckv->next_ckv_ = NULL;
+	  delete ckv;
+	  ckv = tmp_ckv;
+  }
+ }
 
   // user_data is not freed on deleting this object or on resetting its value
   inline void *get_user_data() const { return user_data_; }
