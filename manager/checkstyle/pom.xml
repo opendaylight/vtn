@@ -19,7 +19,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.checkstyle</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.3.0-Lithium</version>
   <packaging>jar</packaging>
 
   <scm>

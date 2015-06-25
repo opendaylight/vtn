@@ -15,7 +15,7 @@
   <parent>
     <groupId>org.opendaylight.vtn.application</groupId>
     <artifactId>dist</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1-Lithium</version>
     <relativePath>..</relativePath>
   </parent>
 
