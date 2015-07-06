@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -34,7 +34,7 @@ private:
 };
 
 static DrvCacheEnvironment    *drvCacheEnv = new DrvCacheEnvironment();
-static ::testing::Environment  *globalEnv =
+::testing::Environment  *globalEnv =
   ::testing::AddGlobalTestEnvironment(drvCacheEnv);
 
 TEST(TypeToStrFun, keytype) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -452,19 +452,19 @@ extern int  __pfc_ipcclnt_getres_struct(pfc_ipcsess_t *PFC_RESTRICT sess,
 
 
 
-inline int
+static inline int
 pfc_ipcclnt_altopen(const char *PFC_RESTRICT name,
                     pfc_ipcconn_t *PFC_RESTRICT connp) {
   *connp = 1;
   return result_;
 }
 
-inline void
+static inline void
 set_pfc_ipcclnt_altopen(int result) {
   result_ = result;
 }
 
-inline int
+static inline int
 pfc_ipcclnt_altclose(pfc_ipcconn_t conn) {
   return 1;
 }
