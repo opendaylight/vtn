@@ -7467,6 +7467,10 @@ public class VTNManagerImpl
                     table.flush(node);
                 }
             } else {
+                if (!addNode(node)) {
+                    return;
+                }
+
                 if (connectionManager.getLocalityStatus(node) ==
                     ConnectionLocality.LOCAL) {
                     // Remove all VTN flows related to this node because
@@ -7477,9 +7481,6 @@ public class VTNManagerImpl
                     }
                 }
 
-                if (!addNode(node)) {
-                    return;
-                }
                 utype = UpdateType.ADDED;
             }
 
