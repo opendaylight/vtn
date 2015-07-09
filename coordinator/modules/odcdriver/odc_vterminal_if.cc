@@ -413,7 +413,8 @@ std::string OdcVtermIfCommand::get_vterm_if_url(key_vterm_if_t& vterm_if_key) {
 
 // Update Cmd for Vterm If
 UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
-                       val_vterm_if_t& vterm_if_val,
+                       val_vterm_if_t& vterm_if_val_old,
+                       val_vterm_if_t& vterm_if_val_new,
                        unc::driver::controller *ctr_ptr) {
   ODC_FUNC_TRACE;
   PFC_ASSERT(ctr_ptr != NULL);
@@ -421,17 +422,17 @@ UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
   if (vterm_if_url.empty()) {
     return UNC_DRV_RC_ERR_GENERIC;
   }
-  json_object* vterm_if_json_request_body = create_request_body(vterm_if_val);
+  json_object* vterm_if_json_request_body = create_request_body(vterm_if_val_new);
   json_object* port_map_json_req_body = NULL;
-  if (vterm_if_val.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
+  if (vterm_if_val_new.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
     if (UNC_VF_INVALID ==
-        vterm_if_val.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
+        vterm_if_val_new.portmap.valid[UPLL_IDX_LOGICAL_PORT_ID_PM]) {
       pfc_log_error("portmap - logical port valid flag is not set");
       json_object_put(vterm_if_json_request_body);
       return UNC_DRV_RC_ERR_GENERIC;
     }
     std::string logical_port_id =
-        reinterpret_cast<char*>(vterm_if_val.portmap.logical_port_id);
+        reinterpret_cast<char*>(vterm_if_val_new.portmap.logical_port_id);
     odc_drv_resp_code_t logical_port_retval = check_logical_port_id_format(
         logical_port_id);
     if (logical_port_retval != ODC_DRV_SUCCESS) {
@@ -439,7 +440,7 @@ UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
       pfc_log_error("logical port id is invalid");
       return UNC_DRV_RC_ERR_GENERIC;
     }
-    port_map_json_req_body = create_request_body_port_map(vterm_if_val,
+    port_map_json_req_body = create_request_body_port_map(vterm_if_val_new,
                                                           logical_port_id);
     if (json_object_is_type(port_map_json_req_body, json_type_null)) {
       pfc_log_error("port map req body is null");
@@ -479,8 +480,8 @@ UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
 
       uint32_t port_map_resp_code = ODC_DRV_FAILURE;
       unc::restjson::HttpResponse_t* port_map_response = NULL;
-      // VBR_IF successful...Check for PortMap
-      if (vterm_if_val.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
+      // VTERM_IF successful...Check for PortMap
+      if (vterm_if_val_new.valid[UPLL_IDX_PM_VTERMI] == UNC_VF_VALID) {
         std::string port_map_url = "";
         port_map_url.append(vterm_if_url);
         port_map_url.append("/portmap");
@@ -504,8 +505,8 @@ UncRespCode OdcVtermIfCommand::update_cmd(key_vterm_if_t& vterm_if_key,
                         port_map_resp_code);
           return UNC_DRV_RC_ERR_GENERIC;
         }
-      } else if ((vterm_if_val.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID_NO_VALUE)
-              && (vterm_if_val.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)) {
+      } else if ((vterm_if_val_new.valid[UPLL_IDX_PM_VBRI] == UNC_VF_VALID_NO_VALUE)
+              && (vterm_if_val_new.valid[PFCDRV_IDX_VAL_VBRIF] == UNC_VF_VALID)) {
         std::string port_map_url = "";
         port_map_url.append(vterm_if_url);
         port_map_url.append("/portmap");
@@ -867,8 +868,9 @@ UncRespCode OdcVtermIfCommand::fill_config_node_vector(
   unc::vtndrvcache::ConfigNode *cfgptr =
           new unc::vtndrvcache::CacheElementUtil<key_vterm_if_t,
                                                  val_vterm_if_t,
+                                                 val_vterm_if_t,
                                                  uint32_t> (&key_vterm_if,
-                                                 &val_vterm_if,
+                                                 &val_vterm_if, &val_vterm_if,
                                                  uint32_t(UNC_OP_READ));
       PFC_ASSERT(cfgptr != NULL);
       cfgnode_vector.push_back(cfgptr);

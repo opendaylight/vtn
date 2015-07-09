@@ -351,9 +351,9 @@ pfc_bool_t ODCModule::get_physical_port_details(
     pfc_log_debug("key_type in odc_mod %d", key_type);
     if (UNC_KT_SWITCH == key_type) {
       unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t> * cache_util_ptr =
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * cache_util_ptr =
           static_cast <unc::vtndrvcache::CacheElementUtil
-          <key_switch_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
+          <key_switch_t, val_switch_st_t, val_switch_st_t, uint32_t> * > (cfgnode_cache);
 
       PFC_ASSERT(cache_util_ptr != NULL);
       key_switch_t *key_switch = cache_util_ptr->get_key_structure();

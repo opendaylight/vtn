@@ -122,9 +122,9 @@ UncRespCode OdcDataFlowCommand::fetch_config_vtn(
       cfg_list.begin();
   for (; node_itr != cfg_list.end(); ++node_itr) {
     unc::vtndrvcache::ConfigNode *cfg_node = *node_itr;
-    unc::vtndrvcache::CacheElementUtil<key_vtn_t, val_vtn_t, uint32_t>
+    unc::vtndrvcache::CacheElementUtil<key_vtn_t, val_vtn_t, val_vtn_t, uint32_t>
         *cfgnode_ctr = static_cast<unc::vtndrvcache::CacheElementUtil
-        <key_vtn_t, val_vtn_t, uint32_t>*> (cfg_node);
+        <key_vtn_t, val_vtn_t, val_vtn_t, uint32_t>*> (cfg_node);
     // std::string vtn_name =reinterpret_cast<char*>
     // (cfgnode_ctr->get_key_structure()->vtn_name);
     vtn_name.push_back(reinterpret_cast<char*>
