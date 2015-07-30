@@ -19,7 +19,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>manager.checkstyle</artifactId>
-  <version>0.2.4-SNAPSHOT</version>
+  <version>0.2.4-Helium-SR4</version>
   <packaging>jar</packaging>
 
   <scm>
