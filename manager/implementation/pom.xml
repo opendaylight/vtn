@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>manager.common</artifactId>
-    <version>0.2.4-Helium-SR4</version>
+    <version>0.2.5-SNAPSHOT</version>
     <relativePath>../common</relativePath>
   </parent>
 

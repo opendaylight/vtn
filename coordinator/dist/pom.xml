@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.opendaylight.vtn</groupId>
     <artifactId>common</artifactId>
-    <version>0.2.4-Helium-SR4</version>
+    <version>0.2.5-SNAPSHOT</version>
     <relativePath>../../common</relativePath>
   </parent>
 
@@ -29,7 +29,7 @@
 
   <groupId>org.opendaylight.vtn</groupId>
   <artifactId>distribution.vtn-coordinator</artifactId>
-  <version>6.0.0.4-Helium-SR4</version>
+  <version>6.0.0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <profiles>
@@ -47,7 +47,7 @@
 
   <properties>
     <!-- Version of VTN Coordinator. -->
-    <vtn.coordinator.version>6.0.0.4</vtn.coordinator.version>
+    <vtn.coordinator.version>6.0.0.5</vtn.coordinator.version>
 
     <!-- Version of OpenDaylight virtualization edition. -->
     <odl.virt.version>0.2.4</odl.virt.version>
