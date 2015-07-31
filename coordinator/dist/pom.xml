@@ -46,9 +46,6 @@
   </profiles>
 
   <properties>
-    <!-- Version of VTN Coordinator. -->
-    <vtn.coordinator.version>6.2.0.0</vtn.coordinator.version>
-
     <!-- Skip tests entirely unless integrationtests profile is active. -->
     <skipTests>false</skipTests>
     <maven.test.skip>true</maven.test.skip>
@@ -252,7 +249,7 @@
                 <!-- Replace keywords in README.txt. -->
                 <argument>-R</argument>
                 <argument>%VTN_COORDINATOR_VERSION%</argument>
-                <argument>${vtn.coordinator.version}</argument>
+                <argument>${project.version}</argument>
 
                 <argument>${basedir}/target/${vtn.build.destdir}</argument>
               </arguments>

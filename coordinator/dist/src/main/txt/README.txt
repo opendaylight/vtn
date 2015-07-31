@@ -16,7 +16,7 @@ INSTALLATION
 1. The VTN Coordinator is available in the "externalapps" directory of the
    Karaf distribution as the tarball named:
 
-   distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-Helium-bin.tar.bz2
+   distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-bin.tar.bz2
 
    If you want to run the VTN Coordinator on a different machine, copy the
    tarball to the target machine.
@@ -25,7 +25,7 @@ INSTALLATION
    This will install the VTN Coordinator to /usr/local/vtn directory.
 
     tar -C / -xvjf \
-    distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-Helium-bin.tar.bz2
+    distribution.vtn-coordinator-%VTN_COORDINATOR_VERSION%-bin.tar.bz2
 
 ### INSTALLING JAVA
 
