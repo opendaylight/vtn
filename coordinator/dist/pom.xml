@@ -2,7 +2,7 @@
 
 <!--
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -46,12 +46,6 @@
   </profiles>
 
   <properties>
-    <!-- Version of VTN Coordinator. -->
-    <vtn.coordinator.version>6.1.0.0</vtn.coordinator.version>
-
-    <!-- Version of OpenDaylight virtualization edition. -->
-    <odl.virt.version>0.2.0</odl.virt.version>
-
     <!-- Skip tests entirely unless integrationtests profile is active. -->
     <skipTests>false</skipTests>
     <maven.test.skip>true</maven.test.skip>
@@ -254,12 +248,8 @@
 
                 <!-- Replace keywords in README.txt. -->
                 <argument>-R</argument>
-                <argument>%ODL_VIRT_VERSION%</argument>
-                <argument>${odl.virt.version}</argument>
-
-                <argument>-R</argument>
                 <argument>%VTN_COORDINATOR_VERSION%</argument>
-                <argument>${vtn.coordinator.version}</argument>
+                <argument>${project.version}</argument>
 
                 <argument>${basedir}/target/${vtn.build.destdir}</argument>
               </arguments>
