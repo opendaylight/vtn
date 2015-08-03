@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,12 +8,12 @@
  */
 
 /*
- * dal_conn_intf.h 
+ * dal_conn_intf.h
  *   Contians class definition for Database connection and transaction
  *   interfaces
  *
  *   Implemented by DalOdbcMgr
- */ 
+ */
 #ifndef __DAL_CONN_INTF_HH__
 #define __DAL_CONN_INTF_HH__
 
@@ -34,7 +34,7 @@ enum DalConnState {
 
 
 /**
- *  DalConnIntf 
+ *  DalConnIntf
  *    Connection and Transaction APIs for database
  *
  *  Inherited by DalOdbcMgr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,7 +28,8 @@ class TcLibInterfaceStub : public TcLibInterface {
    */
 
   TcCommonRet HandleCommitTransactionStart(uint32_t config_id,
-                                           uint32_t session_id) {
+                                           uint32_t session_id, TcConfigMode config_mode,
+                                                       std::string vtn_name) {
     if (tclib_stub_failure_ == PFC_TRUE)
       return TC_FAILURE;
 
@@ -55,6 +56,8 @@ class TcLibInterfaceStub : public TcLibInterface {
 
   TcCommonRet HandleCommitTransactionEnd(uint32_t config_id,
                                          uint32_t session_id,
+                                         TcConfigMode config_mode,
+                                         std::string vtn_name,
                                          TcTransEndResult end_result) {
     return TC_SUCCESS;
   }
@@ -80,6 +83,8 @@ class TcLibInterfaceStub : public TcLibInterface {
 
   TcCommonRet HandleCommitVoteRequest(uint32_t session_id,
                                       uint32_t config_id,
+                                      TcConfigMode config_mode,
+                                      std::string vtn_name,
                                       TcDriverInfoMap& driver_info);
   /*
      {
@@ -108,6 +113,8 @@ class TcLibInterfaceStub : public TcLibInterface {
 
   TcCommonRet HandleCommitGlobalCommit(uint32_t config_id,
                                        uint32_t session_id,
+                                       TcConfigMode config_mode,
+                                       std::string vtn_name,
                                        TcDriverInfoMap& driver_info) {
     return TC_SUCCESS;
   }
@@ -135,6 +142,8 @@ class TcLibInterfaceStub : public TcLibInterface {
 
   TcCommonRet HandleCommitDriverResult(uint32_t session_id,
                                        uint32_t config_id,
+                                       TcConfigMode config_mode,
+                                       std::string vtn_name,
                                        TcCommitPhaseType commitphase,
                                        TcCommitPhaseResult driver_result) {
     if (tclib_stub_failure_ == PFC_TRUE)
@@ -170,11 +179,11 @@ class TcLibInterfaceStub : public TcLibInterface {
   TcCommonRet HandleAuditStart(uint32_t session_id,
                                unc_keytype_ctrtype_t driver_id,
                                string controller_id,
-                               pfc_bool_t simplified_audit,
+                               TcAuditType audit_type,
                                uint64_t commit_number,
                                uint64_t commit_date,
-                               std::string commit_application) {
-    if (tclib_stub_failure_ == PFC_TRUE) {
+                               std::string commit_application){
+    if(tclib_stub_failure_ == PFC_TRUE) {
       return TC_FAILURE;
     }
     return TC_SUCCESS;
@@ -188,13 +197,22 @@ class TcLibInterfaceStub : public TcLibInterface {
   TcCommonRet HandleAuditStart(uint32_t session_id,
                                unc_keytype_ctrtype_t driver_id,
                                string controller_id,
-                               pfc_bool_t force_reconnect) {
+                               pfc_bool_t force_reconnect,
+                               TcAuditType audit_type) {
     if (tclib_stub_failure_ == PFC_TRUE) {
       return TC_FAILURE;
     }
     return TC_SUCCESS;
   }
 
+ TcCommonRet HandleAuditCancel(uint32_t session_id,
+                               unc_keytype_ctrtype_t ctr_type,
+                               std::string controller_id) {
+ if (tclib_stub_failure_ == PFC_TRUE) {
+          return TC_FAILURE;
+        }
+        return TC_SUCCESS;
+}
   /**
    * @Description : This function will be called back when TC sends user
    *                Audit End request to UPPL
@@ -214,7 +232,7 @@ class TcLibInterfaceStub : public TcLibInterface {
    *                This is a virtual function in TCLib
    */
 
-  TcCommonRet HandleSaveConfiguration(uint32_t session_id) {
+  TcCommonRet HandleSaveConfiguration(uint32_t session_id, uint64_t save_version) {
     if (tclib_stub_failure_ == PFC_TRUE)
       return TC_FAILURE;
 
@@ -240,7 +258,10 @@ class TcLibInterfaceStub : public TcLibInterface {
    *                This is a virtual function in TCLib
    */
 
-  TcCommonRet HandleAbortCandidate(uint32_t session_id, uint32_t config_id) {
+  TcCommonRet HandleAbortCandidate(uint32_t session_id, uint32_t config_id,
+                                   TcConfigMode config_mode,
+                                   std::string vtn_name,
+                                   uint64_t abort_version) {
     if (tclib_stub_failure_ == PFC_TRUE)
       return TC_FAILURE;
 
@@ -254,7 +275,10 @@ class TcLibInterfaceStub : public TcLibInterface {
    */
 
   TcCommonRet HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                TcServiceType fail_oper) {
+                                TcServiceType fail_oper,
+                                TcConfigMode config_mode,
+                                std::string vtn_name,
+                                uint64_t version) {
     if (tclib_stub_failure_ == PFC_TRUE)
       return TC_FAILURE;
     return TC_SUCCESS;
@@ -336,6 +360,8 @@ class TcLibInterfaceStub : public TcLibInterface {
    */
 
   TcCommonRet HandleCommitGlobalAbort(uint32_t session_id, uint32_t config_id,
+                                      TcConfigMode config_mode,
+                                      std::string vtn_name,
                                       TcCommitOpAbortPhase fail_phase);
   /*{
     return TC_SUCCESS;

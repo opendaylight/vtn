@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -45,8 +45,17 @@ Mutex PhysicalLayer::notification_manager_mutex_;
 // Static variable for mutex obj use in ODBCManager class
 Mutex PhysicalLayer::ODBCManager_mutex_;
 
+// Static variable for mutex obj use in InternalTransactionCoordinator class
+Mutex PhysicalLayer::phyitc_mutex_;
+
 // Static variable for mutex obj use in ODBC connection pool access
 Mutex PhysicalLayer::db_conpool_mutex_;
+
+// Static variable for mutex obj use to protect the ctr_oprn_status_ map object
+Mutex PhysicalLayer::ctr_oprn_mutex_;
+
+// Static variable for mutex obj use to protect the is_fatal_done flag
+Mutex PhysicalLayer::fatal_mutex_;
 
 ReadWriteLock PhysicalLayer::phy_fini_db_lock_;
 ReadWriteLock PhysicalLayer::phy_fini_phycore_lock_;
@@ -55,8 +64,9 @@ ReadWriteLock PhysicalLayer::phy_dbsbcxn_lock_;
 ReadWriteLock PhysicalLayer::events_done_lock_;
 ReadWriteLock PhysicalLayer::timer_lock_;
 ReadWriteLock PhysicalLayer::phy_sqlexec_lock_;
-
 uint8_t PhysicalLayer::phyFiniFlag = 0;
+bool PhysicalLayer::is_fatal_done = false;
+std::map<string, CtrOprnStatus> PhysicalLayer::ctr_oprn_status_;
 
 /**
  *@Description : This function will be automatically called by the PFC module
@@ -116,7 +126,7 @@ PhysicalLayer* PhysicalLayer::get_instance() {
     physical_layer_ = static_cast<PhysicalLayer *>
     (getInstance(UPPL_IPC_SVC_NAME));
     if (physical_layer_ == NULL) {
-      pfc_log_fatal("Memory not allocated for physical_layer_");
+      UPPL_LOG_FATAL("Memory not allocated for physical_layer_");
     }
   }
   physical_layer_mutex_.unlock();
@@ -224,6 +234,15 @@ UncRespCode PhysicalLayer::FinalizePhysicalSubModules() {
       pfc_log_error("odbc_manager_ is already freed or NULL");
     }
   }
+  // Deleting the CtrlOperationStatus map
+  PhysicalLayer::ctr_oprn_mutex_.lock();
+  map<string, CtrOprnStatus> :: iterator it;
+  for (it = PhysicalLayer::ctr_oprn_status_.begin();
+       it !=PhysicalLayer::ctr_oprn_status_.end(); it++) {
+    if (it->second.rwlock_oper_st != NULL) delete (it->second).rwlock_oper_st;
+  }
+  PhysicalLayer::ctr_oprn_status_.clear();
+  PhysicalLayer::ctr_oprn_mutex_.unlock();
   // Instance of physical core is already deleted FinalizePhysical()
   pfc_log_info("All the physical layer submodules finalised");
   return response;

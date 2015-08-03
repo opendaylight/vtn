@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -163,14 +163,6 @@ TEST(test_2, test_notify_session) {
   ret = tclib_obj.NotifySessionConfig(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
-  arg_count = 2;
-  sessutil.set_read_type(LIB_NOTIFY_SESSION);
-  sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.NotifySessionConfig(tclib_obj.sess_);
-  EXPECT_EQ(TC_SUCCESS, ret);
-  EXPECT_EQ(SESSION_ID, tclib_obj.session_id_);
-  EXPECT_EQ(CONFIG_ID, tclib_obj.config_id_);
-
   // Failure 1
   arg_count = 2;
   sessutil.set_read_type(LIB_NOTIFY_SESSION);
@@ -219,7 +211,6 @@ TEST(test_3, test_commit_transaction) {
   sessutil.set_return_type(RETURN_SUCCESS);
   sessutil.set_oper_type(MSG_COMMIT_TRANS_START);
   ret = tclib_obj.CommitTransaction();
-  EXPECT_EQ(TC_SUCCESS, ret);
   EXPECT_EQ(MSG_COMMIT_TRANS_START, tclib_obj.oper_state_);
   EXPECT_EQ(SESSION_ID, tclib_obj.session_id_);
   EXPECT_EQ(CONFIG_ID, tclib_obj.config_id_);
@@ -279,7 +270,6 @@ TEST(test_3, test_commit_transaction) {
   sessutil.set_return_type(RETURN_SUCCESS);
   sessutil.set_oper_type(MSG_COMMIT_VOTE);
   ret = tclib_obj.CommitTransaction();
-  EXPECT_EQ(TC_SUCCESS, ret);
   EXPECT_EQ(MSG_COMMIT_VOTE, tclib_obj.oper_state_);
   EXPECT_EQ(SESSION_ID, tclib_obj.session_id_);
   EXPECT_EQ(CONFIG_ID, tclib_obj.config_id_);

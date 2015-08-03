@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -107,9 +107,9 @@ class Kt_Root: public Kt_Base {
         uint32_t option2,
         vector<ODBCMOperator> &vect_key_operations,
         void* &old_value_struct,
-        CsRowStatus row_status= NOTAPPLIED,
-        pfc_bool_t is_filtering= false,
-        pfc_bool_t is_state= PFC_FALSE) {return;}
+        CsRowStatus row_status,
+        pfc_bool_t is_filtering,
+        pfc_bool_t is_state) {return;}
 
   private:
     void* getChildKeyStruct(uint32_t child_class);

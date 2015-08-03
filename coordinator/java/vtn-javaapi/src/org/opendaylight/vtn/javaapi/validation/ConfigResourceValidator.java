@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncJavaAPIErrorCode;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
+import org.opendaylight.vtn.javaapi.validation.CommonValidator;
 
 /**
  * The Class ConfigResourceValidator validates request Json object for Commit
@@ -24,6 +25,9 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 
 	private static final Logger LOG = Logger
 			.getLogger(ConfigResourceValidator.class.getName());
+
+	/** The validator. */
+	private final CommonValidator validator = new CommonValidator();
 
 	/**
 	 * Instantiates a new config resource validator.
@@ -74,6 +78,7 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 	private boolean validatePut(final JsonObject requestBody) {
 		LOG.trace("Start ConfigResourceValidator#validatePut()");
 		boolean isValid = false;
+		String operation = null;
 		setInvalidParameter(VtnServiceJsonConsts.CONFIGURATION);
 		if (requestBody.has(VtnServiceJsonConsts.CONFIGURATION)
 				&& requestBody.get(VtnServiceJsonConsts.CONFIGURATION)
@@ -84,12 +89,65 @@ public class ConfigResourceValidator extends VtnServiceValidator {
 			if (configuration.has(VtnServiceJsonConsts.OPERATION)
 					&& configuration.getAsJsonPrimitive(
 							VtnServiceJsonConsts.OPERATION).getAsString() != null) {
-				final String operation = configuration.getAsJsonPrimitive(
+				operation = configuration.getAsJsonPrimitive(
 						VtnServiceJsonConsts.OPERATION).getAsString();
 				isValid = operation
 						.equalsIgnoreCase(VtnServiceJsonConsts.COMMIT)
 						|| operation
 								.equalsIgnoreCase(VtnServiceJsonConsts.SAVE);
+			}
+
+			//if commit, check the mandatory param:timeout
+			if (isValid &&
+					operation.equalsIgnoreCase(VtnServiceJsonConsts.COMMIT)) {
+				setInvalidParameter(VtnServiceJsonConsts.TIMEOUT);
+				if (configuration.has(VtnServiceJsonConsts.TIMEOUT)) {
+					String timeout = configuration.getAsJsonPrimitive(
+							VtnServiceJsonConsts.TIMEOUT).getAsString();
+					if (timeout != null && !timeout.isEmpty()) {
+						try {
+							long min = Integer.MIN_VALUE;
+							long max = Integer.MAX_VALUE;
+							isValid = validator.isValidRange(timeout, min, max);
+						} catch (NumberFormatException e) {
+							LOG.warning("ConfigResourceValidator#validatePut():timeout is invalid."
+									+ timeout);
+						isValid = false;
+					}
+					} else {
+						isValid = false;
+					}
+				} else {
+					isValid = false;
+				}
+			}
+
+			//if commit, check the mandatory param:cancel_audit
+			if (isValid && 
+					operation.equalsIgnoreCase(VtnServiceJsonConsts.COMMIT)) {
+				setInvalidParameter(VtnServiceJsonConsts.CANCEL_AUDIT);
+				if (configuration.has(VtnServiceJsonConsts.CANCEL_AUDIT)) {
+					String cancelAudit = configuration.getAsJsonPrimitive(
+							VtnServiceJsonConsts.CANCEL_AUDIT).getAsString();
+					if (cancelAudit != null && !cancelAudit.isEmpty()) {
+						try {
+							if (Integer.parseInt(cancelAudit) == 0 
+									|| Integer.parseInt(cancelAudit) == 1) {
+								isValid = true;
+							} else {
+								isValid = false;
+							}
+						} catch (NumberFormatException e) {
+							LOG.warning("ConfigResourceValidator#validatePut():cancelAudit is invalid."
+										+ cancelAudit);
+							isValid = false;
+						}
+					} else {
+						isValid = false;
+					}
+				} else {
+					isValid = false;
+				}
 			}
 		}
 		LOG.trace("Complete ConfigResourceValidator#validatePut()");

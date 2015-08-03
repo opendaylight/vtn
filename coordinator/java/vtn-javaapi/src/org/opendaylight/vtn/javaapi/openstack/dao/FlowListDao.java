@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -189,7 +189,8 @@ public class FlowListDao {
 			}
 
 			if (0 == count) {
-				LOG.debug("Auto generated resource counter : " + count++);
+				count++;
+				LOG.debug("Auto generated resource counter : " + count);
 				return count;
 			}
 
@@ -209,7 +210,8 @@ public class FlowListDao {
 		}
 
 		if (idList.get(idList.size() - 1).intValue() == count) {
-			LOG.debug("Auto generated resource counter : " + count++);
+			count++;
+			LOG.debug("Auto generated resource counter : " + count);
 			return count;
 		}
 

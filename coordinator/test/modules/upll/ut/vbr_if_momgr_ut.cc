@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -741,12 +741,14 @@ TEST_F(VbrIfMoMgrTest, GetVexternal_01) {
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalDmlIntf *dmi(getDalDmlIntf());
+  const char *ctrlr_id = "pfc1";
   uint8_t vexternal1=1;
   uint8_t *vexternal=&vexternal1;
   uint8_t vex_if1=1;
   uint8_t *vex_if=&vex_if1;
   InterfacePortMapInfo iftype;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.GetVexternal(ikey,dt_type,dmi,vexternal,vex_if,iftype));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.GetVexternal(ikey,dt_type,dmi,
+                                    vexternal,vex_if,iftype, ctrlr_id));
 
   delete ikey;
 }
@@ -786,12 +788,13 @@ TEST_F(VbrIfMoMgrTest, GetVexternal_03) {
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalDmlIntf *dmi(getDalDmlIntf());
+  const char *ctrlr_id = "pfc1";
   uint8_t vexternal1=1;
   uint8_t *vexternal=&vexternal1;
   uint8_t vex_if1=1;
   uint8_t *vex_if=&vex_if1;
   InterfacePortMapInfo iftype;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.GetVexternal(ikey,dt_type,dmi,vexternal,vex_if,iftype));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.GetVexternal(ikey,dt_type,dmi,vexternal,vex_if,iftype, ctrlr_id));
 
   delete ikey;
 }
@@ -804,12 +807,13 @@ TEST_F(VbrIfMoMgrTest, GetVexternal_04) {
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalDmlIntf *dmi(getDalDmlIntf());
+  const char *ctrlr_id = "pfc1";
   uint8_t vexternal1=1;
   uint8_t *vexternal=&vexternal1;
   uint8_t vex_if1=1;
   uint8_t *vex_if=&vex_if1;
   InterfacePortMapInfo iftype;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.GetVexternal(ikey,dt_type,dmi,vexternal,vex_if,iftype));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.GetVexternal(ikey,dt_type,dmi,vexternal,vex_if,iftype, ctrlr_id));
 
   delete ikey;
 }
@@ -818,31 +822,31 @@ TEST_F(VbrIfMoMgrTest, IsReferenced_01) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
   val_vbr_if *val;
-  upll_keytype_datatype_t dt_type=UPLL_DT_STATE;
+  //upll_keytype_datatype_t dt_type=UPLL_DT_STATE;
   GetKeyValStruct(key, val);
-
+  IpcReqRespHeader *req = NULL;
   ConfigKeyVal *ikey = NULL;
   DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.IsReferenced(ikey,dt_type,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.IsReferenced(req,ikey,dmi));
 
   delete ikey;
 }
-
+/*
 TEST_F(VbrIfMoMgrTest, IsReferenced_02) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
   val_vbr_if *val;
-  upll_keytype_datatype_t dt_type=UPLL_DT_STATE;
+  //upll_keytype_datatype_t dt_type=UPLL_DT_STATE;
   GetKeyValStruct(key, val);
-
+  IpcReqRespHeader *req = NULL;
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.IsReferenced(ikey,dt_type,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.IsReferenced(req,ikey,dmi));
 
   delete ikey;
 }
-
+*/
 #if 0
 TEST_F(VbrIfMoMgrTest, IsReferenced_03) {
   VbrIfMoMgr vbr;
@@ -865,22 +869,22 @@ TEST_F(VbrIfMoMgrTest, IsReferenced_03) {
   delete ikey;
 }
 #endif
-
+/*
 TEST_F(VbrIfMoMgrTest, IsReferenced_04) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
   val_vbr_if *val;
-  upll_keytype_datatype_t dt_type=UPLL_DT_STATE;
+  //upll_keytype_datatype_t dt_type=UPLL_DT_STATE;
   GetKeyValStruct(key, val);
-
+  IpcReqRespHeader *req = NULL;
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VRT_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalDmlIntf *dmi(getDalDmlIntf());
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.IsReferenced(ikey,dt_type,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.IsReferenced(req,ikey,dmi));
 
   delete ikey;
 }
-
+*/
 TEST_F(VbrIfMoMgrTest, UpdateMo_01) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
@@ -1139,7 +1143,10 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigVal_01) {
   GetKeyValDrvStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,vbr.UpdateConfigVal(ikey,datatype,dmi));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,vbr.UpdateConfigVal(ikey,datatype,dmi,
+                                                    config_mode,vtn_name));
 
   delete ikey;
 }
@@ -1153,7 +1160,10 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigVal_03) {
   GetKeyValDrvStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VRT_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,vbr.UpdateConfigVal(ikey,datatype,dmi));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,vbr.UpdateConfigVal(ikey,datatype,dmi,
+                                                config_mode,vtn_name));
 
   delete ikey;
 }
@@ -1661,6 +1671,7 @@ TEST_F(VbrIfMoMgrTest, SetBoundaryIfOperStatusforPathFault_02) {
   delete ikey;
 }
 #endif
+/*
 TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_01) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
@@ -1679,7 +1690,7 @@ TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_01) {
 TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_02) {
   VbrIfMoMgr obj;
   DalDmlIntf *dmi(getDalDmlIntf());
-  const char *ctrlr_id ="pfc001";
+  const char *ctrlr_name ="ctr1";
   IPC_REQ_RESP_HEADER_DECL(req);
   req->clnt_sess_id = 5;
   req->config_id = 14;
@@ -1696,11 +1707,11 @@ TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_02) {
                             IpctSt::kIpcStKeyVbrIf,
                             key, cfgval);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.CreateAuditMoImpl(ikey, dmi, ctrlr_id));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.CreateAuditMoImpl(ikey, dmi,ctrlr_name));
 
   delete ikey;
 }
-
+*/
 TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_03) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
@@ -1717,7 +1728,7 @@ TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_03) {
 
   delete ikey;
 }
-
+/*
 TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_04) {
   VbrIfMoMgr obj;
   DalDmlIntf *dmi(getDalDmlIntf());
@@ -1742,6 +1753,7 @@ TEST_F(VbrIfMoMgrTest, CreateAuditMoImpl_04) {
 
   delete ikey;
 }
+*/
 #if 0
 TEST_F(VbrIfMoMgrTest, GetMappedVbridges_01) {
   VbrIfMoMgr vbr;
@@ -1888,7 +1900,12 @@ TEST_F(VbrIfMoMgrTest, TxUpdateController_NULL) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::UPDATE_RECORD,kDalRcRecordNoMore);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,session_id,config_id,phase,&affected_ctrlr_set  ,dmi,&ikey));
+  TxUpdateUtil *tx_util = NULL;
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,
+                                session_id,config_id,phase,&affected_ctrlr_set,
+                                dmi,&ikey,tx_util,config_mode,vtn_name));
 
   delete ikey;
 }
@@ -1919,14 +1936,19 @@ TEST_F(VbrIfMoMgrTest, TxUpdateController_default) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::UPDATE_RECORD,kDalRcSuccess);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,session_id,config_id,phase,&affected_ctrlr_set  ,dmi,&ikey));
+  TxUpdateUtil *tx_util = NULL;
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,
+                            session_id,config_id,phase,&affected_ctrlr_set,
+                            dmi,&ikey,tx_util,config_mode,vtn_name));
 
   free(ctr_id1);
   free(dom_id1);
   free(ctrlr_dom);
   delete ikey;
 }
-
+/*
 TEST_F(VbrIfMoMgrTest, TxUpdateController_01) {
   VbrIfMoMgr vbr;
   key_vbr_if *key;
@@ -1953,13 +1975,18 @@ TEST_F(VbrIfMoMgrTest, TxUpdateController_01) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::GET_UPDATED_RECORDS,kDalRcSuccess);
+  TxUpdateUtil *tx_util = NULL;
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
   CapaModuleStub::stub_setResultcode(CapaModuleStub::GET_UPDATE_CAPABILITY, true);
 
   key_user_data_t *user_data(ZALLOC_TYPE(key_user_data_t));
   uuu::upll_strncpy(user_data->ctrlr_id,"ctr_id", (kMaxLenCtrlrId + 1));
   uuu::upll_strncpy(user_data->domain_id,"dom_id", (kMaxLenCtrlrId + 1));
   ikey->set_user_data((void*)user_data);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,session_id,config_id,phase,&affected_ctrlr_set  ,dmi,&ikey));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,
+                            session_id,config_id,phase,&affected_ctrlr_set,
+                            dmi,&ikey,tx_util,config_mode,vtn_name));
 
   free(ctr_id1);
   free(dom_id1);
@@ -1993,7 +2020,12 @@ TEST_F(VbrIfMoMgrTest, TxUpdateController_02) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::GET_DELETED_RECORDS,kDalRcSuccess);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,session_id,config_id,phase,&affected_ctrlr_set  ,dmi,&ikey));
+  TxUpdateUtil *tx_util = NULL;
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,
+                              session_id,config_id,phase,&affected_ctrlr_set,
+                              dmi,&ikey,tx_util,config_mode,vtn_name));
 
   free(ctr_id1);
   free(dom_id1);
@@ -2018,11 +2050,16 @@ TEST_F(VbrIfMoMgrTest, TxUpdateController_03) {
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::GET_DELETED_RECORDS,kDalRcSuccess);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,session_id,config_id,phase,&affected_ctrlr_set  ,dmi,&ikey));
+  TxUpdateUtil *tx_util = NULL;
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.TxUpdateController(UNC_KT_VBR_IF,
+                            session_id,config_id,phase,&affected_ctrlr_set,
+                            dmi,&ikey,tx_util,config_mode,vtn_name));
 
   delete ikey;
 }
-
+*/
 TEST_F(VbrIfMoMgrTest, AuditUpdateController_01) {
   VbrIfMoMgr vbr;
   uint32_t session_id=1;
@@ -2035,7 +2072,8 @@ TEST_F(VbrIfMoMgrTest, AuditUpdateController_01) {
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::GET_UPDATED_RECORDS,kDalRcSuccess);
   ConfigKeyVal *err_ckv = NULL;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.AuditUpdateController(UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase,dmi,&err_ckv,&ctrlr_affected));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY, vbr.AuditUpdateController(UNC_KT_VBR_IF,ctrlr_id,
+                    session_id,config_id,phase,dmi,&err_ckv,&ctrlr_affected));
 }
 
 #if 0
@@ -2068,7 +2106,8 @@ TEST_F(VbrIfMoMgrTest, AuditUpdateController_03) {
   DalDmlIntf *dmi(getDalDmlIntf());
   ConfigKeyVal *err_ckv = NULL;
   KTxCtrlrAffectedState ctrlr_affected = kCtrlrAffectedNoDiff;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.AuditUpdateController(UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi,&err_ckv,&ctrlr_affected));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY, vbr.AuditUpdateController
+            (UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi,&err_ckv,&ctrlr_affected));
 }
 
 TEST_F(VbrIfMoMgrTest, AuditUpdateController_04) {
@@ -2081,7 +2120,8 @@ TEST_F(VbrIfMoMgrTest, AuditUpdateController_04) {
   DalDmlIntf *dmi(getDalDmlIntf());
   ConfigKeyVal *err_ckv = NULL;
   KTxCtrlrAffectedState ctrlr_affected = kCtrlrAffectedNoDiff;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.AuditUpdateController(UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi,&err_ckv,&ctrlr_affected));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY, vbr.AuditUpdateController
+            (UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi,&err_ckv,&ctrlr_affected));
 }
 
 TEST_F(VbrIfMoMgrTest, AuditUpdateController_05) {
@@ -2094,7 +2134,8 @@ TEST_F(VbrIfMoMgrTest, AuditUpdateController_05) {
   DalDmlIntf *dmi(getDalDmlIntf());
   ConfigKeyVal *err_ckv = NULL;
   KTxCtrlrAffectedState ctrlr_affected = kCtrlrAffectedNoDiff;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.AuditUpdateController(UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi, &err_ckv,&ctrlr_affected));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY, vbr.AuditUpdateController
+            (UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi, &err_ckv,&ctrlr_affected));
 }
 
 TEST_F(VbrIfMoMgrTest, AuditUpdateController_06) {
@@ -2107,7 +2148,8 @@ TEST_F(VbrIfMoMgrTest, AuditUpdateController_06) {
   DalDmlIntf *dmi(getDalDmlIntf());
   ConfigKeyVal *err_ckv = NULL;
   KTxCtrlrAffectedState ctrlr_affected = kCtrlrAffectedNoDiff;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, vbr.AuditUpdateController(UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi,&err_ckv,&ctrlr_affected));
+  EXPECT_EQ(UNC_UPLL_RC_ERR_NOT_SUPPORTED_BY_STANDBY, vbr.AuditUpdateController
+            (UNC_KT_VBR_IF,ctrlr_id,session_id,config_id,phase, dmi,&err_ckv,&ctrlr_affected));
 }
 
 # if 0
@@ -2207,10 +2249,13 @@ TEST_F(VbrIfMoMgrTest, UpdatePortMap_04){
                                       key, cfgval));
   ConfigKeyVal *ikey(new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf,
                                       key1, cfgval1));
+  TcConfigMode config_mode = TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
   upll_keytype_datatype_t dt_type = UPLL_DT_RUNNING ;
   DalDmlIntf *dmi(getDalDmlIntf());
   val->vbr_if_val.valid[UPLL_IDX_PM_VBRI] = UNC_VF_INVALID;
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC, obj.UpdatePortMap(okey,dt_type,dmi,ikey));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC, obj.UpdatePortMap(okey,dt_type,dmi,ikey,
+                                          config_mode,vtn_name));
 
   delete ikey;
   delete okey;
@@ -2318,7 +2363,7 @@ TEST_F(VbrIfMoMgrTest, UpdateVbrIf_1) {
   IPC_REQ_RESP_HEADER_DECL(req);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::SINGLE,kDalRcSuccess);
   DalOdbcMgr::stub_setResultcode(DalOdbcMgr::UPDATE_RECORD,kDalRcSuccess);
-  EXPECT_EQ(UPLL_RC_SUCCESS,obj.updateVbrIf(req,ikey,dmi));
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.updateVbrIf(req,ikey,dmi));
 
   delete ikey;
 }
@@ -2552,6 +2597,7 @@ TEST_F(VbrIfMoMgrTest, ConverttoDriverPortMap_02) {
 }
 
 # endif
+/*
 TEST_F(VbrIfMoMgrTest, UpdateConfigStatus_Success) {
   VbrIfMoMgr obj;
   DalDmlIntf *dmi(getDalDmlIntf());
@@ -2575,7 +2621,7 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigStatus_Success) {
   delete ikey;
   delete upd_key;
 }
-
+*/
 TEST_F(VbrIfMoMgrTest, UpdateConfigStatus_SuccessUPDATE) {
   VbrIfMoMgr obj;
   DalDmlIntf *dmi(getDalDmlIntf());
@@ -2593,7 +2639,7 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigStatus_SuccessUPDATE) {
   ConfigKeyVal *upd_key(new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf,
                                          key1, cfgval1));
 
-  EXPECT_EQ(UPLL_RC_SUCCESS,obj.UpdateConfigStatus(ikey, UNC_OP_UPDATE,
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.UpdateConfigStatus(ikey, UNC_OP_UPDATE,
                                                    UPLL_RC_SUCCESS,
                                                    upd_key, dmi, ikey));
   delete ikey;
@@ -2617,7 +2663,7 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigStatus_SuccessUPDATE_01) {
   ConfigKeyVal *upd_key(new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf,
                                          key1, cfgval1));
   val->valid[UPLL_IDX_ADMIN_STATUS_VBRI] = UNC_VF_VALID;
-  EXPECT_EQ(UPLL_RC_SUCCESS,obj.UpdateConfigStatus(ikey, UNC_OP_UPDATE,
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.UpdateConfigStatus(ikey, UNC_OP_UPDATE,
                                                    UPLL_RC_SUCCESS,
                                                    upd_key,dmi,ikey));
 
@@ -2642,7 +2688,7 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigStatus_SuccessUPDATE_02) {
   ConfigKeyVal *upd_key(new ConfigKeyVal(UNC_KT_VBR_IF, IpctSt::kIpcStKeyVbrIf,
                                          key1, cfgval1));
   val->valid[UPLL_IDX_ADMIN_STATUS_VBRI] = UNC_VF_VALID_NO_VALUE;
-  EXPECT_EQ(UPLL_RC_SUCCESS,obj.UpdateConfigStatus(ikey, UNC_OP_UPDATE,
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,obj.UpdateConfigStatus(ikey, UNC_OP_UPDATE,
                                                    UPLL_RC_SUCCESS,
                                                    upd_key, dmi, ikey));
 
@@ -3215,7 +3261,7 @@ TEST_F(VbrIfMoMgrTest, ValidateMessage_07) {
 
   delete ikey;
 }
-
+/*
 TEST_F(VbrIfMoMgrTest, GetVbrIfFromVexternal_TmpckvNonNull){
   VbrIfMoMgr obj;
   DalDmlIntf *dmi(getDalDmlIntf());
@@ -3252,6 +3298,7 @@ TEST_F(VbrIfMoMgrTest, GetVbrIfFromVexternal_TmpckvNull){
   EXPECT_EQ(UPLL_RC_ERR_GENERIC,
             obj.GetVbrIfFromVExternal(vtnname, vexternal, ikey, dmi, ctrlrdom, dt_type));
 }
+*/
 #if 0
 TEST_F(VbrIfMoMgrTest, PortStatusHandler_TrueOperStatus){
   VbrIfMoMgr obj;
@@ -3305,7 +3352,10 @@ TEST_F(VbrIfMoMgrTest, UpdateConfigVal_UpdateConfigVal_07) {
   GetKeyValDrvStruct(key, val);
   ConfigVal *config_val= new ConfigVal(IpctSt::kIpcStValVbrIf, val);
   ConfigKeyVal *ikey = new ConfigKeyVal(UNC_KT_VRT_IF, IpctSt::kIpcStKeyVbrIf, key, config_val);
-  EXPECT_EQ(UPLL_RC_ERR_GENERIC,vbr.UpdateConfigVal(ikey,datatype,dmi));
+  TcConfigMode config_mode =  TC_CONFIG_VTN;
+  std::string vtn_name("vtn1");
+  EXPECT_EQ(UPLL_RC_ERR_GENERIC,vbr.UpdateConfigVal(ikey,datatype,dmi,
+                                              config_mode,vtn_name));
 
   delete ikey;
 }
@@ -3342,7 +3392,7 @@ TEST_F(VbrIfMoMgrTest, CompareValidValue_auditfalse) {
   val2->valid[1] = UNC_VF_VALID;
   val1->vbr_if_val.admin_status = 1;
   val2->vbr_if_val.admin_status = 1;
-  ASSERT_TRUE(obj.CompareValidValue(v1, v2, false));
+  ASSERT_TRUE(obj.CompareValidValue(v1, v2, true));
 
   free(val1);
   free(val2);
@@ -3360,7 +3410,7 @@ TEST_F(VbrIfMoMgrTest, CompareValidValue_Invalid_case1) {
     val1->valid[loop] = UNC_VF_VALID;
     val2->valid[loop] = UNC_VF_VALID;
   }
-  ASSERT_TRUE(obj.CompareValidValue(v1, v2, false));
+  ASSERT_TRUE(obj.CompareValidValue(v1, v2, true));
 
   free(val1);
   free(val2);

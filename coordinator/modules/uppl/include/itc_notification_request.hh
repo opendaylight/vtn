@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -82,6 +82,9 @@ class NotificationRequest : public ITCReq {
 
   private:
   UncRespCode ProcessPortEvents(ClientSession *sess,
+                                   uint32_t data_type,
+                                   uint32_t operation);
+  UncRespCode ProcessPortNeighborEvents(ClientSession *sess,
                                    uint32_t data_type,
                                    uint32_t operation);
   UncRespCode ProcessSwitchEvents(ClientSession *sess,

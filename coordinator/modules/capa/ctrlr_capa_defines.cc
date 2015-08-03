@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -37,6 +37,14 @@ KtAttrMap kam_vbridge[] = {
   { "operstatus", vbr::kCapOperStatus }
 };
 
+KtAttrMap kam_vbr_portmap[] = {
+  { "domain_id", vbr_portmap::kCapDomainId },
+  { "logical_port_id", vbr_portmap::kCapLogicalPortId },
+  { "label_type", vbr_portmap::kCapLabelType },
+  { "label", vbr_portmap::kCapLabel },
+  { "operstatus", vbr_portmap::kCapOperStatus }
+};
+
 KtAttrMap kam_vlan_map[] = {
   { "vlan_id", vlan_map::kCapVlanId }
 };
@@ -66,6 +74,7 @@ KtAttrMap kam_dhcp_relay_interface[] = {
 };
 
 KtAttrMap kam_static_ip_route[] = {
+  { "nwm_name", static_ip_route::kCapNwmName },
   { "group_metric", static_ip_route::kCapGroupMetric }
 };
 
@@ -150,7 +159,8 @@ KtAttrMap kam_vlink[] = {
   { "vnode2_name", vlink::kCapVnode2Name },
   { "vnode2_interface_name", vlink::kCapVnode2IfName },
   { "boundary_name", vlink::kCapBoundaryName },
-  { "vlan_id", vlink::kCapVlanId },
+  { "label_type", vlink::kCapLabelType },
+  { "label", vlink::kCapLabel },
   { "operstatus", vlink::kCapOperStatus }
 };
 
@@ -339,7 +349,8 @@ KtAttrMap kam_controller[] = {
   { "ip_address", controller::kIp_address},
   { "user", controller::kUser_name},
   { "password", controller::kPassword},
-  { "enable_audit", controller::kEnableAudit}
+  { "enable_audit", controller::kEnableAudit},
+  { "port", controller::kPort}
 };
 KtAttrMap kam_ctr_domain[] =  {
 
@@ -374,6 +385,10 @@ KtAttrMap kam_data_flow[] =  {
 
 };
 
+KtAttrMap kam_data_flow_v2[] =  {
+
+};
+
 KtAttrMap kam_vtn_dataflow[] = {
 };
 #ifndef ARRAY_SIZE
@@ -385,6 +400,8 @@ KtMap kt_map[] = {
     &kam_vtn[0] },
   { "vbridge", UNC_KT_VBRIDGE, ARRAY_SIZE(kam_vbridge),
     &kam_vbridge[0] },
+  { "vbr_portmap", UNC_KT_VBR_PORTMAP, ARRAY_SIZE(kam_vbr_portmap),
+        &kam_vbr_portmap[0] },
   { "vlan_map", UNC_KT_VBR_VLANMAP, ARRAY_SIZE(kam_vlan_map),
     &kam_vlan_map[0] },
   { "vbridge_interface", UNC_KT_VBR_IF, ARRAY_SIZE(kam_vbr_if),
@@ -509,6 +526,8 @@ KtMap kt_map[] = {
     &kam_boundary[0] },
   { "dataflow", UNC_KT_DATAFLOW, ARRAY_SIZE(kam_data_flow),
     &kam_data_flow[0] },
+  { "dataflow_v2", UNC_KT_DATAFLOW_V2, ARRAY_SIZE(kam_data_flow_v2),
+    &kam_data_flow_v2[0] },
   { "ctr_dataflow", UNC_KT_CTR_DATAFLOW, ARRAY_SIZE(kam_ctr_data_flow),
     &kam_ctr_data_flow[0] },
   { "vtn_dataflow", UNC_KT_VTN_DATAFLOW, ARRAY_SIZE(kam_vtn_dataflow),

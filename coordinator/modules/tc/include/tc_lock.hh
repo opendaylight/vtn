@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,7 @@
 
 #include <pfc/log.h>
 #include <pfcxx/synch.hh>
+#include <unc/tc/external/tc_services.h>
 #include <tc_module_data.hh>
 #include <algorithm>
 #include <unc/usess_ipc.h>
@@ -44,38 +45,52 @@ typedef enum {
 
 class TcLock {
   public:
-  TcLock() {setup_complete_done_ = PFC_FALSE;}
+  TcLock() {
+    setup_complete_done_ = PFC_FALSE;
+  }
+
+  pfc_bool_t CanWriteLock();
   void ResetTcGlobalDataOnStateTransition(void);
+  std::string GetConfigName(::TcConfigMode tc_mode, std::string vtn_name);
+  TcLockRet FindConfigName(uint32_t session_id, std::string& config_name);
   TcLockRet GetLock(uint32_t session_id, TcOperation operation,
-                    TcWriteOperation write_operation);
+                    TcWriteOperation write_operation, 
+                    ::TcConfigMode tc_mode = TC_CONFIG_GLOBAL,
+                    std::string vtn_name = "");
   TcLockRet ReleaseLock(uint32_t session_id, uint32_t config_id,
                         TcOperation operation,
                         TcWriteOperation write_operation);
   TcLockRet AutoSaveEnable();
   TcLockRet AutoSaveDisable();
-  TcLockRet GetConfigIdSessionId(uint32_t * session_id, uint32_t *config_id);
+  TcLockRet GetConfigData(uint32_t session_id,
+                          uint32_t& config_id,
+                          ::TcConfigMode& config_mode,
+                          std::string& vtn_name);
   TcLockRet NotifyConfigIdSessionIdDone(uint32_t config_id,
             uint32_t session_id, TcNotifyOperation config_notify_operation);
   TcSessionOperationProgress  GetSessionOperation(uint32_t session_id);
-  TcLockRet  TcAcquireReadLockForStateTransition(uint32_t session_id);
-  TcLockRet  TcReleaseReadLockForStateTransition(uint32_t session_id);
+  TcLockRet  TcAcquireReadLockForStateTransition();
+  TcLockRet  TcReleaseReadLockForStateTransition();
   void       TcUpdateUncState(TcState state);
   TcState    GetUncCurrentState(void);
   pfc_bool_t IsStateTransitionInProgress(void);
   TcLockRet  TcMarkSessionId(uint32_t session_id);
-  uint32_t   GetMarkedSessionId();
+  uint32_t   GetMarkedSessionId(uint32_t session_id);
   void       TcInitWRLock(pfc_bool_t is_simultaneous_read_write_allowed);
 
   void       TcSetSetupComplete(pfc_bool_t is_done);
   pfc_bool_t TcIsSetupCompleteDone();
+  pfc_bool_t IsLastOperationCandidate();
+  TcWriteOperation TcGetCurrentWriteOperation();
+  TcConfigNameMap GetConfigMap();
 
   private:
   // Prohibit copy constuction and copy assignment.
   TcLock(const TcLock&);
   TcLock& operator=(const TcLock&);
-
-  /* Config data */
-  TcConfigLock tc_config_lock_;
+  static uint32_t prev_config_id_;
+  /* config name map */
+  TcConfigNameMap tc_config_name_map_;
   /* Read data */
   TcReadLock tc_read_lock_;
   /* Write data */
@@ -91,13 +106,16 @@ class TcLock {
 
   pfc_bool_t setup_complete_done_;
   pfc::core::Mutex setup_complete_flag_lock_;
+  pfc::core::Mutex write_op_lock;
 
   /* Config lock methods */
-  TcLockRet AcquireConfigLock(uint32_t session_id);
-  uint32_t GetConfigId(uint32_t config_id);
+  TcLockRet AcquireConfigLock(uint32_t session_id,
+                              ::TcConfigMode tc_mode,
+                              std::string vtn_name);
+  static uint32_t GetConfigId();
   TcLockRet ReleaseConfigLock(uint32_t session_id, uint32_t config_id);
   TcLockRet ForceAcquireConfigLock(uint32_t session_id);
-  void  UpdateConfigData(uint32_t session_id);
+  void UpdateConfigData(uint32_t session_id, std::string tc_config_name);
   /* Read lock methods */
   TcLockRet AcquireReadLock(uint32_t session_id);
   TcLockRet ReleaseReadLock(uint32_t session_id);

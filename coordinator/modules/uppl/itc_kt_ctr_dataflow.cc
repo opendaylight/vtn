@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -65,8 +65,7 @@ UncRespCode Kt_Ctr_Dataflow::ReadInternal(OdbcmConnectionHandler *db_conn,
                                        uint32_t data_type,
                                        uint32_t operation_type) {
   pfc_log_debug("ReadInternal:KT_CTR_DATAFLOW");
-  UncRespCode read_status = UNC_RC_SUCCESS;
-  return read_status;
+  return UNC_RC_SUCCESS;
 }
 
 /** ReadBulk
@@ -91,8 +90,7 @@ UncRespCode Kt_Ctr_Dataflow::ReadBulk(OdbcmConnectionHandler *db_conn,
                                    pfc_bool_t is_read_next,
                                    ReadRequest *read_req) {
   pfc_log_info("ReadBulk operation is not allowed in Kt_Ctr_Dataflow");
-  UncRespCode read_status = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
-  return read_status;
+  return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
 }
 
 /** PerformSyntaxValidation
@@ -110,7 +108,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformSyntaxValidation(
     void* val_struct,
     uint32_t operation,
     uint32_t data_type) {
-  pfc_log_info("PerformSyntax Validation:KT_CTR_DATAFLOW");
+  pfc_log_debug("PerformSyntax Validation:KT_CTR_DATAFLOW");
   UncRespCode ret_code = UNC_RC_SUCCESS;
   pfc_bool_t mandatory = PFC_TRUE;
 
@@ -121,12 +119,17 @@ UncRespCode Kt_Ctr_Dataflow::PerformSyntaxValidation(
       attr_syntax_map_all[UNC_KT_CTR_DATAFLOW];
   IS_VALID_STRING_KEY(CTR_NAME_STR, ctrl_name, operation, ret_code, mandatory);
   if (ret_code != UNC_RC_SUCCESS) {
+    pfc_log_debug("Syntax validation failed for attribute controller_name:%d",
+        ret_code);
     return UNC_UPPL_RC_ERR_CFG_SYNTAX;
   }
 
   uint64_t val = key->flow_id;
-  if (val <= 0)
+  if (val <= 0) {
     ret_code = UNC_UPPL_RC_ERR_CFG_SYNTAX;
+    pfc_log_debug("Syntax validation failed for attribute flow_id:%d",
+        ret_code);
+  }
   return ret_code;
 }
 
@@ -164,7 +167,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformSemanticValidation(
   unc::capa::CapaModule *capa = reinterpret_cast<unc::capa::CapaModule *>(
     pfc::core::Module::getInstance("capa"));
   if (capa == NULL) {
-    pfc_log_warn("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
+     UPPL_LOG_FATAL("%s:%d: CapaModule is not found", __FUNCTION__, __LINE__);
      return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   // collect controller type, actual version, configured version, oper_status
@@ -192,12 +195,13 @@ UncRespCode Kt_Ctr_Dataflow::PerformSemanticValidation(
            (unc_keytype_ctrtype_t) val_ctr_vect->controller.type;
   // configured version
   string version = (const char*)val_ctr_vect->controller.version;
-  pfc_log_debug("controller_type=%d", val_ctr_vect->controller.type);
-  pfc_log_debug("oper_status_db=%d", val_ctr_vect->oper_status);
-  pfc_log_debug("config version=%s", version.c_str());
+  pfc_log_debug("controller_type=%d oper_status_db=%d config version=%s",
+                 val_ctr_vect->controller.type, val_ctr_vect->oper_status,
+                 version.c_str());
 
-  if (val_ctr_vect->controller.type != UNC_CT_PFC) {
-    pfc_log_error("Read operation is NOT allowed for non-PFC controllers");
+  if (val_ctr_vect->controller.type != UNC_CT_PFC &&
+      val_ctr_vect->controller.type != UNC_CT_ODC) {
+    pfc_log_error("Read operation is NOT allowed for non-PFC/ODC controllers");
     ret_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
   } else if (val_ctr_vect->oper_status != UPPL_CONTROLLER_OPER_UP) {
     pfc_log_error("Read operation is NOT allowed if the controller is DOWN");
@@ -215,7 +219,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformSemanticValidation(
     return ret_code;
   }
 
-  // Call CapaModule and check for PFC actual version
+  // Call CapaModule and check for actual version
   bool ret_actual = capa->GetReadCapability(ctr_type,
                        version,
                        UNC_KT_CTR_DATAFLOW,
@@ -266,7 +270,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
                                       uint32_t option1,
                                       uint32_t option2,
                                       uint32_t max_rep_ct) {
-  pfc_log_info("PerformRead oper=%d,dt=%d",
+  pfc_log_debug("PerformRead oper=%d,dt=%d",
                operation_type, data_type);
 
   physical_response_header rsh = {session_id,
@@ -308,20 +312,37 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
     }
     return UNC_RC_SUCCESS;
   }
-
-  pfc_log_debug("creating IPCClientDriverHandler object,"
-                " with PFC type and result code variable is passed");
-  UncRespCode sess_err = UNC_RC_SUCCESS;
-  IPCClientDriverHandler pfc_drv_handler(UNC_CT_PFC, sess_err);
-  if (sess_err != UNC_RC_SUCCESS) {
-    pfc_log_error("Cannot open session to PFC driver");
-    return sess_err;
-  }
-  ClientSession *cli_session = pfc_drv_handler.ResetAndGetSession();
   string controller_name =
      reinterpret_cast<char*>(obj_key_ctr_dataflow->ctr_key.controller_name);
   string domain_id = "";
   uint64_t flow_id = obj_key_ctr_dataflow->flow_id;
+
+  UncRespCode sess_err = UNC_RC_SUCCESS;
+  unc_keytype_ctrtype_t ctr_type = UNC_CT_UNKNOWN;
+  sess_err = PhyUtil::get_controller_type(db_conn,
+                                          controller_name,
+                                          ctr_type, UNC_DT_RUNNING);
+  if (sess_err != UNC_RC_SUCCESS) {
+    pfc_log_debug("Failed to get controller type with response code :%d",
+                     sess_err);
+    rsh.result_code = sess_err;
+    int err = PhyUtil::sessOutRespHeader(sess, rsh);
+    err |= sess.addOutput((uint32_t)UNC_KT_CTR_DATAFLOW);
+    err |= sess.addOutput(*obj_key_ctr_dataflow);
+    if (err != 0) {
+      pfc_log_error("addOutput failed for physical_response_header");
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+    }
+    return UNC_RC_SUCCESS;
+  }
+  pfc_log_debug("creating IPCClientDriverHandler object,"
+                " with ctr type and result code variable is passed");
+  IPCClientDriverHandler pfc_drv_handler(ctr_type, sess_err);
+  if (sess_err != UNC_RC_SUCCESS) {
+    pfc_log_error("Cannot open session to %d driver", ctr_type);
+    return sess_err;
+  }
+  ClientSession *cli_session = pfc_drv_handler.ResetAndGetSession();
   driver_request_header rqh = {uint32_t(0), uint32_t(0), controller_name,
       domain_id, static_cast<uint32_t>(UNC_OP_READ), uint32_t(0),
       option1, (uint32_t)0, static_cast<uint32_t>(UNC_DT_STATE),
@@ -355,7 +376,7 @@ UncRespCode Kt_Ctr_Dataflow::PerformRead(OdbcmConnectionHandler *db_conn,
   int read_err_status = UNC_RC_SUCCESS;
   uint32_t resp_pos = 12;
   DataflowDetail *df_segment =
-    new DataflowDetail((unc::dataflow::IpctStructNum)0);
+    new DataflowDetail(kidx_val_df_data_flow_cmn, ctr_type);
   val_df_data_flow_st_t obj_val_df_data_flow_st;
   memset(&obj_val_df_data_flow_st, 0, sizeof(val_df_data_flow_st_t));
   if (option1 == UNC_OPT1_NORMAL) {
@@ -435,7 +456,7 @@ void Kt_Ctr_Dataflow::Fill_Attr_Syntax_Map() {
   attr_syntax_map[CTR_NAME_STR] = key_attrib1;
 
   Kt_Class_Attr_Syntax key_attrib2 =
-  { PFC_IPCTYPE_UINT64, 1, 1, 0, 0, true, "" };
+  { PFC_IPCTYPE_UINT64, 1, 18446744073709551615ULL, 0, 0, true, "" };
   attr_syntax_map[CTR_DATAFLOW_FLOWID_STR] = key_attrib2;
 
   attr_syntax_map_all[UNC_KT_CTR_DATAFLOW] = attr_syntax_map;

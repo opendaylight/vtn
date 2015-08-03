@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -103,7 +103,8 @@ class FlowListMoMgr : public MoMgrImpl {
      *        associated attributes are supported on the given controller,
      *        based on the valid flag
      *
-     * @param[in] IpcReqRespHeader  contains first 8 fields of input request structure
+     * @param[in] IpcReqRespHeader  contains first 8 fields of input
+     *                              request structure
      * @param[in] ConfigKeyVal      contains key and value structure.
      * @param[in] ctrlr_name        controller_name
      *
@@ -219,15 +220,15 @@ class FlowListMoMgr : public MoMgrImpl {
 
     /* @brief        Checkes whether the key exists in DB
      *
-     * @param[in]  ikey     Pointer to the ConfigKeyval containing the Key and Value
+     * @param[in]  ikey     Pointer to the ConfigKeyval containing the Key and
      *                      value structure of Import Configuration
-     * @param[in]  dt_type  Given UNC Datatype  at which reference needs to check
+     * @param[in]  dt_type  Given UNC Datatype at which reference needs to check
      * @param[in]  dmi      Pointer to the DalDmlIntf(DB Interface)
      *
      * @retval  UPLL_RC_SUCCECSS     Successful Completion
      * @retval  UPLL_RC_ERR_GENERIC  For failue case GENERIC ERROR
      **/
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /* @brief  Read the configuration from DB based on the operation code
@@ -307,7 +308,7 @@ class FlowListMoMgr : public MoMgrImpl {
     **/
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
-        DalDmlIntf *dmi);
+        DalDmlIntf *dmi, TcConfigMode config_mode, std::string vtn_name);
 
     /** @brief  Allocate the memory for the value structure depending upon
      *          the tbl ARG
@@ -344,11 +345,11 @@ class FlowListMoMgr : public MoMgrImpl {
                        upll_keytype_datatype_t dt_type, MoMgrTables tbl =
                            MAINTBL);
 
-    /* @brief  Creates a duplicate configkeyval structure from the existing configkey
-     *         val structure
-     * @param[out]  okey  Pointer to the ConfigKeyval containing the Key and Value
+    /* @brief  Creates a duplicate configkeyval structure from the existing
+     *         configkey val structure
+     * @param[out]  okey  Pointer to the ConfigKeyval containing the Key and
      *                    value structure
-     * @param[in]   req   Pointer to the ConfigKeyval containing the Key and Value
+     * @param[in]   req   Pointer to the ConfigKeyval containing the Key and
      *                    value structure
      * @param[in]   tbl   Enumerator variable contaiing the Table type
      *
@@ -465,12 +466,16 @@ class FlowListMoMgr : public MoMgrImpl {
     upll_rc_t UpdateControllerTable(ConfigKeyVal *ikey,
                                     unc_keytype_operation_t op,
                                     DalDmlIntf *dmi,
-                                    char* ctrl_id);
+                                    char* ctrl_id,
+                                    TcConfigMode config_mode,
+                                    string vtn_name);
     upll_rc_t AddFlowListToController(char *flowlist_name,
                                       DalDmlIntf *dmi,
                                       char* ctrl_id,
                                       upll_keytype_datatype_t dt_type,
-                                      unc_keytype_operation_t op);
+                                      unc_keytype_operation_t op,
+                                      TcConfigMode config_mode,
+                                      string vtn_name, bool is_commit = false);
     /**
      * @brief  Method to Set the Consolidated status
      *
@@ -505,7 +510,7 @@ class FlowListMoMgr : public MoMgrImpl {
      * @return  TRUE   Success
      * @retval  FALSE  Failure
      * */
-     bool IsValidKey(void *key, uint64_t index);
+     bool IsValidKey(void *kaey, uint64_t index, MoMgrTables tbl = MAINTBL);
     /**
      * @brief  Method to get Parent ConfigKeyVal
      *
@@ -519,11 +524,15 @@ class FlowListMoMgr : public MoMgrImpl {
 
     upll_rc_t CreateFlowListToController(
         char *flowlist_name, DalDmlIntf *dmi, char* ctrl_id,
-        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op);
+        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op,
+        TcConfigMode config_mode, string vtn_name, bool is_commit,
+        int count);
 
     upll_rc_t DeleteFlowListToController(
         char *flowlist_name, DalDmlIntf *dmi, char* ctrl_id,
-        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op);
+        upll_keytype_datatype_t dt_type, unc_keytype_operation_t op,
+        TcConfigMode config_mode, string vtn_name, bool is_commit,
+        int count);
 
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
@@ -538,12 +547,14 @@ class FlowListMoMgr : public MoMgrImpl {
 
     upll_rc_t UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
                                        DalDmlIntf *dmi,
-                                       upll_keytype_datatype_t dt_type);
+                                       upll_keytype_datatype_t dt_type,
+                                       TcConfigMode config_mode,
+                                       string vtn_name);
 
     upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
                            unc_keytype_operation_t &op);
-    upll_rc_t CopyKeyToVal (ConfigKeyVal *ikey,
-                            ConfigKeyVal *&okey);
+    upll_rc_t CopyKeyToVal(ConfigKeyVal *ikey,
+                           ConfigKeyVal *&okey);
 
     upll_rc_t GetControllerDomainSpan(
         ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
@@ -553,6 +564,57 @@ class FlowListMoMgr : public MoMgrImpl {
         ConfigKeyVal *ckv_drvr,
         ConfigKeyVal *&ctrlr_ckv,
         DalDmlIntf *dmi);
+
+    upll_rc_t UpdateRefCountInScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        unc_keytype_operation_t op,
+        TcConfigMode config_mode, string vtn_name,
+        uint32_t count);
+
+    upll_rc_t InsertRecInScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        unc_keytype_operation_t op,
+        TcConfigMode config_mode, string vtn_name,
+        uint32_t count);
+
+    upll_rc_t ComputeRefCountInScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name,
+        int &ref_count);
+
+    upll_rc_t ReadCtrlrTbl(
+        ConfigKeyVal *&okey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+
+    upll_rc_t ComputeCtrlrTblRefCountFromScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name);
+
+    upll_rc_t ClearScratchTbl(
+        TcConfigMode config_mode, string vtn_name,
+        DalDmlIntf *dmi, bool is_abort = false);
+
+    upll_rc_t RevertCtlrTblEntries(
+        TcConfigMode config_mode, string vtn_name,
+        DalDmlIntf *dmi);
+
+    upll_rc_t RefCountSemanticCheck(
+        const char* flowlist_name, DalDmlIntf *dmi,
+        TcConfigMode config_mode, string vtn_name);
+
+    upll_rc_t InstanceExistsInScratchTbl(
+        ConfigKeyVal *ikey, TcConfigMode config_mode, string vtn_name,
+        DalDmlIntf *dmi);
+
+    upll_rc_t ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi);
+
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+        TcConfigMode config_mode, string vtn_name);
 };
 
 typedef struct val_flowlist_ctrl {

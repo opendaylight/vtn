@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -77,6 +77,12 @@ class driver_read_util {
   public:
     std::list <unc::vtnreadutil::read_cache_element*> drv_read_results_;
     unc::dataflow::DataflowUtil *df_util_;
+    unc::dataflow::DataflowCmn *df_cmn_;
+    bool alternate_flow;
+    const char* get_ctr_id(){
+    return 0;
+    }
+
     pfc::core::ipc::ServerSession &sess_;
 
     driver_read_util(pfc::core::ipc::ServerSession& sess);

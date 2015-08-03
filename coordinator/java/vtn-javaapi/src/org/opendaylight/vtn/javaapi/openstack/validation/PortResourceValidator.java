@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -72,6 +72,8 @@ public class PortResourceValidator extends VtnServiceValidator {
 				isValid = validateUri();
 				if (isValid && VtnServiceConsts.POST.equalsIgnoreCase(method)) {
 					isValid = validatePost(requestBody);
+				} else if (isValid && VtnServiceConsts.PUT.equalsIgnoreCase(method)) {
+					isValid = validatePut(requestBody);
 				} else if (isValid) {
 					setInvalidParameter(UncCommonEnum.UncResultCode
 							.UNC_METHOD_NOT_ALLOWED.getMessage());
@@ -463,6 +465,72 @@ public class PortResourceValidator extends VtnServiceValidator {
 			return false;
 		}
 
+		return isValid;
+	}
+
+	/**
+	 * Validates the parameters of PUT request body
+	 * 
+	 * @param requestBody
+	 *            - JSON request body corresponding to PUT operation
+	 * @return
+	 */
+	private boolean validatePut(final JsonObject requestBody) {
+		LOG.trace("Start PortResourceValidator#validatePut()");
+		boolean isValid = true;
+		// validation of mandatory parameters
+		if (requestBody == null) {
+			isValid = false;
+			setInvalidParameter(UncCommonEnum.UncResultCode.UNC_INVALID_FORMAT
+					.getMessage());
+		} else {
+			// validation of filters.
+			if (requestBody.has(VtnServiceOpenStackConsts.FILTERS)) {
+				if (requestBody.get(VtnServiceOpenStackConsts.FILTERS)
+						.isJsonArray()) {
+					if (requestBody.getAsJsonArray(
+							VtnServiceOpenStackConsts.FILTERS).size() > 0) {
+						JsonArray filters = requestBody
+								.getAsJsonArray(
+										VtnServiceOpenStackConsts.FILTERS);
+						Iterator<JsonElement> iterator = filters.iterator();
+						while (iterator.hasNext()) {
+							JsonElement filterID = iterator.next();
+							if (filterID.isJsonPrimitive()) {
+								isValid = isValidFilterId(filterID
+										.getAsString());
+								// Set message as per above checks
+								if (!isValid) {
+									setInvalidParameter(
+										VtnServiceOpenStackConsts
+											.FILTER_RES_ID
+											+ VtnServiceConsts.COLON
+											+ filterID.getAsString());
+									LOG.debug("Invalid flow filter id: %s",
+											filterID.getAsString());
+									break;
+								}
+							} else {
+								setInvalidParameter(
+										UncCommonEnum.UncResultCode
+											.UNC_INVALID_FORMAT
+												.getMessage());
+								isValid = false;
+								break;
+							}
+						}
+					}
+				} else {
+					setInvalidParameter(UncCommonEnum.UncResultCode
+							.UNC_INVALID_FORMAT
+								.getMessage());
+					isValid = false;
+				}
+			}
+			// filters is not specified, The isValid is true.
+		}
+
+		LOG.trace("Complete PortResourceValidator#validatePut()");
 		return isValid;
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -114,13 +114,17 @@ DalResultCode DalOdbcMgr::GetRecordCount(const UpllCfgType cfg_type,
 DalResultCode DalOdbcMgr::DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
                                 const DalBindInfo *matching_attr_info,
-                                const bool truncate) {
+                                const bool truncate,
+                                const TcConfigMode cfg_mode,
+                                const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::DELETE_RECORD);
 }
 
 DalResultCode DalOdbcMgr::CreateRecord(const UpllCfgType cfg_type,
                                const DalTableIndex table_index,
-                               const DalBindInfo *input_attr_info) {
+                               const DalBindInfo *input_attr_info,
+                               const TcConfigMode cfg_mode,
+                              const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::CREATE_RECORD);
 }
 
@@ -128,14 +132,18 @@ DalResultCode DalOdbcMgr::UpdateRecords(
                     string query_statement,
                     const UpllCfgType cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *input_and_matching_attr_info) {
+                    const DalBindInfo *input_and_matching_attr_info,
+                    const TcConfigMode cfg_mode,
+                    const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::UPDATE_RECORD);
 }
 
 DalResultCode DalOdbcMgr::UpdateRecords(
                         const UpllCfgType cfg_type,
                         const DalTableIndex table_index,
-                        const DalBindInfo *input_and_matching_attr_info) {
+                        const DalBindInfo *input_and_matching_attr_info,
+                        const TcConfigMode cfg_mode,
+                        const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::UPDATE_RECORD);
 }
 
@@ -145,7 +153,9 @@ DalResultCode DalOdbcMgr::GetDeletedRecords(const UpllCfgType cfg_type_1,
                                     const DalTableIndex table_index,
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor) {
+                                    DalCursor **cursor,
+                                    const TcConfigMode cfg_mode,
+                                    const uint8_t* vtn_name) {
 
 	return stub_getMappedResultCode(DalOdbcMgr::GET_DELETED_RECORDS);
 }
@@ -155,7 +165,9 @@ DalResultCode DalOdbcMgr::GetCreatedRecords(const UpllCfgType cfg_type_1,
                                     const DalTableIndex table_index,
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor)  {
+                                    DalCursor **cursor,
+                                    const TcConfigMode cfg_mode,
+                                    const uint8_t* vtn_name)  {
 	return stub_getMappedResultCode(DalOdbcMgr::GET_CREATED_RECORDS);
 }
 
@@ -166,7 +178,9 @@ DalResultCode DalOdbcMgr::GetUpdatedRecords(
                     const size_t max_record_count,
                     const DalBindInfo *cfg_1_output_and_match_attr_info,
                     const DalBindInfo *cfg_2_output_and_match_attr_info,
-                    DalCursor **cursor)  {
+                    DalCursor **cursor,
+                    const TcConfigMode cfg_mode,
+                    const uint8_t* vtn_name)  {
 	return stub_getMappedResultCode(DalOdbcMgr::GET_UPDATED_RECORDS);
 }
 
@@ -182,7 +196,9 @@ DalResultCode DalOdbcMgr::CopyModifiedRecords(
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
                     const DalBindInfo *output_and_match_attr_info,
-                    const unc_keytype_operation_t op)  {
+                    const unc_keytype_operation_t op,
+                    const TcConfigMode cfg_mode,
+                    const uint8_t* vtn_name)  {
 	return stub_getMappedResultCode(DalOdbcMgr::COPY_MODIFY);
 }
 DalResultCode DalOdbcMgr::CopyModifiedInsertRecords(
@@ -198,7 +214,9 @@ DalResultCode DalOdbcMgr::CopyMatchingRecords(
                     const UpllCfgType dest_cfg_type,
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) {
+                    const DalBindInfo *output_and_match_attr_info,
+                    const TcConfigMode cfg_mode,
+                    const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::COPY_MATCHING);
 }
 
@@ -206,7 +224,9 @@ DalResultCode DalOdbcMgr::ExecuteAppQuery(std::string query_stmt,
                             const UpllCfgType cfg_type,
                             const DalTableIndex table_index,
                             const DalBindInfo *bind_info,
-                            const unc_keytype_operation_t dirty_op) {
+                            const unc_keytype_operation_t dirty_op,
+                            const TcConfigMode cfg_mode,
+                            const uint8_t* vtn_name) {
   return stub_getMappedResultCode(DalOdbcMgr::EXECUTE_QUERY);
 }
 
@@ -223,7 +243,9 @@ DalOdbcMgr::ExecuteAppQueryModifyRecord(
     const DalTableIndex table_index,
     const std::string query_stmt,
     const DalBindInfo *bind_info,
-    const unc_keytype_operation_t op) {
+    const unc_keytype_operation_t op,
+    const TcConfigMode cfg_mode,
+    const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::EXECUTE_APPQUERY_MODIFY);
 }
 DalResultCode
@@ -231,6 +253,16 @@ DalOdbcMgr::ExecuteAppQuerySingleRecord(
     const std::string query_stmt,
     const DalBindInfo *bind_info)  {
 	return stub_getMappedResultCode(DalOdbcMgr::EXECUTE_APPQUERY_SINGLE);
+}
+
+DalResultCode
+DalOdbcMgr::DeleteRecordsInVtnMode(const UpllCfgType cfg_type,
+                                   const DalTableIndex table_index,
+                                   const DalBindInfo *bind_info,
+                                   const bool truncate,
+                                   const CfgModeType cfg_mode,
+                                   const uint8_t* vtn_name) const {
+  return kDalRcSuccess;
 }
 
 DalResultCode
@@ -242,7 +274,9 @@ DalResultCode DalOdbcMgr::CheckRecordsIdentical(const UpllCfgType cfg_type_1,
                                         const UpllCfgType cfg_type_2,
                                         const DalTableIndex table_index,
                                         const DalBindInfo *matching_attr_info,
-                                        bool *identical) {
+                                        bool *identical,
+                                        const TcConfigMode cfg_mode,
+                                        const uint8_t* vtn_name) {
 	return stub_getMappedResultCode(DalOdbcMgr::CHECK_IDENTICAL);
 
 }
@@ -264,13 +298,24 @@ DalResultCode DalOdbcMgr::stub_getMappedResultCode(DalOdbcMgr::Method methodType
 
 DalResultCode
 DalOdbcMgr::ClearCreateUpdateFlags(const DalTableIndex table_index,
-                                   const UpllCfgType cfg_type) const {
+                                   const UpllCfgType cfg_type,
+                                   const TcConfigMode cfg_mode,
+                                   const uint8_t *vtn_name,
+                                   const bool create,
+                                   const bool update) const {
 
   return kDalRcSuccess;
 }
 
 DalResultCode
-DalOdbcMgr::ClearAllDirtyTblInDB(UpllCfgType cfg_type) const {
+DalOdbcMgr::ClearAllDirtyTblInDB(UpllCfgType cfg_type,
+                                 const TcConfigMode cfg_mode,
+                                 const uint8_t* vtn_name) const {
+  return kDalRcSuccess;
+}
+DalResultCode DalOdbcMgr::ClearGlobalDirtyTblCacheAndDB(
+    const DalTableIndex table_index,
+    const unc_keytype_operation_t op) const {
   return kDalRcSuccess;
 }
 

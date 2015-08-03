@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -68,10 +68,12 @@ VtepMoMgr::VtepMoMgr() {
       IpctSt::kIpcStKeyVtep, IpctSt::kIpcStValVtep,
       uudst::vtep::kDbiVtepNumCols+2);
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = tbl;
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = sizeof(vtep_child) / sizeof(*vtep_child);
   child = vtep_child;
 #ifdef _STANDALONE_
@@ -82,7 +84,8 @@ VtepMoMgr::VtepMoMgr() {
 /*
  *  * Based on the key type the bind info will pass
  *
- bool VtepMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo, int &nattr,
+ bool VtepMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo,
+ int &nattr,
  MoMgrTables tbl ) {
  UPLL_FUNC_TRACE;
  if (MAINTBL == tbl) {
@@ -95,7 +98,7 @@ VtepMoMgr::VtepMoMgr() {
  }*/
 
 
-bool VtepMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VtepMoMgr::IsValidKey(void *key, uint64_t index, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vtep *vtep_key = reinterpret_cast<key_vtep *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -830,7 +833,8 @@ upll_rc_t VtepMoMgr::CreateVnodeConfigKey(ConfigKeyVal *ikey,
   return UPLL_RC_SUCCESS;
 }
 /*
-   upll_rc_t VtepMoMgr::CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey) {
+   upll_rc_t VtepMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
+   ConfigKeyVal *ikey) {
    UPLL_FUNC_TRACE;
    if (!ikey || !(ikey->get_key()))
    return UPLL_RC_ERR_GENERIC;
@@ -842,7 +846,8 @@ upll_rc_t VtepMoMgr::CreateVnodeConfigKey(ConfigKeyVal *ikey,
    return UPLL_RC_ERR_GENERIC;
    if (!strlen ((char *)key_rename->old_unc_vtn_name))
    return UPLL_RC_ERR_GENERIC;
-   strcpy ((char *)vtep_key ->vtn_key.vtn_name, (char *)key_rename->old_unc_vtn_name);
+   strcpy ((char *)vtep_key ->vtn_key.vtn_name,
+   (char *)key_rename->old_unc_vtn_name);
 
    okey = new ConfigKeyVal (UNC_KT_VTEP, IpctSt::kIpcStKeyVtep, vtep_key, NULL);
    if (!okey) {
@@ -882,8 +887,8 @@ upll_rc_t VtepMoMgr::CreateVtepGrpConfigKey(ConfigKeyVal *&okey,
 }
 
 
-upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
-    upll_keytype_datatype_t dt_type,
+upll_rc_t VtepMoMgr::IsReferenced(IpcReqRespHeader *req,
+    ConfigKeyVal *ikey,
     DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -893,7 +898,7 @@ upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
   MoMgrImpl *mgr1 = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
       (GetMoManager(UNC_KT_VTEP_IF)));
   if (!mgr1) return UPLL_RC_ERR_GENERIC;
-  result_code = mgr1->IsReferenced(ikey, dt_type, dmi);
+  result_code = mgr1->IsReferenced(req, ikey, dmi);
   result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
                     UPLL_RC_SUCCESS:result_code;
   UPLL_LOG_DEBUG("Interface IsReferenced returned: (%d)", result_code);
@@ -909,7 +914,8 @@ upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
     DELETE_IF_NOT_NULL(okey);
     return UPLL_RC_ERR_GENERIC;
   }
-  result_code =  mgr2->UpdateConfigDB(okey, dt_type, UNC_OP_READ, dmi, MAINTBL);
+  result_code =  mgr2->UpdateConfigDB(okey, req->datatype, UNC_OP_READ,
+                                      dmi, MAINTBL);
   DELETE_IF_NOT_NULL(okey);
   if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code)
     result_code = UPLL_RC_ERR_CFG_SEMANTIC;
@@ -919,8 +925,39 @@ upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
   return result_code;
 }
 
+upll_rc_t VtepMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
+                          AdaptType adapt_type) {
+  UPLL_FUNC_TRACE;
+  if (!ikey) {
+    UPLL_LOG_DEBUG("Invalid ikey");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  key_vtep *vtep_key = reinterpret_cast<key_vtep*>(ikey->get_key());
+  while (ikey) {
+    ConfigVal *cval = ikey->get_cfg_val();
+    if (!cval) {
+      UPLL_LOG_DEBUG("Config Val is Null");
+      return UPLL_RC_ERR_GENERIC;
+    }
+    while (cval) {
+      if (IpctSt::kIpcStValVtepSt == cval->get_st_num()) {
+        controller_domain ctrlr_dom = {NULL, NULL};
+        GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+        CheckOperStatus<val_vtep_st>(vtep_key->vtn_key.vtn_name,
+                                     cval, UNC_KT_VTEP, ctrlr_dom);
+      }
+      cval = cval->get_next_cfg_val();
+    }
+    if (adapt_type == ADAPT_ONE)
+      break;
+    ikey = ikey->get_next_cfg_key_val();
+  }
+  return UPLL_RC_SUCCESS;
+}
+
 /*
-   upll_rc_t VtepMoMgr::MergeValidate(unc_key_type_t keytype, const char *ctrlr_id,
+   upll_rc_t VtepMoMgr::MergeValidate(unc_key_type_t keytype,
+   const char *ctrlr_id,
    ConfigKeyVal *ikey, DalDmlIntf *dmi) {
    UPLL_FUNC_TRACE;
    upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -932,14 +969,14 @@ upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
 
  result_code = ReadConfigDB(ikey, UPLL_DT_IMPORT, UNC_OP_READ,
  dbop, dmi, MAINTBL);
- if(UPLL_RC_SUCCESS != result_code)
+ if (UPLL_RC_SUCCESS != result_code)
  return result_code;
  checks the vnode name present in the running vnode under the
  * same vtn
 
  while (!ikey) {
  Same Name should not present in the vnodes in running
- result_code = VnodeChecks(ikey, UPLL_DT_RUNNING, dmi);
+ result_code = VnodeChecks(ikey, UPLL_DT_RUNNING, dmi, false);
 
  if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code )
  return UPLL_RC_ERR_MERGE_CONFLICT;
@@ -956,6 +993,6 @@ upll_rc_t VtepMoMgr::IsReferenced(ConfigKeyVal *ikey,
  }
  */
 
-}  // namespace vtn
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

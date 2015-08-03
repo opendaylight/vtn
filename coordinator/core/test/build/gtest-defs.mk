@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2011-2014 NEC Corporation
+# Copyright (c) 2011-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -73,5 +73,9 @@ GTEST_FILTER	= $(NAME:%=--gtest_filter='%.$(SUBNAME)')
 GTEST_REPEAT	= $(REPEAT:%=--gtest_repeat=%)
 GTEST_COLOR	= $(COLOR:%=--gtest_color=%)
 GTEST_FLAGS	= $(GTEST_FILTER) $(GTEST_REPEAT) $(GTEST_COLOR)
+
+ifdef	BROKEN_TEST
+GTEST_FLAGS	+= --gtest_also_run_disabled_tests
+endif	# BROKEN_TEST
 
 endif	# GTEST_CONFIG

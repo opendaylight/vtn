@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -488,16 +488,27 @@ void VtnDrvIntf::switch_event(oper_type operation,
                               val_switch_st_t &val_struct ) {
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
+  pfc_bool_t Start_event = PFC_TRUE;
   int err = 0;
+  controller* ctr = NULL;
   std::string controller_name =
       (const char*)key_struct.ctr_key.controller_name;
   std::string switch_id = (const char*)key_struct.switch_id;
+  controller_operation util_obj(ctrl_inst_, READ_FROM_CONTROLLER, controller_name);
+  ctr = util_obj.get_controller_handle();
 
   pfc_log_debug("%s, key structure fields:"
                 "controller_name: %s, "
                 "switch_id: %s, ", PFC_FUNCNAME, controller_name.c_str(),
                 switch_id.c_str());
   pfc_log_debug("Switch event Operation received is %d", operation);
+ if ( ctr->get_audit_result() == PFC_TRUE ) {
+  Start_event = ctrl_inst_->GetEventFlag(controller_name);
+  if ((Start_event == PFC_FALSE)) {
+    event_start(controller_name);  //  post domain event to UPPL
+    ctrl_inst_->SetEventFlag(controller_name, PFC_TRUE);
+  }
+ }
   switch (operation) {
     case VTN_SWITCH_CREATE:
       {
@@ -544,6 +555,7 @@ void VtnDrvIntf::switch_event(oper_type operation,
   ODC_FUNC_TRACE;
   unc_event_mask_t mask_type = UNC_PHYSICAL_EVENTS;
   int err = 0;
+//  pfc_bool_t Start_event = PFC_TRUE;
   std::string controller_name =
       (const char*)key_struct.ctr_key.controller_name;
   std::string switch_id = (const char*)key_struct.switch_id;
@@ -767,6 +779,47 @@ void VtnDrvIntf::link_event(oper_type operation,
   } else {
     pfc_log_debug("%s, Invalid operation, PFC_FUNCNAME", PFC_FUNCNAME);
   }
+}
+
+
+/**
+ * @brief     : Method to post EVENT START to UPPL
+ * @param[in] : Controller name
+ * @retval    : None
+**/
+
+void VtnDrvIntf::event_start(std::string ctr_name) {
+  ODC_FUNC_TRACE;
+  unc_event_mask_t mask_type = UNC_CTLR_STATE_EVENTS;
+  int err = 0;
+  //unc::driver::controller* ctr_ptr;
+  const std::string ctr_version = "1.0.0.0";
+  key_ctr_t key_ctr;
+  val_ctr_st_t val_ctr_new;
+  val_ctr_st_t val_ctr_old;
+  memset(&key_ctr, 0, sizeof(key_ctr_t));
+  memset(&val_ctr_new, 0, sizeof(val_ctr_st_t));
+  memset(&val_ctr_old, 0, sizeof(val_ctr_st_t));
+  val_ctr_new.valid[1] = UNC_VF_VALID;
+  val_ctr_new.valid[2] = UNC_VF_VALID;
+//  std::string ctr_name =
+//              (const char*)key_struct.ctr_key.controller_name;
+  memcpy(key_ctr.controller_name, ctr_name.c_str(), ctr_name.length() + 1);
+  memcpy(val_ctr_new.actual_version,
+         ctr_version.c_str(), ctr_version.length() + 1);
+  pfc::core::ipc::ServerEvent phys_ctr_event((uint32_t) mask_type, err);
+  val_ctr_new.oper_status = CONTROLLER_EVENTS_START;
+  phys_ctr_event.addOutput(ctr_name);
+//  phys_ctr_event.addOutput(controller_name);
+  phys_ctr_event.addOutput(DEFAULT_DOMAIN_ID);
+  phys_ctr_event.addOutput((uint32_t) UNC_OP_UPDATE);
+  phys_ctr_event.addOutput((uint32_t) UNC_DT_STATE);
+  phys_ctr_event.addOutput((uint32_t) UNC_KT_CONTROLLER);
+  phys_ctr_event.addOutput(key_ctr);
+  phys_ctr_event.addOutput(val_ctr_new);
+  phys_ctr_event.addOutput(val_ctr_old);
+  pfc_log_debug("%s: Posting CONTROLLER_EVENTS_START to UPPL, Controller_name: %s", PFC_FUNCNAME, ctr_name.c_str());
+  phys_ctr_event.post();
 }
 
 /**

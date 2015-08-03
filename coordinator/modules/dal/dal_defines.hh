@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,8 @@
 #define __DAL_DEFINES_H__
 
 #include "upll/keytype_upll_ext.h"
+#include "uncxx/tclib/tclib_defs.hh"
+#include "uncxx/tclib/tclib_interface.hh"
 
 namespace unc {
 namespace upll {
@@ -23,6 +25,8 @@ namespace dal {
 
 // Type definition for Config Type
 typedef upll_keytype_datatype_t UpllCfgType;
+// Type definition for ConfigMode
+typedef TcConfigMode CfgModeType;
 
 /**
  * Enumeration for C datatype used by dal user

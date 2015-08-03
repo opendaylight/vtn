@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,13 +44,23 @@ class TcDbHandler {
     /*methods to access TC_RECOVERY_TABLE*/
     TcOperRet UpdateRecoveryTable(unc_keytype_datatype_t data_base,
                                   TcServiceType operation,
+                                  TcConfigMode config_mode = TC_CONFIG_INVALID,
+                                  std::string vtn_name = "",
                                   uint32_t failover_instance = 0);
+    TcOperRet UpdateRecoveryTableAbortVersion(uint64_t abort_version);
+    TcOperRet UpdateRecoveryTableSaveVersion(uint64_t save_version);
     TcOperRet GetRecoveryTable(unc_keytype_datatype_t* db,
                                TcServiceType* oper,
+                               TcConfigMode *config_mode,
+                               std::string *vtn_name,
                                uint32_t* failover_instance);
+    TcOperRet GetRecoveryTableAbortVersion(uint64_t & abort_version);
+    TcOperRet GetRecoveryTableSaveVersion(uint64_t & save_version);
     /*checks whether the row exists with a value*/
     TcOperRet IsRowExists(std::string table_name, std::string attribute);
 
+    TcOperRet UpdateRecoveryTableGlobalModeDirty(pfc_bool_t global_mode_dirty);
+    TcOperRet GetRecoveryTableGlobalModeDirty(pfc_bool_t&  global_mode_dirty);
   private:
     /*DB connection methods*/
     TcOperRet SetConnectionEnv();
@@ -66,6 +76,7 @@ class TcDbHandler {
     std::string ConvertOptoString(SQLINTEGER op);
     std::string ConvertDbasetoString(SQLINTEGER dbase);
     std::string ConvertAutoSaveString(pfc_bool_t autosave);
+    std::string ConvertConfigModeString(SQLINTEGER config_mode);
     /*method to log SQL error msg*/
     void GetErrorReason(SQLRETURN sqlret,
                         SQLSMALLINT handletype,

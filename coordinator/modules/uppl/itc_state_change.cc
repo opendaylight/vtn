@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -76,17 +76,21 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToStandBy(
     ClearVector(vect_ctr_key, vect_ctr_val);
     return err;
   }
-  err = UNC_RC_SUCCESS;
   IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err);
   if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to VNP driver");
     ClearVector(vect_ctr_key, vect_ctr_val);
     return err;
   }
-  err = UNC_RC_SUCCESS;
   IPCClientDriverHandler polc_drv_handler(UNC_CT_POLC, err);
   if (err != UNC_RC_SUCCESS) {
     pfc_log_error("Cannot open session to POLC driver");
+    ClearVector(vect_ctr_key, vect_ctr_val);
+    return err;
+  }
+  IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
+  if (err != UNC_RC_SUCCESS) {
+    pfc_log_error("Cannot open session to ODC driver");
     ClearVector(vect_ctr_key, vect_ctr_val);
     return err;
   }
@@ -113,6 +117,9 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToStandBy(
     } else if (controller_type == UNC_CT_POLC) {
       pfc_log_debug("Send controller info to POLC driver");
       cli_session = polc_drv_handler.ResetAndGetSession();
+    } else if (controller_type == UNC_CT_ODC) {
+      pfc_log_debug("Send controller info to ODC driver");
+      cli_session = odc_drv_handler.ResetAndGetSession();
     } else {
       pfc_log_info("Driver support not yet added for unknown controller");
       // Release memory allocated for key struct
@@ -175,8 +182,9 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToStandBy(
       driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
     } else if (controller_type == UNC_CT_POLC) {
       driver_response = polc_drv_handler.SendReqAndGetResp(rsp);
+    } else if (controller_type == UNC_CT_ODC) {
+      driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
     }
-
     pfc_log_debug("driver_response is  %d", driver_response);
     if (driver_response != UNC_RC_SUCCESS) {
       pfc_log_info(
@@ -192,7 +200,20 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToStandBy(
     // Create a task queue to process particular controller's events
     PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
     taskq_util->del_task_queue(controller_name);
+    // Delete the readwrite lock of this controller from CtrlUtil map.
+    map<string, CtrOprnStatus>::iterator it;
+    PhysicalLayer::ctr_oprn_mutex_.lock();
+    it = PhysicalLayer::ctr_oprn_status_.find(controller_name);
+    if (it != PhysicalLayer::ctr_oprn_status_.end()) {
+      if (it->second.rwlock_oper_st != NULL)
+        delete it->second.rwlock_oper_st;
+      PhysicalLayer::ctr_oprn_status_.erase(it);
+    }
+    PhysicalLayer::ctr_oprn_mutex_.unlock();
   }
+  PhysicalLayer::ctr_oprn_mutex_.lock();
+  PhysicalLayer::ctr_oprn_status_.clear();  // Clear the utility holder map
+  PhysicalLayer::ctr_oprn_mutex_.unlock();
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
   PhysicalCore* physical_core = physical_layer->get_physical_core();
   physical_core->set_system_state(UPPL_SYSTEM_ST_STANDBY);
@@ -257,18 +278,22 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
     pfc_log_error("Cannot open session to PFC driver");
     return err;
   }
-  err = UNC_RC_SUCCESS;
   IPCClientDriverHandler vnp_drv_handler(UNC_CT_VNP, err);
   if (err != UNC_RC_SUCCESS) {
     ClearVector(vect_ctr_key, vect_ctr_val);
     pfc_log_error("Cannot open session to VNP driver");
     return err;
   }
-  err = UNC_RC_SUCCESS;
   IPCClientDriverHandler polc_drv_handler(UNC_CT_POLC, err);
   if (err != UNC_RC_SUCCESS) {
     ClearVector(vect_ctr_key, vect_ctr_val);
     pfc_log_error("Cannot open session to POLC driver");
+    return err;
+  }
+  IPCClientDriverHandler odc_drv_handler(UNC_CT_ODC, err);
+  if (err != UNC_RC_SUCCESS) {
+    ClearVector(vect_ctr_key, vect_ctr_val);
+    pfc_log_error("Cannot open session to ODC driver");
     return err;
   }
   for (uint32_t ctrIndex = 0; ctrIndex < vect_ctr_key.size();
@@ -309,11 +334,12 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
           db_conn,
           UNC_DT_RUNNING,
           vect_ctr_key[ctrIndex],
-          ctr_val);
+          ctr_val,
+          false);
       if (operation_status != UNC_RC_SUCCESS) {
         pfc_log_error("Unable to set the oper status of controller as down");
       }
-      // Reset actual version as empty
+      // Reset actual version as empty in running and candidate
       string act_version = "";
       UncRespCode status = kt_ctr.SetActualVersion(
                                    db_conn, vect_ctr_key[ctrIndex], act_version,
@@ -321,20 +347,27 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
       if (status != UNC_RC_SUCCESS) {
         pfc_log_error("act_version reset operation failed for running");
       }
+      status = kt_ctr.SetActualVersion(db_conn, vect_ctr_key[ctrIndex],
+          act_version, UNC_DT_CANDIDATE, UNC_VF_INVALID);
+      if (status != UNC_RC_SUCCESS) {
+        pfc_log_error("act_version reset operation failed for candidate");
+      }
+      // Reset actual id as empty in running and candidate
+      string actual_id = "";
+      status = kt_ctr.SetActualControllerId(db_conn, vect_ctr_key[ctrIndex],
+                                 actual_id, UNC_DT_RUNNING, UNC_VF_INVALID);
+      if (status != UNC_RC_SUCCESS) {
+        // log error
+        pfc_log_error("actual_id reset operation failed for running");
+      }
+      status = kt_ctr.SetActualControllerId(db_conn, vect_ctr_key[ctrIndex],
+                               actual_id, UNC_DT_CANDIDATE, UNC_VF_INVALID);
+      if (status != UNC_RC_SUCCESS) {
+        // log error
+        pfc_log_error("actual_id reset operation failed for candidate");
+      }
     }
-
-    // Sending the Controller Update Information to Logical Layer
     UncRespCode upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
-        UNC_DT_CANDIDATE,
-        UNC_OP_CREATE,
-        UNC_KT_CONTROLLER,
-        vect_ctr_key[ctrIndex],
-        reinterpret_cast<void*>(&obj_val_ctr->controller));
-    if (upll_result != UNC_RC_SUCCESS) {
-      pfc_log_info("Failed to send the controller %s in candidate to UPLL",
-                   controller_name.c_str());
-    }
-    upll_result = kt_ctr.SendUpdatedControllerInfoToUPLL(
         UNC_DT_RUNNING,
         UNC_OP_CREATE,
         UNC_KT_CONTROLLER,
@@ -356,6 +389,9 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
     } else if (controller_type == UNC_CT_POLC) {
       pfc_log_debug("Send controller info to POLC driver");
       cli_session = polc_drv_handler.ResetAndGetSession();
+    } else if (controller_type == UNC_CT_ODC) {
+      pfc_log_debug("Send controller info to ODC driver");
+      cli_session = odc_drv_handler.ResetAndGetSession();
     } else {
       pfc_log_info("Driver support not yet added for unknown controller");
       // Release memory allocated for key struct
@@ -409,6 +445,18 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
       obj_val_ctr = NULL;
       continue;
     }
+    // Create a task queue to process particular controller's events
+    PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+    UncRespCode status = taskq_util->create_task_queue(controller_name);
+    if (status != UNC_RC_SUCCESS)
+      UPPL_LOG_FATAL("Event Handling taskq creation error !!");
+    // Inserting the lock object in the map for the particular controller
+    CtrOprnStatus oCtrOprnStatus;
+    oCtrOprnStatus.rwlock_oper_st = new ReadWriteLock();
+    PhysicalLayer::ctr_oprn_mutex_.lock();
+    PhysicalLayer::ctr_oprn_status_.insert(std::pair<string, CtrOprnStatus>
+                                         (controller_name, oCtrOprnStatus));
+    PhysicalLayer::ctr_oprn_mutex_.unlock();
     pfc_log_info("Sending connect request to driver");
     // Send the request to driver
     UncRespCode driver_response = UNC_RC_SUCCESS;
@@ -419,8 +467,9 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
       driver_response = vnp_drv_handler.SendReqAndGetResp(rsp);
     } else if (controller_type == UNC_CT_POLC) {
       driver_response = polc_drv_handler.SendReqAndGetResp(rsp);
-    }
-
+    } else if (controller_type == UNC_CT_ODC) {
+      driver_response = odc_drv_handler.SendReqAndGetResp(rsp);
+    }  // else part will not occur. It is already eliminated above...
     pfc_log_debug("driver_response is  %d", driver_response);
     if (driver_response != UNC_RC_SUCCESS) {
       pfc_log_error(
@@ -433,12 +482,9 @@ UncRespCode SystemStateChangeRequest::SystemStateChangeToActive(
     // delete the val memory
     delete obj_val_ctr;
     obj_val_ctr = NULL;
-    // Create a task queue to process particular controller's events
-    PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
-    UncRespCode status = taskq_util->create_task_queue(controller_name);
-    if (status != UNC_RC_SUCCESS)
-      pfc_log_fatal("Event Handling taskq creation error !!");
   }
+  // Sending the Controller Candidate Info to Logical Layer
+  SendCandidateInfoToLogical(db_conn);
   pfc_log_info("SystemStateChangeToActive returned SUCCESS");
   return UNC_RC_SUCCESS;
 }

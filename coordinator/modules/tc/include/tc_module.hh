@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -62,9 +62,14 @@ class TcModule : public pfc::core::Module, public UncStateHandler {
   /* 
    * @brief Get the details of the config session
    * @param[in]  session_id - Session Id .
-   * @param[in]  config_id - Represents the request sent from TC.
-   */
-  TcApiRet TcGetConfigSession(uint32_t* session_id, uint32_t* config_id);
+   * @param[out]  config_id - Represents the request sent from TC.  
+   * @param[out]  tc_mode - Represents the request sent from TC.
+   * @param[out]  vtn_name - Represents the request sent from TC.
+*/
+  TcApiRet TcGetConfigSession(uint32_t session_id,
+                              uint32_t& config_id,
+                              TcConfigMode& tc_mode,
+                              std::string& vtn_name);
 
   /* API's for Session Manager*/
 
@@ -92,8 +97,10 @@ class TcModule : public pfc::core::Module, public UncStateHandler {
   TcOperStatus HandleCandidateRequests(pfc::core::ipc::ServerSession* sess);
   TcOperStatus HandleStartUpRequests(pfc::core::ipc::ServerSession* sess);
   TcOperStatus HandleReadRequests(pfc::core::ipc::ServerSession* sess);
+  TcOperStatus HandleReadStatusRequests(pfc::core::ipc::ServerSession* sess);
   TcOperStatus HandleAutoSaveRequests(pfc::core::ipc::ServerSession* sess);
   TcOperStatus HandleAuditRequests(pfc::core::ipc::ServerSession* sess);
+  TcOperStatus ReleaseConfigSession(uint32_t session_id);
   TcOperStatus ReleaseConfigSession();
 
 
@@ -108,10 +115,14 @@ class TcModule : public pfc::core::Module, public UncStateHandler {
   TcTaskqUtil* audit_q_;
   /* DB DSN NAME */
   std::string dsn_name;
+  /* DB DSN name used in ACT */
+  std::string act_dsn_name;
+  /* DB DSN name used in SBY */
+  std::string sby_dsn_name;
   /*Max Failover instance*/
   uint32_t max_failover_instance_;
-  /* Simultaneous read and write lock allowed? */
-  pfc_bool_t simultaneous_read_write_allowed_;
+  /* Seconday wait time for cancelled audit in seconds */
+  uint32_t secondary_wait_time_for_cancelled_audit_;
 };
 }  //  namespace tc
 }  //  namespace unc

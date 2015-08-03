@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <set>
 #include <stack>
 #include <sstream>
 #include "pfcxx/module.hh"
@@ -98,7 +99,6 @@ class DataflowDetail {
   ~DataflowDetail();
   // Read the DataflowCmn details from session as mentioned in FD API doc
   int sessReadDataflow(ClientSession& sess, uint32_t& getres_pos);
-  int RedirectCheck(val_vtn_dataflow_path_info_t *path_info);
   val_df_data_flow_cmn_t *df_common;
   val_vtn_dataflow_cmn_t *vtn_df_common;
   map<UncDataflowFlowMatchType, void *> matches;
@@ -126,6 +126,7 @@ class DataflowCmn {
   bool is_vlan_src_mac_changed_;
   DataflowCmn *parent_node;
   bool action_applied;
+  uint8_t pfc_vtn_name[32];
 
   std::string ToStr();
   // Write the DataflowCmn details into session as mentioned in FD API doc
@@ -144,6 +145,8 @@ class DataflowCmn {
 
   static string get_string(const AddlData *ptr);
   static string get_string(const key_dataflow_t &k);
+  static string get_string(const key_dataflow_v2_t &k);
+  static string get_string(const val_dataflow_v2_t &v);
   static string get_string(const key_ctr_dataflow_t &k);
 
   static string get_string(const val_df_data_flow_cmn_t &val_obj);
@@ -244,6 +247,9 @@ class DataflowUtil {
   std::map<key_dataflow_t, vector<DataflowDetail *>, KeyDataflowCmp > pfc_flows;
   std::map<key_vtn_ctrlr_dataflow, vector<DataflowDetail *>, KeyVtnDataflowCmp  > upll_pfc_flows;
   std::map<std::string, uint32_t> ctrlr_dom_count_map;
+  std::set<std::string> bypass_dom_set;
+  std::map<std::string, void* > vext_info_map;
+  std::map<std::string, std::string> vnode_rename_map;
  private:
   vector<DataflowCmn* > firstCtrlrFlows;
 };

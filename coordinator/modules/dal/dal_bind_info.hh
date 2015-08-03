@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -7,13 +7,13 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-/*                                                                
- * dal_info.hh 
+/*
+ * dal_info.hh
  *   Contians information and buffers from dal user for all the columns
  *   in a specific table
  *   The buffers store the input values from dal user to databse and
  *   the output values from database to dal user.
- */ 
+ */
 
 #ifndef __DAL_BIND_INFO__HH__
 #define __DAL_BIND_INFO__HH__
@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <sqltypes.h>
 #include <vector>
+#include <string>
 #include "dal_schema.hh"
 #include "dal_bind_column_info.hh"
 
@@ -188,6 +189,18 @@ class DalBindInfo {
     std::string BindListToStr();
     std::string BindListInputToStr();
     std::string BindListResultToStr();
+
+    /**
+     * ValidateInputParams
+     * Validates the input parameters to bind functions
+     *
+     * @return bool             - true, if all te params are valid
+     *                            false, otherwise
+     */
+    bool ValidateInputParams(const DalColumnIndex column_index,
+                             const DalCDataType app_data_type,
+                             const size_t array_size,
+                             const void *bind_addr);
 
   private:
     // Initialize the bind list for all columns with default values

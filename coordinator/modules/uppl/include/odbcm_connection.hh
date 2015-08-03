@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -105,7 +105,6 @@ class ScopedDBConnection {
                                          db_conn_, session_id_, config_id_);
       db_conn = db_conn_;
       if (db_conn == NULL) pfc_log_info("conn is null after assign");
-      if (db_conn_ == NULL) pfc_log_info("conn_ is null after assign");
       if (db_status != ODBCM_RC_SUCCESS) {
         resp_code = UNC_UPPL_RC_ERR_DB_ACCESS;
         pfc_log_error("odbc connection assignation is failed!!");

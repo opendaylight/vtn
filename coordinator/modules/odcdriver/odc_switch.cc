@@ -251,7 +251,6 @@ UncRespCode OdcSwitch::update_event(unc::driver::controller *ctr_ptr,
   // Send notification to UPPL
   notify_physical(unc::driver::VTN_SWITCH_UPDATE, key_switch,
                   val_switch, val_new_switch);
-
   // Append to cache
   UncRespCode  ret_val =
       ctr_ptr->physical_port_cache->update_physical_attribute_node(cfg_node);

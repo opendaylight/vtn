@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -298,7 +298,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      */
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
-        DalDmlIntf *dmi);
+        DalDmlIntf *dmi, TcConfigMode config_mode, std::string vtn_name);
 
     /**
      * @brief  Method used to check whether the key is referred by any entry
@@ -314,7 +314,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  No record found in DB
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /**
@@ -454,7 +454,7 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @return  TRUE   Success
      * @retval  FALSE  Failure
      */
-    bool IsValidKey(void *ikey, uint64_t index);
+    bool IsValidKey(void *ikey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
     /**
      * @brief  Method to Get the controller span
@@ -499,7 +499,9 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblDelete(ConfigKeyVal *pp_ckv,
-        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name, bool is_commit,
+        uint32_t count);
 
     /**
      * @brief  Method to Create record in ctrlrtbl
@@ -514,7 +516,9 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      */
     upll_rc_t CtrlrTblCreate(ConfigKeyVal *pp_ckv,
-        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name, bool is_commit,
+        uint32_t count);
 
     /**
      * @brief  Method to Create or Delete record in ctrlrtbl
@@ -531,7 +535,9 @@ class PolicingProfileMoMgr : public MoMgrImpl {
      */
     upll_rc_t PolicingProfileCtrlrTblOper(const char *policingprofile_name,
        const char *ctrlr_id, DalDmlIntf *dmi, unc_keytype_operation_t oper,
-       upll_keytype_datatype_t dt_type, uint8_t pp_flag);
+       upll_keytype_datatype_t dt_type, uint8_t pp_flag,
+       TcConfigMode config_mode, string vtn_name, uint32_t count = 1,
+       bool is_commit = false);
 
     /**
      * @brief  Method to Get Policingprofile COnfigKeyVal
@@ -575,14 +581,68 @@ class PolicingProfileMoMgr : public MoMgrImpl {
 
     upll_rc_t UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
                                        DalDmlIntf *dmi,
-                                       upll_keytype_datatype_t dt_type);
+                                       upll_keytype_datatype_t dt_type,
+                                       TcConfigMode config_mode,
+                                       string vtn_name);
 
     upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
                            unc_keytype_operation_t &op);
 
-     upll_rc_t CopyKeyToVal(ConfigKeyVal *ikey,
+    upll_rc_t CopyKeyToVal(ConfigKeyVal *ikey,
                             ConfigKeyVal *&okey);
 
+    upll_rc_t UpdateRefCountInScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi,
+        upll_keytype_datatype_t dt_type,
+        unc_keytype_operation_t op,
+        TcConfigMode config_mode,
+        string vtn_name,
+        uint32_t count);
+
+    upll_rc_t InsertRecInScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        unc_keytype_operation_t op, TcConfigMode config_mode,
+        string vtn_name,
+        uint32_t count);
+
+    upll_rc_t ComputeRefCountInScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name,
+        int &ref_count);
+
+    upll_rc_t ReadCtrlrTbl(
+        ConfigKeyVal *&okey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type);
+
+    upll_rc_t ComputeCtrlrTblRefCountFromScratchTbl(
+        ConfigKeyVal *ikey,
+        DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+        TcConfigMode config_mode, string vtn_name);
+
+    upll_rc_t ClearScratchTbl(
+        TcConfigMode config_mode, string vtn_name,
+        DalDmlIntf *dmi, bool is_abort = false);
+
+    upll_rc_t RevertCtlrTblEntries(
+        TcConfigMode config_mode, string vtn_name,
+        DalDmlIntf *dmi);
+
+    upll_rc_t RefCountSemanticCheck(
+        const char* policingprofile_name, DalDmlIntf *dmi,
+        TcConfigMode config_mode, string vtn_name);
+
+    upll_rc_t InstanceExistsInScratchTbl(
+        ConfigKeyVal *ikey, TcConfigMode config_mode, string vtn_name,
+        DalDmlIntf *dmi);
+
+    upll_rc_t ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi);
+
+    upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
+        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+        TcConfigMode config_mode, string vtn_name);
 };
 
 typedef struct val_policingprofile_ctrl {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -28,6 +28,9 @@ extern "C" {
 #define USESS_ID_DB_MGMT  128  // Database Management
 #define USESS_ID_LAUNCHER 129  // Launcher
 #define USESS_ID_STARTUPPROXY 130  // Startup Proxy
+#define USESS_ID_UPLL 131  // UPLL
+#define USESS_ID_UPPL 132  // UPPL
+#define USESS_ID_TC 133  // TC
 
 // Default user name.
 #define USESS_USER_CLI_ADMIN "UNC_CLI_ADMIN"
@@ -99,7 +102,8 @@ typedef enum {
 // config mode status.
 typedef enum {
   CONFIG_STATUS_NONE = 0,       // Not Configuration mode.
-  CONFIG_STATUS_TCLOCK          // Configuration mode.
+  CONFIG_STATUS_TCLOCK,         // Global Configuration mode.
+  CONFIG_STATUS_TCLOCK_PART     // Partial Configuration mode.
 } usess_config_mode_e;
 
 

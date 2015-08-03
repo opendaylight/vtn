@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -11,14 +11,15 @@
  * dal_dml_intf.hh
  *   Contains definition of DalDmlIntf
  *   DML interface of database
- * 
+ *
  * Implemented by DalOdbcMgr
- */ 
+ */
 
 #ifndef __DAL_DML_INTF_HH__
 #define __DAL_DML_INTF_HH__
 
 #include <stdint.h>
+#include <string>
 #include "dal_defines.hh"
 #include "dal_bind_info.hh"
 #include "dal_schema.hh"
@@ -29,7 +30,7 @@ namespace upll {
 namespace dal {
 
 /**
- *  DalConnIntf 
+ *  DalConnIntf
  *    Database management query APIs for database
  *
  *  Inherited by DalOdbcMgr
@@ -379,11 +380,13 @@ class DalDmlIntf {
     virtual DalResultCode DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
                                 const DalBindInfo *matching_attr_info,
-                                const bool truncate) const = 0;
+                                const bool truncate,
+                                const CfgModeType cfg_mode,
+                                const uint8_t* vtn_name) const = 0;
 
     /**
      * CreateRecord
-     *   Creates the record in table with the given input data for 
+     *   Creates the record in table with the given input data for
      *   the given cfg_type
      *
      * @param[in] cfg_type        - Configuration Type for which the record
@@ -404,11 +407,13 @@ class DalDmlIntf {
      */
     virtual DalResultCode CreateRecord(const UpllCfgType cfg_type,
                                const DalTableIndex table_index,
-                               const DalBindInfo *input_attr_info) const = 0;
+                               const DalBindInfo *input_attr_info,
+                               const CfgModeType cfg_mode,
+                               const uint8_t* vtn_name) const = 0;
 
     /**
      * UpdateRecords
-     *   Updates the records of table with the given input data for 
+     *   Updates the records of table with the given input data for
      *   the given cfg_type
      *
      * @param[in] cfg_type        - Configuration Type for which the records
@@ -435,7 +440,9 @@ class DalDmlIntf {
     virtual DalResultCode UpdateRecords(
                     const UpllCfgType cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *input_and_matching_attr_info) const = 0;
+                    const DalBindInfo *input_and_matching_attr_info,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const = 0;
 
     /**
      * ExecuteAppQuery
@@ -471,7 +478,9 @@ class DalDmlIntf {
                               const UpllCfgType cfg_type,
                               const DalTableIndex table_index,
                               const DalBindInfo *bind_info,
-                              const unc_keytype_operation_t dirty_op) const = 0;
+                              const unc_keytype_operation_t dirty_op,
+                              const CfgModeType cfg_mode,
+                              const uint8_t* vtn_name) const = 0;
     /**
      * GetDeletedRecords
      *   Fetches the records from cfg_type_2 which are not in cfg_type_1
@@ -513,7 +522,9 @@ class DalDmlIntf {
                                     const DalTableIndex table_index,
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor) const = 0;
+                                    DalCursor **cursor,
+                                    const CfgModeType cfg_mode,
+                                    const uint8_t* vtn_name) const = 0;
 
     /**
      * GetCreatedRecords
@@ -556,10 +567,17 @@ class DalDmlIntf {
                                     const DalTableIndex table_index,
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor) const = 0;
+                                    DalCursor **cursor,
+                                    const CfgModeType cfg_mode,
+                                    const uint8_t* vtn_name) const = 0;
 
-    virtual DalResultCode ClearCreateUpdateFlags(const DalTableIndex table_index,
-                                    const UpllCfgType cfg_type) const = 0;
+    virtual DalResultCode ClearCreateUpdateFlags(
+                                    const DalTableIndex table_index,
+                                    const UpllCfgType cfg_type,
+                                    const CfgModeType cfg_mode,
+                                    const uint8_t* vtn_name,
+                                    const bool create,
+                                    const bool update) const = 0;
 
     /**
      * GetUpdatedRecords
@@ -619,7 +637,9 @@ class DalDmlIntf {
                     const size_t max_record_count,
                     const DalBindInfo *cfg_1_output_and_match_attr_info,
                     const DalBindInfo *cfg_2_output_and_match_attr_info,
-                    DalCursor **cursor) const = 0;
+                    DalCursor **cursor,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const = 0;
 
     /**
      * CopyEntireRecords
@@ -659,9 +679,10 @@ class DalDmlIntf {
      *     dummy address. Do not pass NULL address.
      */
     virtual DalResultCode CopyEntireRecords(const UpllCfgType dest_cfg_type,
-                                    const UpllCfgType src_cfg_type,
-                                    const DalTableIndex table_index,
-                                    const DalBindInfo *output_attr_info) const = 0;
+                                            const UpllCfgType src_cfg_type,
+                                            const DalTableIndex table_index,
+                                            const DalBindInfo *output_attr_info)
+                                            const = 0;
 
     /**
      * CopyModifiedRecords
@@ -725,7 +746,9 @@ class DalDmlIntf {
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
                     const DalBindInfo *output_and_match_attr_info,
-                    const unc_keytype_operation_t op) const = 0;
+                    const unc_keytype_operation_t op,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const = 0;
 
 
     /**
@@ -762,8 +785,9 @@ class DalDmlIntf {
                     const UpllCfgType dest_cfg_type,
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) const = 0;
-
+                    const DalBindInfo *output_and_match_attr_info,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const = 0;
     /**
      * CheckRecordsIdentical
      *   Checks whether cfg_type_1 and cfg_type_2 configurations contains same
@@ -802,7 +826,10 @@ class DalDmlIntf {
                                         const UpllCfgType cfg_type_2,
                                         const DalTableIndex table_index,
                                         const DalBindInfo *matching_attr_info,
-                                        bool *identical) const = 0;
+                                        bool *identical,
+                                        const CfgModeType cfg_mode,
+                                        const uint8_t* vtn_name)
+        const = 0;
 
     /**
      * ExecuteAppQuerySingleRecord
@@ -845,15 +872,33 @@ class DalDmlIntf {
              const DalTableIndex table_index,
              const std::string query_stmt,
              const DalBindInfo *bind_info,
-             const unc_keytype_operation_t op) const = 0;
+             const unc_keytype_operation_t op,
+             const CfgModeType cfg_mode,
+             const uint8_t* vtn_name) const = 0;
 
      virtual void MakeAllTableDirtyInCache() const = 0;
      virtual  bool IsTableDirtyShallow(
-                    const DalTableIndex table_index) const = 0; 
+                    const DalTableIndex table_index,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const = 0;
 
      virtual bool IsTableDirtyShallowForOp(
                     const DalTableIndex table_index,
-                    const unc_keytype_operation_t op) const = 0;
+                    const unc_keytype_operation_t op,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const = 0;
+
+    virtual DalResultCode ClearGlobalDirtyTblCacheAndDB(
+              const DalTableIndex table_index,
+              const unc_keytype_operation_t op) const = 0;
+
+    virtual  DalResultCode DeleteRecordsInVtnMode(
+                               const UpllCfgType cfg_type,
+                               const DalTableIndex table_index,
+                               const DalBindInfo *bind_info,
+                               const bool truncate,
+                               const CfgModeType cfg_mode,
+                               const uint8_t* vtn_name) const = 0;
 };  // class DalDmlIntf
 
 };  // namespace dal

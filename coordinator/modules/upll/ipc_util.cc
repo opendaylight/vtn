@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -25,6 +25,8 @@
 #include "upll_util.hh"
 #include "kt_util.hh"
 #include "ipc_util.hh"
+
+#include "convert_vnode.hh"
 
 namespace unc {
 namespace upll {
@@ -72,7 +74,6 @@ void ConfigKeyVal::AppendCfgKeyVal(ConfigKeyVal *cfg_kv) {
   prev_kv->next_ckv_ = cfg_kv;
 }
 
-
 ConfigKeyVal *ConfigKeyVal::FindNext(unc_key_type_t keytype) {
   for (ConfigKeyVal *ckv = next_ckv_; ckv != NULL; ckv = ckv->next_ckv_) {
     if (ckv->get_key_type() == keytype)
@@ -87,6 +88,11 @@ ConfigVal *ConfigVal::DupVal() const {
   if (val_ != NULL) {
     const pfc_ipcstdef_t *st_def = IpctSt::GetIpcStdef(st_num_);
     if (st_def == NULL) {
+      if (st_num_ == IpctSt::kIpcStValConvertVbr) {
+        dup->val_ = ConfigKeyVal::Malloc(sizeof(val_convert_vbr_t));
+        memcpy(dup->val_, val_, sizeof(val_convert_vbr_t));
+        return dup;
+      }
       UPLL_LOG_DEBUG("Unknown structure %d ", st_num_);
       delete dup;
       return NULL;
@@ -240,6 +246,7 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
 
           case UNC_RC_CTRLAPI_FAILURE:
           case UNC_RC_ERR_DRIVER_NOT_PRESENT:
+          case UNC_RC_REQUEST_CANCELLED:  // expected only in the case of audit
             return static_cast<upll_rc_t>(driver_result_code);
           default:
             UPLL_LOG_INFO("Received error %d from driver,"
@@ -248,7 +255,7 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
             return UPLL_RC_ERR_GENERIC;
         }
       }
-    default: // Not-transaction specific operations: READ, CONTROL operations
+    default:  // Not-transaction specific operations: READ, CONTROL operations
       {
         switch (driver_result_code) {
           case UNC_RC_SUCCESS:
@@ -275,26 +282,24 @@ upll_rc_t IpcUtil::DriverResultCodeToKtURC(
           case UNC_RC_CTR_DISCONNECTED:
             return UPLL_RC_ERR_CTR_DISCONNECTED;
 
-            // case UNC_RC_CONFIG_INVAL: move to default case
             // case UNC_RC_CTR_CONFIG_STATUS_ERR: move to default case
-            // case UNC_RC_CTR_BUSY: move to default case
-            // TODO: assumption driver does not give this error. Please Verify
+            // driver does not give this error.
 
           case UNC_RC_NO_SUCH_INSTANCE:
             return UPLL_RC_ERR_NO_SUCH_INSTANCE;
 
           case UNC_RC_UNSUPPORTED_CTRL_CONFIG:
           case UNC_RC_ERR_DRIVER_NOT_PRESENT:
+          case UNC_RC_CTR_BUSY:
+          case UNC_RC_CONFIG_INVAL:
+          case UNC_RC_CTRLAPI_FAILURE:
+          case UNC_RC_REQUEST_CANCELLED:  // expected only in the case of audit
             return static_cast<upll_rc_t>(driver_result_code);
 
             // case UNC_DRV_RC_MISSING_KEY_STRUCT: move to default case
             // case UNC_DRV_RC_MISSING_VAL_STRUCT: move to default case
             // case UNC_DRV_RC_ERR_GENERIC: move to default case
             // case UNC_RC_INTERNAL_ERR: move to default case
-          case UNC_RC_CTRLAPI_FAILURE:
-          // TODO: need to check with Driver on whether this is possible
-          // for these operations. If so, what should it get converted in upll.
-          // In U10 we were sending GENERIC error, so we can convert to default case
           default:
             UPLL_LOG_INFO("Received error %d from driver,"
                           " converting to GENERIC error",
@@ -490,6 +495,16 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
     UPLL_LOG_TRACE("IPC Client Session timeout for channel %s set to %d secs"
                    " for operation %d on VTN_STATION_CONTROLLER",
                    channel_name, kIpcTimeoutVtnstation, req->header.operation);
+  } else if (req->ckv_data->get_key_type() == UNC_KT_VROUTER && 
+             req->header.operation == UNC_OP_READ &&
+             req->header.option2 == UNC_OPT2_IP_ROUTE) {
+    pfc_timespec_t sess_timeout;
+    sess_timeout.tv_sec  = kIpcTimeoutReadState;
+    sess_timeout.tv_nsec = 0;
+    cl_sess.setTimeout(&sess_timeout);
+    UPLL_LOG_TRACE("IPC Client Session timeout for channel %s set to %d secs"
+                   " for operation %d on VROUTER",
+                   channel_name, kIpcTimeoutReadState, req->header.operation);
   }
 
 
@@ -546,7 +561,9 @@ bool IpcUtil::SendReqToServer(const char *channel_name,
     return false;
   }
 
-  ret = ReadKtResponse(&cl_sess, service_id, driver_msg, domain_id,
+  // ReadKtResponse writes to domain_id, but at this point domain_id from server
+  // is not required.
+  ret = ReadKtResponse(&cl_sess, service_id, driver_msg, NULL,
                        &local_resp.header, &local_resp.ckv_data);
   if (!ret) {
     UPLL_LOG_DEBUG("Failed to read IPC response from %s:%s:%d",

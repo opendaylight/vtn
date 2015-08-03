@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -166,6 +166,20 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_input(
           log_flag = 0;
         }
         break;
+       case CTR_PORT:
+        if ((*i).request_attribute_type == DATATYPE_UINT16) {
+          odbc_rc = BindInputParameter_SQL_INTEGER(
+              r_hstmt,
+              ++col_no,
+              0,
+              0,
+              reinterpret_cast<SQLINTEGER*>(&p_ctr_table->sport),
+              0,
+              NULL);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
       case CTR_ACTUAL_VERSION:
         if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
           odbc_rc = BindInputParameter_SQL_VARCHAR(
@@ -194,12 +208,40 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_input(
           log_flag = 0;
         }
         break;
-      case CTR_VALID:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+      case CTR_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+          odbc_rc = BindInputParameter_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              ODBCM_SIZE_32,
+              0,
+              p_ctr_table->szactual_id,
+              sizeof(p_ctr_table->szactual_id)-1,
+              NULL);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_VALID_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_1) {
           odbc_rc = BindInputParameter_SQL_CHAR(
               r_hstmt,
               ++col_no,
-              ODBCM_SIZE_9,
+              ODBCM_SIZE_1,
+              0,
+              p_ctr_table->svalid_actual_id,
+              sizeof(p_ctr_table->svalid_actual_id)-1,
+              NULL);
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_VALID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
+          odbc_rc = BindInputParameter_SQL_CHAR(
+              r_hstmt,
+              ++col_no,
+              ODBCM_SIZE_10,
               0,
               p_ctr_table->svalid,
               sizeof(p_ctr_table->svalid)-1,
@@ -223,11 +265,11 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_input(
         }
         break;
       case CTR_CS_ATTR:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
           odbc_rc = BindInputParameter_SQL_CHAR(
               r_hstmt,
               ++col_no,
-              ODBCM_SIZE_9,
+              ODBCM_SIZE_10,
               0,
               p_ctr_table->scs_attr,
               sizeof(p_ctr_table->scs_attr)-1,
@@ -446,6 +488,18 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
           log_flag = 0;
         }
         break;
+     case CTR_PORT:
+        if ((*i).request_attribute_type == DATATYPE_UINT16) {
+          odbc_rc = BindCol_SQL_INTEGER(
+              r_hstmt,
+              ++col_no,
+              reinterpret_cast<SQLINTEGER*>(&p_ctr_table->sport),
+              sizeof(SQLINTEGER),
+              (&p_ctr_table->cbport));
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
      case CTR_ACTUAL_VERSION:
         if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
           odbc_rc = BindCol_SQL_VARCHAR(
@@ -471,12 +525,12 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
         }
         break;
       case CTR_VALID:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
           odbc_rc = BindCol_SQL_VARCHAR(
               r_hstmt,
               ++col_no,
               p_ctr_table->svalid,
-              ODBCM_SIZE_9+1,
+              ODBCM_SIZE_10+1,
               (&p_ctr_table->cbvalid));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
@@ -495,12 +549,12 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
         }
         break;
       case CTR_CS_ATTR:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
           odbc_rc = BindCol_SQL_VARCHAR(
               r_hstmt,
               ++col_no,
               p_ctr_table->scs_attr,
-              ODBCM_SIZE_9+1,
+              ODBCM_SIZE_10+1,
               (&p_ctr_table->cbcsattr));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
@@ -550,6 +604,32 @@ ODBCM_RC_STATUS DBVarbind::bind_controller_table_output(
               p_ctr_table->svalid_commit_version,
               ODBCM_SIZE_3+1,
               (&p_ctr_table->cbvalid_cv));
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+      case CTR_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt/**sql statement handler*/,
+              ++col_no/*parameter number (sequential order)*/,
+              p_ctr_table->szactual_id/*buffer to fetch values*/,
+              ODBCM_SIZE_32+1,
+              /**no.of bytes available to return*/
+              (&p_ctr_table->cbacname));
+          /**set flag value 0 to print column binding details */
+          log_flag = 0;
+        }
+        break;
+
+      case CTR_VALID_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_1) {
+          odbc_rc = BindCol_SQL_VARCHAR(
+              r_hstmt,
+              ++col_no,
+              p_ctr_table->svalid_actual_id,
+              ODBCM_SIZE_1+1,
+              (&p_ctr_table->cbvalid_ac));
           /**set flag value 0 to print column binding details */
           log_flag = 0;
         }
@@ -752,15 +832,60 @@ ODBCM_RC_STATUS DBVarbind::fill_controller_table(
               "soper_status = %d", p_ctr_table->soper_status);
         }
         break;
+      case CTR_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
+          /**ColumnAttrValue is a template to receive the void* values from
+           * caller and typecast it into appropriate data type,
+           * for actual_version CHAR[32]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_32]> actual_id_value =
+            *((ColumnAttrValue <uint8_t[ODBCM_SIZE_32]>*)
+                ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(p_ctr_table->szactual_id, 0, ODBCM_SIZE_32+1);
+          /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(p_ctr_table->szactual_id,
+            &actual_id_value.value, (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE: "
+              "szactual_id = %s", p_ctr_table->szactual_id);
+        }
+        break;
+      case CTR_VALID_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_1) {
+          /**ColumnAttrValue is a template to receive the void* values from
+           * caller and typecast it into appropriate data type,
+           * for valid CHAR[3]*/
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_1]> valid_value =
+              *((ColumnAttrValue <uint8_t[ODBCM_SIZE_1]>*)
+                ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(p_ctr_table->svalid_actual_id, 0, ODBCM_SIZE_1+1);
+          /**copying the value from template to binded buffer */
+          ODBCM_MEMCPY(p_ctr_table->svalid_actual_id, &valid_value.value,
+              (*i).table_attribute_length);
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE: "
+             "svalid_actual_id = %s", p_ctr_table->svalid_actual_id);
+        }
+        break;
+      case CTR_PORT:
+        if ((*i).request_attribute_type == DATATYPE_UINT16) {
+          /**ColumnAttrValue is a template to receive the void* values from
+           * caller and typecast it into appropriate data type,
+           * for port unit16_t*/
+          ColumnAttrValue <uint16_t> audit_value =
+            *((ColumnAttrValue <uint16_t>*)
+            ((*i).p_table_attribute_value));
+          ODBCM_MEMSET(&p_ctr_table->sport, 0, sizeof(SQLINTEGER));
+          p_ctr_table->sport = audit_value.value;
+          odbcm_debug_info("ODBCM::DBVarbind::fill:CTR_TABLE: "
+              "sport = %" UNC_PFMT_SQLINTEGER, p_ctr_table->sport);
+        }
       case CTR_VALID:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
           /**ColumnAttrValue is a template to receive the void* values from
            * caller and typecast it into appropriate data type,
            * for valid CHAR[9]*/
-          ColumnAttrValue <uint8_t[ODBCM_SIZE_9]> valid_value =
-              *((ColumnAttrValue <uint8_t[ODBCM_SIZE_9]>*)
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_10]> valid_value =
+              *((ColumnAttrValue <uint8_t[ODBCM_SIZE_10]>*)
                 ((*i).p_table_attribute_value));
-          ODBCM_MEMSET(p_ctr_table->svalid, 0, ODBCM_SIZE_9+1);
+          ODBCM_MEMSET(p_ctr_table->svalid, 0, ODBCM_SIZE_10+1);
           /**copying the value from template to binded buffer */
           ODBCM_MEMCPY(p_ctr_table->svalid, &valid_value.value,
               (*i).table_attribute_length);
@@ -783,14 +908,14 @@ ODBCM_RC_STATUS DBVarbind::fill_controller_table(
         }
         break;
       case CTR_CS_ATTR:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
           /**ColumnAttrValue is a template to receive the void* values from
            * caller and typecast it into appropriate data type,
            * for cs_attr CHAR[9]*/
-          ColumnAttrValue <uint8_t[ODBCM_SIZE_9]> csa_value =
-              *((ColumnAttrValue<uint8_t[ODBCM_SIZE_9]>*)
+          ColumnAttrValue <uint8_t[ODBCM_SIZE_10]> csa_value =
+              *((ColumnAttrValue<uint8_t[ODBCM_SIZE_10]>*)
                 ((*i).p_table_attribute_value));
-          ODBCM_MEMSET(p_ctr_table->scs_attr, 0, ODBCM_SIZE_9+1);
+          ODBCM_MEMSET(p_ctr_table->scs_attr, 0, ODBCM_SIZE_10+1);
           /**copying the value from template to binded buffer */
           ODBCM_MEMCPY(p_ctr_table->scs_attr, &csa_value.value,
               (*i).table_attribute_length);
@@ -1018,6 +1143,21 @@ ODBCM_RC_STATUS DBVarbind::fetch_controller_table(
               " senable_audit = %d", ad_value->value);
         }
         break;
+       case CTR_PORT:
+        if ((*i).request_attribute_type == DATATYPE_UINT16) {
+          /**ColumnAttrValue is a template to send the fetched values to
+              * caller. typecast it into void*, memory will be allocated
+              * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(uint16_t, ad_value);
+          ad_value->value = p_ctr_table->sport;
+
+          (*i).p_table_attribute_value = ad_value;
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE:"
+              " sport = %u", ad_value->value);
+          pfc_log_debug("p_ctr_table->sport = %" UNC_PFMT_SQLINTEGER,
+                          p_ctr_table->sport);
+        }
+        break;
       case CTR_ACTUAL_VERSION:
         if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
           /**ColumnAttrValue is a template to send the fetched values to
@@ -1047,14 +1187,53 @@ ODBCM_RC_STATUS DBVarbind::fetch_controller_table(
           (*i).p_table_attribute_value = rs_value;
         }
         break;
-      case CTR_VALID:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+      case CTR_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_32) {
           /**ColumnAttrValue is a template to send the fetched values to
               * caller. typecast it into void*, memory will be allocated
               * for the template to send to caller*/
           ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(
-                  uint8_t[ODBCM_SIZE_9+1],
+                uint8_t[ODBCM_SIZE_32+1],
+                ac_value);
+          ODBCM_MEMCPY(
+                ac_value->value,
+                p_ctr_table->szactual_id,
+                sizeof(p_ctr_table->szactual_id));
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
+              "actual_id = %s", ac_value->value);
+          (*i).p_table_attribute_value = ac_value;
+        }
+        break;
+      case CTR_VALID_ACTUAL_CONTROLLERID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_1) {
+          /**ColumnAttrValue is a template to send the fetched values to
+              * caller. typecast it into void*, memory will be allocated
+              * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(
+                  uint8_t[ODBCM_SIZE_1+1],
                   valid_value);
+          ODBCM_MEMCPY(
+                  valid_value->value,
+                  p_ctr_table->svalid_actual_id,
+                  sizeof(p_ctr_table->svalid_actual_id));
+          odbcm_debug_info("ODBCM::DBVarbind::fetch:CTR_TABLE: "
+              "valid_actual_id = %s", valid_value->value);
+          (*i).p_table_attribute_value = valid_value;
+        }
+        break;
+      case CTR_VALID:
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
+          /**ColumnAttrValue is a template to send the fetched values to
+              * caller. typecast it into void*, memory will be allocated
+              * for the template to send to caller*/
+          ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(
+                  uint8_t[ODBCM_SIZE_10+1],
+                  valid_value);
+          /*If port value is null in table, CTR_PORT_INVALID_VALUE will be 
+           * returned and the valid flag for port will be set as invalid*/
+          if (p_ctr_table->sport == CTR_PORT_INVALID_VALUE) {
+            p_ctr_table->svalid[9] =  '0';  //  UNC_VF_INVALID;
+          }
           ODBCM_MEMCPY(
                   valid_value->value,
                   p_ctr_table->svalid,
@@ -1078,12 +1257,12 @@ ODBCM_RC_STATUS DBVarbind::fetch_controller_table(
         }
         break;
       case CTR_CS_ATTR:
-        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_9) {
+        if ((*i).request_attribute_type == DATATYPE_UINT8_ARRAY_10) {
           /**ColumnAttrValue is a template to send the fetched values to
               * caller. typecast it into void*, memory will be allocated
               * for the template to send to caller*/
           ODBCM_ALLOCATE_COLUMN_ATTRVALUE_T(
-                    uint8_t[ODBCM_SIZE_9+1],
+                    uint8_t[ODBCM_SIZE_10+1],
                     cs_value);
           ODBCM_MEMCPY(
                     cs_value->value,

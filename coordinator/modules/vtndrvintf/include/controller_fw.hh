@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -47,10 +47,11 @@ const uint32_t first_physical_task_interval = 15;
 class ControllerContainer {
  public:
   ControllerContainer():ctr(NULL), drv(NULL),
-  Domain_event_(PFC_FALSE) {}
+  Domain_event_(PFC_FALSE), Start_event_(PFC_FALSE) {}
   controller* ctr;
   driver* drv;
   pfc_bool_t Domain_event_;
+  pfc_bool_t Start_event_;
   ~ControllerContainer() {
     pfc_log_trace("Entering ControllerContainer destructor");
     if (NULL != ctr) {
@@ -184,6 +185,20 @@ class ControllerFramework  {
    * @retval     - None
    */
   void SetDomainFlag(std::string ctr_name, pfc_bool_t flag);
+  /**
+   * @brief      - This function is to Get the event start flag
+   * @param[in]  - controller name
+   * @retval     - PFC_TRUE/PFC_FALSE
+   */
+  pfc_bool_t GetEventFlag(std::string ctr_name);
+  /**
+   * @brief      - This function is to Set the event start flag
+   * @param[in]  - controller name
+   * @param[in]  - flag to set start event
+   * @retval     - None
+   */
+  void SetEventFlag(std::string ctr_name, pfc_bool_t flag);
+
   pfc::core::Mutex controller_list_rwlock_;
   uint32_t time_interval_;  //  in seconds
 

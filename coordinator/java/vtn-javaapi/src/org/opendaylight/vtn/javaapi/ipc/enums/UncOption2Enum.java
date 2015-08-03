@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -29,5 +29,9 @@ public enum UncOption2Enum {
 	UNC_OPT2_MATCH_SWITCH1, /* match-switch1 */
 	UNC_OPT2_MATCH_SWITCH2, /* match-switch2 */
 	UNC_OPT2_MATCH_BOTH_SWITCH, /* match-both-switch */
-	UNC_OPT2_SIBLING_ALL /* return all sibling details */
+	UNC_OPT2_SIBLING_ALL, /* return all sibling details */
+	UNC_OPT2_NO_TRAVERSING,   /*Returns n flows without travering further*/
+	UNC_OPT2_FDBENTRY,        /* switch fdn entries */
+	UNC_OPT2_BOUNDARY,         /* to check the boundary presence*/
+	UNC_OPT2_EXPAND        /* to read Unified vBridge*/
 }

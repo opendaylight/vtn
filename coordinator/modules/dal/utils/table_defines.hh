@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -34,9 +34,9 @@ namespace uudstbl = unc::upll::dal::schema::table;
 #define downgrade_filepath "../../../sql/downgrade/"
 #define optimize_filepath "../../../sql/optimize/"
 
-std::string copyrights_header = 
+std::string copyrights_header =
     "/*\n"
-    " * Copyright (c) 2012-2014 NEC Corporation\n"
+    " * Copyright (c) 2012-2015 NEC Corporation\n"
     " * All rights reserved.\n"
     " *\n"
     " * This program and the accompanying materials are made available under "
@@ -48,7 +48,7 @@ std::string copyrights_header =
 
 std::string copyrights_header_2014 =
     "/*\n"
-    " * Copyright (c) 2014 NEC Corporation\n"
+    " * Copyright (c) 2015 NEC Corporation\n"
     " * All rights reserved.\n"
     " *\n"
     " * This program and the accompanying materials are made available under "
@@ -65,11 +65,23 @@ enum UpllDbCfgId {
   kCfgIdRunning,
   kCfgIdImport,
   kCfgIdAudit,
+  kCfgIdTempDel,
+  kCfgIdSysTbl,
   kUpllDbNumCfgId
 };
 
+// Table/Column addition methods
+enum UpllDBAddition {
+  ENTIRETABLE = 0,  // = 0
+  SINGLECONFIGONENTIRETABLE,
+  SINGLECONFIGONPARTICULARTABLE,
+  ENTIRECOLUMN,     // = 3
+  SINGLECONFIGONENTIRECOLUMN,
+  SINGLECONFIGONPARTICULARCOLUMN,
+};
+
 const std::string cfg_str[kUpllDbNumCfgId] =
-  { "su_", "ca_", "ru_", "im_", "au_" };
+  { "su_", "ca_", "ru_", "im_", "au_", "ca_del_", "sy_" };
 
 // default types
 enum UpllDbDefaultType {
@@ -91,6 +103,8 @@ const std::string default_str[kUpllDbNumCfgId][kUpllDbNumDefaultTypes] = {
   {"' '", "\\000", "0", "0", "0", "0", "0", "3", "3", "0"},
   {"' '", "\\000", "0", "0", "0", "0", "0", "3", "3", "0"},
   {"' '", "\\000", "0", "0", "0", "0", "0", "3", "3", "0"},
+  {"' '", "\\000", "0", "0", "0", "0", "0", "1", "1", "0"},
+  {"' '", "\\000", "0", "0", "0", "0", "0", "1", "1", "0"},
   {"' '", "\\000", "0", "0", "0", "0", "0", "1", "1", "0"},
   {"' '", "\\000", "0", "0", "0", "0", "0", "1", "1", "0"}
 };
@@ -158,8 +172,13 @@ std::string get_data_type_str(SQLSMALLINT dal_data_type) {
   }
 }
 
-std::string dirty_insert_values = 
-  "CREATE OR REPLACE function f_insert_row_if_not_exists(_dest_tblname varchar(32)) RETURNS VOID\n"
+std::string dirty_insert_function =
+  "CREATE OR REPLACE function f_insert_row_if_not_exists(_dest_tblname varchar(32)) RETURNS VOID\n";
+
+std::string systemTbl_insert_function =
+  "CREATE OR REPLACE function f_init_sy_upll_system_tbl(_dest_tblname varchar(32)) RETURNS VOID\n";
+
+std::string dirty_insert_values =
   "LANGUAGE plpgsql AS\n"
   "$func$\n"
   "DECLARE row_count integer;\n"
@@ -174,10 +193,13 @@ std::string dirty_insert_values =
   "END\n"
   "$func$;\n";
 
-std::string select_and_drop_dirty_insert_values = 
-  "SELECT f_insert_row_if_not_exists('ca_upll_cfg_dirty_tbl');\n\n"
+std::string select_and_drop_dirty_insert_function =
+  "SELECT f_insert_row_if_not_exists('!!');\n"
   "DROP function f_insert_row_if_not_exists(_dest_tblname varchar(32));\n";
 
+std::string select_and_drop_systemTbl_insert_function =
+  "SELECT f_init_sy_upll_system_tbl('!!');\n"
+  "DROP function f_init_sy_upll_system_tbl(_dest_tblname varchar(32));\n";
 
 #endif  // DAL_TABLE_DEFINES_HH_
 

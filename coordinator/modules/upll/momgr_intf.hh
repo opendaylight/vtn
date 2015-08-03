@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,10 @@
 #include "unc/upll_ipc_enum.h"
 #include "dal/dal_dml_intf.hh"
 #include "ipc_util.hh"
+#include "upll_util.hh"
+#include "kt_util.hh"
+#include "tx_update_util.hh"
+#include "tclib_module.hh"
 
 namespace unc {
 namespace upll {
@@ -30,9 +34,12 @@ using std::string;
 using std::list;
 using std::set;
 using unc::upll::ipc_util::IpcReqRespHeader;
+using unc::upll::ipc_util::IpcResponse;
 using unc::upll::ipc_util::ConfigKeyVal;
 using unc::upll::ipc_util::ConfigNotification;
+using unc::upll::ipc_util::controller_domain_t;
 using unc::upll::dal::DalDmlIntf;
+using unc::upll::tx_update_util::TxUpdateUtil;
 
 
 struct CtrlrTxResult {
@@ -53,6 +60,13 @@ struct CtrlrTxResult {
 };
 typedef CtrlrTxResult CtrlrVoteStatus;
 typedef CtrlrTxResult CtrlrCommitStatus;
+
+// Virtual and Vtn views are non-overlapping except for KT_ROOT.
+enum UpllKtView {  // bit map
+  kUpllKtViewVirtual = 0x01,
+  kUpllKtViewVtn = 0x02,
+  kUpllKtViewState = 0x04,
+};
 
 // Interface class for edit/read/control operations
 class MoCfgServiceIntf {
@@ -95,15 +109,15 @@ enum UpdateCtrlrPhase {
   kUpllUcpDelete,
   // kUpllUcpDelete2: Used to clean up some entries where references need to be
   // deleted first using Update.
-  kUpllUcpDelete2
+  kUpllUcpDelete2,
+  kUpllUcpInit
 };
 
 enum KTxCtrlrAffectedState {
-  kCtrlrAffectedNoDiff =  0, // There is no diff in UNC and Ctrlr Configuration
-  kCtrlrAffectedOnlyCSDiff,   // No config diff, only diff in the config status
-  kCtrlrAffectedConfigDiff  // There is a diff in the configuration,
+  kCtrlrAffectedNoDiff = 0,  // There is no diff in UNC and Ctrlr Configuration
+  kCtrlrAffectedOnlyCSDiff,  // No config diff, only diff in the config status
+  kCtrlrAffectedConfigDiff   // There is a diff in the configuration,
                              // add the controller to affected ctrlr list
-
 };
 // Interface class for normal transaction operations
 class MoTxServiceIntf {
@@ -114,20 +128,34 @@ class MoTxServiceIntf {
                                     UpdateCtrlrPhase phase,
                                     set<string> *affected_ctrlr_set,
                                     DalDmlIntf *dmi,
-                                    ConfigKeyVal **err_ckv) = 0;
+                                    ConfigKeyVal **err_ckv,
+                                    TxUpdateUtil *tx_util,
+                                    TcConfigMode config_mode,
+                                    std::string vtn_name) = 0;
 
+  virtual upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *ckv_unc,
+                                          ConfigKeyVal *ck_driver,
+                                          DalDmlIntf *dmi,
+                                          upll_keytype_datatype_t dt_type,
+                                          ConfigKeyVal **err_ckv,
+                                          IpcResponse *ipc_resp) = 0;
 
   // To clear c_flag and u_flag from candidate db
   virtual upll_rc_t TxClearCreateUpdateFlag(unc_key_type_t keytype,
                                             upll_keytype_datatype_t cfg_type,
-                                            DalDmlIntf *dmi) = 0;
+                                            DalDmlIntf *dmi,
+                                            TcConfigMode config_mode,
+                                            std::string vtn_name) = 0;
 
   virtual upll_rc_t TxVote(unc_key_type_t keytype, DalDmlIntf *dmi,
+                           TcConfigMode config_mode, std::string vtn_name,
                            ConfigKeyVal **err_ckv) = 0;
   virtual upll_rc_t TxVoteCtrlrStatus(
       unc_key_type_t keytype,
       list<CtrlrVoteStatus*> *ctrlr_vote_status,
-      DalDmlIntf *dmi) = 0;
+      DalDmlIntf *dmi,
+      TcConfigMode config_mode,
+      std::string vtn_name) = 0;
   // NOTE:
   // ctrlr_commit_status list will contain errors pertaining to UPLL returned by
   // drivers during normal user initiated commit operation.
@@ -136,7 +164,8 @@ class MoTxServiceIntf {
   virtual upll_rc_t TxCopyCandidateToRunning(
       unc_key_type_t keytype,
       list<CtrlrCommitStatus*> *ctrlr_commit_status,
-      DalDmlIntf *dmi) = 0;
+      DalDmlIntf *dmi, TcConfigMode config_mode,
+      std::string vtn_name) = 0;
 
   virtual upll_rc_t TxUpdateDtState(unc_key_type_t ktype,
                                     uint32_t session_id,
@@ -145,7 +174,18 @@ class MoTxServiceIntf {
     UPLL_LOG_DEBUG("kt: %u", ktype);
     return UPLL_RC_SUCCESS;
   }
-  virtual upll_rc_t TxEnd(unc_key_type_t keytype, DalDmlIntf *dmi) = 0;
+  virtual upll_rc_t TxEnd(unc_key_type_t keytype, DalDmlIntf *dmi,
+                          TcConfigMode config_mode, std::string vtn_name) = 0;
+
+  virtual upll_rc_t ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi) {
+    UPLL_FUNC_TRACE;
+    return UPLL_RC_ERR_GENERIC;
+  }
+  virtual upll_rc_t ProcessAlarm(TcConfigMode config_mode,
+                                 std::string vtn_name, DalDmlIntf *dmi) {
+    UPLL_FUNC_TRACE;
+    return UPLL_RC_ERR_GENERIC;
+  }
 };
 
 // Interface class for audit operations
@@ -172,17 +212,20 @@ class MoAuditServiceIntf {
   // controlller-id ""
   virtual upll_rc_t AuditEnd(unc_key_type_t keytype, const char *ctrlr_id,
                              DalDmlIntf *dmi) = 0;
+
+  virtual upll_rc_t ContinueAuditProcess();
 };
 
 // Interface class for import operations
 class MoImportServiceIntf {
  public:
   virtual ~MoImportServiceIntf() {}
-  virtual upll_rc_t MergeValidate(unc_key_type_t keytype,
-                                  const char *ctrlr_id,
-                                  ConfigKeyVal *conflict_ckv,
-                                  DalDmlIntf *dmi,
-                                  upll_import_type import_type = UPLL_IMPORT_TYPE_FULL) = 0;
+  virtual upll_rc_t MergeValidate(
+      unc_key_type_t keytype,
+      const char *ctrlr_id,
+      ConfigKeyVal *conflict_ckv,
+      DalDmlIntf *dmi,
+      upll_import_type import_type = UPLL_IMPORT_TYPE_FULL) = 0;
   virtual upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
                                            const char *ctrlr_id,
                                            DalDmlIntf *dmi,
@@ -192,8 +235,12 @@ class MoImportServiceIntf {
   virtual upll_rc_t ImportClear(unc_key_type_t keytype,
                                 const char *ctrlr_id,
                                 DalDmlIntf *dmi) = 0;
-  virtual upll_rc_t CopyRenameTables(const char *ctrlr_id, 
+  virtual upll_rc_t CopyRenameTables(const char *ctrlr_id,
+                                     upll_keytype_datatype_t dt_type,
                                      DalDmlIntf *dom) = 0;
+  virtual upll_rc_t CopyVtnUnifiedTable(upll_keytype_datatype_t dt_type,
+                                     DalDmlIntf *dom) = 0;
+
   virtual upll_rc_t PurgeCandidate(unc_key_type_t keytype,
                                      const char *ctrlr_id,
                                      DalDmlIntf *dom) = 0;
@@ -201,9 +248,9 @@ class MoImportServiceIntf {
                                      const char *ctrlr_id,
                                      DalDmlIntf *dom) = 0;
   virtual upll_rc_t GetRenamedUncKeyWithRedirection(unc_key_type_t kt_type,
-		  const char *ctrlr_id,
-		  DalDmlIntf *dmi) = 0; 
-
+                                          upll_keytype_datatype_t dt_type,
+                                          const char *ctrlr_id,
+                                          DalDmlIntf *dmi) = 0;
 };
 
 // Interface class for database operations
@@ -213,14 +260,25 @@ class MoDbServiceIntf {
   virtual upll_rc_t CopyRunningToStartup(unc_key_type_t kt,
                                          DalDmlIntf *dmi) = 0;
   virtual upll_rc_t ClearConfiguration(unc_key_type_t kt, DalDmlIntf *dmi,
-                                 upll_keytype_datatype_t cfg_type) = 0;
+                                       upll_keytype_datatype_t cfg_type,
+                                       TcConfigMode config_mode,
+                                       std::string vtn_name) = 0;
   virtual upll_rc_t ClearStartup(unc_key_type_t kt, DalDmlIntf *dmi) = 0;
   virtual upll_rc_t LoadStartup(unc_key_type_t kt, DalDmlIntf *dmi) = 0;
   virtual upll_rc_t CopyRunningToCandidate(unc_key_type_t kt,
                                            DalDmlIntf *dmi,
-                                           unc_keytype_operation_t op) = 0;
-  virtual upll_rc_t IsCandidateDirty(unc_key_type_t kt, bool *dirty,
-                                     DalDmlIntf *dmi) = 0;
+                                           unc_keytype_operation_t op,
+                                           TcConfigMode config_mode,
+                                           std::string vtn_name) = 0;
+  virtual upll_rc_t IsCandidateDirtyInGlobal(
+      unc_key_type_t kt, bool *dirty, DalDmlIntf *dmi,
+      bool shallow_check) = 0;
+
+  virtual upll_rc_t IsCandidateDirtyShallowInPcm(unc_key_type_t kt,
+                                                 TcConfigMode config_mode,
+                                                 std::string vtn_name,
+                                                 bool *dirty,
+                                                 DalDmlIntf *dmi) = 0;
 };
 
 class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
@@ -285,7 +343,7 @@ class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
                    upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
+   *
    * @param[in]  ctrlr_name controller name.
    * @param[in]  version    controller version
    * @param[in]  keytype    Key type.
@@ -293,7 +351,7 @@ class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
    * @param[in]  num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
    * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
+   *
    * @retval true   Successful
    * @retval false  controller or keytype is not found
    */
@@ -305,13 +363,13 @@ class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
                    upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
+   *
    * @param[in]  ctrlr_type controller type.
    * @param[in]  keytype    Key type.
    * @param[in]  num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
    * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
+   *
    * @retval true   Successful
    * @retval false  controler or keytype is not found
    */
@@ -322,13 +380,13 @@ class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
                    upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
+   *
    * @param[in]  ctrlr_name controller name.
    * @param[in]  keytype    Key type.
    * @param[in]  num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
    * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
+   *
    * @retval true   Successful
    * @retval false  controller or keytype is not found
    */
@@ -339,13 +397,13 @@ class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
                    upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
   /**
    * @brief  Return Attribute SUPPORTED or NOT_SUPPORTED of specified key type.
-   * 
+   *
    * @param[in]  ctrlr_name controller name.
    * @param[in]  keytype    Key type.
    * @param[in]  num_attrs  Maximum attribute for specified key type
    * @param[out] attrs      Array of SUPPORTED and NOT_SUPPORTED information
    * @param[in] datatype    Datatype. default is CANDIDATE
-   * 
+   *
    * @retval true   Successful
    * @retval false  controller or keytype is not found
    */
@@ -354,6 +412,8 @@ class MoManager : public MoCfgServiceIntf, public MoTxServiceIntf,
                    uint32_t *num_attrs,
                    const uint8_t **attrs,
                    upll_keytype_datatype_t datatype = UPLL_DT_CANDIDATE);
+
+
  private:
   static bool GetCtrlrTypeAndVersion(const char *ctrlr_name,
                                      upll_keytype_datatype_t datatype,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -370,7 +370,7 @@ class vtn_read_request : public odl_http_rest_intf {
     unc::restjson::json_obj_destroy_util delete_vtn_obj(vtn_data_json);
     if (json_object_is_type(vtn_data_json, json_type_null)) {
       pfc_log_info("JSON is NULL");
-      return UNC_DRV_RC_ERR_GENERIC;
+            return UNC_DRV_RC_ERR_GENERIC;
     }
 
     int vtn_ret(unc::restjson::json_object_parse_util:: extract_json_object
@@ -483,6 +483,13 @@ class vbr_read_request : public odl_http_rest_intf {
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
+      get_array_length(vtn_array_json));
+
+      if ( arr_length == 0 ) {
+      pfc_log_info("No Data in array");
+      return UNC_DRV_RC_ERR_GENERIC;
+      } */
     unc::restjson::json_obj_destroy_util delete_vtn_array_obj(vtn_array_json);
     vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
     int vtn_collect_ret(vtn_collect.extract_values());
@@ -584,6 +591,13 @@ class vterm_read_request : public odl_http_rest_intf {
     if (vtn_ret != unc::restjson::REST_OP_SUCCESS )
       return UNC_DRV_RC_ERR_GENERIC;
 
+    /*uint32_t arr_length(unc::restjson::json_object_parse_util::
+      get_array_length(vtn_array_json));
+
+      if ( arr_length == 0 ) {
+      pfc_log_info("No Data in array");
+      return UNC_DRV_RC_ERR_GENERIC;
+      } */
     unc::restjson::json_obj_destroy_util delete_vterm_array_obj(vtn_array_json);
     vtn_read_resp_parser vtn_collect(vtn_array_json, vbrnames_);
     int vtn_collect_ret(vtn_collect.extract_values());
@@ -714,5 +728,7 @@ UncRespCode odlutils::get_portname(unc::driver::controller *ctr_ptr,
   port_name_read_request port_req;
   return port_req(ctr_ptr, conf_values, switch_id, port_id, port_name);
 }
+
+
 }  // namespace odcdriver
 }  // namespace  unc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -78,13 +78,15 @@ BindInfo VunkIfMoMgr::key_vunk_if_maintbl_update_bind_info[] = {
 VunkIfMoMgr::VunkIfMoMgr() {
   UPLL_FUNC_TRACE
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = new Table(uudst::kDbiVunknownIfTbl, UNC_KT_VUNK_IF,
                          vunk_if_bind_info, IpctSt::kIpcStKeyVunkIf,
                          IpctSt::kIpcStValVunkIf,
                          uudst::vunknown_interface::kDbiVunknownIfNumCols);
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
+  table[CONVERTTBL] = NULL;
+
   nchild = 0;
   child = NULL;
 }
@@ -106,7 +108,8 @@ bool VunkIfMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
   return PFC_TRUE;
 }
 
-bool VunkIfMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VunkIfMoMgr::IsValidKey(void *key, uint64_t index,
+                             MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vunk_if *vunk_if_key = static_cast<key_vunk_if *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
@@ -158,7 +161,7 @@ bool VunkIfMoMgr::CompareValidValue(void *&val1,
   for (unsigned int loop = 0;
         loop < sizeof(val_vunkif1->valid) / sizeof(uint8_t); ++loop) {
       if (UNC_VF_INVALID == val_vunkif1->valid[loop]
-          && UNC_VF_VALID == val_vunkif2->valid[loop]) 
+          && UNC_VF_VALID == val_vunkif2->valid[loop])
         val_vunkif1->valid[loop] = UNC_VF_VALID_NO_VALUE;
   }
   /* Specify the configured ip address for
@@ -171,11 +174,11 @@ bool VunkIfMoMgr::CompareValidValue(void *&val1,
                  kMaxLenDescription))
         val_vunkif1->valid[UPLL_IDX_DESC_VUNI] = UNC_VF_INVALID;
 
-  if ((val_vunkif2->valid[UPLL_IDX_ADMIN_ST_VUNI] == 
+  if ((val_vunkif2->valid[UPLL_IDX_ADMIN_ST_VUNI] ==
        val_vunkif1->valid[UPLL_IDX_ADMIN_ST_VUNI])
       && UNC_VF_INVALID != val_vunkif2->valid[UPLL_IDX_ADMIN_ST_VUNI]) {
     if (val_vunkif1->admin_status == val_vunkif2->admin_status)
-      val_vunkif1->valid[UPLL_IDX_ADMIN_ST_VUNI] = 
+      val_vunkif1->valid[UPLL_IDX_ADMIN_ST_VUNI] =
         (copy_to_running)?UNC_VF_INVALID:UNC_VF_VALUE_NOT_MODIFIED;
   }
 
@@ -259,7 +262,7 @@ upll_rc_t VunkIfMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
       }
       GET_USER_DATA_FLAGS(parent_key->get_cfg_val(), flags);
       flags &=  VLINK_FLAG_NODE_POS;
-      UPLL_LOG_DEBUG("Vlink flag node position %d",flags);
+      UPLL_LOG_DEBUG("Vlink flag node position %d", flags);
       if (flags == kVlinkVnode2) {
         cfgval_ctrlr = true;
         vnode_name = vlink_val->vnode2_name;
@@ -354,7 +357,7 @@ upll_rc_t VunkIfMoMgr::AllocVal(ConfigVal *&ck_val,
       ck_val = new ConfigVal(IpctSt::kIpcStValVunkIf, val);
       break;
     default:
-   	  UPLL_LOG_TRACE("Invalid Table for VunknownInterface");
+       UPLL_LOG_TRACE("Invalid Table for VunknownInterface");
       val = NULL;
   }
   return UPLL_RC_SUCCESS;
@@ -417,7 +420,7 @@ upll_rc_t VunkIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
   val_vunk_if *vunk_if_val2 = reinterpret_cast<val_vunk_if *>(GetVal(upd_key));
 
   unc_keytype_configstatus_t cs_status = UNC_CS_APPLIED;
-  UPLL_LOG_TRACE("Key in Candidate %s",(ikey->ToStrAll()).c_str());
+  UPLL_LOG_TRACE("Key in Candidate %s", (ikey->ToStrAll()).c_str());
   if (vunk_if_val == NULL || vunk_if_val2 == NULL) {
     UPLL_LOG_TRACE("Value of Vunknown Interface is NULL");
     return UPLL_RC_ERR_GENERIC;
@@ -427,7 +430,7 @@ upll_rc_t VunkIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
   } else if (op == UNC_OP_UPDATE) {
     void *vunkifval = reinterpret_cast<void *>(vunk_if_val);
     CompareValidValue(vunkifval, GetVal(upd_key), true);
-    UPLL_LOG_TRACE("Key in Running %s",(upd_key->ToStrAll()).c_str());
+    UPLL_LOG_TRACE("Key in Running %s", (upd_key->ToStrAll()).c_str());
     vunk_if_val->cs_row_status = vunk_if_val2->cs_row_status;
   } else {
      return UPLL_RC_ERR_GENERIC;
@@ -442,7 +445,7 @@ upll_rc_t VunkIfMoMgr::UpdateConfigStatus(ConfigKeyVal *ikey,
              (UNC_OP_CREATE == op))
       vunk_if_val->cs_attr[loop] = UNC_CS_APPLIED;
     else if ((UNC_VF_INVALID == vunk_if_val->valid[loop]) &&
-             (UNC_OP_UPDATE == op)) 
+             (UNC_OP_UPDATE == op))
       vunk_if_val->cs_attr[loop] = vunk_if_val2->cs_attr[loop];
   }
   return UPLL_RC_SUCCESS;
@@ -526,7 +529,8 @@ upll_rc_t VunkIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
     UPLL_LOG_DEBUG(
         "Invalid structure received.Expected struct-kIpcStKeyVunkIf,"
         "received struct -%s ",
-        reinterpret_cast<const char *>(IpctSt::GetIpcStdef(ikey->get_st_num())));
+        reinterpret_cast<const char *>
+        (IpctSt::GetIpcStdef(ikey->get_st_num())));
     return UPLL_RC_ERR_BAD_REQUEST;
   }
   key_vunk_if_t *key_vunk_if =
@@ -556,7 +560,7 @@ upll_rc_t VunkIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
         static_cast<val_vunk_if_t *>(ikey->get_cfg_val()->get_val());
     }
     if (val_vunk_if != NULL) {
-      ret_val = ValidateVunkIfValue(val_vunk_if,operation);
+      ret_val = ValidateVunkIfValue(val_vunk_if, operation);
       if (ret_val != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Syntax check failed for VUNK_IF value structure");
         return UPLL_RC_ERR_CFG_SYNTAX;
@@ -575,7 +579,7 @@ upll_rc_t VunkIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
         reinterpret_cast<val_vunk_if_t *>(ikey->get_cfg_val()->get_val());
     }
     if (val_vunk_if != NULL) {
-      ret_val = ValidateVunkIfValue(val_vunk_if,operation);
+      ret_val = ValidateVunkIfValue(val_vunk_if, operation);
       if (ret_val != UPLL_RC_SUCCESS) {
         UPLL_LOG_DEBUG("Syntax check failed for VINK_IF value structure");
         return UPLL_RC_ERR_CFG_SYNTAX;
@@ -664,7 +668,7 @@ upll_rc_t VunkIfMoMgr::ValidateMessage(IpcReqRespHeader *req,
               static_cast<val_vunk_if_t *>(ikey->get_cfg_val()->get_val());
         }
         if (val_vunk_if != NULL) {
-          ret_val = ValidateVunkIfValue(val_vunk_if,operation);
+          ret_val = ValidateVunkIfValue(val_vunk_if, operation);
           if (ret_val != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("Syntax check failed for VUNK_IF value structure");
             return ret_val;
@@ -802,12 +806,12 @@ upll_rc_t VunkIfMoMgr::ValidateVunkIfKey(key_vunk_if_t *key_vunk_if,
   } else {
     UPLL_LOG_TRACE("Operation is %d", operation);
     StringReset(key_vunk_if->if_name);
-  }  
+  }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VunkIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                    upll_keytype_datatype_t dt_type,
+upll_rc_t VunkIfMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                    ConfigKeyVal *ikey,
                                     DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   ConfigKeyVal *okey = NULL;
@@ -815,7 +819,7 @@ upll_rc_t VunkIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
      return UPLL_RC_ERR_GENERIC;
   GetChildConfigKey(okey, ikey);
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutFlag };
-  upll_rc_t result_code = ReadConfigDB(okey, dt_type, UNC_OP_READ, 
+  upll_rc_t result_code = ReadConfigDB(okey, req->datatype, UNC_OP_READ,
                                        dbop, dmi, MAINTBL);
   if (result_code != UPLL_RC_SUCCESS) {
     result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
@@ -826,7 +830,7 @@ upll_rc_t VunkIfMoMgr::IsReferenced(ConfigKeyVal *ikey,
   ConfigKeyVal *temkey = okey;
   while (temkey != NULL) {
     uint8_t vlink_flag = 0;
-    GET_USER_DATA_FLAGS(temkey,vlink_flag);
+    GET_USER_DATA_FLAGS(temkey, vlink_flag);
     if (vlink_flag & VIF_TYPE) {
       delete okey;
       return UPLL_RC_ERR_CFG_SEMANTIC;

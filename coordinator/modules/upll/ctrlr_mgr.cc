@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -85,7 +85,7 @@ upll_rc_t CtrlrMgr::Add(const Ctrlr &ctrlr,
 /**
  * @brief Delete controller in both candidate and running
  *
- * @param ctrlr_name[in]      Controller name 
+ * @param ctrlr_name[in]      Controller name
  *
  * @retval  UPLL_RC_SUCCESS, if controller deleted
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -134,7 +134,7 @@ upll_rc_t CtrlrMgr::Delete(const std::string &ctrlr_name,
 /**
  * @brief Update controller version
  *
- * @param ctrlr_name[in]      Controller name 
+ * @param ctrlr_name[in]      Controller name
  * @param ctrlr_version[in]   Controller version
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
@@ -174,8 +174,8 @@ upll_rc_t CtrlrMgr::UpdateVersion(const std::string &ctrlr_name,
 /**
  * @brief Update audit_done flag in Running
  *
- * @param ctrlr_name[in]      Controller name 
- * @param audit_done[in]      Audit Done flag 
+ * @param ctrlr_name[in]      Controller name
+ * @param audit_done[in]      Audit Done flag
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -211,8 +211,8 @@ upll_rc_t CtrlrMgr::UpdateAuditDone(const std::string &ctrlr_name,
 /**
  * @brief Update config_done flag in Running
  *
- * @param ctrlr_name[in]      Controller name 
- * @param config_done[in]     Config Done flag 
+ * @param ctrlr_name[in]      Controller name
+ * @param config_done[in]     Config Done flag
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -248,8 +248,8 @@ upll_rc_t CtrlrMgr::UpdateConfigDone(const std::string &ctrlr_name,
 /**
  * @brief Update invalid_config flag in Running
  *
- * @param ctrlr_name[in]      Controller name 
- * @param invalid_config[in]  Invalid Config flag 
+ * @param ctrlr_name[in]      Controller name
+ * @param invalid_config[in]  Invalid Config flag
  *
  * @retval  UPLL_RC_SUCCESS, if controller updated
  * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE, if entry not found
@@ -361,7 +361,7 @@ bool CtrlrMgr::GetCtrlrTypeAndVersion(const char *ctrlr_name,
  *
  * @param ctrlr_name[in]  Controller Name
  *
- * @return  
+ * @return
  */
 upll_rc_t CtrlrMgr::IsConfigInvalid(const char *ctrlr_name,
                                     bool *config_invalid) {
@@ -391,8 +391,8 @@ upll_rc_t CtrlrMgr::IsConfigInvalid(const char *ctrlr_name,
  *
  * @param ctrlr_name[in]  Controller Name
  *
- * @return  
- *          
+ * @return
+ *
  */
 upll_rc_t CtrlrMgr::IsConfigDone(const char *ctrlr_name, bool *config_done) {
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
@@ -449,7 +449,7 @@ upll_rc_t CtrlrMgr::IsAuditDone(const char *ctrlr_name, bool *audit_done) {
 /**
  * @brief Get Name of the first controller in the list
  *
- * @param[in]  datatype      Datatype in which to be read 
+ * @param[in]  datatype      Datatype in which to be read
  * @param[out] first_name    Name of the first controller
  *
  * @return     UPLL_RC_SUCCES, when name is read from the list
@@ -487,9 +487,9 @@ upll_rc_t CtrlrMgr::GetFirstCtrlrName(
 /**
  * @brief Get Name of the next controller in the list
  *
- * @param[in]  name          Name of the input controller 
- * @param[in]  datatype      Datatype in which to be read 
- * @param[out] next_name     Name of the next controller 
+ * @param[in]  name          Name of the input controller
+ * @param[in]  datatype      Datatype in which to be read
+ * @param[out] next_name     Name of the next controller
  *
  * @return     UPLL_RC_SUCCES, when name is read from the list
  *             UPLL_RC_ERR_NO_SUCH_INSTANCE when there is no matching entry
@@ -628,7 +628,7 @@ upll_rc_t CtrlrMgr::GetAuditType(const std::string &ctrlr_name,
        it != ctrlrs_.end(); ++it) {
     if ((*it)->name_.compare(ctrlr_name) == 0 &&
         (*it)->datatype_ == datatype) {
-      *audit_type = (*it)->audit_type_ ;
+      *audit_type = (*it)->audit_type_;
       get_audit_type_ = true;
       break;
     }
@@ -683,19 +683,20 @@ upll_rc_t CtrlrMgr::UpdateAuditType(const std::string &ctrlr_name,
   UPLL_LOG_INFO("Updated controller(%s) with audittype(%d) in datatype(%d)",
                 ctrlr_name.c_str(), audit_type, datatype);
   return UPLL_RC_SUCCESS;
-} 
+}
 
 /**
  * @brief Get list of controllers which have invalidConfig
  *
  * @param invalidConfigCtr[in/out]  Controller Name list
  */
-void CtrlrMgr::GetInvalidConfigList(std::list<std::string> &invalidConfigCtr) {
+void CtrlrMgr::GetInvalidConfigList(std::list<std::string>
+                                     &invalidConfigCtr) {
   UPLL_FUNC_TRACE;
   pfc::core::ScopedMutex lock(ctrlr_mutex_);
   for (std::list<Ctrlr*>::iterator it = ctrlrs_.begin();
        it != ctrlrs_.end(); ++it) {
-    if((*it)->datatype_ == UPLL_DT_RUNNING && (*it)->invalid_config_) {
+    if ((*it)->datatype_ == UPLL_DT_RUNNING && (*it)->invalid_config_) {
       invalidConfigCtr.push_back((*it)->name_);
       UPLL_LOG_TRACE("Ctrlr name(%s), invalid_config(%d) in Running",
                      (*it)->name_.c_str(), (*it)->invalid_config_);
@@ -703,6 +704,30 @@ void CtrlrMgr::GetInvalidConfigList(std::list<std::string> &invalidConfigCtr) {
   }
 }
 
+bool CtrlrMgr::GetPathFaultDomains(const char *ctr_na,
+                                   set<string>* domain_names) {
+  UPLL_FUNC_TRACE;
+  if (ctr_na == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name %p",
+                   ctr_na);
+    return false;
+  }
+  std::string ctrlr_id(ctr_na);
+
+  std::map<std::string, std::map<std::string, uint32_t> >::iterator it =
+                                 path_fault_map_.find(ctrlr_id);
+  if (it != path_fault_map_.end()) {
+    std::map<std::string, uint32_t>::iterator
+                  start_it =  path_fault_map_[ctrlr_id].begin(),
+                  dom_it  =  path_fault_map_[ctrlr_id].end();
+    for (; start_it != dom_it; ++start_it) {
+       domain_names->insert(start_it->first);
+    }
+  } else {
+    return false;
+  }
+  return true;
+}
 
 bool CtrlrMgr::UpdatePathFault(const char *ctr_na,
                                const char *domain_na, bool assert_alarm) {
@@ -733,7 +758,7 @@ bool CtrlrMgr::UpdatePathFault(const char *ctr_na,
       path_fault_map_[ctr_name] = domain_map;
       update_operstatus = true;
     } else if (path_fault_map_[ctr_name].end() ==
-        path_fault_map_[ctr_name].find(domain_name)){
+        path_fault_map_[ctr_name].find(domain_name)) {
       // path fault  occurred on a new domain
       // initialize fault count to 1
       UPLL_LOG_INFO("first path fault occurred on domain %s:%s",
@@ -789,7 +814,7 @@ bool CtrlrMgr::IsPathFaultOccured(const char *ctr_na, const char *domain_na) {
   if (!path_fault_map_.empty()) {
     if (ctr_name == "*") {
       bOccurence = true;
-    } else if (path_fault_map_.end() != path_fault_map_.find(ctr_name)){
+    } else if (path_fault_map_.end() != path_fault_map_.find(ctr_name)) {
       if (domain_name == "*") {
         bOccurence = true;
       } else if (path_fault_map_[ctr_name].end() !=
@@ -832,7 +857,7 @@ void CtrlrMgr::ClearPathfault(const char *ctr_na, const char *domain_na) {
       if (domain_name == "*") {
         path_fault_map_.erase(ctr_name);
       } else if (path_fault_map_[ctr_name].end() !=
-          path_fault_map_[ctr_name].find(domain_name)){
+          path_fault_map_[ctr_name].find(domain_name)) {
         path_fault_map_[ctr_name].erase(domain_name);
         if (path_fault_map_[ctr_name].empty()) {
           path_fault_map_.erase(ctr_name);
@@ -890,7 +915,7 @@ bool CtrlrMgr::GetLogicalPortSt(const char *ctr_na, const char *logical_port,
 void CtrlrMgr::AddCtrToDisconnectList(const char *ctr_name) {
   UPLL_FUNC_TRACE;
 
-  if (ctr_name == NULL ) {
+  if (ctr_name == NULL) {
     UPLL_LOG_ERROR("Invalid argument ctr_name %p", ctr_name);
     return;
   }
@@ -938,6 +963,201 @@ void CtrlrMgr::RemoveCtrFromDisconnectList(const char *ctr_name) {
   ctr_discon_lock_.unlock();
 }
 
+void CtrlrMgr::AddtoUnknownCtrlrList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+  if (ctr_name == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name");
+    return;
+  }
+  std::string ctr(ctr_name);
+  discon_ctrlr_lock_.wrlock();
+  discon_ctrlr_list_.insert(ctr);
+  discon_ctrlr_lock_.unlock();
+}
+
+void CtrlrMgr::DeleteFromUnknownCtrlrList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+  if (ctr_name == NULL) {
+    UPLL_LOG_ERROR("Invalid argument ctr_name");
+    return;
+  }
+  discon_ctrlr_lock_.wrlock();
+  if (strcmp(ctr_name, "*") == 0) {
+    if (!discon_ctrlr_list_.empty()) {
+      discon_ctrlr_list_.clear();
+    }
+  }
+  if (discon_ctrlr_list_.find(ctr_name) != discon_ctrlr_list_.end()) {
+    discon_ctrlr_list_.erase(ctr_name);
+  }
+  discon_ctrlr_lock_.unlock();
+}
+void CtrlrMgr::AddCtrToIgnoreList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+  if (ctr_name == NULL) {
+    UPLL_LOG_DEBUG("ctrlr_name is empty")
+    return;
+  }
+  std::string ctr(ctr_name);
+  path_fault_lock_.wrlock();
+  ctrlr_ignore_list_.insert(ctr);
+  path_fault_lock_.unlock();
+}
+
+void CtrlrMgr::RemoveCtrlrFromIgnoreList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+  if (ctr_name == NULL) {
+    UPLL_LOG_DEBUG("ctrlr_name is empty")
+    return;
+  }
+  path_fault_lock_.wrlock();
+  if (strcmp(ctr_name, "*") == 0) {
+    if (!ctrlr_ignore_list_.empty()) {
+      ctrlr_ignore_list_.clear();
+    }
+  } else {
+    ctrlr_ignore_list_.erase(ctr_name);
+  }
+  path_fault_lock_.unlock();
+}
+
+bool CtrlrMgr::IsCtrlrInIgnoreList(const char *ctr_name) {
+  UPLL_FUNC_TRACE;
+  bool bFound(false);
+  if (ctr_name == NULL) {
+    UPLL_LOG_DEBUG("ctrlr_name is empty")
+    return bFound;
+  }
+  path_fault_lock_.rdlock();
+  if (ctrlr_ignore_list_.find(ctr_name) != ctrlr_ignore_list_.end()) {
+    bFound = true;
+  }
+  path_fault_lock_.unlock();
+  return bFound;
+}
+
+/**
+ * @brief : This function adds(alarm asserted) or clears(alarm cleared)
+ *          the entries from vtn_exhaust_map_
+ */
+bool CtrlrMgr::UpdateVtnExhaustionMap(const char *vtn_na, const char *ctr_na,
+                                  const char *domain_na, bool assert_alarm) {
+  UPLL_FUNC_TRACE;
+  bool update_operstatus(false);
+
+  if (ctr_na == NULL || domain_na == NULL || vtn_na == NULL) {
+    UPLL_LOG_ERROR("Invalid argument vtn_na %p, ctr_name %p domain_name %p",
+                   vtn_na, ctr_na, domain_na);
+    return false;
+  }
+  std::string vtn_name(vtn_na);
+  std::string ctrlr_name(ctr_na);
+  std::string domain_name(domain_na);
+
+  vtn_exhaust_lock_.wrlock();
+  // path fault aerted
+  if (assert_alarm) {
+    if (vtn_exhaust_map_.end() == vtn_exhaust_map_.find(vtn_name)) {
+      // vtn exhaustion occured for the first time in for a vtn
+      UPLL_LOG_INFO("vtn exhaustion  occurred on ctrlr %s:%s:%s",
+                    vtn_name.c_str(), ctrlr_name.c_str(), domain_name.c_str());
+      // create map for ctrlr_domain
+      std::set<std::string> domains;
+      domains.insert(domain_name);
+      std::map<std::string, std::set<std::string> > ctrlr_domains;
+      ctrlr_domains.insert(std::make_pair(ctrlr_name, domains));
+      // update vtn_exhaust_map_
+      vtn_exhaust_map_[vtn_name] = ctrlr_domains;
+      update_operstatus = true;
+    } else if (vtn_exhaust_map_[vtn_name].end() ==
+        vtn_exhaust_map_[vtn_name].find(ctrlr_name)) {
+      // vtn exhaustion occured for the first time in a controller
+      UPLL_LOG_INFO("first vtn exhaustion  occurred on controller %s:%s:%s",
+                    vtn_name.c_str(), ctrlr_name.c_str(), domain_name.c_str());
+      std::set<std::string> domains;
+      domains.insert(domain_name);
+      vtn_exhaust_map_[vtn_name][ctrlr_name] = domains;
+      update_operstatus = true;
+    } else {
+      // path fault already occurred on this controller domain
+      vtn_exhaust_map_[vtn_name][ctrlr_name].insert(domain_name);
+      UPLL_LOG_INFO("vtn exhaustion  occurred on controller-domain%s:%s:%s",
+                     vtn_name.c_str(), ctrlr_name.c_str(), domain_name.c_str());
+    }
+  } else {
+     if ((vtn_exhaust_map_.end() != vtn_exhaust_map_.find(vtn_name)) &&
+         (vtn_exhaust_map_[vtn_name].end() !=
+              vtn_exhaust_map_[vtn_name].find(ctrlr_name)) &&
+         (vtn_exhaust_map_[vtn_name][ctrlr_name].end() !=
+              vtn_exhaust_map_[vtn_name][ctrlr_name].find(domain_name))) {
+      // vtn exhaustion recovered on this controller domain
+      vtn_exhaust_map_[vtn_name][ctrlr_name].erase(domain_name);
+      UPLL_LOG_INFO("vtn exhaustion recovery for %s:%s:%s",
+                    vtn_name.c_str(), ctrlr_name.c_str(), domain_name.c_str());
+      if (vtn_exhaust_map_[vtn_name][ctrlr_name].empty()) {
+        vtn_exhaust_map_[vtn_name][ctrlr_name].clear();
+        if (vtn_exhaust_map_[vtn_name].empty()) {
+          vtn_exhaust_map_[vtn_name].clear();
+          if (vtn_exhaust_map_.empty()) {
+            vtn_exhaust_map_.clear();
+          }
+        }
+      }
+      update_operstatus = true;
+    }
+  }
+  vtn_exhaust_lock_.unlock();
+  return update_operstatus;
+}
+
+/**
+ * @brief : This function returns true if vtn exhaustion has occurred
+ */
+bool CtrlrMgr::HasVtnExhaustionOccured(const char *vtn_na,
+                     const char *ctr_na, const char *domain_na) {
+  UPLL_FUNC_TRACE;
+  bool bOccurence(false);
+
+  if (vtn_na == NULL || ctr_na == NULL || domain_na == NULL) {
+    UPLL_LOG_ERROR("Invalid argument vtn_name %p, ctr_name %p domain_name %p",
+                   vtn_na, ctr_na, domain_na);
+    return false;
+  }
+  std::string vtn_name(vtn_na);
+  std::string ctrlr_name(ctr_na);
+  std::string domain_name(domain_na);
+
+  vtn_exhaust_lock_.rdlock();
+  if ((!vtn_exhaust_map_.empty()) &&
+      (vtn_exhaust_map_.end() != vtn_exhaust_map_.find(vtn_name))) {
+    if (ctrlr_name == "*" && domain_name == "*") {
+      bOccurence = true;
+    } else {
+      if ((vtn_exhaust_map_[vtn_name].end() !=
+        vtn_exhaust_map_[vtn_name].find(ctrlr_name)) &&
+        (vtn_exhaust_map_[vtn_name][ctrlr_name].end() !=
+        vtn_exhaust_map_[vtn_name][ctrlr_name].find(domain_name))) {
+        bOccurence = true;
+      }
+    }
+  }
+  vtn_exhaust_lock_.unlock();
+
+  UPLL_LOG_TRACE("Vtn Exhaustion for %s:%s:%s asserted:%d",
+                 vtn_name.c_str(), ctrlr_name.c_str(),
+                 domain_name.c_str(), bOccurence);
+  return bOccurence;
+}
+
+/**
+ * @brief : This function clears vtn_exhaust_map_
+ */
+void CtrlrMgr::ClearVtnExhaustionMap() {
+  UPLL_FUNC_TRACE;
+  vtn_exhaust_lock_.wrlock();
+  vtn_exhaust_map_.clear();
+  vtn_exhaust_lock_.unlock();
+}
 }  // namespace config_momgr
 }  // namespace upll
 }  // namespace unc

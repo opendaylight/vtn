@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -34,6 +34,7 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
      * @brief  Member Variable for VtermIfFlowfilterMainTblBindInfo.
      */
     static BindInfo vterm_if_flowfiltermaintbl_bind_info[];
+
   public:
     /**
      * @brief  VtermIfFlowFilterMoMgr Class Constructor.
@@ -79,7 +80,7 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
      * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
      * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
     /**
      * @Brief Validates the syntax of the specified key and value structure
@@ -392,7 +393,7 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
      * @retval  FALSE  Failure
      **/
     bool IsValidKey(void *key,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
 
     upll_rc_t ReadSiblingDetail(ConfigKeyVal *ikey,
                                 ConfigKeyVal *dup_key,
@@ -403,17 +404,20 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
                                 DalDmlIntf *dmi,
                                 uint8_t * domain_id,
                                 uint8_t* ctrlr_id);
-
-/*    upll_rc_t GetVexternalInformation(ConfigKeyVal* ck_main,
+#if 0
+    upll_rc_t GetVexternalInformation(ConfigKeyVal* ck_main,
                  upll_keytype_datatype_t dt_type,
                  pfcdrv_val_vbrif_vextif *& pfc_val,
-                // pfcdrv_val_vtermif_vextif *& pfc_val, need to remove
-                 uint8_t db_flag, DalDmlIntf *dmi);*/ //jai
+                 pfcdrv_val_vtermif_vextif *& pfc_val, need to remove
+                 uint8_t db_flag, DalDmlIntf *dmi);  // jai
+#endif
     upll_rc_t SetPortmapConfiguration(
                                  ConfigKeyVal *ikey,
                                  upll_keytype_datatype_t dt_type,
                                  DalDmlIntf *dmi,
-                                 InterfacePortMapInfo flag);
+                                 InterfacePortMapInfo flag,
+                                 TcConfigMode config_mode,
+                                 string vtn_name);
 
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
                                         uint32_t session_id,
@@ -421,7 +425,10 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
                                         uuc::UpdateCtrlrPhase phase,
                                         set<string> *affected_ctrlr_set,
                                         DalDmlIntf *dmi,
-                                        ConfigKeyVal **err_ckv);
+                                        ConfigKeyVal **err_ckv,
+                                        TxUpdateUtil *tx_util,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name);
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
                                        ConfigKeyVal *ikey,
@@ -438,20 +445,23 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi);
 
-   upll_rc_t CreateAuditMoImpl(unc::upll::ipc_util::ConfigKeyVal*, unc::upll::dal::DalDmlIntf*, const char*); 
+    upll_rc_t CreateAuditMoImpl(unc::upll::ipc_util::ConfigKeyVal*,
+                                unc::upll::dal::DalDmlIntf*, const char*);
 
-   upll_rc_t AuditUpdateController(unc_key_type_t keytype,
-                                   const char *ctrlr_id,
-                                   uint32_t session_id,
-                                   uint32_t config_id,
-                                   uuc::UpdateCtrlrPhase phase1,
-                                   DalDmlIntf *dmi,
-                                   ConfigKeyVal **err_ckv,
-                                   KTxCtrlrAffectedState *ctrlr_affected);
+    upll_rc_t AuditUpdateController(unc_key_type_t keytype,
+                                    const char *ctrlr_id,
+                                    uint32_t session_id,
+                                    uint32_t config_id,
+                                    uuc::UpdateCtrlrPhase phase1,
+                                    DalDmlIntf *dmi,
+                                    ConfigKeyVal **err_ckv,
+                                    KTxCtrlrAffectedState *ctrlr_affected);
 
   upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                               upll_keytype_datatype_t dt_type,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi,
+                              TcConfigMode config_mode,
+                              string vtn_name);
 
   upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
@@ -463,6 +473,12 @@ class VtermIfFlowFilterMoMgr : public MoMgrImpl {
   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                           DalDmlIntf *dmi,
                           IpcReqRespHeader *req);
+  upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *req,
+      ConfigKeyVal *ck_main,
+      DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type,
+      ConfigKeyVal **err_ckv,
+      IpcResponse *ipc_resp);
 };
 }  // namespace kt_momgr
 }  // namespace upll

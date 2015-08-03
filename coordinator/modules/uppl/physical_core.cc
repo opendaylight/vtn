@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -246,16 +246,55 @@ UncRespCode PhysicalCore::CancelEventSubscripInDriver() {
  */
 
 UncRespCode PhysicalCore::ValidateConfigId(uint32_t session_id,
-                                              uint32_t config_id) {
+                                           uint32_t config_id) {
   TcLibModule* tclib_ptr = static_cast<TcLibModule*>
   (TcLibModule::getInstance(TCLIB_MODULE_NAME));
   if (tclib_ptr == NULL) {  // cpptest issue fix
     return UNC_UPPL_RC_ERR_INVALID_STATE;
   }
-
-  uint8_t resp = tclib_ptr->TcLibValidateUpdateMsg(session_id, config_id);
+  //  as part of paritial configure mode support, config_mode, vtn_name
+  //  are passed in this API. vtn_name is always null.
+  TcConfigMode config_mode = TC_CONFIG_REAL;
+  std::string vtn_name = "";
+  uint8_t resp = tclib_ptr->TcLibValidateUpdateMsg(session_id, config_id,
+                                                   config_mode,
+                                                   vtn_name);
   UncRespCode return_code = UNC_UPPL_RC_FAILURE;
-  pfc_log_debug("Validation of config/session id with TC returned %d", resp);
+  pfc_log_debug("Validation of config/session id with TC returned %d"
+                                " config mode %d", resp, config_mode);
+  if (resp == unc::tclib::TC_API_COMMON_SUCCESS) {
+    return_code = UNC_RC_SUCCESS;
+  } else if (resp == unc::tclib::TC_INVALID_CONFIG_ID) {
+    return_code = UNC_UPPL_RC_ERR_INVALID_CONFIGID;
+  } else if (resp == unc::tclib::TC_INVALID_SESSION_ID) {
+    return_code = UNC_UPPL_RC_ERR_INVALID_SESSIONID;
+  } else if (resp == unc::tclib::TC_INVALID_MODE) {
+    return_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+  }
+  // return the response received
+  return return_code;
+}
+
+/**
+ * @Description : This function getss the config Mode by TC library API
+ */
+
+UncRespCode PhysicalCore::GetConfigMode(uint32_t session_id,
+                                        uint32_t config_id,
+                                        TcConfigMode &config_mode,
+                                        std::string vtn_name) {
+  TcLibModule* tclib_ptr = static_cast<TcLibModule*>
+  (TcLibModule::getInstance(TCLIB_MODULE_NAME));
+  if (tclib_ptr == NULL) {  // cpptest issue fix
+    return UNC_UPPL_RC_ERR_INVALID_STATE;
+  }
+  //  as part of paritial configure mode support, config_mode, vtn_name
+  //  are passed in this API. vtn_name is always null.
+  uint8_t resp = tclib_ptr->TcLibGetConfigMode(session_id, config_id,
+                                                   config_mode,
+                                                   vtn_name);
+  UncRespCode return_code = UNC_UPPL_RC_FAILURE;
+  pfc_log_debug("GetConfigMode returned %d config mode %d", resp, config_mode);
   if (resp == unc::tclib::TC_API_COMMON_SUCCESS) {
     return_code = UNC_RC_SUCCESS;
   } else if (resp == unc::tclib::TC_INVALID_CONFIG_ID) {
@@ -312,7 +351,9 @@ UncRespCode PhysicalCore::GetDriverName(
  */
 
 TcCommonRet PhysicalCore::HandleCommitTransactionStart(uint32_t session_id,
-                                                       uint32_t config_id) {
+                                                       uint32_t config_id,
+                                                       TcConfigMode config_mode,
+                                                       std::string vtn_name) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
   if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
@@ -322,7 +363,7 @@ TcCommonRet PhysicalCore::HandleCommitTransactionStart(uint32_t session_id,
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
-      StartTransaction(&db_conn, session_id, config_id);
+      StartTransaction(&db_conn, session_id, config_id, config_mode);
   pfc_log_debug("HandleCommitTransactionStart return code %d", resp);
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -372,6 +413,8 @@ TcCommonRet PhysicalCore::HandleAuditTransactionStart(
 TcCommonRet PhysicalCore::HandleCommitTransactionEnd(
     uint32_t session_id,
     uint32_t config_id,
+    TcConfigMode config_mode,
+    std::string vtn_name,
     TcTransEndResult trans_res) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
@@ -383,8 +426,9 @@ TcCommonRet PhysicalCore::HandleCommitTransactionEnd(
   // Call ITC transaction handler function
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
       EndTransaction(&db_conn, session_id,
-                     config_id,
-                     trans_res);
+                     config_id, config_mode,
+                     trans_res,
+                     true);
   pfc_log_debug("HandleCommitTransactionEnd response %d", resp);
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -435,6 +479,8 @@ TcCommonRet PhysicalCore::HandleAuditTransactionEnd(
 TcCommonRet PhysicalCore::HandleCommitVoteRequest(
     uint32_t session_id,
     uint32_t config_id,
+    TcConfigMode config_mode,
+    std::string vtn_name,
     TcDriverInfoMap& driver_info) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
@@ -448,6 +494,7 @@ TcCommonRet PhysicalCore::HandleCommitVoteRequest(
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
       HandleVoteRequest(session_id,
                         config_id,
+                        config_mode,
                         driver_info);
   pfc_log_debug("HandleVoteRequest response %d", resp);
   // convert the error code returned by ITC to TC error code
@@ -501,6 +548,8 @@ TcCommonRet PhysicalCore::HandleAuditVoteRequest(
 TcCommonRet PhysicalCore::HandleCommitGlobalCommit(
     uint32_t session_id,
     uint32_t config_id,
+    TcConfigMode config_mode,
+    std::string vtn_name,
     TcDriverInfoMap& driver_info) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
@@ -514,6 +563,7 @@ TcCommonRet PhysicalCore::HandleCommitGlobalCommit(
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
       HandleGlobalCommitRequest(session_id,
                                 config_id,
+                                config_mode,
                                 driver_info);
 
   // convert the error code returned by ITC to TC error code
@@ -568,6 +618,8 @@ TcCommonRet PhysicalCore::HandleAuditGlobalCommit(
 TcCommonRet PhysicalCore::HandleCommitDriverResult(
     uint32_t session_id,
     uint32_t config_id,
+    TcConfigMode config_mode,
+    std::string vtn_name,
     TcCommitPhaseType commitphase,
     TcCommitPhaseResult driver_result) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
@@ -576,14 +628,12 @@ TcCommonRet PhysicalCore::HandleCommitDriverResult(
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
-  // Check for Events Lock
-  ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
-                                    PFC_TRUE);  // write lock
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
       HandleDriverResult(&db_conn, session_id,
                          config_id,
+                         config_mode,
                          commitphase,
                          driver_result);
   pfc_log_debug("HandleCommitDriverResult response %d", resp);
@@ -637,8 +687,9 @@ TcCommonRet PhysicalCore::HandleAuditDriverResult(
  */
 
 TcCommonRet PhysicalCore::HandleAuditStart(uint32_t session_id,
-                  unc_keytype_ctrtype_t ctrl_type, string controller_id,
-                  pfc_bool_t simplified_audit, 
+                  unc_keytype_ctrtype_t ctrl_type,
+                  string controller_id,
+                  TcAuditType audit_type,
                   uint64_t  commit_number,  /*Latest Commit version PFC*/
                   uint64_t  commit_date,  /*Latest committed time of PFC*/
                   std::string commit_application
@@ -654,8 +705,8 @@ TcCommonRet PhysicalCore::HandleAuditStart(uint32_t session_id,
   pfc_log_debug("Received HandleAuditStart from TC");
   // Call ITC transaction handler function
   UncRespCode resp = internal_transaction_coordinator_->audit_req()->
-      StartAudit(&db_conn, ctrl_type,
-                 controller_id, simplified_audit, commit_number, commit_date, commit_application);
+      StartAudit(&db_conn, ctrl_type, controller_id, audit_type,
+                 commit_number, commit_date, commit_application);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -703,7 +754,8 @@ TcCommonRet PhysicalCore::HandleAuditEnd(uint32_t session_id,
  *                This is an implementation of virtual function in TCLib
  */
 
-TcCommonRet PhysicalCore::HandleSaveConfiguration(uint32_t session_id) {
+TcCommonRet PhysicalCore::HandleSaveConfiguration(uint32_t session_id,
+                                                  uint64_t save_version) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
   if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
@@ -756,7 +808,10 @@ TcCommonRet PhysicalCore::HandleClearStartup(uint32_t session_id) {
  */
 
 TcCommonRet PhysicalCore::HandleAbortCandidate(uint32_t session_id,
-                                               uint32_t config_id) {
+                                               uint32_t config_id,
+                                               TcConfigMode config_mode,
+                                               std::string vtn_name,
+                                               uint64_t abort_version) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
   if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
@@ -766,7 +821,7 @@ TcCommonRet PhysicalCore::HandleAbortCandidate(uint32_t session_id,
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   // Call ITC transaction handler function
   uint8_t resp = internal_transaction_coordinator_->db_config_req()->
-      AbortCandidateDb(&db_conn);
+      AbortCandidateDb(&db_conn, config_mode);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -838,16 +893,16 @@ TcCommonRet PhysicalCore::SendControllerInfoToUPLL(
  */
 
 TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                            TcServiceType fail_oper) {
+                                            TcServiceType fail_oper,
+                                            TcConfigMode config_mode,
+                                            std::string vtn_name,
+                                            uint64_t version) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
   if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
     pfc_log_error("Operation Not allowed: System is in standby\n");
     return unc::tclib::TC_FAILURE;
   }
-  // Check for Events Lock
-  ScopedReadWriteLock eventDoneLock(PhysicalLayer::get_events_done_lock_(),
-                                    PFC_TRUE);  // write lock
   OPEN_DB_CONNECTION_TC_REQUEST(unc::uppl::kOdbcmConnReadWriteNb);
   pfc_log_info("AuditDB from TC dt:%d failop:%d", db_target, fail_oper);
   // Call ITC transaction handler function
@@ -871,14 +926,15 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
 
     TransactionRequest *txn_req =
         internal_transaction_coordinator_->transaction_req();
-    resp = txn_req->StartTransaction(&db_conn, session_id, config_id);
+    resp = txn_req->StartTransaction(&db_conn, session_id,
+                                     config_id, config_mode);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - StartTransaction failed with %d",
                     resp);
       return unc::tclib::TC_FAILURE;
     }
-    resp = txn_req->HandleVoteRequest(session_id,
-                                      config_id, driver_info);
+    resp = txn_req->HandleVoteRequest(session_id, config_id,
+                                      config_mode, driver_info);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - Vote failed with %d",
                     resp);
@@ -887,16 +943,16 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
 
     TcCommitPhaseType phase = unc::tclib::TC_COMMIT_VOTE_PHASE;
     TcCommitPhaseResult driver_result;
-    resp = txn_req->HandleDriverResult(&db_conn, session_id,
-                                       config_id, phase, driver_result);
+    resp = txn_req->HandleDriverResult(&db_conn, session_id, config_id,
+                                       config_mode, phase, driver_result);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - DriverResult VOTE PH failed with %d",
                     resp);
       return unc::tclib::TC_FAILURE;
     }
 
-    resp = txn_req->HandleGlobalCommitRequest(session_id,
-                                              config_id, driver_info);
+    resp = txn_req->HandleGlobalCommitRequest(session_id, config_id,
+                                              config_mode, driver_info);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - GlobalCommit failed with %d",
                     resp);
@@ -904,8 +960,8 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     }
 
     phase = unc::tclib::TC_COMMIT_GLOBAL_COMMIT_PHASE;
-    resp = txn_req->HandleDriverResult(&db_conn, session_id,
-                                       config_id, phase, driver_result);
+    resp = txn_req->HandleDriverResult(&db_conn, session_id, config_id,
+                                       config_mode, phase, driver_result);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - DriverResult COM PH failed with %d",
                     resp);
@@ -914,7 +970,7 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     TcTransEndResult trans_res = unc::tclib::TRANS_END_SUCCESS;
     bool audit_flag = false;
     resp = txn_req->EndTransaction(
-        &db_conn, session_id, config_id, trans_res, audit_flag);
+        &db_conn, session_id, config_id, config_mode, trans_res, audit_flag);
     if (resp != UNC_RC_SUCCESS) {
       pfc_log_error("HandleAuditConfig - EndTransaction COM PH failed with %d",
                     resp);
@@ -944,7 +1000,7 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
     }
 
     resp = internal_transaction_coordinator_->db_config_req()->
-        AbortCandidateDb(&db_conn);
+        AbortCandidateDb(&db_conn, config_mode);
   } else if (fail_oper == TC_OP_USER_AUDIT ||
       fail_oper == TC_OP_DRIVER_AUDIT) {
     // Do nothing
@@ -968,6 +1024,8 @@ TcCommonRet PhysicalCore::HandleAuditConfig(unc_keytype_datatype_t db_target,
 TcCommonRet PhysicalCore::HandleCommitGlobalAbort(
     uint32_t session_id,
     uint32_t config_id,
+    TcConfigMode config_mode,
+    std::string vtn_name,
     TcCommitOpAbortPhase fail_phase) {
   PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
   //  Reject the request when system is in StandBy
@@ -979,6 +1037,7 @@ TcCommonRet PhysicalCore::HandleCommitGlobalAbort(
   UncRespCode resp = internal_transaction_coordinator_->transaction_req()->
       AbortTransaction(session_id,
                        config_id,
+                       config_mode,
                        fail_phase);
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -1011,6 +1070,37 @@ TcCommonRet PhysicalCore::HandleAuditGlobalAbort(
                        ctrl_type,
                        controller_id,
                        operation_phase);
+
+  // convert the error code returned by ITC to TC error code
+  if (resp == UNC_RC_SUCCESS) {
+    return unc::tclib::TC_SUCCESS;
+  } else {
+    return unc::tclib::TC_FAILURE;
+  }
+}
+
+/**
+ * @Description : This function will be called back when TC sends
+ *                cancel audit when commit/abort request arrives 
+ *                with cancel flag enable
+ *                This is an implementation of virtual function in TCLib
+ */
+
+TcCommonRet PhysicalCore::HandleAuditCancel(
+    uint32_t session_id,
+    unc_keytype_ctrtype_t driver_id,
+    std::string controller_id) {
+  PHY_FINI_IPC_LOCK(unc::tclib::TC_SUCCESS);
+  //  Reject the request when system is in StandBy
+  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
+    pfc_log_error("Operation Not allowed: System is in standby\n");
+    return unc::tclib::TC_FAILURE;
+  }
+  // Call ITC transaction handler function
+  UncRespCode resp = internal_transaction_coordinator_->audit_req()->
+      HandleAuditCancel(session_id,
+                       driver_id,
+                       controller_id);
 
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
@@ -1112,7 +1202,7 @@ unc_keytype_ctrtype_t PhysicalCore::HandleGetControllerType(
   UncRespCode resp = PhyUtil::get_controller_type(&db_conn,
                                                      controller_id,
                                                      controller_type,
-                                                     UNC_DT_CANDIDATE);
+                                                     UNC_DT_RUNNING);
   // convert the error code returned by ITC to TC error code
   if (resp == UNC_RC_SUCCESS) {
     return controller_type;
@@ -1278,12 +1368,119 @@ UncRespCode PhysicalCore::SendControllerConnectAlarm(string controller_id) {
 
 
 /**
+ * @Description : This function sends EVENT_HANDLING_FAILURE notice to
+ *                node manager
+ *                This function will be called from ipc_connection_manager 
+ *                when send event is failed.
+ */
+UncRespCode
+PhysicalCore::SendEventPostFailureNotice(string controller_id,
+                                            string event_details) {
+  if (system_transit_state_ == true &&
+     get_system_state() == UPPL_SYSTEM_ST_ACTIVE) {
+    pfc_log_info("System is in active->standby transition,"
+                 " so don't send event post failure notice");
+    return UNC_RC_SUCCESS;
+  }
+  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
+    pfc_log_info("SBY node, post event failure notice"
+                 " not sent to node manager");
+    return UNC_RC_SUCCESS;
+  }
+  std::string alarm_category = "3";
+  string vtn_name = "";
+  const std::string& alm_msg =
+      "Event Post failure - " + event_details;
+  const std::string& alm_msg_summary =
+      "Event Post failure notice";
+  pfc::alarm::alarm_info_with_key_t* data =
+      new pfc::alarm::alarm_info_with_key_t;
+  data->alarm_class = pfc::alarm::ALM_WARNING;
+  data->apl_No = UNCCID_PHYSICAL;
+  data->alarm_category = 3;
+  data->alarm_key_size = controller_id.length();
+  data->alarm_key = new uint8_t[controller_id.length()+1];
+  memcpy(data->alarm_key, controller_id.c_str(), controller_id.length()+1);
+  data->alarm_kind = 2;  //  in case of North Bound Event handling failure
+
+  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
+      vtn_name,
+      alm_msg,
+      alm_msg_summary,
+      data, fd);
+  if (ret != pfc::alarm::ALM_OK) {
+    delete []data->alarm_key;
+    delete data;
+    return UNC_UPPL_RC_ERR_ALARM_API;
+  }
+  delete []data->alarm_key;
+  delete data;
+  pfc_log_debug("Sent post event operation Failure notice - %s , %s",
+               controller_id.c_str(), event_details.c_str());
+  return UNC_RC_SUCCESS;
+}
+
+/**
+ * @Description : This function sends duplicate controller id notice to
+ *                node manager,if similar actual id is found for different
+ *                controllers.
+ *                This function will be called from Kt_Controller 
+ *                when duplicate controller id is received. 
+ */
+UncRespCode
+PhysicalCore::SendDuplicateControllerIdAlarm(string dup_ctr_id,
+                           string actual_id, string orig_ctr_id) {
+  if (system_transit_state_ == true &&
+     get_system_state() == UPPL_SYSTEM_ST_ACTIVE) {
+    pfc_log_info("System is in active->standby transition,"
+                 " so don't send duplicate controller id notice");
+    return UNC_RC_SUCCESS;
+  }
+  if (get_system_state() == UPPL_SYSTEM_ST_STANDBY) {
+    pfc_log_info("SBY node, duplicate controller id notice"
+                 " not sent to node manager");
+    return UNC_RC_SUCCESS;
+  }
+  std::string alarm_category = "4";
+  string vtn_name = "";
+  const std::string& alm_msg =
+      "Duplicate Actual ID exists: Duplicate controller Id-" + dup_ctr_id +
+      ", Actual Id-" + actual_id + ", Original controller Id-" + orig_ctr_id;
+  const std::string& alm_msg_summary =
+      "Duplicate Actual ID exists";
+  pfc::alarm::alarm_info_with_key_t* data =
+      new pfc::alarm::alarm_info_with_key_t;
+  data->alarm_class = pfc::alarm::ALM_NOTICE;
+  data->apl_No = UNCCID_PHYSICAL;
+  data->alarm_category = 4;
+  data->alarm_key_size = dup_ctr_id.length();
+  data->alarm_key = new uint8_t[dup_ctr_id.length()+1];
+  memcpy(data->alarm_key, dup_ctr_id.c_str(), dup_ctr_id.length()+1);
+  data->alarm_kind = 2;  //  in case of receiving duplicate controller id
+
+  pfc::alarm::alarm_return_code_t ret = pfc::alarm::pfc_alarm_send_with_key(
+      vtn_name,
+      alm_msg,
+      alm_msg_summary,
+      data, fd);
+  if (ret != pfc::alarm::ALM_OK) {
+    delete []data->alarm_key;
+    delete data;
+    return UNC_UPPL_RC_ERR_ALARM_API;
+  }
+  delete []data->alarm_key;
+  delete data;
+  pfc_log_debug("Sent duplicate controller id received alarm - %s",
+               dup_ctr_id.c_str());
+  return UNC_RC_SUCCESS;
+}
+
+/**
  * @Description : This function sends EVENT_HANDLING FAILURE alarm to
  *                node manager
  *                This function will be called from kt classes when event
  *                handling fails
  */
-
 UncRespCode
 PhysicalCore::SendEventHandlingFailureAlarm(string controller_id,
                                             string event_details) {
@@ -1603,7 +1800,8 @@ UncRespCode PhysicalCore::remove_ctr_from_alarm_status_map(
     else if (alarm_category.compare("2") == 0)
       SendControllerAuditSuccessAlarm(controller_name);
     else if (alarm_category.compare("3") == 0)
-      SendEventHandlingSuccessAlarm(controller_name, "KT_CONTROLLER - DELETE");
+      SendEventHandlingSuccessAlarm(controller_name,
+                                        "KT_CONTROLLER - DELETE/AUDIT");
     else
       pfc_log_error("alarm category is not matched in alarm_status_map");
 
@@ -1633,7 +1831,6 @@ unc::capa::CapaIntf *PhysicalCore::GetCapaInterface() {
  * @param[in] : None
  * @return    : StartupValidity status
  */
-
 uint16_t PhysicalCore::getStartupValidStatus() {
   TcLibModule* tclib_ptr = static_cast<TcLibModule*>
     (TcLibModule::getInstance(TCLIB_MODULE_NAME));

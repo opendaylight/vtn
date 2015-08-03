@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -33,11 +33,13 @@ class ImportRequest:public ITCReq {
   ~ImportRequest();
   UncRespCode ProcessRequest(OdbcmConnectionHandler *db_conn,
                                 uint32_t operation,
-                            key_ctr_t obj_key_ctr);
+                            key_ctr_t obj_key_ctr, uint32_t session_id,
+                            uint32_t config_id);
   UncRespCode StartImport(OdbcmConnectionHandler *db_conn,
-                             key_ctr_t obj_key_ctr);
-  UncRespCode MergeConfiguration();
-  UncRespCode ClearImportConfig();
+                             key_ctr_t obj_key_ctr, uint32_t session_id,
+                             uint32_t config_id);
+  UncRespCode MergeConfiguration(uint32_t session_id, uint32_t config_id);
+  UncRespCode ClearImportConfig(uint32_t session_id, uint32_t config_id);
 };
 }/*namespace uppl*/
 }/*namespace unc*/

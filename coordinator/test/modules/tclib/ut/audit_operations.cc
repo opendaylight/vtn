@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -119,6 +119,7 @@ TEST(test_9, test_AuditTransStartEnd) {
   audit_trans_msg.session_id = SESSION_ID;
   audit_trans_msg.driver_id = UNC_CT_PFC;
   audit_trans_msg.controller_id = "openflow1";
+  audit_trans_msg.reconnect_controller = 1;
 
   ret = tclib_obj.AuditTransStartEnd(MSG_AUDIT_START,
                                      audit_trans_msg);

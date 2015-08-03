@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -17,7 +17,9 @@ import java.util.List;
 
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeInterfaceBean;
+import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 import org.opendaylight.vtn.javaapi.openstack.dbmanager.VtnOpenStackSQLFactory;
+import org.opendaylight.vtn.javaapi.openstack.dao.CommonDao;
 
 /**
  * Data Access Object Class for os_vbr_if_tbl table
@@ -37,19 +39,49 @@ public class VBridgeInterfaceDao {
 	 */
 	public int getNextId(Connection connection, String vtnName)
 			throws SQLException {
-		final String sql = VtnOpenStackSQLFactory.SEL_VBR_IF_ID_SQL;
+		String sql = VtnOpenStackSQLFactory.SEL_VBR_IF_LIST_ID_CNT_SQL;
 		int vbrIfResourceId = -1;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
+
+		CommonDao comDao = new CommonDao();
+		List<Integer> idList = new ArrayList<Integer>();
+		int low, high;
+
 		try {
 			statement = connection.prepareStatement(sql);
 			statement.setString(1, vtnName);
 			resultSet = statement.executeQuery();
 			if (resultSet.next()) {
-				vbrIfResourceId = resultSet.getInt(1) + 1;
-				LOG.debug("Auto generated resource counter : "
-						+ vbrIfResourceId);
+				vbrIfResourceId = resultSet.getInt(1);
+				LOG.debug("Get flow list id counter : "	+ vbrIfResourceId);
+			} else {
+				vbrIfResourceId = 0;
 			}
+
+			if (resultSet != null) {
+				resultSet.close();
+				resultSet = null;
+			}
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}
+
+			if (0 == vbrIfResourceId) {
+				vbrIfResourceId++;
+				LOG.debug("Auto generated resource counter : " + vbrIfResourceId);
+				return vbrIfResourceId;
+			}
+
+			sql = VtnOpenStackSQLFactory.SEL_VBR_IF_LIST_ID_LIST_SQL;
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, vtnName);
+			resultSet = statement.executeQuery();
+			while (resultSet.next()) {
+				idList.add(resultSet.getInt(1));
+			}
+
 		} finally {
 			if (resultSet != null) {
 				resultSet.close();
@@ -58,6 +90,17 @@ public class VBridgeInterfaceDao {
 				statement.close();
 			}
 		}
+
+		if (idList.get(idList.size() - 1).intValue() == vbrIfResourceId) {
+			vbrIfResourceId++;
+			LOG.debug("Auto generated resource counter : " + vbrIfResourceId);
+			return vbrIfResourceId;
+		}
+
+		low = 1;
+		high = idList.size();
+		vbrIfResourceId = comDao.getCount(idList, low, high);
+		LOG.debug("Auto generated resource counter : " + vbrIfResourceId);
 		return vbrIfResourceId;
 	}
 
@@ -85,6 +128,7 @@ public class VBridgeInterfaceDao {
 			statement.setString(4, vInterfaceBean.getVbrIfName());
 			statement.setString(5, vInterfaceBean.getMapType());
 			statement.setString(6, vInterfaceBean.getLogicalPortId());
+			statement.setInt(7, vInterfaceBean.getVbrIfStatus());
 			status = statement.executeUpdate();
 		} finally {
 			if (statement != null) {
@@ -282,13 +326,53 @@ public class VBridgeInterfaceDao {
 	public List<Integer> getVbrIfIds(Connection connection,
 			VBridgeInterfaceBean vInterfaceBean) throws SQLException {
 		List<Integer> list = new ArrayList<Integer>();
-		final String sql = VtnOpenStackSQLFactory.SEL_VBR_IF_IDS_SQL;
+		String sql = VtnOpenStackSQLFactory.SEL_MAX_FC_SQL;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
-		try {
+		int vbrIfMaxResourceId = -1;
+
+		try {/*get the max id from free counter*/
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, VtnServiceOpenStackConsts.PORT_RES_ID);
+			statement.setString(2, vInterfaceBean.getVtnName());
+			resultSet = statement.executeQuery();
+			if (resultSet.next()) {
+				vbrIfMaxResourceId = resultSet.getInt(1);
+			}
+
+			if (resultSet != null) {
+				resultSet.close();
+				resultSet = null;
+			}
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}
+
+			/*get the max interface id from the specified vtn*/
+			sql = VtnOpenStackSQLFactory.SEL_VBR_IF_MAX_ID_SQL;
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, vInterfaceBean.getVtnName());
+			resultSet = statement.executeQuery();
+			if (resultSet.next() && (resultSet.getInt(1) > vbrIfMaxResourceId)) {
+				vbrIfMaxResourceId = resultSet.getInt(1);
+			}
+
+			if (resultSet != null) {
+				resultSet.close();
+				resultSet = null;
+			}
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}
+
+			/*get the id list which little than the specified id*/
+			sql = VtnOpenStackSQLFactory.SEL_VBR_IF_IDS_SQL;
 			statement = connection.prepareStatement(sql);
 			statement.setString(1, vInterfaceBean.getVtnName());
 			statement.setString(2, vInterfaceBean.getVbrName());
+			statement.setInt(3, vbrIfMaxResourceId);
 			resultSet = statement.executeQuery();
 			while (resultSet.next()) {
 				list.add(resultSet.getInt(1));

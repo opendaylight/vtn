@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -72,7 +72,8 @@ DalBindColumnInfo::UpdateColumnInfo(const DalTableIndex table_index,
     return false;
   }
 
-  if (column_index_ >= schema::TableNumCols(table_index)) {
+  if (column_index_ >= schema::TableNumCols(table_index) &&
+      column_index_ != schema::DAL_COL_STD_INTEGER) {
     UPLL_LOG_DEBUG("Invalid Column(%s) for Table(%s)(columns - %zd)",
                    schema::ColumnName(table_index, column_index_),
                    schema::TableName(table_index),
@@ -314,7 +315,8 @@ DalBindColumnInfo::CopyResultToAppAddr(const DalTableIndex table_index) {
     return false;
   }
 
-  if (column_index_ >= schema::TableNumCols(table_index)) {
+  if (column_index_ >= schema::TableNumCols(table_index) &&
+      column_index_ != schema::DAL_COL_STD_INTEGER) {
     UPLL_LOG_DEBUG("Invalid Column(%s) for Table(%s)(columns - %zd)",
                    schema::ColumnName(table_index, column_index_),
                    schema::TableName(table_index),
@@ -532,7 +534,6 @@ DalBindColumnInfo::AllocateColBuffer(void **col_buff,
 // Resets the DAL output buffer to store further results
 bool
 DalBindColumnInfo::ResetDalOutputBuffer(const DalTableIndex table_index) {
-
   // Validating table_index
   if (table_index >= schema::table::kDalNumTables) {
     UPLL_LOG_DEBUG("Invalid table(%s) for Column(%s)",
@@ -541,7 +542,8 @@ DalBindColumnInfo::ResetDalOutputBuffer(const DalTableIndex table_index) {
     return false;
   }
 
-  if (column_index_ >= schema::TableNumCols(table_index)) {
+  if (column_index_ >= schema::TableNumCols(table_index) &&
+      column_index_ != schema::DAL_COL_STD_INTEGER) {
     UPLL_LOG_DEBUG("Invalid Column(%s) for Table(%s)(columns - %zd)",
                    schema::ColumnName(table_index, column_index_),
                    schema::TableName(table_index),
@@ -660,7 +662,7 @@ DalBindColumnInfo::CalculateAppBufferSize(const DalCDataType app_data_type,
 
   switch (app_data_type) {
     case kDalChar:
-      buffer_size = array_size * sizeof(char);
+      buffer_size = array_size * sizeof(char);  // NOLINT
       break;
 
     case kDalUint8:
@@ -698,7 +700,6 @@ void
 DalBindColumnInfo::GetCopyDataType(const DalCDataType app_data_type,
                                    const SQLSMALLINT dal_data_type,
                                    DalDataTypeCode *data_type_code) {
-
   *data_type_code = kDalDtCodeInvalid;
   switch (dal_data_type) {
     case SQL_C_CHAR:
@@ -1332,7 +1333,7 @@ DalBindColumnInfo::ColInfoToStr(const DalTableIndex table_index) const {
      << "\n  App Array Size : " << app_array_size_
      << "\n  Bind Type : " << DalIoTypeToStr(io_type_);
   if (app_out_addr_ != NULL) {
-    ss  << "\n  App Output Address : " << app_out_addr_ 
+    ss  << "\n  App Output Address : " << app_out_addr_
         << "\n  App Output Value : "
         << ValueInBindAddrToStr(table_index,
                             const_cast<const void**>(&app_out_addr_));
@@ -1527,7 +1528,7 @@ std::string
 DalBindColumnInfo::AppValueToStr(const DalCDataType app_data_type,
                                  const void **addr) const {
   std::stringstream ss;
-  
+
   if (addr == NULL || *addr == NULL) {
     ss << "(null)";
     return ss.str();
@@ -1549,7 +1550,7 @@ DalBindColumnInfo::AppValueToStr(const DalCDataType app_data_type,
         ss << "0x";
         for (size_t i = 0; i < app_array_size_; i++) {
           memset(xtemp, 0, 3);
-          snprintf(xtemp, 3,
+          snprintf(xtemp, sizeof(xtemp),
                    "%02X", *((reinterpret_cast<const uint8_t *>(*addr))+i));
           ss << xtemp;
         }
@@ -1663,7 +1664,7 @@ DalBindColumnInfo::DalValueToStr(const SQLSMALLINT dal_data_type,
         ss << "0x";
         for (size_t i = 0; i < app_array_size_; i++) {
           memset(xtemp, 0, 3);
-          snprintf(xtemp, 3,
+          snprintf(xtemp, sizeof(xtemp),
                    "%02X", *((reinterpret_cast<const SCHAR *>(*addr))+i));
           ss << xtemp;
         }

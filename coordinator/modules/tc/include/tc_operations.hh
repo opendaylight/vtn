@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,8 +14,10 @@
 #include <tc_db_handler.hh>
 #include <uncxx/tc/libtc_common.hh>
 #include <unc/tc/external/tc_services.h>
-#include<pfcxx/timer.hh>
-#include<pfcxx/task_queue.hh>
+#include <unc/upll_svc.h>
+#include <unc/uppl_common.h>
+#include <pfcxx/timer.hh>
+#include <pfcxx/task_queue.hh>
 #include <map>
 #include <string>
 #include <list>
@@ -35,6 +37,24 @@ typedef enum {
   RELEASE_EXCLUSION_PHASE,
   SEND_RESPONSE_PHASE
 }TcOperEnum;
+
+/*
+ * Audit Operation phases
+ */
+typedef enum {
+  AUDIT_NOT_STARTED = 0,
+  AUDIT_START,
+  AUDIT_TRANSACTION_START,
+  AUDIT_VOTE_REQUEST,
+  AUDIT_GLOBAL_COMMIT,
+  AUDIT_TRANSACTION_END,
+  AUDIT_END
+}TcAuditPhase;
+
+typedef enum {
+  AUDIT_CANCEL_DONE = 0,
+  AUDIT_CANCEL_INPROGRESS
+}TcAuditCancelStatus;
 
 /*
  * @brief TcOperations Class to be extended by all operations
@@ -69,16 +89,16 @@ class TcOperations {
   /*flag is set when Audit DB fails in startup phase*/
   pfc_bool_t audit_db_fail_;
 
+  /* To connect to upll/uppl for IsCandidateDirty */
+  pfc::core::ipc::ClientSession * csess_;
+  pfc_ipcconn_t cconn_;
 
   TcOperations(TcLock* tclock,
                pfc::core::ipc::ServerSession* sess,
                TcDbHandler* tc_db_,
                TcChannelNameMap& unc_map_);
 
-  virtual ~TcOperations() {
-    if ( db_hdlr_ != NULL )
-      delete db_hdlr_;
-  }
+  virtual ~TcOperations();
 
   /* Virtual Functions List */
   /* These have some default definitions in TcOperations */
@@ -101,12 +121,43 @@ class TcOperations {
   virtual TcOperStatus TcValidateOperType()=0;
   virtual TcOperStatus TcValidateOperParams()=0;
   virtual TcOperStatus TcCheckOperArgCount(uint32_t sess_arg_count)=0;
-  virtual TcOperStatus  HandleLockRet(TcLockRet LockRet) =0;
+  virtual TcOperStatus HandleLockRet(TcLockRet LockRet) =0;
   virtual TcOperStatus TcGetExclusion()=0;
   virtual TcOperStatus TcReleaseExclusion()=0;
   virtual TcOperStatus TcCreateMsgList()=0;
   virtual TcOperStatus FillTcMsgData(TcMsg*, TcMsgOperType)=0;
   virtual TcOperStatus SendAdditionalResponse(TcOperStatus oper_status)=0;
+  
+  /* Holds the phase of the audit process */
+  static TcAuditPhase audit_phase_;
+  static pfc::core::Mutex audit_phase_mutex_;
+
+  static TcAuditCancelStatus audit_cancel_status_;
+  static pfc::core::Mutex audit_cancel_status_mutex_;
+
+  /* Flag to set when state changed to SBY*/
+  static pfc_bool_t state_changed_to_sby_;
+  static pfc::core::Mutex state_changed_lock_;
+
+  /* Set and Get Methods for Audit_Phase for cancel Audit */
+  static void SetAuditPhase(TcAuditPhase phase);
+  static TcAuditPhase GetAuditPhase();
+  
+  /* Set/Get Functions for auditCancelDone */
+  static void SetAuditCancelStatus(TcAuditCancelStatus status);
+  static TcAuditCancelStatus GetAuditCancelStatus();
+
+  /* Hold the list of modules for the cancel audit Notification */
+  static std::vector<TcDaemonName> audit_cancel_notify_;
+  static pfc::core::Mutex audit_cancel_notify_lock_;
+
+  static pfc::core::Mutex candidate_audit_excl_lock_;
+  
+  static pfc_bool_t IsStateChangedToSby();
+  static void SetStateChangedToSby(pfc_bool_t state);
+
+  pfc_bool_t IsCandidateDirty(uint32_t session_id, uint32_t config_id);
+  std::string OperTypeToStr(TcServiceType op_type);
 };
 
 
@@ -119,8 +170,11 @@ class TcConfigOperations: public TcOperations {
  public:
   uint32_t config_id_;
   int32_t timeout_;
-  pthread_cond_t * cond_var_;
+  TcConfigMode tc_mode_;
+  std::string vtn_name_;
+  pthread_cond_t  cond_var_;
   pthread_mutex_t mutex_var_;
+
   TcConfigOperations(TcLock* tclock,
                      pfc::core::ipc::ServerSession* sess,
                      TcDbHandler* tc_db_,
@@ -138,27 +192,22 @@ class TcConfigOperations: public TcOperations {
   TcOperStatus SendAdditionalResponse(TcOperStatus);
   TcOperStatus  HandleLockRet(TcLockRet LockRet);
   TcOperStatus  SetConfigId();
-  pfc_bool_t IsConfigModeAvailable();
 
-  void SetConfigModeAvailability(pfc_bool_t status);
+  void HandleConfigRelease();
+  static void   ClearConfigAcquisitionQueue();
+  TcOperStatus Dispatch();
+
+ private:
+  TcConfigNameMap tc_config_name_map;
+  static std::deque<TcConfigOperations*> config_req_queue_;
+  static pfc::core::Mutex config_req_queue_lock_;
+
   pfc_bool_t IsConfigReqQueueEmpty();
-  pfc_bool_t IsConfigAcquireAllowed();
   void InsertConfigRequest();
   TcConfigOperations * RetrieveConfigRequest();
   void RemoveConfigRequest(uint32_t sess_id);
-  void HandleConfigRelease();
-  static pfc_bool_t IsStateChangedToSby();
-  static void SetStateChangedToSby(pfc_bool_t state);
-  static void   ClearConfigAcquisitionQueue();
-  TcOperStatus Dispatch();
   TcOperStatus HandleTimedConfigAcquisition();
- private:
-  static pfc_bool_t config_mode_available_;
-  static pfc::core::Mutex config_mode_available_lock_;
-  static std::deque<TcConfigOperations*> config_req_queue_;
-  static pfc::core::Mutex config_req_queue_lock_;
-  static pfc_bool_t state_changed_to_sby_;
-  static pfc::core::Mutex state_changed_lock_;
+  TcOperStatus ValidateGlobalModeDirty();
 };
 
 /*
@@ -170,7 +219,10 @@ class TcStartUpOperations: public TcOperations {
  public:
   pfc_bool_t is_switch_;
   TcServiceType fail_oper_;
+  uint64_t version_;
   unc_keytype_datatype_t database_type_;
+  TcConfigMode config_mode_;
+  std::string vtn_name_;
 
   TcStartUpOperations(TcLock* tclock,
                       pfc::core::ipc::ServerSession* sess,
@@ -186,6 +238,7 @@ class TcStartUpOperations: public TcOperations {
   TcOperStatus TcCreateMsgList();
   TcOperStatus FillTcMsgData(TcMsg*, TcMsgOperType);
   TcOperStatus HandleArgs();
+  TcOperStatus Execute();
   TcOperStatus HandleLockRet(TcLockRet LockRet);
   TcOperStatus SendAdditionalResponse(TcOperStatus oper_stat);
   TcOperStatus SendResponse(TcOperStatus oper_status);
@@ -216,6 +269,9 @@ class TcDbOperations: public TcOperations {
   TcOperStatus  HandleLockRet(TcLockRet LockRet);
   TcOperStatus HandleMsgRet(TcOperRet ret);
   TcOperStatus Dispatch();
+  TcOperStatus Execute();
+ private:
+  uint64_t save_version_;
 };
 
 class TcTaskqUtil;
@@ -283,13 +339,24 @@ class TcAutoSaveOperations: public TcOperations {
  */
 class TcCandidateOperations: public TcOperations {
  public:
+  pfc_bool_t cancel_audit_;
+  uint32_t config_id_;
+  uint64_t abort_version_;
+  int32_t timeout_;
+  pthread_cond_t que_cond_;
+  pthread_mutex_t que_mutex_;
+   
+
+  static std::deque<TcCandidateOperations*> candidate_req_queue_;
+  static pfc::core::Mutex candidate_req_queue_lock_;
+
   TcCandidateOperations(TcLock* tclock,
                         pfc::core::ipc::ServerSession* sess,
                         TcDbHandler* tc_db_,
                         TcChannelNameMap& unc_map_);
 
   ~TcCandidateOperations();
-  uint32_t config_id_;
+
   TcMsg* resp_tc_msg_;
   unc::tclib::TcTransEndResult trans_result_;
   pfc_bool_t autosave_enabled_;
@@ -311,6 +378,16 @@ class TcCandidateOperations: public TcOperations {
   pfc_bool_t  TransEndMsg();
   pfc_bool_t  TransVoteMsg();
   pfc_bool_t  TransGlobalCommitMsg();
+  TcOperStatus Dispatch();
+  TcOperStatus HandleCandidateTimedRequest();
+  TcOperRet HandleCancelAudit();
+  void InsertCandidateRequest();
+  static void HandleCandidateRelease();
+  static void ClearCandidateQueue();
+  void RemoveCandidateRequest(uint32_t sess_id);
+  static TcCandidateOperations* RetrieveCandidateRequest(); 
+  TcOperRet GetUtilResp(TcUtilRet ret);
+  std::string GetDaemonName(TcDaemonName daemon_id);
 };
 
 
@@ -330,6 +407,18 @@ class TcAuditOperations: public TcOperations {
   unc::tclib::TcTransEndResult trans_result_;
   pfc_bool_t api_audit_;
   pfc_bool_t force_reconnect_;
+  TcAuditType audit_type_;
+  pthread_cond_t primary_wait_cond_;
+  pthread_mutex_t primary_wait_mutex_;
+  pfc_bool_t primary_wait_signalled;
+
+  pthread_cond_t secondary_wait_cond_;
+  pthread_mutex_t secondary_wait_mutex_;
+  pfc_bool_t secondary_wait_signalled_;
+
+  static std::deque<TcAuditOperations*> drv_audit_req_queue_;
+  static pfc::core::Mutex drv_audit_req_queue_lock_;
+  static uint32_t secondary_driver_audit_timeout_;
 
   TcAuditOperations(TcLock* tclock,
                     pfc::core::ipc::ServerSession* sess,
@@ -350,6 +439,7 @@ class TcAuditOperations: public TcOperations {
   TcOperStatus GetSessionId();
   TcOperStatus SetAuditOperationStatus();
   TcOperStatus Execute();
+  TcOperStatus DriverAuditWait();
   pfc_bool_t  AuditTransStart();
   pfc_bool_t  AuditTransEnd();
   pfc_bool_t  AuditVote();
@@ -357,6 +447,56 @@ class TcAuditOperations: public TcOperations {
   pfc_bool_t  AuditStart();
   pfc_bool_t  AuditEnd();
   pfc_bool_t  GetDriverType();
+  TcOperStatus Dispatch();
+
+  static void SetSecondaryWaitTime(uint32_t timeout);
+  static void PushToWaitQueue(TcAuditOperations * audit_op);
+  static void PopWaitQueue();
+  static int32_t SignalPrimaryWaitingAudit();
+  static int32_t SignalSecondaryWaitingAudit();
+};
+
+/*
+ * @brief TcReadStatus Class used to handle status for inconsistent data
+ * when Running configuration/startup configuration reads
+ */
+class TcReadStatusOperations : public TcOperations  {
+  public:
+    TcReadStatusOperations(TcLock* tclock,
+                           pfc::core::ipc::ServerSession* sess,
+                           TcDbHandler* tc_db_,
+                           TcChannelNameMap& unc_map_);
+    ~TcReadStatusOperations();
+    
+    static void Init(); 
+    static TcOperStatus GetRunningStatus(uint64_t& commit_number, 
+                                  TcReadStatusType&  runningDB_status);
+    static TcOperStatus GetStartupStatus(uint64_t& save_number, 
+                                  TcReadStatusType&  startupDB_status);
+    static TcOperStatus SetRunningStatus();
+    static TcOperStatus SetStartupStatus();
+    static TcOperStatus SetRunningStatusIncr();
+    static TcOperStatus SetStartupStatusIncr();
+
+    TcOperStatus SendAdditionalResponse(TcOperStatus);
+    TcOperStatus TcReleaseExclusion();
+    TcOperStatus Execute();
+    TcOperStatus TcCreateMsgList();
+    TcOperStatus TcGetExclusion();
+    TcOperStatus TcValidateOperType();
+    TcOperStatus TcValidateOperParams();
+    TcOperStatus TcCheckOperArgCount(uint32_t sess_arg_count);
+    TcOperStatus FillTcMsgData(TcMsg*, TcMsgOperType);
+    TcOperStatus HandleLockRet(TcLockRet LockRet);
+    uint32_t TcGetMinArgCount();     
+
+  private:
+    static uint64_t commit_number_;
+    static uint64_t save_number_;
+    static TcReadStatusType runningDB_status_;
+    static TcReadStatusType startupDB_status_;
+     
+    static pfc::core::Mutex read_status_db_lock_;
 };
 
 /*
@@ -421,6 +561,7 @@ class  AuditParams : public std::unary_function < void, void > {
   }
   void HandleDriverAudit(void);
 };
+
 }  // namespace tc
 }  // namespace unc
 #endif

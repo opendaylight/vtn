@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -33,12 +33,12 @@ void build_delete_table_script() {
   upll_delete_file << copyrights_header.c_str();
 
   // Print File Header
-  upll_delete_file << 
+  upll_delete_file <<
     "\n"
     "/**\n"
     " *  upll_delete_table.sql\n"
     " *  Contains SQL commands to delete all the tables created by UPLL\n"
-    " */\n"; 
+    " */\n";
 
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
     for (uint16_t tbl_iter = uudstbl::kDalNumTables; tbl_iter > 0; tbl_iter--) {

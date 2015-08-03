@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,13 +12,12 @@
 
 #include <string>
 #include <map>
-
+#include "convert_vnode.hh"
 #include "pfc/ipc.h"
-
 namespace unc {
 namespace upll {
 namespace ipc_util {
-
+// using namespace unc::upll::kt_momgr::convert;
 /**
  * Class IpctSt contains IPC_STRUCT information for structures used by UPLL
  *
@@ -33,6 +32,22 @@ class IpctSt {
  public:
   // Define literals for all ipc_struct below
   static const char *kIpcStrStKeyRoot;
+  static const char *kIpcStrStKeyUnifiedNw;
+  static const char *kIpcStrStValUnifiedNw;
+  static const char *kIpcStrStKeyUnwLabel;
+  static const char *kIpcStrStValUnwLabel;
+  static const char *kIpcStrStKeyUnwLabelRange;
+  static const char *kIpcStrStValUnwLabelRange;
+  static const char *kIpcStrStKeyUnwSpineDomain;
+  static const char *kIpcStrStValUnwSpineDomain;
+  static const char *kIpcStrStValUnwSpineDomain_Ext;
+  static const char *kIpcStrStValSpineAlarmSt;
+  static const char *kIpcStrStValUnwSpineDomainSt;
+  static const char *kIpcStrStValUnwSpineDomainAssignedLabel;
+  static const char *kIpcStrStValUnwSpineDomainFdbentry;
+  static const char *kIpcStrStValUnwSpineDomainFdbentryVtn;
+  static const char *kIpcStrStKeyVtnUnified;
+  static const char *kIpcStrStValVtnUnified;
   static const char *kIpcStrStValPing;
   static const char *kIpcStrStValVtnNeighbor;
   static const char *kIpcStrStKeyVtn;
@@ -46,11 +61,16 @@ class IpctSt {
   static const char *kIpcStrStValVtnstationControllerStat;
   static const char *kIpcStrStKeyVbr;
   static const char *kIpcStrStValVbr;
+  static const char *kIpcStrStKeyVbrPortMap;
+  static const char *kIpcStrStValVbrPortMap;
+  static const char *kIpcStrStValVbrPortMapSt;
   static const char *kIpcStrStValRenameVbr;
   static const char *kIpcStrStValVbrSt;
   static const char *kIpcStrStValVbrL2DomainSt;
   static const char *kIpcStrStValVbrL2DomainMemberSt;
   static const char *kIpcStrStValVbrMacEntrySt;
+  static const char *kIpcStrStKeyConvertVbr;
+  static const char *kIpcStrStValConvertVbr;
   static const char *kIpcStrStKeyVbrIf;
   static const char *kIpcStrStValPortMap;
   static const char *kIpcStrStValVbrIf;
@@ -149,18 +169,35 @@ class IpctSt {
   static const char *kIpcStrStKeyVbrifPolicingmapEntry;
   static const char *kIpcStrStKeyVtermIfPolicingMapEntry;
   static const char *kIpcStrStKeyVtnDataflow;
+  //  Convert structures
+  static const char *kIpcStrStKeyConvertVbrIf;
+  static const char *kIpcStrStValConvertVbrIf;
+  static const char *kIpcStrStKeyConvertVlink;
+  static const char *kIpcStrStValConvertVlink;
+  // Expand structires
+  static const char *kIpcStrStValVbrExpand;
+  static const char *kIpcStrStValVbrPortMapExpand;
+  static const char *kIpcStrStValVbrIfExpand;
+  static const char *kIpcStrStValVtunnelExpand;
+  static const char *kIpcStrStValVtunnelIfExpand;
+  static const char *kIpcStrStValVlinkExpand;
   // Driver structures
   static const char *kIpcStrStPfcdrvValVbrIf;
   static const char *kIpcStrStPfcdrvValVbrifVextif;
   static const char *kIpcStrStPfcdrvValFlowfilterEntry;
   static const char *kIpcStrStPfcdrvValVbrifPolicingmap;
+  static const char *kIpcStrStPfcdrvValVtnController;
   /* VlanmapOnBoundary: New val struct */
   static const char *kIpcStrStPfcdrvValVlanMap;
+  static const char *kIpcStrStPfcdrvValVbrPortMap;
+
       // Physical strucures
   static const char *kIpcStrStKeyCtr;
   static const char *kIpcStrStValCtr;
   static const char *kIpcStrStValCtrSt;
   static const char *kIpcStrStKeyCtrDomain;
+  static const char *kIpcStrStValCtrDomain;
+  static const char *kIpcStrStValCtrDomainSt;
   static const char *kIpcStrStKeyLogicalPort;
   static const char *kIpcStrStValLogicalPort;
   static const char *kIpcStrStValLogicalPortSt;
@@ -171,6 +208,11 @@ class IpctSt {
   // Overlay Driver structures
   static const char *kIpcStrStVnpdrvValVtunnel;
   static const char *kIpcStrStVnpdrvValVtunnelIf;
+  static const char *kIpcStrStKeyConvertVtunnel;
+  static const char *kIpcStrStValConvertVtunnel;
+  static const char *kIpcStrStKeyConvertVtunnelIf;
+  static const char *kIpcStrStValConvertVtunnelIf;
+  static const char *kIpcStrStValVtnGatewayPort;
 
   enum IpcStructNum {
     kIpcInvalidStNum = 0,
@@ -204,6 +246,9 @@ class IpctSt {
     kIpcStValVtnstationControllerStat,
     kIpcStKeyVbr,
     kIpcStValVbr,
+    kIpcStKeyVbrPortMap,
+    kIpcStValVbrPortMap,
+    kIpcStValVbrPortMapSt,
     kIpcStValRenameVbr,
     kIpcStValVbrSt,
     kIpcStValVbrL2DomainSt,
@@ -306,6 +351,25 @@ class IpctSt {
     kIpcStKeyVbrPolicingmapEntry,
     kIpcStKeyVbrifPolicingmapEntry,
     kIpcStKeyVtermIfPolicingMapEntry,
+    // convert structure
+    kIpcStKeyConvertVbr,
+    kIpcStValConvertVbr,
+    kIpcStKeyConvertVbrIf,
+    kIpcStValConvertVbrIf,
+    kIpcStKeyConvertVtunnel,
+    kIpcStValConvertVtunnel,
+    kIpcStKeyConvertVtunnelIf,
+    kIpcStValConvertVtunnelIf,
+    kIpcStKeyConvertVlink,
+    kIpcStValConvertVlink,
+    kIpcStValVtnGatewayPort,
+    // Expand structure
+    kIpcStValVbrExpand,
+    kIpcStValVbrPortMapExpand,
+    kIpcStValVbrIfExpand,
+    kIpcStValVtunnelExpand,
+    kIpcStValVtunnelIfExpand,
+    kIpcStValVlinkExpand,
     // Driver structures
     kIpcStPfcdrvValVbrIf,
     kIpcStPfcdrvValVbrifVextif,
@@ -313,11 +377,21 @@ class IpctSt {
     kIpcStPfcdrvValVbrifPolicingmap,
     /* VlanmapOnBoundary: New val struct */
     kIpcStPfcdrvValVlanMap,
+    kIpcStPfcdrvValVbrPortMap,
+    kIpcStPfcdrvValVtnController,
+    /* label allocation structures*/
+    kIpcStKeyVbid,
+    kIpcStValVbid,
+    kIpcStKeyGVtnId,
+    kIpcStValGVtnId,
+
     // Physical structures
     kIpcStKeyCtr,
     kIpcStValCtr,
     kIpcStValCtrSt,
     kIpcStKeyCtrDomain,
+    kIpcStValCtrDomain,
+    kIpcStValCtrDomainSt,
     kIpcStKeyLogicalPort,
     kIpcStValLogicalPort,
     kIpcStValLogicalPortSt,
@@ -329,7 +403,24 @@ class IpctSt {
     kIpcStVnpdrvValVtunnel,
     kIpcStVnpdrvValVtunnelIf,
     // Vtn DataFlow Structures
-    kIpcStKeyVtnDataflow
+    kIpcStKeyVtnDataflow,
+    // Unified Nw structures
+    kIpcStKeyUnifiedNw,
+    kIpcStValUnifiedNw,
+    kIpcStKeyUnwLabel,
+    kIpcStValUnwLabel,
+    kIpcStKeyUnwLabelRange,
+    kIpcStValUnwLabelRange,
+    kIpcStKeyUnwSpineDomain,
+    kIpcStValUnwSpineDomain,
+    kIpctStValUnwSpineDomain_Ext,
+    kIpctStValSpineAlarmSt,
+    kIpcStValUnwSpineDomainSt,
+    kIpcStValUnwSpineDomainAssignedLabel,
+    kIpcStValUnwSpineDomainFdbentry,
+    kIpcStValUnwSpineDomainFdbentryVtn,
+    kIpcStKeyVtnUnified,
+    kIpcStValVtnUnified
   };  // enum IpcStructNum
 
   static uint32_t Register(const char *stname, IpcStructNum stnum);
@@ -353,7 +444,7 @@ class IpctSt {
   }
   static const pfc_ipcstdef_t *GetIpcStdef(IpcStructNum st_num) {
     std::map<IpcStructNum, const pfc_ipcstdef_t*>::iterator it =
-      ipc_stdef_nmap_.find(st_num);    
+      ipc_stdef_nmap_.find(st_num);
     if (it != ipc_stdef_nmap_.end())
       return it->second;
     else

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -56,9 +56,11 @@ class IpctUtil  {
     static string get_string(const val_link_st_t &v);
 
     static string get_string(const key_logical_member_port_t &k);
+    static string get_string(const val_lm_port_st_neighbor &v);
 
     static string get_string(const key_logical_port_t &k);
     static string get_string(const val_logical_port_st_t &v);
+    static string get_string(const val_logical_port_boundary_t &v);
     static string get_string(const val_logical_port_t &v);
 
     static string get_string(const key_port_t &k);

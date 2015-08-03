@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -90,14 +90,17 @@ TcDaemonName TcConvertDriverType(unc_keytype_ctrtype_t drv_type) {
     case UNC_CT_VNP:
       return TC_DRV_OVERLAY;
 
-    case UNC_CT_ODC:
-      return TC_DRV_ODL;
-
     /*case UNC_CT_LEGACY:
       return TC_DRV_LEGACY;*/
 
     case UNC_CT_POLC:
       return TC_DRV_POLC;
+
+    case UNC_CT_VAN:
+      return TC_DRV_VAN;
+
+    case UNC_CT_ODC:
+      return TC_DRV_ODC;
 
     default:
        break;

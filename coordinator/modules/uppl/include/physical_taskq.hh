@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -15,10 +15,11 @@
 #include <unc/keytype.h>
 #include <pfcxx/module.hh>
 #include <pfcxx/synch.hh>
-#include "physical_common_def.hh"
-#include "odbcm_connection.hh"
 #include <map>
 #include <string>
+#include <functional>
+#include "physical_common_def.hh"
+#include "odbcm_connection.hh"
 using std::string;
 using std::map;
 using pfc::core::TaskQueue;
@@ -39,7 +40,7 @@ struct EventAlarmDetail {
                 key_size(0),
                 old_val_struct(NULL),
                 new_val_struct(NULL),
-                val_size(0), 
+                val_size(0),
                 alarm_type(0),
                 alarm_flag(TQ_EVENT),
                 eventid(0),
@@ -52,7 +53,7 @@ struct EventAlarmDetail {
                 key_size(0),
                 old_val_struct(NULL),
                 new_val_struct(NULL),
-                val_size(0), 
+                val_size(0),
                 alarm_type(0),
                 alarm_flag(flag),
                 eventid(0),
@@ -64,7 +65,7 @@ struct EventAlarmDetail {
     key_type = event_detail.key_type;
     key_size = event_detail.key_size;
     if (event_detail.key_struct != NULL) {
-      key_struct = (void*) malloc (event_detail.key_size);
+      key_struct = (void*)malloc(event_detail.key_size);
       if (key_struct != NULL)
         memcpy(key_struct, event_detail.key_struct, event_detail.key_size);
       else
@@ -74,18 +75,20 @@ struct EventAlarmDetail {
     }
     val_size = event_detail.val_size;
     if (event_detail.old_val_struct != NULL) {
-      old_val_struct = (void*) malloc (event_detail.val_size);
+      old_val_struct = (void*)malloc(event_detail.val_size);
       if (old_val_struct != NULL)
-        memcpy(old_val_struct, event_detail.old_val_struct, event_detail.val_size);
+        memcpy(old_val_struct, event_detail.old_val_struct,
+                        event_detail.val_size);
       else
         pfc_log_error("old_val_struct malloc is failed ");
     } else {
       old_val_struct = NULL;
     }
     if (event_detail.new_val_struct != NULL) {
-      new_val_struct = (void*) malloc (event_detail.val_size);
+      new_val_struct = (void*)malloc(event_detail.val_size);
       if (new_val_struct != NULL)
-        memcpy(new_val_struct, event_detail.new_val_struct, event_detail.val_size);
+        memcpy(new_val_struct, event_detail.new_val_struct,
+                event_detail.val_size);
       else
         pfc_log_error("new_val_struct malloc is failed ");
     } else {
@@ -102,21 +105,23 @@ struct EventAlarmDetail {
     key_type = event_detail.key_type;
     key_size = event_detail.key_size;
     if (event_detail.key_struct != NULL) {
-      key_struct = (void*) malloc (event_detail.key_size);
+      key_struct = (void*)malloc(event_detail.key_size);
       memcpy(key_struct, event_detail.key_struct, event_detail.key_size);
     } else {
       key_struct = NULL;
     }
     val_size = event_detail.val_size;
     if (event_detail.old_val_struct != NULL) {
-      old_val_struct = (void*) malloc (event_detail.val_size);
-      memcpy(old_val_struct, event_detail.old_val_struct, event_detail.val_size);
+      old_val_struct = (void*)malloc(event_detail.val_size);
+      memcpy(old_val_struct, event_detail.old_val_struct,
+                 event_detail.val_size);
     } else {
       old_val_struct = NULL;
     }
     if (event_detail.new_val_struct != NULL) {
-      new_val_struct = (void*) malloc (event_detail.val_size);
-      memcpy(new_val_struct, event_detail.new_val_struct, event_detail.val_size);
+      new_val_struct = (void*)malloc(event_detail.val_size);
+      memcpy(new_val_struct, event_detail.new_val_struct,
+               event_detail.val_size);
     } else {
       new_val_struct = NULL;
     }
@@ -149,7 +154,7 @@ struct EventAlarmDetail {
   void* new_val_struct;
   size_t val_size;
   uint32_t alarm_type;
-  uint8_t alarm_flag; 
+  uint8_t alarm_flag;
   uint64_t eventid;
   string controller_name;
 };
@@ -165,6 +170,7 @@ class PhyEventTaskqUtil {
   UncRespCode create_task_queue(string ctr_name);
   pfc::core::TaskQueue* get_task_queue(string ctr_name);
   void del_task_queue(string ctr_name);
+  void clear_task_queue(string ctr_name);
 
   int DispatchNotificationEvent(
          EventAlarmDetail& event_detail, string ctr_name);
@@ -186,7 +192,6 @@ class NotificationEventParams: public std::unary_function < void, void > {
   void InvokeProcessEvent(OdbcmConnectionHandler& db_conn);
   void InvokeProcessAlarm(OdbcmConnectionHandler& db_conn);
 };
-
 }
 }
 #endif

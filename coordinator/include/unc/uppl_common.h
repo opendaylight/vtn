@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,8 +14,8 @@
  * @brief   UPPL Common Header
  * @file    uppl_common.h
  * @author  HCL
- * @date    Nov-2012
- * @version SYSTEM:UNC 1.0, MODULE:Physical
+ * @date    Dec-2014
+ * @version SYSTEM:UNC v6.2.0.0, MODULE:Physical
  *
  */
 
@@ -43,6 +43,7 @@ typedef enum {
   UPPL_CONTROLLER_OPER_UP,
   UPPL_CONTROLLER_OPER_WAITING_AUDIT,
   UPPL_CONTROLLER_OPER_AUDITING,
+  UPPL_CONTROLLER_OPER_EVENTS_START,
   UPPL_CONTROLLER_OPER_EVENTS_MERGED
 }UpplControllerOperStatus;
 
@@ -59,14 +60,16 @@ typedef enum {
   kIdxIpAddress,
   kIdxUser,
   kIdxPassword,
-  kIdxEnableAudit
+  kIdxEnableAudit,
+  kIdxcPort
 }uppl_val_ctr_index;
 
 //  Enum for the structure val_ctr_st
 typedef enum {
   kIdxController = 0,
   kIdxActualVersion,
-  kIdxOperStatus
+  kIdxOperStatus,
+  kIdxActualId
 }uppl_val_ctr_st_index;
 
 typedef enum {
@@ -75,6 +78,7 @@ typedef enum {
   kIdxCtrCommitDate,
   kIdxCtrCommitApplication
 }uppl_val_ctr_commit_version_index;
+
 //  Enum for the structure val_path_fault_alarm
 typedef enum {
   kIdxIngressLogicalPort = 0,
@@ -88,7 +92,9 @@ typedef enum {
  */
 typedef enum {
   UPPL_DOMAIN_TYPE_DEFAULT = 0,
-  UPPL_DOMAIN_TYPE_NORMAL
+  UPPL_DOMAIN_TYPE_NORMAL,
+  UPPL_DOMAIN_TYPE_PF_LEAF,
+  UPPL_DOMAIN_TYPE_PF_SPINE
 }UpplDomainType;
 
 typedef enum {
@@ -109,6 +115,27 @@ typedef enum {
   kIdxDomainStOperStatus
 }uppl_val_domain_st_index;
 
+//  Enum for the structure val_domain_fdbentry
+typedef enum {
+  kIdxDomainFdbStDomain = 0,
+  kIdxDomainFdbMaxCount,
+  kIdxDomainFdbMaxSwitchId,
+  kIdxDomainFdbMinCount,
+  kIdxDomainFdbMinSwitchId,
+  kIdxDomainFdbAverageCount,
+  kIdxDomainFdbNoOfSwitches
+}uppl_val_domain_fdbentry_index;
+
+//  Enum for the structure val_domain_fdbentry_vid
+typedef enum {
+  kIdxDomainFdbVlanId = 0,
+  kIdxDomainFdbVidMaxCount,
+  kIdxDomainFdbVidMaxSwitchId,
+  kIdxDomainFdbVidMinCount,
+  kIdxDomainFdbVidMinSwitchId,
+  kIdxDomainFdbVidAverageCount
+}uppl_val_domain_fdbentry_vid_index;
+
 /*
  * KT_LOGICAL_PORT specific
  */
@@ -118,7 +145,8 @@ typedef enum {
   UPPL_LP_TRUNK_PORT = 11,
   UPPL_LP_SUBDOMAIN = 12,
   UPPL_LP_TUNNEL_ENDPOINT = 13,
-  UPPL_LP_PORT_GROUP = 14
+  UPPL_LP_PORT_GROUP = 14,
+  UPPL_LP_MAPPING_GROUP = 15
 }UpplLogicalPortType;
 
 typedef enum {
@@ -133,6 +161,18 @@ typedef enum {
 }UpplLogicalPortOperStatus;
 
 typedef enum {
+  UPPL_LP_BDRY_CANDIDATE_NO = 0,
+  UPPL_LP_BDRY_CANDIDATE_YES
+}UpplLogicalPortBoundaryCandidate;
+
+typedef enum {
+  kIdxLogicalPortBSt=0,
+  kIdxLogicalPortBoundaryCandidate,
+  kIdxLogicalPortBoundaryConnectedController,
+  kIdxLogicalPortBoundaryConnectedDomain,
+}uppl_val_logical_port_boundary_st_index;
+
+typedef enum {
   kIdxLogicalPortDescription = 0,
   kIdxLogicalPortType,
   kIdxLogicalPortSwitchId,
@@ -144,6 +184,16 @@ typedef enum {
   kIdxLogicalPortSt = 0,
   kIdxLogicalPortStOperStatus
 }uppl_val_logical_port_st_index;
+
+/* 
+ * KT_LOGICAL_MEMBER_PORT specific
+ */
+typedef enum {
+  kIdxLmPort = 0,
+  kIdxLmPortConnectedSwitchId,
+  kIdxLmPortConnectedPortId,
+  kIdxLmPortConnectedControllerId
+}uppl_val_lm_port_neighbor_index;
 
 /*
  * KT_SWITCH specific
@@ -181,6 +231,16 @@ typedef enum {
   kIdxSwitchSt = 0,
   kIdxSwitchStatFlowCount
 }uppl_val_switch_st_detail_index;
+
+typedef enum {
+  kIdxSwitchFdbSt = 0,
+  kIdxSwitchFdbCount
+}uppl_val_switch_st_fdbentry_index;
+
+typedef enum {
+  kIdxSwitchFdbVlanId = 0,
+  kIdxSwitchFdbVidCount
+}uppl_val_switch_st_fdbentry_vid_index;
 
 /*
  * KT_PORT specific
@@ -244,7 +304,8 @@ typedef enum {
 typedef enum {
   kIdxPort = 0,
   kIdxPortConnectedSwitchId,
-  kIdxPortConnectedPortId
+  kIdxPortConnectedPortId,
+  kIdxPortConnectedControllerId
 }uppl_val_port_neighbor_index;
 
 /*
@@ -289,8 +350,6 @@ typedef enum {
   kIdxBoundaryStOperStatus
 }uppl_val_boundary_st_index;
 
-
-
 typedef enum {
   UPPL_SVC_CONFIGREQ = 0,
   UPPL_SVC_READREQ,
@@ -319,6 +378,8 @@ typedef enum {
   UPPL_ALARMS_PORT_DIRECTION,   /*Port direction is inconsistent/consistent*/
   UPPL_ALARMS_PORT_CONGES,      /*OFS Port Congestion Occurred/Recovered*/
   UPPL_ALARMS_OFS_LACK_FEATURES,/*OFS has lack of features/recovered it*/
+  UPPL_ALARMS_OFS_DISABLED,/*OFS is disabled/enabled*/
+  UPPL_ALARMS_OFS_BC_DOMAIN_SPLIT /* BC Leaf/Spine Domain Split/Recovery*/
 } uppl_alarm_type_t;
 
 /*
@@ -354,4 +415,10 @@ typedef enum {
   UNC_OP_CLEAR_IMPORT_CONFIG
 } unc_addl_operation_t;
 
+/*
+ * @KT_DATAFLOW_V2
+ */
+typedef enum {
+  kIdxflowId = 0
+}uppl_val_data_flow_v2_index;
 #endif  // UNC_UPPL_COMMON_H_

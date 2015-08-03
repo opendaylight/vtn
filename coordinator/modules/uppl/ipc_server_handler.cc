@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -73,7 +73,7 @@ uint32_t IPCServerHandler::SendEvent(ServerEvent *serv_event) {
   time_out.tv_sec = 300;
   time_out.tv_nsec = 0;
   uint32_t resp = serv_event->setTimeout(&time_out);
-  if( resp != 0) {
+  if (resp != 0) {
     pfc_log_info("setTimeout failed in SendEvent");
   }
 

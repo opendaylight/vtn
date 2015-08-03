@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,6 +28,10 @@ class Module {
  public:
   explicit Module(const pfc_modattr_t *attr) {
   }
+
+  explicit Module() {
+  }
+
   virtual ~Module(void) {
   }
 
@@ -137,10 +141,10 @@ removeIpcEventHandler(ipc::IpcEventHandler* /**handler*/) {
   return 0;
 }
 
-virtual pfc_ipcresp_t ipcService(ipc::ServerSession& /*sess*/,
-                                 pfc_ipcid_t /*service*/) {
+ virtual pfc_ipcresp_t ipcService(ipc::ServerSession& /*sess*/,
+                                pfc_ipcid_t /*service*/) {
   return pfc_ipcresp_t();
-}
+ }
 
 static Module* getModule(const char* moduleName);
 
@@ -234,6 +238,17 @@ class ModuleConfBlock {
       getBlock(void) const {
         return static_cast<uint32_t>(0);
       }
+  void setResult(uint32_t data) {
+    result_ = data;
+  }
+  inline pfc_bool_t
+      getBool(const char *name, pfc_bool_t defvalue) {
+        return pfc_conf_get_bool(_block, name, defvalue);
+      }
+ private:
+  uint32_t result_;
+  uint32_t _block;
+
 };
 }  //  namespace core
 }  //  namespace pfc

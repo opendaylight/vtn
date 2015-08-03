@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -518,42 +518,63 @@ flowfilterlistUtil::SetValue(json_object *out,dscp* in) {
 UncRespCode
 flowfilterlistUtil::GetValue(json_object *in,filterType* out) {
   ODC_FUNC_TRACE;
+  pfc_log_info("FLOWFILTER TYPE Parse");
+  pfc_log_info("FLOWFILTER TYPE Parse:%s",restjson::JsonBuildParse::get_json_string(in));
   if ( in == NULL || out == NULL )
     return UNC_DRV_RC_ERR_GENERIC;
   std::string passkey ("pass");
+  std::string action_type("");
   json_object *pass_obj (JsonBuildParse::create_json_obj());
   // Clear memory when variable(pass_obj) is out of scope
   unc::restjson::json_obj_destroy_util pass_obj_delete_obj(pass_obj);
-  int pass_ret (JsonBuildParse::parse(in,passkey,pass_obj));
-  if ( pass_ret != REST_OP_SUCCESS ) {
-    pfc_log_error("parse failed %s", passkey.c_str());
+  //int pass_ret (JsonBuildParse::parse(in,passkey,pass_obj));
+  int pass_ret (JsonBuildParse::parse(in,passkey,action_type));
+  //action_type = restjson::JsonBuildParse::get_json_string(pass_obj);
+  //pass_obj = restjson::JsonBuildParse::get_json_object(action_type.c_str());
+  pfc_log_info("FLOWFILTER TYPE Parse pass action type %s",action_type.c_str());
+  if ( pass_ret != REST_OP_SUCCESS || strlen(action_type.c_str()) == 0 ) {
+    pfc_log_error(" PASS parse failed %s", passkey.c_str());
   } else {
-    out->pass_=new pass();
-    UncRespCode pass_getret ( GetValue ( pass_obj,out->pass_));
+     pfc_log_info("FLOWFILTER TYPE Parse Pass");
+     pfc_log_info("pass_obj: %s",restjson::JsonBuildParse::get_json_string(pass_obj));
+     out->pass_=new pass();
+     UncRespCode pass_getret ( GetValue ( pass_obj,out->pass_));
+     action_type = "";
     if ( pass_getret != UNC_RC_SUCCESS )
       return pass_getret;
   }
   std::string dropkey ("drop");
   json_object *drop_obj (JsonBuildParse::create_json_obj());
   unc::restjson::json_obj_destroy_util drop_obj_delete_obj(drop_obj);
-  int drop_ret (JsonBuildParse::parse(in,dropkey,drop_obj));
-  if ( drop_ret != REST_OP_SUCCESS ) {
-    pfc_log_error("parse failed %s", dropkey.c_str());
+  //int drop_ret (JsonBuildParse::parse(in,dropkey,drop_obj));
+  //action_type = restjson::JsonBuildParse::get_json_string(drop_obj);
+  int drop_ret (JsonBuildParse::parse(in,dropkey,action_type));
+  pfc_log_info("FLOWFILTER TYPE Parse drop action type %s",action_type.c_str());
+  if ( drop_ret != REST_OP_SUCCESS || strlen(action_type.c_str()) == 0) {
+    pfc_log_error("DROP parse failed %s", dropkey.c_str());
   } else {
+    pfc_log_info("FLOWFILTER TYPE Parse Drop");
     out->drop_=new drop();
     UncRespCode drop_getret ( GetValue ( drop_obj,out->drop_));
+    action_type = "";
     if ( drop_getret != UNC_RC_SUCCESS )
       return drop_getret;
   }
   std::string redirectkey ("redirect");
   json_object *redirect_obj (JsonBuildParse::create_json_obj());
   unc::restjson::json_obj_destroy_util redirect_obj_delete_obj(redirect_obj);
-  int redirect_ret (JsonBuildParse::parse(in,redirectkey,redirect_obj));
-  if ( redirect_ret != REST_OP_SUCCESS ) {
-    pfc_log_error("parse failed %s", redirectkey.c_str());
+  int redirect_ret (JsonBuildParse::parse(in,redirectkey,action_type));
+  JsonBuildParse::parse(in,redirectkey,redirect_obj);
+  //action_type = restjson::JsonBuildParse::get_json_string(drop_obj);
+  pfc_log_info("FLOWFILTER TYPE Parse RD action type %s",action_type.c_str());
+  if ( redirect_ret != REST_OP_SUCCESS || strlen(action_type.c_str()) == 0 ) {
+    pfc_log_error("Redirect parse failed %s", redirectkey.c_str());
   } else {
+    pfc_log_info("FLOWFILTER TYPE Parse Redirect");
+    pfc_log_info("redirect_obj: %s",restjson::JsonBuildParse::get_json_string(redirect_obj));
     out->redirect_=new redirect();
     UncRespCode redirect_getret ( GetValue ( redirect_obj,out->redirect_));
+    action_type = "";
     if ( redirect_getret != UNC_RC_SUCCESS )
       return redirect_getret;
   }
@@ -711,21 +732,24 @@ flowfilterlistUtil::SetValue(json_object *out,flowfilter* in) {
     }
   }
   std::string actionkey ("actions");
-  json_object* array(JsonBuildParse::create_json_array_obj());
+  json_object* action_array(JsonBuildParse::create_json_array_obj());
   std::list <action*>::iterator iter=in->action_.begin();
   while ( iter != in->action_.end() ) {
     if ( *iter == NULL ) {
       pfc_log_error("No Contents in action");
     } else {
-      json_object* obj = JsonBuildParse::create_json_obj();
-      UncRespCode action_ret(SetValue(obj,*iter));
-      if ( action_ret != UNC_RC_SUCCESS )
-        return action_ret;
-      JsonBuildParse::add_to_array(array,obj);
+      json_object* action_obj = JsonBuildParse::create_json_obj();
+      UncRespCode action_ret(SetValue(action_obj,*iter));
+      if ( action_ret != UNC_RC_SUCCESS ) {
+        json_object_put(action_obj);
+        json_object_put(action_array);
+      return action_ret;
+      }
+      JsonBuildParse::add_to_array(action_array,action_obj);
       iter++;
     }
   }
-  int action_setret (JsonBuildParse::build(actionkey,array,out));
+  int action_setret (JsonBuildParse::build(actionkey,action_array,out));
   if ( action_setret != REST_OP_SUCCESS )
     return UNC_DRV_RC_ERR_GENERIC;
   return UNC_RC_SUCCESS;
@@ -1065,21 +1089,24 @@ flowfilterlistUtil::SetValue(json_object *out,flowfilterlist* in) {
   if ( in == NULL || out == NULL )
     return UNC_DRV_RC_ERR_GENERIC;
   std::string flowfilterkey ("flowfilter");
-  json_object* array(JsonBuildParse::create_json_array_obj());
+  json_object* flowfilter_array(JsonBuildParse::create_json_array_obj());
   std::list <flowfilter*>::iterator iter=in->flowfilter_.begin();
   while ( iter != in->flowfilter_.end() ) {
     if ( *iter == NULL ) {
       pfc_log_error("No Contents in flowfilter");
     } else {
-      json_object* obj = JsonBuildParse::create_json_obj();
-      UncRespCode flowfilter_ret(SetValue(obj,*iter));
-      if ( flowfilter_ret != UNC_RC_SUCCESS )
+      json_object* flowfilter_obj = JsonBuildParse::create_json_obj();
+      UncRespCode flowfilter_ret(SetValue(flowfilter_obj,*iter));
+       if ( flowfilter_ret != UNC_RC_SUCCESS ) {
+          json_object_put(flowfilter_obj);
+          json_object_put(flowfilter_array);
         return flowfilter_ret;
-      JsonBuildParse::add_to_array(array,obj);
-      iter++;
+       }
+       JsonBuildParse::add_to_array(flowfilter_array,flowfilter_obj);
+       iter++;
     }
   }
-  int flowfilter_setret (JsonBuildParse::build(flowfilterkey,array,out));
+  int flowfilter_setret (JsonBuildParse::build(flowfilterkey,flowfilter_array,out));
   if ( flowfilter_setret != REST_OP_SUCCESS )
     return UNC_DRV_RC_ERR_GENERIC;
   return UNC_RC_SUCCESS;

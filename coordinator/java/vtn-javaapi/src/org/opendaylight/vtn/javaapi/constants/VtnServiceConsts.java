@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,7 +14,7 @@ package org.opendaylight.vtn.javaapi.constants;
  */
 public final class VtnServiceConsts {
 
-	public static final String JAVAAPI_VERSION = "V1.2";
+	public static final String JAVAAPI_VERSION = "V1.4";
 
 	public static final int IPC_RESUL_CODE_INDEX = 7;
 	public static final int IPC_COUNT_INDEX = 2;
@@ -104,4 +104,6 @@ public final class VtnServiceConsts {
 	public static final String QUOTE_CHAR = "\"";
 	
 	public static final String CONF_FILE_FIELD_POLC = "polc";
+	public static final String CONF_FILE_FIELD_HPVANC = "hpvanc";
+	public static final String CONF_FILE_FIELD_ODC = "odc";
 }

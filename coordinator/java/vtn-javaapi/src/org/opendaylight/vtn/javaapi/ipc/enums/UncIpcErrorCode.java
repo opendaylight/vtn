@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -251,6 +251,12 @@ public class UncIpcErrorCode {
 			uerr.setSouthboundErrorMessage(south);
 			if (index == 0) {
 				map.put(index, uerr);
+			} else if(uerr.getErrorCodeKey().equals("UPLL_RC_ERR_CTR_DISCONNECTED")) {
+				//Add common error code(UNC_RC_CTR_DISCONNECTED: 4005)
+				map.put(4005, uerr);
+			} else if (uerr.getErrorCodeKey().equals("UPLL_RC_ERR_DRIVER_NOT_PRESENT")) {
+				//Add common error code(UNC_RC_ERR_DRIVER_NOT_PRESENT: 200)
+				map.put(200, uerr);
 			} else {
 				map.put(index + initialErrorIndex, uerr);
 			}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -10,6 +10,11 @@ package org.opendaylight.vtn.javaapi.resources.openstack;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -23,11 +28,16 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
+import org.opendaylight.vtn.javaapi.openstack.beans.FlowFilterVbrBean;
+import org.opendaylight.vtn.javaapi.openstack.beans.FlowFilterVrtBean;
+import org.opendaylight.vtn.javaapi.openstack.beans.FlowListBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.FreeCounterBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeInterfaceBean;
 import org.opendaylight.vtn.javaapi.openstack.beans.VtnBean;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
+import org.opendaylight.vtn.javaapi.openstack.dao.FlowFilterDao;
+import org.opendaylight.vtn.javaapi.openstack.dao.FlowListDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VBridgeDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VBridgeInterfaceDao;
 import org.opendaylight.vtn.javaapi.openstack.dao.VtnDao;
@@ -484,5 +494,498 @@ public class PortResource extends AbstractResource {
 		restResource.get(new JsonObject());
 
 		return restResource.getInfo();
+	}
+
+	/**
+	 * Handler method for PUT operation of Port
+	 * 
+	 * @see org.opendaylight.vtn.javaapi.resources.AbstractResource#put(com.
+	 *      google.gson.JsonObject)
+	 */
+	@Override
+	public int put(JsonObject requestBody) {
+		LOG.trace("Start PortResource#put()");
+
+		int errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+
+		Connection connection = null;
+		boolean isCommitRequired = false;
+
+		try {
+			connection = VtnServiceInitManager.getDbConnectionPoolMap()
+					.getConnection();
+
+			/*
+			 * Check for instances that they exists or not, if not then return
+			 * 404 error
+			 */
+			if (checkForNotFoundResources(connection)) {
+
+				final RestResource restResource = new RestResource();
+
+				errorCode = updatePort(requestBody, restResource, connection);
+
+				if (errorCode == UncCommonEnum.UncResultCode.UNC_SUCCESS
+						.getValue()) {
+					isCommitRequired = true;
+					LOG.info("VTN Update at UNC is successful.");
+				} else {
+					LOG.error("VTN Update at UNC is failed.");
+				}
+				checkForSpecificErrors(restResource.getInfo());
+			} else {
+				LOG.error("Resource not found error.");
+			}
+
+			/*
+			 * If all processing are OK, the commit all the database transaction
+			 * made for current connection. Otherwise do the roll-back
+			 */
+			if (isCommitRequired) {
+				// connection.commit();
+				setOpenStackConnection(connection);
+				LOG.info("Resource update successful in database.");
+			} else {
+				connection.rollback();
+				LOG.info("Resource update is roll-backed.");
+			}
+
+			/*
+			 * set response, if it is not set during above processing
+			 */
+			if (errorCode != UncResultCode.UNC_SUCCESS.getValue()) {
+				if (getInfo() == null) {
+					createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR
+							.getValue());
+				}
+			}
+
+		} catch (final SQLException exception) {
+			LOG.error(exception, "Internal server error : " + exception);
+			errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+			createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue());
+		} finally {
+			if (connection != null && !isCommitRequired) {
+				try {
+					connection.rollback();
+				} catch (final SQLException e) {
+					LOG.error(e, "Rollback error : " + e);
+				}
+				LOG.info("Free connection...");
+				VtnServiceInitManager.getDbConnectionPoolMap().freeConnection(
+						connection);
+			}
+		}
+		LOG.trace("Complete PortResource#put()");
+		return errorCode;
+	}
+
+	/**
+	 * Perform Filter related operations at UNC
+	 * 
+	 * @param requestBody
+	 *            - OpenStack request body
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param connection
+	 *            - Database Connection instance
+	 * @return - erorrCode, 200 for Success
+	 * @throws SQLException 
+	 */
+	private int updatePort(JsonObject requestBody,
+			RestResource restResource,
+			Connection connection) throws SQLException {
+		int errorCode = UncResultCode.UNC_SUCCESS.getValue();
+		final FlowFilterDao flowFilterDao = new FlowFilterDao();
+		boolean hasFilterIn = true;
+		boolean inputEmpty = false;
+
+		if (!requestBody.has(VtnServiceOpenStackConsts.FILTERS)) {
+			return UncResultCode.UNC_SUCCESS.getValue();
+		}
+
+		Set<String> insertFilterIds = new HashSet<String>();
+		Set<String> deleteFilterIds = new HashSet<String>();
+		JsonArray filters = requestBody
+				.getAsJsonArray(VtnServiceOpenStackConsts.FILTERS);
+		if (filters.size() == 0) {
+			inputEmpty = true;
+		}
+
+		/*
+		 * Delete duplicate flow filter.
+		 */
+		FlowListDao flowListDao = new FlowListDao();
+		FlowListBean flowListBean = new FlowListBean();
+		Iterator<JsonElement> iterator = filters.iterator();
+		while (iterator.hasNext()) {
+			JsonElement element = iterator.next();
+			insertFilterIds.add(element.getAsString());
+
+			// check filter id if exist.
+			flowListBean.setFlName(element.getAsString());
+			if (!flowListDao.isFlowListFound(connection, flowListBean)) {
+				createErrorInfo(
+						UncResultCode.UNC_NOT_FOUND.getValue(),
+						getCutomErrorMessage(
+								UncResultCode.UNC_NOT_FOUND.getMessage(),
+								VtnServiceOpenStackConsts.FILTER_RES_ID,
+								element.getAsString()));
+				LOG.error("Resource not found error(filterId: " + 
+						element.getAsString() + ").");
+				return UncResultCode.UNC_NOT_FOUND.getValue();
+			}
+			
+			LOG.debug("filter_id: %s", element.getAsString());
+		}
+
+		/*
+		 * if the port link with interface of router.
+		 */
+		FlowFilterVrtBean flowFilterVrtBean = new FlowFilterVrtBean();
+		flowFilterVrtBean.setVtnName(tenantId);
+		flowFilterVrtBean.setVbrName(netId);
+		flowFilterVrtBean.setVrtIfName(VtnServiceOpenStackConsts.IF_PREFIX + portId);
+		String vrouter = flowFilterDao.isLinkedWithRouter(connection,
+				flowFilterVrtBean);
+
+		/*
+		 * Get list of filter id that related on port
+		 */
+		List<String>  listFilterIds = null;
+		FlowFilterVbrBean flowFilterVbrBean = new FlowFilterVbrBean();
+		flowFilterVbrBean.setVtnName(tenantId);
+		flowFilterVbrBean.setVbrName(netId);
+		flowFilterVbrBean.setVbrIfName(VtnServiceOpenStackConsts.IF_PREFIX + portId);
+		listFilterIds = flowFilterDao.getFlowFiltersByPort(connection,
+				flowFilterVbrBean, null != vrouter);
+		if (listFilterIds.isEmpty()) {
+			hasFilterIn = false;
+		}
+
+		/*
+		 * find filte id to delete. then filte id to add in deleteFilterIds
+		 */
+		for (String item : listFilterIds) {
+			if(!insertFilterIds.remove(item)) {
+				deleteFilterIds.add(item);
+			}
+		}
+
+		if (!deleteFilterIds.isEmpty()) {
+			int status = -1;
+			if (null != vrouter) {
+				ArrayList<FlowFilterVrtBean> vrouterList = new ArrayList<FlowFilterVrtBean>();
+				for (String filterID : deleteFilterIds) {
+					FlowFilterVrtBean vrtBean = new FlowFilterVrtBean();
+					vrtBean.setVtnName(getTenantId());
+					vrtBean.setVrtName(vrouter);
+					vrtBean.setVrtIfName(VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+					vrtBean.setFlName(filterID);
+					vrouterList.add(vrtBean);
+				}
+
+				// delete db for flow filter.
+				status = flowFilterDao.deleteVrouterFilterInfo(connection,
+						vrouterList);
+			} else {
+				ArrayList<FlowFilterVbrBean> vbridgeList = new ArrayList<FlowFilterVbrBean>();
+				for (String filterID : deleteFilterIds) {
+					FlowFilterVbrBean vbrBean = new FlowFilterVbrBean();
+					vbrBean.setVtnName(getTenantId());
+					vbrBean.setVbrName(getNetId());
+					vbrBean.setVbrIfName(VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+					vbrBean.setFlName(filterID);
+					vbridgeList.add(vbrBean);
+				}
+
+				// delete db for flow filter.
+				status = flowFilterDao.deleteVbridgeFilterInfo(connection,
+						vbridgeList);
+			}
+
+			if (1 == status) {
+				LOG.info("Resource delete successful at database operation.");
+				for (String filterID : deleteFilterIds) {
+					String priority = filterID.substring(5, 9);
+					String seqnum =  String.valueOf((Integer.parseInt(priority, 16)));
+					// send request.
+					errorCode = deleteFlowFilter(restResource,
+							getTenantId(), getNetId(),
+							VtnServiceOpenStackConsts.IF_PREFIX + getPortId(),
+							seqnum);
+					if (UncResultCode.UNC_SUCCESS.getValue() != errorCode) {
+						LOG.error("Failed to delete flow filter entry("
+								+ filterID + ") at UNC.");
+						return errorCode;
+					}
+				}
+				
+				if (inputEmpty) {
+					// send request.
+					errorCode = deleteFlowFilterIn(restResource, getTenantId(),
+							getNetId(),
+							VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+					if (UncResultCode.UNC_SUCCESS.getValue() != errorCode) {
+						LOG.error("Failed to delete flow filter in at UNC.");
+						return errorCode;
+					}
+				}
+				
+			} else {
+				LOG.error("Failed to delete Resource(filter for interface "
+						+ "of vbridge) at database operation.");
+				errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+			}
+		}
+
+		if (!insertFilterIds.isEmpty()) {
+			if (!hasFilterIn) {
+				/*
+				 * Create request body for type of filter creation
+				 */
+				JsonObject flowFilterInRequestBody = new JsonObject();
+				flowFilterInRequestBody.add(VtnServiceJsonConsts.FLOWFILTER,
+											new JsonObject());
+				flowFilterInRequestBody
+						.get(VtnServiceJsonConsts.FLOWFILTER)
+						.getAsJsonObject()
+						.addProperty(VtnServiceJsonConsts.FFTYPE,
+								VtnServiceJsonConsts.IN);
+
+				// send request.
+				errorCode = createFlowFilterIn(requestBody, restResource,
+						flowFilterInRequestBody);
+				
+				if (UncResultCode.UNC_SUCCESS.getValue() != errorCode) {
+					LOG.error("Failed to create type(in) of flow filter at UNC.");
+					return errorCode;
+				}
+				LOG.info("filter in Creation at UNC is successful.");
+			}
+
+			int status = -1;
+			if (null != vrouter) {
+				ArrayList<FlowFilterVrtBean> vrouterList = new ArrayList<FlowFilterVrtBean>();
+				for (String filterID : insertFilterIds) {
+					FlowFilterVrtBean vrtBean = new FlowFilterVrtBean();
+					vrtBean.setVtnName(getTenantId());
+					vrtBean.setVrtName(vrouter);
+					vrtBean.setVrtIfName(VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+					vrtBean.setVbrName(getNetId());
+					vrtBean.setFlName(filterID);
+					vrouterList.add(vrtBean);
+				}
+
+				// Insert db for flow filter.
+				status = flowFilterDao.insertVrouterFilterInfo(connection,
+						vrouterList);
+			} else {
+				ArrayList<FlowFilterVbrBean> vbridgeList = new ArrayList<FlowFilterVbrBean>();
+				for (String filterID : insertFilterIds) {
+					FlowFilterVbrBean vbrBean = new FlowFilterVbrBean();
+					vbrBean.setVtnName(getTenantId());
+					vbrBean.setVbrName(getNetId());
+					vbrBean.setVbrIfName(VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+					vbrBean.setFlName(filterID);
+					vbridgeList.add(vbrBean);
+				}
+
+				// Insert db for flow filter.
+				status = flowFilterDao.insertVbridgeFilterInfo(connection,
+						vbridgeList);
+			}
+
+			if (1 == status) {
+				LOG.info("Resource insertion successful at database "
+						+ "operation.");
+				for (String filterID : insertFilterIds) {
+					/*
+					 * Create request body for flow filter creation
+					 */
+					String action = VtnServiceOpenStackConsts.S_PASS;
+					if (VtnServiceOpenStackConsts.X_DROP == filterID
+							.charAt(4)) {
+						action = VtnServiceOpenStackConsts.S_DROP;
+					}
+
+					String priority = filterID.substring(5, 9);
+
+					JsonObject flowFilterRequestBody = new JsonObject();
+					flowFilterRequestBody.add(
+							VtnServiceJsonConsts.FLOWFILTERENTRY,
+							new JsonObject());
+					JsonObject flowfilter = flowFilterRequestBody
+							.getAsJsonObject(VtnServiceJsonConsts.FLOWFILTERENTRY);
+					flowfilter
+							.addProperty(VtnServiceJsonConsts.SEQNUM,
+									String.valueOf((Integer.parseInt(
+											priority, 16))));
+					flowfilter.addProperty(VtnServiceJsonConsts.FLNAME,
+							filterID);
+					flowfilter.addProperty(VtnServiceJsonConsts.ACTIONTYPE,
+							action);
+					flowfilter.add(VtnServiceJsonConsts.REDIRECTDST,
+							new JsonObject());
+
+					// send request.
+					errorCode = createFlowFilter(requestBody, restResource,
+							flowFilterRequestBody);
+					if (UncResultCode.UNC_SUCCESS.getValue() != errorCode) {
+						LOG.error("Failed to create flow filter entry("
+								+ filterID + ") at UNC.");
+						return errorCode;
+					}
+				}
+			} else {
+				LOG.error("Failed to insert Resource(filter for interface "
+						+ "of vbridge) at database operation.");
+				errorCode = UncResultCode.UNC_SERVER_ERROR.getValue();
+				return errorCode;
+			}
+		}
+
+		return errorCode;
+	}
+
+	/**
+	 * Create flow filter in at UNC
+	 * 
+	 * @param requestBody
+	 *            - OpenStack request body
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param flowFilterInRequestBody
+	 *            - Basic request body
+	 * @return - erorrCode, 200 for Success
+	 */
+	private int createFlowFilterIn(JsonObject requestBody,
+			RestResource restResource, JsonObject flowFilterInRequestBody) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getTenantId());
+		sb.append(VtnServiceOpenStackConsts.VBRIDGE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getNetId());
+		sb.append(VtnServiceOpenStackConsts.INTERFACE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_PATH);
+
+		restResource.setPath(sb.toString());
+		restResource.setSessionID(getSessionID());
+		restResource.setConfigID(getConfigID());
+		return restResource.post(flowFilterInRequestBody);
+	}
+
+	/**
+	 * Create flow filter at UNC
+	 * 
+	 * @param requestBody
+	 *            - OpenStack request body
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param flowfilterEntryRequest
+	 *            - Basic request body
+	 * @return - erorrCode, 200 for Success
+	 */
+	private int createFlowFilter(JsonObject requestBody,
+			RestResource restResource, JsonObject flowfilterEntryRequest) {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getTenantId());
+		sb.append(VtnServiceOpenStackConsts.VBRIDGE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(getNetId());
+		sb.append(VtnServiceOpenStackConsts.INTERFACE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(VtnServiceOpenStackConsts.IF_PREFIX + getPortId());
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_PATH);
+		sb.append(VtnServiceOpenStackConsts.IN_PATH);
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_ENTRY_PATH);
+
+		restResource.setPath(sb.toString());
+		restResource.setSessionID(getSessionID());
+		restResource.setConfigID(getConfigID());
+		return restResource.post(flowfilterEntryRequest);
+	}
+
+	/**
+	 * Delete Flow Filter Entry at UNC
+	 * 
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param vtnName
+	 *            - VTN name
+	 * @param vbrName
+	 *            - vBridge name
+	 * @param ifName
+	 *            - Interface name
+	 * @param seqNum
+	 *            - Sequence number
+	 * @return - erorrCode, 200 for Success
+	 */
+	private int deleteFlowFilter(RestResource restResource,
+			String vtnName, String vbrName, String ifName, String seqNum) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(vtnName);
+		sb.append(VtnServiceOpenStackConsts.VBRIDGE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(vbrName);
+		sb.append(VtnServiceOpenStackConsts.INTERFACE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(ifName);
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_PATH);
+		sb.append(VtnServiceOpenStackConsts.IN_PATH);
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_ENTRY_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(seqNum);
+
+		restResource.setPath(sb.toString());
+		restResource.setSessionID(getSessionID());
+		restResource.setConfigID(getConfigID());
+
+		return restResource.delete();
+
+	}
+
+	/**
+	 * Delete flow filter in at UNC
+	 * 
+	 * @param restResource
+	 *            - RestResource instance
+	 * @param vtnName
+	 *            - VTN name
+	 * @param vbrName
+	 *            - vBridge name
+	 * @param ifName
+	 *            - Interface name
+	 * @return - erorrCode, 200 for Success
+	 */
+	private int deleteFlowFilterIn(RestResource restResource, String vtnName,
+			String vbrName, String ifName) {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(VtnServiceOpenStackConsts.VTN_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(vtnName);
+		sb.append(VtnServiceOpenStackConsts.VBRIDGE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(vbrName);
+		sb.append(VtnServiceOpenStackConsts.INTERFACE_PATH);
+		sb.append(VtnServiceOpenStackConsts.URI_CONCATENATOR);
+		sb.append(ifName);
+		sb.append(VtnServiceOpenStackConsts.FLOWFILTER_PATH);
+		sb.append(VtnServiceOpenStackConsts.IN_PATH);
+
+		restResource.setPath(sb.toString());
+		restResource.setSessionID(getSessionID());
+		restResource.setConfigID(getConfigID());
+		return restResource.delete();
 	}
 }

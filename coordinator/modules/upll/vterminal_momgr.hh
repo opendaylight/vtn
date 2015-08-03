@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -43,24 +43,24 @@ class VterminalMoMgr : public VnodeMoMgr {
    * @retval         false                input key is invalid.
    */
   bool IsValidKey(void *key,
-      uint64_t index);
+      uint64_t index, MoMgrTables tbl = MAINTBL);
   /**
    * @brief         This method invoke when the VTN merge hapeening between
-   *                Running and DT import. This will checks the vnode name 
-   *                unique or not. 
-   *              
+   *                Running and DT import. This will checks the vnode name
+   *                unique or not.
+   *
    * @param[in]     keytype       UNC KEY TYPE
-   * @param[in/out] ctrlr_id      Controller ID                    
-   * @param[in]     conflict_ckv  key and value structure 
+   * @param[in/out] ctrlr_id      Controller ID
+   * @param[in]     conflict_ckv  key and value structure
    * @param[in]     dal           Pointer to the DalDmlIntf(DB Interface)
    * @param[in]     import_type   specifies the import_type.
-   * 
+   *
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
    * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
    * @retval  UPLL_RC_ERR_MERGE_CONFLICT         Semantic check error.
-   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
    */
   upll_rc_t MergeValidate(unc_key_type_t keytype,
       const char *ctrlr_id,
@@ -91,8 +91,7 @@ class VterminalMoMgr : public VnodeMoMgr {
    * @retval UPLL_RC_ERR_CFG_SEMANTIC           Referenced
    * @retval result_code                        Generic failure/DB error
    */
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-      upll_keytype_datatype_t dt_type,
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
       DalDmlIntf *dmi) {
     UPLL_FUNC_TRACE;
     return UPLL_RC_SUCCESS;
@@ -115,8 +114,8 @@ class VterminalMoMgr : public VnodeMoMgr {
   /**
    * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
    *
-   * @param[in/out]  okey                 pointer to output ConfigKeyVal 
-   * @param[in]      parent_key           pointer to the configkeyval from 
+   * @param[in/out]  okey                 pointer to output ConfigKeyVal
+   * @param[in]      parent_key           pointer to the configkeyval from
    * which the output configkey val is initialized.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -144,15 +143,15 @@ class VterminalMoMgr : public VnodeMoMgr {
   static BindInfo key_vterminal_maintbl_bind_info[];
   static BindInfo key_vterminal_renametbl_update_bind_info[];
   /**
-   * @brief  Gets the valid array position of the variable in the value 
-   *         structure from the table in the specified configuration  
+   * @brief  Gets the valid array position of the variable in the value
+   *         structure from the table in the specified configuration
    *
-   * @param[in]     val      pointer to the value structure 
+   * @param[in]     val      pointer to the value structure
    * @param[in]     indx     database index for the variable
-   * @param[out]    valid    position of the variable in the valid array - 
+   * @param[out]    valid    position of the variable in the valid array -
    *                          NULL if valid does not exist.
    * @param[in]     dt_type  specifies the configuration
-   * @param[in]     tbl      specifies the table containing the given value 
+   * @param[in]     tbl      specifies the table containing the given value
    *
    */
   upll_rc_t GetValid(void *val,
@@ -176,12 +175,12 @@ class VterminalMoMgr : public VnodeMoMgr {
 
   /**
    * @brief  Compares the valid value between two database records.
-   * 	     if both the values are same, update the valid flag for 
-   * 	     corresponding attribute as invalid in the first record. 
+   * 	     if both the values are same, update the valid flag for
+   * 	     corresponding attribute as invalid in the first record.
    *
    * @param[in/out]  val1   first record value instance.
    * @param[in]      val2   second record value instance.
-   * @param[in]      audit  if true, CompareValidValue called from audit 
+   * @param[in]      audit  if true, CompareValidValue called from audit
    *  			    process..
    *
    */
@@ -191,9 +190,9 @@ class VterminalMoMgr : public VnodeMoMgr {
   /**
    * @brief swap the value after read operation in Import table
    *
-   * @param[in]  ikey       ConfigKeyVal pointer 
+   * @param[in]  ikey       ConfigKeyVal pointer
    * @param[in]  okey       pointer to output ConfigKeyVal
-   * @param[in]  dmi        DalDmlIntf pointer 
+   * @param[in]  dmi        DalDmlIntf pointer
    * @param[in]  ctrlr      pointer to the controller name
    * @param[in]  no_rename  rename check flag
    *
@@ -239,7 +238,7 @@ class VterminalMoMgr : public VnodeMoMgr {
    *                               (first 8 fields of input request structure).
    * @param[in]  ikey              ikey contains key and value structure.
    * @param[in]  ctrlr_id          Controller id associated with ikey.
-   *  
+   *
    * @retval  UPLL_RC_SUCCESS              Validation succeeded.
    * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
    * @retval  UPLL_RC_ERR_INVALID_OPTION1  Option1 is not valid.
@@ -306,7 +305,7 @@ class VterminalMoMgr : public VnodeMoMgr {
    */
   upll_rc_t ValidateVterminalRenameValue(val_rename_vterm *vterm_rename);
   /**
-   * @Brief  compares controller id and domain id before 
+   * @Brief  compares controller id and domain id before
    *         updating the value to DB.
    *
    * @param[in]  ikey  ikey contains key and value structure.
@@ -318,12 +317,12 @@ class VterminalMoMgr : public VnodeMoMgr {
   upll_rc_t CtrlrIdAndDomainIdUpdationCheck(ConfigKeyVal *ikey,
       ConfigKeyVal *okey);
   /**
-   * @brief  Duplicates the input configkeyval including the key and val.  
+   * @brief  Duplicates the input configkeyval including the key and val.
    * based on the tbl specified.
    *
    * @param[in]  okey   Output Configkeyval - allocated within the function
    * @param[in]  req    Input ConfigKeyVal to be duplicated.
-   * @param[in]  tbl    specifies if the val structure belongs to the main 
+   * @param[in]  tbl    specifies if the val structure belongs to the main
    * table/ controller table or rename table.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -334,11 +333,11 @@ class VterminalMoMgr : public VnodeMoMgr {
       MoMgrTables tbl = MAINTBL);
   /**
    * @brief  Allocates for the specified val in the given configuration in the
-   *         specified table.   
+   *         specified table.
    *
    * @param[in]  ck_val   Reference pointer to configval structure allocated.
-   * @param[in]  dt_type  specifies the configuration candidate/running/state 
-   * @param[in]  tbl      specifies if the corresponding table is the  main 
+   * @param[in]  dt_type  specifies the configuration candidate/running/state
+   * @param[in]  tbl      specifies if the corresponding table is the  main
    *                      table / controller table or rename table.
    *
    * @retval     UPLL_RC_SUCCESS      Successfull completion.
@@ -349,10 +348,10 @@ class VterminalMoMgr : public VnodeMoMgr {
       MoMgrTables tbl = MAINTBL);
 
   /**
-   * @brief      Method to get a configkeyval of the parent keytype 
+   * @brief      Method to get a configkeyval of the parent keytype
    *
-   * @param[in/out]  okey           pointer to parent ConfigKeyVal 
-   * @param[in]      ikey           pointer to the child configkeyval from 
+   * @param[in/out]  okey           pointer to parent ConfigKeyVal
+   * @param[in]      ikey           pointer to the child configkeyval from
                                     which the parent configkey val is obtained.
    *
    * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -456,10 +455,10 @@ class VterminalMoMgr : public VnodeMoMgr {
   upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey,
       ConfigKeyVal *ikey);
 
-  /** @brief     To convert the value structure read from DB to 
+  /** @brief     To convert the value structure read from DB to
    *            VTNService during READ operations
-   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure             
-   * 
+   * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure
+   *
    * @retval  UPLL_RC_SUCCESS                    Completed successfully.
    * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
    *
@@ -470,8 +469,8 @@ class VterminalMoMgr : public VnodeMoMgr {
   /** @brief     This function validates the vTerminal name
    *             Exists on ru_vbr_if_tbl as vexternal during
    *             partial import
-   * @param[out] ikey      Which vTerminal violates the condidition 
-   * 
+   * @param[out] ikey      Which vTerminal violates the condidition
+   *
    * @retval  UPLL_RC_SUCCESS             No Record exists.
    * @retval  UPLL_RC_ERR_MERGE_CONFLICT  vTermianl exists in running vbr_if_tbl.
    *
@@ -479,10 +478,9 @@ class VterminalMoMgr : public VnodeMoMgr {
   upll_rc_t PartialMergeValidate(unc_key_type_t keytype,
                                  const char *ctrlr_id,
                                  ConfigKeyVal *ikey,
-                                 DalDmlIntf *dmi); 
-
+                                 DalDmlIntf *dmi);
 };
-}
-}
-}
+}  //  namespace kt_momgr
+}  //  namespace upll
+}  //  namespace unc
 #endif

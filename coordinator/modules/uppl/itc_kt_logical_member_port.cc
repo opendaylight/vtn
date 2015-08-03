@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,9 @@
 #include "itc_kt_logical_member_port.hh"
 #include "itc_kt_logicalport.hh"
 #include "itc_read_request.hh"
+#include "itc_kt_port.hh"
+#include "itc_kt_port_neighbor.hh"
+#include "ipct_util.hh"
 using unc::uppl::PhysicalLayer;
 /** Constructor
  * @Description : This function initializes member variables
@@ -132,7 +135,7 @@ UncRespCode Kt_LogicalMemberPort::DeleteKeyInstance(
   if (delete_db_status != ODBCM_RC_SUCCESS) {
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
       delete_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
@@ -310,7 +313,8 @@ UncRespCode Kt_LogicalMemberPort::ReadBulkInternal(
       db_conn, kt_logical_member_port_dbtableschema,
       key_struct, NULL,
       UNC_OP_READ_BULK, data_type, 0, 0,
-      primary_key_operation_list, old_val_struct);
+      primary_key_operation_list, old_val_struct,
+      NOTAPPLIED, false, PFC_FALSE);
   uint32_t no_of_query = 1;
   vector<ODBCMOperator>:: iterator iter =
       find(primary_key_operation_list.begin(),
@@ -504,8 +508,7 @@ UncRespCode Kt_LogicalMemberPort::PerformSemanticValidation(
       pfc_log_error("DB Access failure");
       status = KeyStatus;
     } else if (KeyStatus != UNC_RC_SUCCESS) {
-      pfc_log_info("LMP key does not exist and"
-          " hence read/delete/update oper not allowed");
+      pfc_log_info("key not found,U/D/R opern not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_debug("key exist, update/del/read oper allowed");
@@ -513,8 +516,7 @@ UncRespCode Kt_LogicalMemberPort::PerformSemanticValidation(
   }
   if (operation == UNC_OP_CREATE) {
     if (KeyStatus == UNC_RC_SUCCESS) {
-      pfc_log_info("LMP key already exist"
-          " hence create oper not allowed");
+      pfc_log_info("Key exists,CREATE not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else if (KeyStatus == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
@@ -620,7 +622,7 @@ UncRespCode Kt_LogicalMemberPort::IsKeyExists(
   } else if (check_db_status == ODBCM_RC_ROW_EXISTS) {
     pfc_log_debug("DB returned success for Row exists");
   } else {
-    pfc_log_info("DB Returned failure for IsRowExists");
+    pfc_log_debug("DB Returned failure for IsRowExists");
     check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   pfc_log_debug("check_status = %d", check_status);
@@ -755,7 +757,7 @@ void Kt_LogicalMemberPort::PopulateDBSchemaForKtTable(
                   domain_name.c_str(),
                   port_id.c_str(),
                   switch_id.c_str(),
-                  physical_port_id.c_str(), 
+                  physical_port_id.c_str(),
                   operation_type);
   return;
 }
@@ -916,7 +918,7 @@ UncRespCode Kt_LogicalMemberPort::PerformRead(
     }
     return UNC_RC_SUCCESS;
   }
-  if (option2 != UNC_OPT2_NONE) {
+  if (option2 != UNC_OPT2_NONE && option2 != UNC_OPT2_NEIGHBOR) {
     pfc_log_error("Invalid option2 specified for read operation");
     rsh.result_code = UNC_UPPL_RC_ERR_INVALID_OPTION2;
     int err = PhyUtil::sessOutRespHeader(sess, rsh);
@@ -963,16 +965,81 @@ UncRespCode Kt_LogicalMemberPort::PerformRead(
     for (unsigned int index = 0;
         index < vect_logical_mem_port.size();
         ++index) {
-      sess.addOutput((uint32_t)UNC_KT_LOGICAL_MEMBER_PORT);
-      sess.addOutput((key_logical_member_port_t)vect_logical_mem_port[index]);
+      err = sess.addOutput((uint32_t)UNC_KT_LOGICAL_MEMBER_PORT);
+      err |= sess.addOutput(
+          (key_logical_member_port_t)vect_logical_mem_port[index]);
+      if (err != 0) {
+        pfc_log_error("Failure in addOutput");
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+      }
+      if (option1 == UNC_OPT1_NORMAL && option2 ==  UNC_OPT2_NONE) {
+        // Do nothing, already added above
+      } else if (option1 == UNC_OPT1_NORMAL && option2 == UNC_OPT2_NEIGHBOR) {
+        // Getting the neighbor from link table
+        Kt_Port port_kt;
+        key_port_t port_key;
+        memset(&port_key, 0, sizeof(key_port_t));
+        val_port_st_neighbor obj_neighbor;
+        memset(&obj_neighbor, '\0', sizeof(val_port_st_neighbor));
+        memcpy(port_key.sw_key.switch_id,
+               vect_logical_mem_port[index].switch_id,
+               sizeof(vect_logical_mem_port[index].switch_id));
+        memcpy(port_key.sw_key.ctr_key.controller_name,
+                    vect_logical_mem_port[index].logical_port_key.
+                    domain_key.ctr_key.controller_name,
+                    sizeof(vect_logical_mem_port[index].logical_port_key.
+                    domain_key.ctr_key.controller_name));
+        memcpy(port_key.port_id,
+               vect_logical_mem_port[index].physical_port_id,
+               sizeof(vect_logical_mem_port[index].physical_port_id));
+        val_lm_port_st_neighbor_t  val_lmp_neigh;
+        // Setting connected neighbor valid bits as INVALID
+        memset(&val_lmp_neigh , '\0', sizeof(val_lm_port_st_neighbor_t));
+        val_lmp_neigh.valid[kIdxLmPortConnectedSwitchId] = UNC_VF_INVALID;
+        val_lmp_neigh.valid[kIdxLmPortConnectedPortId] = UNC_VF_INVALID;
+        val_lmp_neigh.valid[kIdxLmPortConnectedControllerId] = UNC_VF_INVALID;
+        read_status = port_kt.ReadNeighbor(db_conn,
+                                   &port_key,
+                                   NULL,
+                                   data_type,
+                                   obj_neighbor);
+        if (read_status == UNC_RC_SUCCESS) {
+          memcpy(&val_lmp_neigh.port,
+                 &obj_neighbor.port, sizeof(obj_neighbor.port));
+          memcpy(val_lmp_neigh.connected_switch_id,
+                 obj_neighbor.connected_switch_id,
+                 sizeof(obj_neighbor.connected_switch_id));
+          memcpy(val_lmp_neigh.connected_port_id,
+                 obj_neighbor.connected_port_id,
+                 sizeof(obj_neighbor.connected_port_id));
+          memcpy(val_lmp_neigh.connected_controller_id,
+                 obj_neighbor.connected_controller_id,
+                 sizeof(obj_neighbor.connected_controller_id));
+          memcpy(val_lmp_neigh.valid, obj_neighbor.valid,
+                    sizeof(obj_neighbor.valid));
+        } else {
+          // valid bit is set as invalid
+        }
+        //  Fill the session output for read neighbour
+        err  = sess.addOutput(val_lmp_neigh);
+        if (err != 0) {
+          pfc_log_error("Failure in addOutput");
+          return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+        }
+        pfc_log_debug(" %s", IpctUtil::get_string(val_lmp_neigh).c_str());
+      }
       if (index < vect_logical_mem_port.size() -1) {
         sess.addOutput();  // Seperator
       }
     }
   } else {
     pfc_log_info("Read Operation failed with %d", read_status);
-    sess.addOutput((uint32_t)UNC_KT_LOGICAL_MEMBER_PORT);
-    sess.addOutput(*obj_key_logical_member_port);
+    err = sess.addOutput((uint32_t)UNC_KT_LOGICAL_MEMBER_PORT);
+    err |= sess.addOutput(*obj_key_logical_member_port);
+    if (err != 0) {
+      pfc_log_error("Failure in addOutput");
+      return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+    }
   }
   return UNC_RC_SUCCESS;
 }
@@ -995,8 +1062,7 @@ UncRespCode Kt_LogicalMemberPort::ReadLogicalMemberPortValFromDB(
     uint32_t data_type,
     uint32_t operation_type,
     uint32_t &max_rep_ct,
-    vector<key_logical_member_port_t> &logical_mem_port,
-    pfc_bool_t is_state) {
+    vector<key_logical_member_port_t> &logical_mem_port) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
     return UNC_RC_SUCCESS;
@@ -1017,7 +1083,8 @@ UncRespCode Kt_LogicalMemberPort::ReadLogicalMemberPortValFromDB(
       db_conn, kt_logical_member_port_dbtableschema,
       key_struct, NULL,
       operation_type, data_type, 0, 0,
-      prim_keys_operator, old_val_struct);
+      prim_keys_operator, old_val_struct,
+      NOTAPPLIED, false, PFC_FALSE);
   pfc_log_debug("Operation type is %d", operation_type);
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
@@ -1163,7 +1230,7 @@ UncRespCode Kt_LogicalMemberPort::ReadInternal(
     uint32_t operation_type) {
   if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
       operation_type != UNC_OP_READ_SIBLING_BEGIN) {
-    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    pfc_log_trace("This function not allowed for read next/bulk/count");
     return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
   pfc_log_debug("Processing Kt_LogicalMemberPort::ReadInternal");
@@ -1187,7 +1254,8 @@ UncRespCode Kt_LogicalMemberPort::ReadInternal(
       "ReadLMP returned %d with resp size %"
       PFC_PFMT_SIZE_T, read_status, logical_mem_port.size());
     if (firsttime) {
-       pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+       pfc_log_trace(
+           "Clearing key_val and val_struct vectors for the first time");
        key_val.clear();
        firsttime = false;
     }
@@ -1205,14 +1273,14 @@ UncRespCode Kt_LogicalMemberPort::ReadInternal(
     if ((logical_mem_port.size() == UPPL_MAX_REP_CT) &&
                      (operation_type != UNC_OP_READ)) {
       pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
-                    operation_type,key_val.size());
+                    operation_type, key_val.size());
       key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
       operation_type = UNC_OP_READ_SIBLING;
       continue;
     } else {
       break;
     }
-  } while(true);
+  } while (true);
   return read_status;
 }
 

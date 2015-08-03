@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2014 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -125,14 +125,15 @@ ipc_struct key_vbr {
 };
 
 ipc_struct val_vbr {
-  UINT8    valid[5];
+  UINT8    valid[6];
   UINT8    cs_row_status;
-  UINT8    cs_attr[5];
+  UINT8    cs_attr[6];
   UINT8    controller_id[32];
   UINT8    domain_id[32];
   UINT8    vbr_description[128];
   IPV4     host_addr;
   UINT8    host_addr_prefixlen;
+  UINT32   label;
 };
 
 ipc_struct val_rename_vbr {
@@ -292,13 +293,13 @@ ipc_struct key_static_ip_route {
   IPV4      dst_addr;
   UINT8     dst_addr_prefixlen;
   IPV4      next_hop_addr;
-  UINT8     nwm_name[32];
 };
 
 ipc_struct val_static_ip_route {
-  UINT8     valid[1];
+  UINT8     valid[2];
   UINT8     cs_row_status;
-  UINT8     cs_attr[1]; 
+  UINT8     cs_attr[2]; 
+  UINT8     nwm_name[32];
   UINT16    group_metric;
 };
 
@@ -501,16 +502,17 @@ ipc_struct key_vlink{
 };
 
 ipc_struct val_vlink{
-  UINT8   valid[8];
+  UINT8   valid[9];
   UINT8   cs_row_status;
-  UINT8   cs_attr[8];
+  UINT8   cs_attr[9];
   UINT8   admin_status;
   UINT8   vnode1_name[32];
   UINT8   vnode1_ifname[32];
   UINT8   vnode2_name[32];
   UINT8   vnode2_ifname[32];
   UINT8   boundary_name[32];
-  UINT16  vlan_id;
+  UINT8   label_type;
+  UINT32  label;
   UINT8   description[128];
 };
 
@@ -1013,4 +1015,300 @@ ipc_struct  key_vterm_if_flowfilter_entry {
 ipc_struct key_vtermif_policingmap_entry {
   key_vterm_if    vterm_if_key;          # vTerminal Interface key
   UINT8           sequence_num;          # sequence number
+};
+
+#
+# vBridge portmap key
+#
+ipc_struct key_vbr_portmap {
+  key_vbr         vbr_key;               # vBridge key
+  UINT8           portmap_id[32];        # portmap identifier
+};
+
+
+#
+# vBridge portmap value
+#
+ipc_struct val_vbr_portmap {
+  UINT8          valid[5];
+  UINT8          cs_row_status;
+  UINT8          cs_attr[5];
+  UINT8          controller_id[32];       # controller identifier
+  UINT8          domain_id[32];           # domain identifer
+  UINT8          logical_port_id[320];    # logical port identifier
+  UINT8          label_type;              # label type
+  UINT32         label;                   # label
+};
+
+#
+# vBridge portmap status value
+#
+ipc_struct val_vbr_portmap_st {
+  UINT8   valid[1];
+  UINT8   oper_status;
+};
+
+
+#
+# unified network key
+#
+ipc_struct key_unified_nw {
+  UINT8       unified_nw_id[32];          # unified network identifier
+};
+
+#
+# unified network value
+#
+ipc_struct val_unified_nw  {
+  UINT8       valid[2];                   # valid flag
+  UINT8       cs_row_status;              # object configuration status
+  UINT8       cs_attr[2];                 # attributes configuration status
+  UINT8       routing_type;               # routing type
+  UINT8       is_default;                 # is default
+};
+
+#
+# unified network spine key
+#
+ipc_struct key_unw_spine_domain {
+  key_unified_nw  unw_key;               # unified network key
+  UINT8           unw_spine_id[32];      # unified network spine identifier
+}; 
+
+#
+# unified network spine value
+#
+ipc_struct val_unw_spine_domain {
+  UINT8     valid[3];                    # valid flag
+  UINT8     cs_row_status;               # object configuration status
+  UINT8     cs_attr[3];                  # attributes configuration status
+  UINT8     spine_controller_id[32];     # spine controller identifier
+  UINT8     spine_domain_id[32];         # spine domain identifier
+  UINT8     unw_label_id[32];            # unified network label identifier
+};
+
+#
+# unified network spine domain st value
+#
+ipc_struct val_unw_spine_domain_st {
+  UINT8        valid[3];                    # valid flag
+  UINT32       max_count;                   # maximum count
+  UINT32       used_count;                  # used label count
+  UINT8        alarm_status;                # alarm status
+};
+
+
+#
+# unified network spine domain assigned label value
+#
+ipc_struct val_unw_spine_domain_assigned_label {
+  UINT8        valid[3];                    # valid flag
+  UINT32       label;                       # label value
+  UINT8        vtn_id[32];                  # VTN name
+  UINT8        vnode_id[32];                # vNode name
+};
+
+#
+# unified network spine domain fdb entry value
+#
+ipc_struct val_unw_spine_domain_fdbentry {
+  UINT8        valid[7];                    # valid flag
+  UINT64       max_count;                   # maximum count
+  UINT8        max_switch_id[256];          # max switch identifier
+  UINT64       min_count;                   # minimum count
+  UINT8        min_switch_id[256];          # min switch identifier
+  UINT64       avg_count;                   # average count
+  UINT32       num_of_switches;             # number of switches
+  UINT32       vtn_count;                   # VTN count
+};
+
+#
+# unified network spine domain fdb entry vtn value
+#
+ipc_struct val_unw_spine_domain_fdbentry_vtn {
+  UINT8        valid[7];                    # valid flag
+  UINT8        vtn_id[32];                  # VTN identifier
+  UINT32       vlan_id;                     # vlan identifier
+  UINT64       max_count;                   # maximum count 
+  UINT8        max_switch_id[256];          # max switch identifier
+  UINT64       min_count;                   # minimum count
+  UINT8        min_switch_id[256];          # min switch identifier
+  UINT64       avg_count;                   # average count
+};
+
+#
+# unified network label key
+#
+ipc_struct key_unw_label {
+  key_unified_nw  unified_nw_key;           # unified network key
+  UINT8           unw_label_id[32];         # unified network label identifier
+};
+
+
+#
+# unified network label value
+#
+ipc_struct val_unw_label {
+  UINT8        valid[3];                    # valid flag
+  UINT8        cs_row_status;               # object configuration status
+  UINT8        cs_attr[3];                  # attributes configuration status
+  UINT32       max_count;                   # maximum count
+  UINT32       raising_threshold;           # raising threshold
+  UINT32       falling_threshold;           # falling threshold
+}; 
+
+#
+# unified network label range key
+#
+ipc_struct key_unw_label_range {
+  key_unw_label  unw_label_key;             # unified network label key
+  UINT32         range_max;                 # maximum range
+  UINT32         range_min;                 # minimum range
+};
+
+#
+# unified network label range value
+#
+ipc_struct val_unw_label_range {                                                 
+  UINT8          cs_row_status;             # object configuration status
+};
+
+#
+# VTN unified key
+#
+ipc_struct key_vtn_unified {
+  key_vtn        vtn_key;                   # VTN key
+  UINT8          unified_nw_id[32];         # unified network identifier
+}; 
+
+#
+# VTN unified value
+#
+ipc_struct val_vtn_unified {
+  UINT8          valid[1];                  # valid flag
+  UINT8          cs_row_status;             # object configuration status
+  UINT8          cs_attr[1];                # attributes configuration status
+  UINT8          spine_id[32];              # unified network spine identifier
+};
+
+#
+# VTN flooding path key
+#
+ipc_struct key_vtn_flooding_path {
+  key_vtn        vtn_key;                   # VTN key
+  UINT8          vnode_id[32];              # vNode name
+}; 
+
+#
+# VTN flooding path st value
+#
+ipc_struct val_vtn_flooding_path_st {
+  UINT8          valid[5];                  # valid flag   
+  UINT8          controller_id[32];         # controller identifier
+  UINT8          domain_id[32];             # domain identifier
+  UINT32         flooding_path_id;          # flooding path identifier
+  UINT64         last_updated;              # last updated time
+  UINT32         tree_count;                # number of tree information
+};
+
+#
+# VTN flooding path tree value
+#
+ipc_struct val_vtn_flooding_path_tree {
+  UINT8          valid[2];                  # valid flag
+  UINT8          root_switch_id[256];       # root switch identifier
+  UINT32         path_count;                # number of path information
+};
+
+#
+# VTN flooding path path value
+#
+ipc_struct val_vtn_flooding_path_path {
+  UINT8          valid[2];                  # valid flag
+  UINT8          member_switch_id[256];     # member switch identifier
+  UINT32         link_count;                # nummber of link count
+};
+
+#
+# VTN flooding path link value
+#
+ipc_struct val_vtn_flooding_path_link {
+  UINT8          valid[5];                  # valid flag
+  UINT8          src_switch_id[256];        # source switch identifier
+  UINT8          src_port[32];              # source port
+  UINT8          dest_switch_id[256];       # destination switch identifier
+  UINT8          dest_port[32];             # destination port
+  UINT32         link_weight;               # link weight
+};
+
+#
+# vBridge expanding value
+#
+ipc_struct val_vbr_expand {
+  UINT8    valid[6];
+  UINT8    vbridge_name[40];                 # converted vBridge name
+  UINT8    controller_id[32];                # controller identifier
+  UINT8    domain_id[32];                    # domain identifier
+  UINT32   label;                            # vBID
+  UINT8    controller_vtn_name[32];          # controller VTN identifier
+  UINT32   controller_vtn_label;             # L-VTNID
+};
+
+#
+# vLink expanding value
+#
+ipc_struct val_vlink_expand {
+  UINT8   valid[8];
+  UINT8   vlink_name[32];                   # vLink identifier
+  UINT8   vnode1_name[40];                  # vNode1 identifier
+  UINT8   vnode1_ifname[32];                # vNode1 interface identifier
+  UINT8   vnode2_name[40];                  # vNode2 identifer
+  UINT8   vnode2_ifname[32];                # vNode2 interface identifer
+  UINT8   boundary_name[32];                # boundary name
+  UINT8   label_type;                       # label type
+  UINT32  label;                            # label
+};
+
+#
+# vBridge portmap expanding value
+# 
+ipc_struct val_vbr_portmap_expand {
+  UINT8   valid[4];
+  UINT8   portmap_id[32];                   # portmap identifier
+  UINT8   logical_port_id[320];             # logical port identifier
+  UINT8   label_type;                       # label type
+  UINT32  label;                            # label
+};
+
+#
+# vBridge Interface expanding value
+#
+ipc_struct val_vbr_if_expand {
+  UINT8   valid[4];
+  UINT8   if_name[32];                      # Interface Identifier
+  UINT8   connected_vnode_name[40];         # connected vNode Identifier
+  UINT8   connected_if_name[32];            # connected Interface Identifier
+  UINT8   connected_vlink_name[32];         # connected vLink Identifier
+};
+
+#
+# vTunnel expanding value
+#
+ipc_struct val_vtunnel_expand {
+  UINT8    valid[4];
+  UINT8    vtunnel_name[40];                # converted vTunnel Identifier
+  UINT8    controller_id[32];               # controller Identifier
+  UINT8    domain_id[32];                   # domain Identifier
+  UINT32   label;                           # label
+};
+
+#
+# vTunnel Interface expanding value
+#
+ipc_struct val_vtunnel_if_expand {
+  UINT8   valid[4];
+  UINT8   if_name[32];                      # Interface Identifier
+  UINT8   connected_vnode_name[40];         # connected vNode Identifier
+  UINT8   connected_if_name[32];            # connected Interface Identifier
+  UINT8   connected_vlink_name[32];         # connected vLink Identifier
 };

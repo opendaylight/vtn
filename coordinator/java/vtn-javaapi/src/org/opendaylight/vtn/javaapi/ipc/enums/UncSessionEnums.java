@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -89,7 +89,8 @@ public class UncSessionEnums {
 	// config mode status.
 	public enum UsessConfigModeE {
 		CONFIG_STATUS_NONE("0"), // Not Configuration mode.
-		CONFIG_STATUS_TCLOCK("1"); // Configuration mode.
+		CONFIG_STATUS_TCLOCK("1"), // Configuration mode.
+		CONFIG_STATUS_TCLOCK_PART("2");
 
 		private final String value;
 
@@ -108,12 +109,12 @@ public class UncSessionEnums {
 		USESS_E_NG(50000, "Internal error"), // error.
 		USESS_E_INVALID_SESSID(40001, "Invalid current session ID"), 
 		USESS_E_NO_SUCH_SESSID(40400, "Invalid target session ID"),
-		USESS_E_INVALID_PRIVILEGE(40300, "Invalid privileges"),
-		USESS_E_INVALID_MODE(40001, "Invalid mode"),
-		USESS_E_INVALID_SESSTYPE(40001, "Invalid session type"),
+		USESS_E_INVALID_PRIVILEGE(50000, "Invalid privileges"),
+		USESS_E_INVALID_MODE(50000, "Invalid mode"),
+		USESS_E_INVALID_SESSTYPE(50000, "Invalid session type"),
 		USESS_E_INVALID_USER(40100, "Invalid user name"),
 		USESS_E_INVALID_PASSWD(40100, "Invalid password"),
-		USESS_E_SESS_OVER(50000, "Over the number of user sessions");
+		USESS_E_SESS_OVER(50301, "Over the number of user sessions");
 
 		private final String message;
 		private final int code;

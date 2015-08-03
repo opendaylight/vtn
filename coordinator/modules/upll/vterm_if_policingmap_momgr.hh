@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -156,7 +156,7 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
    * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
    * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
    */
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                          DalDmlIntf *dmi);
 
   /**
@@ -194,7 +194,9 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t UpdateRefCountInPPCtrlr(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi,
-                                    unc_keytype_operation_t op);
+                                    unc_keytype_operation_t op,
+                                    TcConfigMode config_mode,
+                                    string vtn_name);
 
   /**
    *  @Brief Method used to get ctrlrid.
@@ -372,7 +374,7 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
     unc_keytype_configstatus_t cs_status,
     uuc::UpdateCtrlrPhase phase,
     ConfigKeyVal *&ckv_running,
-    DalDmlIntf *dmi); 
+    DalDmlIntf *dmi);
   /**
    * @Brief Method to compare to keys
    *
@@ -475,7 +477,7 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
                        DbSubOp dbop,
                        DalDmlIntf *dmi);
 
-  bool IsValidKey(void *tkey, uint64_t index);
+  bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
   upll_rc_t ReadDTStateNormal(IpcReqRespHeader *req,
                               ConfigKeyVal *ikey,
@@ -515,7 +517,10 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
                                uuc::UpdateCtrlrPhase phase,
                                set<string> *affected_ctrlr_set,
                                DalDmlIntf *dmi,
-                               ConfigKeyVal **err_ckv);
+                               ConfigKeyVal **err_ckv,
+                               TxUpdateUtil *tx_util,
+                               TcConfigMode config_mode,
+                               std::string vtn_name);
 
   /**
    * @Brief This API is used to update the flag in the Database whenever
@@ -537,7 +542,9 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
                        ConfigKeyVal *ikey,
                        upll_keytype_datatype_t dt_type,
                        DalDmlIntf *dmi,
-                       InterfacePortMapInfo flag);
+                       InterfacePortMapInfo flag,
+                       TcConfigMode config_mode,
+                       string vtn_name);
 
   upll_rc_t ConstructReadDetailResponse(
       ConfigKeyVal *ikey,
@@ -587,9 +594,12 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
 
   upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                               upll_keytype_datatype_t dt_type,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi,
+                              TcConfigMode config_mode,
+                              string vtn_name);
 
   upll_rc_t IsPolicingProfileConfigured(const char* policingprofile_name,
+                                        upll_keytype_datatype_t data_type,
                                         DalDmlIntf *dmi);
 
   upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
@@ -615,9 +625,15 @@ class VtermIfPolicingMapMoMgr : public MoMgrImpl {
   upll_rc_t SetRenameFlag(ConfigKeyVal *ikey,
                           DalDmlIntf *dmi,
                           IpcReqRespHeader *req);
+  upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *req,
+      ConfigKeyVal *ck_main,
+      DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type,
+      ConfigKeyVal **err_ckv,
+      IpcResponse *ipc_resp);
 };
-}  // kt_momgr
-}  // upll
-}  // unc
+}  // namespace kt_momgr
+}  // namespace upll
+}  // namespace unc
 
 #endif  // SRC_MODULES_UPLL_VTERM_IF_POLICINGMAP_MOMGR_HH_

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -86,7 +86,7 @@ VtermIfPolicingMapMoMgr::VtermIfPolicingMapMoMgr() : MoMgrImpl() {
   // Rename and ctrlr tables not required for this KT
   // setting max tables to 1
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
 
   // For Main Table
   table[MAINTBL] = new Table(uudst::kDbiVtermIfPolicingMapTbl,
@@ -99,6 +99,8 @@ VtermIfPolicingMapMoMgr::VtermIfPolicingMapMoMgr() : MoMgrImpl() {
 
   /* For Rename Table*/
   table[RENAMETBL] = NULL;
+
+  table[CONVERTTBL] = NULL;
 
   nchild = 0;
   child = NULL;
@@ -140,6 +142,14 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
   GET_USER_DATA_CTRLR(okey, ctrlr_id);
   UPLL_LOG_TRACE("ctrlrid %s", ctrlr_id);
 
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
+
   val_policingmap_t *val_pm = reinterpret_cast<val_policingmap_t *>
       (GetVal(ikey));
   if (UNC_VF_VALID == val_pm->valid[UPLL_IDX_POLICERNAME_PM]) {
@@ -158,6 +168,24 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
                        result_code);
         DELETE_IF_NOT_NULL(okey);
         return result_code;
+      }
+    }
+    // check the policing profile existence in running DB also
+    if (config_mode == TC_CONFIG_VTN) {
+      result_code = IsPolicyProfileReferenced(ikey, UPLL_DT_RUNNING, dmi,
+                                            UNC_OP_READ);
+      if (UPLL_RC_SUCCESS != result_code) {
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+          UPLL_LOG_ERROR("Profile Object (%d) not available in RUNNING DB",
+                         result_code);
+          DELETE_IF_NOT_NULL(okey);
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        } else {
+          UPLL_LOG_DEBUG("CreateCandidateMo Error Accesing RUNNING DB(%d)",
+                         result_code);
+          DELETE_IF_NOT_NULL(okey);
+          return result_code;
+        }
       }
     }
   }
@@ -227,7 +255,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
     // Update the refcount of PP only if portmap is configured
     if (flag_port_map & SET_FLAG_PORTMAP) {
       result_code = UpdateRefCountInPPCtrlr(ikey, req->datatype, dmi,
-                                            UNC_OP_CREATE);
+                                            UNC_OP_CREATE, config_mode,
+                                            vtn_name);
       if (UPLL_RC_SUCCESS != result_code) {
         UPLL_LOG_DEBUG("UpdateRefCountInPPCtrlr Err in CANDIDATE DB(%d)",
                        result_code);
@@ -241,7 +270,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateCandidateMo(IpcReqRespHeader *req,
     kOpInOutFlag|kOpInOutCtrlr|kOpInOutDomain };
   // Update the information in DB
   result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_CREATE,
-                               dmi, &dbop, MAINTBL);
+                               dmi, &dbop, config_mode, vtn_name,
+                               MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("CreateCandidateMo failed. UpdateConfigDb failed."
                    "Record creation failed - %d",
@@ -273,7 +303,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteMo(IpcReqRespHeader *req,
 
   // Check VTERMIF object existence in VtermIfPolicingMap CANDIDATE DB
   // If record not exists, return error
-  result_code = IsReferenced(ikey, req->datatype, dmi);
+  result_code = IsReferenced(req, ikey, dmi);
   if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
     UPLL_LOG_ERROR("DeleteMo Instance not Available(%d)", result_code);
     return result_code;
@@ -306,6 +336,14 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteMo(IpcReqRespHeader *req,
     delete okey;
     return result_code;
   }
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
+
   val_policingmap_t *val_pm = reinterpret_cast<val_policingmap_t *>
                               (GetVal(okey));
   if (UNC_VF_VALID == val_pm->valid[UPLL_IDX_POLICERNAME_PM]) {
@@ -313,7 +351,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteMo(IpcReqRespHeader *req,
     GET_USER_DATA_FLAGS(okey, flag_port_map);
     if (flag_port_map & SET_FLAG_PORTMAP) {
       result_code = UpdateRefCountInPPCtrlr(okey, req->datatype, dmi,
-          UNC_OP_DELETE);
+          UNC_OP_DELETE, config_mode, vtn_name);
       if (UPLL_RC_SUCCESS != result_code) {
         DELETE_IF_NOT_NULL(okey);
         UPLL_LOG_DEBUG("UpdateRefCountInPPCtrlr Error DB (%d)", result_code);
@@ -324,7 +362,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteMo(IpcReqRespHeader *req,
 
   // Delete the record in vtermifpolicingmap table
   result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_DELETE, dmi,
-                               MAINTBL);
+                               config_mode, vtn_name, MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("DeleteMo Failed. UpdateConfigdb failed to delete - %d",
                   result_code);
@@ -353,6 +391,14 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
     return result_code;
   }
 
+  TcConfigMode config_mode = TC_CONFIG_INVALID;
+  std::string vtn_name = "";
+  result_code = GetConfigModeInfo(req, config_mode, vtn_name);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("GetConfigMode failed");
+    return result_code;
+  }
+
   // Check vtermif Policingmap object exists in PolicingProfileTbl CANDIDATE DB
   // If record not exists, return error code
   val_policingmap_t *val_ival = reinterpret_cast<val_policingmap_t *>
@@ -370,6 +416,23 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
             "IsPolicyProfileReferenced error accessing DB (%d)",
             result_code);
         return result_code;
+      }
+    }
+    // check the policing profile existence in running DB also
+    if (config_mode == TC_CONFIG_VTN) {
+      result_code = IsPolicyProfileReferenced(ikey, UPLL_DT_RUNNING, dmi,
+                                            UNC_OP_READ);
+      if (UPLL_RC_SUCCESS != result_code) {
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+          UPLL_LOG_ERROR("Profile Object (%d) not available in RUNNING DB",
+                         result_code);
+          return UPLL_RC_ERR_CFG_SEMANTIC;
+        } else {
+          UPLL_LOG_DEBUG(
+               "IsPolicyProfileReferenced Error Accesing RUNNING DB(%d)",
+                result_code);
+          return result_code;
+        }
       }
     }
   }
@@ -429,7 +492,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
     UPLL_LOG_DEBUG(" Policer name valid in DB and ikey");
     // Decrement the refcount in policingprofile table
     result_code = UpdateRefCountInPPCtrlr(tmpckv, req->datatype, dmi,
-        UNC_OP_DELETE);
+        UNC_OP_DELETE, config_mode, vtn_name);
     if (UPLL_RC_SUCCESS != result_code) {
       DELETE_IF_NOT_NULL(tmpckv);
       UPLL_LOG_DEBUG("UpdateMo UpdateRefCountInPPCtrlr error in delete (%d)",
@@ -439,7 +502,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
 
     // Increment the refcount in corresponding policingprofile table
     result_code = UpdateRefCountInPPCtrlr(ikey, req->datatype, dmi,
-        UNC_OP_CREATE);
+        UNC_OP_CREATE, config_mode, vtn_name);
     if (UPLL_RC_SUCCESS != result_code) {
       DELETE_IF_NOT_NULL(tmpckv);
       UPLL_LOG_DEBUG("UpdateMo UpdateRefCountInPPCtrlr error in create (%d)",
@@ -453,7 +516,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
     UPLL_LOG_DEBUG(" Policer name valid in ikey and validnovalue in DB");
     // Increment the refcount in corresponding policingprofile table
     result_code = UpdateRefCountInPPCtrlr(ikey, req->datatype, dmi,
-        UNC_OP_CREATE);
+        UNC_OP_CREATE, config_mode, vtn_name);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("UpdateMo UpdateRefCountInPPCtrlr error in create (%d)",
           result_code);
@@ -466,7 +529,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
     UPLL_LOG_DEBUG(" Policer name validnovalue in ikey and valid in db");
     // Decrement the refcount in policingprofile table
     result_code = UpdateRefCountInPPCtrlr(tmpckv, req->datatype, dmi,
-        UNC_OP_DELETE);
+        UNC_OP_DELETE, config_mode, vtn_name);
     if (UPLL_RC_SUCCESS != result_code) {
       DELETE_IF_NOT_NULL(tmpckv);
       UPLL_LOG_DEBUG("UpdateMo UpdateRefCountInPPCtrlr error in create (%d)",
@@ -481,7 +544,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
   UPLL_LOG_DEBUG("Flag in ikey: %d", temp_flag);
   DbSubOp dbop1 = {kOpNotRead, kOpMatchNone, kOpInOutNone};
   result_code = UpdateConfigDB(ikey, req->datatype, req->operation, dmi,
-                               &dbop1, MAINTBL);
+                               &dbop1, config_mode, vtn_name, MAINTBL);
   DELETE_IF_NOT_NULL(tmpckv);
   UPLL_LOG_TRACE("VtnPolicingMapMoMgr::UpdateMo update record status (%d)",
                 result_code);
@@ -489,16 +552,17 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateMo(IpcReqRespHeader *req,
   return result_code;
 }
 
-upll_rc_t VtermIfPolicingMapMoMgr::IsReferenced(ConfigKeyVal *ikey,
-                                              upll_keytype_datatype_t dt_type,
-                                              DalDmlIntf *dmi) {
+upll_rc_t VtermIfPolicingMapMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                                ConfigKeyVal *ikey,
+                                                DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   if (NULL == ikey) return UPLL_RC_ERR_GENERIC;
   DbSubOp dbop = { kOpReadExist, kOpMatchNone, kOpInOutNone };
 
   // Check the VTERMIF PM object existence in vtermifpolicingmap
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  result_code = UpdateConfigDB(ikey, dt_type, UNC_OP_READ, dmi, &dbop, MAINTBL);
+  result_code = UpdateConfigDB(ikey, req->datatype, UNC_OP_READ, dmi,
+                               &dbop, MAINTBL);
 
   UPLL_LOG_TRACE("IsReferenced (%d)", result_code);
   return result_code;
@@ -574,7 +638,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::IsPolicyProfileReferenced(ConfigKeyVal *ikey,
 
 upll_rc_t VtermIfPolicingMapMoMgr::UpdateRefCountInPPCtrlr(
     ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
-    unc_keytype_operation_t op) {
+    unc_keytype_operation_t op, TcConfigMode config_mode,
+    string vtn_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   uint8_t *ctrlr_id = NULL;
@@ -595,12 +660,12 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateRefCountInPPCtrlr(
   val_policingmap_t* val_pm =
       reinterpret_cast<val_policingmap_t *>(GetVal(ikey));
 
-  if(UPLL_DT_IMPORT == dt_type) {
+  if (UPLL_DT_IMPORT == dt_type) {
     GET_USER_DATA_FLAGS(ikey, pp_flag);
     if (pp_flag & POLICINGPROFILE_RENAME)
        pp_flag1 = PP_RENAME;
     UPLL_LOG_DEBUG("##### op1op1 flag %d", pp_flag);
-    UPLL_LOG_DEBUG("##### op1op1 flag1 %d", pp_flag1); 
+    UPLL_LOG_DEBUG("##### op1op1 flag1 %d", pp_flag1);
   }
 
   if (NULL == ctrlr_id) {
@@ -618,9 +683,20 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateRefCountInPPCtrlr(
   create the record with refcount if record not
   exist in policingprofilectrl tbl for the vterm associated controller name
   */
+  std::string temp_vtn_name;
+  if (TC_CONFIG_VTN == config_mode) {
+    temp_vtn_name = vtn_name;
+  } else {
+    temp_vtn_name = reinterpret_cast<const char *>(reinterpret_cast
+                                                   <key_vterm_if_t *>
+                                                   (ikey->get_key())->
+                                                   vterm_key.vtn_key.vtn_name);
+  }
+
   result_code = pp_mgr->PolicingProfileCtrlrTblOper(
       reinterpret_cast<const char*>(val_pm->policer_name),
-      reinterpret_cast<const char*>(ctrlr_id), dmi, op, dt_type, pp_flag1);
+      reinterpret_cast<const char*>(ctrlr_id), dmi, op, dt_type, pp_flag1,
+      config_mode, temp_vtn_name, 1, false);
 
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_INFO("PolicingProfileCtrlrTblOper err (%d)", result_code);
@@ -945,8 +1021,9 @@ upll_rc_t VtermIfPolicingMapMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
           if (result_code != UPLL_RC_SUCCESS) {
             DELETE_IF_NOT_NULL(temp_vterm_if_key);
             DELETE_IF_NOT_NULL(ppe_ckv);
-            UPLL_LOG_DEBUG("Failed construct ConfigKey for PolicingProfileEntry %d",
-                           result_code);
+            UPLL_LOG_DEBUG(
+                "Failed construct ConfigKey for PolicingProfileEntry %d",
+                result_code);
             return result_code;
           }
           PolicingProfileEntryMoMgr *mgr = reinterpret_cast
@@ -966,7 +1043,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
           temp_req->option1 = UNC_OPT1_NORMAL;
           // result_code = mgr->ReadInfoFromDB(req, ppe_ckv, dmi, &ctrlr_dom);
           result_code = mgr->ReadSiblingMo(temp_req, ppe_ckv, dmi);
-          //req->rep_count = temp_req->rep_count;
+          // req->rep_count = temp_req->rep_count;
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("Read sibling of ppe failed (%d)", result_code);
             ConfigKeyVal::Free(temp_req);
@@ -1013,7 +1090,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
             if (NULL == okey) {
               okey = temp_vtermif_pm_ckv;
             } else {
-              okey->AppendCfgKeyVal(temp_vtermif_pm_ckv); // TODO: Improve
+              okey->AppendCfgKeyVal(temp_vtermif_pm_ckv);
             }
           }
 
@@ -1058,8 +1135,9 @@ upll_rc_t VtermIfPolicingMapMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
           if (result_code != UPLL_RC_SUCCESS) {
             DELETE_IF_NOT_NULL(temp_vterm_if_key);
             DELETE_IF_NOT_NULL(ppe_ckv);
-            UPLL_LOG_DEBUG("Failed construct ConfigKey for PolicingProfileEntry %d",
-                           result_code);
+            UPLL_LOG_DEBUG(
+                "Failed construct ConfigKey for PolicingProfileEntry %d",
+                result_code);
             return result_code;
           }
           PolicingProfileEntryMoMgr *mgr = reinterpret_cast
@@ -1077,7 +1155,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::ReadSiblingMo(IpcReqRespHeader *req,
           temp_req->option1 = UNC_OPT1_NORMAL;
           // result_code = mgr->ReadInfoFromDB(req, ppe_ckv, dmi, &ctrlr_dom);
           result_code = mgr->ReadSiblingMo(temp_req, ppe_ckv, dmi);
-          //req->rep_count = temp_req->rep_count;
+          // req->rep_count = temp_req->rep_count;
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("Read sibling of ppe failed (%d)", result_code);
             ConfigKeyVal::Free(temp_req);
@@ -1354,6 +1432,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
   ctrlr_dom.ctrlr = NULL;
   ctrlr_dom.domain = NULL;
   uint8_t rename = 0;
+  string vtn_name = "";
 
   key_rename_vnode_info_t *key_rename =
   reinterpret_cast<key_rename_vnode_info_t *>(ikey->get_key());
@@ -1472,7 +1551,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::UpdateVnodeVal(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("kval flag (%d)", rename);
     // Update the new policer name in MAINTBL
     result_code = UpdateConfigDB(kval, data_type, UNC_OP_UPDATE, dmi,
-                  MAINTBL);
+                  TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("Create record Err in vtnpolicingmaptbl CANDIDATE DB(%d)",
         result_code);
@@ -2336,7 +2415,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::ValidateCapability(IpcReqRespHeader *req,
   const uint8_t *attrs = NULL;
   uint32_t max_attrs = 0;
 
-  UPLL_LOG_TRACE("ctrlr_name (%s),operation : (%d)",
+  UPLL_LOG_TRACE("ctrlr_name (%s), operation : (%d)",
                  ctrlr_name, req->operation);
 
   switch (req->operation) {
@@ -2420,7 +2499,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::GetParentConfigKey(ConfigKeyVal *&okey,
   return UPLL_RC_SUCCESS;
 }
 
-bool VtermIfPolicingMapMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VtermIfPolicingMapMoMgr::IsValidKey(void *key, uint64_t index,
+                                         MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_vterm_if *if_key = reinterpret_cast<key_vterm_if *>(key);
   upll_rc_t result_code = UPLL_RC_SUCCESS;
@@ -2477,7 +2557,10 @@ upll_rc_t VtermIfPolicingMapMoMgr::TxUpdateController(unc_key_type_t keytype,
     uuc::UpdateCtrlrPhase phase,
     set<string> *affected_ctrlr_set,
     DalDmlIntf *dmi,
-    ConfigKeyVal **err_ckv)  {
+    ConfigKeyVal **err_ckv,
+    TxUpdateUtil *tx_util,
+    TcConfigMode config_mode,
+    std::string vtn_name)  {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DalResultCode db_result;
@@ -2486,9 +2569,13 @@ upll_rc_t VtermIfPolicingMapMoMgr::TxUpdateController(unc_key_type_t keytype,
   ctrlr_dom.ctrlr = NULL;
   ctrlr_dom.domain = NULL;
   DalCursor *dal_cursor_handle = NULL;
-  IpcResponse ipc_resp;
   uint8_t db_flag = 0;
   uint8_t flag = 0;
+
+  // TxUpdate skipped if config mode is VIRTUAL
+  if (config_mode == TC_CONFIG_VIRTUAL) {
+    return UPLL_RC_SUCCESS;
+  }
 
   if (affected_ctrlr_set == NULL) {
     UPLL_LOG_DEBUG("affected_ctrlr_set is NULL");
@@ -2499,9 +2586,18 @@ upll_rc_t VtermIfPolicingMapMoMgr::TxUpdateController(unc_key_type_t keytype,
      ((phase == uuc::kUpllUcpDelete)?UNC_OP_DELETE:UNC_OP_INVALID));
 
   unc_keytype_operation_t op1 = op;
+
   result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING,
-      op, req, nreq, &dal_cursor_handle, dmi, MAINTBL);
+      op, req, nreq, &dal_cursor_handle, dmi, config_mode, vtn_name,
+      MAINTBL);
   while (result_code == UPLL_RC_SUCCESS) {
+    if (tx_util->GetErrCount() > 0) {
+      UPLL_LOG_ERROR("TxUpdateUtil says exit the loop.");
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(req);
+      return UPLL_RC_ERR_GENERIC;
+    }
     //  Get Next Record
     ck_main = NULL;
     db_result = dmi->GetNextRecord(dal_cursor_handle);
@@ -2569,7 +2665,6 @@ upll_rc_t VtermIfPolicingMapMoMgr::TxUpdateController(unc_key_type_t keytype,
       UPLL_LOG_DEBUG("flag (%d)", flag);
       if (!(SET_FLAG_PORTMAP & flag)) {
         op1 = UNC_OP_CREATE;
-        // vext_datatype = UPLL_DT_CANDIDATE;
       }
     }
 
@@ -2578,52 +2673,55 @@ upll_rc_t VtermIfPolicingMapMoMgr::TxUpdateController(unc_key_type_t keytype,
 
     UPLL_LOG_DEBUG("Controller : %s; Domain : %s", ctrlr_dom.ctrlr,
         ctrlr_dom.domain);
-    ConfigKeyVal *temp_ck_main = NULL;
-    result_code = DupConfigKeyVal(temp_ck_main, req, MAINTBL);
-    if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_DEBUG("DupConfigKeyVal failed %d", result_code);
-      DELETE_IF_NOT_NULL(ck_main);
-      dmi->CloseCursor(dal_cursor_handle, true);
-      DELETE_IF_NOT_NULL(req);
-      DELETE_IF_NOT_NULL(nreq);
-      return result_code;
-    }
     result_code = GetRenamedControllerKey(ck_main, dt_type,
         dmi, &ctrlr_dom);
     if (result_code != UPLL_RC_SUCCESS) {
       UPLL_LOG_DEBUG("GetRenamedControllerKey fail");
       DELETE_IF_NOT_NULL(ck_main);
-      DELETE_IF_NOT_NULL(temp_ck_main);
       break;
     }
-
+    ConfigKeyVal *ckv_driver = NULL;
+    result_code = DupConfigKeyVal(ckv_driver, ck_main, MAINTBL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_TRACE("DupConfigKeyVal failed %d\n", result_code);
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(req);
+      DELETE_IF_NOT_NULL(ck_main);
+      DELETE_IF_NOT_NULL(nreq);
+      return result_code;
+    }
     if (op1 == UNC_OP_UPDATE) {
       ConfigVal *old_cval = ((nreq->get_cfg_val())->DupVal());
-      ck_main->AppendCfgVal(old_cval);
+      ckv_driver->AppendCfgVal(old_cval);
     }
 
     affected_ctrlr_set->insert
       (string(reinterpret_cast<char *>(ctrlr_dom.ctrlr)));
 
-    UPLL_LOG_DEBUG("Controller : %s; Domain : %s", ctrlr_dom.ctrlr,
-        ctrlr_dom.domain);
-    memset(&ipc_resp, 0, sizeof(IpcResponse));
-    result_code = SendIpcReq(session_id, config_id, op1, UPLL_DT_CANDIDATE,
-        ck_main, &ctrlr_dom, &ipc_resp);
-    if (result_code == UPLL_RC_ERR_CTR_DISCONNECTED) {
-      UPLL_LOG_DEBUG("driver result code - %d", result_code);
-      result_code = UPLL_RC_SUCCESS;
-    }
-    if (result_code != UPLL_RC_SUCCESS) {
-      UPLL_LOG_DEBUG("IpcSend failed %d", result_code);
-      *err_ckv = temp_ck_main;
-      DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
-      DELETE_IF_NOT_NULL(ck_main);
-      break;
-    }
-    DELETE_IF_NOT_NULL(ipc_resp.ckv_data);
-    DELETE_IF_NOT_NULL(temp_ck_main);
     DELETE_IF_NOT_NULL(ck_main);
+
+    ConfigKeyVal *ckv_unc = NULL;
+    result_code = DupConfigKeyVal(ckv_unc, req, MAINTBL);
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_TRACE("DupConfigKeyVal failed %d\n", result_code);
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(req);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(ckv_driver);
+      return result_code;
+    }
+
+    result_code = tx_util->EnqueueRequest(session_id, config_id,
+                                          UPLL_DT_CANDIDATE, op1, dmi,
+                                          ckv_driver, ckv_unc, string());
+    if (result_code != UPLL_RC_SUCCESS) {
+      dmi->CloseCursor(dal_cursor_handle, true);
+      DELETE_IF_NOT_NULL(req);
+      DELETE_IF_NOT_NULL(nreq);
+      DELETE_IF_NOT_NULL(ckv_driver);
+      DELETE_IF_NOT_NULL(ckv_unc);
+      return result_code;
+    }
   }
   dmi->CloseCursor(dal_cursor_handle, true);
   DELETE_IF_NOT_NULL(req);
@@ -2741,7 +2839,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::ConstructReadDetailResponse(
             (temp_cfg_val->get_val());
         memcpy(val_switch_st, drv_val_switch_st,
                sizeof(val_policingmap_switch_st_t));
-        if (drv_val_switch_st->valid[UPLL_IDX_VNODE_IF_NAME_PMSS] == UNC_VF_VALID) {
+        if (drv_val_switch_st->valid[UPLL_IDX_VNODE_IF_NAME_PMSS] ==
+            UNC_VF_VALID) {
           key_vterm_if_t *vtermif_pm_key =
               reinterpret_cast<key_vterm_if_t*>(ikey->get_key());
           unc::upll::kt_momgr::VtermIfMoMgr *vtermifmgr =
@@ -2958,7 +3057,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::ConstructReadEntryDetailResponse(
             (temp_cfg_val->get_val());
         memcpy(val_switch_st, drv_val_switch_st,
                sizeof(val_policingmap_switch_st_t));
-        if (drv_val_switch_st->valid[UPLL_IDX_VNODE_IF_NAME_PMSS] == UNC_VF_VALID) {
+        if (drv_val_switch_st->valid[UPLL_IDX_VNODE_IF_NAME_PMSS] ==
+            UNC_VF_VALID) {
          // key_vtermif_policingmap_entry *vtermif_pme_key =
          // reinterpret_cast<key_vtermif_policingmap_entry *>(ikey->get_key());
          // ConfigKeyVal *vtermif_key_val = NULL;
@@ -3288,17 +3388,9 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
   }
 
   upll_rc_t result_code = UPLL_RC_SUCCESS;
-  uint8_t *controller_id = reinterpret_cast<uint8_t *>(
-                                 const_cast<char *>(ctrlr_id));
-  // Obtain the rename info
-  result_code = GetRenamedUncKey(ikey, UPLL_DT_RUNNING, dmi,
-                                 controller_id);
-  if (result_code != UPLL_RC_SUCCESS &&
-      result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-    UPLL_LOG_DEBUG("GetRenamedUncKey Failed err_code %d", result_code);
-    return result_code;
-  }
+
   ConfigKeyVal *okey = NULL;
+  string vtn_name = "";
   // Get the ctrlr id
   result_code = GetControllerId(ikey, okey, UPLL_DT_AUDIT, dmi);
   if (UPLL_RC_SUCCESS != result_code) {
@@ -3334,12 +3426,13 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
   result_code = mgrvtermif->GetPortmapInfo(pkey, UPLL_DT_AUDIT, dmi, flags);
   UPLL_LOG_DEBUG("GetVexternal flag %d", flags);
   DELETE_IF_NOT_NULL(pkey);
-  if (result_code != UPLL_RC_SUCCESS ) {
+  if (result_code != UPLL_RC_SUCCESS) {
     UPLL_LOG_ERROR("GetPortmapinfo failed err_code %d", result_code);
     return result_code;
   }
 
   uint8_t flag_port_map = 0;
+  GET_USER_DATA_FLAGS(ikey, flag_port_map);
   if (flags & kPortMapConfigured) {
     UPLL_LOG_DEBUG("PORTMAP_CONFIGURED");
     flag_port_map =  flag_port_map | SET_FLAG_PORTMAP;
@@ -3352,7 +3445,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
 
   if (UNC_VF_VALID == val_pm->valid[UPLL_IDX_POLICERNAME_PM]) {
     result_code = UpdateRefCountInPPCtrlr(ikey, UPLL_DT_AUDIT, dmi,
-                                          UNC_OP_CREATE);
+                                          UNC_OP_CREATE, TC_CONFIG_GLOBAL,
+                                          vtn_name);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("UpdateRefCountInPPCtrlr Err in CANDIDATE DB(%d)",
                      result_code);
@@ -3366,7 +3460,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::CreateAuditMoImpl(ConfigKeyVal *ikey,
   DbSubOp dbop = { kOpNotRead, kOpMatchNone,
     kOpInOutFlag|kOpInOutCtrlr|kOpInOutDomain|kOpInOutCs };
   result_code = UpdateConfigDB(ikey, UPLL_DT_AUDIT, UNC_OP_CREATE,
-                               dmi, &dbop, MAINTBL);
+                               dmi, &dbop, TC_CONFIG_GLOBAL, vtn_name,
+                               MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG("CreateAuditMo failed. UpdateConfigDb failed."
                    "Record creation failed - %d",
@@ -3396,6 +3491,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::AuditUpdateController(unc_key_type_t keytype,
   ConfigKeyVal  *ckv_driver_req = NULL;
   ConfigKeyVal  *ckv_audit_dup_db = NULL;
   DalCursor *cursor = NULL;
+  string vtn_name = "";
   // upll_keytype_datatype_t vext_datatype = UPLL_DT_RUNNING;
   uint8_t *ctrlr = reinterpret_cast<uint8_t *>(const_cast<char *>(ctrlr_id));
   // Skipping the create phase if it comes as an input.
@@ -3427,7 +3523,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::AuditUpdateController(unc_key_type_t keytype,
     UPLL_LOG_DEBUG("Operation is %d", op[i]);
     result_code = DiffConfigDB(UPLL_DT_RUNNING, UPLL_DT_AUDIT, op[i],
         ckv_running_db, ckv_audit_db,
-        &cursor, dmi, ctrlr, tbl, true, true);
+        &cursor, dmi, ctrlr, TC_CONFIG_GLOBAL, vtn_name, tbl, true, true);
     if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
       UPLL_LOG_DEBUG("No Diff found for operation %d", op[i]);
       DELETE_IF_NOT_NULL(ckv_running_db);
@@ -3446,7 +3542,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::AuditUpdateController(unc_key_type_t keytype,
       DELETE_IF_NOT_NULL(ckv_audit_db);
       return UPLL_RC_ERR_GENERIC;
     }
-    while (uud::kDalRcSuccess == (db_result = dmi->GetNextRecord(cursor))) {
+    while (uud::kDalRcSuccess == (db_result = dmi->GetNextRecord(cursor)) &&
+           ((result_code = ContinueAuditProcess()) == UPLL_RC_SUCCESS)) {
       op1 = op[i];
       if (phase != uuc::kUpllUcpDelete) {
         uint8_t *db_ctrlr = NULL;
@@ -3574,7 +3671,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::AuditUpdateController(unc_key_type_t keytype,
 
       upll_keytype_datatype_t dt_type = (op1 == UNC_OP_DELETE)?
         UPLL_DT_AUDIT : UPLL_DT_RUNNING;
-      result_code = GetRenamedControllerKey(ckv_driver_req, UPLL_DT_RUNNING,
+      result_code = GetRenamedControllerKey(ckv_driver_req, dt_type,
           dmi, &ctrlr_dom);
       if (result_code != UPLL_RC_SUCCESS &&
           result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
@@ -3666,7 +3763,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::AuditUpdateController(unc_key_type_t keytype,
             return result_code;
           }
           result_code = UpdateConfigDB(resp, dt_type, UNC_OP_UPDATE,
-             dmi, tbl);
+             dmi, TC_CONFIG_GLOBAL, vtn_name, tbl);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG(
              "UpdateConfigDB failed for ipc response ckv err_code %d",
@@ -3711,15 +3808,167 @@ upll_rc_t VtermIfPolicingMapMoMgr::AuditUpdateController(unc_key_type_t keytype,
 }
 
 upll_rc_t VtermIfPolicingMapMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
-        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi) {
+        upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+        TcConfigMode config_mode,
+        string vtn_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+  int nattr = 0;
+  BindInfo *binfo = NULL;
+  DalCursor *dal_cursor_handle = NULL;
+  string query_string;
+  unc_key_type_t deletedkt;
 
   if (NULL == ikey || NULL == dmi) {
     UPLL_LOG_DEBUG("DeleteChildrenPOM Failed. Insufficient input parameters");
     return result_code;
   }
 
+  key_vterm_if_t *pkey =
+      reinterpret_cast<key_vterm_if_t*>(ikey->get_key());
+  if (!pkey) {
+    UPLL_LOG_DEBUG(" Input vterm_if policingmap  key is NULL ");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  if (((pkey->vterm_key.vterminal_name)[0]) == '\0') {
+    deletedkt = UNC_KT_VTN;
+  } else if (((pkey->if_name)[0]) == '\0') {
+    deletedkt = UNC_KT_VTERMINAL;
+  } else {
+    deletedkt = UNC_KT_VTERM_IF;
+  }
+
+  result_code = GetFLPPCountQuery(ikey, deletedkt, query_string);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetFLPPCountQuery failed");
+    return result_code;
+  }
+
+  const uudst::kDalTableIndex tbl_index = GetTable(MAINTBL, UPLL_DT_CANDIDATE);
+  if (tbl_index >= uudst::kDalNumTables) {
+    UPLL_LOG_DEBUG("Invalid Table Index - %d", tbl_index);
+    return UPLL_RC_ERR_GENERIC;
+  }
+  DalBindInfo dal_bind_info(tbl_index);
+
+  if (!GetBindInfo(MAINTBL, UPLL_DT_CANDIDATE, binfo, nattr)) {
+    UPLL_LOG_DEBUG("GetBindInfo failed");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  ConfigKeyVal *vtermif_pm_ckv  = NULL;
+  result_code = GetChildConfigKey(vtermif_pm_ckv, NULL);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed");
+    return result_code;
+  }
+  ConfigVal* vtermif_pm_cv = NULL;
+  result_code = AllocVal(vtermif_pm_cv, UPLL_DT_CANDIDATE, MAINTBL);
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Error in AllocVal");
+    DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+    return result_code;
+  }
+  vtermif_pm_ckv->SetCfgVal(vtermif_pm_cv);
+  GET_USER_DATA(vtermif_pm_ckv);
+  uint32_t count = 0;
+  void *tkey = vtermif_pm_ckv->get_key();
+  void *p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey) +
+                                     binfo[0].offset);
+  dal_bind_info.BindOutput(binfo[0].index, binfo[0].app_data_type,
+                           binfo[0].array_size, p);
+  tkey = vtermif_pm_ckv->get_user_data();
+  p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey) +
+                               binfo[3].offset);
+  dal_bind_info.BindOutput(binfo[3].index, binfo[3].app_data_type,
+                           binfo[3].array_size, p);
+  tkey = vtermif_pm_ckv->get_cfg_val()->get_val();
+  p = reinterpret_cast<void *>(reinterpret_cast<char *>(tkey) +
+                               binfo[5].offset);
+  dal_bind_info.BindOutput(binfo[5].index, binfo[5].app_data_type,
+                           binfo[5].array_size, p);
+
+  dal_bind_info.BindOutput(uud::schema::DAL_COL_STD_INTEGER,
+                           uud::kDalUint32, 1, &count);
+
+  result_code = DalToUpllResCode(dmi->ExecuteAppQueryMultipleRecords(
+                 query_string, 0, &dal_bind_info,
+                 &dal_cursor_handle));
+  while (result_code == UPLL_RC_SUCCESS) {
+    result_code = DalToUpllResCode(dmi->GetNextRecord(dal_cursor_handle));
+    if (UPLL_RC_SUCCESS == result_code) {
+      // Call function to update refcount in scratch table
+      key_vterm_if_t *vtermif_pm_key =
+          reinterpret_cast<key_vterm_if_t *>(vtermif_pm_ckv->get_key());
+      vtn_name = reinterpret_cast<const char *>
+          (vtermif_pm_key->vterm_key.vtn_key.vtn_name);
+      uint8_t *ctrlr_id = NULL;
+      GET_USER_DATA_CTRLR(vtermif_pm_ckv, ctrlr_id);
+      val_policingmap_t *vtermif_pm_val =
+          reinterpret_cast<val_policingmap_t *>(GetVal(vtermif_pm_ckv));
+
+      PolicingProfileMoMgr *pp_mgr =
+          reinterpret_cast<PolicingProfileMoMgr *>
+          (const_cast<MoManager *>(GetMoManager(UNC_KT_POLICING_PROFILE)));
+      if (NULL == pp_mgr) {
+        UPLL_LOG_DEBUG("pp_mgr is NULL");
+        DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+        return UPLL_RC_ERR_GENERIC;
+      }
+      ConfigKeyVal *pp_ckv  = NULL;
+      result_code = pp_mgr->GetChildConfigKey(pp_ckv, NULL);
+      if (UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("GetChildConfigKey failed");
+        DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+        return result_code;
+      }
+      key_policingprofile_t *pp_key =
+          reinterpret_cast<key_policingprofile_t *>(pp_ckv->get_key());
+      uuu::upll_strncpy(pp_key->policingprofile_name,
+                        vtermif_pm_val->policer_name,
+                        (kMaxLenPolicingProfileName+1));
+      SET_USER_DATA_CTRLR(pp_ckv, ctrlr_id);
+
+      result_code = pp_mgr->UpdateRefCountInScratchTbl(pp_ckv, dmi,
+                                                       dt_type, UNC_OP_DELETE,
+                                                       config_mode, vtn_name,
+                                                       count);
+      if (result_code != UPLL_RC_SUCCESS &&
+          result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+        UPLL_LOG_DEBUG("UpdateRefCountInScratchTbl returned %d", result_code);
+        DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+        DELETE_IF_NOT_NULL(pp_ckv);
+        return result_code;
+      } else if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+        result_code = pp_mgr->InsertRecInScratchTbl(pp_ckv, dmi, dt_type,
+                                                    UNC_OP_DELETE,
+                                                    config_mode, vtn_name,
+                                                    count);
+        if (UPLL_RC_SUCCESS != result_code) {
+          UPLL_LOG_DEBUG("InsertRecInScratchTbl failed %d", result_code);
+          DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+          DELETE_IF_NOT_NULL(pp_ckv);
+          return result_code;
+        }
+      }
+      DELETE_IF_NOT_NULL(pp_ckv);
+    } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+      UPLL_LOG_DEBUG("GetNextRecord failed");
+      DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+      dmi->CloseCursor(dal_cursor_handle, false);
+      return result_code;
+    }
+  }
+  if (result_code != UPLL_RC_SUCCESS &&
+      result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+    UPLL_LOG_DEBUG("ExecuteAppQueryMultipleRecords failed");
+    DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+    dmi->CloseCursor(dal_cursor_handle, false);
+    return result_code;
+  }
+  DELETE_IF_NOT_NULL(vtermif_pm_ckv);
+/*
   // 1)Get vtermif associated ctrlr name and invoke the PP and PPE functions to
   // decrement the refcount capability. If refcount is zero, remove the record
   // in policingprofilectrltbl and if refcount not zero update the refcount in
@@ -3728,7 +3977,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
   ConfigKeyVal *okey = NULL;
   result_code = GetChildConfigKey(okey, ikey);
   if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_DEBUG("DeleteChildrenPOM Failed.GetChildConfigKey failed %d", result_code);
+    UPLL_LOG_DEBUG("DeleteChildrenPOM Failed.GetChildConfigKey failed %d",
+                   result_code);
     return result_code;
   }
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
@@ -3741,7 +3991,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
       DELETE_IF_NOT_NULL(okey);
       return UPLL_RC_SUCCESS;
     }
-    UPLL_LOG_DEBUG("DeleteChildrenPOM Failed.ReadConfigDB failed %d", result_code);
+    UPLL_LOG_DEBUG("DeleteChildrenPOM Failed.ReadConfigDB failed %d",
+                   result_code);
     DELETE_IF_NOT_NULL(okey);
     return result_code;
   }
@@ -3755,9 +4006,10 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
       GET_USER_DATA_FLAGS(temp_okey, flag_port_map);
       if (flag_port_map & SET_FLAG_PORTMAP) {
         result_code = UpdateRefCountInPPCtrlr(temp_okey, dt_type, dmi,
-            UNC_OP_DELETE);
+            UNC_OP_DELETE, config_mode, vtn_name);
         if (UPLL_RC_SUCCESS != result_code) {
-          UPLL_LOG_DEBUG("DeleteChildrenPOM Failed.UpdateRefCountInPPCtrlr Error DB (%d)", result_code);
+          UPLL_LOG_DEBUG("DeleteChildrenPOM Failed."
+                         "UpdateRefCountInPPCtrlr Error DB (%d)", result_code);
           DELETE_IF_NOT_NULL(okey);
           return result_code;
         }
@@ -3766,6 +4018,7 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
     temp_okey = temp_okey->get_next_cfg_key_val();
   }
   DELETE_IF_NOT_NULL(okey);
+  */
   // Delete the record in vtermifpolicingmap table
   ConfigKeyVal *temp_ikey = NULL;
   result_code = GetChildConfigKey(temp_ikey, ikey);
@@ -3774,19 +4027,22 @@ upll_rc_t VtermIfPolicingMapMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
     return result_code;
   }
   result_code = UpdateConfigDB(temp_ikey, dt_type, UNC_OP_DELETE, dmi,
-                               MAINTBL);
+                               config_mode, vtn_name, MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
-    UPLL_LOG_DEBUG("DeleteChildrenPOM Failed. UpdateConfigdb failed to delete - %d",
+    UPLL_LOG_DEBUG("DeleteChildrenPOM Failed."
+                   "UpdateConfigdb failed to delete - %d",
                   result_code);
     DELETE_IF_NOT_NULL(temp_ikey);
+    dmi->CloseCursor(dal_cursor_handle, false);
     return result_code;
   }
+  dmi->CloseCursor(dal_cursor_handle, false);
   DELETE_IF_NOT_NULL(temp_ikey);
   return UPLL_RC_SUCCESS;
 }
 
 upll_rc_t VtermIfPolicingMapMoMgr::IsPolicingProfileConfigured(
-    const char* policingprofile_name,
+    const char* policingprofile_name,  upll_keytype_datatype_t dt_type,
     DalDmlIntf *dmi) {
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   ConfigKeyVal *ckv = NULL;
@@ -4110,7 +4366,9 @@ upll_rc_t VtermIfPolicingMapMoMgr::SetPortmapConfiguration(
                                  ConfigKeyVal *ikey,
                                  upll_keytype_datatype_t dt_type,
                                  DalDmlIntf *dmi,
-                                 InterfacePortMapInfo flag) {
+                                 InterfacePortMapInfo flag,
+                                 TcConfigMode config_mode,
+                                 string vtn_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
   if (NULL == ikey || NULL == ikey->get_key()) {
@@ -4125,7 +4383,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::SetPortmapConfiguration(
   unc_keytype_operation_t oper =  UNC_OP_INVALID;
 
   key_vterm_if_t *pp_key = reinterpret_cast<key_vterm_if_t *>(ckv->get_key());
-  key_vterm_if_t *vtermif_key = reinterpret_cast<key_vterm_if_t *>(ikey->get_key());
+  key_vterm_if_t *vtermif_key =
+      reinterpret_cast<key_vterm_if_t *>(ikey->get_key());
   uuu::upll_strncpy(pp_key->vterm_key.vtn_key.vtn_name,
                     vtermif_key->vterm_key.vtn_key.vtn_name,
                     kMaxLenVtnName + 1);
@@ -4170,7 +4429,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::SetPortmapConfiguration(
   SET_USER_DATA_FLAGS(ckv, flag_port_map);
   DbSubOp dbop_up = { kOpNotRead, kOpMatchNone, kOpInOutFlag };
   result_code = UpdateConfigDB(ckv, dt_type, UNC_OP_UPDATE,
-                               dmi, &dbop_up, MAINTBL);
+                               dmi, &dbop_up, config_mode,
+                               vtn_name, MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
      UPLL_LOG_DEBUG("UpdateConfigDB failure %d", result_code);
      DELETE_IF_NOT_NULL(ckv);
@@ -4179,8 +4439,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::SetPortmapConfiguration(
   if (UNC_VF_VALID == val_pm->valid[UPLL_IDX_POLICERNAME_PM]) {
     // Update the controller reference count for policing profile  based
     // on the value of  portmap flag
-    // 1)Get vtermif associated ctrlr name and invoke the PP and PPE functions to
-    // check the refcount capability and update the refcount or create the
+    // 1)Get vtermif associated ctrlr name and invoke the PP and PPE functions
+    // to check the refcount capability and update the refcount or create the
     // record in policingprofilectrltbl and policingprofileentryctrltbl.
     // 2)Create the record in policingprofileentryctrltbl
     if (flag_port_map & SET_FLAG_PORTMAP) {
@@ -4195,7 +4455,8 @@ upll_rc_t VtermIfPolicingMapMoMgr::SetPortmapConfiguration(
         oper = UNC_OP_DELETE;
     }
 
-    result_code = UpdateRefCountInPPCtrlr(ckv, dt_type, dmi, oper);
+    result_code = UpdateRefCountInPPCtrlr(ckv, dt_type, dmi, oper, config_mode,
+                                          vtn_name);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("Err while updating the policingprofile ctrlr table(%d)",
                    result_code);
@@ -4205,7 +4466,20 @@ upll_rc_t VtermIfPolicingMapMoMgr::SetPortmapConfiguration(
   }
   DELETE_IF_NOT_NULL(ckv);
   return UPLL_RC_SUCCESS;
-}// End of SetPortmapConfiguration
-}  // kt_momgr
-}  // upll
-}  // unc
+}  // End of SetPortmapConfiguration
+
+upll_rc_t VtermIfPolicingMapMoMgr::TxUpdateErrorHandler(ConfigKeyVal *ckv_unc,
+    ConfigKeyVal *ckv_driver,
+    DalDmlIntf *dmi,
+    upll_keytype_datatype_t dt_type,
+    ConfigKeyVal **err_ckv,
+    IpcResponse *ipc_resp) {
+  UPLL_FUNC_TRACE;
+  *err_ckv = ckv_unc;
+  DELETE_IF_NOT_NULL(ckv_driver);
+  DELETE_IF_NOT_NULL(ipc_resp->ckv_data);
+  return UPLL_RC_SUCCESS;
+}
+}  // namespace kt_momgr
+}  // namespace upll
+}  // namespace unc

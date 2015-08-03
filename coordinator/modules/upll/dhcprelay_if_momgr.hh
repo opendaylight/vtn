@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -42,12 +42,12 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
 
     /**
      * @brief  Compares the valid value between two database records.
-     *       if both the values are same, update the valid flag for corresponding
-     *       attribute as invalid in the first record.
+     *       if both the values are same, update the valid flag for
+     *       corresponding attribute as invalid in the first record.
      *
-     * @param[in/out]  val1   first record value instance.
-     * @param[in]      val2   second record value instance.
-     * @param[in]      audit  if true, CompareValidValue called from audit process.
+     * @param[in/out]  val1  first record value instance.
+     * @param[in]      val2  second record value instance.
+     * @param[in]      audit if true,CompareValidValue called from audit process
      *
      **/
     bool CompareValidValue(void *&val1, void *val2, bool audit) {
@@ -80,7 +80,7 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
      *
      * @retval  UPLL_RC_SUCCESS                Successful.
      * @retval  UPLL_RC_ERR_CFG_SYNTAX         Syntax error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE   key_dhcp_relay_if is not available.
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE   key_dhcp_relay_if_not available.
      * @retval  UPLL_RC_ERR_GENERIC            Generic failure.
      * @retval  UPLL_RC_ERR_INVALID_OPTION1    Option1 is not valid.
      * @retval  UPLL_RC_ERR_INVALID_OPTION2    Option2 is not valid.
@@ -105,9 +105,9 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
      *         based on the valid flag
      *
      * @param[in]  req               This structure contains IpcReqRespHeader
-     *                               (first 8 fields of input request structure).
+     *                               (first 8 fields of input request structure)
      * @param[in]  ikey              ikey contains key and value structure.
-     * @param[in]  ctrlr_name        controller name associated with the input ikey.
+     * @param[in]  ctrlr_name        controller name associated with input ikey.
      *
      * @retval  UPLL_RC_SUCCESS              Validation succeeded.
      * @retval  UPLL_RC_ERR_GENERIC          Validation failure.
@@ -117,7 +117,7 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
     upll_rc_t ValidateCapability(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                                  const char *ctrlr_name);
 
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
     /**
@@ -135,9 +135,11 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
     upll_rc_t DupConfigKeyVal(ConfigKeyVal *&okey, ConfigKeyVal *&req,
                               MoMgrTables tbl = MAINTBL);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
+     * @brief  Allocates for the specified val in the given configuration in the
+     * * specified table.
      *
-     * @param[in]  ck_val   Reference pointer to configval structure allocated.      * @param[in]  dt_type  specifies the configuration candidate/running/state
+     * @param[in]  ck_val   Reference pointer to configval structure allocated.
+     * @param[in]  dt_type  specifies the configuration candidate/running/state
      * @param[in]  tbl      specifies if the corresponding table is the  main
      *                      table / controller table or rename table.
      *
@@ -162,10 +164,10 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
     bool GetRenameKeyBindInfo(unc_key_type_t key_type, BindInfo *&binfo,
                               int &nattr, MoMgrTables tbl);
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
-    upll_rc_t IsAdminStatusEnable(ConfigKeyVal *ikey,DalDmlIntf *dmi);
-    
+    upll_rc_t IsAdminStatusEnable(ConfigKeyVal *ikey, DalDmlIntf *dmi);
+
   public:
     DhcpRelayIfMoMgr();
     virtual ~DhcpRelayIfMoMgr() {
@@ -179,16 +181,16 @@ class DhcpRelayIfMoMgr : public VnodeChildMoMgr {
     /**
      * @brief      Method to check if individual portions of a key are valid
      *
-     * @param[in/out]  ikey                 pointer to ConfigKeyVal referring to a UNC resource
-     * @param[in]      index                db index associated with the variable
+     * @param[in/out]  ikey  pointer to ConfigKeyVal referring to a UNC resource
+     * @param[in]      index db index associated with the variable
      *
-     * @retval         true                 input key is valid
-     * @retval         false                input key is invalid.
+     * @retval         true  input key is valid
+     * @retval         false input key is invalid.
      **/
-    bool IsValidKey(void *tkey, uint64_t index);
+    bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 };
 
 }  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
-#endif
+#endif   // SRC_MODULES_UPLL_DHCPRELAY_IF_MOMGR_H_

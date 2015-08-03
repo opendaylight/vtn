@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -20,6 +20,7 @@ public class UncTCEnums {
 		TC_CANDIDATE_SERVICES,
 		TC_STARTUP_DB_SERVICES,
 		TC_READ_ACCESS_SERVICES,
+		TC_READ_STATUS_SERVICES,
 		TC_AUTO_SAVE_SERVICES,
 		TC_AUDIT_SERVICES;
 
@@ -29,19 +30,32 @@ public class UncTCEnums {
 		TC_OP_CONFIG_ACQUIRE,
 		TC_OP_CONFIG_RELEASE,
 		TC_OP_CONFIG_ACQUIRE_TIMED,
+		TC_OP_CONFIG_ACQUIRE_PARTIAL,
 		TC_OP_CONFIG_ACQUIRE_FORCE,
 		TC_OP_CANDIDATE_COMMIT,
+		TC_OP_CANDIDATE_COMMIT_TIMED,
 		TC_OP_CANDIDATE_ABORT,
+		TC_OP_CANDIDATE_ABORT_TIMED,
 		TC_OP_RUNNING_SAVE,
 		TC_OP_CLEAR_STARTUP,
 		TC_OP_READ_ACQUIRE,
 		TC_OP_READ_RELEASE,
+		TC_OP_READ_RUNNING_STATUS,
+		TC_OP_READ_STARTUP_STATUS,
 		TC_OP_AUTOSAVE_GET,
 		TC_OP_AUTOSAVE_ENABLE,
 		TC_OP_AUTOSAVE_DISABLE,
 		TC_OP_USER_AUDIT,
 		TC_OP_DRIVER_AUDIT,
 		TC_OP_INVALID
+	}
+
+	public enum ConfigMode {
+		TC_CONFIG_INVALID,
+		TC_CONFIG_GLOBAL,
+		TC_CONFIG_REAL,
+		TC_CONFIG_VIRTUAL,
+		TC_CONFIG_VTN
 	}
 
 	public enum OperationStatus {
@@ -56,17 +70,17 @@ public class UncTCEnums {
 
 		TC_OPER_SUCCESS(0, 200, "Success"),
 
-		TC_CONFIG_NOT_PRESENT(100, 40400, "Configuration not present"),
+		TC_CONFIG_NOT_PRESENT(100, 50000, "Configuration not present"),
 
 		TC_CONFIG_PRESENT(101, 50301, "Server Busy"),
 
 		TC_STATE_CHANGED(102, 50000, "Cluster status is changed"),
 
-		TC_INVALID_CONFIG_ID(103, 40000, "Invalid config id"),
+		TC_INVALID_CONFIG_ID(103, 50000, "Invalid config id"),
 
 		TC_INVALID_OPERATION_TYPE(104, 50000, "Invalid operation type"),
 
-		TC_INVALID_SESSION_ID(105, 40000, "Invalid session id"),
+		TC_INVALID_SESSION_ID(105, 50000, "Invalid session id"),
 
 		TC_INVALID_STATE(106, 50300, "Invalid state"),
 
@@ -74,7 +88,7 @@ public class UncTCEnums {
 
 		TC_SESSION_ALREADY_ACTIVE(108, 50301, "Server Busy"),
 
-		TC_SESSION_NOT_ACTIVE(109, 40400, "Session not active"),
+		TC_SESSION_NOT_ACTIVE(109, 50000, "Session not active"),
 
 		TC_SYSTEM_BUSY(110, 50301, "Server Busy"),
 
@@ -82,6 +96,7 @@ public class UncTCEnums {
 
 		TC_OPER_FORBIDDEN(112, 50000, "Operation forbidden in current setup"),
 		
+		TC_AUDIT_CANCELLED(113, 50300, "Audit may be cancelled."),
 		/* Define for commit command start */
 		TC_INTERNAL_SERVER_ERROR(1000, 50000, "Internal server error"),
 
@@ -191,7 +206,8 @@ public class UncTCEnums {
 		TC_CTR_CONFIG_STATUS_ERR(4003),
 		TC_CTR_BUSY(4004),
 		TC_CTR_DISCONNECTED(4005),
-		TC_REQ_NOT_SENT_TO_CTR(4006);
+		TC_REQ_NOT_SENT_TO_CTR(4006),
+		TC_NO_SUCH_INSTANCE(4007);
 
 		private final int code;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -295,6 +295,18 @@ public class ControllerResourceValidator extends VtnServiceValidator {
 				isValid = validator.isValidMaxLength(controller
 						.getAsJsonPrimitive(VtnServiceJsonConsts.PASSWORD)
 						.getAsString(), VtnServiceJsonConsts.LEN_256);
+			}
+		}
+		if (isValid) {
+			// validation for key: port
+			setInvalidParameter(VtnServiceJsonConsts.PORT);
+			if (controller.has(VtnServiceJsonConsts.PORT)
+					&& controller.getAsJsonPrimitive(
+							VtnServiceJsonConsts.PORT).getAsString() != null) {
+				isValid = validator.isValidRange(controller
+						.getAsJsonPrimitive(VtnServiceJsonConsts.PORT)
+						.getAsString(), VtnServiceJsonConsts.VAL_0,
+						VtnServiceJsonConsts.VAL_65535);
 			}
 		}
 		return isValid;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -271,7 +271,7 @@ class VunkIfMoMgr : public MoMgrImpl {
      * @retval         false                input key is invalid.
      **/
     bool IsValidKey(void *key,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
     virtual upll_rc_t TxVoteCtrlrStatus(unc_key_type_t keytype,
                                       list<CtrlrVoteStatus*> *ctrlr_vote_status,
                                       DalDmlIntf *dmi) {
@@ -283,7 +283,10 @@ class VunkIfMoMgr : public MoMgrImpl {
                                          uuc::UpdateCtrlrPhase phase,
                                          set<string> *affected_ctrlr_set,
                                          DalDmlIntf *dmi,
-                                         ConfigKeyVal **err_ckv) {
+                                         ConfigKeyVal **err_ckv,
+                                         TxUpdateUtil *tx_util,
+                                         TcConfigMode config_mode,
+                                         std::string vtn_name) {
       return UPLL_RC_SUCCESS;
     }
     virtual upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
@@ -302,7 +305,7 @@ class VunkIfMoMgr : public MoMgrImpl {
                                             uuc::UpdateCtrlrPhase phase,
                                             DalDmlIntf *dmi,
                                             ConfigKeyVal **err_ckv,
-                                            KTxCtrlrAffectedState *ctrlr_affected) {
+                                       KTxCtrlrAffectedState *ctrlr_affected) {
       return UPLL_RC_SUCCESS;
     }
     virtual upll_rc_t AuditVoteCtrlrStatus(unc_key_type_t keytype,
@@ -335,14 +338,16 @@ class VunkIfMoMgr : public MoMgrImpl {
      **/
     upll_rc_t PopulateValVtnNeighbor(ConfigKeyVal *&key, DalDmlIntf *dmi);
 
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
-    virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                                 val_port_map_t *&pm, uint8_t &valid_admin,
+    virtual upll_rc_t GetPortMap(ConfigKeyVal *ikey,
+                                 uint8_t &valid_pm,
+                                 val_port_map_t *&pm,
+                                 uint8_t &valid_admin,
                                  uint8_t &admin_status) {
       UPLL_FUNC_TRACE;
-      if (ikey == NULL) return UPLL_RC_ERR_GENERIC; 
+      if (ikey == NULL) return UPLL_RC_ERR_GENERIC;
       val_vunk_if *ifval = reinterpret_cast<val_vunk_if *>
                                                  (GetVal(ikey));
       if (!ifval) {
@@ -351,7 +356,7 @@ class VunkIfMoMgr : public MoMgrImpl {
       }
       valid_pm = UNC_VF_INVALID;
       pm = NULL;
-      valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VUNI]; 
+      valid_admin = ifval->valid[UPLL_IDX_ADMIN_ST_VUNI];
       admin_status = ifval->admin_status;
       return UPLL_RC_SUCCESS;
     }

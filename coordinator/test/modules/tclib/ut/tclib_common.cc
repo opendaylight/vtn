@@ -1,20 +1,21 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
+
 #ifndef _UNC_TCLIB_TCLIB_COMMON_HH_
 #define _UNC_TCLIB_TCLIB_COMMON_HH_
 
 #include <gtest/gtest.h>
 #include <pfcxx/ipc_server.hh>
 #include <tclib_module.hh>
+#include <unc/keytype.h>
 #include <stub/tclib_module/tclib_interface_stub.hh>
 #include <stub/tclib_module/libtc_common.hh>
-#include <unc/keytype.h>
 #include <stdio.h>
 
 using namespace unc::tc;
@@ -71,14 +72,14 @@ TEST(test_14, test_test_SaveConfiguration) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  ret = tclib_obj.SaveConfiguration();
+  ret = tclib_obj.SaveConfiguration(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
   tclib_obj.sess_ = NULL;
-  ret = tclib_obj.SaveConfiguration();
+  ret = tclib_obj.SaveConfiguration(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   pfc_ipcsrv_t *srv = NULL;
@@ -87,19 +88,19 @@ TEST(test_14, test_test_SaveConfiguration) {
 
   tclib_obj.sess_ = &sess;
   arg_count = 0;
-  ret = tclib_obj.SaveConfiguration();
+  ret = tclib_obj.SaveConfiguration(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   arg_count = 1;
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.SaveConfiguration();
+  ret = tclib_obj.SaveConfiguration(tclib_obj.sess_);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // sess failure
   arg_count = 1;
   sessutil.set_read_type(LIB_COMMON);
   sessutil.set_return_type(RETURN_FAILURE);
-  ret = tclib_obj.SaveConfiguration();
+  ret = tclib_obj.SaveConfiguration(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   // handle interface failure
@@ -107,7 +108,7 @@ TEST(test_14, test_test_SaveConfiguration) {
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
   sessutil.set_read_type(LIB_COMMON);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.SaveConfiguration();
+  ret = tclib_obj.SaveConfiguration(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -121,14 +122,14 @@ TEST(test_15, test_ClearStartup) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  ret = tclib_obj.ClearStartup();
+  ret = tclib_obj.ClearStartup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
   tclib_obj.sess_ = NULL;
-  ret = tclib_obj.ClearStartup();
+  ret = tclib_obj.ClearStartup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   pfc_ipcsrv_t *srv = NULL;
@@ -137,20 +138,20 @@ TEST(test_15, test_ClearStartup) {
 
   tclib_obj.sess_ = &sess;
   arg_count = 0;
-  ret = tclib_obj.ClearStartup();
+  ret = tclib_obj.ClearStartup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   arg_count = 1;
   sessutil.set_read_type(LIB_COMMON);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.ClearStartup();
+  ret = tclib_obj.ClearStartup(tclib_obj.sess_);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // sess failure1
   arg_count = 1;
   sessutil.set_read_type(LIB_COMMON);
   sessutil.set_return_type(RETURN_FAILURE);
-  ret = tclib_obj.ClearStartup();
+  ret = tclib_obj.ClearStartup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   // handle interface failure
@@ -158,7 +159,7 @@ TEST(test_15, test_ClearStartup) {
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
   sessutil.set_read_type(LIB_COMMON);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.ClearStartup();
+  ret = tclib_obj.ClearStartup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -172,14 +173,14 @@ TEST(test_16, test_AbortCandidate) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
   tclib_obj.sess_ = NULL;
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   pfc_ipcsrv_t *srv = NULL;
@@ -188,27 +189,27 @@ TEST(test_16, test_AbortCandidate) {
 
   tclib_obj.sess_ = &sess;
   arg_count = 0;
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   arg_count = 2;
   sessutil.set_read_type(LIB_ABORT_CANDIDATE);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // sess failure1
   arg_count = 2;
   sessutil.set_read_type(LIB_ABORT_CANDIDATE);
   sessutil.set_return_type(RETURN_FAILURE_1);
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   // sess failure2
   arg_count = 2;
   sessutil.set_read_type(LIB_ABORT_CANDIDATE);
   sessutil.set_return_type(RETURN_FAILURE_2);
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   // handle interface failure
@@ -216,7 +217,7 @@ TEST(test_16, test_AbortCandidate) {
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
   sessutil.set_read_type(LIB_ABORT_CANDIDATE);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.AbortCandidate();
+  ret = tclib_obj.AbortCandidate(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -230,25 +231,17 @@ TEST(test_17, test_Setup) {
   TcLibModule tclib_obj(&mattr);
   tclib_obj.init();
 
+
   // pTcLibInterface_ NULL
-
-  pfc_ipcsrv_t *srv = NULL;
-  pfc::core::ipc::ServerSession sess(srv);
-
-  ret = tclib_obj.Setup(&sess);
+  ret = tclib_obj.Setup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
-  // handle interface success
-  if_stub_obj.tclib_stub_failure_ = PFC_FALSE;
-  ret = tclib_obj.Setup(&sess);
-  EXPECT_EQ(TC_SUCCESS, ret);
-
   // handle interface failure
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
-  ret = tclib_obj.Setup(&sess);
+  ret = tclib_obj.Setup(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -262,22 +255,15 @@ TEST(test_17, test_SetupComplete) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  pfc_ipcsrv_t *srv = NULL;
-  pfc::core::ipc::ServerSession sess(srv);
-  ret = tclib_obj.SetupComplete(&sess);
+  ret = tclib_obj.SetupComplete(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
-  // handle interface success
-  if_stub_obj.tclib_stub_failure_ = PFC_FALSE;
-  ret = tclib_obj.SetupComplete(&sess);
-  EXPECT_EQ(TC_SUCCESS, ret);
-
   // handle interface failure
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
-  ret = tclib_obj.SetupComplete(&sess);
+  ret = tclib_obj.SetupComplete(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -334,30 +320,29 @@ TEST(test_19, test_AuditConfig) {
   tclib_obj.init();
 
   // pTcLibInterface_ NULL
-  pfc_ipcsrv_t *srv = NULL;
-  pfc::core::ipc::ServerSession sess(srv);
-
-  ret = tclib_obj.AuditConfig(&sess);
+  ret = tclib_obj.AuditConfig(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   TcLibInterfaceStub if_stub_obj;
   tclib_obj.pTcLibInterface_ = &if_stub_obj;
 
   tclib_obj.sess_ = NULL;
-  ret = tclib_obj.AuditConfig(&sess);
-  EXPECT_EQ(TC_SUCCESS, ret);
+  ret = tclib_obj.AuditConfig(tclib_obj.sess_);
+  EXPECT_EQ(TC_FAILURE, ret);
 
+  pfc_ipcsrv_t *srv = NULL;
+  pfc::core::ipc::ServerSession sess(srv);
   TcServerSessionUtils sessutil;
 
   tclib_obj.sess_ = &sess;
   arg_count = 0;
-  ret = tclib_obj.AuditConfig(&sess);
+  ret = tclib_obj.AuditConfig(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   arg_count = 2;
   sessutil.set_read_type(LIB_AUDIT_CONFIG);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.AuditConfig(&sess);
+  ret = tclib_obj.AuditConfig(tclib_obj.sess_);
   EXPECT_EQ(TC_SUCCESS, ret);
 
   // handle interface failure
@@ -365,7 +350,7 @@ TEST(test_19, test_AuditConfig) {
   if_stub_obj.tclib_stub_failure_ = PFC_TRUE;
   sessutil.set_read_type(LIB_AUDIT_CONFIG);
   sessutil.set_return_type(RETURN_SUCCESS);
-  ret = tclib_obj.AuditConfig(&sess);
+  ret = tclib_obj.AuditConfig(tclib_obj.sess_);
   EXPECT_EQ(TC_FAILURE, ret);
 
   tclib_obj.fini();
@@ -377,9 +362,8 @@ TEST(test_31, test_fini) {
   TcLibModule tclib_obj(&mattr);
   tclib_obj.init();
 
-  //Tests removed in line with change in implementation
-  EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.session_id_);
-  EXPECT_EQ(TC_DEFAULT_VALUE, tclib_obj.config_id_);
+  EXPECT_EQ(NULL, tclib_obj.pTcLibInterface_);
+  EXPECT_EQ(NULL, tclib_obj.sess_);
   EXPECT_EQ(MSG_NONE, tclib_obj.oper_state_);
   EXPECT_EQ(0, tclib_obj.key_map_.size());
   EXPECT_EQ(0, tclib_obj.controller_key_map_.size());

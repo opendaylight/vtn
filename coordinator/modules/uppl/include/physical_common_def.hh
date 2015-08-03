@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -27,11 +27,11 @@
 #define VNPDRIVER_IPC_SVC_NAME              "vnpdriver"
 #define POLCDRIVER_IPC_CHN_NAME             "drvpolcd"
 #define POLCDRIVER_IPC_SVC_NAME             "polcdriver"
+#define ODCDRIVER_IPC_CHN_NAME              "drvodcd"
+#define ODCDRIVER_IPC_SVC_NAME              "vtndrvintf"
 #define UPLL_IPC_CHN_NAME                   "lgcnwd"
 #define UPLL_IPC_SVC_NAME                   "upll"
 #define TCLIB_MODULE_NAME                   "tclib"
-#define ODCDRIVER_IPC_CHN_NAME              "drvodcd"
-#define ODCDRIVER_IPC_SVC_NAME              "vtndrvintf"
 #define CONF_FILE_PATH_SEP                  "/"
 
 const unsigned int UPPL_MAX_REP_CT = 10000;
@@ -140,11 +140,12 @@ typedef enum {
   DATATYPE_UINT32,
   DATATYPE_IPV4,
   DATATYPE_IPV6,
+  DATATYPE_UINT8_ARRAY_1,
   DATATYPE_UINT8_ARRAY_2,
   DATATYPE_UINT8_ARRAY_3,
   DATATYPE_UINT8_ARRAY_6,
   DATATYPE_UINT8_ARRAY_8,
-  DATATYPE_UINT8_ARRAY_9,
+  DATATYPE_UINT8_ARRAY_10,
   DATATYPE_UINT8_ARRAY_11,
   DATATYPE_UINT8_ARRAY_16,
   DATATYPE_UINT8_ARRAY_32,

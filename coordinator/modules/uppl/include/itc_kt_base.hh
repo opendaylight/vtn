@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,7 @@ class OperStatusHolder {
  public:
   OperStatusHolder(unc_key_type_t key_type,
                    void* key_struct,
-                   uint8_t oper_status): key_type_(key_type),
+                   uint8_t oper_status):key_type_(key_type),
                    key_struct_(key_struct),
                    oper_status_(oper_status) {
   };
@@ -285,9 +285,10 @@ class Kt_Base {
                              uint32_t option1, uint32_t option2,
                              vector<ODBCMOperator> &vect_key_operations,
                              void* &old_value_struct,
-                             CsRowStatus row_status = NOTAPPLIED,
-                             pfc_bool_t is_filtering = false,
-                             pfc_bool_t is_state = PFC_FALSE)=0;
+                             CsRowStatus row_status,
+                             pfc_bool_t is_filtering,
+                             pfc_bool_t is_state)=0;
+
   pfc_ipcevtype_t GetEventType(uint32_t key_type);
   int AddKeyStructuretoSession(uint32_t key_type,
                                ServerEvent &ser_event,
@@ -451,7 +452,6 @@ class Kt_Base {
         if ((value) < objAttr.min_value || \
             (value) > objAttr.max_value) { \
           if ((value) == 0xffff) { \
-            pfc_log_info("no_vlan_id value is allowed");\
             (ret_code) = UNC_RC_SUCCESS; \
           } else { \
             (ret_code) = UNC_UPPL_RC_ERR_CFG_SYNTAX; \

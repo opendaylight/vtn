@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,8 +19,10 @@
 #include "ipc_client_configuration_handler.hh"
 #include "physicallayer.hh"
 #include "physical_common_def.hh"
+#include "unc/pfcdriver_include.h"
+#include "unc/vnpdriver_include.h"
 #include "unc/polcdriver_include.h"
-#include "unc/odcdriver_include.h" 
+#include "unc/odcdriver_include.h"
 #include "unc/unc_base.h"
 
 using unc::uppl::IPCClientDriverHandler;
@@ -40,7 +42,7 @@ IPCClientDriverHandler::IPCClientDriverHandler(
   if (cntr_type == UNC_CT_PFC ||
       cntr_type == UNC_CT_VNP ||
       cntr_type == UNC_CT_POLC ||
-      cntr_type == UNC_CT_ODC ) {
+      cntr_type == UNC_CT_ODC) {
     controller_type = cntr_type;
     PhysicalCore* physical_core = PhysicalCore::get_physical_core();
     /* Getting the driver name from uppl.conf */
@@ -58,8 +60,8 @@ IPCClientDriverHandler::IPCClientDriverHandler(
       chn_name = VNPDRIVER_IPC_CHN_NAME;
     } else if (cntr_type == UNC_CT_POLC) {
       chn_name = POLCDRIVER_IPC_CHN_NAME;
-    } else if ( cntr_type == UNC_CT_ODC ) {
-      chn_name = ODCDRIVER_CHANNEL_NAME;
+    } else if (cntr_type == UNC_CT_ODC) {
+      chn_name = ODCDRIVER_IPC_CHN_NAME;
     }
     int clnt_err = pfc_ipcclnt_altopen(chn_name.c_str(), &connp);
     if (clnt_err != 0) {
@@ -71,6 +73,8 @@ IPCClientDriverHandler::IPCClientDriverHandler(
       service = VNPDRV_SVID_PHYSICAL;
     } else if (cntr_type == UNC_CT_POLC) {
       service = POLCDRV_SVID_PHYSICAL;
+    } else if (cntr_type == UNC_CT_ODC) {
+      service = ODCDRV_SVID_PLATFORM;
     }
     cli_session = new ClientSession(connp, driver_name, service, clnt_err);
     if (cli_session == NULL) {
@@ -142,13 +146,14 @@ UncRespCode IPCClientDriverHandler::ConvertDriverErrorCode(
     uint32_t drv_err_code) {
   switch (controller_type) {
     case UNC_CT_PFC:
-    case UNC_CT_ODC:
     case UNC_CT_VNP:
     case UNC_CT_POLC:
+    case UNC_CT_ODC:
       switch (drv_err_code) {
         case UNC_RC_SUCCESS:
           return UNC_RC_SUCCESS;
         case UNC_RC_CTRLAPI_FAILURE:
+          return UNC_RC_CTRLAPI_FAILURE;
         case UNC_DRV_RC_DAEMON_INACTIVE:
           return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;
         case UNC_DRV_RC_INVALID_REQUEST_FORMAT:
@@ -170,14 +175,16 @@ UncRespCode IPCClientDriverHandler::ConvertDriverErrorCode(
           return UNC_UPPL_RC_ERR_CFG_SEMANTIC;
         case UNC_RC_CTR_DISCONNECTED:
         case UNC_RC_REQ_NOT_SENT_TO_CTR:
-        case UNC_RC_CTR_BUSY:
           return UNC_UPPL_RC_ERR_CTRLR_DISCONNECTED;
+        case UNC_RC_CTR_BUSY:
+          return UNC_RC_CTR_BUSY;
         case UNC_RC_NO_SUCH_INSTANCE:
           return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
         case UNC_RC_INTERNAL_ERR:
           return UNC_UPPL_RC_ERR_INVALID_STATE;
         case UNC_RC_UNSUPPORTED_CTRL_CONFIG:
         case UNC_DRV_RC_ERR_NOT_SUPPORTED_BY_CTRLR:
+        case UNC_DRV_RC_ERR_GENERIC:
           return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
         default:
           return UNC_UPPL_RC_ERR_DRIVER_COMMUNICATION_FAILURE;

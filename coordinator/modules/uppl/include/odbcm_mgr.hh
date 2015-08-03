@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -62,7 +62,7 @@ namespace uppl {
 #define ODBCM_CREATE_OBJECT(obj, class) \
   (obj) = new (class)();                    \
   if ((obj) == NULL) \
-    pfc_log_fatal("ODBCM::ODBCManager:: " \
+    UPPL_LOG_FATAL("ODBCM::ODBCManager:: " \
               "Internal object memory allocation is failed");
 
 /**macro to set odbc connection attributes
@@ -93,7 +93,8 @@ namespace uppl {
  *  - structure to store configuration file parsed values
  */
 typedef struct {
-    std::string dsn;
+    std::string fip_dsn;
+    std::string local_dsn;
     uint32_t time_out;
 }db_conf_info;
 
@@ -127,9 +128,9 @@ class ODBCManager {
     ODBCM_RC_STATUS CloseDBConnection(OdbcmConnectionHandler *conn_obj);
 
     ODBCM_RC_STATUS AssignDBConnection(OdbcmConnectionHandler *&db_conn,
-                             uint32_t session_id, uint32_t config_id = 0);
+                             uint32_t session_id, uint32_t config_id);
     ODBCM_RC_STATUS PoolDBConnection(OdbcmConnectionHandler *&conn_obj,
-                            uint32_t session_id, uint32_t config_id = 0);
+                            uint32_t session_id, uint32_t config_id);
     ODBCM_RC_STATUS FreeingConnections(bool IsAllOrUnused);
     // Closes the Read Write connections
     ODBCM_RC_STATUS CloseRwConnection();
@@ -165,7 +166,7 @@ class ODBCManager {
                                  /**object which carries the table,pkeys,
                                  * column names with data type*/,
                                  OdbcmConnectionHandler *conn_obj,
-                                 bool IsInternal = false);
+                                 bool IsInternal);
     /**
      * This method deletes the attributes of single key tree
      * instance in a row, the row entry will not be actually deleted in the case

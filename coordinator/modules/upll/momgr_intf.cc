@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,6 +23,10 @@ const MoManager *MoManager::GetMoManager(unc_key_type_t kt) {
     return ucm->GetMoManager(kt);
   }
   return NULL;
+}
+
+upll_rc_t MoAuditServiceIntf::ContinueAuditProcess() {
+  return UpllConfigMgr::GetUpllConfigMgr()->ContinueAuditProcess();
 }
 
 bool MoManager::GetMaxInstanceCount(const char *ctrlr_name,

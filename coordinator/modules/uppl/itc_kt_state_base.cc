@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,7 @@
 #include "physicallayer.hh"
 #include "itc_kt_logicalport.hh"
 #include "itc_kt_port.hh"
+#include "itc_kt_port_neighbor.hh"
 #include "itc_kt_switch.hh"
 #include "itc_kt_link.hh"
 #include "itc_kt_controller.hh"
@@ -84,7 +85,8 @@ UncRespCode Kt_State_Base::Create(OdbcmConnectionHandler *db_conn,
       err |= sess.addOutput(*obj_key);
       break;
     }
-    case UNC_KT_PORT: {
+    case UNC_KT_PORT:
+    case UNC_KT_PORT_NEIGHBOR: {
       key_port_t *obj_key = reinterpret_cast<key_port_t*>(key_struct);
       err |= sess.addOutput(*obj_key);
       break;
@@ -134,23 +136,31 @@ UncRespCode Kt_State_Base::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
 
   // Structure used to send request to ODBC
   DBTableSchema kt_dbtableschema;
-  void* old_value_struct;
+  void* old_value_struct = NULL;
   vector<ODBCMOperator> vect_key_operations;
   // Create DBSchema structure for kt_table
   PopulateDBSchemaForKtTable(db_conn, kt_dbtableschema,
                              key_struct,
                              val_struct,
                              UNC_OP_CREATE, data_type, 0, 0,
-                             vect_key_operations, old_value_struct);
+                             vect_key_operations, old_value_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
 
   // Send request to ODBC for kt_table create
-  ODBCM_RC_STATUS create_db_status = physical_layer->get_odbc_manager()->
+  ODBCM_RC_STATUS create_db_status = ODBCM_RC_SUCCESS;
+  if (key_type == UNC_KT_PORT_NEIGHBOR) {
+    create_db_status = physical_layer->get_odbc_manager()->
+         UpdateOneRow((unc_keytype_datatype_t)data_type,
+                                kt_dbtableschema, db_conn, true);
+  } else {
+    create_db_status = physical_layer->get_odbc_manager()->
       CreateOneRow((unc_keytype_datatype_t)data_type,
                    kt_dbtableschema, db_conn);
+  }
   if (create_db_status != ODBCM_RC_SUCCESS) {
     if (create_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       create_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -230,7 +240,8 @@ UncRespCode Kt_State_Base::Update(OdbcmConnectionHandler *db_conn,
       err |= sess.addOutput(*obj_key);
       break;
     }
-    case UNC_KT_PORT: {
+    case UNC_KT_PORT:
+    case UNC_KT_PORT_NEIGHBOR: {
       key_port_t *obj_key = reinterpret_cast<key_port_t*>(key_struct);
       err |= sess.addOutput(*obj_key);
       break;
@@ -298,10 +309,10 @@ UncRespCode Kt_State_Base::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
     // Send request to ODBC for kt_table update
     ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()-> \
         UpdateOneRow((unc_keytype_datatype_t)data_type,
-                     kt_dbtableschema, db_conn);
+                     kt_dbtableschema, db_conn, false);
     if (update_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       update_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else if (update_db_status != ODBCM_RC_SUCCESS) {
       // log error to log daemon
@@ -369,7 +380,8 @@ UncRespCode Kt_State_Base::Delete(OdbcmConnectionHandler *db_conn,
       err |= sess.addOutput(*obj_key);
       break;
     }
-    case UNC_KT_PORT: {
+    case UNC_KT_PORT:
+    case UNC_KT_PORT_NEIGHBOR: {
       key_port_t *obj_key = reinterpret_cast<key_port_t*>(key_struct);
       err |= sess.addOutput(*obj_key);
       break;
@@ -471,6 +483,13 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
       event_details = "KT_PORT";
       break;
     }
+    case UNC_KT_PORT_NEIGHBOR: {
+      key_port_t *obj_key = reinterpret_cast<key_port_t*>(key_struct);
+      controller_name = reinterpret_cast<const char*>(
+          obj_key->sw_key.ctr_key.controller_name);
+      event_details = "KT_PORT(neighbor)";
+      break;
+    }
     case UNC_KT_LINK: {
       key_link_t *obj_key = reinterpret_cast<key_link_t*>(key_struct);
       controller_name = reinterpret_cast<const char*>(
@@ -482,7 +501,7 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
   status = ValidateRequest(db_conn, key_struct, new_val_struct,
                            oper_type, data_type, key_type);
   if (status != UNC_RC_SUCCESS) {
-    pfc_log_info(
+    pfc_log_debug(
         "HandleDriverEvents validation failed with %d "
         "for operation %d with data type %d", status, oper_type, data_type);
     if ((oper_type == UNC_OP_CREATE && status !=
@@ -490,6 +509,21 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
          ((oper_type == UNC_OP_UPDATE ||
            oper_type == UNC_OP_DELETE) &&
            status != UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE)) {
+      PhysicalLayer::ctr_oprn_mutex_.lock();
+      map<string, CtrOprnStatus> :: iterator it;
+      it = PhysicalLayer::ctr_oprn_status_.find(controller_name);
+      if (it != PhysicalLayer::ctr_oprn_status_.end()) {
+        if (it->second.EventsStartReceived == false ||
+                       it->second.IsIPChanged == true) {
+          pfc_log_debug("Alarm ignored,due to EventsStart/IPchanged flag");
+          PhysicalLayer::ctr_oprn_mutex_.unlock();
+          return UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+        }
+      }
+      PhysicalLayer::ctr_oprn_mutex_.unlock();
+      pfc_log_info(
+        "HandleDriverEvents validation failed with %d "
+        "for operation %d with data type %d", status, oper_type, data_type);
       // Raise validation failure alarm
       UncRespCode alarm_status = physical_layer->get_physical_core()->
           RaiseEventHandlingAlarm(controller_name);
@@ -508,8 +542,9 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
         alarm_status = physical_layer->get_physical_core()->
             SendEventHandlingFailureAlarm(controller_name,
                                           event_details);
-        pfc_log_debug("Event Handling Validation Failure alarm sent - status %d",
-                     alarm_status);
+        pfc_log_debug(
+            "Event Handling Validation Failure alarm sent - status %d",
+             alarm_status);
         } else {
         pfc_log_info(
             "Event Handling Validation Failure alarm not sent - status %d",
@@ -570,47 +605,50 @@ UncRespCode Kt_State_Base::HandleDriverEvents(
     }
   } else {
     UncRespCode alarm_status = physical_layer->get_physical_core()->
-        ClearEventHandlingAlarm(controller_name);
+      ClearEventHandlingAlarm(controller_name);
     if (alarm_status == UNC_RC_SUCCESS) {
       alarm_status = physical_layer->get_physical_core()->
           SendEventHandlingSuccessAlarm(controller_name,
-                                        event_details);
+                                    event_details);
     }
-    if (data_type != UNC_DT_IMPORT) {
-      pfc_ipcevtype_t event_type = GetEventType(key_type);
-      int err = 0;
-      ServerEvent ser_evt(event_type, err);
-      northbound_event_header rsh = {oper_type,
+    if (key_type != UNC_KT_PORT_NEIGHBOR) {
+      if (data_type != UNC_DT_IMPORT) {
+        pfc_ipcevtype_t event_type = GetEventType(key_type);
+        int err = 0;
+        ServerEvent ser_evt(event_type, err);
+        northbound_event_header rsh = {oper_type,
           data_type,
           key_type};
-      err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
-      err |= AddKeyStructuretoSession(key_type,
+        err = PhyUtil::sessOutNBEventHeader(ser_evt, rsh);
+        err |= AddKeyStructuretoSession(key_type,
+                                    ser_evt,
+                                    key_struct);
+        err |= AddValueStructuretoSession(key_type,
+                                      oper_type,
+                                      data_type,
                                       ser_evt,
-                                      key_struct);
-      err |= AddValueStructuretoSession(key_type,
-                                        oper_type,
-                                        data_type,
-                                        ser_evt,
-                                        new_val_struct,
-                                        old_value_struct);
-      if (err != 0) {
-        pfc_log_error(
+                                      new_val_struct,
+                                      old_value_struct);
+        if (err != 0) {
+          pfc_log_error(
             "Server Event addOutput failed, return IPC_WRITE_ERROR");
-        status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
-      } else {
+          status = UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
+        } else {
         // Call IPC server to post the event
-        status = (UncRespCode) physical_layer
-            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+          status = (UncRespCode) physical_layer
+              ->get_ipc_connection_manager()->SendEvent(&ser_evt,
+                                 controller_name, event_type);
+        }
       }
+      // Perform for oper_status handling
+      UncRespCode oper_status_handle = HandleOperStatus(db_conn, key_struct,
+                                                       oper_type,
+                                                       data_type,
+                                                       key_type,
+                                                       new_val_struct,
+                                                       controller_name);
+      pfc_log_debug("Oper Status Handling Status %d", oper_status_handle);
     }
-    // Perform for oper_status handling
-    UncRespCode oper_status_handle = HandleOperStatus(db_conn, key_struct,
-                                                         oper_type,
-                                                         data_type,
-                                                         key_type,
-                                                         new_val_struct,
-                                                         controller_name);
-    pfc_log_debug("Oper Status Handling Status %d", oper_status_handle);
   }
   // Old value structure memory clean up
   if (oper_type == UNC_OP_UPDATE) {

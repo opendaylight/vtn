@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,6 +16,7 @@ public class VBridgeBean {
 	private int vbrId;
 	private String vtnName;
 	private String vbrName;
+	private int vbrStatus;
 
 	public int getVbrId() {
 		return vbrId;
@@ -39,5 +40,13 @@ public class VBridgeBean {
 
 	public void setVbrName(String vbrName) {
 		this.vbrName = vbrName;
+	}
+
+	public int getVbrStatus() {
+		return vbrStatus;
+	}
+
+	public void setVbrStatus(int vbrStatus) {
+		this.vbrStatus = vbrStatus;
 	}
 }

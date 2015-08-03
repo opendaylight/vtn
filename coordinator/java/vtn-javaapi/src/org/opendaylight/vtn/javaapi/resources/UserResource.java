@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -114,7 +114,10 @@ public class UserResource extends AbstractResource {
 
 			session.addOutput(usessIpcReqUserPasswd);
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			if (status != UncSessionEnums.UsessIpcErrE.USESS_E_OK.ordinal()) {
 				LOG.info("Error occurred while performing operation");

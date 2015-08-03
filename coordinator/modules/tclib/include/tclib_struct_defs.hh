@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -78,7 +78,7 @@ typedef struct {
   uint8_t reconnect_controller; /*filled only for audit start*/
   TcAuditResult audit_result; /* filled only for audit end */
   TcTransEndResult end_result; /* filled for transaction end */
-  uint8_t simplified_audit; /*filled only for audit start*/
+  TcAuditType audit_type; /*filled only for audit start*/
   uint64_t commit_number; /*Filled only for audit start */
   uint64_t commit_date; /*Filled only for audit start */
   std::string commit_application; /*Filled only for audit start */
@@ -139,6 +139,9 @@ typedef struct {
 typedef struct {
   unc_keytype_datatype_t db_type;
   TcServiceType service_type;
+  TcConfigMode config_mode;
+  std::string vtn_name;
+  uint64_t version;
 }TcAuditConfigMsg;
 }  // tclib
 }  // unc

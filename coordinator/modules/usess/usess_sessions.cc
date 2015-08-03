@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -54,7 +54,7 @@ bool UsessSessions::Init(void)
 
   // configuration data load.
   rtn = conf_.LoadConf();
-  RETURN_IF((rtn != USESS_E_OK), false,
+  RETURN_IF2((rtn != USESS_E_OK), false,
       "Failure configuration data load. err=%d", rtn);
 
   table_.clear();
@@ -115,15 +115,15 @@ usess_ipc_err_e UsessSessions::Add(const usess_ipc_req_sess_add_t& add_sess,
 
   // check parameter. session type.
   sess_type = static_cast<usess_type_e>(add_sess.sess_type);
-  RETURN_IF((IsSessType(sess_type) != true), USESS_E_INVALID_SESSTYPE,
+  RETURN_IF2((IsSessType(sess_type) != true), USESS_E_INVALID_SESSTYPE,
       "Invalid session type. type = %d", add_sess.sess_type);
 
   // check parameter. user type.
-  RETURN_IF((IsUserType(user.type) != true), USESS_E_INVALID_USER,
+  RETURN_IF2((IsUserType(user.type) != true), USESS_E_INVALID_USER,
       "Invalid user type. type = %d", user.type);
 
   // check number of sessions that are registered.
-  RETURN_IF((CheckSessTypeCount(sess_type) != true), USESS_E_SESS_OVER,
+  RETURN_IF2((CheckSessTypeCount(sess_type) != true), USESS_E_SESS_OVER,
       "Session count over. session type = %d", sess_type);
 
   // ---------------------------------------------
@@ -131,11 +131,11 @@ usess_ipc_err_e UsessSessions::Add(const usess_ipc_req_sess_add_t& add_sess,
   // ---------------------------------------------
   // Editing session information.
   rtn = pfc_clock_get_realtime((pfc_timespec_t*)&sess_data.login_time);
-  RETURN_IF((rtn != 0), USESS_E_NG, "failed get login_time. err=%d (%s)",
+  RETURN_IF2((rtn != 0), USESS_E_NG, "failed get login_time. err=%d (%s)",
       rtn, strerror(rtn));
 
   sess_data.sess = GetNewSessionId(sess_type);
-  RETURN_IF((sess_data.sess.id == USESS_ID_INVALID), USESS_E_SESS_OVER,
+  RETURN_IF2((sess_data.sess.id == USESS_ID_INVALID), USESS_E_SESS_OVER,
     "Session count over. session type = %d", sess_type);
   sess_data.sess_type = add_sess.sess_type;
   sess_data.sess_mode = USESS_MODE_OPER;
@@ -147,6 +147,8 @@ usess_ipc_err_e UsessSessions::Add(const usess_ipc_req_sess_add_t& add_sess,
          sizeof(sess_data.sess_uname));
   sess_data.ipaddr = add_sess.ipaddr;
   memcpy(sess_data.info, add_sess.info, sizeof(sess_data.info));
+  sess_data.config_mode = TC_CONFIG_INVALID;
+  sess_data.vtn_name[0] = '\0';
 
   // create session class.
   table_.insert(usess_session_table_t::value_type(
@@ -176,12 +178,12 @@ usess_ipc_err_e UsessSessions::Del(const usess_ipc_sess_id_t& target)
   L_FUNCTION_START();
 
   // chack session.
-  RETURN_IF((table_.count(target.id) != 1), USESS_E_NO_SUCH_SESSID,
+  RETURN_IF2((table_.count(target.id) != 1), USESS_E_NO_SUCH_SESSID,
       "Invalid delete session ID = %d", target.id);
 
   // Get TC module instance.
   tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
-  RETURN_IF((tc_instance == NULL), USESS_E_NG,
+  RETURN_IF2((tc_instance == NULL), USESS_E_NG,
       "%s", "Failure TC module getinstance.");
 
   // release configuration mode session.
@@ -215,12 +217,12 @@ usess_ipc_err_e UsessSessions::Del(const usess_type_e target_sess_type)
   L_FUNCTION_START();
 
   // chack session type.
-  RETURN_IF((IsSessType(target_sess_type) != true), USESS_E_INVALID_SESSTYPE,
+  RETURN_IF2((IsSessType(target_sess_type) != true), USESS_E_INVALID_SESSTYPE,
       "Invalid delete session type = %d", target_sess_type);
 
   // Get TC module instance.
   tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
-  RETURN_IF((tc_instance == NULL), USESS_E_NG,
+  RETURN_IF2((tc_instance == NULL), USESS_E_NG,
       "%s", "Failure TC module getinstance.");
 
   // delete target search.
@@ -266,7 +268,7 @@ usess_ipc_err_e UsessSessions::Del(void)
 
   // Get TC module instance.
   tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
-  RETURN_IF((tc_instance == NULL), USESS_E_NG,
+  RETURN_IF2((tc_instance == NULL), USESS_E_NG,
       "%s", "Failure TC module getinstance.");
 
   // TC notification.
@@ -305,7 +307,7 @@ usess_ipc_err_e UsessSessions::GetSession(
 
   // chack session.
   it = table_.find(target.id);
-  RETURN_IF((it == table_.end()), USESS_E_NO_SUCH_SESSID,
+  RETURN_IF2((it == table_.end()), USESS_E_NO_SUCH_SESSID,
               "Failed session id. id=%d", target.id);
 
   *sess = &it->second;
@@ -343,8 +345,9 @@ usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
 {
   usess_session_table_t::iterator it;
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
-  uint32_t session_id = 0;
-  uint32_t config_id = 0;
+  uint32_t         config_id = 0;
+  TcConfigMode config_mode = TC_CONFIG_GLOBAL;
+  std::string      vtn_name = "";
   tc::TcModule *tc_instance = NULL;     // TC module instance.
 
 
@@ -352,7 +355,7 @@ usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
 
   // chack session.
   it = table_.find(target.id);
-  RETURN_IF((it == table_.end()), USESS_E_NO_SUCH_SESSID,
+  RETURN_IF2((it == table_.end()), USESS_E_NO_SUCH_SESSID,
       "Invalid session ID = %d", target.id);
 
   // list clear.
@@ -360,21 +363,39 @@ usess_ipc_err_e UsessSessions::GetList(const usess_ipc_sess_id_t& target,
 
   // list set.
   info_list.push_back(it->second.sess());
+  info_list[0].config_mode = TC_CONFIG_INVALID;
+  info_list[0].vtn_name[0] = '\0';
 
   // Get TC module instance.
   tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
-  RETURN_IF((tc_instance == NULL), USESS_E_NG,
+  RETURN_IF2((tc_instance == NULL), USESS_E_NG,
       "%s", "Failure TC module getinstance.");
 
   // set configration status.
-  tc_rtn = tc_instance->TcGetConfigSession(&session_id, &config_id);
-  RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
+  tc_rtn = tc_instance->TcGetConfigSession(target.id,
+                                           config_id,
+                                           config_mode,
+                                           vtn_name);
+
+  RETURN_IF2((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
              tc_rtn != tc::TC_NO_CONFIG_SESSION &&
              tc_rtn != tc::TC_INVALID_UNC_STATE), USESS_E_NG,
-        "Get configuration session to TC. err=%d", tc_rtn);
+            "Get configuration session to TC. id=%d err=%d",
+            target.id, tc_rtn);
 
-  if (tc_rtn == tc::TC_API_COMMON_SUCCESS && session_id == target.id) {
-    info_list[0].config_status = CONFIG_STATUS_TCLOCK;
+  if (tc_rtn == tc::TC_API_COMMON_SUCCESS) {
+    info_list[0].config_mode = (int32_t)config_mode;
+
+    if (config_mode == TC_CONFIG_VTN) {
+      strncpy((char *)&(info_list[0].vtn_name[0]),
+              (char *)vtn_name.c_str(), sizeof(info_list[0].vtn_name));
+      info_list[0].vtn_name[sizeof(info_list[0].vtn_name) - 1] = '\0';
+    }
+
+    info_list[0].config_status =
+      ((info_list[0].config_mode == TC_CONFIG_GLOBAL) ?
+       CONFIG_STATUS_TCLOCK :
+       CONFIG_STATUS_TCLOCK_PART);
   }
 
   L_FUNCTION_COMPLETE();
@@ -393,8 +414,9 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list)
 {
   usess_session_table_t::iterator it;
   tc::TcApiRet tc_rtn = tc::TC_API_COMMON_FAILURE;
-  uint32_t session_id = 0;
-  uint32_t config_id = 0;
+  uint32_t         config_id = 0;
+  TcConfigMode config_mode = TC_CONFIG_GLOBAL;
+  std::string      vtn_name = "";
   tc::TcModule *tc_instance = NULL;     // TC module instance.
 
 
@@ -402,15 +424,8 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list)
 
   // Get TC module instance.
   tc_instance = (tc::TcModule *)pfc::core::Module::getInstance("tc");
-  RETURN_IF((tc_instance == NULL), USESS_E_NG,
+  RETURN_IF2((tc_instance == NULL), USESS_E_NG,
       "%s", "Failure TC module getinstance.");
-
-  // set configration status.
-  tc_rtn = tc_instance->TcGetConfigSession(&session_id, &config_id);
-  RETURN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
-             tc_rtn != tc::TC_NO_CONFIG_SESSION &&
-             tc_rtn != tc::TC_INVALID_UNC_STATE), USESS_E_NG,
-        "Get configuration session to TC. err=%d", tc_rtn);
 
   // list clear.
   info_list.clear();
@@ -418,9 +433,34 @@ usess_ipc_err_e UsessSessions::GetList(usess_session_list_v& info_list)
   // list set.
   for (it = table_.begin(); it != table_.end(); ++it) {
     info_list.push_back(it->second.sess());
-    if (tc_rtn == tc::TC_API_COMMON_SUCCESS &&
-        session_id == it->second.sess().sess.id) {
-      info_list[info_list.size() - 1].config_status = CONFIG_STATUS_TCLOCK;
+    info_list[info_list.size() - 1].config_mode = TC_CONFIG_INVALID;
+    info_list[info_list.size() - 1].vtn_name[0] = '\0';
+
+    // set configration status.
+    tc_rtn = tc_instance->TcGetConfigSession(it->second.sess().sess.id,
+                                             config_id,
+                                             config_mode,
+                                             vtn_name);
+
+    WARN_IF((tc_rtn != tc::TC_API_COMMON_SUCCESS && 
+             tc_rtn != tc::TC_NO_CONFIG_SESSION &&
+             tc_rtn != tc::TC_INVALID_UNC_STATE),
+            "Get configuration session to TC. id=%d err=%d",
+            it->second.sess().sess.id, tc_rtn);
+
+    if (tc_rtn == tc::TC_API_COMMON_SUCCESS) {
+      info_list[info_list.size() - 1].config_mode = (int32_t)config_mode;
+
+      if (config_mode == TC_CONFIG_VTN) {
+        strncpy((char *)&(info_list[info_list.size() - 1].vtn_name[0]),
+                (char *)vtn_name.c_str(), sizeof(info_list[0].vtn_name));
+        info_list[info_list.size() - 1].vtn_name[sizeof(info_list[0].vtn_name) - 1] = '\0';
+      }
+
+      info_list[info_list.size() - 1].config_status =
+        ((info_list[info_list.size() - 1].config_mode == TC_CONFIG_GLOBAL) ?
+         CONFIG_STATUS_TCLOCK :
+         CONFIG_STATUS_TCLOCK_PART);
     }
   }
 
@@ -458,13 +498,13 @@ usess_ipc_err_e UsessSessions::Privilege(const session_privilege_e mode,
 
     // get current session.
     current_it = table_.find(current.id);
-    RETURN_IF((current_it == table_.end()), USESS_E_INVALID_SESSID,
+    RETURN_IF2((current_it == table_.end()), USESS_E_INVALID_SESSID,
         "Invalid current session ID. ID=%u", current.id);
   }
 
   // check target session.
   if (current.id != target.id) {
-    RETURN_IF((table_.count(target.id) != 1), USESS_E_NO_SUCH_SESSID,
+    RETURN_IF2((table_.count(target.id) != 1), USESS_E_NO_SUCH_SESSID,
         "Invalid target session ID. ID=%u", target.id);
   }
 
@@ -533,7 +573,7 @@ usess_ipc_err_e UsessSessions::LoadConf(void)
   L_FUNCTION_START();
 
   func_rtn = conf_.LoadConf();
-  RETURN_IF((func_rtn != USESS_E_OK), func_rtn,
+  RETURN_IF2((func_rtn != USESS_E_OK), func_rtn,
       "Failure configuration data load. err=%d", func_rtn);
 
   L_FUNCTION_COMPLETE();

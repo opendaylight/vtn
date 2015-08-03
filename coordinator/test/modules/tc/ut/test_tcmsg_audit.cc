@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,17 +8,6 @@
  */
 
 #include "test_tcmsg_audit.hh"
-
-TEST(AuditTransaction, ExcutePOLC_UNC_CT_MAX) {
-  TcMsgOperType oper =  MSG_AUDIT_TRANS_START;
-  TcOperRet retval =  TCOPER_RET_SUCCESS;
-
-  AuditTransaction Audit(SET,  oper);
-  Audit.channel_names_ =  GetChannelNameMapAudit(SET);
-  Audit.driver_id_ =  (unc_keytype_ctrtype_t)(UNC_CT_POLC + 1);
-  retval =  Audit.Execute();
-  EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
-}
 
 TEST(AuditTransaction, Excute_UNC_CT_POLC) {
   TcOperRet retval =  TCOPER_RET_SUCCESS;

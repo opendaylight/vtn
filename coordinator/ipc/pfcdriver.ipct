@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2014 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -115,3 +115,23 @@ ipc_struct pfcdrv_val_vlan_map {
   val_vlan_map  vm;
   UINT32        bdry_ref_count;
 };
+
+#vbr portmap value structure
+ipc_struct pfcdrv_val_vbr_portmap {
+  UINT8         valid[2];
+  val_vbr_portmap vbrpm;
+  UINT32 bdry_ref_count;
+};
+
+# pfcdrv_val_vtn_controller structure
+ipc_struct pfcdrv_val_vtn_controller {
+  UINT8  label_type;
+  UINT32 label;
+  UINT8 valid[2];
+};
+# vtn flooding path value structure
+ipc_struct pfcdrv_val_vtn_flooding_path {
+  UINT8     valid[1];
+  UINT32    gVtnId;
+};
+

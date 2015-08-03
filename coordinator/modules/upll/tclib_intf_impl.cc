@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -40,9 +40,28 @@ TcLibIntfImpl::~TcLibIntfImpl() {
 
 // NOLINT
 TcCommonRet TcLibIntfImpl::HandleCommitTransactionStart(uint32_t session_id,
-                                                        uint32_t config_id) {
+                                                      uint32_t config_id,
+                                                      TcConfigMode config_mode,
+                                                      std::string vtn_name) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
   ConfigKeyVal *err_ckv =  NULL;
-  upll_rc_t urc = ucm_->OnTxStart(session_id, config_id, &err_ckv);
+
+  TaskScheduler::Task *task = ucm_->fifo_scheduler_->AllowExecution(
+                              kCriticalTaskPriority, __FUNCTION__);
+  if (!task) {
+    UPLL_LOG_FATAL("Failed to add priority task in FIFO scheduler");
+    return unc::tclib::TC_FAILURE;
+  }
+  upll_rc_t urc = ucm_->OnTxStart(session_id, config_id, &err_ckv,
+                                 config_mode, vtn_name);
+  if (!(ucm_->fifo_scheduler_->DoneExecution(task))) {
+    UPLL_LOG_FATAL("Failed to complete the priority task");
+    return unc::tclib::TC_FAILURE;
+  }
+
   if (urc != UPLL_RC_SUCCESS) {
     // If local error in UPLL, send it to TC with controller id as ""
     const char *ctrlr_id = kUpllCtrlrId;
@@ -67,7 +86,7 @@ TcCommonRet TcLibIntfImpl::HandleCommitTransactionStart(uint32_t session_id,
     }
     if (urc != UPLL_RC_ERR_DRIVER_NOT_PRESENT) {
       // There was an error, let us end tx as TC won't call TxEnd
-      ucm_->OnTxEnd();
+      ucm_->OnTxEnd(config_mode, vtn_name);
     }
   }
   return ((urc == UPLL_RC_SUCCESS ||
@@ -76,9 +95,27 @@ TcCommonRet TcLibIntfImpl::HandleCommitTransactionStart(uint32_t session_id,
 }
 
 TcCommonRet TcLibIntfImpl::HandleCommitTransactionEnd(
-    uint32_t session_id, uint32_t config_id, TcTransEndResult end_result) {
+    uint32_t session_id, uint32_t config_id, TcConfigMode config_mode,
+    std::string vtn_name, TcTransEndResult end_result) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
+
   UPLL_LOG_TRACE("TxEnd result: %d", end_result);
-  upll_rc_t urc = ucm_->OnTxEnd();
+
+  TaskScheduler::Task *task = ucm_->fifo_scheduler_->AllowExecution(
+                              kCriticalTaskPriority, __FUNCTION__);
+  if (!task) {
+    UPLL_LOG_FATAL("Failed to add priority task in FIFO scheduler");
+    return unc::tclib::TC_FAILURE;
+  }
+  upll_rc_t urc = ucm_->OnTxEnd(config_mode, vtn_name);
+  if (!(ucm_->fifo_scheduler_->DoneExecution(task))) {
+    UPLL_LOG_FATAL("Failed to complete the priority task");
+    return unc::tclib::TC_FAILURE;
+  }
+
   WriteUpllErrorBlock(&urc);
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
           unc::tclib::TC_FAILURE);
@@ -91,10 +128,10 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
   PFC_ASSERT(driver_info != NULL);
   PFC_ASSERT(ctrlr_set != NULL);
 
-  std::vector<std::string> openflow_list, /*legacy_list,*/ overlay_list, polc_list;
-  int openflow_cnt = 0, /*legacy_cnt = 0,*/ overlay_cnt = 0, polc_cnt = 0;
-  std::vector<std::string> odc_list;
-  int odc_cnt = 0;
+  std::vector<std::string> openflow_list, /*legacy_list,*/
+      overlay_list, polc_list, odc_list;
+  int openflow_cnt = 0, /*legacy_cnt = 0,*/
+      overlay_cnt = 0, polc_cnt = 0, odc_cnt = 0;
 
   for (std::set<std::string>::iterator ctr_it = ctrlr_set->begin();
        ctr_it != ctrlr_set->end(); ++ctr_it) {
@@ -126,7 +163,7 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
     } else if (ctrlr_type == UNC_CT_LEGACY) {
       legacy_cnt++;
       legacy_list.push_back(ctrlr_name);
-    */  
+    */
     } else if (ctrlr_type == UNC_CT_VNP) {
       overlay_cnt++;
       overlay_list.push_back(ctrlr_name);
@@ -162,10 +199,29 @@ upll_rc_t TcLibIntfImpl::FillTcDriverInfoMap(
 }
 
 TcCommonRet TcLibIntfImpl::HandleCommitVoteRequest(
-    uint32_t session_id, uint32_t config_id, TcDriverInfoMap& driver_info) {
+    uint32_t session_id, uint32_t config_id,
+    TcConfigMode config_mode, std::string vtn_name,
+    TcDriverInfoMap& driver_info) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
   const std::set<std::string> *affected_ctrlr_list = NULL;
   ConfigKeyVal *err_ckv =  NULL;
-  upll_rc_t urc = ucm_->OnTxVote(&affected_ctrlr_list, &err_ckv);
+
+  TaskScheduler::Task *task = ucm_->fifo_scheduler_->AllowExecution(
+                              kCriticalTaskPriority, __FUNCTION__);
+  if (!task) {
+    UPLL_LOG_FATAL("Failed to add priority task in FIFO scheduler");
+    return unc::tclib::TC_FAILURE;
+  }
+  upll_rc_t urc = ucm_->OnTxVote(&affected_ctrlr_list, config_mode,
+                                 vtn_name, &err_ckv);
+  if (!(ucm_->fifo_scheduler_->DoneExecution(task))) {
+    UPLL_LOG_FATAL("Failed to complete the priority task");
+    return unc::tclib::TC_FAILURE;
+  }
+
   if (urc == UPLL_RC_SUCCESS) {
     urc = FillTcDriverInfoMap(&driver_info, affected_ctrlr_list, false);
   } else {
@@ -183,12 +239,32 @@ TcCommonRet TcLibIntfImpl::HandleCommitVoteRequest(
 }
 
 TcCommonRet TcLibIntfImpl::HandleCommitGlobalCommit(
-    uint32_t session_id, uint32_t config_id, TcDriverInfoMap& driver_info) {
-  // lock path fault event handling
-  ucm_->LockPathFaultEvent();
+    uint32_t session_id, uint32_t config_id,
+    TcConfigMode config_mode, std::string vtn_name,
+    TcDriverInfoMap& driver_info) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
+  // lock event handling
+  ucm_->LockAlarmEvent();
 
   const std::set<std::string> *affected_ctrlr_list = NULL;
-  upll_rc_t urc = ucm_->OnTxGlobalCommit(&affected_ctrlr_list);
+
+  TaskScheduler::Task *task = ucm_->fifo_scheduler_->AllowExecution(
+                              kCriticalTaskPriority, __FUNCTION__);
+  if (!task) {
+    UPLL_LOG_FATAL("Failed to add priority task in FIFO scheduler");
+    return unc::tclib::TC_FAILURE;
+  }
+  upll_rc_t urc = ucm_->OnTxGlobalCommit(&affected_ctrlr_list,
+                                         config_mode,
+                                         vtn_name);
+  if (!(ucm_->fifo_scheduler_->DoneExecution(task))) {
+    UPLL_LOG_FATAL("Failed to complete the priority task");
+    return unc::tclib::TC_FAILURE;
+  }
+
   if (urc == UPLL_RC_SUCCESS) {
     urc = FillTcDriverInfoMap(&driver_info, affected_ctrlr_list, false);
     if (urc != UPLL_RC_SUCCESS) {
@@ -418,6 +494,7 @@ static UncRespCode ConvertToTcErrorCode(uint32_t ctr_err_code) {
     case UNC_RC_CTR_DISCONNECTED:
     case UNC_RC_REQ_NOT_SENT_TO_CTR:
     case UNC_RC_NO_SUCH_INSTANCE:
+    case UNC_RC_REQUEST_CANCELLED:  // expected only in the case of audit
       return static_cast<UncRespCode>(ctr_err_code);
 
     default:
@@ -567,7 +644,8 @@ bool TcLibIntfImpl::WriteBackTxResult(const list<CtrlrTxResult*> &tx_res_list) {
           UPLL_LOG_INFO("Bad ConfigKeyVal key is NULL");
           return false;
         }
-        const pfc_ipcstdef_t *key_stdef = IpctSt::GetIpcStdef(ckv->get_st_num());
+        const pfc_ipcstdef_t *key_stdef =
+            IpctSt::GetIpcStdef(ckv->get_st_num());
         if (key_stdef == NULL) {
           UPLL_LOG_INFO("Unknown ConfigKeyVal key=%d", ckv->get_st_num());
           return false;
@@ -590,7 +668,8 @@ bool TcLibIntfImpl::WriteBackTxResult(const list<CtrlrTxResult*> &tx_res_list) {
           bzero(&val_stdef_dummy, sizeof(val_stdef_dummy));
           val_stdef = &val_stdef_dummy;
         }
-        unc::tclib::TcApiCommonRet tclib_ret = tclib->TcLibWriteKeyValueDataInfo(
+        unc::tclib::TcApiCommonRet tclib_ret =
+            tclib->TcLibWriteKeyValueDataInfo(
             res->ctrlr_id, ckv->get_key_type(), *key_stdef, *val_stdef,
             ckv->get_key(), ((cv) ? cv->get_val() : NULL));
         if (tclib_ret != unc::tclib::TC_API_COMMON_SUCCESS) {
@@ -608,6 +687,7 @@ bool TcLibIntfImpl::WriteBackTxResult(const list<CtrlrTxResult*> &tx_res_list) {
  */
 TcCommonRet TcLibIntfImpl::HandleCommonTxDriverResult(
     uint32_t session_id, uint32_t config_id,
+    TcConfigMode config_mode, std::string vtn_name,
     TcCommitPhaseType tx_phase, TcCommitPhaseResult driver_result) {
   UPLL_FUNC_TRACE;
   UPLL_LOG_TRACE("Commit phase: %d", tx_phase);
@@ -627,10 +707,13 @@ TcCommonRet TcLibIntfImpl::HandleCommonTxDriverResult(
   upll_rc_t urc;
   switch (tx_phase) {
     case unc::tclib::TC_COMMIT_VOTE_PHASE:
-      urc = ucm_->OnTxVoteCtrlrStatus(&tx_res_list);
+      urc = ucm_->OnTxVoteCtrlrStatus(&tx_res_list,
+                                      config_mode,
+                                      vtn_name);
       break;
     case unc::tclib::TC_COMMIT_GLOBAL_COMMIT_PHASE:
-      urc = ucm_->OnTxCommitCtrlrStatus(session_id, config_id, &tx_res_list);
+      urc = ucm_->OnTxCommitCtrlrStatus(session_id, config_id, &tx_res_list,
+                                        config_mode, vtn_name);
       break;
     case unc::tclib::TC_AUDIT_VOTE_PHASE:
       if (tx_res_list.size() != 1) {
@@ -662,6 +745,9 @@ TcCommonRet TcLibIntfImpl::HandleCommonTxDriverResult(
     // Now write UPLL result back to TCLIB
     tcr = ((WriteBackTxResult(tx_res_list) == true) ?  unc::tclib::TC_SUCCESS :
            unc::tclib::TC_FAILURE);
+  } else if (urc == UPLL_RC_ERR_AUDIT_CANCELLED &&
+             tx_phase == unc::tclib::TC_AUDIT_VOTE_PHASE) {
+    tcr = unc::tclib::TC_CANCELLED_AUDIT;
   } else {
     UPLL_LOG_TRACE("ConfigMgr failed to process the commit result %d", urc);
     WriteUpllErrorBlock(&urc);
@@ -700,16 +786,36 @@ TcCommonRet TcLibIntfImpl::HandleCommonTxDriverResult(
 
 TcCommonRet TcLibIntfImpl::HandleCommitDriverResult(
     uint32_t session_id, uint32_t config_id,
+    TcConfigMode config_mode, std::string vtn_name,
     TcCommitPhaseType tx_phase, TcCommitPhaseResult driver_result) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
+
+  TaskScheduler::Task *task = ucm_->fifo_scheduler_->AllowExecution(
+                              kCriticalTaskPriority, __FUNCTION__);
+  if (!task) {
+    UPLL_LOG_FATAL("Failed to add priority task in FIFO scheduler");
+    return unc::tclib::TC_FAILURE;
+  }
   TcCommonRet tcr = HandleCommonTxDriverResult(session_id, config_id,
+                                               config_mode, vtn_name,
                                                tx_phase, driver_result);
-  // unlock path fault event
-  ucm_->UnlockPathFaultEvent();
+  if (!(ucm_->fifo_scheduler_->DoneExecution(task))) {
+    UPLL_LOG_FATAL("Failed to complete the priority task");
+    return unc::tclib::TC_FAILURE;
+  }
+
+  // unlock event handling
+  ucm_->UnlockAlarmEvent();
   return tcr;
 }
 
 TcCommonRet TcLibIntfImpl::HandleCommitGlobalAbort(
-    uint32_t session_id, uint32_t config_id, TcCommitOpAbortPhase fail_phase) {
+    uint32_t session_id, uint32_t config_id,
+    TcConfigMode config_mode, std::string vtn_name,
+    TcCommitOpAbortPhase fail_phase) {
   return unc::tclib::TC_SUCCESS;
 }
 
@@ -719,17 +825,21 @@ TcCommonRet TcLibIntfImpl::HandleCommitGlobalAbort(
 TcCommonRet TcLibIntfImpl::HandleAuditStart(uint32_t session_id,
                                             unc_keytype_ctrtype_t ctr_type,
                                             std::string controller_id,
-                                            pfc_bool_t simplified_audit,
+                                            TcAuditType audit_type,
                                             uint64_t commit_number,
                                             uint64_t commit_date,
                                             std::string commit_application) {
-  upll_rc_t urc = ucm_->OnAuditStart(controller_id.c_str(), simplified_audit);
-  if (urc != UPLL_RC_SUCCESS) {
+  upll_rc_t urc = ucm_->OnAuditStart(controller_id.c_str(), audit_type);
+  if (urc != UPLL_RC_SUCCESS &&
+      urc != UPLL_RC_ERR_AUDIT_CANCELLED) {
     ucm_->OnAuditEnd(controller_id.c_str(), false);
   }
-  WriteUpllErrorBlock(&urc);
+  if (urc != UPLL_RC_ERR_AUDIT_CANCELLED) {
+    WriteUpllErrorBlock(&urc);
+  }
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
-          unc::tclib::TC_FAILURE);
+          ((urc == UPLL_RC_ERR_AUDIT_CANCELLED) ?
+           unc::tclib::TC_CANCELLED_AUDIT : unc::tclib::TC_FAILURE));
 }
 
 
@@ -744,13 +854,26 @@ TcCommonRet TcLibIntfImpl::HandleAuditEnd(uint32_t session_id,
           unc::tclib::TC_FAILURE);
 }
 
+/**
+ * @brief Message sent by TC to UPLL to cancel the ongoing audit operation
+ */
+TcCommonRet TcLibIntfImpl::HandleAuditCancel(uint32_t session_id,
+                                             unc_keytype_ctrtype_t ctr_type,
+                                             std::string controller_id) {
+  upll_rc_t urc = ucm_->OnAuditCancel();
+  return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
+          unc::tclib::TC_FAILURE);
+}
+
 
 TcCommonRet TcLibIntfImpl::HandleAuditTransactionStart(
     uint32_t session_id, unc_keytype_ctrtype_t ctr_type,
     std::string controller_id) {
   ConfigKeyVal *err_ckv =  NULL;
-  upll_rc_t urc = ucm_->OnAuditTxStart(controller_id.c_str(), session_id, 0, &err_ckv);
-  if (urc != UPLL_RC_SUCCESS) {
+  upll_rc_t urc = ucm_->OnAuditTxStart(controller_id.c_str(), session_id,
+                                       0, &err_ckv);
+  if (urc != UPLL_RC_SUCCESS &&
+      urc != UPLL_RC_ERR_AUDIT_CANCELLED) {
     // If local error in UPLL, send it to TC with controller id as ""
     const char *ctrlr_id = kUpllCtrlrId;
     if (err_ckv != NULL) {
@@ -774,7 +897,8 @@ TcCommonRet TcLibIntfImpl::HandleAuditTransactionStart(
     }
   }
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
-          unc::tclib::TC_FAILURE);
+          ((urc == UPLL_RC_ERR_AUDIT_CANCELLED) ?
+           unc::tclib::TC_CANCELLED_AUDIT : unc::tclib::TC_FAILURE));
 }
 
 
@@ -806,8 +930,8 @@ TcCommonRet TcLibIntfImpl::HandleAuditGlobalCommit(
     uint32_t session_id, uint32_t driver_id,
     std::string controller_id, TcDriverInfoMap& driver_info,
     TcAuditResult& audit_result) {
-  // Lock path fault event;
-  ucm_->LockPathFaultEvent();
+  // Lock event;
+  ucm_->LockAlarmEvent();
 
   const std::set<std::string> *affected_ctrlr_list = NULL;
   upll_rc_t urc = ucm_->OnAuditTxGlobalCommit(controller_id.c_str(),
@@ -829,8 +953,10 @@ TcCommonRet TcLibIntfImpl::HandleAuditDriverResult(
     uint32_t session_id, std::string controller_id,
     TcCommitPhaseType phase, TcCommitPhaseResult driver_result,
     TcAuditResult &audit_result) {
-  TcCommonRet tcr = HandleCommonTxDriverResult(session_id, 0, phase,
-                                               driver_result);
+  TcConfigMode config_mode = TC_CONFIG_GLOBAL;
+  std::string vtn_name = "";
+  TcCommonRet tcr = HandleCommonTxDriverResult(session_id, 0, config_mode,
+                                               vtn_name, phase, driver_result);
   /* Note: audit_result is applicable only to TC_AUDIT_GLOBAL_COMMIT_PHASE.
    * For TC_AUDIT_VOTE_PHASE, audit_result will be set to SUCCESS irrespective
    * of the vote result at UNC / Controler. */
@@ -851,8 +977,8 @@ TcCommonRet TcLibIntfImpl::HandleAuditDriverResult(
       }
     }
   }
-  // unlock path fault event
-  ucm_->UnlockPathFaultEvent();
+  // unlock event handling
+  ucm_->UnlockAlarmEvent();
   return tcr;
 }
 
@@ -866,8 +992,11 @@ TcCommonRet TcLibIntfImpl::HandleAuditGlobalAbort(
 /**
  * @brief Save Configuration
  */
-TcCommonRet TcLibIntfImpl::HandleSaveConfiguration(uint32_t session_id) {
-  upll_rc_t urc = ucm_->OnSaveRunningConfig(session_id);
+TcCommonRet TcLibIntfImpl::HandleSaveConfiguration(uint32_t session_id,
+                                                   uint64_t version_no) {
+  bool prv_op_failed = false;
+  upll_rc_t urc = ucm_->OnSaveRunningConfig(session_id, false,
+                                            version_no, &prv_op_failed);
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
           unc::tclib::TC_FAILURE);
 }
@@ -877,8 +1006,29 @@ TcCommonRet TcLibIntfImpl::HandleSaveConfiguration(uint32_t session_id) {
  * @brief Abort Candidate Configuration
  */
 TcCommonRet TcLibIntfImpl::HandleAbortCandidate(uint32_t session_id,
-                                                uint32_t config_id) {
-  upll_rc_t urc = ucm_->OnAbortCandidateConfig(session_id);
+                                                uint32_t config_id,
+                                                TcConfigMode config_mode,
+                                                std::string vtn_name,
+                                                uint64_t version_no) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
+  TaskScheduler::Task *task = ucm_->fifo_scheduler_->AllowExecution(
+                              kCriticalTaskPriority, __FUNCTION__);
+  if (!task) {
+    UPLL_LOG_FATAL("Failed to add priority task in FIFO scheduler");
+    return unc::tclib::TC_FAILURE;
+  }
+  bool prv_op_failed = false;
+  upll_rc_t urc = ucm_->OnAbortCandidateConfig(session_id, false,
+                                              version_no, &prv_op_failed,
+                                              config_mode, vtn_name);
+  if (!(ucm_->fifo_scheduler_->DoneExecution(task))) {
+    UPLL_LOG_FATAL("Failed to complete the priority task");
+    return unc::tclib::TC_FAILURE;
+  }
+
   return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
           unc::tclib::TC_FAILURE);
 }
@@ -898,9 +1048,16 @@ TcCommonRet TcLibIntfImpl::HandleClearStartup(uint32_t session_id) {
  * @brief HandleAuditConfig DB
  */
 TcCommonRet TcLibIntfImpl::HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                             TcServiceType fail_oper) {
-  if (IsActiveNode()) {
-    UPLL_LOG_WARN("Node is active, cannot handle Tclib audit config");
+                                             TcServiceType fail_oper,
+                                             TcConfigMode config_mode,
+                                             std::string vtn_name,
+                                             uint64_t version_no) {
+  if (config_mode == TC_CONFIG_REAL) {
+    UPLL_LOG_DEBUG("config mode is real mode");
+    return unc::tclib::TC_SUCCESS;
+  }
+  if (!IsActiveNode()) {
+    UPLL_LOG_WARN("Node is not active, cannot handle Tclib audit config");
     return unc::tclib::TC_FAILURE;
   }
   if (IsShuttingDown()) {
@@ -908,6 +1065,15 @@ TcCommonRet TcLibIntfImpl::HandleAuditConfig(unc_keytype_datatype_t db_target,
     return unc::tclib::TC_FAILURE;
   }
 
+  // NOTE: UPLL does not validate AUDIT-DB preconditions after cold-start
+  // It is expected TC calls UPLL only for Commit failure if auto-save is
+  // enabled and Save failure & Clear failure if auto-save is disabled.
+  if (!ucm_->UpdateDirtyCache()) {
+    UPLL_LOG_INFO("UpdateDirtyCache failed. dt:%d, fail_op:%d, cfg_mode:%d, "
+                  "vtn_name:%s, version_no:%"PFC_PFMT_u64, db_target, fail_oper,
+                  config_mode, vtn_name.c_str(), version_no);
+    return unc::tclib::TC_FAILURE;
+  }
   upll_rc_t urc;
 
   switch (fail_oper) {
@@ -917,16 +1083,33 @@ TcCommonRet TcLibIntfImpl::HandleAuditConfig(unc_keytype_datatype_t db_target,
         // NOTE: Each MoMgr on NULL tx_res_list, should just copy candidate to
         // running with cs_status as NOT_APPLIED for all diff-config.
         list<CtrlrTxResult*> tx_res_list;
-        urc = ucm_->OnTxCommitCtrlrStatus(0, 0, NULL);
+        urc = ucm_->OnTxCommitCtrlrStatus(0, 0, NULL, config_mode, vtn_name);
         return ((urc == UPLL_RC_SUCCESS) ? unc::tclib::TC_SUCCESS :
                 unc::tclib::TC_FAILURE);
       }
       break;
     case TC_OP_CANDIDATE_ABORT:
-      return HandleAbortCandidate(0, 0);
+      {
+        bool prv_op_failed = false;
+        urc = ucm_->OnAbortCandidateConfig(0, true, version_no,
+                                           &prv_op_failed, config_mode,
+                                           vtn_name);
+        return ((urc == UPLL_RC_SUCCESS) ? ((prv_op_failed) ?
+                                           unc::tclib::TC_LAST_DB_OPER_FAILURE :
+                                           unc::tclib::TC_SUCCESS) :
+                                           unc::tclib::TC_FAILURE);
+      }
       break;
     case TC_OP_RUNNING_SAVE:
-      return HandleSaveConfiguration(0);
+      {
+        bool prv_op_failed = false;
+        urc = ucm_->OnSaveRunningConfig(0, true, version_no,
+                                        &prv_op_failed);
+        return ((urc == UPLL_RC_SUCCESS) ? ((prv_op_failed) ?
+                                            unc::tclib::TC_LAST_DB_OPER_FAILURE:
+                                            unc::tclib::TC_SUCCESS) :
+                                            unc::tclib::TC_FAILURE);
+      }
       break;
     case TC_OP_CLEAR_STARTUP:
       return HandleClearStartup(0);
@@ -965,6 +1148,11 @@ TcCommonRet TcLibIntfImpl::HandleSetup() {
  */
 TcCommonRet TcLibIntfImpl::HandleSetupComplete() {
   UPLL_LOG_INFO("*** %s ***", __FUNCTION__);
+  ucm_->PopulateCtrlrInfo();
+  upll_rc_t urc = ucm_->HandleSpineThresholdAlarm(true);
+  if (urc != UPLL_RC_SUCCESS) {
+    UPLL_LOG_ERROR("Failed to send threshold alarms, urc=%d", urc);
+  }
   return unc::tclib::TC_SUCCESS;
 }
 
@@ -1026,6 +1214,6 @@ void TcLibIntfImpl::WriteUpllErrorBlock(upll_rc_t *urc) {
 }
 
                                                                        // NOLINT
-}  // config_momgr
-}  // upll
-}  // unc
+}  // namespace config_momgr
+}  // namespace upll
+}  // namespace unc

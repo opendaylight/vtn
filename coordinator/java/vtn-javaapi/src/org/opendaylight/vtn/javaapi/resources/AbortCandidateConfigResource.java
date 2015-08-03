@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -62,6 +62,8 @@ public class AbortCandidateConfigResource extends AbstractResource {
 		LOG.trace("Starts AbortCandidateConfigResource#put()");
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
+		String timeout = null;
+		String cancelAudit = null;
 		try {
 			LOG.debug("Start Ipc framework call");
 			session = getConnPool().getSession(UncTCEnums.UNC_CHANNEL_NAME,
@@ -78,9 +80,21 @@ public class AbortCandidateConfigResource extends AbstractResource {
 							.getAsJsonPrimitive(VtnServiceJsonConsts.OPERATION)
 							.getAsString()
 							.equalsIgnoreCase(VtnServiceJsonConsts.ABORT)) {
+				final JsonObject candidate = requestBody
+						.getAsJsonObject(VtnServiceJsonConsts.CANDIDATE);
+				if (candidate.has(VtnServiceJsonConsts.TIMEOUT)) {
+					timeout = candidate.getAsJsonPrimitive(
+							VtnServiceJsonConsts.TIMEOUT).getAsString();
+				}
+
+				if (candidate.has(VtnServiceJsonConsts.CANCEL_AUDIT)) {
+					cancelAudit = candidate.getAsJsonPrimitive(
+							VtnServiceJsonConsts.CANCEL_AUDIT).getAsString();
+				}
+
 				session.addOutput(IpcDataUnitWrapper
-						.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_CANDIDATE_ABORT
-								.ordinal()));
+							.setIpcUint32Value(UncTCEnums.ServiceType
+									.TC_OP_CANDIDATE_ABORT_TIMED.ordinal()));
 			} else {
 				LOG.warning("Request body is not correct");
 			}
@@ -88,16 +102,23 @@ public class AbortCandidateConfigResource extends AbstractResource {
 					.setIpcUint32Value(getSessionID()));
 			session.addOutput(IpcDataUnitWrapper
 					.setIpcUint32Value(getConfigID()));
+			session.addOutput(IpcDataUnitWrapper.setIpcInt32Value(
+					Integer.parseInt(timeout)));
+			session.addOutput(IpcDataUnitWrapper
+					.setIpcUint8Value(cancelAudit));
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_0));
-			final String configId = IpcDataUnitWrapper
+			final String sessionId = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session
 							.getResponse(VtnServiceJsonConsts.VAL_1));
-			final String sessionId = IpcDataUnitWrapper.getIpcDataUnitValue(
+			final String configId = IpcDataUnitWrapper.getIpcDataUnitValue(
 					session.getResponse(VtnServiceJsonConsts.VAL_2)).toString();
 			final int operationStatus = Integer.parseInt(IpcDataUnitWrapper
 					.getIpcDataUnitValue(session

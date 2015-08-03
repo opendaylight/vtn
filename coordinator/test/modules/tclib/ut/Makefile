@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -22,9 +22,10 @@ MODULE_SRCROOT = $(GTEST_SRCROOT)/modules
 TCLIB_SRCDIR = $(MODULE_SRCROOT)/tclib
 MISC_STUBDIR = $(COMMON_STUB_PATH)/stub/misc
 STUB_DIR = $(COMMON_STUB_PATH)/stub
+#TCLIB_STUBDIR = $(COMMON_STUB_PATH)/stub/tclib_module
 
 # Define a list of directories that contain source files.
-ALT_SRCDIRS =  $(TCLIB_SRCDIR) $(STUB_DIR) $(MISC_STUBDIR)
+ALT_SRCDIRS =  $(TCLIB_SRCDIR) $(STUB_DIR) $(MISC_STUBDIR) #$(TCLIB_STUBDIR)
 
 CXX_INCDIRS  +=  core/include/cxx
 CXX_INCDIRS  +=  core/libs/
@@ -32,6 +33,8 @@ CXX_INCDIRS  +=  core/libs/
 UT_INCDIRS_PREP = ${COMMON_STUB_PATH}
 
 EXTRA_CXX_INCDIRS = $(STUB_DIR)/include
+EXTRA_CXX_INCDIRS = $(STUB_DIR)/include/cxx/pfcxx
+#EXTRA_CXX_INCDIRS += $(TCLIB_STUBDIR)
 EXTRA_CXX_INCDIRS += $(MODULE_SRCROOT)
 EXTRA_CXX_INCDIRS += $(GTEST_SRCROOT)/include/unc
 EXTRA_CXX_INCDIRS += $(GTEST_SRCROOT)/include/uncxx

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -138,6 +138,8 @@ class ClientSession {
   int   getResponse(uint32_t, val_path_fault_alarm_t&);
   int   getResponse(uint32_t, key_boundary_t&);
   int   getResponse(uint32_t, val_boundary_st_t&);
+  int   getResponse(uint32_t, val_port_st_neighbor&);
+  int   getResponse(uint32_t, key_ctr_dataflow_t&);
   uint32_t getResponseCount(void);
   int getResponseType(uint32_t index, pfc_ipctype_t& type);
 

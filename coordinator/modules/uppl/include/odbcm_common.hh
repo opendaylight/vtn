@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -64,6 +64,11 @@ namespace uppl {
  * 10.database user's password
  */
 #define ODBCM_CONF_FILE                 "odbcm.conf"
+
+/*CTR_PORT_INVALID_VALUE will be returned when controller_table
+ * port attribute is null*/
+#define CTR_PORT_INVALID_VALUE          65536
+
 /**null string assign*/
 #define ODBCM_NULL_STRING ""
 
@@ -90,6 +95,8 @@ typedef enum {
   CTR_ENABLE_AUDIT,
   CTR_ACTUAL_VERSION,
   CTR_OPER_STATUS,
+  CTR_PORT,
+  CTR_PORT_READ,
   CTR_VALID,
   CTR_CS_ROW_STATUS,
   CTR_CS_ATTR,
@@ -97,6 +104,8 @@ typedef enum {
   CTR_COMMIT_DATE,
   CTR_COMMIT_APPLICATION,
   CTR_VALID_COMMIT_VERSION,
+  CTR_ACTUAL_CONTROLLERID,
+  CTR_VALID_ACTUAL_CONTROLLERID,
   DOMAIN_NAME,
   DOMAIN_TYPE,
   DOMAIN_DESCRIPTION,
@@ -141,6 +150,10 @@ typedef enum {
   PORT_ALARM_STATUS,
   PORT_LOGIC_PORT_ID,
   PORT_VALID,
+  PORT_CONNECTED_SWITCH_ID,
+  PORT_CONNECTED_PORT_ID,
+  PORT_CONNECTED_CONTROLLER_ID,
+  PORT_CONNECTEDNEIGHBOR_VALID,
   LINK_SWITCH_ID1,
   LINK_PORT_ID1,
   LINK_SWITCH_ID2,
@@ -181,10 +194,14 @@ typedef struct {
 #define CTR_USER_NAME_STR       "user_name"
 #define CTR_PASSWORD_STR        "password"
 #define CTR_ENABLE_AUDIT_STR    "enable_audit"
+#define CTR_PORT_STR            "port"
+#define CTR_PORT_STR_COALESCE   "COALESCE(port, 65536)"
 #define CTR_COMMIT_NUMBER_STR    "commit_number"
 #define CTR_COMMIT_DATE_STR    "commit_date"
 #define CTR_COMMIT_APPLICATION_STR    "commit_application"
 #define CTR_ACTUAL_VERSION_STR  "actual_version"
+#define CTR_ACTUAL_CONTROLLERID_STR   "actual_controllerid"
+#define CTR_VALID_ACTUAL_CONTROLLERID_STR   "actual_ctrid_valid"
 #define CTR_OPER_STATUS_STR     "oper_status"
 #define CTR_VALID_STR           "valid"
 #define CTR_CS_ROW_STATUS_STR   "cs_row_status"
@@ -243,7 +260,11 @@ typedef struct {
 #define PORT_SPEED_STR          "speed"
 #define PORT_ALARM_STATUS_STR   "alarms_status"
 #define PORT_LOGIC_PORT_ID_STR  "logical_port_id"
+#define PORT_CONNECTED_CONTROLLER_ID_STR   "connected_controller"
+#define PORT_CONNECTED_SWITCH_ID_STR   "connected_switch"
+#define PORT_CONNECTED_PORT_ID_STR   "connected_port"
 #define PORT_VALID_STR          "valid"
+#define PORT_CONNECTEDNEIGHBOR_VALID_STR          "connectedneighbor_valid"
 
 // link_table columns
 #define LINK_SWITCH_ID1_STR     "switch_id1"

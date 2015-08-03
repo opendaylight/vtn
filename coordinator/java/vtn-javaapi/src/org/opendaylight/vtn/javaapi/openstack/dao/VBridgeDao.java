@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,10 +12,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.openstack.beans.VBridgeBean;
 import org.opendaylight.vtn.javaapi.openstack.dbmanager.VtnOpenStackSQLFactory;
+import org.opendaylight.vtn.javaapi.openstack.dao.CommonDao;
 
 /**
  * Data Access Object Class for os_vbr_tbl table
@@ -35,17 +38,47 @@ public class VBridgeDao {
 	 */
 	public int getNextId(Connection connection, String vtnName)
 			throws SQLException {
-		final String sql = VtnOpenStackSQLFactory.SEL_VBR_ID_SQL;
+		String sql = VtnOpenStackSQLFactory.SEL_VBR_LIST_ID_CNT_SQL;
 		int vbrResourceId = -1;
 		PreparedStatement statement = null;
 		ResultSet resultSet = null;
+
+		CommonDao comDao = new CommonDao();
+		List<Integer> idList = new ArrayList<Integer>();
+		int low, high;
+
 		try {
 			statement = connection.prepareStatement(sql);
 			statement.setString(1, vtnName);
 			resultSet = statement.executeQuery();
 			if (resultSet.next()) {
-				vbrResourceId = resultSet.getInt(1) + 1;
+				vbrResourceId = resultSet.getInt(1);
+				LOG.debug("Get flow list id counter : "	+ vbrResourceId);
+			} else {
+				vbrResourceId = 0;
+			}
+
+			if (resultSet != null) {
+				resultSet.close();
+				resultSet = null;
+			}
+			if (statement != null) {
+				statement.close();
+				statement = null;
+			}
+
+			if (0 == vbrResourceId) {
+				vbrResourceId++;
 				LOG.debug("Auto generated resource counter : " + vbrResourceId);
+				return vbrResourceId;
+			}
+
+			sql = VtnOpenStackSQLFactory.SEL_VBR_LIST_ID_LIST_SQL;
+			statement = connection.prepareStatement(sql);
+			statement.setString(1, vtnName);
+			resultSet = statement.executeQuery();
+			while (resultSet.next()) {
+				idList.add(resultSet.getInt(1));
 			}
 		} finally {
 			if (resultSet != null) {
@@ -55,6 +88,17 @@ public class VBridgeDao {
 				statement.close();
 			}
 		}
+
+		if (idList.get(idList.size() - 1).intValue() == vbrResourceId) {
+			vbrResourceId++;
+			LOG.debug("Auto generated resource counter : " + vbrResourceId);
+			return vbrResourceId;
+		}
+
+		low = 1;
+		high = idList.size();
+		vbrResourceId = comDao.getCount(idList, low, high);
+		LOG.debug("Auto generated resource counter : " + vbrResourceId);
 		return vbrResourceId;
 	}
 
@@ -78,6 +122,7 @@ public class VBridgeDao {
 			statement.setInt(1, vBridgeBean.getVbrId());
 			statement.setString(2, vBridgeBean.getVtnName());
 			statement.setString(3, vBridgeBean.getVbrName());
+			statement.setInt(4, vBridgeBean.getVbrStatus());
 			status = statement.executeUpdate();
 		} finally {
 			if (statement != null) {
@@ -139,7 +184,7 @@ public class VBridgeDao {
 			statement.setString(1, vBridgeBean.getVtnName());
 			statement.setString(2, vBridgeBean.getVbrName());
 			resultSet = statement.executeQuery();
-			if (resultSet.next() && resultSet.getInt(1) > 0) {
+			if (resultSet.next() && (resultSet.getInt(1) > 0)) {
 				isFound = true;
 			}
 		} finally {

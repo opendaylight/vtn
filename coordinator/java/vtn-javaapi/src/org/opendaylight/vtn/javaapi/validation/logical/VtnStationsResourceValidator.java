@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -235,27 +235,6 @@ public class VtnStationsResourceValidator extends VtnServiceValidator {
 								.getAsJsonPrimitive(
 										VtnServiceJsonConsts.VTNNAME)
 								.getAsString().isEmpty();
-			}
-		}
-		// validation for key: vnode_type
-		if (isValid) {
-			setInvalidParameter(VtnServiceJsonConsts.VNODETYPE);
-			if (requestBody.has(VtnServiceJsonConsts.VNODETYPE)
-					&& requestBody.getAsJsonPrimitive(
-							VtnServiceJsonConsts.VNODETYPE).getAsString() != null) {
-
-				String vnodeType = requestBody.getAsJsonPrimitive(
-						VtnServiceJsonConsts.VNODETYPE).getAsString();
-				if (vnodeType.equals(VtnServiceJsonConsts.VBRIDGE)
-						|| vnodeType.equals(VtnServiceJsonConsts.VROUTER)
-						|| vnodeType.equals(VtnServiceJsonConsts.VTERMINAL)
-						|| vnodeType.equals(VtnServiceJsonConsts.VBYPASS)
-						|| vnodeType.equals(VtnServiceJsonConsts.VTEP)
-						|| vnodeType.equals(VtnServiceJsonConsts.VTUNNEL)
-						|| vnodeType.equals(VtnServiceJsonConsts.EMPTY)) {
-					isValid = true;
-				}
-
 			}
 		}
 		// validation for key: vnode_name

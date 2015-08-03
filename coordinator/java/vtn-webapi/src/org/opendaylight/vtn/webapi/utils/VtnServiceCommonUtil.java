@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -197,6 +197,7 @@ public final class VtnServiceCommonUtil {
 		return configID;
 	}
 
+
 	/**
 	 * Gets the content type.
 	 * 
@@ -204,76 +205,56 @@ public final class VtnServiceCommonUtil {
 	 *            the uri
 	 * @return the content type
 	 */
-	public static String getContentType(final HttpServletRequest request) {
+	public static String getResponseBodyContentType(final HttpServletRequest request) {
 		LOG.trace("Start VtnServiceCommonUtil#getContentType()");
 
 		String contentType = null;
-		LOG.debug("Http Method : " + request.getMethod());
-		if (request.getMethod().equalsIgnoreCase(
-				ApplicationConstants.GET_METHOD_NAME)
-				|| request.getMethod().equalsIgnoreCase(
-						ApplicationConstants.DELETE_METHOD_NAME)) {
-			final String requestURI = request.getRequestURI();
-			if (requestURI.lastIndexOf(ApplicationConstants.DOT_REGEX) != -1) {
-				String extension = requestURI.substring(requestURI
-						.lastIndexOf(ApplicationConstants.DOT_REGEX));
-				if (extension.indexOf(ApplicationConstants.QUESTION_MARK_CHAR) != -1) {
-					extension = extension.substring(0, extension.indexOf("?"));
-				}
-				if (null != extension
-						&& (extension
-								.equalsIgnoreCase(ApplicationConstants.TYPE_XML) || extension
-								.equalsIgnoreCase(ApplicationConstants.TYPE_JSON))) {
-					if (extension
-							.equalsIgnoreCase(ApplicationConstants.TYPE_XML)) {
-						contentType = ContentTypeEnum.APPLICATION_XML
-								.getContentType();
-					} else if (extension
-							.equalsIgnoreCase(ApplicationConstants.TYPE_JSON)) {
-						contentType = ContentTypeEnum.APPLICATION_JSON
-								.getContentType();
-					}
-				}
+		final String requestURI = request.getRequestURI();
+		if (requestURI.lastIndexOf(ApplicationConstants.DOT_REGEX) != -1) {
+			String extension = requestURI.substring(requestURI
+					.lastIndexOf(ApplicationConstants.DOT_REGEX));
+			if (extension.indexOf(ApplicationConstants.QUESTION_MARK_CHAR) != -1) {
+				extension = extension.substring(0, extension.indexOf("?"));
 			}
-			
-			if (null == contentType) {
-				final String acceptHeaderValue = request
-						.getHeader(ApplicationConstants.HTTP_HEADER_ACCEPT);
-				if (acceptHeaderValue != null) {
-					String acceptHeader[] = acceptHeaderValue
-							.split(ApplicationConstants.SEMI_COLON);
-					if (acceptHeader.length > 0
-							&& !acceptHeader[0]
-									.equalsIgnoreCase(ApplicationConstants.DEFAULT_ACCEPT)) {
-						if (acceptHeader[0]
-								.equalsIgnoreCase(ContentTypeEnum.APPLICATION_JSON
-										.getContentType())
-								|| acceptHeader[0]
-										.equalsIgnoreCase(ContentTypeEnum.APPLICATION_XML
-												.getContentType())) {
-							contentType = acceptHeader[0];
-						}
-					}
-				}
-			}
-			
-			if (null == contentType) {
-				contentType = ContentTypeEnum.APPLICATION_JSON.getContentType();
-			}
-		} else {
-			contentType = request.getContentType();
-			if (contentType != null) {
-				String content[] = contentType
-						.split(ApplicationConstants.SEMI_COLON);
-				if (content.length > 0) {
-					contentType = content[0];
-				} else {
+			if (null != extension
+					&& (extension
+							.equalsIgnoreCase(ApplicationConstants.TYPE_XML) || extension
+							.equalsIgnoreCase(ApplicationConstants.TYPE_JSON))) {
+				if (extension
+						.equalsIgnoreCase(ApplicationConstants.TYPE_XML)) {
+					contentType = ContentTypeEnum.APPLICATION_XML
+							.getContentType();
+				} else if (extension
+						.equalsIgnoreCase(ApplicationConstants.TYPE_JSON)) {
 					contentType = ContentTypeEnum.APPLICATION_JSON
 							.getContentType();
 				}
 			}
 		}
-		LOG.debug("Content-Type : " + contentType);
+
+		if (null == contentType) {
+			final String acceptHeaderValue = request
+					.getHeader(ApplicationConstants.HTTP_HEADER_ACCEPT);
+			if (acceptHeaderValue != null) {
+				String acceptHeader[] = acceptHeaderValue
+						.split(ApplicationConstants.SEMI_COLON);
+				if (acceptHeader.length > 0) {
+					if (acceptHeader[0]
+							.equalsIgnoreCase(ContentTypeEnum.APPLICATION_JSON
+									.getContentType())
+							|| acceptHeader[0]
+									.equalsIgnoreCase(ContentTypeEnum.APPLICATION_XML
+											.getContentType())) {
+						contentType = acceptHeader[0];
+					}
+				}
+			}
+		} 
+
+		if (null == contentType) {
+			contentType = ContentTypeEnum.APPLICATION_JSON.getContentType();
+		}
+
 		LOG.trace("Complete VtnServiceCommonUtil#getContentType()");
 		return contentType;
 	}

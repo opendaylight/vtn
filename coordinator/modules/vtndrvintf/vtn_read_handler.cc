@@ -1,5 +1,5 @@
  /*
-  * Copyright (c) 2013-2014 NEC Corporation
+  * Copyright (c) 2013-2015 NEC Corporation
   * All rights reserved.
   *
   * This program and the accompanying materials are made available under the
@@ -61,7 +61,13 @@ KtReadRequestHandler::execute(
                                  PFC_FUNCNAME);
     return UNC_RC_CTR_DISCONNECTED;
   }
-
+  if (ctrl_ptr->get_audit_result() == PFC_FALSE) {
+    //  check controller audit status, if audit not completed
+    //  send disconnected
+    pfc_log_debug("%s Audit is not completed, send disconnected",
+                                 PFC_FUNCNAME);
+    return UNC_RC_CTR_DISCONNECTED;
+  }
   unc::driver::vtn_driver_read_command * drv_command_ptr =
       drv_ptr->create_driver_read_command(request_header.key_type);
   if (drv_command_ptr == NULL) {

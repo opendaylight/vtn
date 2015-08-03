@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -118,6 +118,16 @@ public class AuditControllerResourceValidator extends VtnServiceValidator {
 						VtnServiceJsonConsts.FORCE).getAsString();
 				isValid = force.equalsIgnoreCase(VtnServiceJsonConsts.TRUE)
 						|| force.equalsIgnoreCase(VtnServiceJsonConsts.FALSE);
+			}
+
+			setInvalidParameter(VtnServiceJsonConsts.REAL_NETWORK_AUDIT);
+			if (audit.has(VtnServiceJsonConsts.REAL_NETWORK_AUDIT)
+					&& audit.getAsJsonPrimitive(VtnServiceJsonConsts.REAL_NETWORK_AUDIT)
+							.getAsString() != null) {
+				String auditType = audit.getAsJsonPrimitive(
+						VtnServiceJsonConsts.REAL_NETWORK_AUDIT).getAsString();
+				isValid = auditType.equalsIgnoreCase(VtnServiceJsonConsts.TRUE)
+						|| auditType.equalsIgnoreCase(VtnServiceJsonConsts.FALSE);
 			}
 		}
 		LOG.trace("Complete AuditControllerResourceValidator#validatePut()");

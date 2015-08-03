@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -27,9 +27,11 @@ class  TcMsgAudit : public TcMsg {
   void SetData(uint32_t config_id,
                std::string controller_id,
                unc_keytype_ctrtype_t driver_id);
+  void SetAuditType(TcAuditType audit_type);
 
   std::string controller_id_;
   unc_keytype_ctrtype_t driver_id_;
+  TcAuditType audit_type_;
 
  protected:
   /*methods to send abort and trans-end notifications*/
@@ -45,14 +47,11 @@ class AuditTransaction : public TcMsgAudit {
   TcOperRet Execute();
   void SetReconnect(pfc_bool_t force_reconnect);
   void IsUserAudit(pfc_bool_t user_audit);
-  void SetSimplifiedAudit(pfc_bool_t simplified_audit);
 
   void SetCommitInfo(uint64_t commit_number,
                      uint64_t commit_date,
                      std::string commit_application);
-
   pfc_bool_t reconnect_controller_;
-  pfc_bool_t simplified_audit_;
   uint64_t commit_number_;
   uint64_t commit_date_;
   std::string commit_application_;

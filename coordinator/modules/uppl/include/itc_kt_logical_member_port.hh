@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -125,9 +125,9 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
       void* &old_value_struct,
-      CsRowStatus row_status= NOTAPPLIED,
-      pfc_bool_t is_filtering= false,
-      pfc_bool_t is_state= PFC_FALSE);
+      CsRowStatus row_status,
+      pfc_bool_t is_filtering,
+      pfc_bool_t is_state);
 
 
   void FillLogicalMemberPortValueStructure(OdbcmConnectionHandler *db_conn,
@@ -153,8 +153,7 @@ class Kt_LogicalMemberPort : public Kt_State_Base {
       uint32_t data_type,
       uint32_t operation_type,
       uint32_t &max_rep_ct,
-      vector<key_logical_member_port_t> &logical_mem_port,
-      pfc_bool_t is_state = PFC_FALSE);
+      vector<key_logical_member_port_t> &logical_mem_port);
 
   UncRespCode ReadBulkInternal(OdbcmConnectionHandler *db_conn,
       void* key_struct,

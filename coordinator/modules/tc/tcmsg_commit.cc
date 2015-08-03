@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -223,6 +223,13 @@ TcMsgCommit::SendTransEndRequest(AbortOnFailVector abort_on_fail_) {
 AbortCandidateDB::AbortCandidateDB(uint32_t sess_id,
                                    tclib::TcMsgOperType oper)
 :TcMsgCommit(sess_id, oper) {
+  abort_version_ = 0;
+}
+
+void AbortCandidateDB::SetData(unc_keytype_datatype_t target_db,
+                               TcServiceType fail_oper,
+                               uint64_t version) {
+  abort_version_ = version;
 }
 
 /*!\brief TC service handler invokes this method to send abort candidate request
@@ -240,7 +247,7 @@ TcOperRet AbortCandidateDB::Execute() {
 
   notifyorder_.push_back(TC_UPLL);
   notifyorder_.push_back(TC_UPPL);
-  pfc_log_info("sending CANDIDATE ABORT notification");
+  pfc_log_debug("sending CANDIDATE ABORT notification");
   for (NotifyList::iterator list_iter = notifyorder_.begin();
        list_iter != notifyorder_.end(); list_iter++) {
     channel_name = GetChannelName(*list_iter);
@@ -270,6 +277,11 @@ TcOperRet AbortCandidateDB::Execute() {
       util_resp = TcClientSessionUtils::set_uint32(sess_, config_id_);
       if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
         pfc_log_error("AbortCandidateDB::Execute Set config_id failed");
+        return ReturnUtilResp(util_resp);
+      }
+      util_resp = TcClientSessionUtils::set_uint64(sess_, abort_version_);
+      if (PFC_EXPECT_TRUE(util_resp != TCUTIL_RET_SUCCESS)) {
+        pfc_log_error("AbortCandidateDB::Execute Set abort_ver failed");
         return ReturnUtilResp(util_resp);
       }
     } else {
@@ -419,10 +431,11 @@ TcOperRet CommitTransaction::Execute() {
   switch (opertype_) {
     case tclib::MSG_COMMIT_TRANS_START: {
       pfc_log_info("*** TxSTART request ***");
-      notifyorder_.push_back(TC_DRV_ODL);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
       notifyorder_.push_back(TC_DRV_OVERLAY);
       notifyorder_.push_back(TC_DRV_POLC);
+      notifyorder_.push_back(TC_DRV_VAN);
+      notifyorder_.push_back(TC_DRV_ODC);
       // notifyorder_.push_back(TC_DRV_LEGACY);
       notifyorder_.push_back(TC_UPLL);
       notifyorder_.push_back(TC_UPPL);
@@ -433,10 +446,11 @@ TcOperRet CommitTransaction::Execute() {
       notifyorder_.push_back(TC_UPPL);
       notifyorder_.push_back(TC_UPLL);
       // notifyorder_.push_back(TC_DRV_LEGACY);
+      notifyorder_.push_back(TC_DRV_ODC);
+      notifyorder_.push_back(TC_DRV_VAN);
       notifyorder_.push_back(TC_DRV_POLC);
       notifyorder_.push_back(TC_DRV_OVERLAY);
       notifyorder_.push_back(TC_DRV_OPENFLOW);
-      notifyorder_.push_back(TC_DRV_ODL);
       break;
     }
     default: {
@@ -1171,8 +1185,8 @@ TcOperRet TwoPhaseCommit::Execute() {
   /*commit configurations that doesn't relate to any controllers - ignore*/
   if (PFC_EXPECT_TRUE(ret_val == TCOPER_RET_SUCCESS) &&
       PFC_EXPECT_TRUE(driverinfo_map_.empty())) {
-    pfc_log_info("Controller info from UPPL,UPLL is empty.");
-    pfc_log_info("sending dummy driver result to UPLL/UPPL");
+    pfc_log_info("Controller info from UPPL,UPLL is empty. "
+                 "Sending dummy driver result to UPLL/UPPL");
     ret_val = CreateSessionsToForwardDriverResult();
     if (PFC_EXPECT_TRUE(ret_val != TCOPER_RET_SUCCESS)) {
       pfc_log_error("CreateSessionsToForwardDriverResult failed");

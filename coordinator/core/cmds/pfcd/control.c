@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -382,6 +382,20 @@ ctrl_setup_directory(const char *path, mode_t mode)
 			      strerror(err));
 		/* NOTREACHED */
 	}
+
+	/* Append executable bits if needed. */
+	if ((mode & S_IRWXU) != 0) {
+		mode |= S_IXUSR;
+	}
+	if ((mode & S_IRWXG) != 0) {
+		mode |= S_IXGRP;
+	}
+	if ((mode & S_IRWXO) != 0) {
+		mode |= S_IXOTH;
+	}
+
+	/* Socket directory should never be group or world writable. */
+	mode &= ~(S_IWGRP | S_IWOTH);
 
 	/* Create channel directory. */
 	if (mkdir(path, mode) != 0) {

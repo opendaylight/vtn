@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -140,7 +140,29 @@ public enum UncStructEnum {
 	ValVtnPathMapEntry("val_vtn_pathmap_entry"),
 	// Path Policy Entry
 	KeyVtnPathmapPpolicyEntry("key_vtn_pathmap_ppolicy_entry"),
-	ValVtnPathmapPpolicyEntry("val_vtn_pathmap_ppolicy_entry");
+	ValVtnPathmapPpolicyEntry("val_vtn_pathmap_ppolicy_entry"),
+
+	KeyUnwLabel("key_unw_label"),
+	ValUnwLabel("val_unw_label"),
+	KeyUnwLabelRange("key_unw_label_range"),
+	ValUnwLabelRange("val_unw_label_range"),
+
+	// Path Port Map
+	KeyVbrPortmap("key_vbr_portmap"),
+	ValVbrPortmap("val_vbr_portmap"),
+	
+	// Path Unified Network
+	KeyUnifiedNetwork("key_unified_nw"),
+	ValUnifiedNetwork("val_unified_nw"),
+
+	//spine domain
+	KeyUnwSpineDomain("key_unw_spine_domain"),
+	ValUnwSpineDomain("val_unw_spine_domain"),
+
+	// VTN Unified Network Resource
+	KeyVtnUnified("key_vtn_unified"),
+	ValVtnUnified("val_vtn_unified");
+
 	private String value;
 
 	private UncStructEnum(final String value) {

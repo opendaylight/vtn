@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -31,13 +31,15 @@ using unc::tclib::TcCommitOpAbortPhase;
 using unc::tclib::TcAuditResult;
 using unc::tclib::TcAuditOpAbortPhase;
 
-#define STATE_OBJECTS 6
+#define STATE_OBJECTS 7
+#define INVALID_OPERSTATUS -1
 typedef enum {
   Notfn_Ctr_Domain = 0,
       Notfn_Logical_Port,
       Notfn_Logical_Member_Port,
       Notfn_Switch,
       Notfn_Port,
+      Notfn_Port_Neighbor,
       Notfn_Link,
 }AuditStateObjects;
 
@@ -46,6 +48,11 @@ typedef struct {
   uint64_t commit_date;
   uint8_t commit_application[256];
 }commit_version;
+
+typedef enum {
+  AUDIT_NORMAL = 0,
+  AUDIT_REALNETWORK
+}AuditType;
 
 namespace unc {
 namespace uppl {
@@ -56,8 +63,8 @@ class AuditRequest:public ITCReq  {
   ~AuditRequest();
   UncRespCode StartAudit(OdbcmConnectionHandler *db_conn,
                             unc_keytype_ctrtype_t driver_id,
-                            string controller_id, 
-                            pfc_bool_t simplified_audit, 
+                            string controller_id,
+                            TcAuditType  audit_type,
                             uint64_t commit_number,
                             uint64_t commit_date,
                             string commit_application);
@@ -84,6 +91,9 @@ class AuditRequest:public ITCReq  {
                                   unc_keytype_ctrtype_t driver_id,
                                   string controller_id,
                                   TcAuditOpAbortPhase operation_phase);
+  UncRespCode HandleAuditCancel(uint32_t session_id,
+                                  unc_keytype_ctrtype_t driver_id,
+                                  string controller_id);
   UncRespCode EndAuditTransaction(uint32_t session_id,
                                      unc_keytype_ctrtype_t& driver_id,
                                      string controller_id);
@@ -94,6 +104,9 @@ class AuditRequest:public ITCReq  {
   UncRespCode MergeAuditDbToRunning(OdbcmConnectionHandler *db_conn,
                                        string controller_name);
   static map<string, commit_version> comm_ver_;
+  static int16_t ctr_oper_status_before_audit;
+  static pfc_bool_t IsControllerNotUp;
+  static AuditType audit_type_;
 
  private:
   Kt_Base* GetClassPointerAndKey(AuditStateObjects audit_key_type,

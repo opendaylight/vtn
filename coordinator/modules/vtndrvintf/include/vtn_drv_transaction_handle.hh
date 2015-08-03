@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -44,6 +44,8 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   unc::tclib::TcCommonRet HandleCommitVoteRequest(uint32_t session_id,
                                                   uint32_t config_id,
+                                                  TcConfigMode config_mode,
+                                                  std::string vtn_name,
                                                   unc::tclib::TcDriverInfoMap&
                                                   driver_info) {
     return unc::tclib::TC_FAILURE;
@@ -58,6 +60,8 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   unc::tclib::TcCommonRet  HandleCommitGlobalCommit(uint32_t session_id,
                                                     uint32_t config_id,
+                                                    TcConfigMode config_mode,
+                                                    std::string vtn_name,
                                                     unc::tclib::TcDriverInfoMap&
                                                     driver_info) {
     return unc::tclib::TC_FAILURE;
@@ -72,6 +76,8 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   unc::tclib::TcCommonRet HandleCommitDriverResult(uint32_t session_id,
                                                    uint32_t config_id,
+                                                   TcConfigMode config_mode,
+                                                   std::string vtn_name,
                                                    unc::tclib::TcCommitPhaseType
                                                    phase,
                                                    unc::tclib
@@ -142,7 +148,8 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    * @param[in]  - session id
    * @retval     - returns TC_FAILURE
    */
-  unc::tclib::TcCommonRet HandleSaveConfiguration(uint32_t session_id) {
+  unc::tclib::TcCommonRet HandleSaveConfiguration(uint32_t session_id,
+                                                  uint64_t ver) {
     return unc::tclib::TC_FAILURE;
   }
 
@@ -153,7 +160,10 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    * @retval      - returns TC_FAILURE
    */
   unc::tclib::TcCommonRet HandleAbortCandidate(uint32_t session_id,
-                                               uint32_t config_id) {
+                                               uint32_t config_id,
+                                               TcConfigMode config_mode,
+                                               std::string vtn_name,
+                                               uint64_t ver) {
     return unc::tclib::TC_FAILURE;
   }
 
@@ -197,7 +207,10 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    * @retval      - returns TC_FAILURE
    */
   unc::tclib::TcCommonRet HandleAuditConfig(unc_keytype_datatype_t db_target,
-                                            TcServiceType fail_oper) {
+                                            TcServiceType fail_oper,
+                                            TcConfigMode config_mode,
+                                            std::string vtn_name,
+                                            uint64_t ver) {
     return unc::tclib::TC_FAILURE;
   }
 
@@ -208,7 +221,9 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    * @retval     - returns TC_SUCCESS
    */
   unc::tclib::TcCommonRet HandleCommitTransactionStart(uint32_t session_id,
-                                                       uint32_t config_id) {
+                                                       uint32_t config_id,
+                                                       TcConfigMode config_mode,
+                                                       std::string vtn_name) {
     return unc::tclib::TC_SUCCESS;
   }
 
@@ -221,6 +236,8 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   unc::tclib::TcCommonRet HandleCommitTransactionEnd(uint32_t session_id,
                                                      uint32_t config_id,
+                                                     TcConfigMode config_mode,
+                                                     std::string vtn_name,
                                                      unc::tclib
                                                      ::TcTransEndResult
                                                      end_result) {
@@ -236,6 +253,8 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
    */
   unc::tclib::TcCommonRet HandleCommitGlobalAbort(uint32_t session_id,
                                                   uint32_t config_id,
+                                                  TcConfigMode config_mode,
+                                                  std::string vtn_name,
                                                   unc::tclib
                                                   ::TcCommitOpAbortPhase
                                                   fail_phase) {
@@ -252,7 +271,7 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
   unc::tclib::TcCommonRet HandleAuditStart(uint32_t session_id,
                                            unc_keytype_ctrtype_t ctr_type,
                                            std::string controller_id,
-				           pfc_bool_t simplified_audit,
+                                           TcAuditType audit_type,
                                            uint64_t commit_number,
                                            uint64_t commit_date,
                                            std::string commit_application);
@@ -271,9 +290,14 @@ class DriverTxnInterface : public unc::tclib::TcLibInterface {
   unc::tclib::TcCommonRet HandleAuditStart(uint32_t session_id,
                                            unc_keytype_ctrtype_t ctr_type,
                                            std::string controller_id,
-                                           pfc_bool_t force_reconnect) {
+                                           pfc_bool_t force_reconnect,
+                                           TcAuditType audit_type) {
     return unc::tclib::TC_SUCCESS;
   }
+
+  unc::tclib::TcCommonRet HandleAuditCancel(uint32_t session_id,
+                                            unc_keytype_ctrtype_t ctr_type,
+                                            std::string controller_id);
 
   /**
    * @brief       - Handles Audit end

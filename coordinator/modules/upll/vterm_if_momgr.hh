@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -41,8 +41,10 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
    * @retval  UPLL_RC_ERR_GENERIC  Generic failure.
    *
    **/
-  upll_rc_t GetPortMap(ConfigKeyVal *ikey, uint8_t &valid_pm,
-                       val_port_map_t *&pm, uint8_t &valid_admin,
+  upll_rc_t GetPortMap(ConfigKeyVal *ikey,
+                       uint8_t &valid_pm,
+                       val_port_map_t *&pm,
+                       uint8_t &valid_admin,
                        uint8_t &admin_status);
 
   /**
@@ -57,8 +59,8 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
    * @param[in]     tbl      specifies the table containing the given value
    *
    **/
-   upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
-                      upll_keytype_datatype_t dt_type, MoMgrTables tbl );
+  upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
+                      upll_keytype_datatype_t dt_type, MoMgrTables tbl);
 
   /**
    * @brief  Filters the attributes which need not be sent to controller
@@ -223,9 +225,9 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
    *
    **/
   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
-  
-  /** 
-   * @brief     Perform validation on key type specific, 
+
+  /**
+   * @brief     Perform validation on key type specific,
    *            before sending to driver
    *
    * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
@@ -235,7 +237,7 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
    * @param[in]  keytype                  Specifies the keytype
    * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
    * @param[out] not_send_to_drv          Decides whether the configuration needs
-   *                                      to be sent to controller or not 
+   *                                      to be sent to controller or not
    * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
    *
    * @retval  UPLL_RC_SUCCESS             Completed successfully.
@@ -302,7 +304,7 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
    * @retval         true      input key is valid
    * @retval         false     input key is invalid.
    **/
-  bool IsValidKey(void *tkey, uint64_t index);
+  bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
   /**
    * @brief  Duplicates the input configkeyval including the key and val.
@@ -320,8 +322,7 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
                             ConfigKeyVal *&req, MoMgrTables tbl = MAINTBL);
 
   /* In VTERM_IF nothing to be performed */
-  upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                         upll_keytype_datatype_t dt_type,
+  upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                          DalDmlIntf *dmi);
 
   /**
@@ -412,7 +413,6 @@ class VtermIfMoMgr : public VnodeChildMoMgr {
   upll_rc_t GetVtermIfFromVexternal(uint8_t *vtn_name, uint8_t *vterminal,
                                     uint8_t *vtermif, uint8_t *ctrlr_id,
                                     DalDmlIntf *dmi);
-
 };
 
 }  // namespace kt_momgr

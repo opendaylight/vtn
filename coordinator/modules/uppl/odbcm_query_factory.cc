@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -484,8 +484,11 @@ SQLQUERY QueryFactory::operation_getonerow(unc_keytype_datatype_t db_name,
     /** Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
-      get_query << ODBCManager::get_ODBCManager()->GetColumnName(
-                (*iter_vector).table_attribute_name);
+      ODBCMTableColumns col_id = (*iter_vector).table_attribute_name;
+      if (col_id == unc::uppl::CTR_PORT) {
+        col_id = unc::uppl::CTR_PORT_READ;
+      }
+      get_query << ODBCManager::get_ODBCManager()->GetColumnName(col_id);
       if (loop2  !=  attributes_vector.size()-1) {
         get_query << " ,";
       }
@@ -645,8 +648,11 @@ SQLQUERY QueryFactory::operation_getmodifiedrows
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
       /** Get attribute name of a row */
-      get_query << ODBCManager::get_ODBCManager()->GetColumnName(
-              (*iter_vector).table_attribute_name);
+      ODBCMTableColumns col_id = (*iter_vector).table_attribute_name;
+      if (col_id == unc::uppl::CTR_PORT) {
+        col_id = unc::uppl::CTR_PORT_READ;
+      }
+      get_query << ODBCManager::get_ODBCManager()->GetColumnName(col_id);
       if (loop2  !=  attributes_vector.size()-1)
         get_query << " ,";
       /** Frame where query part using row_status in db_table_schema */
@@ -768,8 +774,8 @@ SQLQUERY* QueryFactory::operation_copydatabase(
   std::string ctr_table = (*iter_srcvector);
   for (loop2 = ODBCM_MAX_UPPL_TABLES, iter_srcvector = src_vector.begin(),
       iter_dstvector = dst_vector.begin();
-      iter_srcvector != src_vector.end(),
-      iter_dstvector != dst_vector.end();
+      (iter_srcvector != src_vector.end()) &&
+      (iter_dstvector != dst_vector.end());
       iter_srcvector++, iter_dstvector++, loop2++) {
     /** Take the pointer to _ and check both tables are same */
     p_src_table = strstr(const_cast <char*>((*iter_dstvector).c_str()), "_");
@@ -1012,7 +1018,7 @@ SQLQUERY* QueryFactory::operation_iscandidatedirty() {
   cand_vector = (db_table_list_map.find(UNC_DT_CANDIDATE))->second;
   /** Frame the query for every table in CANDIDATE_DB */
   for (loop1 = 0, iter_vector = cand_vector.begin();
-    iter_vector != cand_vector.end(), loop1 < ODBCM_MAX_CANDIDATE_TABLES;
+    (iter_vector != cand_vector.end()) && (loop1 < ODBCM_MAX_CANDIDATE_TABLES);
     iter_vector++, loop1++ ) {
     /** Reset the query for next table */
     isdirty_query.str("");
@@ -1114,8 +1120,11 @@ SQLQUERY QueryFactory::operation_getbulkrows(unc_keytype_datatype_t db_name,
     /** Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
-      getbulk_query << ODBCManager::get_ODBCManager()->GetColumnName(
-               (*iter_vector).table_attribute_name);
+      ODBCMTableColumns col_id = (*iter_vector).table_attribute_name;
+      if (col_id == unc::uppl::CTR_PORT) {
+        col_id = unc::uppl::CTR_PORT_READ;
+      }
+      getbulk_query << ODBCManager::get_ODBCManager()->GetColumnName(col_id);
       if (loop2  !=  attributes_vector.size()-1)
         getbulk_query << ",";
     }  // for attribute vectors
@@ -1423,8 +1432,12 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
     /* Get the column names  and values */
     for (loop2 = 0, iter_vector = attributes_vector.begin();
         iter_vector != attributes_vector.end(); iter_vector++, loop2++) {
+      ODBCMTableColumns col_id = (*iter_vector).table_attribute_name;
+      if (col_id == unc::uppl::CTR_PORT) {
+        col_id = unc::uppl::CTR_PORT_READ;
+      }
       getsibling_query << ODBCManager::get_ODBCManager()->GetColumnName(
-                  (*iter_vector).table_attribute_name);
+                                       col_id);
       if (loop2  !=  attributes_vector.size()-1)
         getsibling_query << ",";
     }  // for attribute vectors
@@ -1483,13 +1496,14 @@ SQLQUERY QueryFactory::operation_getsiblingrows(
   }
 
   // modification for explict order changes
-  if(db_table_schema.frame_explicit_order_.empty()) {
+  if (db_table_schema.frame_explicit_order_.empty()) {
     getsibling_query << getOrderByString(db_table_schema.table_name_,
                                          db_table_schema.primary_keys_);
   } else {
     // should be in this case only for frame_explicit_order_
     pfc_log_debug("ODBCM::QueryFactory::GetSiblingRows: Frame Explicit \
-               Order for Link\"%s\"",db_table_schema.frame_explicit_order_.c_str());
+               Order for Link\"%s\"",
+               db_table_schema.frame_explicit_order_.c_str());
     getsibling_query << db_table_schema.frame_explicit_order_;
   }
 
@@ -1643,12 +1657,21 @@ SQLQUERY* QueryFactory::operation_commit_all_config(
       /**copy the actual_version, oper_status STATE details into 
       * candidate controller_table*/
       commit_query << "UPDATE " <<  "c_"UPPL_CTR_TABLE <<
-      " SET " 
-      << CTR_ACTUAL_VERSION_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_ACTUAL_VERSION_STR << ", " 
-      << CTR_OPER_STATUS_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_OPER_STATUS_STR << ", "
-      << CTR_COMMIT_NUMBER_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_COMMIT_NUMBER_STR << ", "
-      << CTR_COMMIT_DATE_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_COMMIT_DATE_STR << ", "
-      << CTR_COMMIT_APPLICATION_STR << " = " << "r_"UPPL_CTR_TABLE << "." << CTR_COMMIT_APPLICATION_STR 
+      " SET "
+      << CTR_ACTUAL_VERSION_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+                                         << CTR_ACTUAL_VERSION_STR << ", "
+      << CTR_OPER_STATUS_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+                                      << CTR_OPER_STATUS_STR << ", "
+      << CTR_ACTUAL_CONTROLLERID_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+                                     << CTR_ACTUAL_CONTROLLERID_STR<< ", "
+      << CTR_VALID_ACTUAL_CONTROLLERID_STR << " = " << "r_"UPPL_CTR_TABLE
+                          << "." << CTR_VALID_ACTUAL_CONTROLLERID_STR<< ", "
+      << CTR_COMMIT_NUMBER_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+                               << CTR_COMMIT_NUMBER_STR << ", "
+      << CTR_COMMIT_DATE_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+                             << CTR_COMMIT_DATE_STR << ", "
+      << CTR_COMMIT_APPLICATION_STR << " = " << "r_"UPPL_CTR_TABLE << "."
+                             << CTR_COMMIT_APPLICATION_STR
       << " from " <<
       "r_"UPPL_CTR_TABLE << " where " << "c_"UPPL_CTR_TABLE <<
       "." << CTR_NAME_STR << " = " << "r_"UPPL_CTR_TABLE << "." <<

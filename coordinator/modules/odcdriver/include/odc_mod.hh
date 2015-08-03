@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -18,6 +18,8 @@
 #include <odc_link.hh>
 #include <odc_vbr_vlanmap.hh>
 #include <odc_dataflow.hh>
+#include <odc_ctr_dataflow.hh>
+#include <odc_vtn_dataflow.hh>
 #include <odc_vtnstation.hh>
 #include <odc_vterminal.hh>
 #include <odc_vterminal_if.hh>
@@ -181,6 +183,14 @@ class ODCModule: public pfc::core::Module, public unc::driver::driver {
    */
   pfc_bool_t get_physical_port_details(unc::driver::controller* ctr);
 
+  /**
+   * @brief      - Compare the val_ctr with controller obeject
+   *               and return the type of change identified
+   * @param[in]  - ,Controller pointer, val_ctr
+   * @return     - ctrl_info_update_type_t
+   */
+  ctrl_info_update_type_t compare_ctr_info(unc::driver::controller* ctr,
+                                           const val_ctr_t& val_ctr);
  private:
   /**
    * @brief     - Read configuration file of odcdriver

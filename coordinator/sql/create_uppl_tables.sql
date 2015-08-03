@@ -1,5 +1,5 @@
 --
--- Copyright (c) 2012-2014 NEC Corporation
+-- Copyright (c) 2012-2015 NEC Corporation
 -- All rights reserved.
 -- 
 -- This program and the accompanying materials are made available under the
@@ -37,7 +37,9 @@ create table if not exists s_controller_table (
   commit_number bytea,
   commit_date bytea,
   commit_application varchar(256),
-  valid_commit_version char(3)
+  valid_commit_version char(3),
+  actual_controllerid varchar(32),
+  actual_ctrid_valid char(1)
   );
 
 create table if not exists s_ctr_domain_table(
@@ -85,7 +87,9 @@ create table if not exists c_controller_table (
   commit_number bytea,
   commit_date bytea,
   commit_application varchar(256),
-  valid_commit_version char(3)
+  valid_commit_version char(3),
+  actual_controllerid varchar(32),
+  actual_ctrid_valid char(1)
   );
 
 create table if not exists c_ctr_domain_table(
@@ -133,7 +137,9 @@ create table if not exists r_controller_table (
   commit_number bytea,
   commit_date bytea,
   commit_application varchar(256),
-  valid_commit_version char(3)
+  valid_commit_version char(3),
+  actual_controllerid varchar(32),
+  actual_ctrid_valid char(1)
   );
 
 create table if not exists r_ctr_domain_table(
@@ -221,6 +227,10 @@ create table if not exists r_port_table(
   alarms_status bytea,
   logical_port_id bytea,
   valid char(11), 
+  connected_switch bytea,
+  connected_port varchar(32),
+  connected_controller varchar(32),
+  connectedneighbor_valid char(3),
   primary key (controller_name, switch_id, port_id)
   );
 
@@ -306,6 +316,10 @@ create table if not exists i_port_table(
   alarms_status bytea,
   logical_port_id bytea,
   valid char(11), 
+  connected_switch bytea,
+  connected_port varchar(32),
+  connected_controller varchar(32),
+  connectedneighbor_valid char(3),
   primary key (controller_name, switch_id, port_id)
   );
 

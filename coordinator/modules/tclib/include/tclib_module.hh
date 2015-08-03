@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -90,18 +90,30 @@ class TcLibModule : public pfc::core::Module {
    * @param[in]  session_id session on which commit request sent
    * @param[in]  config_id config id generated on acquire config mode for
    *             session_id
+   * @param[in]  config_mode - which holds (global/real/virtual/vtn) type
+   * @param[in]  vtn_name - which contains the vtn name if config_mode is vtn.
    * @retval     TC_API_COMMON_SUCCESS on validation is success
    * @retval     TC_INVALID_SESSION_ID if session id is invalid
    * @retval     TC_INVALID_CONFIG_id if config id is invalid
    */
-  TcApiCommonRet TcLibValidateUpdateMsg(uint32_t sessionid, uint32_t configid);
+  TcApiCommonRet TcLibValidateUpdateMsg(uint32_t sessionid, 
+                                        uint32_t configid,
+                                        TcConfigMode config_mode, 
+                                        std::string vtn_name);
 
   /**
    * @brief       Gives current session_id and config_id to upll,upll,pfcdriver
-   * @param[out]  current session_id
+   * @param[in]   current session_id
    * @param[out]  current config_id
+   * @param[out]  current config_mode
+   * @param[out]  current vtn_name (if config_mode is vtn)
+   * @return      TC_API_COMMON_SUCCESS on success
+   * @return      TC_INVALID_SESSION_ID on invalid session id
    */
-  void GetSessionAttributes(uint32_t* session_id, uint32_t* config_id);
+  TcApiCommonRet TcLibGetSessionAttributes(uint32_t session_id, 
+                                           uint32_t& config_id,
+                                           TcConfigMode& config_mode,
+                                           std::string& vtn_name);
 
   /**
    * @brief      Read of key types key and value data information from session
@@ -179,11 +191,27 @@ class TcLibModule : public pfc::core::Module {
                                             void* key_data,
                                             void* value_data);
 
+  /**
+   * @brief      Get config mode based on key session_id and config_id
+   * @param[in]  session_id session id of notify session config data
+   * @param[in]  config_id -  notify session config id
+   * @param[out] config_mode - reterive from tc_notify_config_data_map
+   * @param[out] vtn_name - reterive from tc_notify_config_data_map
+   *                        if config_mode is VTN
+   * @retval     TC_API_COMMON_SUCCESS on successful updation
+   * @retval     TC_INVALID_SESSION_ID on session_id not present in map
+   * @retval     TC_INVALID_CONFIG_ID on invalid config Id
+   */
+  TcApiCommonRet TcLibGetConfigMode(uint32_t session_id,
+                                    uint32_t config_id,
+                                    TcConfigMode& config_mode,
+                                    std::string& vtn_name);
  private:
   /* @brief      Handles the AutoSave msgs
    * @param[in]  pfc_ipcid_t service
    */
-  TcCommonRet NotifyAutoSave(pfc_ipcid_t service);
+  TcCommonRet NotifyAutoSave(pfc_ipcid_t service,
+                             pfc::core::ipc::ServerSession *sess);
   /**
    * @brief      Validation of oper type sequence
    * @param[in]  oper_type operation type in commit/audit process
@@ -270,6 +298,32 @@ class TcLibModule : public pfc::core::Module {
    */
   TcCommonRet NotifySessionConfig(pfc::core::ipc::ServerSession *sess);
 
+  /*
+   * @brief     Updation of notify config data based on key sessionid
+   * @param[in] session_id - session id of config data
+   * @param[in] config_id - config id of config data
+   * @param[in] config_mode - config mode of config data
+   * @param[in] vtn_name - config name of config data
+   * @retval    TC_SUCCESS on successful updation
+   * @retval    TC_FAILURE on any failure
+   */
+  TcCommonRet UpdateNotifyConfigData(uint32_t session_id,
+                                     uint32_t config_id,
+                                     TcConfigMode config_mode, 
+                                     std::string vtn_name);
+  /**
+   * @brief      Get notify config data based on key sessionid
+   * @param[in]  session_id session id config data
+   * @param[out] config_id - reterive from tc_notify_config_data_map
+   * @param[out] config_mode - reterive from tc_notify_config_data_map
+   * @param[out] vtn_name - reterive from tc_notify_config_data_map
+   * @retval     TC_SUCCESS on successful updation
+   * @retval     TC_FAILURE on any failure
+   */
+   TcCommonRet GetConfigData(uint32_t session_id,
+                             uint32_t& config_id,
+                             TcConfigMode& config_mode,
+                             std::string& vtn_name);
   /**
    * @brief      commit transaction start/end operations invoking
    * @param[in]  oper_type operation type in commit trans start/end process
@@ -360,6 +414,13 @@ class TcLibModule : public pfc::core::Module {
   TcCommonRet AuditDriverResult();
 
   /**
+   * @brief      audit cancel notification to driver, uppl, upll
+   * @retval     TC_SUCCESS on handle operation success
+   * @retval     TC_FAILURE on handle operation failure
+   */
+  TcCommonRet AuditCancel(pfc::core::ipc::ServerSession *sess);
+
+  /**
    * @brief      audit global abort
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
@@ -377,21 +438,21 @@ class TcLibModule : public pfc::core::Module {
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
-  TcCommonRet SaveConfiguration();
+  TcCommonRet SaveConfiguration(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      Clear startup configuaration towards UPPL
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
-  TcCommonRet ClearStartup();
+  TcCommonRet ClearStartup(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      Abort configuaration towards UPPL
    * @retval     TC_SUCCESS on handle operation success
    * @retval     TC_FAILURE on handle operation failure
    */
-  TcCommonRet AbortCandidate();
+  TcCommonRet AbortCandidate(pfc::core::ipc::ServerSession *sess);
 
   /**
    * @brief      Audit config operation on fail over scenorios
@@ -448,8 +509,32 @@ class TcLibModule : public pfc::core::Module {
   TcApiCommonRet GetKeyIndex(std::string controller_id,
                              uint32_t err_pos,
                              uint32_t &key_index);
+  
+  /**
+   * @brief       SetHandleCancelAuditInTclib
+   *              Setter function to set flag when CancelAudit is received
+   *              before AuditStart notification
+   * @param[in]   boolean to set/reset the flag
+   * @retval      None
+   */
+  void SetHandleCancelAuditInTclib(pfc_bool_t);
+
+  /**
+   * @brief       IsHandleCancelAuditInTclib
+   *              Getter function to return the flag to determine whether
+   *              the CancelAudit notification is received before AuditStart
+   * @param       None
+   * @retval      boolean
+   */
+  pfc_bool_t IsHandleCancelAuditInTclib(); 
 
  private:
+
+  /**
+   * @brief      mutex control inside tclib ValidateOperTypeSequence 
+   */
+  pfc::core::Mutex tclib_validate_seq_mutex_;
+
   /**
    * @brief      pointer to update the TclibInterface handler
    */
@@ -470,6 +555,18 @@ class TcLibModule : public pfc::core::Module {
    * @brief      mutex to control ipcservices handling
    */
   pfc::core::Mutex tclib_ipc_control_mutex_;
+
+  /*
+   * @brief       holds config data based on session id
+   */
+
+  TcNotifyConfigDataMap tc_notify_config_data_map_;
+
+  /**
+   * @brief      Mutex to control tc_notify_config_data_map
+   */
+    
+  pfc::core::Mutex tc_notify_config_data_map_lock_;
 
   /**
    * @brief      Updated on recieving notify session/config id
@@ -535,6 +632,16 @@ class TcLibModule : public pfc::core::Module {
    * @brief Mutex for request counter
    */
   pfc::core::Mutex request_counter_lock_;
+
+  /**
+   * @brief Mutex for audit-cancel received first flag
+   */
+  pfc::core::Mutex handle_in_tclib_mutex_;
+
+  /**
+   * @brief Flag for audit-cancel received before AuditStart
+   */
+  pfc_bool_t handle_in_tclib_;
 };
 }  // namespace tclib
 }  // namespace unc

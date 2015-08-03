@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -50,7 +50,8 @@ class IPCConnectionManager {
   string get_uppl_channel_name();
   string get_uppl_service_name();
   UncRespCode Finalize();
-  uint32_t SendEvent(ServerEvent *evt);
+  uint32_t SendEvent(ServerEvent *evt, std::string controller_name,
+                                                pfc_ipcevtype_t event_type);
   UncRespCode SendEventSubscription();
   UncRespCode CancelEventSubscription();
   void addControllerToAuditList(string);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,7 +24,7 @@ TEST(TcDbOperations, TcGetMinArgCount) {
                                      unc_map_);
   int argcount  =  tc_dboperations.TcGetMinArgCount();
   EXPECT_EQ(2, argcount);
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, TcCheckOperArgCount) {
@@ -41,24 +41,9 @@ TEST(TcDbOperations, TcCheckOperArgCount) {
   avail_count = 2;
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_dboperations.TcCheckOperArgCount(avail_count));
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
-TEST(TcDbOperations, TcValidateOperType) {
-  SET_AUDIT_OPER_PARAMS();
-  TestTcDbOperations tc_dboperations(tc_lock_,
-                                     &sess_,
-                                     db_handler,
-                                     unc_map_);
-  stub_srv_uint32 = 1;
-  tc_dboperations.tc_oper_  =  TC_OP_RUNNING_SAVE;
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.TcValidateOperType());
-
-  tc_dboperations.tc_oper_  =  TC_OP_CLEAR_STARTUP;
-  // change -11 to define
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.TcValidateOperType());
-  DEL_AUDIT_PARAMS();
-}
 
 TEST(TcDbOperations, TcValidateOperType_Failure) {
   SET_AUDIT_OPER_PARAMS();
@@ -69,7 +54,7 @@ TEST(TcDbOperations, TcValidateOperType_Failure) {
                                      unc_map_);
   // Check return value and change to define
   EXPECT_EQ(TC_INVALID_OPERATION_TYPE, tc_dboperations.TcValidateOperType());
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, HandleMsgRet_Fatal) {
@@ -81,7 +66,7 @@ TEST(TcDbOperations, HandleMsgRet_Fatal) {
                                      unc_map_);
   // check code change define value
   EXPECT_EQ(TC_SYSTEM_FAILURE, tc_dboperations.HandleMsgRet(msgret));
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, HandleMsgRet_Abort) {
@@ -92,7 +77,7 @@ TEST(TcDbOperations, HandleMsgRet_Abort) {
                                      db_handler,
                                      unc_map_);
   EXPECT_EQ(TC_OPER_ABORT, tc_dboperations.HandleMsgRet(msgret));
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, HandleMsgRet_Success) {
@@ -103,7 +88,7 @@ TEST(TcDbOperations, HandleMsgRet_Success) {
                                      db_handler,
                                      unc_map_);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.HandleMsgRet(msgret));
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, TcValidateOperParams) {
@@ -113,31 +98,39 @@ TEST(TcDbOperations, TcValidateOperParams) {
                                      db_handler,
                                      unc_map_);
   EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.TcValidateOperParams());
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, TcGetExclusion) {
-  SET_AUDIT_OPER_PARAMS();
-  tc_lock_->TcUpdateUncState(TC_ACT);
-  TestTcDbOperations tc_dboperations(tc_lock_, &sess_, db_handler, unc_map_);
+  TestTcLock* tc_lock  =  new TestTcLock();
+  pfc_ipcsrv_t *srv  =  NULL;
+  pfc::core::ipc::ServerSession sess_(srv);
+  std::string dsn_name  =  "UNC_DB_DSN";
+  TcDbHandler* db_handler  =  new TcDbHandler(dsn_name);
+  TcChannelNameMap  unc_map_;
+
+  TestTcDbOperations tc_dboperations(tc_lock, &sess_, db_handler, unc_map_);
   tc_dboperations.tc_oper_  =  TC_OP_RUNNING_SAVE;
-  tc_dboperations.tclock_  =  tc_lock_;
+  tc_dboperations.tclock_  =  tc_lock;
   // Check error Code and change
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.TcGetExclusion());
-  DEL_AUDIT_PARAMS();
+  EXPECT_EQ(TC_INVALID_STATE, tc_dboperations.TcGetExclusion());
 }
 
 TEST(TcDbOperations, TcReleaseExclusion) {
-  SET_AUDIT_OPER_PARAMS();
+  TestTcLock*  tc_lock  =  new TestTcLock();
+  pfc_ipcsrv_t *srv  =  NULL;
+  pfc::core::ipc::ServerSession sess_(srv);
+  std::string dsn_name  =  "UNC_DB_DSN";
+  TcDbHandler* db_handler  =  new TcDbHandler(dsn_name);
+  TcChannelNameMap  unc_map_;
 
-  TestTcDbOperations tc_dboperations(tc_lock_,  &sess_, db_handler, unc_map_);
+  TestTcDbOperations tc_dboperations(tc_lock,  &sess_, db_handler, unc_map_);
 
   tc_dboperations.tc_oper_  =  TC_OP_USER_AUDIT;
-  tc_dboperations.tclock_  =  tc_lock_;
+  tc_dboperations.tclock_  =  tc_lock;
   EXPECT_EQ(TC_OPER_FAILURE, tc_dboperations.TcReleaseExclusion());
   tc_dboperations.tc_oper_  =  TC_OP_DRIVER_AUDIT;
   EXPECT_EQ(TC_OPER_FAILURE, tc_dboperations.TcReleaseExclusion());
-  DEL_AUDIT_PARAMS();
 }
 
 
@@ -163,22 +156,21 @@ TEST(TcDbOperations, HandleLockRet) {
 
   ret  =  TC_LOCK_INVALID_PARAMS;
   EXPECT_EQ(TC_OPER_FAILURE, tc_dboperations.HandleLockRet(ret));
-  DEL_AUDIT_PARAMS();
-}
-
-TEST(TcDbOperations, TcCreateMsgList) {
-  SET_AUDIT_OPER_PARAMS();
-  TestTcDbOperations tc_dboperations(tc_lock_,
-                                     &sess_,
-                                     db_handler,
-                                     unc_map_);
-  EXPECT_EQ(TC_OPER_SUCCESS, tc_dboperations.TcCreateMsgList());
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
 TEST(TcDbOperations, FillTcMsgData) {
   SET_AUDIT_OPER_PARAMS();
-  TcMsg* tc_msg  =  NULL;
+  TcChannelNameMap test_map;
+  
+  test_map.insert((std::pair<TcDaemonName, std::string>(TC_UPLL,  "lgcnwd")));
+  test_map.insert((std::pair<TcDaemonName, std::string>(TC_UPPL,  "phynwd")));
+  test_map.insert((std::pair<TcDaemonName, std::string>(TC_DRV_OPENFLOW,  "drvpfcd")));
+  test_map.insert((std::pair<TcDaemonName, std::string>(TC_DRV_OVERLAY,  "drvoverlay")));
+
+  TcMsg* tc_msg  =  TcMsg::CreateInstance(1211,
+                                   MSG_SETUP,
+                                   test_map);
   stub_srv_uint32  =  1;
   TestTcDbOperations tc_dboperations(tc_lock_,
                                      &sess_,
@@ -186,33 +178,9 @@ TEST(TcDbOperations, FillTcMsgData) {
                                      unc_map_);
   EXPECT_EQ(TC_OPER_SUCCESS,
   tc_dboperations.FillTcMsgData(tc_msg, MSG_SAVE_CONFIG));
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
 }
 
-TEST(TcDbOperations, SendAdditionalResponse_Success) {
-  SET_AUDIT_OPER_PARAMS();
-  TcOperStatus oper_stat = TC_OPER_SUCCESS;
-  TestTcDbOperations tc_dboperations(tc_lock_,
-                                     &sess_,
-                                     db_handler,
-                                     unc_map_);
-  EXPECT_EQ(TC_OPER_SUCCESS,
-            tc_dboperations.SendAdditionalResponse(oper_stat));
-  DEL_AUDIT_PARAMS();
-}
-
-TEST(TcDbOperations, SendAdditionalResponse_Failure) {
-  SET_AUDIT_OPER_PARAMS();
-  TcOperStatus oper_stat = TC_OPER_SUCCESS;
-  stub_srv_uint32  =  0;
-  TestTcDbOperations tc_dboperations(tc_lock_,
-                                     &sess_,
-                                     db_handler,
-                                     unc_map_);
-  EXPECT_EQ(TC_OPER_SUCCESS,
-            tc_dboperations.SendAdditionalResponse(oper_stat));
-  DEL_AUDIT_PARAMS();
-}
 
 TEST(TcDbOperations, Execute) {
   SET_AUDIT_OPER_PARAMS();
@@ -221,5 +189,26 @@ TEST(TcDbOperations, Execute) {
                                      db_handler,
                                      unc_map_);
   EXPECT_EQ(TC_OPER_FAILURE, tc_dboperations.Execute());
-  DEL_AUDIT_PARAMS();
+  // DEL_AUDIT_PARAMS();
+}
+
+TEST(TcDbOperations, Dispatch_Invalid_Input) {
+
+  SET_AUDIT_OPER_PARAMS();
+  TestTcDbOperations tc_dboperations(tc_lock_,
+                                     &sess_,
+                                     db_handler,
+                                     unc_map_);
+  EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_dboperations.Dispatch());
+}
+
+TEST(TcDbOperations, Dispatch_Failure) {
+
+  SET_AUDIT_OPER_PARAMS();
+  TestTcDbOperations tc_dboperations(tc_lock_,
+                                     &sess_,
+                                     db_handler,
+                                     unc_map_);
+  sess_.getArgCount();
+  EXPECT_EQ(TC_OPER_INVALID_INPUT, tc_dboperations.Dispatch());
 }

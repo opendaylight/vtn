@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -57,6 +57,16 @@ enum vbr {
 };
 }  // namespace vbr
 
+namespace vbr_portmap {
+enum vbr_portmap {
+  kCapDomainId =0,
+  kCapLogicalPortId,
+  kCapLabelType,
+  kCapLabel,
+  kCapOperStatus
+};
+}  // namespace vbr_portmap
+
 namespace vlan_map {
 enum vlan_map {
   kCapVlanId = 0
@@ -97,7 +107,8 @@ enum dhcp_relay_if {
 
 namespace static_ip_route {
 enum static_ip_route {
-  kCapGroupMetric = 0
+  kCapNwmName = 0,
+  kCapGroupMetric
 };
 }  // namespace static_ip_route
 
@@ -199,7 +210,8 @@ enum vlink {
   kCapVnode2Name,
   kCapVnode2IfName,
   kCapBoundaryName,
-  kCapVlanId,
+  kCapLabelType,
+  kCapLabel,
   kCapOperStatus
 };
 }  // namespace vlink
@@ -465,6 +477,7 @@ enum controller {
   kUser_name,
   kPassword,
   kEnableAudit,
+  kPort,
   kActualVersion,
   kOperStatus,
   kValid,

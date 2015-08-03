@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,11 +19,14 @@
 #include <string>
 #include <set>
 #include <map>
+#include <utility>
 #include "pfcxx/module.hh"
 #include "unc/config.h"
 #include "dal_defines.hh"
 #include "dal_conn_intf.hh"
 #include "dal_dml_intf.hh"
+#include "uncxx/upll_log.hh"
+#include "cxx/pfcxx/synch.hh"
 
 extern pfc_cfdef_t dal_cfdef;
 namespace unc {
@@ -420,6 +423,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * @param[in] table_index     - Valid Index of the table
      * @param[in] matching_attr_info
      *                            - Bind Information for deleting records
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -435,15 +440,21 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *     values.
      *     BindMatch if not used, deletes all the records from the table.
      *  4. BindOutput if used for any attributes, ignored.
+     *
+     *  NOTE: truncate cannot be used with bindinfo.
+     *  NOTE: truncate cannot be used for candidate operations which require
+     *        abort/commit
      */
     DalResultCode DeleteRecords(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
                                 const DalBindInfo *matching_attr_info,
-                                const bool truncate) const;
+                                const bool truncate,
+                                const CfgModeType cfg_mode,
+                                const uint8_t  *vtn_name) const;
 
     /**
      * CreateRecord
-     *   Creates the record in table with the given input data for 
+     *   Creates the record in table with the given input data for
      *   the given cfg_type
      *   Performs parent existence check if cfg_type is UPLL_DT_IMPORT
      *   Performs existence check and parent existence check if
@@ -455,6 +466,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                              has to be created
      * @param[in] table_index     - Valid Index of the table
      * @param[in] input_attr_info - Bind Information for creating record
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -469,11 +482,13 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      */
     DalResultCode CreateRecord(const UpllCfgType cfg_type,
                                const DalTableIndex table_index,
-                               const DalBindInfo *input_attr_info) const;
+                               const DalBindInfo *input_attr_info,
+                               const CfgModeType cfg_mode,
+                               const uint8_t* vtn_name) const;
 
     /**
      * UpdateRecords
-     *   Updates the records of table with the given input data for 
+     *   Updates the records of table with the given input data for
      *   the given cfg_type
      *   Increments the write count if operation is successful.
      *
@@ -482,6 +497,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * @param[in] table_index     - Valid Index of the table
      * @param[in] input_and_matching_attr_info
      *                            - Bind Information for updating records
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -501,7 +518,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
     DalResultCode UpdateRecords(
                     const UpllCfgType cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *input_and_matching_attr_info) const;
+                    const DalBindInfo *input_and_matching_attr_info,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const;
 
     /**
      * ExecuteAppQuery
@@ -517,6 +536,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                            - Bind Information for updating records
      * @param[in] dirty_op        - How to treat the modification -
      *                              create/update/delete
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -537,7 +558,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                   const UpllCfgType cfg_type,
                                   const DalTableIndex table_index,
                                   const DalBindInfo *bind_info,
-                                  const unc_keytype_operation_t dirty_op) const;
+                                  const unc_keytype_operation_t dirty_op,
+                                  const CfgModeType cfg_mode,
+                                  const uint8_t* vtn_name) const;
 
     /**
      * GetDeletedRecords
@@ -551,6 +574,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * @param[in] max_record_count- Will be filled later. Under discussion
      * @param[in] output_attr_info
      *                            - Bind Information for output records
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      * @param[in/out] cursor      - reference to the unallocated DalCursor
      *                              pointer
      *                            - Output - cursor pointer with valid instance
@@ -580,7 +605,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                     const DalTableIndex table_index,
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor) const;
+                                    DalCursor **cursor,
+                                    const CfgModeType cfg_mode,
+                                    const uint8_t* vtn_name) const;
 
     /**
      * GetCreatedRecords
@@ -598,6 +625,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                              pointer
      *                            - Output - cursor pointer with valid instance
      *                              of DalCursor
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -623,10 +652,23 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                     const DalTableIndex table_index,
                                     const size_t max_record_count,
                                     const DalBindInfo *output_attr_info,
-                                    DalCursor **cursor) const;
+                                    DalCursor **cursor,
+                                    const CfgModeType cfg_mode,
+                                    const uint8_t* vtn_name) const;
 
     DalResultCode ClearCreateUpdateFlags(const DalTableIndex table_index,
-                                    const UpllCfgType cfg_type) const;
+                                         const UpllCfgType cfg_type,
+                                         const CfgModeType cfg_mode,
+                                         const uint8_t* vtn_name,
+                                         const bool creat,
+                                         const bool update) const;
+
+    DalResultCode DeleteRecordsInVtnMode(const UpllCfgType cfg_type,
+                                         const DalTableIndex table_index,
+                                         const DalBindInfo *bind_info,
+                                         const bool truncate,
+                                         const CfgModeType cfg_mode,
+                                         const uint8_t* vtn_name) const;
 
     /**
      * GetUpdatedRecords
@@ -649,6 +691,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                              pointer
      *                            - Output - cursor pointer with valid instance
      *                              of DalCursor
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -686,7 +730,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const size_t max_record_count,
                     const DalBindInfo *cfg_1_output_and_match_attr_info,
                     const DalBindInfo *cfg_2_output_and_match_attr_info,
-                    DalCursor **cursor) const;
+                    DalCursor **cursor,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const;
 
     /**
      * CopyEntireRecords
@@ -744,6 +790,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                            - Bind Information for output and match
      *                            - columns
      * @param[in] op              - Operation to be performed for Copy.
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -763,7 +811,7 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *    GetUpdatedRecords(dest_cfg_type, src_cfg_type, ...)
      * 4. Recommended to use this API, where difference between both the
      *    configurations are comparitively lesser.
-     *    
+     *
      * Information on usage of DalBindInfo
      *  1. Valid instance of DalBindInfo with same table_index used in this API
      *  2. BindInput if used for any attributes, ignored.
@@ -792,7 +840,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
                     const DalBindInfo *output_and_match_attr_info,
-                    const unc_keytype_operation_t op) const;
+                    const unc_keytype_operation_t op,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const;
 
     /**
      * CopyMatchingRecords
@@ -806,6 +856,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      * @param[in] table_index     - Valid Index of the table
      * @param[in] output_and_match_attr_info
      *                            - Bind Information for match and ouput columns
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -828,7 +880,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                     const UpllCfgType dest_cfg_type,
                     const UpllCfgType src_cfg_type,
                     const DalTableIndex table_index,
-                    const DalBindInfo *output_and_match_attr_info) const;
+                    const DalBindInfo *output_and_match_attr_info,
+                    const CfgModeType cfg_mode,
+                    const uint8_t* vtn_name) const;
 
     /**
      * CheckRecordsIdentical
@@ -846,6 +900,8 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
      *                            - On successful execution, contains
      *                              true, if both config have same records
      *                              false, if not
+     * @param[in] cfg_mode        - Configuration mode
+     * @param[in] vtn_name        - VTN name of corresponding VTN config mode
      *
      * @return DalResultCode      - kDalRcSuccess in case of success
      *                            - Valid errorcode otherwise
@@ -868,7 +924,9 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                         const UpllCfgType cfg_type_2,
                                         const DalTableIndex table_index,
                                         const DalBindInfo *matching_attr_info,
-                                        bool *identical) const;
+                                        bool *identical,
+                                        const CfgModeType cfg_mode,
+                                        const uint8_t* vtn_name) const;
     /**
      * ExecuteAppQuerySingleRecord
      *   Execute the user supplied query statement to generate single record as
@@ -907,11 +965,27 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                          DalCursor **cursor) const;
 
     // Clears all the tables from dirty list
-    inline void ClearDirtyTblCache() const {
+    inline void ClearGlobalDirtyTblCache() const {
       delete_dirty.clear();
       create_dirty.clear();
       update_dirty.clear();
     }
+
+    // Clear specific table index from global dirty cache.
+    // Currently used to clear specific tables in virtual mode commit
+    DalResultCode ClearGlobalDirtyTblCacheAndDB(
+        const DalTableIndex table_index,
+        const unc_keytype_operation_t op) const;
+
+    // Clear all the tables from VTN dirty list
+    inline void ClearVtnDirtyTblCache() const {
+      delete_vtn_dirty.clear();
+      create_vtn_dirty.clear();
+      update_vtn_dirty.clear();
+    }
+
+    DalResultCode  ClearDirtyTblCache(const CfgModeType cfg_mode,
+                                      const uint8_t* vtn_name) const;
 
     // Add all the tables to dirty list
     inline void MakeAllTableDirtyInCache() const {
@@ -932,39 +1006,41 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
               (create_dirty.size() > 0) ||
               (update_dirty.size() > 0));
     }
-    inline bool IsTableDirtyShallow(const DalTableIndex table_index) const {
-      return !((delete_dirty.end() == delete_dirty.find(table_index)) &&
-               (create_dirty.end() == create_dirty.find(table_index)) &&
-               (update_dirty.end() == update_dirty.find(table_index)));
-    }
+    bool IsTableDirtyShallow(const DalTableIndex table_index,
+                             const CfgModeType cfg_mode,
+                             const uint8_t* vtn_name) const;
 
-    inline bool IsTableDirtyShallowForOp(const DalTableIndex table_index,
-                                         const unc_keytype_operation_t op)
-                                         const {
-      if (UNC_OP_DELETE == op) {
-        return !(delete_dirty.end() == delete_dirty.find(table_index));
-      } else if (op == UNC_OP_CREATE) {
-        return !(create_dirty.end() == create_dirty.find(table_index));
-      } else if (op == UNC_OP_UPDATE) {
-        return !(update_dirty.end() == update_dirty.find(table_index));
-      }
-      return false;
-    }
+    bool IsTableDirtyShallowForOp(const DalTableIndex table_index,
+                                  const unc_keytype_operation_t op,
+                                  const CfgModeType cfg_mode,
+                                  const uint8_t* vtn_name) const;
 
     DalResultCode SetTableDirty(const UpllCfgType cfg_type,
                                 const DalTableIndex table_index,
-                                const unc_keytype_operation_t op) const;
+                                const unc_keytype_operation_t op,
+                                const CfgModeType cfg_mode,
+                                const uint8_t* vtn_name) const;
 
     DalResultCode  ExecuteAppQueryModifyRecord(
       const UpllCfgType cfg_type,
       const DalTableIndex table_index,
       const std::string query_stmt,
       const DalBindInfo *bind_info,
-      const unc_keytype_operation_t op) const ; 
+      const unc_keytype_operation_t op,
+      const CfgModeType cfg_mode,
+      const uint8_t* vtn_name) const;
 
     DalResultCode UpdateDirtyTblCacheFromDB() const;
-    DalResultCode ClearAllDirtyTblInDB(UpllCfgType cfg_type) const;
+    DalResultCode ClearAllDirtyTblInDB(UpllCfgType cfg_type,
+                                       const CfgModeType cfg_mode,
+                                       const uint8_t* vtn_name) const;
     static bool FillTableName2IndexMap();
+
+    inline bool get_wr_exclusion_on_runn() { return wr_exclusion_on_runn_; }
+
+    // NOTE: wr_exclusion_on_runn_ should be set immediately after
+    // construction else the behavior is undefined
+    inline void set_wr_exclusion_on_runn() { wr_exclusion_on_runn_ = true; }
 
   private:
     /**
@@ -1142,6 +1218,32 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
                                 const DalTableIndex table_index,
                                 const DalBindInfo *input_attr_info) const;
 
+    /**
+     * BackupToCandDel
+     *  During Merge, the records which are going to be deleted from
+     *  DT_CANDIDATE needs to be backedup in DT_CANDIDATE_DEL for commit
+     *  operation(to get deleted records).
+     *
+     * @param[in] cfg_type        - Configuration Type from where the records
+     *                              will be copied
+     * @param[in] table_index     - Valid Index of the table
+     * @param[in] bind_info
+     *                            - Bind Information for match and ouput columns
+     *
+     * @return DalResultCode      - kDalRcSuccess in case of success
+     *                            - Valid errorcode otherwise
+     *
+     * Information on usage of DalBindInfo
+     * This function is called from CopyModifiedRecords
+     * so the bind information is same as CopyModifiedRecords.
+     *
+     * XXX: NOTE: It is mandatory that candidate and running needs to be in
+     * sync at this time. If not, the result is undefined.
+     */
+    DalResultCode BackupToCandDel(const UpllCfgType cfg_type,
+                                  const DalTableIndex table_index,
+                                  const DalBindInfo *bind_info) const;
+
     inline DalResultCode FreeHandle(const SQLSMALLINT handle_type,
                                     SQLHANDLE handle) const;
 
@@ -1149,12 +1251,81 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
 
     DalResultCode SetCfgTblDirtyInDB(const UpllCfgType cfg_type,
                                      const unc_keytype_operation_t op,
-                                     const DalTableIndex table_index) const;
-    DalResultCode UpdateDirtyTblCache(const UpllCfgType cfg_type,
-                                      const char *tbl_name,
-                                      const unc_keytype_operation_t op) const;
+                                     const DalTableIndex table_index,
+                                     bool set_flag) const;
+    DalResultCode UpdateGlobalDirtyTblCache(
+        const UpllCfgType cfg_type,
+        const char *tbl_name,
+        const unc_keytype_operation_t op) const;
     DalResultCode GetTableIndex(const char* tbl_name,
                                 DalTableIndex *tbl_idx) const;
+
+    bool CheckRunnUpdateQuery(const std::string *query_stmt) const;
+
+    void AcquireRunnExclusiveLock() const {
+      wr_exclusion_runn_mutex_.lock();
+      wr_exclusion_runn_mutex_acqd_ = true;
+    }
+
+    void ReleaseRunnExclusiveLock() const {
+      wr_exclusion_runn_mutex_.unlock();
+      wr_exclusion_runn_mutex_acqd_ = false;
+    }
+
+    DalResultCode SetTableDirtyForGblAndVirMode(
+        const UpllCfgType cfg_type,
+        const DalTableIndex table_index,
+        const unc_keytype_operation_t op) const;
+    DalResultCode SetTableDirtyForVtnMode(
+        const UpllCfgType cfg_type,
+        const DalTableIndex table_index,
+        const unc_keytype_operation_t op,
+        const uint8_t* vtn_name) const;
+    DalResultCode SetVtnCfgTblDirtyInDB(const UpllCfgType cfg_type,
+                                        const unc_keytype_operation_t op,
+                                        const DalTableIndex table_index,
+                                        const uint8_t* vtn_name) const;
+    // To check if table is dirty or not in any mode
+    DalResultCode IsTblDirty(const unc_keytype_operation_t op,
+                             const DalTableIndex table_index,
+                             const CfgModeType cfg_mode,
+                             const uint8_t* vtn_name) const;
+    // To check if table is dirty or not in global cache in global mode
+    DalResultCode IsTblInGlobalDirty(const unc_keytype_operation_t op,
+                                     const DalTableIndex table_index) const;
+    // To check if table is dirty or not in vtn cache and db in vtn mode
+    DalResultCode IsTblInVtnDirty(const unc_keytype_operation_t op,
+                                  const DalTableIndex table_index,
+                                  const CfgModeType cfg_mode,
+                                  const uint8_t* vtn_name) const;
+    // To check if table is dirty or not in vtn dirty db in vtn or global mode
+    DalResultCode IsTblInVtnDirtyInDB(const unc_keytype_operation_t op,
+                                      const DalTableIndex table_index,
+                                      const CfgModeType cfg_mode,
+                                      const uint8_t* vtn_name) const;
+    // Clear all the records in global dirty tbl
+    DalResultCode ClearGlobalDirtyTblInDB(UpllCfgType cfg_type) const;
+    // Clear all the records in vtn dirty tbl
+    DalResultCode ClearVtnDirtyTblInDB(UpllCfgType cfg_type,
+                                       const CfgModeType cfg_mode,
+                                       const uint8_t* vtn_name) const;
+    DalResultCode UpdateGlobalDirtyTblCacheFromDB() const;
+    DalResultCode UpdateVtnDirtyTblCacheFromDB() const;
+    DalResultCode UpdateVtnDirtyTblCache(const UpllCfgType cfg_type,
+                                         const DalTableIndex table_index,
+                                         const unc_keytype_operation_t op,
+                                         const uint8_t* vtn_name) const;
+
+    bool IsVtnNamePresentInBind(const DalTableIndex table_index,
+                                DalBindInfo *bind_info,
+                                const uint8_t* vtn_name) const;
+    bool  IsVtnNamePresentInCol(const DalTableIndex table_index) const;
+    bool  BindVtnNameForMatch(const DalTableIndex table_index,
+                              DalBindInfo *bind_info,
+                              const uint8_t* vtn_name) const;
+    // Get maximum configuration session possible from dal.conf
+    uint32_t GetMaxcfgSession() const;
+
     mutable std::set<uint32_t> create_dirty;
        // List of tables modified by candidate create operation
     mutable std::set<uint32_t> delete_dirty;
@@ -1166,7 +1337,35 @@ class DalOdbcMgr:public DalConnIntf, public DalDmlIntf {
     mutable DalConnType conn_type_;  // Connection Type
     mutable DalConnState conn_state_;  // Connection State
     mutable uint32_t write_count_;
-    static std::map<std::string, DalTableIndex> tbl_name_to_idx_map_; 
+    typedef std::pair<DalTableIndex, std::string> TblVtnNamePair;
+    mutable std::set<TblVtnNamePair> create_vtn_dirty;
+    mutable std::set<TblVtnNamePair> delete_vtn_dirty;
+    mutable std::set<TblVtnNamePair> update_vtn_dirty;
+    static std::map<std::string, DalTableIndex> tbl_name_to_idx_map_;
+    static std::string db_rw_dsn;  // RW DSN connection string
+    static std::string db_ro_dsn;  // RO DSN connection string
+
+    static pfc::core::Mutex wr_exclusion_runn_mutex_;
+
+    // If true, wr_exclusion_runn_mutex_ lock needs be taken in UPDATE to
+    // running configuration in ExecuteQuery() & should be released in
+    // after commit/abort
+    bool wr_exclusion_on_runn_;
+    // If wr_exclusion_runn_mutex_acqd_ is true, then wr_exclusion_runn_mutex_
+    // is currently owned by this connection.
+    mutable bool wr_exclusion_runn_mutex_acqd_;
+
+    mutable pfc::core::Mutex wr_exclusion_var_mutex_;
+    // Maximum cache limit is calculated based on max configure session
+    static uint32_t max_cache_limit_;
+    // Default configure session(64)
+    static uint32_t default_max_session_;
+    // If true, vtn dirty cache limit is reached for respective operation
+    static bool max_cache_reached_cr_;
+    static bool max_cache_reached_up_;
+    static bool max_cache_reached_dl_;
+
+    DalResultCode print_vtn_cache(const unc_keytype_operation_t op) const;
 };  // class DalOdbcMgr
 
 }  // namespace dal

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -85,6 +85,47 @@ BindInfo VtunnelMoMgr::vtunnel_bind_info[] = {
     offsetof(val_vtunnel, cs_attr[5]), uud::kDalUint8, 1}
 };
 
+BindInfo VtunnelMoMgr::conv_vtunnel_bind_info[] = {
+  { uudst::convert_vtunnel::kDbiVtnName, CFG_KEY,
+    offsetof(key_convert_vtunnel, vtn_key.vtn_name),
+    uud::kDalChar, kMaxLenVtnName+1 },
+  { uudst::convert_vtunnel::kDbiVtunnelName, CFG_KEY,
+    offsetof(key_convert_vtunnel, convert_vtunnel_name),
+    uud::kDalChar, kMaxLenConvertVnodeName+1 },
+  { uudst::convert_vtunnel::kDbiCtrlrName, CK_VAL,
+    offsetof(key_user_data_t, ctrlr_id),
+    uud::kDalChar, kMaxLenCtrlrId+1 },
+  { uudst::convert_vtunnel::kDbiDomainId, CK_VAL,
+    offsetof(key_user_data_t, domain_id),
+    uud::kDalChar, kMaxLenDomainId+1 },
+  { uudst::convert_vtunnel::kDbiRefCount, CFG_VAL,
+    offsetof(val_convert_vtunnel, ref_count), uud::kDalUint32, 1},
+  { uudst::convert_vtunnel::kDbiLabel, CFG_VAL,
+    offsetof(val_convert_vtunnel, label), uud::kDalUint32, 1},
+  { uudst::convert_vtunnel::kDbiOperStatus, ST_VAL,
+    offsetof(val_db_vtunnel_st,
+        vtunnel_val_st.oper_status),
+    uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiDownCount, ST_VAL,
+    offsetof(val_db_vtunnel_st, down_count),
+    uud::kDalUint32, 1},
+  { uudst::convert_vtunnel::kDbiFlags, CK_VAL,
+    offsetof(key_user_data_t, flags), uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiValidRefCount, CFG_META_VAL,
+    offsetof(val_convert_vtunnel, valid[0]), uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiValidLabel, CFG_META_VAL,
+    offsetof(val_convert_vtunnel, valid[1]), uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiValidOperStatus, ST_META_VAL,
+    offsetof(val_db_vtunnel_st, vtunnel_val_st.valid[0]),
+    uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiCsRowstatus, CS_VAL,
+    offsetof(val_convert_vtunnel, cs_row_status), uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiCsRefCount, CS_VAL,
+    offsetof(val_convert_vtunnel, cs_attr[0]), uud::kDalUint8, 1},
+  { uudst::convert_vtunnel::kDbiCsLabel, CS_VAL,
+    offsetof(val_convert_vtunnel, cs_attr[1]), uud::kDalUint8, 1}
+};
+
 unc_key_type_t VtunnelMoMgr::vtunnel_child[] = {
     UNC_KT_VTUNNEL_IF
 };
@@ -96,8 +137,13 @@ VtunnelMoMgr::VtunnelMoMgr() {
       IpctSt::kIpcStKeyVtunnel, IpctSt::kIpcStValVtunnel,
       uudst::vtunnel::kDbiVtunnelNumCols+2);
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
   table[MAINTBL] = tbl;
+  table[CONVERTTBL] = new Table(uudst::kDbiConvertVtunnelTbl, UNC_KT_VTUNNEL,
+                      conv_vtunnel_bind_info, IpctSt::kIpcStKeyConvertVtunnel,
+                      IpctSt::kIpcStValConvertVtunnel,
+                      (uudst::convert_vtunnel::kDbiConvertVtunnelNumCols+2));
+
   table[RENAMETBL] = NULL;
   table[CTRLRTBL] = NULL;
   nchild = sizeof(vtunnel_child) / sizeof(*vtunnel_child);
@@ -107,31 +153,59 @@ VtunnelMoMgr::VtunnelMoMgr() {
 #endif
 }
 
-bool VtunnelMoMgr::IsValidKey(void *key, uint64_t index) {
+bool VtunnelMoMgr::IsValidKey(void *key, uint64_t index, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
-  key_vtunnel *vtun_key = reinterpret_cast<key_vtunnel *>(key);
   upll_rc_t ret_val = UPLL_RC_SUCCESS;
-  switch (index) {
-    case uudst::vtunnel::kDbiVtnName:
-      ret_val = ValidateKey(reinterpret_cast<char *>
-          (vtun_key->vtn_key.vtn_name),
-          kMinLenVtnName, kMaxLenVtnName);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
+  if (tbl == CONVERTTBL) {
+    key_convert_vtunnel *convert_vtun_key =
+      reinterpret_cast<key_convert_vtunnel *>(key);
+    switch (index) {
+      case uudst::convert_vtunnel::kDbiVtnName:
+        ret_val = ValidateKey(reinterpret_cast<char *>
+            (convert_vtun_key->vtn_key.vtn_name),
+            kMinLenVtnName, kMaxLenVtnName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      case uudst::convert_vtunnel::kDbiVtunnelName:
+        ret_val = ValidateKey(reinterpret_cast<char *>
+            (convert_vtun_key->convert_vtunnel_name),
+            kMinLenConvertVnodeName, kMaxLenConvertVnodeName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("Convert Vtunnel Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      default:
+        UPLL_LOG_TRACE("Invalid Key Index");
         return false;
-      }
-      break;
-    case uudst::vtunnel::kDbiVtunnelName:
-      ret_val = ValidateKey(reinterpret_cast<char *>(vtun_key->vtunnel_name),
-          kMinLenVnodeName, kMaxLenVnodeName);
-      if (ret_val != UPLL_RC_SUCCESS) {
-        UPLL_LOG_TRACE("Vtunnel Name is not valid(%d)", ret_val);
+    }
+  } else {
+    key_vtunnel *vtun_key = reinterpret_cast<key_vtunnel *>(key);
+    switch (index) {
+      case uudst::vtunnel::kDbiVtnName:
+        ret_val = ValidateKey(reinterpret_cast<char *>
+            (vtun_key->vtn_key.vtn_name),
+            kMinLenVtnName, kMaxLenVtnName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("VTN Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      case uudst::vtunnel::kDbiVtunnelName:
+        ret_val = ValidateKey(reinterpret_cast<char *>(vtun_key->vtunnel_name),
+            kMinLenVnodeName, kMaxLenVnodeName);
+        if (ret_val != UPLL_RC_SUCCESS) {
+          UPLL_LOG_TRACE("Vtunnel Name is not valid(%d)", ret_val);
+          return false;
+        }
+        break;
+      default:
+        UPLL_LOG_TRACE("Invalid Key Index");
         return false;
-      }
-      break;
-    default:
-      UPLL_LOG_TRACE("Invalid Key Index");
-      return false;
+    }
   }
   return true;
 }
@@ -244,71 +318,85 @@ upll_rc_t VtunnelMoMgr::AllocVal(ConfigVal *&ck_val,
         ck_val->AppendCfgVal(ck_nxtval);
       }
       break;
+    case CONVERTTBL:
+      val = reinterpret_cast<void *>
+        (ConfigKeyVal::Malloc(sizeof(val_convert_vtunnel)));
+      ck_val = new ConfigVal(IpctSt::kIpcStValConvertVtunnel, val);
+      break;
     default:
       val = NULL;
   }
   return UPLL_RC_SUCCESS;
 }
 
-upll_rc_t VtunnelMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
-                   ConfigKeyVal *&req, MoMgrTables tbl) {
+upll_rc_t VtunnelMoMgr::DupConfigKeyVal(
+    ConfigKeyVal *&okey, ConfigKeyVal *&req, MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   if (req == NULL) return UPLL_RC_ERR_GENERIC;
   if (okey != NULL) return UPLL_RC_ERR_GENERIC;
   if (req->get_key_type() != UNC_KT_VTUNNEL)
-     return UPLL_RC_ERR_GENERIC;
+    return UPLL_RC_ERR_GENERIC;
   ConfigVal *tmp1 = NULL, *tmp = (req)->get_cfg_val();
 
   if (tmp) {
-      if (tbl == MAINTBL) {
-        val_vtunnel *ival = reinterpret_cast<val_vtunnel *>(GetVal(req));
-        val_vtunnel *vtunnel_val = reinterpret_cast<val_vtunnel *>
-                                   (ConfigKeyVal::Malloc(sizeof(val_vtunnel)));
-        memcpy(vtunnel_val, ival, sizeof(val_vtunnel));
-        tmp1 = new ConfigVal(IpctSt::kIpcStValVtunnel, vtunnel_val);
-        if (!tmp1) {
-          FREE_IF_NOT_NULL(vtunnel_val);
-          return UPLL_RC_ERR_GENERIC;
-        }
+    if (tbl == MAINTBL) {
+      val_vtunnel *ival = reinterpret_cast<val_vtunnel *>(GetVal(req));
+      val_vtunnel *vtunnel_val = reinterpret_cast<val_vtunnel *>
+          (ConfigKeyVal::Malloc(sizeof(val_vtunnel)));
+      memcpy(vtunnel_val, ival, sizeof(val_vtunnel));
+      tmp1 = new ConfigVal(IpctSt::kIpcStValVtunnel, vtunnel_val);
+    } else if (tbl == CONVERTTBL) {
+      val_convert_vtunnel *ival = reinterpret_cast<val_convert_vtunnel *>
+        (GetVal(req));
+      if (ival == NULL) {
+        UPLL_LOG_ERROR("convert val is NULL");
+        return UPLL_RC_ERR_GENERIC;
       }
-      tmp = tmp->get_next_cfg_val();
+      val_convert_vtunnel *conv_vtunnel_val =
+          ConfigKeyVal::Malloc<val_convert_vtunnel>();
+      memcpy(conv_vtunnel_val, ival, sizeof(val_convert_vtunnel));
+      tmp1 = new ConfigVal(IpctSt::kIpcStValConvertVtunnel, conv_vtunnel_val);
+    }
+    tmp = tmp->get_next_cfg_val();
   };
   if (tmp) {
-      if (tbl == MAINTBL) {
-        val_db_vtunnel_st *ival = static_cast<val_db_vtunnel_st *>
-                                  (tmp->get_val());
-        val_db_vtunnel_st *vtunnel_st = static_cast<val_db_vtunnel_st *>
-                           (ConfigKeyVal::Malloc(sizeof(val_db_vtunnel_st)));
-        memcpy(vtunnel_st, ival, sizeof(val_db_vtunnel_st));
-        ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValVtunnelSt,
-                                        vtunnel_st);
-        if (!tmp2) {
-          delete tmp1;
-          FREE_IF_NOT_NULL(vtunnel_st);
-          return UPLL_RC_ERR_GENERIC;
-        }
-        tmp1->AppendCfgVal(tmp2);
-      }
+    if (tbl == MAINTBL || tbl == CONVERTTBL) {
+      val_db_vtunnel_st *ival = static_cast<val_db_vtunnel_st *>
+        (tmp->get_val());
+      val_db_vtunnel_st *vtunnel_st = static_cast<val_db_vtunnel_st *>
+        (ConfigKeyVal::Malloc(sizeof(val_db_vtunnel_st)));
+      memcpy(vtunnel_st, ival, sizeof(val_db_vtunnel_st));
+      ConfigVal *tmp2 = new ConfigVal(IpctSt::kIpcStValVtunnelSt,
+          vtunnel_st);
+      tmp1->AppendCfgVal(tmp2);
+    }
   };
   void *tkey = (req != NULL)?(req)->get_key():NULL;
   if (!tkey) {
-    UPLL_LOG_DEBUG("Null tkey");
+    UPLL_LOG_ERROR("Null tkey");
     DELETE_IF_NOT_NULL(tmp1);
     return UPLL_RC_ERR_GENERIC;
   }
-  key_vtunnel *ikey = static_cast<key_vtunnel *>(tkey);
-  key_vtunnel *vtunnel_key = static_cast<key_vtunnel *>
-                             (ConfigKeyVal::Malloc(sizeof(key_vtunnel)));
-  memcpy(vtunnel_key, ikey, sizeof(key_vtunnel));
-  okey = new ConfigKeyVal(UNC_KT_VTUNNEL, IpctSt::kIpcStKeyVtunnel,
-         vtunnel_key, tmp1);
-  if (okey) {
-    SET_USER_DATA(okey, req);
+  if (tbl == MAINTBL) {
+    key_vtunnel *ikey = static_cast<key_vtunnel *>(tkey);
+    key_vtunnel *vtunnel_key = static_cast<key_vtunnel *>
+      (ConfigKeyVal::Malloc(sizeof(key_vtunnel)));
+    memcpy(vtunnel_key, ikey, sizeof(key_vtunnel));
+    okey = new ConfigKeyVal(UNC_KT_VTUNNEL, IpctSt::kIpcStKeyVtunnel,
+        vtunnel_key, tmp1);
+  } else if (tbl == CONVERTTBL) {
+    key_convert_vtunnel *ikey = static_cast<key_convert_vtunnel *>(tkey);
+    key_convert_vtunnel *conv_vtunnel_key =
+        ConfigKeyVal::Malloc<key_convert_vtunnel>();
+    memcpy(conv_vtunnel_key, ikey, sizeof(key_convert_vtunnel));
+    okey = new ConfigKeyVal(UNC_KT_VTUNNEL, IpctSt::kIpcStKeyConvertVtunnel,
+                            conv_vtunnel_key, tmp1);
   } else {
-    if (tmp1) delete tmp1;
-    FREE_IF_NOT_NULL(vtunnel_key);
+    UPLL_LOG_DEBUG("Received tbl name is not supported");
+    DELETE_IF_NOT_NULL(tmp1);
     return UPLL_RC_ERR_GENERIC;
   }
+  SET_USER_DATA(okey, req);
   return UPLL_RC_SUCCESS;
 }
 
@@ -1057,6 +1145,7 @@ upll_rc_t VtunnelMoMgr::CreateVnodeConfigKey(ConfigKeyVal *ikey,
                           NULL);
   return UPLL_RC_SUCCESS;
 }
+
 /*
 upll_rc_t VtunnelMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
                                         ConfigKeyVal *ikey) {
@@ -1086,15 +1175,16 @@ upll_rc_t VtunnelMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
 }
 */
 
-upll_rc_t VtunnelMoMgr::IsReferenced(ConfigKeyVal *ikey,
-           upll_keytype_datatype_t dt_type, DalDmlIntf *dmi) {
+upll_rc_t VtunnelMoMgr::IsReferenced(IpcReqRespHeader *req,
+                                     ConfigKeyVal *ikey,
+                                     DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (!ikey || !(ikey->get_key()) || !dmi)
     return UPLL_RC_ERR_GENERIC;
   MoMgrImpl *mgr = reinterpret_cast<MoMgrImpl *>(const_cast<MoManager*>
                        (GetMoManager(UNC_KT_VTUNNEL_IF)));
-  result_code = mgr->IsReferenced(ikey, dt_type, dmi);
+  result_code = mgr->IsReferenced(req, ikey, dmi);
   result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
                     UPLL_RC_SUCCESS:result_code;
   // Success / NoSuchInstance / Semantic
@@ -1102,6 +1192,192 @@ upll_rc_t VtunnelMoMgr::IsReferenced(ConfigKeyVal *ikey,
   return result_code;
 }
 
-}  // namespace vtn
+upll_rc_t VtunnelMoMgr::AdaptValToVtnService(ConfigKeyVal *ikey,
+                             AdaptType adapt_type) {
+  UPLL_FUNC_TRACE;
+  if (!ikey) {
+    UPLL_LOG_DEBUG("Invalid ikey");
+    return UPLL_RC_ERR_GENERIC;
+  }
+  key_vtunnel *vtun_key = reinterpret_cast<key_vtunnel*>(ikey->get_key());
+  while (ikey) {
+    ConfigVal *cval = ikey->get_cfg_val();
+    if (!cval) {
+      UPLL_LOG_DEBUG("Config Val is Null");
+      return UPLL_RC_ERR_GENERIC;
+    }
+    while (cval) {
+      if (IpctSt::kIpcStValVtunnelSt == cval->get_st_num()) {
+        controller_domain ctrlr_dom = {NULL, NULL};
+        GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+        CheckOperStatus<val_vtunnel_st>(vtun_key->vtn_key.vtn_name,
+                                        cval, UNC_KT_VTUNNEL, ctrlr_dom);
+      }
+      cval = cval->get_next_cfg_val();
+    }
+    if (adapt_type == ADAPT_ONE)
+      break;
+    ikey = ikey->get_next_cfg_key_val();
+  }
+  return UPLL_RC_SUCCESS;
+}
+upll_rc_t VtunnelMoMgr::ConvertVtunnel(ConfigKeyVal *ikey,
+                                       uint8_t *unified_vbr_name,
+                                       unc_keytype_operation_t op,
+                                       TcConfigMode config_mode,
+                                       string vtn_name,
+                                       DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+
+  // validate the input
+  if (!ikey || !dmi || !ikey->get_key()) {
+    UPLL_LOG_DEBUG("IpcReqRespHeader or ConfigKeyVal or DalDmlIntf is Null");
+    return UPLL_RC_ERR_BAD_REQUEST;
+  }
+
+  unc_key_type_t keytype = ikey->get_key_type();
+  if (UNC_KT_VTUNNEL != keytype) {
+    UPLL_LOG_DEBUG("Invalid keytype. Keytype- %d", keytype);
+    return UPLL_RC_ERR_BAD_REQUEST;
+  }
+
+  if (ikey->get_st_num() != IpctSt::kIpcStKeyConvertVtunnel) {
+    UPLL_LOG_DEBUG("Invalid struct received."
+        "Expected struct-kIpcStConvertKeyVtunnel, "
+        "received struct -%s ", reinterpret_cast<const char *>
+        (IpctSt::GetIpcStdef(ikey->get_st_num())));
+    return UPLL_RC_ERR_BAD_REQUEST;
+  }
+
+  // Fetch the ConfigKey
+  key_convert_vtunnel *con_key_tun =  reinterpret_cast<key_convert_vtunnel *>
+    (ikey->get_key());
+
+  // Fetch the Configval
+  val_convert_vtunnel *con_val_tun =  reinterpret_cast<val_convert_vtunnel *>
+    (ikey->get_cfg_val()->get_val());
+
+  controller_domain ctrlr_dom;
+  memset(&ctrlr_dom, 0, sizeof(controller_domain));
+  GET_USER_DATA_CTRLR_DOMAIN(ikey, ctrlr_dom);
+  DbSubOp dbop_upd = {kOpNotRead, kOpMatchNone, kOpInOutCtrlr|kOpInOutDomain};
+
+  // If vtunnel name is not exists, the vtunnel name will be auto-generated
+  if (op == UNC_OP_CREATE) {
+    if (!ctrlr_dom.ctrlr || !ctrlr_dom.domain) {
+      UPLL_LOG_DEBUG("Ctrlr/Domain is NULL");
+      return UPLL_RC_ERR_BAD_REQUEST;
+    }
+    if (!strlen(reinterpret_cast<char*>(con_key_tun->convert_vtunnel_name))) {
+      string vtunnelName;
+      // Generate vtunnel based on timestamp and if the name is not unique
+      // Regenerate until getting an unique name
+     DbSubOp dbop = {kOpReadExist, kOpMatchNone, kOpInOutNone};
+     while (1) {
+        vtunnelName = unc::upll::upll_util::getTime();
+        string input = vtunnelName;
+        std::stringstream ssoutput;
+        for (int i = 0; i < 7; i++)
+          ssoutput << input[(strlen(input.c_str())) - (7 - i)];
+        // Assign auto generated even numbers for convert vtunnel
+        int autogenerateno = atoi((ssoutput.str()).c_str());
+        if (autogenerateno % 2 == 0) {
+          vtunnelName = string(reinterpret_cast<char *>(unified_vbr_name)) +
+            "_" + ssoutput.str();
+          UPLL_LOG_DEBUG("Auto generated convert vtunnel name is %s",
+              vtunnelName.c_str());
+        } else {
+          continue;
+        }
+        // Assign the generated vtunnel name
+        uuu::upll_strncpy(con_key_tun->convert_vtunnel_name,
+            vtunnelName.c_str(), (kMaxLenConvertVnodeName+1));
+        result_code = UpdateConfigDB(ikey, UPLL_DT_CANDIDATE, UNC_OP_READ, dmi,
+            &dbop, CONVERTTBL);
+        if ((result_code != UPLL_RC_ERR_INSTANCE_EXISTS) &&
+            (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE)) {
+            UPLL_LOG_TRACE("UpdateConfigDB Failed -%d", result_code);
+          return result_code;
+        } else if (result_code == UPLL_RC_ERR_INSTANCE_EXISTS) {
+          UPLL_LOG_TRACE("Convert vtunnel name already exists %d", result_code);
+          continue;
+        }
+        break;
+      }
+      // Increment the ref count.
+      con_val_tun->valid[UPLL_IDX_REF_COUNT_CONV_VTNL] = UNC_VF_VALID;
+      con_val_tun->ref_count++;
+    }
+  }
+  // Insert/update/delete the entry to database
+  result_code = UpdateConfigDB(ikey, UPLL_DT_CANDIDATE, op, dmi, &dbop_upd,
+      config_mode, vtn_name, CONVERTTBL);
+  return result_code;
+}
+upll_rc_t VtunnelMoMgr::GetChildConvertConfigKey(ConfigKeyVal *&okey,
+                                        ConfigKeyVal *parent_key) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  key_convert_vtunnel *vtunnel_convert_key = NULL;
+  if (okey && (okey->get_key())) {
+    vtunnel_convert_key = reinterpret_cast<key_convert_vtunnel_t *>
+                (okey->get_key());
+  } else {
+    vtunnel_convert_key = reinterpret_cast<key_convert_vtunnel *>
+      (ConfigKeyVal::Malloc(sizeof(key_convert_vtunnel)));
+  }
+  void *pkey;
+  if (parent_key == NULL) {
+    if (!okey)
+      okey = new ConfigKeyVal(UNC_KT_VTUNNEL, IpctSt::kIpcStKeyConvertVtunnel,
+                              vtunnel_convert_key, NULL);
+    else if (okey->get_key() != vtunnel_convert_key)
+      okey->SetKey(IpctSt::kIpcStKeyConvertVtunnel, vtunnel_convert_key);
+    return UPLL_RC_SUCCESS;
+  } else {
+    pkey = parent_key->get_key();
+  }
+  if (!pkey) {
+    if (!okey || !(okey->get_key()))
+      free(vtunnel_convert_key);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  /* presumes MoMgrs receive only supported keytypes */
+  switch (parent_key->get_key_type()) {
+    case UNC_KT_VBR_PORTMAP:
+      uuu::upll_strncpy(vtunnel_convert_key->vtn_key.vtn_name,
+         reinterpret_cast<key_vbr_portmap*>(pkey)->vbr_key.vtn_key.vtn_name,
+        (kMaxLenVtnName+1));
+     break;
+    case UNC_KT_VTUNNEL:
+      uuu::upll_strncpy(vtunnel_convert_key->vtn_key.vtn_name,
+         reinterpret_cast<key_convert_vtunnel*>(pkey)->vtn_key.vtn_name,
+        (kMaxLenVtnName+1));
+      uuu::upll_strncpy(vtunnel_convert_key->convert_vtunnel_name,
+         reinterpret_cast<key_convert_vtunnel*>(pkey)->convert_vtunnel_name,
+        (kMaxLenConvertVnodeName+1));
+     break;
+    default:
+      break;
+  }
+  if (!okey)
+    okey = new ConfigKeyVal(UNC_KT_VTUNNEL, IpctSt::kIpcStKeyConvertVtunnel,
+                            vtunnel_convert_key, NULL);
+  else if (okey->get_key() != vtunnel_convert_key)
+    okey->SetKey(IpctSt::kIpcStKeyConvertVtunnel, vtunnel_convert_key);
+  if (okey == NULL) {
+    free(vtunnel_convert_key);
+    result_code = UPLL_RC_ERR_GENERIC;
+  } else {
+    SET_USER_DATA(okey, parent_key);
+  }
+  return result_code;
+}
+
+
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc

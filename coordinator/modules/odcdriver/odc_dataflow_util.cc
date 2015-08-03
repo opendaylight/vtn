@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -24,6 +24,10 @@ void driver_dataflow_read_util::add_read_value(
   } else {
     read_util->df_util_->appendFlow(value);
   }
+  if (!read_util->df_cmn_) {
+    read_util->df_cmn_ = value;
+    PFC_ASSERT(read_util->df_cmn_ != NULL);
+}
 }
 
 

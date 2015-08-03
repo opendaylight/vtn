@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -12,6 +12,7 @@
 
 #include <string>
 #include <set>
+#include <list>
 #include "momgr_impl.hh"
 #include "dbconn_mgr.hh"
 #include "config_mgr.hh"
@@ -20,7 +21,13 @@
 namespace unc {
 namespace upll {
 namespace kt_momgr {
-
+enum unc_oper_type {
+  UNC_CTRLR_DISC = 0,
+  UNC_START_UP,
+  UNC_DT_STATE_READ,
+  UNC_PATH_FAULT,
+  UNC_PATH_FAULT_RESET
+};
 using unc::upll::config_momgr::CtrlrCommitStatus;
 using unc::upll::config_momgr::CtrlrVoteStatus;
 using unc::upll::dal::DalBindInfo;
@@ -39,8 +46,9 @@ class VtnMoMgr : public MoMgrImpl {
     static BindInfo key_vtn_ctrlrtbl_bind_info[];
     static BindInfo key_vtn_maintbl_bind_info[];
     static BindInfo key_vtn_renametbl_bind_info[];
+    static BindInfo key_vtn_gateway_port_bind_info[];
 
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
     /**
@@ -52,7 +60,8 @@ class VtnMoMgr : public MoMgrImpl {
      * @retval         true                 input key is valid
      * @retval         false                input key is invalid.
      **/
-    bool IsValidKey(void *key, uint64_t index);
+    bool IsValidKey(void *key, uint64_t index,
+                    MoMgrTables tbl = MAINTBL);
 
     /**
      * @brief  Filters the attributes which need not be sent to controller
@@ -70,10 +79,10 @@ class VtnMoMgr : public MoMgrImpl {
     /** Not used for VTN **/
     bool CompareValidValue(void *&val1, void *val2, bool audit);
     /*
-     * @brief      Method to get a configkeyval of the parent keytype 
+     * @brief      Method to get a configkeyval of the parent keytype
      *
-     * @param[in/out]  pkey           pointer to parent ConfigKeyVal 
-     * @param[in]      ck_vtn         pointer to the child configkeyval from 
+     * @param[in/out]  pkey           pointer to parent ConfigKeyVal
+     * @param[in]      ck_vtn         pointer to the child configkeyval from
      * which the parent configkey val is obtained.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -86,7 +95,7 @@ class VtnMoMgr : public MoMgrImpl {
                          DalDmlIntf *dmi, uint8_t *ctrlr, bool &no_rename);
     upll_rc_t UpdateVtnConfigStatus(ConfigKeyVal *vtn_key,
                          unc_keytype_operation_t op, uint32_t driver_result,
-                         ConfigKeyVal *nreq,DalDmlIntf *dmi);
+                         ConfigKeyVal *nreq, DalDmlIntf *dmi);
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *req, unc_keytype_operation_t op,
                                  uint32_t driver_result, ConfigKeyVal *upd_key,
                                  DalDmlIntf *dmi, ConfigKeyVal *ctrlr_key);
@@ -107,13 +116,13 @@ class VtnMoMgr : public MoMgrImpl {
                                       uuc::UpdateCtrlrPhase phase,
                                       ConfigKeyVal *&ckv_running);
     /**
-     * @brief  Allocates for the specified val in the given configuration in the     * specified table.   
+     * @brief  Allocates for the specified val in the given configuration in the     * specified table.
      *
-     * @param[in/out]  ck_val   Reference pointer to configval structure 
-     *                          allocated.      
+     * @param[in/out]  ck_val   Reference pointer to configval structure
+     *                          allocated.
      * @param[in]      dt_type  specifies the configuration candidate/running/
-     *                          state 
-     * @param[in]      tbl      specifies if the corresponding table is the  
+     *                          state
+     * @param[in]      tbl      specifies if the corresponding table is the
      *                          main table / controller table or rename table.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
@@ -122,21 +131,21 @@ class VtnMoMgr : public MoMgrImpl {
     upll_rc_t AllocVal(ConfigVal *&ck_val, upll_keytype_datatype_t dt_type,
                        MoMgrTables tbl = MAINTBL);
     /**
-     * @brief  Gets the valid array position of the variable in the value 
-     *         structure from the table in the specified configuration  
+     * @brief  Gets the valid array position of the variable in the value
+     *         structure from the table in the specified configuration
      *
-     * @param[in]     val      pointer to the value structure 
+     * @param[in]     val      pointer to the value structure
      * @param[in]     indx     database index for the variable
-     * @param[out]    valid    position of the variable in the valid array - 
+     * @param[out]    valid    position of the variable in the valid array -
      *                          NULL if valid does not exist.
      * @param[in]     dt_type  specifies the configuration
-     * @param[in]     tbl      specifies the table containing the given value 
+     * @param[in]     tbl      specifies the table containing the given value
      *
      **/
     upll_rc_t GetValid(void *val, uint64_t indx, uint8_t *&valid,
                        upll_keytype_datatype_t dt_type, MoMgrTables tbl);
     /**
-     * @brief  Duplicates the input configkeyval including the key and val.  
+     * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
      *
      * @param[in]  okey   Output Configkeyval - allocated within the function
@@ -154,7 +163,7 @@ class VtnMoMgr : public MoMgrImpl {
     upll_rc_t ReadSingleCtlrlStation(IpcReqRespHeader *header,
                                            ConfigKeyVal *ikey,
                                            bool &is_vnode_filter_valid,
-                                           controller_domain *vnode_ctrlr_dom, 
+                                           controller_domain *vnode_ctrlr_dom,
                                            uint32_t *rec_count,
                                            DalDmlIntf *dmi);
     upll_rc_t ReadSingleCtlrlVtnMapping(IpcReqRespHeader *header,
@@ -162,7 +171,7 @@ class VtnMoMgr : public MoMgrImpl {
                                               DalDmlIntf *dmi,
                                               uint32_t *count,
                                               bool is_vnode_filter_valid);
- 
+
     /**
      * @brief     Method used in Delete opertaion. Its semantic checks
      *            for the VTN key.
@@ -175,10 +184,10 @@ class VtnMoMgr : public MoMgrImpl {
      * @retval     UPLL_RC_ERR_GENERIC         Failure case.
      * @retval     UPLL_RC_ERR_CFG_SEMANTIC    Failue dueto Semantic.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
     /**
-     * @brief     Method used in Delete opertaion. Its Create the Vtunnel 
+     * @brief     Method used in Delete opertaion. Its Create the Vtunnel
      *            Configkey and copy the VTN name from the ikey to Vtunnel
      *            Value structure.
      *
@@ -294,7 +303,7 @@ class VtnMoMgr : public MoMgrImpl {
      *
      * @retval  UPLL_RC_SUCCESS               Successful.
      * @retval  UPLL_RC_ERR_CFG_SYNTAX        Syntax error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  key_vtn_mapping_controller 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE  key_vtn_mapping_controller
      *                                        is not available.
      * @retval  UPLL_RC_ERR_GENERIC           Generic failure.
      * @retval  UPLL_RC_ERR_INVALID_OPTION1   option1 is not valid.
@@ -304,7 +313,7 @@ class VtnMoMgr : public MoMgrImpl {
                                             ConfigKeyVal *ikey);
 
     /*
-     * @Brief  Validates the syntax for KT_VTNSTATION_CONTROLLER 
+     * @Brief  Validates the syntax for KT_VTNSTATION_CONTROLLER
      *         Keytype Key structure.
      *
      * @param[in]  val_vtn  KT_VTN key structure.
@@ -329,17 +338,16 @@ class VtnMoMgr : public MoMgrImpl {
      **/
     upll_rc_t ValidateVtnMapCtrlrKey(key_vtn_controller *vtn_ctrlr_key,
                                      unc_keytype_operation_t operation);
-    upll_rc_t SetVtnOperStatusonDisconnect(ConfigKeyVal *ikey, DalDmlIntf *dmi,
-                                       uint8_t ctrlr_status);
+
   protected:
     /* @brief         This method invoke when the VTN merge hapeening between
-     *                Running and DT import. This will checks the vnode name 
-     *                unique or not and semantic checks like IP Address, Mac 
-     *                Address and network host address. 
-     *              
+     *                Running and DT import. This will checks the vnode name
+     *                unique or not and semantic checks like IP Address, Mac
+     *                Address and network host address.
+     *
      * @param[in]     keytype       UNC KEY TYPE
-     * @param[in/out] ctrlr_id      Controller ID                    
-     * @param[in]     conflict_ckv  key and value structure 
+     * @param[in/out] ctrlr_id      Controller ID
+     * @param[in]     conflict_ckv  key and value structure
      * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
      * @param[in]     import_type    Specifies the import type.
      *
@@ -348,7 +356,7 @@ class VtnMoMgr : public MoMgrImpl {
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
      * @retval  UPLL_RC_ERR_MERGE_CONFLICT         Semantic check error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
     upll_rc_t MergeValidateChildren(ConfigKeyVal *import_ckval,
@@ -359,12 +367,13 @@ class VtnMoMgr : public MoMgrImpl {
 
     upll_rc_t SetCtrlrOperStatus(ConfigKeyVal *ikey,
                             state_notification &notification,
-                            DalDmlIntf *dmi, bool &oper_change) ;
+                            DalDmlIntf *dmi, bool &oper_change);
 
     upll_rc_t DupConfigKeyValVtnStation(ConfigKeyVal *&okey,
                                  ConfigKeyVal *req);
     upll_rc_t DupConfigKeyValVtnMapping(ConfigKeyVal *&okey,
                                  ConfigKeyVal *req);
+
   public:
     VtnMoMgr();
     virtual ~VtnMoMgr() {
@@ -374,26 +383,14 @@ class VtnMoMgr : public MoMgrImpl {
         }
       delete[] table;
     }
-    /**
-     * @brief Set vtn oper status
-     *
-     * @param[in]   vtn_name_o     Vtn name 
-     * @param[in]   dmi            Database connection parameter
-     * @param[in]   notification   notification causing change in oper status 
-     * @param[out]  bool           true oper status set successfully
-     */
-    bool VtnSetOperStatus(uint8_t *vtn_name_o,
-                          DalDmlIntf *dmi, 
-                          state_notification notification) ;
-
 
     upll_rc_t UpdateOperStatus(ConfigKeyVal *ck_vtn,
                                DalDmlIntf *dmi,
                                state_notification notification,
-                               bool skip) ;
+                               bool skip);
     upll_rc_t SetOperStatus(ConfigKeyVal *ikey,
                        state_notification notification,
-                       DalDmlIntf *dmi) ;
+                       DalDmlIntf *dmi, bool skip);
     /**
      * @brief Exposed to Physical to Verify whether particular Key
      *                            is in Use in Logical
@@ -414,23 +411,26 @@ class VtnMoMgr : public MoMgrImpl {
     /**
      * @brief      Method to get a configkeyval of a specified keytype from an input configkeyval
      *
-     * @param[in/out]  okey                 pointer to output ConfigKeyVal 
+     * @param[in/out]  okey                 pointer to output ConfigKeyVal
      * @param[in]      parent_key           pointer to the configkeyval from which the output configkey val is initialized.
      *
      * @retval         UPLL_RC_SUCCESS      Successfull completion.
      * @retval         UPLL_RC_ERR_GENERIC  Failure case.
      */
     upll_rc_t GetChildConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *parent_key);
-    upll_rc_t GetControllerDomainSpan(ConfigKeyVal *ikey,
+    upll_rc_t GetControllerDomainSpanForPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
                                 DalDmlIntf *dmi,
                                 std::list<controller_domain_t> &list_ctrlr_dom);
     upll_rc_t GetControllerDomainSpan(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi);
+    upll_rc_t GetNormalDomainCtrlrTableCount(ConfigKeyVal *ikey,
+                                             upll_keytype_datatype_t dt_type,
+                                             DalDmlIntf *dmi, uint32_t *count);
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
-        DalDmlIntf *dmi);
+        DalDmlIntf *dmi, TcConfigMode config_mode, string vtn_name);
 
     /* @brief         Set Consolidated config status when controller
      *                                        table entry is deleted
@@ -443,58 +443,58 @@ class VtnMoMgr : public MoMgrImpl {
     upll_rc_t SetVtnConsolidatedStatus(ConfigKeyVal *ikey, uint8_t *ctrlr_id,
                                        DalDmlIntf *dmi);
     /* @brief         Read the configuration either from RDBMS and/or from the
-     *             controller  
-     *              
+     *             controller
+     *
      * @param[in]     req    Pointer to IpcResResHeader
-     * @param[in/out] ikey   Pointer to the ConfigKeyVal Structure              
+     * @param[in/out] ikey   Pointer to the ConfigKeyVal Structure
      * @param[in]     dmi    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
     upll_rc_t ReadMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                      DalDmlIntf *dmi);
 
-    /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the sibling group under the parent 
-     *                specified in the key from the specified UNC database 
-     *                READ_SIBLING: Gets the next MO from the sibling group under the parent 
+    /* @brief         READ_SIBLING_BEGIN: Gets the first MO from the sibling group under the parent
      *                specified in the key from the specified UNC database
-     *              
+     *                READ_SIBLING: Gets the next MO from the sibling group under the parent
+     *                specified in the key from the specified UNC database
+     *
      * @param[in]     req    Pointer to IpcResResHeader
-     * @param[in/out] key    Pointer to the ConfigKeyVal Structure                    
-     * @param[in]     begin  boolean variable to decide the sibling operation 
+     * @param[in/out] key    Pointer to the ConfigKeyVal Structure
+     * @param[in]     begin  boolean variable to decide the sibling operation
      * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
     upll_rc_t ReadSiblingMo(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                             bool begin, DalDmlIntf *dmi);
 
     /* @brief         This method invoke when the VTN merge hapeening between
-     *                Running and DT import. This will checks the vnode name 
-     *                unique or not and semantic checks like IP Address, Mac 
-     *                Address and network host address. 
-     *              
+     *                Running and DT import. This will checks the vnode name
+     *                unique or not and semantic checks like IP Address, Mac
+     *                Address and network host address.
+     *
      * @param[in]     keytype       UNC KEY TYPE
-     * @param[in/out] ctrlr_id      Controller ID                    
-     * @param[in]     conflict_ckv  key and value structure 
+     * @param[in/out] ctrlr_id      Controller ID
+     * @param[in]     conflict_ckv  key and value structure
      * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
      * @retval  UPLL_RC_ERR_MERGE_CONFLICT         Semantic check error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
     upll_rc_t ReadSiblingCount(IpcReqRespHeader *req, ConfigKeyVal *ikey,
@@ -507,11 +507,11 @@ class VtnMoMgr : public MoMgrImpl {
 
     /**
      * @brief     Method create configkey for the VTN.
-     *            Allocates the memory for the okey and 
+     *            Allocates the memory for the okey and
      *            Copy the old name from the rename_info into okey.
-     *     
+     *
      * @param[in]  okey                        key and value structure.
-     * @param[in]  rename_info                 key and value structure. 
+     * @param[in]  rename_info                 key and value structure.
      *
      * @retval     UPLL_RC_SUCCESS             Successfull completion.
      * @retval     UPLL_RC_ERR_GENERIC         Failure case.
@@ -519,13 +519,13 @@ class VtnMoMgr : public MoMgrImpl {
     upll_rc_t CopyToConfigKey(ConfigKeyVal *&okey, ConfigKeyVal *ikey);
 
     /**
-     * @brief     Method used in Rename Operation. 
-     *            This function collects the Unc new name from okey, Unc old name and 
-     *            Ctrlr name  from the ikey and creats the rename_info 
+     * @brief     Method used in Rename Operation.
+     *            This function collects the Unc new name from okey, Unc old name and
+     *            Ctrlr name  from the ikey and creats the rename_info
      *            ConfigKeyVal
      *
      * @param[in]  ikey                        key and value structure.
-     * @param[in]  okey                        key and value structure. 
+     * @param[in]  okey                        key and value structure.
      * @param[out] rename_info                key and value structure.
      * @param[in]  dmi                         Pointer to DalDmlIntf Class.
      * @param[in]  ctrlr_id                    Controller Id.
@@ -540,11 +540,11 @@ class VtnMoMgr : public MoMgrImpl {
 
     /**
      * @brief     Method used in rename opertaion while update the new name into the tables
-     *            to Gets the bindinfo detail for the VTN key. 
-     *     
+     *            to Gets the bindinfo detail for the VTN key.
+     *
      * @param[in]  key_type                    unc key type.
      * @param[out] binfo                       Bindinfo details.
-     * @param[out] nattr                       Number of Attributes. 
+     * @param[out] nattr                       Number of Attributes.
      * @param[in]  tbl                         Table Name.
      *
      * @retval     PFC_TRUE                    Successfull completion.
@@ -562,33 +562,24 @@ class VtnMoMgr : public MoMgrImpl {
      */
     upll_rc_t ValidateVtnKey(key_vtn_t *vtn_key);
 
-   /* @brief     To convert the value structure read from DB to 
+   /* @brief     To convert the value structure read from DB to
     *            VTNService during READ operations
-    * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure             
-    * 
+    * @param[in/out] ikey      Pointer to the ConfigKeyVal Structure
+    *
     * @retval  UPLL_RC_SUCCESS                    Completed successfully.
     * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
     *
     **/
-   upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
+    upll_rc_t AdaptValToVtnService(ConfigKeyVal *ikey, AdaptType adapt_type);
 
     upll_rc_t SetConsolidatedStatus(ConfigKeyVal *ikey, DalDmlIntf *dmi);
 
     upll_rc_t ControllerStatusHandler(uint8_t *ctrlr_name, uint8_t operstatus,
-                        uuc::UpllDbConnMgr* db_con, uuc::ConfigLock* cfg_lock);
-    upll_rc_t CtrlrReconnOrPathFault(uint8_t *ctrlr_name,uint8_t *domain_name,
-                                     state_notification notfn,
-                                     uuc::UpllDbConnMgr* db_con,
-                                     uuc::ConfigLock* cfg_lock);
-    upll_rc_t RestoreVnodesAndIfs(ConfigKeyVal *ck_vnode, DalDmlIntf *dmi,
-                                  state_notification notfn, bool pfexist);
-    upll_rc_t RestoreVnodeIfOperStatus(ConfigKeyVal *ck_vtn,
-                                       DalDmlIntf *dmi,
-                                       int if_type, bool switch_over = false);
-    upll_rc_t RestoreVnodeOperStatus(uint8_t *ctrlr_name,
-                                    DalDmlIntf *dmi, bool switch_over = false);
-    upll_rc_t RestoreVtnCtrlrOperStatus(uint8_t *ctrlr_name,
-                                        DalDmlIntf *dmi);
+                         uuc::UpllDbConnMgr* db_con, uuc::ConfigLock* cfg_lock);
+    upll_rc_t CtrlrReconnect(uint8_t *ctrlr_name,
+                                uuc::UpllDbConnMgr* db_con,
+                                uuc::ConfigLock* cfg_lock);
+    upll_rc_t RestoreVnodesAndIfs(ConfigKeyVal *ck_vnode, DalDmlIntf *dmi);
     upll_rc_t GetRenamedControllerKey(ConfigKeyVal *ikey,
                                       upll_keytype_datatype_t dt_type,
                                       DalDmlIntf *dmi,
@@ -599,29 +590,43 @@ class VtnMoMgr : public MoMgrImpl {
     upll_rc_t VtnRenameMerge(ConfigKeyVal *ikey,
                           ConfigKeyVal *okey,
                           DalDmlIntf *dmi);
-    upll_rc_t MergeVtnMainTable (DalDmlIntf *dmi);
+    upll_rc_t MergeVtnMainTable(DalDmlIntf *dmi);
     upll_rc_t PathFaultHandler(uint8_t *ctrlr_name,
                                       uint8_t *domain_id,
                                       bool alarm_asserted,
-                    uuc::UpllDbConnMgr* db_con, uuc::ConfigLock* cfg_lock) ;
-    upll_rc_t InitAllOperStatus(DalDmlIntf *dmi);
+                    uuc::UpllDbConnMgr* db_con, uuc::ConfigLock* cfg_lock);
+    upll_rc_t VtnExhaustionHandler(uint8_t* ctrlr_id, uint8_t* domain_id,
+                                key_vtn vtn_name,
+                                bool alarm_asserted, uuc::UpllDbConnMgr* db_con,
+                                uuc::ConfigLock* cfg_lock);
+    upll_rc_t PopulateCtrlrInfo(DalBindInfo *dal_bind_info,
+                                uuc::UpllDbConnMgr* db_con,
+                                uuc::ConfigLock* cfg_lock,
+                                ConfigKeyVal *ck_vtn, unc_oper_type op);
     upll_rc_t InitOperStatus(DalDmlIntf *dmi);
-    upll_rc_t ValidateVnodeFilter(ConfigKeyVal *ikey, uint8_t ctrlr_domain_valid,
-                                  uint8_t &is_vnode_filter_valid, controller_domain *vnode_ctrlr_dom,
+    upll_rc_t ValidateVnodeFilter(ConfigKeyVal *ikey,
+                                  uint8_t ctrlr_domain_valid,
+                                  uint8_t &is_vnode_filter_valid,
+                                  controller_domain *vnode_ctrlr_dom,
                                   DalDmlIntf *dmi);
     upll_rc_t ProcessVexternalFilter(uint8_t *vtn_name, uint8_t *vnode_name,
                                uint8_t *vnode_if_name, uint8_t *vnode_type,
                                controller_domain **ctrlr_dom, DalDmlIntf *dmi);
-    upll_rc_t ProcessVnodeFilter(uint8_t *vtn_name, uint8_t *vnode_name, uint8_t *vnode_type,
-                               controller_domain **ctrlr_dom, DalDmlIntf *dmi);
+    upll_rc_t ProcessVnodeFilter(uint8_t *vtn_name, uint8_t *vnode_name,
+                                 uint8_t *vnode_type,
+                                 controller_domain **ctrlr_dom,
+                                 DalDmlIntf *dmi);
     upll_rc_t GetVbrIfFromVexternal(uint8_t *unc_vtn_name,
                                           uint8_t *vnode_name,
                                           uint8_t *vnode_if_name,
                                           uint8_t  vnode_if_valid,
                                           controller_domain *ctrlr_dom,
                                           DalDmlIntf *dmi);
-    upll_rc_t ValidateVnodeFilter(ConfigKeyVal *ikey, uint8_t ctrlr_domain_valid, bool &is_vnode_filter_valid,
-                                  controller_domain **ctrlr_dom, DalDmlIntf *dmi);
+    upll_rc_t ValidateVnodeFilter(ConfigKeyVal *ikey,
+                                  uint8_t ctrlr_domain_valid,
+                                  bool &is_vnode_filter_valid,
+                                  controller_domain **ctrlr_dom,
+                                  DalDmlIntf *dmi);
     upll_rc_t ReadSingleCtlrlDomVtnMapping(IpcReqRespHeader *header,
                                                  ConfigKeyVal *ikey,
                                                  bool is_vnode_filter_valid,
@@ -632,8 +637,8 @@ class VtnMoMgr : public MoMgrImpl {
     upll_rc_t GetOperation(uuc::UpdateCtrlrPhase phase,
                            unc_keytype_operation_t &op);
 
-    //Note: this function is used only by import normal
-    //read operation
+    // Note: this function is used only by import normal
+    // read operation
     upll_rc_t CopyKeyToVal(ConfigKeyVal *ikey,
                            ConfigKeyVal *&okey);
 
@@ -641,7 +646,133 @@ class VtnMoMgr : public MoMgrImpl {
                                      ConfigKeyVal *ikey,
                                      DalDmlIntf *dmi,
                                      upll_import_type import_type);
+    upll_rc_t BindInfoBasedonOperation(DalBindInfo *dal_bind_info,
+                                      ConfigKeyVal *&ck_vtn,
+                                      unc_oper_type op);
+    upll_rc_t CheckVtnOperStatus(ConfigKeyVal *ikey,
+                                  DalDmlIntf *dmi);
+    upll_rc_t RecomputeVtnOperStatus(DalBindInfo *dal_bind_info,
+                                     DalDmlIntf *dmi,
+                                     ConfigKeyVal* ck_vtn,
+                                     ConfigKeyVal* ikey);
+    upll_rc_t ClearOrGeneratePathFaultAlarms(
+                  uint8_t *ctrlr_name, uint8_t *domain_name,
+                  state_notification notfn, uuc::UpllDbConnMgr* db_con,
+                  uuc::ConfigLock* cfg_lock);
+    upll_rc_t PartialMergeValidate(unc_key_type_t keytype,
+                                   const char *ctrlr_id,
+                                   ConfigKeyVal *err_ckv,
+                                   DalDmlIntf *dmi);
+    upll_rc_t DupConfigKeyValVtnGatewayPort(ConfigKeyVal *&okey,
+                                            ConfigKeyVal *req);
+    upll_rc_t ConvertGatewayPort(ConfigKeyVal *ikey,
+        ConfigKeyVal *uppl_ikey,
+        DalDmlIntf *dmi,
+        unc_keytype_operation_t operation,
+        TcConfigMode config_mode,
+        string vtn_name);
 
+  /**
+   * @brief  Update controller with the new created / updated / deleted
+   * configuration between the Candidate and the Running configuration for
+   * vtn and vtn gateway port tables
+   *
+   * @param[in]  keytype                  Specifies the keytype.
+   * @param[in]  session_id               Ipc client session id.
+   * @param[in]  config_id                Ipc request header config id.
+   * @param[in]  phase                    Specifies the operation.
+   * @param[in]  dmi                      Pointer to DalDmlIntf class.
+   * @param[out] affected_ctrlr_set       Returns the list of controller to
+   *                                      which the command has been delivered.
+   * @param[out] err_ckv                  Converts the driver returned err_ckv
+   *                                      specific to VTNService.
+   * @param[in]  config_mode              Configuration mode.
+   * @param[in]  vtn_name                 vtn name.
+   *
+   * @retval  UPLL_RC_SUCCESS                    Request successfully processed.
+   * @retval  UPLL_RC_ERR_GENERIC                Generic error.
+   * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
+   * @retval  UPLL_RC_ERR_DB_ACCESS              DBMS access failure.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS  Instance specified already exist.
+   */
+  virtual upll_rc_t TxUpdateController(unc_key_type_t keytype,
+                                       uint32_t session_id, uint32_t config_id,
+                                       uuc::UpdateCtrlrPhase phase,
+                                       set<string> *affected_ctrlr_set,
+                                       DalDmlIntf *dmi,
+                                       ConfigKeyVal **err_ckv,
+                                       TxUpdateUtil *tx_util,
+                                       TcConfigMode config_mode,
+                                       std::string vtn_name);
+    upll_rc_t CreateImportGatewayPort(ConfigKeyVal *ikey,
+                                      DalDmlIntf *dmi,
+                                      IpcReqRespHeader *req,
+                                      upll_import_type import_type);
+
+  /**
+   * @brief     Perform validation on key type specific,
+   *            before sending to driver
+   *
+   * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
+   * @param[in]  op                       Operation name.
+   * @param[in]  dt_type                  Specifies the configuration CANDIDATE/RUNNING
+   * @param[in]  keytype                  Specifies the keytype
+   * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
+   * @param[out] not_send_to_drv          Decides whether the configuration needs
+   *                                      to be sent to controller or not
+   * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
+   *
+   * @retval  UPLL_RC_SUCCESS             Completed successfully.
+   * @retval  UPLL_RC_ERR_GENERIC         Generic failure.
+   * @retval  UPLL_RC_ERR_CFG_SEMANTIC    Failure due to semantic validation.
+   * @retval  UPLL_RC_ERR_DB_ACCESS       DB Read/Write error.
+   *
+   */
+
+  upll_rc_t AdaptValToDriver(ConfigKeyVal *ck_new,
+      ConfigKeyVal *ck_old,
+      unc_keytype_operation_t op,
+      upll_keytype_datatype_t dt_type,
+      unc_key_type_t keytype,
+      DalDmlIntf *dmi,
+      bool &not_send_to_drv,
+      bool audit_update_phase);
+
+  /**
+   * @brief  update controller candidate configuration with the difference in
+   *      committed configuration between the UNC and the audited controller
+   *
+   * @param[in]  keytype     Specifies the keytype.
+   * @param[in]  ctrlr_id    Specifies the controller Name.
+   * @param[in]  session_id  Ipc client session id.
+   * @param[in]  config_id   Ipc request header config id.
+   * @param[in]  phase       Specifies the Controller name.
+   * @param[in]  dmi         Pointer to DalDmlIntf class.
+   *
+   * @retval  UPLL_RC_SUCCESS                Request successfully processed.
+   * @retval  UPLL_RC_ERR_GENERIC            Generic error.
+   * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource is diconnected.
+   * @retval  UPLL_RC_ERR_DB_ACCESS          DBMS access failure.
+   * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE   Instance specified does not exist.
+   * @retval  UPLL_RC_ERR_INSTANCE_EXISTS    Instance specified already exist.
+   */
+  virtual upll_rc_t AuditUpdateController(
+      unc_key_type_t keytype,
+      const char *ctrlr_id,
+      uint32_t session_id,
+      uint32_t config_id,
+      uuc::UpdateCtrlrPhase phase,
+      DalDmlIntf *dmi,
+      ConfigKeyVal **err_ckv,
+      KTxCtrlrAffectedState *ctrlr_affected);
+
+  upll_rc_t IsSpineDomainExistInRunning(ConfigKeyVal *ck_main,
+                                        DalDmlIntf *dmi);
+  upll_rc_t ResetGWPortStatus(ConfigKeyVal *ckey, DalDmlIntf *dmi,
+                uint8_t oper_status, const char *logical_port_id,
+                bool is_reconnect);
 };
 
 typedef struct val_db_vtn_st {
@@ -658,7 +789,8 @@ typedef struct val_vtn_ctrlr {
     unc_keytype_configstatus_t cs_row_status;
     uint32_t down_count;
     uint32_t unknown_count;
-    uint32_t ref_count;
+    uint32_t vnode_ref_cnt;
+    uint32_t ref_cnt2;
     uint8_t flags;
 } val_vtn_ctrlr_t;
 }  // namespace kt_momgr

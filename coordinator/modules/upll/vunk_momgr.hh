@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -83,12 +83,13 @@ class VunknownMoMgr : public MoMgrImpl {
 
     /**
      * @brief  Compares the valid value between two database records.
-     * 	     if both the values are same, update the valid flag for corresponding
-     * 	     attribute as invalid in the first record.
+     * 	     if both the values are same, update the valid flag for
+     * 	     corresponding attribute as invalid in the first record.
      *
      * @param[in/out]  val1   first record value instance.
      * @param[in]      val2   second record value instance.
-     * @param[in]      audit  if true, CompareValidValue called from audit process.
+     * @param[in]      audit  if true, CompareValidValue called from
+     * audit process.
      *
      **/
     bool CompareValidValue(void *&val1, void *val2, bool audit);
@@ -98,7 +99,8 @@ class VunknownMoMgr : public MoMgrImpl {
      *        for KT_VUNKNOWN keytype
      *
      * @param[in] req                       This structure contains
-     *                                      IpcReqRespHeader(first 8 fields of input request structure).
+     *                                      IpcReqRespHeader(first 8 fields of
+     *                                      input request structure).
      * @param[in] ikey                      ikey contains key and value structure.
      *
      * @retval UPLL_RC_SUCCESS              Successful.
@@ -151,7 +153,7 @@ class VunknownMoMgr : public MoMgrImpl {
      * @retval         true                 input key is valid
      * @retval         false                input key is invalid.
      **/
-    bool IsValidKey(void *key, uint64_t index);
+    bool IsValidKey(void *key, uint64_t index, MoMgrTables tbl = MAINTBL);
     /**
      * @brief  Duplicates the input configkeyval including the key and val.
      * based on the tbl specified.
@@ -240,7 +242,10 @@ class VunknownMoMgr : public MoMgrImpl {
                                          uuc::UpdateCtrlrPhase phase,
                                          set<string> *affected_ctrlr_set,
                                          DalDmlIntf *dmi,
-                                         ConfigKeyVal **err_ckv) {
+                                         ConfigKeyVal **err_ckv,
+                                         TxUpdateUtil *tx_util,
+                                         TcConfigMode config_mode,
+                                         std::string vtn_name) {
       return UPLL_RC_SUCCESS;
     }
     virtual upll_rc_t MergeImportToCandidate(unc_key_type_t keytype,
@@ -252,14 +257,15 @@ class VunknownMoMgr : public MoMgrImpl {
                                   DalDmlIntf *dmi) {
       return UPLL_RC_SUCCESS;
     }
-    virtual upll_rc_t AuditUpdateController(unc_key_type_t keytype,
-                                            const char *ctrlr_id,
-                                            uint32_t session_id,
-                                            uint32_t config_id,
-                                            uuc::UpdateCtrlrPhase phase,
-                                            DalDmlIntf *dmi,
-                                            ConfigKeyVal **err_ckv,
-                                            KTxCtrlrAffectedState *ctrlr_affected) {
+    virtual upll_rc_t AuditUpdateController(
+        unc_key_type_t keytype,
+        const char *ctrlr_id,
+        uint32_t session_id,
+        uint32_t config_id,
+        uuc::UpdateCtrlrPhase phase,
+        DalDmlIntf *dmi,
+        ConfigKeyVal **err_ckv,
+        KTxCtrlrAffectedState *ctrlr_affected) {
       return UPLL_RC_SUCCESS;
     }
     virtual upll_rc_t AuditVoteCtrlrStatus(unc_key_type_t keytype,
@@ -298,9 +304,10 @@ class VunknownMoMgr : public MoMgrImpl {
      * @retval UPLL_RC_SUCCESS        validation succeeded.
      * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
      */
-    upll_rc_t ValidateVunknownKey(key_vunknown_t *key_vunknown,
+    upll_rc_t ValidateVunknownKey(
+        key_vunknown_t *key_vunknown,
         unc_keytype_operation_t operation = UNC_OP_INVALID);
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     /**

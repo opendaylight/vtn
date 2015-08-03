@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -45,52 +45,57 @@ DBVarbind::DBVarbind()
     * database binding apis */
   p_switch_id1_len = new SQLLEN;
   if (p_switch_id1_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_switch_id1_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_switch_id1_len");
   *p_switch_id1_len = 0;
 
   p_switch_id2_len = new SQLLEN;
   if (p_switch_id2_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_switch_id2_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_switch_id2_len");
   *p_switch_id2_len = 0;
+
+  p_connected_switch_id_len = new SQLLEN;
+  if (p_connected_switch_id_len == NULL )
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: "
+                    "p_connected_switch_id_len");
+  *p_connected_switch_id_len = 0;
 
   p_logicalport_id1_len = new SQLLEN;
   if (p_logicalport_id1_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_logicalport_id1_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_logicalport_id1_len");
   *p_logicalport_id1_len = 0;
 
   p_logicalport_id2_len = new SQLLEN;
   if (p_logicalport_id2_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_logicalport_id2_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_logicalport_id2_len");
   *p_logicalport_id2_len = 0;
 
   p_ipv6_len = new SQLLEN;
   if (p_ipv6_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_ipv6_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_ipv6_len");
   *p_ipv6_len = 0;
 
   p_alarms_status_len = new SQLLEN;
   if (p_alarms_status_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_alarms_status_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_alarms_status_len");
   *p_alarms_status_len = 0;
 
   p_mac_len = new SQLLEN;
   if (p_mac_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_mac_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_mac_len");
   *p_mac_len = 0;
 
   p_speed_len = new SQLLEN;
   if (p_speed_len == NULL )
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_speed_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_speed_len");
   *p_speed_len = 0;
   p_commit_number_len = new SQLLEN;
   if (p_commit_number_len == NULL)
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_commit_number_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_commit_number_len");
   *p_commit_number_len = 0;
   p_commit_date_len = new SQLLEN;
   if (p_commit_date_len == NULL)
-    pfc_log_fatal("ODBCM::DBVarbind:: Error in new: p_commit_date_len");
+    UPPL_LOG_FATAL("ODBCM::DBVarbind:: Error in new: p_commit_date_len");
   *p_commit_date_len = 0;
-
 }
 
 /**
@@ -103,6 +108,10 @@ DBVarbind::~DBVarbind() {
   if (NULL != p_switch_id1_len) {
     delete p_switch_id1_len;
     p_switch_id1_len = NULL;
+  }
+  if (NULL != p_connected_switch_id_len) {
+    delete p_connected_switch_id_len;
+    p_connected_switch_id_len = NULL;
   }
   if (NULL != p_switch_id2_len) {
     delete p_switch_id2_len;
@@ -329,6 +338,7 @@ void DBVarbind::BindingInput(int table_id) {
         }
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
+      *p_connected_switch_id_len = ODBCM_SIZE_256;
       *p_logicalport_id1_len = ODBCM_SIZE_320;
       *p_alarms_status_len = sizeof(SQLLEN);
       *p_mac_len = ODBCM_SIZE_6;
@@ -495,6 +505,7 @@ void DBVarbind::BindingOutput(int table_id) {
         }
       }
       *p_switch_id1_len = ODBCM_SIZE_256;
+      *p_connected_switch_id_len = ODBCM_SIZE_256;
       *p_logicalport_id1_len = ODBCM_SIZE_320;
       *p_alarms_status_len = sizeof(SQLLEN);
       *p_mac_len = ODBCM_SIZE_6;

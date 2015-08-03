@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -11,6 +11,7 @@ package org.opendaylight.vtn.javaapi.resources;
 import com.google.gson.JsonObject;
 import org.opendaylight.vtn.core.ipc.ClientSession;
 import org.opendaylight.vtn.core.ipc.IpcException;
+import org.opendaylight.vtn.core.ipc.IpcString;
 import org.opendaylight.vtn.core.util.Logger;
 import org.opendaylight.vtn.javaapi.annotation.UNCVtnService;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
@@ -63,6 +64,8 @@ public class AcquireConfigModeResource extends AbstractResource {
 		ClientSession session = null;
 		int status = ClientSession.RESP_FATAL;
 		boolean isForce = false;
+		boolean isVtnMode = false;
+		String mode = null;
 		try {
 			LOG.debug("Start Ipc framework call");
 			session = getConnPool().getSession(UncTCEnums.UNC_CHANNEL_NAME,
@@ -85,6 +88,13 @@ public class AcquireConfigModeResource extends AbstractResource {
 				session.addOutput(IpcDataUnitWrapper
 						.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_CONFIG_ACQUIRE_TIMED
 								.ordinal()));
+			} else if (requestBody != null
+					&& requestBody.has(VtnServiceJsonConsts.MODE)){
+				mode = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.MODE).getAsString();
+				session.addOutput(IpcDataUnitWrapper
+							.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_CONFIG_ACQUIRE_PARTIAL
+									.ordinal()));
 			} else {
 				session.addOutput(IpcDataUnitWrapper
 						.setIpcUint32Value(UncTCEnums.ServiceType.TC_OP_CONFIG_ACQUIRE
@@ -99,8 +109,40 @@ public class AcquireConfigModeResource extends AbstractResource {
 				int timeout = Integer.parseInt(str);
 				session.addOutput(IpcDataUnitWrapper.setIpcInt32Value(timeout));
 			}
+
+			if (!isForce && requestBody != null
+					&& !requestBody.has(VtnServiceJsonConsts.TIMEOUT)
+					&& requestBody.has(VtnServiceJsonConsts.MODE)) {
+				if(mode.equals(VtnServiceJsonConsts.VIRTUAL_MODE)) {
+					session.addOutput(IpcDataUnitWrapper
+						.setIpcUint32Value(UncTCEnums.ConfigMode
+						.TC_CONFIG_VIRTUAL.ordinal()));
+				} else if (mode.equals(VtnServiceJsonConsts.REAL_MODE)) {
+					session.addOutput(IpcDataUnitWrapper
+						.setIpcUint32Value(UncTCEnums.ConfigMode
+						.TC_CONFIG_REAL.ordinal()));
+				} else if (mode.equals(VtnServiceJsonConsts.VTN_MODE)) {
+					isVtnMode = true;
+					session.addOutput(IpcDataUnitWrapper
+						.setIpcUint32Value(UncTCEnums.ConfigMode
+						.TC_CONFIG_VTN.ordinal()));
+				} else {
+					session.addOutput(IpcDataUnitWrapper
+						.setIpcUint32Value(UncTCEnums.ConfigMode
+						.TC_CONFIG_GLOBAL.ordinal()));
+				}
+
+				if (isVtnMode) {
+					String vtnName = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.VTNNAME).getAsString();
+					session.addOutput(new IpcString(vtnName));
+				}
+			}
 			LOG.info("Request packet created successfully");
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			LOG.info("Request packet processed with status:" + status);
 			final String operationType = IpcDataUnitWrapper
 					.getIpcDataUnitValue(session

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -166,11 +166,22 @@ string IPCConnectionManager::get_uppl_service_name() {
  * @param[in]   : pointer to Serverevent
  * @return      : UNC_RC_SUCCESS
  **/
-uint32_t IPCConnectionManager::SendEvent(ServerEvent *evt) {
+uint32_t IPCConnectionManager::SendEvent(ServerEvent *evt,
+                                 std::string controller_name,
+                                 pfc_ipcevtype_t event_type) {
   uint32_t ret = ipc_server_handler_->SendEvent(evt);
+  //  IPC service name, and `type' is an IPC event type
+  PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  if (ret != 0) {
+    string event_detail = PhyUtil::getEventDetailsString(event_type);
+    pfc_log_warn("posts event to client failed, so failure notice is issued");
+    UncRespCode alarm_status = physical_layer->get_physical_core()->
+          SendEventPostFailureNotice(controller_name, event_detail);
+    if (alarm_status != UNC_RC_SUCCESS)
+      pfc_log_error("posts event to client failed - notice issue is failed");
+  }
   return ret;
 }
-
 
 /**
  * @Description : Frees up the allocated memory
@@ -206,8 +217,8 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
     pfc_log_error("add() failed for UNC_PHYSICAL_EVENTS\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
-  if ((mask.add(UNC_ALARMS)) != 0) {
-    pfc_log_error("add() failed for UNC_ALARMS\n");
+  if ((mask.add(UNC_UPPL_ALARMS)) != 0) {
+    pfc_log_error("add() failed for UNC_UPPL_ALARMS\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
   if ((mask.add(UNC_CTLR_STATE_EVENTS)) != 0) {
@@ -252,7 +263,7 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
       &attr_polc);
   pfc_log_debug("Event Subscribed for Polc driver");
 
-  // Notification manager for ODC
+  // ODC
   if ((attr_odc.addTarget(ODCDRIVER_IPC_SVC_NAME, mask)) != 0) {
     pfc_log_error("addTarget() failed for ODC driver\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
@@ -261,7 +272,6 @@ UncRespCode IPCConnectionManager::SendEventSubscription() {
       ODCDRIVER_IPC_CHN_NAME,
       get_notification_manager(UNC_CT_ODC),
       &attr_odc);
-
   pfc_log_debug("Event Subscribed for ODC driver");
   return UNC_RC_SUCCESS;
 }
@@ -297,14 +307,12 @@ UncRespCode  IPCConnectionManager::CancelEventSubscription() {
     pfc_log_error("removeIpcEventHandler() polc failed\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
-  // Remove the Event Handler for ODC Driver
+  // Remove the Event Handler for ODC
   if ((physical_layer->Module::removeIpcEventHandler(
-      get_notification_manager(UNC_CT_ODC)))
-      != 0) {
-    pfc_log_error("removeIpcEventHandler() for ODC Driver failed\n");
+      get_notification_manager(UNC_CT_ODC))) != 0) {
+    pfc_log_error("removeIpcEventHandler() ODC failed\n");
     return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
   }
-
   NotificationManager::release_notification_manager();
   return UNC_RC_SUCCESS;
 }
@@ -393,7 +401,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
     string controller_name) {
   PhysicalCore *physical_core = PhysicalLayer::get_instance()->
       get_physical_core();
-  PHY_TIMER_LOCK();  
+  PHY_TIMER_LOCK();
   uint32_t time_out = physical_core->getAuditNotfnTimeOut();
   uint32_t no_tasks = 1;
   map<string, Timer *> :: iterator timer_iter =
@@ -415,7 +423,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   pfc_log_debug("Starting timer with timeout %d for audit", time_out);
   TaskQueue *taskq = TaskQueue::create(no_tasks);
   if (taskq == NULL) {
-    pfc_log_fatal("Error while creating task queue");
+    UPPL_LOG_FATAL("Error while creating task queue");
     return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   tqmap_rc = queue_obj_.insert(
@@ -433,7 +441,7 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
   timeout.tv_nsec = 0;
   Timer *notfn_timer = pfc::core::Timer::create(taskq->getId());
   if (notfn_timer == NULL) {
-    pfc_log_fatal("Error while creating timer for the task queue");
+    UPPL_LOG_FATAL("Error while creating timer for the task queue");
     return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
   }
   tmap_rc = timer_obj_.insert(
@@ -464,7 +472,8 @@ uint32_t IPCConnectionManager::StartNotificationTimer(
 UncRespCode IPCConnectionManager::GetDriverPresence(uint32_t ctr_type) {
   UncRespCode driver_response = UNC_RC_SUCCESS;
   if (ctr_type == UNC_CT_PFC || ctr_type == UNC_CT_VNP ||
-      ctr_type == UNC_CT_POLC || ctr_type == UNC_CT_ODC) {
+      ctr_type == UNC_CT_POLC ||
+      ctr_type == UNC_CT_ODC) {
     UncRespCode err_resp = UNC_RC_SUCCESS;
     pfc_ipcresp_t resp = 0;
     uint8_t err = 0;

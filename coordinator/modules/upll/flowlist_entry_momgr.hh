@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -36,7 +36,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
 
     static BindInfo rename_flowlist_entry_main_tbl[];
     static BindInfo rename_flowlist_entry_ctrlr_tbl[];
-    
+
     bool GetRenameKeyBindInfo(unc_key_type_t key_type,
     BindInfo *&binfo, int &nattr, MoMgrTables tbl);
 
@@ -177,7 +177,8 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     * @Brief Validates the syntax of the specified key and value structure
     *        for KT_FLOWLIST_ENTRY keytype
     *
-    * @param[in] IpcReqRespHeader  contains first 8 fields of input request structure
+    * @param[in] IpcReqRespHeader  contains first 8 fields of input
+    *                              request structure
     * @param[in] ConfigKeyVal      key and value structure.
     *
     * @retval UPLL_RC_SUCCESS              Successful.
@@ -488,15 +489,15 @@ class FlowListEntryMoMgr: public MoMgrImpl {
 
     /* @brief        Checkes whether the key exists in DB
      *
-     * @param[in]  ikey     Pointer to the ConfigKeyval containing the Key and Value
-     *                      value structure of Import Configuration
-     * @param[in]  dt_type  Given UNC Datatype  at which reference needs to check
+     * @param[in]  ikey     Pointer to the ConfigKeyval containing the Key and
+     *                      Value structure of Import Configuration
+     * @param[in]  dt_type  Given UNC Datatype at which reference needs to check
      * @param[in]  dmi      Pointer to the DalDmlIntf(DB Interface)
      *
      * @retval  UPLL_RC_SUCCECSS     Successful Completion
      * @retval  UPLL_RC_ERR_GENERIC  For failue case GENERIC ERROR
      **/
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
     /**
      * @brief  Method GetFlowListKeyVal used for checking
@@ -516,7 +517,8 @@ class FlowListEntryMoMgr: public MoMgrImpl {
     /**
      * @brief  Method used for RenamedControllerkey(PfcName).
      *
-     * @param[out] ikey      Contains the Pointer to ConfigkeyVal Class and contains the Pfc Name.
+     * @param[out] ikey      Contains the Pointer to ConfigkeyVal Class and
+     *                       contains the Pfc Name.
      * @param[in] dt_type    Describes Configiration Information.
      * @param[in] dmi        Pointer to DalDmlIntf Class.
      * @param[in] ctrlr_id   Describes the Controller Name.
@@ -542,7 +544,8 @@ class FlowListEntryMoMgr: public MoMgrImpl {
      * @retval  UPLL_RC_ERR_DB_ACCESS         DB access error
      * */
     upll_rc_t TxCopyCandidateToRunning(unc_key_type_t keytype,
-        CtrlrCommitStatusList *ctrlr_commit_status, DalDmlIntf *dmi);
+        CtrlrCommitStatusList *ctrlr_commit_status, DalDmlIntf *dmi,
+        TcConfigMode config_mode, std::string vtn_name);
 
     bool CompareValidValue(void *&val1, void *val2, bool copy_to_running);
 
@@ -636,7 +639,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
                                     unc_keytype_operation_t op,
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi,
-                                    char* ctrl_id);
+                                    char* ctrl_id,
+                                    TcConfigMode config_mode,
+                                    string vtn_name);
     void SetValidAttributesForController(val_flowlist_entry_t *val);
 
    /** @brief Method to Validate and Update flowlist in  the Controller Table
@@ -654,7 +659,9 @@ class FlowListEntryMoMgr: public MoMgrImpl {
                                       DalDmlIntf *dmi,
                                       char* ctrl_id,
                                       upll_keytype_datatype_t dt_type,
-                                      unc_keytype_operation_t op);
+                                      unc_keytype_operation_t op,
+                                      TcConfigMode config_mode,
+                                      string vtn_name);
 
     /**
      * @brief  Method to check validity of Key
@@ -665,7 +672,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
      * @return  TRUE   Success
      * @retval  FALSE  Failure
      * */
-    bool IsValidKey(void *key, uint64_t index);
+    bool IsValidKey(void *key, uint64_t index, MoMgrTables tbl = MAINTBL);
 
     /**
      * @brief  Method to Set the Consolidated status
@@ -742,8 +749,7 @@ class FlowListEntryMoMgr: public MoMgrImpl {
   std::string GetQueryStringForCtrlrTable(upll_keytype_datatype_t dt_type);
   std::string SelectColumnsDynamically(char * ctrl_id,
                                 upll_keytype_datatype_t dt_type,
-                                set<string> *ctrlr_notsupported_attr_set
-                                );
+                                set<string> *ctrlr_notsupported_attr_set);
 
   upll_rc_t ChkFlowlistNameInRenameTbl(ConfigKeyVal *ctrlr_key,
      upll_keytype_datatype_t dt_type, DalDmlIntf *dmi, const char *ctrlr_id);
@@ -754,6 +760,8 @@ class FlowListEntryMoMgr: public MoMgrImpl {
       DalDmlIntf *dmi);
 
   bool IsAttributeUpdated(void *val1, void *val2);
+
+  upll_rc_t ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi);
 };
 
 typedef struct val_flowlist_entry_ctrl {
@@ -762,7 +770,7 @@ typedef struct val_flowlist_entry_ctrl {
     unc_keytype_configstatus_t cs_attr[22];
     uint8_t flags;
 } val_flowlist_entry_ctrl_t;
-}  // nameSpace kt_momgr
+}  // namespace kt_momgr
 }  // namespace upll
 }  // namespace unc
 #endif  // UPLL_FLOWLISTENTRY_MOMGR_HH_

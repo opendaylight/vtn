@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -15,8 +15,12 @@
 namespace unc {
 namespace tc {
 
-#define UNC_AUDIT_OPS_ARG_COUNT 4
+#define UNC_AUDIT_OPS_ARG_MIN_COUNT 4
+#define UNC_AUDIT_OPS_ARG_MAX_COUNT 5
 
+std::deque<TcAuditOperations*> TcAuditOperations::drv_audit_req_queue_;
+pfc::core::Mutex TcAuditOperations::drv_audit_req_queue_lock_;
+uint32_t TcAuditOperations::secondary_driver_audit_timeout_ = 30;
 
 TcAuditOperations::TcAuditOperations(TcLock* tc_lock_,
                            pfc::core::ipc::ServerSession* sess_,
@@ -31,7 +35,17 @@ TcAuditOperations::TcAuditOperations(TcLock* tc_lock_,
       audit_result_(unc::tclib::TC_AUDIT_FAILURE),
       trans_result_(unc::tclib::TRANS_END_FAILURE),
       api_audit_(PFC_FALSE),
-      force_reconnect_(PFC_FALSE) {}
+      force_reconnect_(PFC_FALSE),
+      audit_type_(TC_AUDIT_NORMAL) {
+
+  pthread_cond_init(&primary_wait_cond_, NULL);
+  pthread_mutex_init(&primary_wait_mutex_, NULL);
+  primary_wait_signalled = PFC_FALSE;
+
+  pthread_cond_init(&secondary_wait_cond_, NULL);
+  pthread_mutex_init(&secondary_wait_mutex_, NULL);
+  secondary_wait_signalled_ = PFC_FALSE;
+}
 
 TcAuditOperations::~TcAuditOperations() {
   if (resp_tc_msg_) {
@@ -44,7 +58,7 @@ TcAuditOperations::~TcAuditOperations() {
  * @brief Minimun no of arguments for AUDIT
  */
 uint32_t TcAuditOperations::TcGetMinArgCount() {
-  return UNC_AUDIT_OPS_ARG_COUNT;
+  return UNC_AUDIT_OPS_ARG_MIN_COUNT;
 }
 
 /*
@@ -75,9 +89,11 @@ TcOperStatus TcAuditOperations::HandleLockRet(TcLockRet lock_ret) {
  * @brief Check No of Arguments
  */
 TcOperStatus TcAuditOperations::TcCheckOperArgCount(uint32_t avail_count) {
-  if ( avail_count != UNC_AUDIT_OPS_ARG_COUNT ) {
-    pfc_log_error("TcCheckOperArgCount avail_count(%u) != %u",
-                  avail_count, UNC_AUDIT_OPS_ARG_COUNT);
+  if ( avail_count < UNC_AUDIT_OPS_ARG_MIN_COUNT || 
+                               avail_count > UNC_AUDIT_OPS_ARG_MAX_COUNT) {
+    pfc_log_error("TcCheckOperArgCount AuditOp args expected(%u)or(%u)"
+                        " recvd(%u)", UNC_AUDIT_OPS_ARG_MIN_COUNT,
+                        UNC_AUDIT_OPS_ARG_MAX_COUNT, avail_count);
     return TC_OPER_INVALID_INPUT;
   }
   return TC_OPER_SUCCESS;
@@ -134,6 +150,7 @@ TcOperStatus TcAuditOperations::TcValidateOperType() {
  */
 TcOperStatus TcAuditOperations::TcValidateOperParams() {
   TcUtilRet ret = TCUTIL_RET_SUCCESS, ret1 = TCUTIL_RET_SUCCESS;
+  TcUtilRet utilret = TCUTIL_RET_SUCCESS;
   uint8_t reconnect = 0;
   if ( tc_oper_ == TC_OP_USER_AUDIT ) {
     ret= TcServerSessionUtils::get_string(ssess_,
@@ -142,15 +159,34 @@ TcOperStatus TcAuditOperations::TcValidateOperParams() {
     ret1= TcServerSessionUtils::get_uint8(ssess_,
                                           TC_REQ_ARG_INDEX+1,
                                           &reconnect);
+    uint32_t count = ssess_->getArgCount();
+    if (count == UNC_AUDIT_OPS_ARG_MAX_COUNT) {
+      uint8_t audit_type = 0;
+      utilret = TcServerSessionUtils::get_uint8(ssess_,
+                                          TC_REQ_ARG_INDEX+2,
+                                          &audit_type);
+      audit_type_ = (TcAuditType)audit_type; 
+      pfc_log_info("AuditType: %d", audit_type_);
+    } else if(count == UNC_AUDIT_OPS_ARG_MIN_COUNT) {
+        audit_type_ = TC_AUDIT_NORMAL;
+    } else  {
+        audit_type_ = TC_AUDIT_INVALID;
+        pfc_log_error("TcValidateOperParams AuditOp args expected(%u)or(%u)"
+                        " recvd(%u)", UNC_AUDIT_OPS_ARG_MIN_COUNT,
+                        UNC_AUDIT_OPS_ARG_MAX_COUNT, count);
+        return TC_OPER_INVALID_INPUT;
+    }   
   } else {
     ret= TcServerSessionUtils::get_string(ssess_,
                                           TC_REQ_SESSION_ID_INDEX,
                                           controller_id_);
   }
-  if (ret == TCUTIL_RET_FAILURE || ret1 == TCUTIL_RET_FAILURE) {
+  if (ret == TCUTIL_RET_FAILURE || ret1 == TCUTIL_RET_FAILURE ||
+                                   utilret == TCUTIL_RET_FAILURE) {
     pfc_log_error("TcValidateOperParams: Fail reading session data");
     return TC_OPER_INVALID_INPUT;
-  } else if (ret == TCUTIL_RET_FATAL || ret1 == TCUTIL_RET_FATAL) {
+  } else if (ret == TCUTIL_RET_FATAL || ret1 == TCUTIL_RET_FATAL ||
+                                    utilret == TCUTIL_RET_FATAL) {
     pfc_log_error("TcValidateOperParams: Fatal reading session data");
     return TC_OPER_FAILURE;
   }
@@ -179,7 +215,7 @@ TcOperStatus TcAuditOperations::TcValidateOperParams() {
 
     driver_id_ = (unc_keytype_ctrtype_t) read_drv_id;
     if ( driver_id_ == UNC_CT_UNKNOWN ) {
-      pfc_log_info("API passed invalid controller type");
+      pfc_log_error("API passed invalid controller type");
       return TC_OPER_INVALID_INPUT;
     }
     api_audit_ = PFC_TRUE;
@@ -231,6 +267,9 @@ TcOperStatus TcAuditOperations::TcReleaseExclusion() {
   if ( api_audit_ == PFC_TRUE ) {
     return TC_OPER_SUCCESS;
   }
+
+  pfc::core::ScopedMutex audit_excl(TcOperations::candidate_audit_excl_lock_);
+
   if (tc_oper_ == TC_OP_USER_AUDIT) {
     TcLockRet ret = TC_LOCK_FAILURE;
     ret = tclock_->ReleaseLock(session_id_,
@@ -250,6 +289,26 @@ TcOperStatus TcAuditOperations::TcReleaseExclusion() {
       return HandleLockRet(ret);
     }
   }
+
+  // If this is cancelled audit, set the status to cancel_done
+  if (GetAuditCancelStatus() == AUDIT_CANCEL_INPROGRESS) {
+    pfc_log_info("%s Setting status to AUDIT_CANCEL_DONE", __FUNCTION__);
+    SetAuditCancelStatus(AUDIT_CANCEL_DONE);
+  }
+  TcMsg::SetAuditCancelFlag(PFC_FALSE);
+  TcOperations::SetAuditPhase(AUDIT_NOT_STARTED);
+  pfc::core::ScopedMutex m(TcOperations::audit_cancel_notify_lock_);
+  TcOperations::audit_cancel_notify_.clear();
+  m.unlock();
+
+  audit_excl.unlock();
+
+  // Signal the candidate waiting queue for processing
+  // If candidate queue is empty, waiting audit if any is triggered 
+  // from HandleCandidateRelease
+  pfc_log_info("%s Signal candidate wait queue for processing", __FUNCTION__);
+  TcCandidateOperations::HandleCandidateRelease();
+
   return TC_OPER_SUCCESS;
 }
 
@@ -327,6 +386,9 @@ pfc_bool_t TcAuditOperations::AuditTransStart() {
       resp_tc_msg_ = tc_start_msg;
       return PFC_FALSE;
     }
+    if ( oper_ret == TCOPER_RET_AUDIT_CANCELLED ) {
+      audit_result_ = unc::tclib::TC_AUDIT_CANCELLED;
+    }
     if ( AuditEnd() != PFC_FALSE ) {
       user_response_ = HandleMsgRet(oper_ret);
       resp_tc_msg_ = tc_start_msg;
@@ -355,6 +417,9 @@ pfc_bool_t TcAuditOperations::AuditVote() {
       user_response_ = HandleMsgRet(oper_ret);
       resp_tc_msg_ = tc_vote_msg;
       return PFC_FALSE;
+    }
+    if ( oper_ret == TCOPER_RET_AUDIT_CANCELLED ) {
+      audit_result_ = unc::tclib::TC_AUDIT_CANCELLED;
     }
     if ( AuditTransEnd() != PFC_FALSE ) {
        if ( AuditEnd() != PFC_FALSE ) {
@@ -454,6 +519,9 @@ TcOperStatus TcAuditOperations::FillTcMsgData(TcMsg* tc_msg,
     }
     tc_msg->SetData(0, controller_id_, driver_id_);
   }
+
+  tc_msg->SetAuditType(audit_type_);
+
   if (oper_type == unc::tclib::MSG_AUDIT_START) {
     tc_msg->SetReconnect(force_reconnect_);
     if(tc_oper_ == TC_OP_USER_AUDIT)
@@ -482,38 +550,88 @@ TcOperStatus TcAuditOperations::Execute() {
   }
 
   pfc_log_info("Driver Type %d", driver_id_);
+  TcMsg::SetNotifyDriverId(driver_id_);
+  TcMsg::SetNotifyControllerId(controller_id_);
 
+  // If audit is cancelled even before the AuditStart is sent,
+  // just return. No cancel-audit required in this case.
+  // But the audit request will go to wait state.
+  if (TcMsg::GetAuditCancelFlag() == PFC_TRUE && 
+             audit_type_ != TC_AUDIT_REALNETWORK) {
+    pfc_log_info("%s Audit cancelled even before AUDIT_START", __FUNCTION__);
+    user_response_ = TC_OPER_AUDIT_CANCELLED;
+    audit_result_ = unc::tclib::TC_AUDIT_CANCELLED;
+    return user_response_;
+  }
+
+  TcOperations::SetAuditPhase(AUDIT_START);
   if ( AuditStart() == PFC_FALSE ) {
     return user_response_;
   }
-  if ( tc_oper_ == TC_OP_USER_AUDIT ||
-       user_response_ != TC_OPER_SIMPLIFIED_AUDIT ) {
+
+  if ( (tc_oper_ == TC_OP_USER_AUDIT && audit_type_ != TC_AUDIT_REALNETWORK) ||
+       (tc_oper_ == TC_OP_DRIVER_AUDIT &&
+        user_response_ != TC_OPER_SIMPLIFIED_AUDIT) ) {
+    
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_START);
     if ( AuditTransStart() == PFC_FALSE ) {
       return user_response_;
     }
+
+    TcOperations::SetAuditPhase(AUDIT_VOTE_REQUEST);
     if ( AuditVote() == PFC_FALSE ) {
       return user_response_;
     }
+
+    TcOperations::SetAuditPhase(AUDIT_GLOBAL_COMMIT);
+    // Just while setting phase to GLOBAL_COMMIT,
+    // if the audit has been cancelled, do not send global commit request
+    if (TcMsg::GetAuditCancelFlag() == PFC_TRUE &&
+                audit_type_ != TC_AUDIT_REALNETWORK) {
+      pfc_log_info("%s Audit cancelled before GLOBAL_COMMIT", __FUNCTION__);
+      audit_result_ = unc::tclib::TC_AUDIT_CANCELLED;
+
+      if ( AuditEnd() == PFC_FALSE ) {
+        return user_response_;
+      }
+      user_response_ = TC_OPER_AUDIT_CANCELLED;
+      return user_response_;
+    }
+    TcReadStatusOperations::SetRunningStatus();
     if ( AuditGlobalCommit() == PFC_FALSE ) {
       return user_response_;
     }
+    TcReadStatusOperations::SetRunningStatusIncr();
+   
+    TcOperations::SetAuditPhase(AUDIT_TRANSACTION_END);
     if ( AuditTransEnd() == PFC_FALSE ) {
       return user_response_;
     }
   }
-  if ( user_response_ == TC_OPER_SIMPLIFIED_AUDIT &&
-       tc_oper_ == TC_OP_DRIVER_AUDIT ) {
+
+  if (user_response_ == TC_OPER_SIMPLIFIED_AUDIT &&
+      tc_oper_ == TC_OP_DRIVER_AUDIT ) {
+    pfc_log_info("%s Simplified Audit completed", __FUNCTION__);
     audit_result_ =  unc::tclib::TC_SIMPLIFIED_AUDIT_SUCCESS;
   }
+
+  if (tc_oper_ == TC_OP_USER_AUDIT &&
+      audit_type_ == TC_AUDIT_REALNETWORK) {
+    pfc_log_info("%s REALNETWORK audit completed", __FUNCTION__);
+    audit_result_ = unc::tclib::TC_AUDIT_SUCCESS;
+  }
+
+  TcOperations::SetAuditPhase(AUDIT_END);
   if ( AuditEnd() == PFC_FALSE ) {
     return user_response_;
   }
   if ( db_hdlr_->UpdateRecoveryTable(UNC_DT_INVALID,
                                      TC_OP_INVALID)!= TCOPER_RET_SUCCESS) {
-    pfc_log_info("Recovery Table not updated");
+    pfc_log_error("Recovery Table not updated");
     user_response_ = TC_OPER_FAILURE;
     return TC_OPER_FAILURE;
   }
+  
   return TC_OPER_SUCCESS;
 }
 
@@ -554,6 +672,268 @@ TcAuditOperations::SendAdditionalResponse(TcOperStatus oper_stat) {
     }
   }
   return oper_stat;
+}
+TcOperStatus
+TcAuditOperations::Dispatch() {
+  TcOperStatus ret;
+
+  pfc_log_debug("tc_oper:Read Input Paramaters");
+  tc_oper_status_ = INPUT_VALIDATION;
+  ret = HandleArgs();
+  if (ret != TC_OPER_SUCCESS) {
+    return RevokeOperation(ret);
+  }
+
+  pthread_mutex_lock(&primary_wait_mutex_);
+  primary_wait_signalled = PFC_FALSE;
+  pthread_mutex_unlock(&primary_wait_mutex_);
+
+  pthread_mutex_lock(&secondary_wait_mutex_);
+  secondary_wait_signalled_ = PFC_FALSE;
+  pthread_mutex_unlock(&secondary_wait_mutex_);
+
+  pfc::core::ScopedMutex m(TcCandidateOperations::candidate_req_queue_lock_);
+  pfc_bool_t IsCandidateQueueEmpty =
+                         TcCandidateOperations::candidate_req_queue_.empty();
+  m.unlock();
+
+  if (ssess_ == NULL && tc_oper_ == TC_OP_DRIVER_AUDIT &&
+      !IsCandidateQueueEmpty) {
+    pfc_log_info("%s Candidate Q not empty; Start DrvAudit wait",
+                   __FUNCTION__);
+    ret = DriverAuditWait();
+  } else if (tc_oper_ == TC_OP_USER_AUDIT &&
+             !IsCandidateQueueEmpty) {
+    pfc_log_error("%s Candidate wait queue not empty. Return BUSY",
+                  __FUNCTION__);
+    return RevokeOperation(TC_SYSTEM_BUSY);
+  } else {
+    pfc_log_info("tc_oper:Secure Exclusion");
+    tc_oper_status_ = GET_EXCLUSION_PHASE;
+    ret = TcGetExclusion();
+    if ( ret != TC_OPER_SUCCESS ) {
+      if (ssess_ == NULL && tc_oper_ == TC_OP_DRIVER_AUDIT) {
+         pfc_log_info("%s TcGetExclusion ret %d; Start DrvAudit wait",
+                      __FUNCTION__, ret);
+         ret = DriverAuditWait();
+      } else {
+        return RevokeOperation(ret);
+      }
+    }
+  }
+
+  // Check for return from DriverAuditWait
+  if (ret != TC_OPER_SUCCESS) {
+    pfc_log_error("%s DriverAuditWait return failure",
+                  __FUNCTION__);
+    return RevokeOperation(ret);
+  }
+
+  pfc_log_debug("tc_oper:Accumulate Message List");
+  tc_oper_status_ = CREATE_MSG_LIST;
+  ret = TcCreateMsgList();
+  if ( ret != TC_OPER_SUCCESS ) {
+    return RevokeOperation(ret);
+  }
+
+  pfc_log_info("tc_oper:Execute Message List");
+  tc_oper_status_ = EXECUTE_PHASE;
+  ret = Execute();
+  if ( ret != TC_OPER_SUCCESS ) {
+    if (tc_oper_ == TC_OP_DRIVER_AUDIT) {
+      delete resp_tc_msg_;
+      resp_tc_msg_ = NULL;
+    }
+    return RevokeOperation(ret);
+  }
+
+  pfc_log_info("tc_oper:Release Exclusion");
+  tc_oper_status_ = RELEASE_EXCLUSION_PHASE;
+  ret = TcReleaseExclusion();
+  if ( ret != TC_OPER_SUCCESS ) {
+    return RevokeOperation(ret);
+  }
+
+  pfc_log_debug("tc_oper:Send Response to user");
+  return SendResponse(TC_OPER_SUCCESS);
+}
+
+TcOperStatus
+TcAuditOperations::DriverAuditWait() {
+  if (TcClientSessionUtils::get_sys_stop()) {
+    pfc_log_info("%s SYS-STOP inprogress. Not starting driver audit wait",
+                 __FUNCTION__);
+    return TC_INVALID_STATE;
+  }
+
+  int32_t pthread_ret = 0;
+
+primary_wait:
+
+  pthread_mutex_lock(&primary_wait_mutex_);
+  if (primary_wait_signalled == PFC_FALSE) {
+    pfc_log_info("%s Starting primary wait for Audit[%d, %s]",
+                 __FUNCTION__, driver_id_, controller_id_.c_str());
+    pthread_ret = pthread_cond_wait(&primary_wait_cond_,
+                                    &primary_wait_mutex_);
+  } else {
+    pfc_log_info("%s Primary signal set. No need to primary wait",
+                 __FUNCTION__);
+  }
+
+  // Reset the signal flag
+  primary_wait_signalled = PFC_FALSE;
+  // Reset the secondary wait signal flag after primary wait.
+  // The canidate requests sets this flag on start of dispatch
+  // So everytime, the flag will be set. Therefore reset here
+  pthread_mutex_lock(&secondary_wait_mutex_);
+  secondary_wait_signalled_ = PFC_FALSE;
+  pthread_mutex_unlock(&secondary_wait_mutex_);
+
+  pthread_mutex_unlock(&primary_wait_mutex_);
+
+  pfc_log_info("%s Primary wait for Driver audit return %d",
+               __FUNCTION__, pthread_ret);
+
+  if (TcClientSessionUtils::get_sys_stop()) {
+    pfc_log_info("%s SYS-STOP in-progress. Return from Primary DriverAuditWait",
+                 __FUNCTION__);
+    return TC_INVALID_STATE;
+  }
+
+  if (tclock_->IsLastOperationCandidate()) {
+    pfc_log_info("%s Last operation completed is candidate op. "
+                 "Starting secondary wait for %u seconds",
+                 __FUNCTION__, secondary_driver_audit_timeout_);
+
+    pfc_timespec_t timeout;
+    struct timeval now;
+    gettimeofday(&now, NULL);
+
+    pthread_ret = 0;
+
+    timeout.tv_sec = now.tv_sec + secondary_driver_audit_timeout_;
+    timeout.tv_nsec = now.tv_usec * 1000;
+
+    pthread_mutex_lock(&secondary_wait_mutex_);
+    if (secondary_wait_signalled_ == PFC_FALSE) {
+      pfc_log_info("%s Starting secondary wait for Audit[%d, %s]",
+                   __FUNCTION__, driver_id_, controller_id_.c_str());
+      pthread_ret = pthread_cond_timedwait(&secondary_wait_cond_,
+                                           &secondary_wait_mutex_,
+                                           &timeout);
+    } else {
+      pfc_log_info("%s Secondary signal set. No need to secondary wait",
+                   __FUNCTION__);
+    }
+
+    // Reset secondary_wait_signalled_ flag
+    secondary_wait_signalled_ = PFC_FALSE;
+
+    pthread_mutex_unlock(&secondary_wait_mutex_);
+
+    if (TcClientSessionUtils::get_sys_stop()) {
+      pfc_log_info("%s SYS-STOP in-progress. Return Secondary DriverAuditWait",
+                   __FUNCTION__);
+      return TC_INVALID_STATE;
+    }
+
+    if (pthread_ret == 0) {
+      pfc_log_info("%s Secondary wait time cancelled by candidate operation",
+                   __FUNCTION__);
+      goto primary_wait;  // Go back to primary waiting
+    } else {
+      pfc_log_info("%s Secondary wait over; pthread_ret=%d. "
+                   "Check if write lock can be acquired?",
+                   __FUNCTION__, pthread_ret);
+    }
+  }
+
+  pfc_log_info("%s All wait complete. Secure Exclusion", __FUNCTION__);
+  TcOperStatus ret = TcGetExclusion();
+  if (ret != TC_OPER_SUCCESS) {
+    pfc_log_info("%s TcGetExclusion failed. Start primary wait again",
+                 __FUNCTION__);
+    goto primary_wait;
+  }
+
+  pfc_log_info("%s Lock acquired for audit [%d, %s]",
+               __FUNCTION__, driver_id_, controller_id_.c_str());
+  return ret;
+}
+
+void
+TcAuditOperations::SetSecondaryWaitTime(uint32_t timeout) {
+  secondary_driver_audit_timeout_ = timeout;
+}
+
+void
+TcAuditOperations::PushToWaitQueue(TcAuditOperations * audit_op) {
+  pfc::core::ScopedMutex m(drv_audit_req_queue_lock_);
+  drv_audit_req_queue_.push_back(audit_op);
+  pfc_log_info("%s Current wait size:%" PFC_PFMT_SIZE_T,
+               __FUNCTION__, drv_audit_req_queue_.size()); 
+}
+
+void
+TcAuditOperations::PopWaitQueue() {
+  std::deque<TcAuditOperations*>::iterator it;
+
+  pfc::core::ScopedMutex m(drv_audit_req_queue_lock_);
+
+  it = drv_audit_req_queue_.begin();
+  if (it != drv_audit_req_queue_.end()) {
+    drv_audit_req_queue_.erase(it);
+    pfc_log_info("%s After remove wait size:%" PFC_PFMT_SIZE_T,
+                 __FUNCTION__, drv_audit_req_queue_.size()); 
+  } else {
+    pfc_log_info("%s Driver-Audit wait queue empty", __FUNCTION__);
+  }
+}
+
+int32_t
+TcAuditOperations::SignalPrimaryWaitingAudit() {
+
+  uint32_t ret = 0;
+  pfc::core::ScopedMutex m(drv_audit_req_queue_lock_);
+
+  std::deque<TcAuditOperations*>::iterator it = 
+                                  drv_audit_req_queue_.begin();
+
+  if (it != drv_audit_req_queue_.end()) {
+    pfc_log_info("%s Sending signal for primary waiting audit",
+                 __FUNCTION__);
+    pthread_mutex_lock(&(*it)->primary_wait_mutex_);
+    (*it)->primary_wait_signalled = PFC_TRUE;
+    ret = pthread_cond_signal(&((*it)->primary_wait_cond_));
+    pthread_mutex_unlock(&(*it)->primary_wait_mutex_);
+  } else {
+    pfc_log_info("%s Audit wait queue empty", __FUNCTION__);
+  }
+
+  return ret;
+}
+
+int32_t
+TcAuditOperations::SignalSecondaryWaitingAudit() {
+
+  uint32_t ret = 0;
+  pfc::core::ScopedMutex m(drv_audit_req_queue_lock_);
+
+  std::deque<TcAuditOperations*>::iterator it = 
+                                  drv_audit_req_queue_.begin();
+
+  if (it != drv_audit_req_queue_.end()) {
+    pfc_log_info("%s Sending signal for secondary waiting audit",
+                 __FUNCTION__);
+    pthread_mutex_lock(&(*it)->secondary_wait_mutex_);
+    (*it)->secondary_wait_signalled_ = PFC_TRUE;
+    ret = pthread_cond_signal(&((*it)->secondary_wait_cond_));
+    pthread_mutex_unlock(&(*it)->secondary_wait_mutex_);
+  } else {
+    pfc_log_info("%s Audit wait queue empty", __FUNCTION__);
+  }
+  return ret;
 }
 
 }  // namespace  tc

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -149,6 +149,11 @@ TcOperStatus TcDbOperations::TcReleaseExclusion() {
   if (ret != TC_LOCK_SUCCESS) {
     return HandleLockRet(ret);
   }
+
+  // After release of current write operation,
+  // trigger next waiting candidate operation
+  TcCandidateOperations::HandleCandidateRelease();
+
   return TC_OPER_SUCCESS;
 }
 
@@ -187,6 +192,12 @@ TcOperStatus TcDbOperations::TcCreateMsgList() {
  */
 TcOperStatus TcDbOperations::FillTcMsgData(TcMsg* tc_msg,
                            TcMsgOperType oper_type) {
+  if (tc_msg == NULL) {
+    return TC_OPER_FAILURE;
+  }
+
+  tc_msg->SetData(UNC_DT_STARTUP, TC_OP_RUNNING_SAVE, save_version_);
+
   return TC_OPER_SUCCESS;
 }
 
@@ -211,7 +222,7 @@ TcOperStatus TcDbOperations::Dispatch() {
   TcOperStatus ret;
   tc_oper_status_ = INPUT_VALIDATION;
 
-  pfc_log_info("tc_oper:Read Input Paramaters");
+  pfc_log_debug("tc_oper:Read Input Paramaters");
   ret = HandleArgs();
   if (ret != TC_OPER_SUCCESS) {
     return RevokeOperation(ret);
@@ -241,7 +252,7 @@ TcOperStatus TcDbOperations::Dispatch() {
     return RevokeOperation(ret);
   }
 
-  pfc_log_info("tc_oper:Accumulate Message List");
+  pfc_log_debug("tc_oper:Accumulate Message List");
   tc_oper_status_ = CREATE_MSG_LIST;
   ret = TcCreateMsgList();
   if ( ret != TC_OPER_SUCCESS ) {
@@ -261,8 +272,67 @@ TcOperStatus TcDbOperations::Dispatch() {
   if ( ret != TC_OPER_SUCCESS ) {
     return RevokeOperation(ret);
   }
-  pfc_log_info("tc_oper:Send Response to user");
+  pfc_log_debug("tc_oper:Send Response to user");
   return SendResponse(TC_OPER_SUCCESS);
+}
+
+/*
+ * @brief Execute the operation
+ */
+
+TcOperStatus TcDbOperations::Execute() {
+  if ( TcOperMessageList.size() == 0 )
+    return TC_OPER_FAILURE;
+
+  if (tc_oper_ == TC_OP_RUNNING_SAVE) {
+    if(db_hdlr_->GetRecoveryTableSaveVersion(save_version_)
+                                          != TCOPER_RET_SUCCESS) {
+      pfc_log_warn("Retrieving save_version data from recovery table failed");
+    } else {
+      ++save_version_;
+      pfc_log_info("%s Setting save version %"PFC_PFMT_u64, __FUNCTION__,
+                   save_version_);
+    }
+  }
+
+  std::list<TcMsgOperType>::iterator MsgIter = TcOperMessageList.begin();
+  while ( MsgIter != TcOperMessageList.end() ) {
+    TcMsg *tcmsg_ =
+        TcMsg::CreateInstance(session_id_,
+                              (TcMsgOperType)*MsgIter,
+                              unc_oper_channel_map_);
+    if ( tcmsg_ == NULL ) {
+      return TC_SYSTEM_FAILURE;
+    }
+    if (FillTcMsgData(tcmsg_, *MsgIter) != TC_OPER_SUCCESS) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
+      return TC_SYSTEM_FAILURE;
+    }
+
+    TcReadStatusOperations::SetStartupStatus();
+    TcOperRet MsgRet = tcmsg_->Execute();
+    TcReadStatusOperations::SetStartupStatusIncr();   
+    
+    if ( MsgRet != TCOPER_RET_SUCCESS ) {
+      delete tcmsg_;
+      tcmsg_ = NULL;
+      return HandleMsgRet(MsgRet);
+    }
+
+    if (tc_oper_ == TC_OP_RUNNING_SAVE) {
+      pfc_log_info("Save config: Setting save version: %"PFC_PFMT_u64,
+                   save_version_);
+      if (db_hdlr_->UpdateRecoveryTableSaveVersion(save_version_) !=
+                                                TCOPER_RET_SUCCESS) {
+        pfc_log_warn("Setting save_version to recovery table failed");
+      }
+    }
+
+    MsgIter++;
+    delete tcmsg_;
+  }
+  return TC_OPER_SUCCESS;
 }
 
 }  // namespace tc

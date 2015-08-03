@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -41,10 +41,14 @@ UncModeUtil::~UncModeUtil() {
  * @param[in]  none
  */
 uint8_t UncModeUtil::ReadConfigFile() {
-  pfc::core::ModuleConfBlock modeblock(MODE_PARAMS_BLK);
-  unc_mode_ = (uint8_t)modeblock.getByte("unc_mode", 0);
+  pfc::core::ModuleConfBlock uncmodeblock(UNC_MODE_PARAMS_BLK);
+  pfc::core::ModuleConfBlock importmodeblock(UNC_IMPORT_MODE_PARAMS_BLK);
+  unc_mode_ = (uint8_t)uncmodeblock.getByte("unc_mode", 0);
   // 0 -  UNC_SEPARATE_MODE, 1 - UNC_COEXISTS_MODE
   pfc_log_info("unc_mode from unclib.conf is %d", unc_mode_);
+  import_mode_ = (uint8_t)importmodeblock.getByte("import_mode", 0);
+  // 0 -  UNC_IMPORT_ERROR_MODE , 1 - UNC_IMPORT_IGNORE_MODE
+  pfc_log_info("import_mode from unclib.conf is %d", import_mode_);
   return 0;
 }
 
@@ -56,6 +60,15 @@ uint8_t UncModeUtil::ReadConfigFile() {
 uint8_t UncModeUtil::libunc_get_unc_mode() {
   pfc_log_debug("unc_mode at unclib is %d", unc_mode_);
   return (uint8_t)unc_mode_;
+}
+/**
+ * @brief     libunc_get_import_mode() - to get the import_mode. 
+ * @param[in]  none
+ * @param[out] uint8_t import_mode_
+ */
+uint8_t UncModeUtil::libunc_get_import_mode() {
+  pfc_log_debug("import_mode at unclib is %d", import_mode_);
+  return (uint8_t)import_mode_;
 }
 }
 }

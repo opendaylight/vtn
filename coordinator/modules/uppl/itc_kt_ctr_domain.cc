@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -197,7 +197,8 @@ UncRespCode Kt_Ctr_Domain::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
                                key_struct,
                                val_struct,
                                UNC_OP_CREATE, data_type, 0, 0,
-                               vect_key_operations, old_val_struct);
+                               vect_key_operations, old_val_struct,
+                               NOTAPPLIED, false, PFC_FALSE);
   } else if ((unc_keytype_datatype_t)data_type == UNC_DT_STATE ||
       (unc_keytype_datatype_t)data_type == UNC_DT_IMPORT) {
     PopulateDBSchemaForKtTable(db_conn, kt_ctr_domain_dbtableschema,
@@ -216,7 +217,7 @@ UncRespCode Kt_Ctr_Domain::CreateKeyInstance(OdbcmConnectionHandler *db_conn,
   if (create_db_status != ODBCM_RC_SUCCESS) {
     if (create_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       create_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -340,7 +341,8 @@ UncRespCode Kt_Ctr_Domain::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
                                key_struct,
                                val_struct,
                                UNC_OP_UPDATE, data_type, 0, 0,
-                               vect_key_operations, old_val_struct);
+                               vect_key_operations, old_val_struct,
+                               NOTAPPLIED, false, PFC_FALSE);
   } else if ((unc_keytype_datatype_t)data_type == UNC_DT_STATE ||
       (unc_keytype_datatype_t)data_type == UNC_DT_IMPORT) {
     PopulateDBSchemaForKtTable(db_conn, kt_ctr_domain_dbtableschema,
@@ -356,11 +358,11 @@ UncRespCode Kt_Ctr_Domain::UpdateKeyInstance(OdbcmConnectionHandler *db_conn,
     // Send request to ODBC for ctr_domain_table update
     ODBCM_RC_STATUS update_db_status = physical_layer->get_odbc_manager()-> \
         UpdateOneRow((unc_keytype_datatype_t)data_type,
-                     kt_ctr_domain_dbtableschema, db_conn);
+                     kt_ctr_domain_dbtableschema, db_conn, false);
     if (update_db_status != ODBCM_RC_SUCCESS) {
       if (update_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
-        pfc_log_fatal("DB connection not available or cannot access DB");
+        UPPL_LOG_FATAL("DB connection not available or cannot access DB");
         update_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       } else {
         // log error to log daemon
@@ -573,7 +575,7 @@ UncRespCode Kt_Ctr_Domain::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
     if (delete_db_status != ODBCM_RC_SUCCESS) {
       if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
         // log fatal error to log daemon
-        pfc_log_fatal("DB connection not available or cannot access DB");
+        UPPL_LOG_FATAL("DB connection not available or cannot access DB");
         delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
       } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS ||
           delete_db_status == ODBCM_RC_RECORD_NOT_FOUND) {
@@ -640,7 +642,7 @@ UncRespCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
                                            uint32_t operation_type) {
   if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
       operation_type != UNC_OP_READ_SIBLING_BEGIN) {
-    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    pfc_log_trace("This function not allowed for read next/bulk/count");
     return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
   pfc_log_debug("Inside ReadInternal of KT_CTR_DOMAIN");
@@ -655,7 +657,7 @@ UncRespCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
   if ((!val_struct.empty()) && (val_struct[0] != NULL)) {
     memcpy(&obj_dom_val, (reinterpret_cast <val_ctr_domain_st_t*>
                                       (val_struct[0])),
-           sizeof(val_ctr_domain_st_t)); 
+           sizeof(val_ctr_domain_st_t));
     void_val_struct = reinterpret_cast<void *>(&obj_dom_val);
   }
   UncRespCode read_status = UNC_RC_SUCCESS;
@@ -673,7 +675,8 @@ UncRespCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
                                         vect_val_ctr_domain_st,
                                         vect_domain_id);
     if (firsttime) {
-       pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+       pfc_log_trace(
+           "Clearing key_val and val_struct vectors for the first time");
       key_val.clear();
       val_struct.clear();
        firsttime = false;
@@ -700,14 +703,14 @@ UncRespCode Kt_Ctr_Domain::ReadInternal(OdbcmConnectionHandler *db_conn,
     if ((vect_val_ctr_domain_st.size() == UPPL_MAX_REP_CT) &&
                      (operation_type != UNC_OP_READ)) {
       pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
-                    operation_type,key_val.size());
+                    operation_type, key_val.size());
       key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
       operation_type = UNC_OP_READ_SIBLING;
       continue;
     } else {
       break;
     }
-  } while(true);
+  } while (true);
   pfc_log_debug("Returned Key vector size: %" PFC_PFMT_SIZE_T,
                 key_val.size());
   return read_status;
@@ -974,7 +977,8 @@ UncRespCode Kt_Ctr_Domain::ReadBulkInternal(
                              key_struct,
                              val_struct,
                              UNC_OP_READ_BULK, data_type, 0, 0,
-                             vect_key_operations, old_val_struct);
+                             vect_key_operations, old_val_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
   // Read rows from DB
   read_db_status = physical_layer->get_odbc_manager()-> \
       GetBulkRows((unc_keytype_datatype_t)data_type, max_rep_ct,
@@ -1117,8 +1121,7 @@ UncRespCode Kt_Ctr_Domain::PerformSemanticValidation(
   // In case of create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
     if (key_status == UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance already exists");
-      pfc_log_error("Hence create operation not allowed");
+      pfc_log_error("Key exists,CREATE not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
@@ -1134,8 +1137,7 @@ UncRespCode Kt_Ctr_Domain::PerformSemanticValidation(
       pfc_log_error("DB Access failure");
       status = key_status;
     } else if (key_status != UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance does not exist");
-      pfc_log_error("Hence update/delete/read operation not allowed");
+      pfc_log_error("Key not found,U/D/R opern not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_debug("key instance exist update/del/read operation allowed");
@@ -1182,7 +1184,7 @@ UncRespCode Kt_Ctr_Domain::HandleDriverAlarms(
     void* key_struct,
     void* val_struct) {
   UncRespCode status = UNC_RC_SUCCESS;
-  if (alarm_type != UNC_COREDOMAIN_SPLIT) {
+  if (alarm_type != UNC_COREDOMAIN_SPLIT && alarm_type != UNC_DOMAIN_SPLIT) {
     pfc_log_warn("%d alarm received for domain is ignored", alarm_type);
     return status;
   }
@@ -1259,7 +1261,7 @@ UncRespCode Kt_Ctr_Domain::HandleOperStatus(
     // Update oper_status in domain table
     return_code = SetOperStatus(db_conn, data_type, key_struct,
                                 domain_oper_status);
-    pfc_log_info("Set Domain oper status status %d", return_code);
+    pfc_log_debug("Set Domain oper status status %d", return_code);
 
   } else {
     return_code = UNC_UPPL_RC_ERR_BAD_REQUEST;
@@ -1463,9 +1465,9 @@ UncRespCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->UpdateOneRow(
           (unc_keytype_datatype_t)data_type,
-          kt_ctr_domain_dbtableschema, db_conn);
+          kt_ctr_domain_dbtableschema, db_conn, true);
   if (update_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
-    pfc_log_info("No instance available for update");
+    pfc_log_debug("No instance available for update");
   } else if (update_db_status != ODBCM_RC_SUCCESS) {
     // log error
     pfc_log_error("oper_status update operation failed");
@@ -1498,7 +1500,8 @@ UncRespCode Kt_Ctr_Domain::SetOperStatus(OdbcmConnectionHandler *db_conn,
         PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
         // Notify operstatus modifications
         UncRespCode status = (UncRespCode) physical_layer
-            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+            ->get_ipc_connection_manager()->SendEvent(&ser_evt, controller_name,
+                                                    UPPL_EVENTS_KT_CTR_DOMAIN);
         pfc_log_debug("Event notification status %d", status);
       } else {
         pfc_log_error("Server Event addOutput failed");
@@ -1574,7 +1577,7 @@ UncRespCode Kt_Ctr_Domain::IsKeyExists(OdbcmConnectionHandler *db_conn,
     if (kt_ctr_domain_dbtableschema.db_return_status_ != DELETED) {
       pfc_log_debug("DB returned success for Row exists");
     } else {
-      pfc_log_info("DB Returned failure for IsRowExists");
+      pfc_log_debug("DB Returned failure for IsRowExists");
       check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     }
   } else {
@@ -1884,7 +1887,7 @@ UncRespCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
       pfc_log_error("addOutput failed for physical_response_header");
       return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
     }
-    pfc_log_debug("Vector of Domain Id: %"
+    pfc_log_debug("Vector size of Domain Id: %"
                   PFC_PFMT_SIZE_T, vect_domain_id.size());
     for (unsigned int index = 0; index < vect_domain_id.size();
         ++index) {
@@ -1894,17 +1897,20 @@ UncRespCode Kt_Ctr_Domain::PerformRead(OdbcmConnectionHandler *db_conn,
         pfc_log_debug("Ignoring DELETED entry %s", domain_name.c_str());
         continue;
       }
-      pfc_log_debug("Adding domain name: %s",
-                    domain_name.c_str());
-      sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
-      sess.addOutput(vect_domain_id[index]);
+      pfc_log_debug("Adding domain name: %s", domain_name.c_str());
+      err |= sess.addOutput((uint32_t)UNC_KT_CTR_DOMAIN);
+      err |= sess.addOutput(vect_domain_id[index]);
       if ((unc_keytype_datatype_t)data_type == UNC_DT_STATE) {
-        sess.addOutput(vect_val_ctr_domain_st[index]);
+        err |= sess.addOutput(vect_val_ctr_domain_st[index]);
       } else {
-        sess.addOutput(vect_val_ctr_domain_st[index].domain);
+        err |= sess.addOutput(vect_val_ctr_domain_st[index].domain);
       }
       if (index < vect_domain_id.size() -1) {
-        sess.addOutput();
+        err |= sess.addOutput();
+      }
+      if (err !=0) {
+        pfc_log_error("addOutput failed for physical_response_header");
+        return UNC_UPPL_RC_ERR_IPC_WRITE_ERROR;
       }
     }
   } else {
@@ -1964,7 +1970,8 @@ UncRespCode Kt_Ctr_Domain::ReadDomainValFromDB(
                              key_struct,
                              val_struct,
                              operation_type, data_type, 0, 0,
-                             vect_key_operations, old_val_struct);
+                             vect_key_operations, old_val_struct,
+                             NOTAPPLIED, false, PFC_FALSE);
 
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
@@ -2237,7 +2244,7 @@ UncRespCode Kt_Ctr_Domain::GetModifiedRows(OdbcmConnectionHandler *db_conn,
                              UNC_OP_READ, UNC_DT_CANDIDATE, 0, 0,
                              vect_key_operations, old_val_struct,
                              row_status,
-                             true);
+                             true, PFC_FALSE);
 
   read_db_status = physical_layer->get_odbc_manager()->
       GetModifiedRows(UNC_DT_CANDIDATE, kt_ctr_domain_dbtableschema, db_conn);
@@ -2301,7 +2308,7 @@ void Kt_Ctr_Domain::Fill_Attr_Syntax_Map() {
   attr_syntax_map[CTR_NAME_STR] = objKeyAttrSyntax1;
 
   Kt_Class_Attr_Syntax objAttrTypeSyntax =
-  { PFC_IPCTYPE_UINT8, 0, 1, 0, 0, true, "" };
+  { PFC_IPCTYPE_UINT8, 0, 3, 0, 0, true, "" };
   attr_syntax_map[DOMAIN_TYPE_STR] = objAttrTypeSyntax;
 
   Kt_Class_Attr_Syntax objAttrDescSyntax =
@@ -2356,7 +2363,7 @@ UncRespCode Kt_Ctr_Domain::GetCtrDomainValidFlag(
         domain_key = NULL;
       }
     } else {
-      pfc_log_info("update domain valid ret null val");
+      pfc_log_debug("update domain valid ret null val");
     }
   }
   return return_code;

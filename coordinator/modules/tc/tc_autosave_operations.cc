@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -122,7 +122,7 @@ TcOperStatus TcAutoSaveOperations::TcGetExclusion() {
     ret = tclock_->GetLock(session_id_,
                          TC_AUTO_SAVE_ENABLE,
                          TC_WRITE_NONE);
-  } else {
+  } else if (tc_oper_ == TC_OP_AUTOSAVE_DISABLE) {
     ret = tclock_->GetLock(session_id_,
                          TC_AUTO_SAVE_DISABLE,
                          TC_WRITE_NONE);
@@ -205,12 +205,25 @@ TcOperStatus TcAutoSaveOperations::Execute() {
       return TC_OPER_FAILURE;
   }
 
+  uint64_t save_version = 0;
+
   // Send AutoSave status change request to TCLIB
   TcMsgOperType tclib_opertype = tclib::MSG_MAX;
   if (tc_oper_ == TC_OP_AUTOSAVE_ENABLE) {
     tclib_opertype = tclib::MSG_AUTOSAVE_ENABLE;
   } else if (tc_oper_ == TC_OP_AUTOSAVE_DISABLE) {
     tclib_opertype = tclib::MSG_AUTOSAVE_DISABLE;
+
+    // If autosave disabled, SaveConfiguration is called internally
+    // Set save_version in sess when autosave-disable
+    if(db_hdlr_->GetRecoveryTableSaveVersion(save_version)
+                                          != TCOPER_RET_SUCCESS) {
+      pfc_log_warn("Retrieving save_version data from recovery table failed");
+    } else {
+      ++save_version;
+      pfc_log_info("%s Setting save version %"PFC_PFMT_u64,
+                   __FUNCTION__, save_version);
+    }
   }
   TcMsg *tcmsg = TcMsg::CreateInstance(session_id_,
                                 tclib_opertype,
@@ -220,11 +233,24 @@ TcOperStatus TcAutoSaveOperations::Execute() {
     return TC_SYSTEM_FAILURE;
   }
 
+
+  tcmsg->SetData(UNC_DT_INVALID, TC_OP_AUTOSAVE_DISABLE, save_version);
+
+  TcReadStatusOperations::SetStartupStatus();
   TcOperRet MsgRet = tcmsg->Execute();
+  TcReadStatusOperations::SetStartupStatusIncr();
+  
   delete tcmsg;
   
   if ( MsgRet != TCOPER_RET_SUCCESS ) {
     return HandleMsgRet(MsgRet);
+  }
+
+  pfc_log_info("Autosave disable: Setting save version: %"PFC_PFMT_u64,
+               save_version);
+  if (db_hdlr_->UpdateRecoveryTableSaveVersion(save_version) !=
+                                            TCOPER_RET_SUCCESS) {
+    pfc_log_warn("Setting save_version to recovery table failed");
   }
 
   return TC_OPER_SUCCESS;

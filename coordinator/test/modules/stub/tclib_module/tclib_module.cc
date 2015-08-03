@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -49,9 +49,17 @@ void TcLibModule::GetSessionAttributes(uint32_t* session_id, uint32_t* config_id
 }
 
 TcApiCommonRet TcLibModule::TcLibValidateUpdateMsg
-         (uint32_t sessionid, uint32_t configid) {
+         (uint32_t sessionid, uint32_t configid, TcConfigMode config_mode,
+          std::string vtn_name) {
   return stub_getMappedResultCode(TcLibModule::VALIDATE_UPDATE);
 }
+TcApiCommonRet TcLibModule::TcLibGetConfigMode(uint32_t sessionid,
+                                               uint32_t configid,
+                                               TcConfigMode& config_mode,
+                                               std::string& vtn_name) {
+  return stub_getMappedResultCode(TcLibModule::GET_CONFIG_MODE);
+}
+
 
 TcApiCommonRet TcLibModule::TcLibReadKeyValueDataInfo(std::string controller_id,
                                                       uint32_t err_pos,

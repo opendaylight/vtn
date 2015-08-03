@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -26,7 +26,7 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
     upll_rc_t GetControllerDomainId(ConfigKeyVal *ikey,
                                     upll_keytype_datatype_t dt_type,
                                     controller_domain_t *ctrlr_dom,
-                                    DalDmlIntf *dmi); 
+                                    DalDmlIntf *dmi);
     /**
      * @brief  Gets the valid array position of the variable in the value
      *         structure from the table in the specified configuration
@@ -96,7 +96,8 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
 
     upll_rc_t UpdateConfigStatus(ConfigKeyVal *req, unc_keytype_operation_t op,
                                  uint32_t driver_result, ConfigKeyVal *upd_key,
-                                 DalDmlIntf *dmi, ConfigKeyVal *ctrlr_key = NULL);
+                                 DalDmlIntf *dmi,
+                                 ConfigKeyVal *ctrlr_key = NULL);
     /**
      * @brief  Update config status for commit result and vote result.
      *
@@ -190,7 +191,8 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
         unc_keytype_operation_t operation = UNC_OP_INVALID);
 
     /**
-     * @Brief Validates the syntax for KT_VBR_NWMONITOR_HOST keytype value structure.
+     * @Brief Validates the syntax for KT_VBR_NWMONITOR_HOST keytype value
+     * structure.
      *
      * @param[in] val_nwm_host KT_VBR_NWMONITOR_HOST value structure.
      * @param[in] operation Operation name.
@@ -199,8 +201,9 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
      * @retval UPLL_RC_SUCCESS        validation succeeded.
      * @retval UPLL_RC_ERR_CFG_SYNTAX validation failed.
      */
-    upll_rc_t ValidateNwMonHostValue(val_nwm_host_t *val_nwm_host,
-                                     unc_keytype_operation_t operation = UNC_OP_INVALID);
+    upll_rc_t ValidateNwMonHostValue(
+        val_nwm_host_t *val_nwm_host,
+        unc_keytype_operation_t operation = UNC_OP_INVALID);
 
     /**
      * @Brief Checks if the specified key type(KT_VBR_NWMONITOR_HOST) and
@@ -208,7 +211,8 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
      *        based on the valid flag
      *
      * @param[in] req               This structure contains
-     *                              IpcReqRespHeader(first 8 fields of input request structure).
+     *                              IpcReqRespHeader(first 8 fields of input
+     *                              request structure).
      * @param[in] ikey              ikey contains key and value structure.
      * @param[in] crtlr_name        Controller name.
      *
@@ -237,9 +241,9 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
     upll_rc_t ValNwMonHostAttributeSupportCheck(val_nwm_host_t *val_nwm_host,
   const uint8_t* attrs, unc_keytype_operation_t operation);
 
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL) {
        return UPLL_RC_SUCCESS;
@@ -264,7 +268,7 @@ class NwMonitorHostMoMgr : public VnodeChildMoMgr {
      * @retval         true                 input key is valid
      * @retval         false                input key is invalid.
      **/
-    bool IsValidKey(void *tkey, uint64_t index);
+    bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 };
 
 }  // namespace kt_momgr

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -58,7 +58,7 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
   if (copy_db_status != ODBCM_RC_SUCCESS) {
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -106,7 +106,7 @@ UncRespCode DBConfigurationRequest::LoadAndCommitStartup(
       // log fatal error to log daemon
       string log_msg = string("LoadAndCommitStartup:")+
           "DB connection not available or cannot access DB";
-      pfc_log_fatal(log_msg.c_str());
+      UPPL_LOG_FATAL(log_msg.c_str());
       result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -147,7 +147,7 @@ UncRespCode DBConfigurationRequest::CopyRunningtoCandidate(
   if (copy_db_status != ODBCM_RC_SUCCESS) {
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -178,7 +178,7 @@ UncRespCode DBConfigurationRequest::ClearStartUpDb(
   if (clear_db_status != ODBCM_RC_SUCCESS) {
     if (clear_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       // log error to log daemon
@@ -197,8 +197,14 @@ UncRespCode DBConfigurationRequest::ClearStartUpDb(
  *                or UNC_UPPL_RC_ERR_* in case of failure
  * */
 UncRespCode DBConfigurationRequest::AbortCandidateDb(
-    OdbcmConnectionHandler *db_conn) {
+    OdbcmConnectionHandler *db_conn,
+    TcConfigMode config_mode) {
   PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
+  // If config_mode is not real-network or Global mode, return success
+  if ((config_mode != TC_CONFIG_REAL) &&
+                       (config_mode != TC_CONFIG_GLOBAL)) {
+    return UNC_RC_SUCCESS;
+  }
   UncRespCode result_code = UNC_RC_SUCCESS;
   result_code = SendDeletedControllerToLogical(db_conn);
   if (result_code != UNC_RC_SUCCESS) {
@@ -218,7 +224,7 @@ UncRespCode DBConfigurationRequest::AbortCandidateDb(
   if (copy_db_status != ODBCM_RC_SUCCESS) {
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       /*  log error to log  daemon */
@@ -252,7 +258,7 @@ UncRespCode DBConfigurationRequest::SaveRunningToStartUp(
   if (copy_db_status != ODBCM_RC_SUCCESS) {
     if (copy_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       result_code = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else {
       /* log  error  to log manager */

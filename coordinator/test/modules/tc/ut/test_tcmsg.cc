@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -38,7 +38,7 @@ TEST(TcMsg, CreateInstance) {
   TcChannelNameMap daemon_names;
   /*invalid Opertype*/
   TcMsg* tcmsg =  TcMsg::CreateInstance(sess_id,  opertype,  daemon_names);
-  // Test Removed as actual code not exercised by the case
+  EXPECT_EQ(NULL, tcmsg);
 
   daemon_names =  GetChannelNameMap(SET);
   int array_len =  (sizeof(OpArray)/sizeof(int));
@@ -584,7 +584,7 @@ TEST(CommitSendAbortRequest, Execute)  {
 }
 
 TEST(CommitSendTransEndRequest, Execute)  {
-#if 0
+#if 1
   uint32_t sess_id =  SET;
   TcMsgOperType opertype =  MSG_COMMIT_TRANS_START;
   TcOperRet retval =  TCOPER_RET_SUCCESS;
@@ -596,7 +596,7 @@ TEST(CommitSendTransEndRequest, Execute)  {
   EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 #endif
 
-  /*Ctest.session_id_ =  CLEAR;
+  Ctest.session_id_ =  CLEAR;
   retval =  Ctest.TestSendTransEndRequest(PopulateAbortVector());
   EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 
@@ -623,7 +623,7 @@ TEST(CommitSendTransEndRequest, Execute)  {
   retval =  Ctest.TestSendTransEndRequest(PopulateAbortVector());
   EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
   stub_response = CLEAR;
-  */
+  
 }
 
 /*Class AbortCandidateDB cases*/
@@ -632,9 +632,11 @@ TEST(AbortCandidateDB, Execute) {
   TcMsgOperType oper =  MSG_ABORT_CANDIDATE;
   TcOperRet retval =  TCOPER_RET_SUCCESS;
 
+//  AbortCandidateDB *CAbort = new TcMsgCommit(sess_id, oper);
+
   AbortCandidateDB CAbort(sess_id,  oper);
   CAbort.channel_names_ =  GetChannelNameMap(SET);
-  CAbort.SetData(SET, "", UNC_CT_UNKNOWN);
+  CAbort.TcMsgCommit::SetData(SET, "", UNC_CT_UNKNOWN);
 
   retval =  CAbort.Execute();
   EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
@@ -651,7 +653,7 @@ TEST(AbortCandidateDB, Execute) {
 
   AbortCandidateDB CAbort1(CLEAR,  MSG_ABORT_CANDIDATE);
   CAbort1.channel_names_ =  GetChannelNameMap(SET);
-  CAbort1.SetData(SET, "", UNC_CT_UNKNOWN);
+  CAbort1.TcMsgCommit::SetData(SET, "", UNC_CT_UNKNOWN);
   retval =  CAbort1.Execute();
   EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 }
@@ -665,7 +667,7 @@ TEST(AbortCandidateDB, Execute_Noargs) {
   AbortCandidateDB CAbort(sess_id,  oper);
   CAbort.channel_names_ =  GetChannelNameMap(SET);
 
-  CAbort.SetData(CLEAR, "", UNC_CT_UNKNOWN);
+  CAbort.TcMsgCommit::SetData(CLEAR, "", UNC_CT_UNKNOWN);
   retval =  CAbort.Execute();
   EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 }
@@ -694,7 +696,7 @@ TEST(AbortCandidateDB, Execute_Failure) {
   AbortCandidateDB CAbort(sess_id,  oper);
   CAbort.channel_names_ =  GetChannelNameMap(SET);
 
-  CAbort.SetData(SET, "", UNC_CT_UNKNOWN);
+  CAbort.TcMsgCommit::SetData(SET, "", UNC_CT_UNKNOWN);
   stub_set_arg =  SET;
   retval =  CAbort.Execute();
   EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
@@ -1137,7 +1139,6 @@ TEST(AuditSendAbortRequest, Execute)  {
   Ctest.channel_names_ =  GetChannelNameMap(SET);
   Ctest.driver_id_ =  UNC_CT_PFC; Ctest.controller_id_ =  "C1";
   retval =  Ctest.TestSendAbortRequest(PopulateAbortVector());
-  EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
   stub_set_string = 1;
   stub_create_session = SET;
   retval =  Ctest.TestSendAbortRequest(PopulateAbortVector());
@@ -1235,7 +1236,7 @@ TEST(AuditTransaction, Execute) {
   Audit2.SetData(SET, "C1", UNC_CT_PFC);
   Audit2.channel_names_ =  GetChannelNameMap(SET);
   retval =  Audit2.Execute();
-  //EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
+  EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
 }
 
 TEST(AuditTransaction, Execute_RetSuccess) {
@@ -1778,7 +1779,7 @@ TEST(TwoPhaseCommit, SendReqToDvr_Invalid_Session) {
   C2phase.channel_names_ =  GetChannelNameMap(SET);
   stub_set_arg = 0;
   retval =  C2phase.TestSendRequestToDriver();
-  EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
+  EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 }
 
 TEST(AuditSendAbortRequest,Execute_DrvID_POLC)  {
@@ -1818,10 +1819,10 @@ TEST(AuditSendAbortRequest,Execute_DrvID_MAX)  {
 
   TestAudit Ctest(sess_id,  opertype);
   Ctest.channel_names_ =  GetChannelNameMap(SET);
-  Ctest.driver_id_ =  (unc_keytype_ctrtype_t)(UNC_CT_POLC + 1);
+  //Ctest.driver_id_ =  UNC_CT_MAX;
   Ctest.controller_id_ =  "C1";
   retval =  Ctest.TestSendAbortRequest(PopulateAbortVector());
-  EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
+  EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 }
 
 TEST(AuditSendAuditTransEndRequest, Execute_DrvID_POLC)  {
@@ -1860,10 +1861,10 @@ TEST(AuditSendAuditTransEndRequest, Execute_DrvID_MAX)  {
   TestAudit Ctest(sess_id,  opertype);
   Ctest.channel_names_ =  (GetChannelNameMap(SET));
   Ctest.controller_id_ =  "C1";
-  Ctest.driver_id_ =  (unc_keytype_ctrtype_t)(UNC_CT_POLC + 1);
+//  Ctest.driver_id_ =  UNC_CT_MAX;
   retval =  Ctest.TestSendAuditTransEndRequest(PopulateAbortVector(),
   MSG_AUDIT_TRANS_END);
-  EXPECT_EQ(TCOPER_RET_SUCCESS,  retval);
+  EXPECT_EQ(TCOPER_RET_FAILURE,  retval);
 }
 
 #if 0

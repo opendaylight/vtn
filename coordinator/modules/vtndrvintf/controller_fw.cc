@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -190,6 +190,7 @@ void ReadParams::PingController() {
                     ctlr_name_.c_str());
     }
     ctr_fw_->SetDomainFlag(ctlr_name_, PFC_FALSE);
+    ctr_fw_->SetEventFlag(ctlr_name_, PFC_FALSE);
     ctr_instance->set_connection_status(CONNECTION_DOWN);
   }
   uint32_t ping_interval = drv_instance->get_ping_interval();
@@ -606,6 +607,40 @@ pfc_bool_t ControllerFramework::GetDomainFlag(std::string ctr_name) {
   }
   return PFC_TRUE;
 }
+
+void ControllerFramework::SetEventFlag(std::string ctr_name,
+                                        pfc_bool_t flag) {
+  ControllerContainer* controller_container(NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator = controller_list.begin();
+  controller_list_iterator = controller_list.find(ctr_name);
+
+  if (controller_list_iterator == controller_list.end()) {
+    pfc_log_error("Controller Name not found in the list");
+  } else {
+    controller_container = controller_list_iterator->second;
+    PFC_VERIFY(controller_container != NULL);
+    controller_container->Start_event_ = flag;
+  }
+}
+
+pfc_bool_t ControllerFramework::GetEventFlag(std::string ctr_name) {
+  ControllerContainer* controller_container(NULL);
+  std::map<std::string, ControllerContainer*>::iterator
+      controller_list_iterator = controller_list.begin();
+  controller_list_iterator = controller_list.find(ctr_name);
+
+  if (controller_list_iterator == controller_list.end()) {
+    pfc_log_error("Controller Name not found in the list");
+  } else {
+    controller_container = controller_list_iterator->second;
+    PFC_VERIFY(controller_container != NULL);
+    return controller_container->Start_event_;
+  }
+  return PFC_TRUE;
+}
+
+
 controller_operation::controller_operation(ControllerFramework *fw_ptr,
                                            ControllerOps operation,
                                            std::string ctl_id,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -14,7 +14,6 @@
 #include <pfcxx/ipc_client.hh>
 #include <pfc/log.h>
 #include <uncxx/tclib/tclib_defs.hh>
-#include <string>
 
 using namespace unc::tclib;
 
@@ -22,11 +21,11 @@ namespace unc {
 
 namespace tc {
 
-#define SESSION_ID 10U
-#define CONFIG_ID 200U
+#define SESSION_ID 10
+#define CONFIG_ID 200
 
 typedef enum {
-  TCUTIL_RET_SUCCESS = 0,
+  TCUTIL_RET_SUCCESS=0,
   TCUTIL_RET_FAILURE,
   TCUTIL_RET_FATAL
 } TcUtilRet;
@@ -75,15 +74,15 @@ class TcServerSessionUtils {
       uint32_t index,
       uint32_t* data);
 
-   static TcUtilRet get_uint64(
-          pfc::core::ipc::ServerSession* ssess,
-          uint32_t index,
-          uint64_t* data);
-
   static TcUtilRet get_uint8(
       pfc::core::ipc::ServerSession* ssess,
       uint32_t index,
       uint8_t* data);
+
+  static TcUtilRet get_uint64(
+      pfc::core::ipc::ServerSession* ssess,
+      uint32_t index,
+      uint64_t* data);
 
   static TcUtilRet get_string(
       pfc::core::ipc::ServerSession* ssess,
@@ -101,8 +100,8 @@ class TcServerSessionUtils {
       uint32_t data);
 
   static TcUtilRet set_uint64(
-          pfc::core::ipc::ServerSession* ssess,
-          uint64_t data);
+      pfc::core::ipc::ServerSession* ssess,
+      uint64_t data);
 
   static TcUtilRet set_uint8(
       pfc::core::ipc::ServerSession* ssess,
@@ -148,13 +147,16 @@ class TcServerSessionUtils {
   }
   static uint32_t num_of_errors_;
 
-  static TcUtilRet update_key_list_handler(uint32_t index,
-                                           uint32_t* data);
+  static TcUtilRet update_key_list_handler_uint64(uint32_t index,
+                                           uint64_t& data);
+  static TcUtilRet update_key_list_handler_uint32(uint32_t index,
+                                           uint32_t& data);
 
   inline static void set_updatekey_failure(pfc_bool_t key_failure) {
     update_key_failure_ = key_failure;
   }
   static pfc_bool_t update_key_failure_;
+
 };
 
 class TcClientSessionUtils {
@@ -174,11 +176,6 @@ class TcClientSessionUtils {
       uint32_t index,
       uint32_t* data);
 
-  static TcUtilRet get_uint64(
-          pfc::core::ipc::ClientSession* csess,
-          uint32_t index,
-          uint64_t* data);
-
   static TcUtilRet get_uint8(
       pfc::core::ipc::ClientSession* csess,
       uint32_t index,
@@ -189,15 +186,15 @@ class TcClientSessionUtils {
       uint32_t index,
       std::string& data);
 
-  static TcUtilRet set_uint32(
+  static TcUtilRet set_uint32 (
       pfc::core::ipc::ClientSession* csess,
       uint32_t data);
 
-  static TcUtilRet set_uint8(
+  static TcUtilRet set_uint8 (
       pfc::core::ipc::ClientSession* csess,
       uint8_t data);
 
-  static TcUtilRet set_string(
+  static TcUtilRet set_string (
       pfc::core::ipc::ClientSession* csess,
       std::string& data);
 
@@ -205,7 +202,9 @@ class TcClientSessionUtils {
     return_type_ = return_type;
   }
   static ReturnType return_type_;
+
 };
+
 }  // namespace tc
 }  // namespace unc
 

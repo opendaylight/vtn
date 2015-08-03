@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -9,12 +9,17 @@
 
 #include <unistd.h>
 #include <regex.h>
+#include <crypt.h>
+#include <pfcxx/synch.hh>
 #include "usess_base_common.hh"
 
 namespace unc {
 namespace usess {
 
 #define CLASS_NAME "UsessBaseCommon"
+
+pfc::core::ReadWriteLock usess_crypt_lock;
+struct crypt_data usess_crypt_data;
 
 // -------------------------------------------------------------
 //  Class method definitions.
@@ -115,7 +120,10 @@ void UsessBaseCommon::Hash(const char* str,
     return;
   }
 
-  hash_str = crypt(str, salt.c_str());
+  usess_crypt_lock.wrlock();
+  hash_str = crypt_r(str, salt.c_str(), &usess_crypt_data);
+  usess_crypt_lock.unlock();
+
   return;
 }
 
@@ -173,15 +181,15 @@ bool UsessBaseCommon::CheckRegular(const char* check_str,
   // regulation compile.
   rtn = regcomp(&preg, regular_str.c_str(), (REG_EXTENDED | REG_NEWLINE));
   regerror(rtn, &preg, err_buff, sizeof(err_buff));
-  GOTO_IF((rtn != 0), err_end, "regcomp %d(%s)", rtn, err_buff);
+  GOTO_IF2((rtn != 0), err_end, "regcomp %d(%s)", rtn, err_buff);
 
   // regulation exec.
   rtn = regexec(&preg, check_str, nmatch, pmatch, 0);
   regerror(rtn, &preg, err_buff, sizeof(err_buff));
-  GOTO_IF((rtn != 0), err_end, "regexec %d(%s)", rtn, err_buff);
+  GOTO_IF2((rtn != 0), err_end, "regexec %d(%s)", rtn, err_buff);
 
   // Check the number of matched characters.
-  GOTO_IF((pmatch[0].rm_so != 0 || pmatch[0].rm_eo != (int)strlen(check_str)),
+  GOTO_IF2((pmatch[0].rm_so != 0 || pmatch[0].rm_eo != (int)strlen(check_str)),
               err_end, "%s", "no match.");
 
   regfree(&preg);

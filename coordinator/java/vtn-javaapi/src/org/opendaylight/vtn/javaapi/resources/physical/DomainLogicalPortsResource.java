@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -247,8 +247,11 @@ public class DomainLogicalPortsResource extends AbstractResource {
 								memberIndex = memberArrayNew.size();
 							}
 						}
-						logicalPortsJson.add(VtnServiceJsonConsts.MEMBERPORTS,
-								memberArray);
+						//get neighbor information
+						getNeighbor(queryString, responseGenerator,
+										requestProcessor, memberArray, logicalPortsJson);
+						//get logical port boundary informations
+						getBoundary(queryString, responseGenerator, requestProcessor, logicalPortsJson);
 						logicalPortsArray.add(logicalPortsJson);
 					}
 					root.add(VtnServiceJsonConsts.LOGICALPORTS,
@@ -371,17 +374,15 @@ public class DomainLogicalPortsResource extends AbstractResource {
 						}
 					}
 					if (null != memberArray) {
-						final JsonArray resultJsonArray = new JsonArray();
-						final JsonObject logicalPortJson = (JsonObject) root
-								.get(VtnServiceJsonConsts.LOGICALPORTS)
-								.getAsJsonArray()
-								.get(VtnServiceJsonConsts.VAL_0);
-						logicalPortJson.add(VtnServiceJsonConsts.MEMBER_PORTS,
-								memberArray);
-						resultJsonArray.add(logicalPortJson);
-						root.add(VtnServiceJsonConsts.LOGICALPORTS,
-								resultJsonArray);
+						//get neighbor information
+						getNeighbor(queryString, responseGenerator,
+								requestProcessor, memberArray, logicalPort);
 					}
+					//get logical port boundary informations
+					getBoundary(queryString, responseGenerator, requestProcessor, logicalPort);
+					final JsonArray resultJsonArray = new JsonArray();
+					resultJsonArray.add(logicalPort);
+					root.add(VtnServiceJsonConsts.LOGICALPORTS, resultJsonArray);
 				}
 				setInfo(root);
 			}
@@ -523,5 +524,84 @@ public class DomainLogicalPortsResource extends AbstractResource {
 		}
 		LOG.trace("Completed LogicalPortsResource#getUriParametersMemberGreaterThanDefault()");
 		return uriParameters;
+	}
+
+	private void getBoundary(final JsonObject queryString, IpcPhysicalResponseFactory responseGenerator,
+					IpcRequestProcessor requestProcessor, final JsonObject logicalPortJson)
+					throws VtnServiceException {
+		int status = ClientSession.RESP_FATAL;
+
+		requestProcessor.createIpcRequestPacket(
+				IpcRequestPacketEnum.KT_LOGICAL_PORT_BOUNDARY_GET,
+				queryString, getUriParametersMember(logicalPortJson));
+		requestProcessor.getRequestPacket()
+						.setOperation(IpcDataUnitWrapper
+							.setIpcUint32Value(UncOperationEnum.UNC_OP_READ.ordinal()));
+		LOG.debug("Request packet for boundary call created successfully");
+		status = requestProcessor.processIpcRequest();
+		LOG.debug("Request packet boundary call processed with status:" + status);
+		if (status == ClientSession.RESP_FATAL) {
+			throw new VtnServiceException(
+					Thread.currentThread().getStackTrace()[1]
+							.getClassName()
+							+ VtnServiceConsts.HYPHEN
+							+ Thread.currentThread()
+									.getStackTrace()[1]
+									.getMethodName(),
+					UncJavaAPIErrorCode.IPC_SERVER_ERROR
+							.getErrorCode(),
+					UncJavaAPIErrorCode.IPC_SERVER_ERROR
+							.getErrorMessage());
+		}
+		JsonObject boundary = responseGenerator.getDomainLogicalPortBoundaryResponse(
+												requestProcessor.getIpcResponsePacket());
+		if (boundary != null) {
+			logicalPortJson.add(VtnServiceJsonConsts.BOUNDARY, boundary);
+		}
+	}
+
+	/**/
+	private void getNeighbor(final JsonObject queryString, IpcPhysicalResponseFactory responseGenerator,
+			IpcRequestProcessor requestProcessor, final JsonArray memberArray,
+			final JsonObject logicalPortJson) throws VtnServiceException {
+		int status = ClientSession.RESP_FATAL;
+		JsonArray tmpMembArray = new JsonArray();
+
+		for (int neighborIndex = 0; neighborIndex < memberArray.size(); neighborIndex++) {
+			JsonObject member = (JsonObject) memberArray.get(neighborIndex);
+			requestProcessor.createIpcRequestPacket(
+					IpcRequestPacketEnum.KT_LOGICAL_PORT_NEIGHBOR_GET,
+					queryString, getUriParametersMemberGreaterThanDefault(
+					logicalPortJson, member));
+			requestProcessor.getRequestPacket()
+					.setOperation(IpcDataUnitWrapper
+						.setIpcUint32Value(UncOperationEnum.UNC_OP_READ.ordinal()));
+			LOG.debug("Request packet for neighbor call created successfully");	
+			status = requestProcessor.processIpcRequest();
+			LOG.debug("Request packet neighbor call processed with status:" + status);
+			if (status == ClientSession.RESP_FATAL) {
+				throw new VtnServiceException(
+						Thread.currentThread().getStackTrace()[1]
+								.getClassName()
+								+ VtnServiceConsts.HYPHEN
+								+ Thread.currentThread()
+										.getStackTrace()[1]
+										.getMethodName(),
+						UncJavaAPIErrorCode.IPC_SERVER_ERROR
+								.getErrorCode(),
+						UncJavaAPIErrorCode.IPC_SERVER_ERROR
+								.getErrorMessage());
+			}
+			JsonObject neighbor = responseGenerator.getDomainLogicalPortNeighborResponse(
+												requestProcessor.getIpcResponsePacket());
+			if (neighbor != null) {
+				member.add(VtnServiceJsonConsts.NEIGHBOR, neighbor);
+			}
+			tmpMembArray.add(member);
+		}
+
+		if (tmpMembArray.size() > 0) {
+			logicalPortJson.add(VtnServiceJsonConsts.MEMBERPORTS, tmpMembArray);
+		}
 	}
 }

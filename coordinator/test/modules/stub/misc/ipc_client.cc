@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -586,7 +586,14 @@ int
 ClientSession::getResponse(unsigned int, pfcdrv_policier_alarm_data&) {
   return responseResult_;
 }
-
+int
+ClientSession::getResponse(uint32_t, key_ctr_dataflow_t&) {
+  return responseResult_;
+}
+int
+ClientSession::getResponse(unsigned int, val_port_st_neighbor&){
+  return responseResult_;
+}
 void
 ClientSession::stub_setResponse(int result) {
   responseResult_ = result;

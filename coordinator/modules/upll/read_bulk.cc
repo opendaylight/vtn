@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -19,15 +19,23 @@ namespace config_momgr {
 using unc::upll::ipc_util::IpctSt;
 
 static bool GetNextSiblingKT(const KeyTree &kt_tree, const unc_key_type_t kt,
-                             unc_key_type_t *next_sibling_kt) {
+                             unc_key_type_t *next_sibling_kt,
+                             upll_keytype_datatype_t datatype,
+                             TcConfigMode cfg_mode) {
   UPLL_FUNC_TRACE;
-  UPLL_LOG_TRACE("Request KT = %d", kt);
+  UPLL_LOG_TRACE("Request KT = %d, datatype = %d, cfg_mode = %d",
+                 kt, datatype, cfg_mode);
+  UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
+
   bool ok = kt_tree.GetNextSibling(kt, next_sibling_kt);
   if (ok) {
-    if (UpllConfigMgr::GetUpllConfigMgr()->GetMoManager(*next_sibling_kt)
-        == NULL) {
+    ok = ucm->IsKtPartOfConfigMode(*next_sibling_kt, datatype, cfg_mode);
+  }
+  if (ok) {
+    if (ucm->GetMoManager(*next_sibling_kt) == NULL) {
       UPLL_LOG_TRACE("Skipping KT = %d", *next_sibling_kt);
-      return GetNextSiblingKT(kt_tree, *next_sibling_kt, next_sibling_kt);
+      return GetNextSiblingKT(kt_tree, *next_sibling_kt, next_sibling_kt,
+                              datatype, cfg_mode);
     } else {
       UPLL_LOG_TRACE("Found KT = %d", *next_sibling_kt);
     }
@@ -36,14 +44,22 @@ static bool GetNextSiblingKT(const KeyTree &kt_tree, const unc_key_type_t kt,
 }
 
 static bool GetFirstChildKT(const KeyTree &kt_tree,
-                          unc_key_type_t parent_kt, unc_key_type_t *child_kt) {
+                            unc_key_type_t parent_kt, unc_key_type_t *child_kt,
+                            upll_keytype_datatype_t datatype,
+                            TcConfigMode cfg_mode) {
   UPLL_FUNC_TRACE;
-  UPLL_LOG_TRACE("Request parent KT = %d", parent_kt);
+  UPLL_LOG_TRACE("Request parent KT = %d datatype = %d, cfg_mode = %d",
+                 parent_kt, datatype, cfg_mode);
+  UpllConfigMgr *ucm = UpllConfigMgr::GetUpllConfigMgr();
+
   bool ok = kt_tree.GetFirstChild(parent_kt, child_kt);
   if (ok) {
-    if (UpllConfigMgr::GetUpllConfigMgr()->GetMoManager(*child_kt) == NULL) {
+    ok = ucm->IsKtPartOfConfigMode(*child_kt, datatype, cfg_mode);
+  }
+  if (ok) {
+    if (ucm->GetMoManager(*child_kt) == NULL) {
       UPLL_LOG_TRACE("Skipping KT = %d", *child_kt);
-      return GetNextSiblingKT(kt_tree, *child_kt, child_kt);
+      return GetNextSiblingKT(kt_tree, *child_kt, child_kt, datatype, cfg_mode);
     } else {
       UPLL_LOG_TRACE("Found KT = %d", *child_kt);
     }
@@ -124,14 +140,16 @@ static ConfigKeyVal *GetParentCkvFromChild(const ConfigKeyVal *in_ckv) {
   return parent_ckv;
 }
 
-static upll_rc_t ReadBulkGetMo(upll_keytype_datatype_t datatype,
+static upll_rc_t ReadBulkGetMo(const IpcReqRespHeader &in_reqhdr,
                                const ConfigKeyVal *req_ckv,
                                ConfigKeyVal **resp_ckv, DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   IpcReqRespHeader msghdr;
   bzero(&msghdr, sizeof(msghdr));
   msghdr.operation = UNC_OP_READ;
-  msghdr.datatype = datatype;
+  msghdr.datatype = in_reqhdr.datatype;
+  msghdr.clnt_sess_id = in_reqhdr.clnt_sess_id;
+  msghdr.config_id = in_reqhdr.config_id;
 
   *resp_ckv = NULL;
 
@@ -143,6 +161,8 @@ static upll_rc_t ReadBulkGetMo(upll_keytype_datatype_t datatype,
     UPLL_LOG_INFO("KT %u is not managed by UPLL", req_ckv->get_key_type());
     return UPLL_RC_ERR_NO_SUCH_NAME;
   }
+
+  // TODO(U17): Do we need to check if the req_ckv falls outside the cfg_mode?
 
   ConfigKeyVal *mo_ckv = req_ckv->DupKey();
   upll_rc_t urc = momgr->ReadMo(&msghdr, mo_ckv, dmi);
@@ -158,7 +178,7 @@ static upll_rc_t ReadBulkGetMo(upll_keytype_datatype_t datatype,
 }
 
 // Get one sibling
-static upll_rc_t ReadBulkGetSibling(upll_keytype_datatype_t datatype,
+static upll_rc_t ReadBulkGetSibling(const IpcReqRespHeader &in_reqhdr,
                                     const ConfigKeyVal *req_ckv,
                                     ConfigKeyVal **resp_ckv,
                                     bool begin,
@@ -167,8 +187,10 @@ static upll_rc_t ReadBulkGetSibling(upll_keytype_datatype_t datatype,
   IpcReqRespHeader msghdr;
   bzero(&msghdr, sizeof(msghdr));
   msghdr.operation = (begin ? UNC_OP_READ_SIBLING_BEGIN : UNC_OP_READ_SIBLING);
-  msghdr.datatype = datatype;
   msghdr.rep_count = 1;
+  msghdr.datatype = in_reqhdr.datatype;
+  msghdr.clnt_sess_id = in_reqhdr.clnt_sess_id;
+  msghdr.config_id = in_reqhdr.config_id;
 
   UPLL_LOG_TRACE("Request:begin=%d, ckv=%s", begin, req_ckv->ToStr().c_str());
   *resp_ckv = NULL;
@@ -192,6 +214,9 @@ static upll_rc_t ReadBulkGetSibling(upll_keytype_datatype_t datatype,
     delete mo_ckv;
   } else {
     *resp_ckv = mo_ckv;
+    // It is assumed that MoMgrIntf::ReadSiblingMo of KT_VTN never returns KTs
+    // outside the view. So no need to do additional checks here for partial
+    // configuration mode boundary conditions.
   }
   UPLL_LOG_TRACE("Req:%s\nurc=%d\nResponse: %s", req_ckv->ToStr().c_str(), urc,
                  ((*resp_ckv) ? (*resp_ckv)->ToStrAll().c_str() : "null"));
@@ -202,7 +227,8 @@ static upll_rc_t ReadBulkGetSibling(upll_keytype_datatype_t datatype,
 // returns UPLL_RC_SUCESS if process is done with out err.
 // added_cnt will be zero if no child is found for the given instance
 upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
-                                            upll_keytype_datatype_t datatype,
+                                            const IpcReqRespHeader &in_reqhdr,
+                                            TcConfigMode cfg_mode,
                                             const ConfigKeyVal *user_req_ckv,
                                             uint32_t requested_cnt,
                                             ConfigKeyVal **user_resp_ckv,
@@ -221,9 +247,11 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
   unc_key_type_t child_kt;
   bool keytree_ret;
   // For all children KT
-  for ((keytree_ret = GetFirstChildKT(kt_tree, curr_kt, &child_kt));
+  for ((keytree_ret = GetFirstChildKT(kt_tree, curr_kt, &child_kt,
+                                      in_reqhdr.datatype, cfg_mode));
        keytree_ret;
-       (keytree_ret = GetNextSiblingKT(kt_tree, curr_kt, &child_kt))) {
+       (keytree_ret = GetNextSiblingKT(kt_tree, curr_kt, &child_kt,
+                                       in_reqhdr.datatype, cfg_mode))) {
     curr_kt = child_kt;
     UPLL_LOG_DEBUG("Child KT %u", curr_kt);
     ConfigKeyVal *curr_req_ckv = GetCkvFromParent(curr_kt, user_req_ckv);
@@ -237,11 +265,11 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
     }
     upll_rc_t curr_urc;
     ConfigKeyVal *curr_resp_ckv = NULL;
-    for ((curr_urc = ReadBulkGetSibling(datatype, curr_req_ckv, &curr_resp_ckv,
-                                       true, dmi));
+    for ((curr_urc = ReadBulkGetSibling(in_reqhdr, curr_req_ckv, &curr_resp_ckv,
+                                        true, dmi));
          curr_urc == UPLL_RC_SUCCESS;
-         (curr_urc = ReadBulkGetSibling(datatype, curr_req_ckv, &curr_resp_ckv,
-                                       false, dmi))) {
+         (curr_urc = ReadBulkGetSibling(in_reqhdr, curr_req_ckv, &curr_resp_ckv,
+                                        false, dmi))) {
       delete curr_req_ckv;
       curr_req_ckv = curr_resp_ckv->DupKey();  // prepare for loop
       if (curr_req_ckv == NULL) {
@@ -268,7 +296,7 @@ upll_rc_t UpllConfigMgr::ReadBulkGetSubtree(const KeyTree &kt_tree,
       uint32_t new_cnt = 0;
       ConfigKeyVal *local_bulk_ckv_req = curr_resp_ckv->DupKey();
       ConfigKeyVal *local_bulk_ckv_resp = NULL;
-      upll_rc_t new_urc = ReadBulkGetSubtree(kt_tree, datatype,
+      upll_rc_t new_urc = ReadBulkGetSubtree(kt_tree, in_reqhdr, cfg_mode,
                                              local_bulk_ckv_req,
                                              (requested_cnt - (*added_cnt)),
                                              &local_bulk_ckv_resp, &new_cnt,
@@ -328,6 +356,17 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
     return (upll_rc_t)msghdr->result_code;
   }
 
+  TcConfigMode cfg_mode;
+  if (msghdr->datatype == UPLL_DT_CANDIDATE) {
+    upll_rc_t tc_rc = GetConfigMode(msghdr->clnt_sess_id, msghdr->config_id,
+                                    &cfg_mode);
+    if (tc_rc != UPLL_RC_SUCCESS) {
+      return tc_rc;
+    }
+  } else {
+    cfg_mode = TC_CONFIG_GLOBAL;
+  }
+
   uint32_t pending_cnt = msghdr->rep_count;
   msghdr->rep_count = 0;
   if (pending_cnt == 0) {
@@ -351,12 +390,17 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
       msghdr->result_code = UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_DT;
       return msghdr->result_code;
   }
-  ScopedConfigLock lock(cfg_lock_, msghdr->datatype, ConfigLock::CFG_READ_LOCK);
+
+  // READ lock on given datatype is already taken in TakeConfigLock
+  // so no lock required here
 
   uint32_t added_cnt = 0;
 
   if (user_req_ckv->get_key_type() == UNC_KT_ROOT) {
-    upll_rc_t urc = ReadBulkGetSubtree(*kt_tree, msghdr->datatype, user_req_ckv,
+    // TODO(U17): Is KT_ROOT accessible from VTN mode? I believe so for
+    // READ_NEXT or READ_BULK
+    upll_rc_t urc = ReadBulkGetSubtree(*kt_tree, *msghdr, cfg_mode,
+                                       user_req_ckv,
                                        pending_cnt, user_resp_ckv,
                                        &added_cnt, dmi);
     if (urc == UPLL_RC_SUCCESS) {
@@ -384,16 +428,16 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
 
   bool begin = true;
   bool retrieve_user_req_mo = true;  // Check the presence of user given key
-  const ConfigKeyVal *step_req_ckv = user_req_ckv->DupKey(); 
+  const ConfigKeyVal *step_req_ckv = user_req_ckv->DupKey();
   if (!step_req_ckv) {
     UPLL_LOG_DEBUG("step_req_ckv is NULL");
-    return UPLL_RC_ERR_GENERIC; 
+    return UPLL_RC_ERR_GENERIC;
   }
   upll_rc_t urc;
   while (pending_cnt > 0) {
     ConfigKeyVal *step_resp_ckv = NULL;
     if (retrieve_user_req_mo) {   // execute only once
-      urc = ReadBulkGetMo(msghdr->datatype, step_req_ckv, &step_resp_ckv, dmi);
+      urc = ReadBulkGetMo(*msghdr, step_req_ckv, &step_resp_ckv, dmi);
       switch (urc) {
         case UPLL_RC_ERR_CFG_SYNTAX:
           {
@@ -401,7 +445,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
                            step_req_ckv->ToStr().c_str());
             // probably the key is partial, try sibling begin
             retrieve_user_req_mo = false;
-            urc = ReadBulkGetSibling(msghdr->datatype, step_req_ckv,
+            urc = ReadBulkGetSibling(*msghdr, step_req_ckv,
                                      &step_resp_ckv, true, dmi);
           }
           break;
@@ -410,7 +454,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
             UPLL_LOG_TRACE("User given key does not exist. Key = %s",
                            step_req_ckv->ToStr().c_str());
             retrieve_user_req_mo = false;
-            urc = ReadBulkGetSibling(msghdr->datatype, step_req_ckv,
+            urc = ReadBulkGetSibling(*msghdr, step_req_ckv,
                                      &step_resp_ckv, false, dmi);
           }
           break;
@@ -428,7 +472,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
           return urc;
       }
     } else {
-      urc = ReadBulkGetSibling(msghdr->datatype, step_req_ckv, &step_resp_ckv,
+      urc = ReadBulkGetSibling(*msghdr, step_req_ckv, &step_resp_ckv,
                                begin, dmi);
     }
     switch (urc) {
@@ -457,7 +501,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
           begin = false;
           ConfigKeyVal *subtree_resp_ckv = NULL;
           uint32_t step_added_cnt = 0;
-          upll_rc_t urc = ReadBulkGetSubtree(*kt_tree, msghdr->datatype,
+          upll_rc_t urc = ReadBulkGetSubtree(*kt_tree, *msghdr, cfg_mode,
                                              subtree_req_ckv, pending_cnt,
                                              &subtree_resp_ckv,
                                              &step_added_cnt, dmi);
@@ -506,7 +550,7 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
                          step_req_ckv->get_key_type());
           unc_key_type_t next_sibling_kt;
           if (GetNextSiblingKT(*kt_tree, step_req_ckv->get_key_type(),
-                             &next_sibling_kt)) {
+                               &next_sibling_kt, msghdr->datatype, cfg_mode)) {
             // There is a NEXT SIBLING KT for the given KT; get the first
             // instance of the next KT
             begin = true;
@@ -601,6 +645,6 @@ upll_rc_t UpllConfigMgr::ReadBulkMo(IpcReqRespHeader *msghdr,
   return UPLL_RC_ERR_GENERIC;
 }
                                                                        // NOLINT
-}  // namesapce config_momgr
-}  // namesapce upll
-}  // namesapce unc
+}  // namespace config_momgr
+}  // namespace upll
+}  // namespace unc

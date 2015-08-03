@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -36,7 +36,7 @@ TcCommonRet TcLibMsgUtil::GetCommitTransactionMsg(
   }
 
   argcount = session->getArgCount();
-  pfc_log_info("%s %d session arg count %d",
+  pfc_log_debug("%s %d session arg count %d",
                __FUNCTION__, __LINE__, argcount);
 
   // argcount empty check
@@ -87,13 +87,7 @@ TcCommonRet TcLibMsgUtil::GetCommitTransactionMsg(
       return TC_FAILURE;
     }
     commit_trans_msg.end_result = (TcTransEndResult) end_result;
-    pfc_log_info("%s transaction end result %d",
-                 __FUNCTION__, commit_trans_msg.end_result);
   }
-
-  pfc_log_info("%s oper_type %d session_id %d config_id %d",
-               __FUNCTION__, commit_trans_msg.oper_type,
-               commit_trans_msg.session_id, commit_trans_msg.config_id);
 
   return ret;
 }
@@ -122,7 +116,7 @@ TcCommonRet TcLibMsgUtil::GetCommitDrvVoteGlobalMsg(
   }
 
   argcount = session->getArgCount();
-  pfc_log_info("%s %d session arg count %d",
+  pfc_log_debug("%s %d session arg count %d",
                __FUNCTION__, __LINE__, argcount);
 
   // argcount empty check
@@ -216,7 +210,7 @@ TcCommonRet TcLibMsgUtil::GetCommitDrvResultMsg(
   }
 
   argcount = session->getArgCount();
-  pfc_log_info("%s %d session arg count %d",
+  pfc_log_debug("%s %d session arg count %d",
                __FUNCTION__, __LINE__, argcount);
 
   // argcount empty check
@@ -372,7 +366,7 @@ TcCommonRet TcLibMsgUtil::GetAuditTransactionMsg(
   }
 
   argcount = session->getArgCount();
-  pfc_log_info("%s %d session arg count %d",
+  pfc_log_debug("%s %d session arg count %d",
                __FUNCTION__, __LINE__, argcount);
 
   // argcount empty check
@@ -432,18 +426,17 @@ TcCommonRet TcLibMsgUtil::GetAuditTransactionMsg(
       return TC_FAILURE;
     }
     audit_trans_msg.reconnect_controller = (pfc_bool_t)reconnect;
-
-    /*simplified_audit attribute*/
-    uint8_t simplified_audit = 0;
+    
+    /* AuditType attribute */
+    uint8_t audit_type = 0;
     idx++;
-    util_ret = tc::TcServerSessionUtils::get_uint8(session, idx,
-                                                   &simplified_audit);
+    util_ret = tc::TcServerSessionUtils::get_uint8(session, idx, &audit_type);
     if (util_ret != tc::TCUTIL_RET_SUCCESS) {
       pfc_log_error("%s %d TcServerSessionUtils failed with %d",
                     __FUNCTION__, __LINE__, util_ret);
       return TC_FAILURE;
     }
-    audit_trans_msg.simplified_audit = (pfc_bool_t)simplified_audit;
+    audit_trans_msg.audit_type = (TcAuditType)audit_type;
 
     /*commit number attribute*/
     idx++;
@@ -504,10 +497,6 @@ TcCommonRet TcLibMsgUtil::GetAuditTransactionMsg(
                  __FUNCTION__, audit_trans_msg.end_result);
   }
 
-  pfc_log_info("%s oper_type %d session_id %d driver id %d controller_id %s",
-               __FUNCTION__, audit_trans_msg.oper_type,
-               audit_trans_msg.session_id, audit_trans_msg.driver_id,
-               audit_trans_msg.controller_id.c_str());
   return ret;
 }
 
@@ -789,7 +778,9 @@ TcCommonRet TcLibMsgUtil::GetAuditConfigMsg(
   /* Retrieval of TcAuditGlobalAbortMsg from IPC API */
   TcCommonRet ret = TC_SUCCESS;
   tc::TcUtilRet util_ret = tc::TCUTIL_RET_SUCCESS;
-  uint8_t db_type = 0, service_type = 0;
+  uint8_t db_type = 0, service_type = 0, config_mode = 0;
+  uint64_t version = 0;
+  std::string vtn_name;
   uint32_t argcount = 0, idx = 0;
 
   if (session == NULL) {
@@ -808,10 +799,12 @@ TcCommonRet TcLibMsgUtil::GetAuditConfigMsg(
     return TC_FAILURE;
   }
 
+  /*read from the session and update the session and config id*/
+
   // db_type
   util_ret = tc::TcServerSessionUtils::get_uint8(session, idx, &db_type);
   if (util_ret != tc::TCUTIL_RET_SUCCESS) {
-    pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+    pfc_log_error("%s %d TcServerSessionUtils fail dbtype with %d",
                   __FUNCTION__, __LINE__, util_ret);
     return TC_FAILURE;
   }
@@ -822,14 +815,50 @@ TcCommonRet TcLibMsgUtil::GetAuditConfigMsg(
   util_ret = tc::TcServerSessionUtils::get_uint8(session, idx,
                                                       &service_type);
   if (util_ret != tc::TCUTIL_RET_SUCCESS) {
-    pfc_log_error("%s %d TcServerSessionUtils failed with %d",
+    pfc_log_error("%s %d TcServerSessionUtils fail op with %d",
                   __FUNCTION__, __LINE__, util_ret);
     return TC_FAILURE;
   }
   audit_config_msg.service_type = (TcServiceType)service_type;
 
-  pfc_log_info("%s db_type %d service_type %d", __FUNCTION__,
-               audit_config_msg.db_type, audit_config_msg.service_type);
+  // config_mode
+  idx++;
+  util_ret = tc::TcServerSessionUtils::get_uint8(session, idx,
+                                                      &config_mode);
+  if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+    pfc_log_error("%s %d TcServerSessionUtils fail config_mode with %d",
+                  __FUNCTION__, __LINE__, util_ret);
+    return TC_FAILURE;
+  }
+  audit_config_msg.config_mode = (TcConfigMode)config_mode;
+
+  // vtn_name
+  idx++;
+  util_ret = tc::TcServerSessionUtils::get_string(session, idx,
+                                                      vtn_name);
+  if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+    pfc_log_error("%s %d TcServerSessionUtils fail vtn_name with %d",
+                  __FUNCTION__, __LINE__, util_ret);
+    return TC_FAILURE;
+  }
+  audit_config_msg.vtn_name = vtn_name;
+
+  // Version
+  idx++;
+  util_ret = tc::TcServerSessionUtils::get_uint64(session, idx,
+                                                  &version);
+  if (util_ret != tc::TCUTIL_RET_SUCCESS) {
+    pfc_log_error("%s %d TcServerSessionUtils fail version with %d",
+                  __FUNCTION__, __LINE__, util_ret);
+    return TC_FAILURE;
+  }
+  audit_config_msg.version = version;
+
+  pfc_log_info("%s db_type %d service_type %d version %"PFC_PFMT_u64
+               "conf_mode %d vtn-name %s", __FUNCTION__,
+               audit_config_msg.db_type, audit_config_msg.service_type,
+               audit_config_msg.version,
+               audit_config_msg.config_mode, audit_config_msg.vtn_name.c_str());
   return ret;
 }
 }   // namespace tclib

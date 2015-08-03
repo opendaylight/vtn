@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -21,39 +21,43 @@
 #include "table_upgrade.hh"
 
 
-//Writes Copyrights information
+// Writes Copyrights information
 void copyrights(){
-  upll_downgrade_file << copyrights_header.c_str();
+  upll_downgrade_file << copyrights_header_2014.c_str();
 }
 
-//write header information
+// Writes header information
 void header(char *version) {
   char upll_filename[80];
   sprintf(upll_filename,"\n/**\n *  %s0000_upll_down.sql\n",version);
   upll_downgrade_file << upll_filename;
-  upll_downgrade_file << 
-    " *  Contains SQL commands to update UPLL DB schema for " 
+  upll_downgrade_file <<
+    " *  Contains SQL commands to update UPLL DB schema for "
     << version << " downgrade\n";
   upll_downgrade_file << " */\n";
 }
 
 // Method to validate table(s)
 void table_validation(char *version) {
-  upll_downgrade_file << "\n\n/* VALIDATION FOR DOWNGRADE FROM " 
+  upll_downgrade_file << "\n\n/* VALIDATION FOR DOWNGRADE FROM "
     << version << " */\n";
   upll_downgrade_file << endl << u12u13_error_check.c_str() << endl;
 }
 
 // Method to remove table(s)
-void remove_table(uudstbl::kDalTableIndex new_drop_table[],
-                      uint16_t table_size) {
-  uint16_t cfg_idx;
+void remove_table(uudstbl::kDalTableIndex new_drop_table[], uint16_t table_size,
+                  uint16_t cfg_idx = kUpllDbNumCfgId) {
+  bool break_flag = false;
   uint16_t tbl_idx;
   string line;
 
-  upll_downgrade_file << "\n/* REMOVING EXISTING TABLE(S) */\n";
+  if (cfg_idx != kUpllDbNumCfgId) {
+    break_flag = true;
+    goto jump;
+  }
 
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
+    jump:
     for (int idx = (table_size/sizeof(uudstbl::kDalTableIndex)-1);
          idx >= 0;
          idx--) {
@@ -68,28 +72,56 @@ void remove_table(uudstbl::kDalTableIndex new_drop_table[],
       }
       line += ";";
       upll_downgrade_file << endl << line.c_str();
-    }  // for all tables
-  }  // for all config types
+    }
+    if (break_flag == true)
+      break;
+  }
+  upll_downgrade_file << endl;
+}
+
+void removeEntireTableOnParticularConfig(UpllDbCfgId cfg_idx) {
+  string line;
+
+  for (int tbl_idx = (uudstbl::kDalNumTables-1);
+       tbl_idx >= 0;
+       tbl_idx--) {
+    if(tbl_idx == uudstbl::kDbiVtnCfgTblDirtyTbl ||
+       tbl_idx == uudstbl::kDbiCtrlrTbl ||
+       tbl_idx == uudstbl::kDbiUpllSystemTbl ||
+       tbl_idx == uudstbl::kDbiCfgTblDirtyTbl)
+      continue;
+    line.clear();
+    line += " DROP TABLE ";
+    line += "IF EXISTS ";
+    line += get_cfg_str(static_cast<UpllDbCfgId>(cfg_idx));
+    line += uudschema::TableName(tbl_idx);
+    if (cfg_idx == kCfgIdCandidate) {
+      line += " cascade";
+    }
+    line += ";";
+    upll_downgrade_file << endl << line.c_str();
+  }
+  upll_downgrade_file << endl << endl;
 }
 
 // Method to update already existing tables.
 void remove_column(DalTableExtension extension_table[],
-                       uint16_t table_size) {
+                   uint16_t table_size) {
   uint16_t cfg_idx;
   uint16_t tbl_idx;
   uint16_t col_idx;
   string line;
 
-  upll_downgrade_file << 
+  upll_downgrade_file <<
     "\n\n/* REMOVING EXISTING COLUMN(S) */\n\n";
 
-  //kDalTableIndex  upgrade_new_table used to get the newly added table names
   for (cfg_idx = 0; cfg_idx < kUpllDbNumCfgId; cfg_idx++) {
     for (int idx = (table_size/16); idx >= 0; idx--) {
       for (uint16_t column_count = 0;
-           column_count < extension_table[idx].num_columns; 
+           column_count < extension_table[idx].num_columns;
            column_count++) {
         tbl_idx = extension_table[idx].table_id;
+
         // Alter Table
         line.clear();
         if(column_count == 0) {
@@ -113,14 +145,15 @@ void remove_column(DalTableExtension extension_table[],
           line += ",";
         }
         upll_downgrade_file << line.c_str() << endl;
-      } // for all columns
+      }
       line.clear();
-    }   // for all tables
-  }     // for all config types
-}       // build_update_table_script ends
+    }
+  }
+}
 
 // Removing columns in particular configs
-void removeColumnsInParticularTable(DalAllTableExtension extension_table[], UpllDbCfgId cfg_idx) {
+void removeColumnsInParticularTable(DalAllTableExtension extension_table[],
+                                    UpllDbCfgId cfg_idx) {
   uint16_t col_idx, numCols;
   string line,cfg_id;
   line.clear();cfg_id.clear();
@@ -130,7 +163,6 @@ void removeColumnsInParticularTable(DalAllTableExtension extension_table[], Upll
   upll_downgrade_file <<
     "\n\n/* REMOVING EXISTING COLUMN(S) IN PARTICULAR CONFIGURATION TABLES */\n\n";
 
-  //kDalTableIndex  upgrade_new_table used to get the newly added table names
   for (uint16_t tbl_idx = 0; tbl_idx < uudstbl::kDalNumTables-2; tbl_idx++) {
     numCols = uudschema::TableNumCols(tbl_idx);
     for (uint16_t column_count = 0;
@@ -138,7 +170,7 @@ void removeColumnsInParticularTable(DalAllTableExtension extension_table[], Upll
          column_count++) {
 
       // Alter Table
-            line.clear();
+      line.clear();
       if(column_count == 0) {
         line += "ALTER TABLE ";
         line += cfg_id;
@@ -167,14 +199,13 @@ void removeColumnsInParticularTable(DalAllTableExtension extension_table[], Upll
         line += ",";
       }
       upll_downgrade_file << line.c_str() << endl;
-    } // for all columns
-    //upll_downgrade_file << endl;
+    }
     line.clear();
-  }  // for all tables
-}  // for all config types
+  }
+}
 
-//Rename existing column(s)
-void rename_to_oldColumn(renameColumnInfo rename_col[],uint16_t table_size) {
+// Rename existing column(s)
+void rename_to_oldColumn(renameColumnInfo rename_col[], uint16_t table_size) {
   uint16_t tbl_idx;
   uint16_t cfg_idx, col_idx;
   int idx;
@@ -206,9 +237,12 @@ void rename_to_oldColumn(renameColumnInfo rename_col[],uint16_t table_size) {
   upll_downgrade_file << drop_renameFunction.c_str() << endl;
 }
 
+void removeTableComments() {
+  upll_downgrade_file << "\n/* REMOVING EXISTING TABLE(S) */\n";
+}
 
-//Main to call relevant downgrade functionalities based on the version input
-int main ( int argc, char *argv[] )
+// Main to call relevant downgrade functionalities based on the version input
+int main(int argc, char *argv[])
 {
   string filename;
 
@@ -227,6 +261,7 @@ int main ( int argc, char *argv[] )
     copyrights();
     header(argv[1]);
     table_validation(argv[1]);
+    removeTableComments();
     remove_table(u12u13_new_table,sizeof(u12u13_new_table));
     remove_column(u12u13_extension_table,sizeof(u12u13_extension_table));
   }
@@ -236,11 +271,34 @@ int main ( int argc, char *argv[] )
 
     copyrights();
     header(argv[1]);
+    removeTableComments();
     remove_table(u13u14_new_table,sizeof(u13u14_new_table));
     remove_column(u13u14_extension_table,sizeof(u13u14_extension_table));
     removeColumnsInParticularTable(u13u14_extension_all_table, kCfgIdCandidate);
     rename_to_oldColumn(U13U14RenameColumn,sizeof(U13U14RenameColumn));
   }
+  else if((strcmp(argv[1],"U16")==0)||(strcmp(argv[1],"u16")==0))
+  {
+    upll_downgrade_file.open(filename.c_str());
+
+    copyrights();
+    header(argv[1]);
+    removeTableComments();
+    remove_table(u14u16_new_table,sizeof(u14u16_new_table), kCfgIdSysTbl);
+    removeEntireTableOnParticularConfig(kCfgIdTempDel);
+  }
+
+  else if((strcmp(argv[1],"U17")==0)||(strcmp(argv[1],"u17")==0))
+  {
+    upll_downgrade_file.open(filename.c_str());
+
+    copyrights();
+    header(argv[1]);
+    removeTableComments();
+    remove_table(u16u17_new_table,sizeof(u16u17_new_table), kCfgIdCandidate);
+    remove_table(u16u17_new_table_1,sizeof(u16u17_new_table_1));
+  }
+
   else
   {
     printf("\nDowngrade script not available for this version\n");

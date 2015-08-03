@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -77,14 +77,15 @@ UncRespCode Kt_Link::DeleteKeyInstance(OdbcmConnectionHandler *db_conn,
                              UNC_OPT1_NORMAL,
                              UNC_OPT2_NONE,
                              operator_vector,
-                             old_value);
+                             old_value, NOTAPPLIED,
+                             false, PFC_FALSE);
   ODBCM_RC_STATUS delete_db_status = physical_layer->get_odbc_manager()-> \
       DeleteOneRow((unc_keytype_datatype_t)data_type,
                    kt_link_dbtableschema, db_conn);
   if (delete_db_status != ODBCM_RC_SUCCESS) {
     if (delete_db_status == ODBCM_RC_CONNECTION_ERROR) {
       // log fatal error to log daemon
-      pfc_log_fatal("DB connection not available or cannot access DB");
+      UPPL_LOG_FATAL("DB connection not available or cannot access DB");
       delete_status = UNC_UPPL_RC_ERR_DB_ACCESS;
     } else if (delete_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
       pfc_log_error("given instance does not exist");
@@ -118,7 +119,7 @@ UncRespCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
                                      uint32_t operation_type) {
   if (operation_type != UNC_OP_READ && operation_type != UNC_OP_READ_SIBLING &&
       operation_type != UNC_OP_READ_SIBLING_BEGIN) {
-    pfc_log_trace ("This function not allowed for read next/bulk/count");
+    pfc_log_trace("This function not allowed for read next/bulk/count");
     return UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
   }
   pfc_log_debug("Inside ReadInternal of KT_LINK");
@@ -152,7 +153,8 @@ UncRespCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
                                      vect_link_id, option,
                                      option);
     if (firsttime) {
-      pfc_log_trace("Clearing key_val and val_struct vectors for the firsttime");
+      pfc_log_trace(
+          "Clearing key_val and val_struct vectors for the firsttime");
       key_val.clear();
       val_struct.clear();
       firsttime = false;
@@ -173,14 +175,14 @@ UncRespCode Kt_Link::ReadInternal(OdbcmConnectionHandler *db_conn,
     if ((vect_val_link_st.size() == UPPL_MAX_REP_CT) &&
                      (operation_type != UNC_OP_READ)) {
       pfc_log_debug("Op:%d, key.size:%" PFC_PFMT_SIZE_T"fetch_next_set",
-                    operation_type,key_val.size());
+                    operation_type, key_val.size());
       key_struct = reinterpret_cast<void *>(key_val[key_val.size() - 1]);
       operation_type = UNC_OP_READ_SIBLING;
       continue;
     } else {
       break;
     }
-  } while(true);
+  } while (true);
   return read_status;
 }
 
@@ -341,7 +343,8 @@ UncRespCode Kt_Link::ReadBulkInternal(
                              UNC_OPT1_NORMAL,
                              UNC_OPT2_NONE,
                              operator_vector,
-                             old_value);
+                             old_value, NOTAPPLIED,
+                             false, PFC_FALSE);
   uint32_t no_of_query = 1;
   vector<ODBCMOperator>:: iterator iter =
       find(operator_vector.begin(),
@@ -519,8 +522,7 @@ UncRespCode Kt_Link::PerformSemanticValidation(
   // In case of Create operation, key should not exist
   if (operation == UNC_OP_CREATE) {
     if (key_status == UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance already exists");
-      pfc_log_error("Hence Create operation not allowed");
+      pfc_log_error("Key exists,CREATE not allowed");
       status = UNC_UPPL_RC_ERR_INSTANCE_EXISTS;
     } else if (key_status == UNC_UPPL_RC_ERR_DB_ACCESS) {
       pfc_log_error("DB Access failure");
@@ -536,8 +538,7 @@ UncRespCode Kt_Link::PerformSemanticValidation(
       pfc_log_error("DB Access failure");
       status = key_status;
     } else if (key_status != UNC_RC_SUCCESS) {
-      pfc_log_error("Key instance does not exist");
-      pfc_log_error("Hence update/delete/read operation not allowed");
+      pfc_log_error("Key not found,U/D/R opern not allowed");
       status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
     } else {
       pfc_log_debug("key exist, update/del/read oper allowed");
@@ -689,7 +690,7 @@ UncRespCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
   ODBCM_RC_STATUS update_db_status =
       physical_layer->get_odbc_manager()->UpdateOneRow(
           (unc_keytype_datatype_t)data_type,
-          kt_link_dbtableschema, db_conn);
+          kt_link_dbtableschema, db_conn, true);
   if (update_db_status == ODBCM_RC_ROW_NOT_EXISTS) {
     pfc_log_info("No instance available for update");
     return UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
@@ -725,7 +726,8 @@ UncRespCode Kt_Link::SetOperStatus(OdbcmConnectionHandler *db_conn,
         PhysicalLayer *physical_layer = PhysicalLayer::get_instance();
         // Notify operstatus modifications
         UncRespCode status = (UncRespCode) physical_layer
-            ->get_ipc_connection_manager()->SendEvent(&ser_evt);
+            ->get_ipc_connection_manager()->SendEvent(&ser_evt,
+                     controller_name, UPPL_EVENTS_KT_LINK);
         pfc_log_debug("Event notification status %d", status);
       } else {
         pfc_log_error("Server Event addOutput failed");
@@ -819,7 +821,7 @@ UncRespCode Kt_Link::IsKeyExists(OdbcmConnectionHandler *db_conn,
   } else if (check_db_status == ODBCM_RC_ROW_EXISTS) {
     pfc_log_debug("DB returned success for Row exists");
   } else {
-    pfc_log_info("DB Returned failure for IsRowExists");
+    pfc_log_debug("DB Returned failure for IsRowExists");
     check_status = UNC_UPPL_RC_ERR_NO_SUCH_INSTANCE;
   }
   pfc_log_debug("check_status = %d", check_status);
@@ -1152,7 +1154,6 @@ UncRespCode Kt_Link::PerformRead(OdbcmConnectionHandler *db_conn,
                                     uint32_t option1,
                                     uint32_t option2,
                                     uint32_t max_rep_ct) {
-
   physical_response_header rsh = {session_id,
       configuration_id,
       operation_type,
@@ -1279,8 +1280,7 @@ UncRespCode Kt_Link::ReadLinkValFromDB(
     vector<val_link_st_t> &vect_val_link_st,
     vector<key_link_t> &link_id,
     uint32_t option1,
-    uint32_t option2,
-    pfc_bool_t is_state) {
+    uint32_t option2) {
   if (operation_type < UNC_OP_READ) {
     // Unsupported operation type for this function
     return UNC_RC_SUCCESS;
@@ -1300,7 +1300,8 @@ UncRespCode Kt_Link::ReadLinkValFromDB(
                              operation_type, data_type,
                              option1, option2,
                              vect_prim_key_operations,
-                             old_value);
+                             old_value, NOTAPPLIED,
+                             false, PFC_FALSE);
 
   if (operation_type == UNC_OP_READ) {
     read_db_status = physical_layer->get_odbc_manager()->
@@ -1313,10 +1314,10 @@ UncRespCode Kt_Link::ReadLinkValFromDB(
               option2 == UNC_OPT2_MATCH_SWITCH2 ||
               option2 == UNC_OPT2_MATCH_BOTH_SWITCH))) {
     pfc_log_debug("calling get sibling rows with filtering");
-    if(option2 == UNC_OPT2_MATCH_SWITCH2) {
+    if (option2 == UNC_OPT2_MATCH_SWITCH2) {
       pfc_log_debug("get sibling rows with reorder based on sw2");
       kt_link_dbtableschema.frame_explicit_order_=
-        " ORDER BY controller_name, switch_id2, port_id2, switch_id1, port_id1 ";
+      " ORDER BY controller_name, switch_id2, port_id2, switch_id1, port_id1 ";
     }
     read_db_status = physical_layer->get_odbc_manager()->
         GetSiblingRows((unc_keytype_datatype_t)data_type, max_rep_ct,
@@ -1493,7 +1494,7 @@ UncRespCode Kt_Link::GetLinkValidFlag(
         link_key = NULL;
       }
     } else {
-      pfc_log_info("update link valid ret null val");
+      pfc_log_debug("update link valid ret null val");
     }
   } else {
     pfc_log_info("read internal failure from ctr updatevalid");

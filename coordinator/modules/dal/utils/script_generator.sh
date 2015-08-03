@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2014 NEC Corporation
+# Copyright (c) 2014-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -15,7 +15,6 @@
 # *   Copies the downgrade SQL file to /dev/src/sql/downgrade/
 # *   Copies the delete SQL file to current working directory
 # * Usage : sh table_creation.sh available_version(U13/U14/...)
-# */
 
 
 #!/bin/sh
@@ -23,7 +22,9 @@
 version=${1^^}  #converting string to uppercase
 
 if [ "$version" == "U13" ] \
-   || [ "$version" == "U14" ];
+   || [ "$version" == "U14" ] \
+   || [ "$version" == "U16" ] \
+   || [ "$version" == "U17" ];
 then
   make clean;
   make all;
@@ -35,7 +36,7 @@ then
 else
   echo ""
   echo "<< Please enter the correct available version >>"
-  echo "**  usage: $0 version(U13/U14...) **"
+  echo "**  usage: $0 version(U13/U14/U16/U17...) **"
   echo ""
 fi
 

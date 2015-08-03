@@ -69,7 +69,7 @@
         <Valve className="org.apache.catalina.valves.AccessLogValve"
                directory="${vtn.logdir}" prefix="access_log." suffix=".txt"
                fileDateFormat="yyyy-MM" resolveHosts="false"
-               pattern="%{yyyy-MM-dd HH:mm:ss.SSS z}t: %a %u &quot;%r&quot; %s %b" />
+               pattern="%{yyyy-MM-dd HH:mm:ss.SSS z}t: %a %u &quot;%r&quot; %s %b %{org.opendaylight.vtn.unc.requestbody}r %{org.opendaylight.vtn.unc.errormessage}" />
 
       </Host>
     </Engine>

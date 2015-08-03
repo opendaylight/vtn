@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,7 +23,6 @@ import org.opendaylight.vtn.javaapi.constants.VtnServiceConsts;
 import org.opendaylight.vtn.javaapi.constants.VtnServiceJsonConsts;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceException;
 import org.opendaylight.vtn.javaapi.exception.VtnServiceExceptionHandler;
-import org.opendaylight.vtn.javaapi.init.VtnServiceConfiguration;
 import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.conversion.IpcDataUnitWrapper;
 import org.opendaylight.vtn.javaapi.ipc.enums.IpcRequestPacketEnum;
@@ -277,7 +276,7 @@ public class IpcRequestProcessor {
 				requestPacket.setDataType(new IpcUint32(
 						UncDataType.UNC_DT_CANDIDATE.ordinal()));
 			} else {
-				LOG.warning("No need to update data type from state to another one");
+				LOG.debug("No need to update data type from state to another one");
 			}
 		} else {
 			LOG.debug("No need to do anything");
@@ -542,7 +541,10 @@ public class IpcRequestProcessor {
 			}
 
 			// execute the operation
+			long start = System.currentTimeMillis();
 			status = session.invoke();
+			LOG.debug("The treatment of under layer cost the following time: "
+					+ (System.currentTimeMillis() - start) + "(ms)");
 			if (status == ClientSession.RESP_FATAL) {
 				throw new IpcException("Server Response Failure");
 			} else {
@@ -551,62 +553,90 @@ public class IpcRequestProcessor {
 								.getResponse(VtnServiceConsts.IPC_RESUL_CODE_INDEX));
 				LOG.debug("Result code received: " + resultCode);
 				final int keyType = requestPacket.getKeyType().intValue();
+				if (null == resultCode) {
+					final JsonObject error = new JsonObject();
+					error.addProperty(VtnServiceJsonConsts.CODE,Integer.toString(
+						UncCommonEnum.UncResultCode.UNC_INTERNAL_SERVER_ERROR.getValue()));
+					error.addProperty(VtnServiceJsonConsts.MSG,
+						UncCommonEnum.UncResultCode.UNC_INTERNAL_SERVER_ERROR.getMessage());
+					errorJson = new JsonObject();
+					errorJson.add(VtnServiceJsonConsts.ERROR, error);
 
-				if (requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
-						.ordinal()
-						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING
-								.ordinal()
-						|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_COUNT
-								.ordinal()
-						|| VtnServiceInitManager.getReadAsList().contains(
+					throw new VtnServiceException(
+								Thread.currentThread()
+									.getStackTrace()[1].getMethodName(),
+								Integer.toString(UncCommonEnum.UncResultCode
+									.UNC_INTERNAL_SERVER_ERROR.getValue()),
+								UncCommonEnum.UncResultCode.UNC_INTERNAL_SERVER_ERROR.getMessage());
+				} else {
+					if (requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_BEGIN
+							.ordinal()
+							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING
+									.ordinal()
+							|| requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ_SIBLING_COUNT
+									.ordinal()
+							|| VtnServiceInitManager.getReadAsList().contains(
+									requestPacketEnumName)
+							|| VtnServiceInitManager.getMultiCallList().contains(
+									requestPacketEnumName)) {
+						if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
+								&& keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
+								&& Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+							noSuchInstanceFlag = true;
+							LOG.debug("No such instance case for UPLL");
+						} else if (keyType >= UncCommonEnum.MIN_PHYSICAL_KEYTYPE
+								&& keyType <= UncCommonEnum.MAX_PHYSICAL_KEYTYPE
+								&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+							noSuchInstanceFlag = true;
+							LOG.debug("No such instance case for UPPL");
+						} else {
+							LOG.debug(" Either Key Type does not exists or operation is not success");
+						}
+
+						if (VtnServiceInitManager.getMultiCallList().contains(
 								requestPacketEnumName)
-						|| VtnServiceInitManager.getMultiCallList().contains(
-								requestPacketEnumName)) {
-					if (keyType >= UncCommonEnum.MIN_LOGICAL_KEYTYPE
-							&& keyType <= UncCommonEnum.MAX_LOGICAL_KEYTYPE
-							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-						noSuchInstanceFlag = true;
-						LOG.debug("No such instance case for UPLL");
-					} else if (keyType >= UncCommonEnum.MIN_PHYSICAL_KEYTYPE
-							&& keyType <= UncCommonEnum.MAX_PHYSICAL_KEYTYPE
+								&& requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ
+										.ordinal()) {
+							if (requestPacket
+									.getOption2()
+									.compareTo(
+											IpcDataUnitWrapper
+													.setIpcUint32Value((UncOption2Enum.UNC_OPT2_NEIGHBOR
+															.ordinal()))) != 0) {
+								noSuchInstanceFlag = false;
+							}
+						}
+					} else if (keyType == UncKeyTypeEnum.UNC_KT_PORT.getValue()
 							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
 						noSuchInstanceFlag = true;
-						LOG.debug("No such instance case for UPPL");
-					} else {
-						LOG.debug(" Either Key Type does not exists or operation is not success");
+					} else if (keyType == UncKeyTypeEnum.UNC_KT_LOGICAL_PORT.getValue()
+							&& requestPacket.getOption2().intValue() == UncOption2Enum.UNC_OPT2_BOUNDARY.ordinal()
+							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+						noSuchInstanceFlag = true;
+					} else if (keyType == UncKeyTypeEnum.UNC_KT_LOGICAL_MEMBER_PORT.getValue()
+							&& requestPacket.getOption2().intValue() == UncOption2Enum.UNC_OPT2_NEIGHBOR.ordinal()
+							&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
+						noSuchInstanceFlag = true;
 					}
-					
-					if (VtnServiceInitManager.getMultiCallList().contains(
-							requestPacketEnumName)
-							&& requestPacket.getOperation().intValue() == UncOperationEnum.UNC_OP_READ
-									.ordinal()) {
-						if (requestPacket
-								.getOption2()
-								.compareTo(
-										IpcDataUnitWrapper
-												.setIpcUint32Value((UncOption2Enum.UNC_OPT2_NEIGHBOR
-														.ordinal()))) != 0) {
-							noSuchInstanceFlag = false;
-						}
-					}
-				} else if (keyType == UncKeyTypeEnum.UNC_KT_PORT.getValue()
-						&& Integer.parseInt(resultCode) == VtnServiceConsts.UPPL_RC_ERR_NO_SUCH_INSTANCE) {
-					noSuchInstanceFlag = true;
-				}
 
-				// if return code is not success, then create the error Json for
-				// received result code
-				if (null == resultCode
-						|| UncIpcErrorCode.RC_SUCCESS != Integer
-								.parseInt(resultCode)) {
-					if (noSuchInstanceFlag) {
-						status = UncResultCode.UNC_SUCCESS.getValue();
+					// if return code is not success, then create the error Json for
+					// received result code
+					if (UncIpcErrorCode.RC_SUCCESS != Integer.parseInt(resultCode)) {
+						if (noSuchInstanceFlag) {
+							status = UncResultCode.UNC_SUCCESS.getValue();
+						} else {
+							createErrorJson(Integer.parseInt(resultCode));
+							throw new VtnServiceException(
+								Thread.currentThread()
+									.getStackTrace()[1].getMethodName(),
+								getErrorJson().get(VtnServiceJsonConsts.ERROR).getAsJsonObject()
+									.get(VtnServiceJsonConsts.CODE).toString(),
+								getErrorJson().get(VtnServiceJsonConsts.ERROR).getAsJsonObject()
+									.get(VtnServiceJsonConsts.MSG).toString());
+						}
 					} else {
-						createErrorJson(Integer.parseInt(resultCode));
-						throw new IpcException("Server Response Failure");
+						status = UncResultCode.UNC_SUCCESS.getValue();
 					}
-				} else {
-					status = UncResultCode.UNC_SUCCESS.getValue();
 				}
 			}
 		} catch (final IpcException e) {

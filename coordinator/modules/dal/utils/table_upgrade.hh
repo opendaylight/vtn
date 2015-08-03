@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -10,7 +10,7 @@
 /*
  *    table_upgrade.hh
  *    Contians upgrade schema information for tables
- *  
+ *
  */
 
 #ifndef TABLE_UPGRADE_HH_
@@ -32,11 +32,11 @@ namespace uudal = unc::upll::dal;
 
 ofstream upll_upgrade_file;
 
-string drop_addFunction = 
+string drop_addFunction =
   "DROP FUNCTION f_add_col_if_not_exists(_tbl varchar(32), "
   "_col varchar(32), _type varchar(32));";
 
-string altertable_storedprocedure = 
+string altertable_storedprocedure =
   "CREATE OR REPLACE function f_add_col_if_not_exists(_tbl varchar(32), "
   "_col varchar(32), _type varchar(32)) "
   "RETURNS boolean\n"
@@ -59,11 +59,11 @@ string altertable_storedprocedure =
   "  END\n"
   "  $func$;\n";
 
-string drop_renameFunction = 
+string drop_renameFunction =
   "DROP FUNCTION f_rename_col_if_exists(_tbl varchar(32), "
   "_col varchar(32), _newCol varchar(32));";
 
-string renametable_storedprocedure = 
+string renametable_storedprocedure =
   "CREATE OR REPLACE function f_rename_col_if_exists(_tbl varchar(32), "
   "_col varchar(32), _newCol varchar(32)) RETURNS boolean\n"
   "  LANGUAGE plpgsql AS\n"
@@ -85,10 +85,8 @@ string renametable_storedprocedure =
   "  END\n"
   "  $func$;\n";
 
-
-
-//Names of newly tables
-uudstbl::kDalTableIndex u12u13_new_table[] = 
+// Names of newly tables
+uudstbl::kDalTableIndex u12u13_new_table[] =
   {
     uudstbl::kDbiVterminalTbl,
     uudstbl::kDbiVtermIfTbl,
@@ -99,7 +97,32 @@ uudstbl::kDalTableIndex u12u13_new_table[] =
 
 uudstbl::kDalTableIndex u13u14_new_table[] =  { uudstbl::kDbiCfgTblDirtyTbl };
 
+uudstbl::kDalTableIndex u14u16_new_table[] =  { uudstbl::kDbiUpllSystemTbl };
 
+uudstbl::kDalTableIndex u16u17_new_table[] =
+  {
+   uudstbl::kDbiVtnCfgTblDirtyTbl,
+   uudstbl::kDbiPpScratchTbl,
+   uudstbl::kDbiFlScratchTbl,
+   uudstbl::kDbiSpdScratchTbl
+  };
+uudstbl::kDalTableIndex u16u17_new_table_1[] =
+  {
+   uudstbl::kDbiConvertVbrTbl,
+   uudstbl::kDbiConvertVbrIfTbl,
+   uudstbl::kDbiConvertVlinkTbl,
+   uudstbl::kDbiVbrPortMapTbl,
+   uudstbl::kDbiUnifiedNwTbl,
+   uudstbl::kDbiUnwLabelTbl,
+   uudstbl::kDbiUnwLabelRangeTbl,
+   uudstbl::kDbiUnwSpineDomainTbl,
+   uudstbl::kDbiVtnUnifiedTbl,
+   uudstbl::kDbiConvertVtunnelTbl,
+   uudstbl::kDbiConvertVtunnelIfTbl,
+   uudstbl::kDbiVBIdTbl,
+   uudstbl::kDbiGVtnIdTbl,	
+   uudstbl::kDbiVtnGatewayPortTbl	
+ };
 // Tables to be updated with the default values
 struct u12u13UpdateDefaultTable {
   uudstbl::kDalTableIndex u12u13_update_table_id;
@@ -107,15 +130,15 @@ struct u12u13UpdateDefaultTable {
 };
 
 
-std::string u12u13_update_default_query = 
+std::string u12u13_update_default_query =
   "UPDATE $ SET \n"
   " redirect_direction=0,\n"
   " valid_redirect_direction=1,\n"
   " cs_redirect_direction=cs_redirect_node \n"
   " WHERE valid_redirect_node=1;";
 
-//Tables to be modified
-u12u13UpdateDefaultTable u12u13_update_default_table[] = 
+// Tables to be modified
+u12u13UpdateDefaultTable u12u13_update_default_table[] =
   {
     { uudstbl::kDbiVbrFlowFilterEntryTbl,u12u13_update_default_query },
     { uudstbl::kDbiVbrIfFlowFilterEntryTbl,u12u13_update_default_query },
@@ -131,7 +154,7 @@ struct DalTableExtension {
 };
 
 
-//Attributes to be modified
+// Attributes to be modified
 DalTableExtension  u12u13_extension_table[] =
   {
     { uudstbl::kDbiVbrFlowFilterEntryTbl,
@@ -171,7 +194,7 @@ struct renameColumnInfo {
   uudal::DalColumnIndex new_column_id;
 };
 
-renameColumnInfo  U13U14RenameColumn[] = 
+renameColumnInfo  U13U14RenameColumn[] =
   {
     { uudstbl::kDbiVbrTbl, "fault_count", uudstbl::vbridge::kDbiUnknownCount },
     { uudstbl::kDbiVterminalTbl, "fault_count", uudstbl::vterminal::kDbiUnknownCount },
@@ -275,5 +298,4 @@ DalAllTableExtension u13u14_extension_all_table[] =
   };
 
 #endif  //TABLE_UPGRADE_HH_
-
 

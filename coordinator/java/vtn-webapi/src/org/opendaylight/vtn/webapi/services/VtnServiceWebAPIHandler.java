@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -26,6 +26,7 @@ import org.opendaylight.vtn.webapi.pojo.SessionBean;
 import org.opendaylight.vtn.webapi.utils.DataConverter;
 import org.opendaylight.vtn.webapi.utils.VtnServiceCommonUtil;
 import org.opendaylight.vtn.webapi.utils.VtnServiceWebUtil;
+import org.opendaylight.vtn.webapi.utils.ConfigurationManager;
 
 /**
  * The Class VtnServiceWebAPIHandler.This class is defined at the handler layer
@@ -37,6 +38,16 @@ public class VtnServiceWebAPIHandler {
 	/** The Constant LOGGER. */
 	private static final Logger LOG = Logger
 			.getLogger(VtnServiceWebAPIHandler.class.getName());
+
+	/** Status of commit **/
+	private int commitStatus = ApplicationConstants.SUCCESS;
+
+	/**
+	 * Get Status of commit
+	 */
+	public int getCommitStatus() {
+		return commitStatus;
+	}
 
 	/**
 	 * Get. This method will convert the httprequest to JSON format and then
@@ -63,22 +74,29 @@ public class VtnServiceWebAPIHandler {
 				resourcePath);
 		resourcePath = VtnServiceCommonUtil
 				.removeCountOrDetailFromURI(resourcePath);
-		final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
-		if (null != paramsMap && !paramsMap.isEmpty()) {
-			serviceRequest = DataConverter.convertMapToJson(paramsMap,
-					serviceRequest);
-			serviceResponse = vtnServiceWebAPIController.get(
-					VtnServiceWebUtil.prepareHeaderJson(request),
-					serviceRequest, resourcePath);
+
+		// The URI /configuration/diff is not supported by WebAPI since U17.
+		if (ApplicationConstants.URI_DIFF.equals(resourcePath)) {
+			serviceResponse = VtnServiceWebUtil.prepareErrResponseJson(
+					HttpErrorCodeEnum.UNC_NOT_FOUND.getCode());
 		} else {
-			if (VtnServiceCommonUtil.validateGetAPI(resourcePath)) {
-				serviceResponse = vtnServiceWebAPIController.get(
-						VtnServiceWebUtil.prepareHeaderJson(request),
-						resourcePath);
-			} else {
+			final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
+			if (null != paramsMap && !paramsMap.isEmpty()) {
+				serviceRequest = DataConverter.convertMapToJson(paramsMap,
+						serviceRequest);
 				serviceResponse = vtnServiceWebAPIController.get(
 						VtnServiceWebUtil.prepareHeaderJson(request),
 						serviceRequest, resourcePath);
+			} else {
+				if (VtnServiceCommonUtil.validateGetAPI(resourcePath)) {
+					serviceResponse = vtnServiceWebAPIController.get(
+							VtnServiceWebUtil.prepareHeaderJson(request),
+							resourcePath);
+				} else {
+					serviceResponse = vtnServiceWebAPIController.get(
+							VtnServiceWebUtil.prepareHeaderJson(request),
+							serviceRequest, resourcePath);
+				}
 			}
 		}
 		LOG.debug("serviceResponse : " + serviceResponse);
@@ -107,15 +125,17 @@ public class VtnServiceWebAPIHandler {
 		try {
 			final String resourcePath = VtnServiceCommonUtil
 					.getResourceURI(request.getRequestURI());
-			final String contentType = VtnServiceCommonUtil
-					.getContentType(request);
+			final String contentType = request.getContentType();
 			serviceRequest = new VtnServiceWebUtil().prepareRequestJson(
 					request, contentType);
+			setAttributeForAccesslog(request, serviceRequest);
+
 			final JsonObject sessionJson = VtnServiceWebUtil
 					.prepareHeaderJson(request);
 			final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
 			serviceResponse = vtnServiceWebAPIController.post(sessionJson,
 					serviceRequest, resourcePath);
+			commitStatus = vtnServiceWebAPIController.getCommitStatus();
 			LOG.debug("serviceResponse : " + serviceResponse);
 		} catch (final IOException e) {
 			LOG.error(e, "Internal server error occurred : " + e.getMessage());
@@ -147,8 +167,7 @@ public class VtnServiceWebAPIHandler {
 		try {
 			final String resourcePath = VtnServiceCommonUtil
 					.getResourceURI(request.getRequestURI());
-			final String contentType = VtnServiceCommonUtil
-					.getContentType(request);
+			final String contentType = request.getContentType();
 			if (resourcePath.equals(ApplicationConstants.ALARMSTR)) {
 				final Map<String, String[]> paramsMap = request
 						.getParameterMap();
@@ -161,10 +180,19 @@ public class VtnServiceWebAPIHandler {
 				serviceRequest = new VtnServiceWebUtil().prepareRequestJson(
 						request, contentType);
 			}
+			setAttributeForAccesslog(request, serviceRequest);
+
 			final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
-			serviceResponse = vtnServiceWebAPIController.put(
-					VtnServiceWebUtil.prepareHeaderJson(request),
-					serviceRequest, resourcePath);
+			if (!VtnServiceWebUtil.checkUriForNoConfig(resourcePath)) {
+				serviceResponse = vtnServiceWebAPIController.put(
+						VtnServiceWebUtil.prepareHeaderJson(request),
+						serviceRequest, resourcePath);
+			} else {
+				serviceResponse = vtnServiceWebAPIController.putForNoConfig(
+						VtnServiceWebUtil.prepareHeaderJson(request),
+						serviceRequest, resourcePath);
+			}
+			commitStatus = vtnServiceWebAPIController.getCommitStatus();
 			LOG.debug("serviceResponse : " + serviceResponse);
 		} catch (final IOException e) {
 			LOG.error(e, "Internal server error occurred : " + e.getMessage());
@@ -197,16 +225,23 @@ public class VtnServiceWebAPIHandler {
 				.getRequestURI());
 		final Map<String, String[]> paramsMap = request.getParameterMap();
 		final VtnServiceWebAPIController vtnServiceWebAPIController = new VtnServiceWebAPIController();
-		if (null != paramsMap && !paramsMap.isEmpty()) {
-			serviceRequest = DataConverter.convertMapToJson(paramsMap,
-					serviceRequest);
-			serviceResponse = vtnServiceWebAPIController.delete(
-					VtnServiceWebUtil.prepareHeaderJson(request),
-					serviceRequest, resourcePath);
+		if (!VtnServiceWebUtil.checkUriForNoConfig(resourcePath)) {
+			if (null != paramsMap && !paramsMap.isEmpty()) {
+				serviceRequest = DataConverter.convertMapToJson(paramsMap,
+						serviceRequest);
+				setAttributeForAccesslog(request, serviceRequest);
+				serviceResponse = vtnServiceWebAPIController.delete(
+						VtnServiceWebUtil.prepareHeaderJson(request),
+						serviceRequest, resourcePath);
+			} else {
+				serviceResponse = vtnServiceWebAPIController.delete(
+						VtnServiceWebUtil.prepareHeaderJson(request), resourcePath);
+			}
 		} else {
-			serviceResponse = vtnServiceWebAPIController.delete(
+			serviceResponse = vtnServiceWebAPIController.deleteForNoConfig(
 					VtnServiceWebUtil.prepareHeaderJson(request), resourcePath);
 		}
+		commitStatus = vtnServiceWebAPIController.getCommitStatus();
 		LOG.debug("serviceResponse : " + serviceResponse);
 		LOG.trace("Complete VtnServiceWebAPIHandler#delete()");
 		return serviceResponse;
@@ -252,12 +287,12 @@ public class VtnServiceWebAPIHandler {
 											.getContentType())) {
 						LOG.info("Valid value for Accept");
 					} else {
-						LOG.error("Invalid accept hedare value");
+						LOG.error("Invalid accept header value");
 						throw new VtnServiceWebAPIException(
 								HttpErrorCodeEnum.UNC_NOT_ACCEPTABLE.getCode());
 					}
 				} else {
-					LOG.error("Invalid accept hedare value");
+					LOG.error("Invalid accept header value");
 					throw new VtnServiceWebAPIException(
 							HttpErrorCodeEnum.UNC_NOT_ACCEPTABLE.getCode());
 				}
@@ -362,5 +397,21 @@ public class VtnServiceWebAPIHandler {
 			}
 		}
 		LOG.trace("Complete VtnServiceWebAPIHandler#restrictXmlforOpenStack()");
+	}
+
+	private void setAttributeForAccesslog(final HttpServletRequest request, JsonObject serviceRequest) {
+		String requestBodyName = null;
+		try {
+			requestBodyName = ConfigurationManager.getInstance()
+				.getConfProperty(ApplicationConstants.REQ_BODY);
+		} catch (Exception e) {
+			LOG.warning("Read parameter(REQ_BODY) from the config file failed, use default value.");
+			requestBodyName = ApplicationConstants.REQ_BODY_DEF_NAME;
+		}
+		if (null == requestBodyName || requestBodyName.isEmpty()) {
+			requestBodyName = ApplicationConstants.REQ_BODY_DEF_NAME;
+		}
+
+		request.setAttribute(requestBodyName, serviceRequest.toString());
 	}
 }

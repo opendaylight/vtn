@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -17,6 +17,7 @@
 #include "itc_kt_root.hh"
 #include "itc_kt_controller.hh"
 #include "itc_kt_dataflow.hh"
+#include "itc_kt_dataflow_v2.hh"
 #include "itc_kt_ctr_dataflow.hh"
 #include "itc_kt_switch.hh"
 #include "itc_read_request.hh"
@@ -35,7 +36,8 @@ using unc::uppl::PhysicalLayer;
  * @return      : None
  * */
 ReadRequest::ReadRequest() : key_root_obj(), key_ctr_obj(), val_ctr_obj(),
-  key_dataflow_obj(), key_ctr_dataflow_obj(), key_domain_obj(),
+  key_dataflow_obj(), key_dataflow_v2_obj(), val_dataflow_v2_obj(),
+  key_ctr_dataflow_obj(), key_domain_obj(),
   val_domain_obj(), key_logical_port_obj(), val_logical_port_obj(),
   key_logical_member_port_obj(), key_switch_obj(), val_switch_obj(),
   key_port_obj(), val_port_obj(), key_link_obj(), val_link_obj(),
@@ -120,6 +122,19 @@ UncRespCode ReadRequest::ProcessReq(ServerSession &session,
       KtObj = new Kt_Dataflow();
       if (KtObj  == NULL) {
         pfc_log_error("Memory not allocated for Kt_Dataflow");
+        return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+      }
+      break;
+    case UNC_KT_DATAFLOW_V2:
+      if ((obj_req_hdr.operation != UNC_OP_READ) ||
+          (obj_req_hdr.data_type != UNC_DT_STATE)) {
+        pfc_log_error("KtDataflow supports only Read Operation");
+        rsh.result_code = UNC_UPPL_RC_ERR_OPERATION_NOT_ALLOWED;
+      }
+      GetDataflowV2Structure(session, key_struct, val_struct, rsh);
+      KtObj = new Kt_DataflowV2();
+      if (KtObj  == NULL) {
+        pfc_log_error("Memory not allocated for Kt_DataflowV2");
         return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
       }
       break;
@@ -227,12 +242,21 @@ UncRespCode ReadRequest::ProcessReq(ServerSession &session,
     case UNC_OP_READ_SIBLING:
     case UNC_OP_READ_SIBLING_COUNT:
       // form validate request for READ operation
-      resp_code = KtObj->ValidateRequest(db_conn,
+      if (obj_req_hdr.key_type != UNC_KT_DATAFLOW_V2)
+        resp_code = KtObj->ValidateRequest(db_conn,
                                          key_struct,
                                          NULL,
                                          obj_req_hdr.operation,
                                          obj_req_hdr.data_type,
                                          obj_req_hdr.key_type);
+      else
+        resp_code = KtObj->ValidateRequest(db_conn,
+                                         key_struct,
+                                         val_struct,
+                                         obj_req_hdr.operation,
+                                         obj_req_hdr.data_type,
+                                         obj_req_hdr.key_type);
+
       break;
     default:
       resp_code = UNC_UPPL_RC_ERR_OPERATION_NOT_SUPPORTED;
@@ -264,7 +288,7 @@ UncRespCode ReadRequest::ProcessReq(ServerSession &session,
   return return_code;
 }
 
-/**ProcessReq
+/**ProcessReadOperation
  * @Description : Function processes various Read types of operation by
  *                Creating the respective Kt class object and returns
  *                the processing result.
@@ -325,7 +349,7 @@ UncRespCode ReadRequest::ProcessReadOperation(
       break;
     case UNC_OP_READ_BULK:
       if (max_rep_ct > UPPL_MAX_REP_CT) {
-        pfc_log_info("User requested more than %d records!!", UPPL_MAX_REP_CT);
+        pfc_log_debug("User requested more than %d records!!", UPPL_MAX_REP_CT);
         max_rep_ct = UPPL_MAX_REP_CT;
       }
       // Invoke Read Bulk operation for respective KT class
@@ -549,6 +573,38 @@ void ReadRequest::GetDataflowStructure(ServerSession &session,
   key_struct = static_cast<void*> (&key_dataflow_obj);
   return;
 }
+
+/**GetDataflowV2Structure
+ * @Description : This function is to get the value structure of the Dataflow
+ * @param[in]   : session - Object of ServerSession where the request
+ *                argument present 
+ *                key_struct - the key for the kt_Dataflow instance
+ *                val_struct - the value structure for the ktDataflow
+ *                &rsh - object of the physical response header
+ * @return      : void 
+ * */
+void ReadRequest::GetDataflowV2Structure(ServerSession &session,
+                                         void * &key_struct,
+                                         void * &val_struct,
+                                         physical_response_header &rsh) {
+  // populate key_ctr structure
+  memset(&key_dataflow_v2_obj, 0, sizeof(key_dataflow_v2_t));
+  memset(&val_dataflow_v2_obj, 0, sizeof(val_dataflow_v2_t));
+  rsh.result_code = UNC_RC_SUCCESS;
+  int read_val = session.getArgument(8, key_dataflow_v2_obj);
+  read_val |= session.getArgument(9, val_dataflow_v2_obj);
+  if (read_val != 0) {
+    pfc_log_info("Key or Val structure is not recieved");
+    rsh.result_code = UNC_UPPL_RC_ERR_CFG_SYNTAX;
+  } else {
+    pfc_log_info("%s", DataflowCmn::get_string(key_dataflow_v2_obj).c_str());
+    key_struct = static_cast<void*> (&key_dataflow_v2_obj);
+    pfc_log_info("%s", DataflowCmn::get_string(val_dataflow_v2_obj).c_str());
+    val_struct = static_cast<void*> (&val_dataflow_v2_obj);
+  }
+  return;
+}
+
 
 /**GetCtrDataflowStructure
  * @Description : This function is to get the value structure of the CtrDataflow

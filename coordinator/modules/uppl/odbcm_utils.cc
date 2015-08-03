@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -486,7 +486,7 @@ void ODBCMUtils::print_odbc_details(SQLHDBC conn_handle) {
     pfc_log_debug("ODBCM::ODBCMUtils::odbc_info: "
         "MAX_CONCURRENT_ACTIVITIES: No limit or undefined");
   } else {
-    pfc_log_info("ODBCM::ODBCMUtils::odbc_info: "
+    pfc_log_debug("ODBCM::ODBCMUtils::odbc_info: "
         "MAX_CONCURRENT_ACTIVITIES: %u\n", max_concur_act);
   }
   if (getdata_support & SQL_GD_ANY_ORDER) {

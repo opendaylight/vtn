@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -30,12 +30,13 @@ struct EventArgument {
     UPPL_PATH_FAULT_ALARM,
     PFCDRV_POLICER_FULL_ALARM,
     PFCDRV_POLICER_FAIL_ALARM,
-    PFCDRV_NWMON_FAULT_ALARM
+    PFCDRV_NWMON_FAULT_ALARM,
+    PFCDRV_VTNID_EXHAUSTION_ALARM
   };
 
   IpcEventType event_type_;
 
-  EventArgument():event_type_(UNKNOWN_EVENT){}
+  EventArgument():event_type_(UNKNOWN_EVENT) {}
   virtual ~EventArgument() {}
 };
 
@@ -76,6 +77,12 @@ struct NwmonFaultArg : public EventArgument {
   bool alarm_raised_;
   key_vtn key_vtn_;
   pfcdrv_network_mon_alarm_data_t network_mon_data_;
+};
+struct VtnIdExhaustionArg: public EventArgument {
+  std::string ctrlr_name_;
+  std::string domain_name_;
+  bool alarm_raised_;
+  key_vtn key_vtn_;
 };
 
 

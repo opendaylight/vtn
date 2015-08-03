@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -34,6 +34,7 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
      * @brief  Member Variable for VbrIfFlowfilterMainTblBindInfo.
      */
     static BindInfo vbr_if_flowfiltermaintbl_bind_info[];
+
   public:
     /**
      * @brief  VbrIfFlowFilterMoMgr Class Constructor.
@@ -79,7 +80,7 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
      * @retval    UPLL_RC_ERR_NO_SUCH_INSTANCE  No Record in DB.
      * @retval    UPLL_RC_ERR_INSTANCE_EXISTS   Record exists in DB.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
     /**
      * @Brief Validates the syntax of the specified key and value structure
@@ -390,7 +391,7 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
      * @retval  FALSE  Failure
      **/
     bool IsValidKey(void *key,
-                    uint64_t index);
+                    uint64_t index, MoMgrTables tbl = MAINTBL);
 
     upll_rc_t ReadSiblingDetail(ConfigKeyVal *ikey,
                                 ConfigKeyVal *dup_key,
@@ -405,12 +406,14 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
     upll_rc_t GetVexternalInformation(ConfigKeyVal* ck_main,
                  upll_keytype_datatype_t dt_type,
                  pfcdrv_val_vbrif_vextif *& pfc_val,
-                 uint8_t db_flag, DalDmlIntf *dmi);
+                 uint8_t db_flag, const char *ctrlr_id, DalDmlIntf *dmi);
 
     upll_rc_t SetVlinkPortmapConfiguration(ConfigKeyVal *ikey,
                            upll_keytype_datatype_t dt_type,
                            DalDmlIntf *dmi, InterfacePortMapInfo flag,
-                           unc_keytype_operation_t oper);
+                           unc_keytype_operation_t oper,
+                           TcConfigMode config_mode,
+                           string vtn_name);
 
     upll_rc_t TxUpdateController(unc_key_type_t keytype,
                                         uint32_t session_id,
@@ -418,7 +421,10 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
                                         uuc::UpdateCtrlrPhase phase,
                                         set<string> *affected_ctrlr_set,
                                         DalDmlIntf *dmi,
-                                        ConfigKeyVal **err_ckv);
+                                        ConfigKeyVal **err_ckv,
+                                        TxUpdateUtil *tx_util,
+                                        TcConfigMode config_mode,
+                                        std::string vtn_name);
 
     upll_rc_t CreateCandidateMo(IpcReqRespHeader *req,
                                        ConfigKeyVal *ikey,
@@ -434,8 +440,10 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
                                     upll_keytype_datatype_t dt_type,
                                     DalDmlIntf *dmi);
 
-   upll_rc_t CreateAuditMoImpl(unc::upll::ipc_util::ConfigKeyVal*, unc::upll::dal::DalDmlIntf*, const char*); 
-   upll_rc_t AuditUpdateController(unc_key_type_t keytype,
+    upll_rc_t CreateAuditMoImpl(unc::upll::ipc_util::ConfigKeyVal*,
+                                unc::upll::dal::DalDmlIntf*, const char*);
+
+    upll_rc_t AuditUpdateController(unc_key_type_t keytype,
                              const char *ctrlr_id,
                              uint32_t session_id,
                              uint32_t config_id,
@@ -446,7 +454,9 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
 
   upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                               upll_keytype_datatype_t dt_type,
-                              DalDmlIntf *dmi);
+                              DalDmlIntf *dmi,
+                              TcConfigMode config_mode,
+                              string vtn_name);
 
   upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
@@ -464,7 +474,8 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
       unc_keytype_operation_t op, controller_domain_t ctrlr_dom,
       upll_keytype_datatype_t vext_datatype, DalDmlIntf *dmi,
       uint32_t session_id, uint32_t config_id,
-      uint8_t db_flag, set<string> *affected_ctrlr_set, bool &ipc_result);
+      uint8_t db_flag, set<string> *affected_ctrlr_set,
+      ConfigKeyVal *req, TxUpdateUtil *tx_util);
 
   upll_rc_t HandleAuditDriverIpcError(uuc::UpdateCtrlrPhase phase,
     IpcResponse ipc_response, DalDmlIntf *dmi,
@@ -476,6 +487,13 @@ class VbrIfFlowFilterMoMgr : public MoMgrImpl {
       upll_keytype_datatype_t vext_datatype,  DalDmlIntf *dmi,
       uint32_t session_id, uint32_t config_id,
       uint8_t db_flag, IpcResponse &ipc_response);
+
+  upll_rc_t TxUpdateErrorHandler(ConfigKeyVal *req,
+      ConfigKeyVal *ck_main,
+      DalDmlIntf *dmi,
+      upll_keytype_datatype_t dt_type,
+      ConfigKeyVal **err_ckv,
+      IpcResponse *ipc_resp);
 };
 }  // namespace kt_momgr
 }  // namespace upll

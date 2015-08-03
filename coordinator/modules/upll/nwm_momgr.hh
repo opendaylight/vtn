@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -211,15 +211,15 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
         const uint8_t* attrs,
         unc_keytype_operation_t operation);
 
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey, upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req, ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
-    upll_rc_t ValidateAttribute(ConfigKeyVal *kval, 
+    upll_rc_t ValidateAttribute(ConfigKeyVal *kval,
                                 DalDmlIntf *dmi,
                                 IpcReqRespHeader *req = NULL);
-    /** 
-     * @brief     Perform validation on key type specific, 
+    /**
+     * @brief     Perform validation on key type specific,
      *            before sending to driver
-     * 
+     *
      * @param[in]  ck_new                   Pointer to the ConfigKeyVal Structure
      * @param[in]  ck_old                   Pointer to the ConfigKeyVal Structure
      * @param[in]  op                       Operation name.
@@ -227,7 +227,7 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
      * @param[in]  keytype                  Specifies the keytype
      * @param[in]  dmi                      Pointer to the DalDmlIntf(DB Interface)
      * @param[out] not_send_to_drv          Decides whether the configuration needs
-     *                                      to be sent to controller or not 
+     *                                      to be sent to controller or not
      * @param[in]  audit_update_phase       Specifies whether the phase is commit or audit
      *
      * @retval  UPLL_RC_SUCCESS             Completed successfully.
@@ -264,25 +264,25 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
      * @retval         true                 input key is valid
      * @retval         false                input key is invalid.
      **/
-    bool IsValidKey(void *tkey, uint64_t index);
+    bool IsValidKey(void *tkey, uint64_t index, MoMgrTables tbl = MAINTBL);
 
-    /* @brief         This method invoke when the Network MOnitor merge 
-     *                hapeening between Running and DT import. This will 
-     *                checks the network monitor name is unique or not  
-     *                under the parent VTN 
-     *              
+    /* @brief         This method invoke when the Network MOnitor merge
+     *                hapeening between Running and DT import. This will
+     *                checks the network monitor name is unique or not
+     *                under the parent VTN
+     *
      * @param[in]     keytype       UNC KEY TYPE
-     * @param[in/out] ctrlr_id      Controller ID                    
+     * @param[in/out] ctrlr_id      Controller ID
      * @param[in]     conflict_ckv  key and value structure
-     * @param[in]     import_type   Specifies the import type 
+     * @param[in]     import_type   Specifies the import type
      * @param[in]     dal    Pointer to the DalDmlIntf(DB Interface)
-     * 
+     *
      * @retval  UPLL_RC_SUCCESS                    Completed successfully.
      * @retval  UPLL_RC_ERR_GENERIC                Generic failure.
      * @retval  UPLL_RC_ERR_RESOURCE_DISCONNECTED  Resource disconnected.
      * @retval  UPLL_RC_ERR_DB_ACCESS              DB Read/Write error.
      * @retval  UPLL_RC_ERR_MERGE_CONFLICT         Semantic check error.
-     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist 
+     * @retval  UPLL_RC_ERR_NO_SUCH_INSTANCE       Given key does not exist
      *
      **/
 
@@ -308,7 +308,7 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
        const key_vtn &key_vtn,
        const pfcdrv_network_mon_alarm_data_t &alarm_data,
        bool alarm_raised,
-       DalDmlIntf *dmi );
+       DalDmlIntf *dmi);
 
     /**
      * @Brief Validates Same network monitor group name exist
@@ -324,7 +324,6 @@ class NwMonitorMoMgr : public VnodeChildMoMgr {
      */
     upll_rc_t ValidateVtnRename(ConfigKeyVal *org_vtn_ckv,
                                 ConfigKeyVal *rename_vtn_ckv, DalDmlIntf *dmi);
-
 };
 }  // namespace kt_momgr
 }  // namespace upll

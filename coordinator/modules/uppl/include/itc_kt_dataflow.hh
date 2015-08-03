@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -92,7 +92,11 @@ class Kt_Dataflow: public Kt_Base {
                                              uint32_t operation,
                                              uint32_t data_type);
 
-
+    UncRespCode getDomainType(OdbcmConnectionHandler *db_conn,
+                                             void* key_struct,
+                                             void* val_struct,
+                                             uint32_t data_type,
+                                             UpplDomainType &domain_type);
 
     void Fill_Attr_Syntax_Map();
 
@@ -125,7 +129,6 @@ class Kt_Dataflow: public Kt_Base {
     }
 
 
-
     UncRespCode traversePFC(OdbcmConnectionHandler *db_conn,
                                           uint32_t session_id,
                                           uint32_t configuration_id,
@@ -134,7 +137,8 @@ class Kt_Dataflow: public Kt_Base {
                                           bool is_head_node,
                                           DataflowCmn *parentnode,
                                           DataflowCmn *lastPfcNode,
-                                          string &ingress_bdry_id);
+                                          string &ingress_bdry_id,
+                                          uint32_t option2);
 
     UncRespCode traverseVNP(OdbcmConnectionHandler *db_conn,
                                           uint32_t session_id,
@@ -156,6 +160,23 @@ class Kt_Dataflow: public Kt_Base {
                                           DataflowCmn *lastPfcNode,
                                           string &ingress_bdry_id);
 
+  protected:
+    DataflowUtil df_util_;
+
+    uint32_t max_dataflow_traverse_count_;
+
+    UncRespCode checkFlowLimitAndTraverse(OdbcmConnectionHandler *db_conn,
+                                         uint32_t session_id,
+                                         uint32_t configuration_id,
+                                         ServerSession &sess,
+                                         void* key_struct,
+                                         vector<DataflowCmn*>* node,
+                                         bool is_head_node,
+                                         string &ingress_bdry_id);
+
+    UncRespCode fill_ctrlr_dom_count_map(OdbcmConnectionHandler *db_conn,
+                                         string ctr_name);
+
   private:
     void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
         DBTableSchema &kt_dbtableschema,
@@ -167,9 +188,9 @@ class Kt_Dataflow: public Kt_Base {
         uint32_t option2,
         vector<ODBCMOperator> &vect_key_operations,
         void* &old_value_struct,
-        CsRowStatus row_status= NOTAPPLIED,
-        pfc_bool_t is_filtering= false,
-        pfc_bool_t is_state= PFC_FALSE) {}
+        CsRowStatus row_status,
+        pfc_bool_t is_filtering,
+        pfc_bool_t is_state) {}
 
 
     UncRespCode checkBoundaryAndTraverse(OdbcmConnectionHandler *db_conn,
@@ -232,15 +253,8 @@ class Kt_Dataflow: public Kt_Base {
                                   DataflowCmn *df_cmn,
                                   boundary_val *ingress_obj_bval,
                                   boundary_val &egress_obj_bval,
-                                  bool is_egress);
-    inline void checkFlowLimitAndTraverse(OdbcmConnectionHandler *db_conn,
-                                         uint32_t session_id,
-                                         uint32_t configuration_id,
-                                         ServerSession &sess,
-                                         void* key_struct,
-                                         vector<DataflowCmn*>* node,
-                                         bool is_head_node,
-                                         string &ingress_bdry_id);
+                                  bool is_egress,
+                                  UncRespCode &err_code);
     multimap<string, boundary_val> boundary_map_;
 
     map<string, lp_struct> LP_map_;
@@ -254,11 +268,5 @@ class Kt_Dataflow: public Kt_Base {
     map<string, uint32_t> is_validated_map_;
 
     vector<boundary_record> boundary_tbl_vect_;
-
-    DataflowUtil df_util_;
-
-    UncRespCode fill_ctrlr_dom_count_map(OdbcmConnectionHandler *db_conn,
-                                         string ctr_name);
-    uint32_t max_dataflow_traverse_count_;
 };
 #endif

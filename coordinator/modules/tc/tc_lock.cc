@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -7,10 +7,15 @@
  * distribution, and is available at http://www.eclipse.org/legal/epl-v10.html
  */
 
-#include<tc_lock.hh>
+#include <tc_lock.hh>
+#include <unistd.h>
+#include <sys/time.h>
+#include <tc_operations.hh>
 
 namespace unc {
 namespace tc {
+
+uint32_t TcLock::prev_config_id_ = 0;
 
 /**
  *@brief   Reset the TC global data structure .
@@ -19,14 +24,9 @@ void TcLock::ResetTcGlobalDataOnStateTransition(void)  {
   pfc_log_info("%s (Re)Initializing attributes", __FUNCTION__);
   pfc::core::ScopedMutex m(getGlobalLock());
 
-  /* Initialize config lock  information */
-  tc_config_lock_.session_id = 0;
-  tc_config_lock_.marked_session_id = 0;
-  /* Retaining it as previous configuration number */
-  //  tc_config_lock_.config_id = 0;
-  tc_config_lock_.notify_operation = TC_NOTIFY_NONE;
-  tc_config_lock_.is_notify_pending = PFC_FALSE;
-  tc_config_lock_.is_taken = PFC_FALSE;
+  /* Clearing TC Config Name Map */
+  tc_config_name_map_.clear();
+
   /* Initialize read lock information */
   std::set<uint32_t> &sessions(tc_read_lock_.read_sessions);
   //if (tc_state_lock_.current_state != TC_STOP) {
@@ -34,12 +34,10 @@ void TcLock::ResetTcGlobalDataOnStateTransition(void)  {
   //}
   sessions.clear();
   tc_rwlock_.rw_owner = 1;
-  tc_rwlock_.r_owner = 1;
-  tc_rwlock_.w_owner = 0;
-  tc_rwlock_.r_db_mgmt_session = PFC_FALSE;
-  tc_rwlock_.r_launcher_session = PFC_FALSE;
   /* Initialize write lock information */
   tc_rwlock_.clearWriter();
+  /* Initialize last write operation */
+  tc_rwlock_.last_write_op = TC_WRITE_NONE;
   /* Initialize auto save data */
   tc_auto_save_.is_enable = PFC_FALSE;
 
@@ -66,50 +64,136 @@ pfc_bool_t   TcLock::IsStateTransitionInProgress(void) {
   return tc_state_lock_.state_transition_in_progress;
 }
 
+/*
+ *@brief      Find tc_config_name keyvalue from map based on session_id.
+ *@param[in]  session_id  
+ *@return     tc_config_name, which is associated to input session_id_.
+ */
+TcLockRet TcLock::FindConfigName(uint32_t session_id,
+                                 std::string& config_name) {
+  config_name.clear();
+  TcConfigNameMap::const_iterator cit;
+  for(cit=tc_config_name_map_.begin(); cit!=tc_config_name_map_.end(); cit++) {
+    if ((cit->second).session_id == session_id) {
+      config_name = cit->first;
+      return TC_LOCK_SUCCESS;
+    }
+  }
+  return TC_LOCK_INVALID_SESSION_ID;
+}
+
+/*
+ *@brief      Get config map data
+ *@return     tc_config_name_map_
+*/
+TcConfigNameMap TcLock::GetConfigMap() {
+  pfc::core::ScopedMutex configmaplock(getGlobalLock());
+  return tc_config_name_map_;
+}
+
+/*
+*@brief      convert tc config mode as config_name
+ *@param[in]  tc_mode  tc_configure_mode (global/real/virtual/vtn).
+ *@param[in]  vtn_name vtn name if tc config mode is VTN.
+ *@return     tc_config_name converting tc_mode as config names.
+ *@return     TC_OPER_INVALID_INPUT if tc_mode or vtn_name read fail
+ */
+ 
+std::string TcLock::GetConfigName(TcConfigMode tc_mode, std::string vtn_name) {
+  std::string tc_config_name;
+  switch (tc_mode)
+  {
+    case TC_CONFIG_GLOBAL:
+      tc_config_name = "global-mode";
+    break;
+    case TC_CONFIG_REAL:
+      tc_config_name = "real-mode";
+    break;
+    case TC_CONFIG_VIRTUAL:
+      tc_config_name = "virtual-mode";
+    break;
+    case TC_CONFIG_VTN:
+      tc_config_name = vtn_name;
+    break;
+    default:
+      pfc_log_error("TcGetExclusion: Reading tc_config_mode failed");
+  }
+  return tc_config_name;
+}
 /**
  *@brief   Increment or restart the configuration identifier
- *@param[in]  config_id  previous configuration number.
  *@return     TC_START_CONFIG_ID  Restart config id with 1,when it  \
                                   reaches maximum uint32_t.
  *@return     config_id           Incremented configuration ID.
  */
-uint32_t TcLock::GetConfigId(uint32_t config_id) {
-  if (config_id == UINT32_MAX) {
-    return TC_START_CONFIG_ID;
+uint32_t TcLock::GetConfigId() {
+  if (prev_config_id_ == UINT32_MAX) {
+    prev_config_id_ = TC_START_CONFIG_ID;
   } else {
-    return ++config_id;
+    ++prev_config_id_;
   }
+  return prev_config_id_;
 }
 
 /**
  *@brief   Update config lock acquire data.
  *@param[in]  session_id  Session identifier.
  */
-void TcLock::UpdateConfigData(uint32_t session_id) {
-  tc_config_lock_.session_id = session_id;
-  uint32_t prev_config_id(tc_config_lock_.config_id);
-  tc_config_lock_.config_id = TcLock::GetConfigId(prev_config_id);
-  tc_config_lock_.is_taken = PFC_TRUE;
-  tc_config_lock_.is_notify_pending = PFC_TRUE;
-  tc_config_lock_.notify_operation = TC_NOTIFY_ACQUIRE;
+void TcLock::UpdateConfigData(uint32_t session_id, std::string tc_config_name){ 
+  tc_config_name_map_[tc_config_name].session_id = session_id;
+  tc_config_name_map_[tc_config_name].config_id = TcLock::GetConfigId();
+  tc_config_name_map_[tc_config_name].is_taken = PFC_TRUE;
+  tc_config_name_map_[tc_config_name].is_notify_pending = PFC_TRUE;
+  tc_config_name_map_[tc_config_name].notify_operation = TC_NOTIFY_ACQUIRE;
 }
 
 /**
  *@brief   Acquire configuration session
  *@param[in]  session_id  Session identifier.
- *@ieturn     TC_LOCK_SUCCESS    When acquire configuration session.
+ *@param[in]  tc_mode TC config modes (global/real/virtual/vtn).
+ *@param[in]  vtn_name string type vtn_name (if tc_mode is VTN).
+ *@return     TC_LOCK_SUCCESS    When acquire configuration session.
  *@return     TC_LOCK_OPERATION_NOT_ALLOWED  When state transition in progress.
  *@return     TC_LOCK_BUSY     When configuration session already acquired .
  */
-TcLockRet TcLock::AcquireConfigLock(uint32_t session_id) {
+TcLockRet TcLock::AcquireConfigLock(uint32_t session_id,
+                                    TcConfigMode tc_mode,
+                                    std::string vtn_name) {
   if (tc_state_lock_.state_transition_in_progress == PFC_TRUE) {
+    pfc_log_error("%s Config lock not allowed during state transition",
+                  __FUNCTION__);
     return TC_LOCK_OPERATION_NOT_ALLOWED;
   }
-  if (!tc_config_lock_.is_taken  && !tc_config_lock_.is_notify_pending) {
-      UpdateConfigData(session_id);
+  std::string tc_config_name = GetConfigName(tc_mode, vtn_name);
+
+  if (tc_config_name.empty()) {
+    return TC_LOCK_INVALID_OPERATION;
+  }
+
+  // For global mode
+  if (tc_mode == TC_CONFIG_GLOBAL) {
+    if (tc_config_name_map_.empty()) {
+      UpdateConfigData(session_id, tc_config_name);
       return TC_LOCK_SUCCESS;
-  } else {
-    return TC_LOCK_BUSY;
+    } else {
+      return TC_LOCK_BUSY;
+    }
+  } else { // For partial modes
+    if (tc_config_name_map_.find("global-mode") != tc_config_name_map_.end() &&
+        (tc_config_name_map_["global-mode"].is_taken ||
+         tc_config_name_map_["global-mode"].is_notify_pending) ) {
+      // Global lock is already present
+      return TC_LOCK_BUSY; 
+
+    } else if (tc_config_name_map_.find(tc_config_name)
+                                != tc_config_name_map_.end() &&
+               (tc_config_name_map_[tc_config_name].is_taken ||
+                tc_config_name_map_[tc_config_name].is_notify_pending) ) {
+      return TC_LOCK_BUSY;
+    } else {
+      UpdateConfigData(session_id, tc_config_name);
+      return TC_LOCK_SUCCESS;
+    }
   }
 }
 
@@ -124,25 +208,33 @@ TcLockRet TcLock::AcquireConfigLock(uint32_t session_id) {
               configuration in progress.
  */
 TcLockRet TcLock::ReleaseConfigLock(uint32_t session_id, uint32_t config_id ) {
-  if (tc_config_lock_.is_taken) {
-    if (session_id != tc_config_lock_.session_id) {
-      return TC_LOCK_INVALID_SESSION_ID;
-    }
-    if (config_id != tc_config_lock_.config_id) {
+
+  std::string tc_config_name;
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS) {
+    return TC_LOCK_NO_CONFIG_SESSION_EXIST;
+  }
+
+  if (tc_config_name_map_[tc_config_name].is_taken) {
+    if (config_id != tc_config_name_map_[tc_config_name].config_id) {
+      pfc_log_error("%s Given config-id[%u] not matching existing[%u]",
+                    __FUNCTION__, config_id,
+                    tc_config_name_map_[tc_config_name].config_id);
       return TC_LOCK_INVALID_CONFIG_ID;
     }
-    if (!tc_config_lock_.is_notify_pending &&
+    if (!tc_config_name_map_[tc_config_name].is_notify_pending &&
          !((tc_rwlock_.w_operation == TC_COMMIT ||
-           tc_rwlock_.w_operation ==  TC_ABORT_CANDIDATE_CONFIG) &&
-          tc_rwlock_.isWriteHeld())) {
-      tc_config_lock_.is_notify_pending = PFC_TRUE;
-      tc_config_lock_.notify_operation = TC_NOTIFY_RELEASE;
-      tc_config_lock_.is_taken = PFC_FALSE;
+            tc_rwlock_.w_operation ==  TC_ABORT_CANDIDATE_CONFIG) &&
+           tc_rwlock_.isWriteHeld(session_id))) {
+      tc_config_name_map_[tc_config_name].is_notify_pending = PFC_TRUE;
+      tc_config_name_map_[tc_config_name].is_taken = PFC_FALSE;
+      tc_config_name_map_[tc_config_name].notify_operation = TC_NOTIFY_RELEASE;
       return TC_LOCK_SUCCESS;
     } else {
       return TC_LOCK_BUSY;
     }
   } else {
+    pfc_log_error("%s Config mode not alloted to this seession[%u]",
+                  __FUNCTION__, session_id);
     return TC_LOCK_NOT_ACQUIRED;
   }
 }
@@ -157,18 +249,32 @@ TcLockRet TcLock::ReleaseConfigLock(uint32_t session_id, uint32_t config_id ) {
  */
 TcLockRet TcLock::ForceAcquireConfigLock(uint32_t session_id) {
   if (tc_state_lock_.state_transition_in_progress == PFC_TRUE) {
+    pfc_log_error("%s Cannot get force config lock during state transition",
+                  __FUNCTION__);
     return TC_LOCK_OPERATION_NOT_ALLOWED;
   }
-  if (tc_config_lock_.is_notify_pending ||
-      (tc_config_lock_.is_taken &&
-       tc_rwlock_.isWriteHeld() &&
-       (tc_rwlock_.w_operation == TC_COMMIT  ||
-        tc_rwlock_.w_operation == TC_ABORT_CANDIDATE_CONFIG))) {
-    return TC_LOCK_BUSY;
-  } else {
-    UpdateConfigData(session_id);
-    return TC_LOCK_SUCCESS;
+
+  for (TcConfigNameMap::iterator it = tc_config_name_map_.begin();
+       it != tc_config_name_map_.end();
+       it++) {
+
+    if (it->second.is_notify_pending ||
+        (it->second.is_taken &&
+         tc_rwlock_.isWriteHeld() &&
+         (tc_rwlock_.w_operation == TC_COMMIT  ||
+          tc_rwlock_.w_operation == TC_ABORT_CANDIDATE_CONFIG))) {
+      pfc_log_error("%s Conditions not good for force config acquire",
+                    __FUNCTION__);
+      return TC_LOCK_BUSY;
+    }
   }
+
+  // Remove all entries from config map
+  tc_config_name_map_.clear();
+
+  // Add current force config entry to the map
+  UpdateConfigData(session_id, "global-mode");
+      return TC_LOCK_SUCCESS;
 }
 
 /**
@@ -181,7 +287,7 @@ TcLockRet TcLock::ForceAcquireConfigLock(uint32_t session_id) {
  */
 TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
   // Acquire read lock.
-  if (!tc_rwlock_.tryLock(session_id)) {
+  if (!tc_rwlock_.tryLock()) {
     return TC_LOCK_BUSY;
   }
 
@@ -190,7 +296,7 @@ TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
   std::pair<std::set<uint32_t>::iterator, bool>
     result(sessions.insert(session_id));
   if (!result.second) {
-    tc_rwlock_.unlock(session_id);
+    tc_rwlock_.unlock();
     return TC_LOCK_ALREADY_ACQUIRED;
   }
 
@@ -202,10 +308,10 @@ TcLockRet TcLock::AcquireReadLock(uint32_t session_id) {
  *@return     TC_LOCK_SUCCESS    Will be able to acquire read session.
  *@return     TC_LOCK_INVALID_UNC_STATE The lock can not be held in this state.
  */
-TcLockRet TcLock::TcAcquireReadLockForStateTransition(uint32_t session_id) {
+TcLockRet TcLock::TcAcquireReadLockForStateTransition() {
   PFC_VERIFY(tc_state_lock_.current_state != TC_STOP);
 
-  while (!tc_rwlock_.canReadLock(session_id) ||
+  while (!tc_rwlock_.canReadLock() ||
          tc_state_lock_.state_transition_in_progress) {
     tc_rwlock_.waitForRead();
 
@@ -217,7 +323,7 @@ TcLockRet TcLock::TcAcquireReadLockForStateTransition(uint32_t session_id) {
   }
 
   tc_state_lock_.state_transition_in_progress = PFC_TRUE;
-  tc_rwlock_.setReader(session_id);
+  tc_rwlock_.setReader();
   return TC_LOCK_SUCCESS;
 }
 
@@ -226,10 +332,10 @@ TcLockRet TcLock::TcAcquireReadLockForStateTransition(uint32_t session_id) {
  *@return     TC_LOCK_SUCCESS    Will be able to release read lock.
  *@return     TC_LOCK_NOT_ACQUIRED     When state transition no in progress .
  */
-TcLockRet TcLock::TcReleaseReadLockForStateTransition(uint32_t session_id) {
+TcLockRet TcLock::TcReleaseReadLockForStateTransition() {
   if (tc_state_lock_.state_transition_in_progress == PFC_TRUE) {
     tc_state_lock_.state_transition_in_progress = PFC_FALSE;
-    tc_rwlock_.unlock(session_id);
+    tc_rwlock_.unlock();
     return TC_LOCK_SUCCESS;
   }
   return TC_LOCK_NOT_ACQUIRED;
@@ -249,7 +355,7 @@ TcLockRet TcLock::ReleaseReadLock(uint32_t session_id) {
     return TC_LOCK_NOT_ACQUIRED;
   }
 
-  tc_rwlock_.unlock(session_id);
+  tc_rwlock_.unlock();
   return TC_LOCK_SUCCESS;
 }
 
@@ -262,22 +368,16 @@ TcLockRet TcLock::ReleaseReadLock(uint32_t session_id) {
 TcLockRet TcLock::AcquireWriteLockForAuditDriver(uint32_t session_id) {
   while (!TcIsSetupCompleteDone()) {
     pfc_log_info("%s Waiting for SETUP_COMPLETE to finish", __FUNCTION__);
-    usleep(5000);
-  }
-  pfc_log_info("SETUP_COMPLETE done; check for audit lock acquire");
-  while (!tc_rwlock_.canWriteLock()) {
-    tc_rwlock_.waitForWrite();
-
-    // The lock state must be checked again because it may be changed while
-    // the global lock is released.
-    TcLockRet ret(TcOperationIsAllowed(session_id, TC_ACQUIRE_WRITE_SESSION));
-    if (PFC_EXPECT_FALSE(ret != TC_LOCK_SUCCESS)) {
-      return ret;
-    }
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 100000000;
+    nanosleep(&ts, NULL); //Sleep for 100ms
   }
 
-  tc_rwlock_.setWriter(session_id, TC_AUDIT_DRIVER);
-  return TC_LOCK_SUCCESS;
+  if (tc_rwlock_.tryLock(session_id, TC_AUDIT_DRIVER)) {
+    return TC_LOCK_SUCCESS;
+  }
+  return TC_LOCK_BUSY;
 }
 
 /**
@@ -287,10 +387,18 @@ TcLockRet TcLock::AcquireWriteLockForAuditDriver(uint32_t session_id) {
  *@return     TC_LOCK_BUSY       When not able to the write lock.
  */
 TcLockRet TcLock::AcquireWriteLockForCommit(uint32_t session_id) {
-  if (!tc_config_lock_.is_taken || tc_config_lock_.is_notify_pending
-      || tc_config_lock_.session_id != session_id) {
+  std::string tc_config_name;
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS)  {
+    pfc_log_error("%s Config not alloted for this session[%u]",
+                  __FUNCTION__, session_id);
+    return TC_LOCK_INVALID_SESSION_ID;
+  }
+
+  if (!tc_config_name_map_[tc_config_name].is_taken ||
+      tc_config_name_map_[tc_config_name].is_notify_pending) {
     return TC_LOCK_BUSY;
   }
+
   if (tc_rwlock_.tryLock(session_id, TC_COMMIT)) {
     return TC_LOCK_SUCCESS;
   }
@@ -305,10 +413,16 @@ TcLockRet TcLock::AcquireWriteLockForCommit(uint32_t session_id) {
  */
 
 TcLockRet TcLock::AcquireWriteLockForAbortCandidateConfig(uint32_t session_id) {
-  if (!tc_config_lock_.is_taken || tc_config_lock_.is_notify_pending
-      || tc_config_lock_.session_id != session_id) {
+  std::string tc_config_name;
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS)  {
+    return TC_LOCK_INVALID_SESSION_ID;
+  }
+
+  if (!tc_config_name_map_[tc_config_name].is_taken ||
+      tc_config_name_map_[tc_config_name].is_notify_pending) {
     return TC_LOCK_BUSY;
   }
+
   if (tc_rwlock_.tryLock(session_id, TC_ABORT_CANDIDATE_CONFIG)) {
     return TC_LOCK_SUCCESS;
   }
@@ -442,6 +556,8 @@ void TcLock::TcUpdateUncState(TcState new_state) {
 /**
  *@brief   Check whether TC operation allowed based on current state.
  *@param[in]  operation  TC Operation .
+ *@param[in]  tc_mode of type TcConfigMode (global/real/virtual/VTN)
+ *@param[in]  vtn_name of type std::string if tc_mode is VTN.
  *@return     TC_LOCK_SUCCESS    When  TC operation is allowed.
  *@return     TC_LOCK_INVALID_UNC_STATE  TC operation is not allowed in this state.
  */
@@ -474,10 +590,12 @@ TcLockRet TcLock::TcOperationIsAllowed(uint32_t session_id,
 
   /* if this session ID is marked for release don't allow any operation */
   if (state == TC_ACT) {
-    uint32_t marked(tc_config_lock_.marked_session_id);
-
-    if (PFC_EXPECT_FALSE(marked != 0 && marked == session_id)) {
-      return TC_LOCK_OPERATION_NOT_ALLOWED;
+    std::string tc_config_name;
+    if (FindConfigName(session_id, tc_config_name) == TC_LOCK_SUCCESS) {
+      uint32_t marked = tc_config_name_map_[tc_config_name].marked_session_id;
+      if (PFC_EXPECT_FALSE(marked != 0 && marked == session_id)) {
+        return TC_LOCK_OPERATION_NOT_ALLOWED;
+      }
     }
   }
 
@@ -491,14 +609,20 @@ TcLockRet TcLock::TcOperationIsAllowed(uint32_t session_id,
  *@return     TC_LOCK_FAILURE    When already marked session exist.
  */
 TcLockRet TcLock::TcMarkSessionId(uint32_t session_id) {
-  pfc::core::ScopedMutex m(getGlobalLock());
-  if (tc_config_lock_.is_taken &&
-      tc_config_lock_.marked_session_id == 0 &&
-      session_id == tc_config_lock_.session_id) {
-    tc_config_lock_.marked_session_id = session_id;
-    return TC_LOCK_SUCCESS;
-  } else  {
-    return TC_LOCK_FAILURE;
+  std::string tc_config_name;
+  pfc::core::ScopedMutex config_map_lock(getGlobalLock());
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS) {
+    pfc_log_error("%s Sess[%u] not available", __FUNCTION__, session_id);
+    return TC_LOCK_INVALID_SESSION_ID;
+  } else {
+    if (tc_config_name_map_[tc_config_name].is_taken &&
+        tc_config_name_map_[tc_config_name].marked_session_id == 0 &&
+        session_id == tc_config_name_map_[tc_config_name].session_id) {
+      tc_config_name_map_[tc_config_name].marked_session_id = session_id;
+      return TC_LOCK_SUCCESS;
+    } else  {
+      return TC_LOCK_FAILURE;
+    }
   }
 }
 
@@ -508,9 +632,13 @@ TcLockRet TcLock::TcMarkSessionId(uint32_t session_id) {
  *@return     PFC_TRUE  If any  session is marked.
  *@return     PFC_FALSE No session is marked .
  */
-uint32_t TcLock::GetMarkedSessionId() {
+uint32_t TcLock::GetMarkedSessionId(uint32_t session_id) {
   pfc::core::ScopedMutex m(getGlobalLock());
-  return tc_config_lock_.marked_session_id;
+  std::string tc_config_name;
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS) {
+    return TC_LOCK_INVALID_SESSION_ID;
+  }
+  return tc_config_name_map_[tc_config_name].marked_session_id;
 }
 /**
  *@brief   Interface provided to TcOperation class to acquire a   \
@@ -519,6 +647,7 @@ uint32_t TcLock::GetMarkedSessionId() {
  *@param[in]  tc_operation   TC main operations(acquire config,read,write).
  *@param[in]  write_operation  write sub operation   \
             (commit,audit user or driver,candidate config,save/clear startup).
+ *@param[in]  tc_config_name TC config modes as name (global/real/virtual/vtn).
  *@return     TC_LOCK_SUCCESS    when TC operation acquire lock.
  *@return     TC_LOCK_INVALID_UNC_STATE  TC operation is not allowed in this state.
  *@return     TC_LOCK_BUSY     When TC operation already acquired lock .
@@ -526,7 +655,9 @@ uint32_t TcLock::GetMarkedSessionId() {
  */
 TcLockRet
 TcLock::GetLock(uint32_t session_id, TcOperation tc_operation,
-  TcWriteOperation write_operation) {
+                             TcWriteOperation write_operation,
+                             TcConfigMode tc_mode,
+                             std::string vtn_name) {
   TcLockRet ret = TC_LOCK_SUCCESS;
 
   pfc::core::ScopedMutex m(getGlobalLock());
@@ -538,7 +669,7 @@ TcLock::GetLock(uint32_t session_id, TcOperation tc_operation,
   /* TC Operation switch case handling */
   switch (tc_operation) {
   case TC_ACQUIRE_CONFIG_SESSION:
-    ret = AcquireConfigLock(session_id);
+    ret = AcquireConfigLock(session_id, tc_mode, vtn_name);
     break;
   case TC_ACQUIRE_READ_SESSION:
     ret = AcquireReadLock(session_id);
@@ -571,7 +702,7 @@ TcLock::GetLock(uint32_t session_id, TcOperation tc_operation,
     ret = AutoSaveEnable();
     break;
   case TC_ACQUIRE_READ_LOCK_FOR_STATE_TRANSITION:
-    ret = TcAcquireReadLockForStateTransition(session_id);
+    ret = TcAcquireReadLockForStateTransition();
     break;
   default:
     ret = TC_LOCK_INVALID_OPERATION;
@@ -606,29 +737,38 @@ TcLockRet TcLock::AutoSaveDisable() {
  *@return     TC_LOCK_INVALID_OPERATION     For unkown Notify operation.
  */
 TcLockRet TcLock::NotifyConfigIdSessionIdDone(uint32_t config_id,
-              uint32_t session_id, TcNotifyOperation config_notify_operation) {
+                                   uint32_t session_id,
+                                   TcNotifyOperation config_notify_operation) {
   pfc::core::ScopedMutex m(getGlobalLock());
-  if (tc_config_lock_.notify_operation != config_notify_operation) {
-    return TC_LOCK_INVALID_OPERATION;
-  }
-  if ((tc_config_lock_.session_id == session_id)) {
-    if (tc_config_lock_.config_id != config_id)  {
-      return TC_LOCK_INVALID_CONFIG_ID;
-    }
-    tc_config_lock_.notify_operation = TC_NOTIFY_NONE;
-    tc_config_lock_.is_notify_pending = PFC_FALSE;
-    /* Reset session id and  retain config_id as previous config number */
-    if (config_notify_operation == TC_NOTIFY_RELEASE) {
-      tc_config_lock_.session_id = 0;
-    }
-    /* Reset marked session ID */
-    if (tc_config_lock_.marked_session_id == session_id) {
-       tc_config_lock_.marked_session_id = 0;
-    }
-    return TC_LOCK_SUCCESS;
-  } else {
+  std::string tc_config_name;
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS) {
+    pfc_log_error("%s session_id[%u] not found", __FUNCTION__, session_id);
     return TC_LOCK_INVALID_SESSION_ID;
   }
+
+  if (tc_config_name_map_[tc_config_name].notify_operation != 
+                                                     config_notify_operation) {
+    pfc_log_error("%s Notify operation %d not matching required op %d",
+                  __FUNCTION__, config_notify_operation,
+                  tc_config_name_map_[tc_config_name].notify_operation);
+    return TC_LOCK_INVALID_OPERATION;
+  }
+
+  if (tc_config_name_map_[tc_config_name].config_id != config_id)  {
+    pfc_log_error("%s Given configid[%u] not matching required configid[%u]",
+                  __FUNCTION__, config_id,
+                  tc_config_name_map_[tc_config_name].config_id);
+    return TC_LOCK_INVALID_CONFIG_ID;
+  }
+
+  tc_config_name_map_[tc_config_name].notify_operation = TC_NOTIFY_NONE;
+  tc_config_name_map_[tc_config_name].is_notify_pending = PFC_FALSE;
+  /* Erasing the specific entry from TC_CONFIG_NAME_MAP */
+  if (config_notify_operation == TC_NOTIFY_RELEASE) {
+    tc_config_name_map_.erase(tc_config_name);
+  }
+
+  return TC_LOCK_SUCCESS;
 }
 
 /**
@@ -685,7 +825,7 @@ TcLock::ReleaseLock(uint32_t session_id, uint32_t config_id,
     ret= AutoSaveDisable();
     break;
   case TC_RELEASE_READ_LOCK_FOR_STATE_TRANSITION:
-    ret = TcReleaseReadLockForStateTransition(session_id);
+    ret = TcReleaseReadLockForStateTransition();
     break;
   default:
     ret = TC_LOCK_INVALID_OPERATION;
@@ -693,31 +833,49 @@ TcLock::ReleaseLock(uint32_t session_id, uint32_t config_id,
   return ret;
 }
 
-/**
- *@brief   Get configuration session session ID and config. ID.
- *@param[in]  session_id  Pointer to session identifier.
- *@param[in]  config_id   Pointer to configuration identifier.
- *@return     TC_LOCK_SUCCESS    When config session exist.
- *@return     TC_LOCK_INVALID_UNC_STATE  When state is other than ACT.
- *@return     TC_LOCK_NO_CONFIG_SESSION_EXIST  When no configuration session exist.
- *@return     TC_LOCK_INVALID_PARAMS   When one/both  of passed pointer are NULL.
+/*
+ *@brief   Get configuration Data .
+ *@param[in]  session_id  session identifier.
+ *@param[out] config_id   configuration identifier.
+ *@param[out] config mode operation (Global/Real/VTN).
+ *@param[out] vtn_name, if config mode is VTN.
+ *@return TC_LOCK_SUCCESS    When config session exist.
+ *@return TC_LOCK_INVALID_UNC_STATE  When state is other than ACT.
+ *@return TC_LOCK_NO_CONFIG_SESSION_EXIST  When no configuration session exist.
+ *@return TC_LOCK_INVALID_PARAMS   When one/both  of passed pointer are NULL.
  */
 TcLockRet
-TcLock::GetConfigIdSessionId(uint32_t *session_id, uint32_t* config_id) {
-  if ( NULL == session_id || NULL == config_id)
-    return TC_LOCK_INVALID_PARAMS;
+TcLock::GetConfigData(uint32_t session_id,
+                      uint32_t& config_id,
+                      TcConfigMode& tc_mode,
+                      std::string& vtn_name) {
+
+  vtn_name.clear();
 
   pfc::core::ScopedMutex m(getGlobalLock());
   if (tc_state_lock_.current_state != TC_ACT) {
     return TC_LOCK_INVALID_UNC_STATE;
   }
-  if (tc_config_lock_.is_taken) {
-    *session_id = tc_config_lock_.session_id;
-    *config_id = tc_config_lock_.config_id;
+  std::string tc_config_name;
+  if (FindConfigName(session_id, tc_config_name) != TC_LOCK_SUCCESS)  {
+    return TC_LOCK_INVALID_SESSION_ID;
+  }
+
+  if (tc_config_name_map_[tc_config_name].is_taken) {
+    config_id = tc_config_name_map_[tc_config_name].config_id;
+    if (tc_config_name == "global-mode")  {
+      tc_mode = TC_CONFIG_GLOBAL;
+    } else if (tc_config_name == "real-mode") {
+        tc_mode = TC_CONFIG_REAL;
+    } else if (tc_config_name == "virtual-mode")  {
+        tc_mode = TC_CONFIG_VIRTUAL;
+    } else {
+        tc_mode = TC_CONFIG_VTN;
+        vtn_name = tc_config_name;
+    }
     return TC_LOCK_SUCCESS;
   } else {
-    *session_id = 0;
-    *config_id = 0;
+    config_id = 0;
     return TC_LOCK_NO_CONFIG_SESSION_EXIST;
   }
 }
@@ -739,17 +897,22 @@ TcLock::GetConfigIdSessionId(uint32_t *session_id, uint32_t* config_id) {
  */
 TcSessionOperationProgress TcLock::GetSessionOperation(uint32_t session_id) {
   pfc::core::ScopedMutex m(getGlobalLock());
+  std::string tc_config_name;
 
   /* session id matches with write lock session id */
   if (tc_rwlock_.isWriteHeld(session_id)) {
     TcWriteOperation  wop(tc_rwlock_.w_operation);
-    if (wop == TC_COMMIT && tc_config_lock_.is_taken) {
+    if (wop == TC_COMMIT &&
+        FindConfigName(session_id, tc_config_name) == TC_LOCK_SUCCESS &&
+        tc_config_name_map_[tc_config_name].is_taken) {
       return TC_CONFIG_COMMIT_PROGRESS;
     } else if (wop == TC_AUDIT_USER) {
       return TC_WRITE_AUDIT_USER_PROGRESS;
     } else if (wop == TC_AUDIT_DRIVER) {
       return TC_WRITE_AUDIT_DRIVER_PROGRESS;
-    } else if (wop == TC_ABORT_CANDIDATE_CONFIG  && tc_config_lock_.is_taken) {
+    } else if (wop == TC_ABORT_CANDIDATE_CONFIG  &&
+               FindConfigName(session_id, tc_config_name) == TC_LOCK_SUCCESS &&
+               tc_config_name_map_[tc_config_name].is_taken) {
       return TC_WRITE_ABORT_CANDIDATE_CONFIG_PROGRESS;
     } else if (wop == TC_SAVE_STARTUP_CONFIG) {
       return TC_WRITE_SAVE_STARTUP_CONFIG_PROGRESS;
@@ -759,13 +922,18 @@ TcSessionOperationProgress TcLock::GetSessionOperation(uint32_t session_id) {
   }
 
   /* session id matches with config lock session id  */
-  if ((tc_config_lock_.is_taken || tc_config_lock_.is_notify_pending ) &&
-      tc_config_lock_.session_id == session_id) {
-    if (tc_config_lock_.notify_operation == TC_NOTIFY_NONE) {
+  tc_config_name.clear();
+  if (FindConfigName(session_id, tc_config_name) == TC_LOCK_SUCCESS &&
+      (tc_config_name_map_[tc_config_name].is_taken || 
+       tc_config_name_map_[tc_config_name].is_notify_pending)) {
+    if (tc_config_name_map_[tc_config_name].notify_operation 
+                                               == TC_NOTIFY_NONE) {
       return TC_CONFIG_NO_NOTIFY_PROGRESS;
-    } else if (tc_config_lock_.notify_operation == TC_NOTIFY_ACQUIRE) {
+    } else if (tc_config_name_map_[tc_config_name].notify_operation 
+                                            == TC_NOTIFY_ACQUIRE) {
       return TC_CONFIG_NOTIFY_ACQUIRE_PROGRESS;
-    } else if (tc_config_lock_.notify_operation == TC_NOTIFY_RELEASE) {
+    } else if (tc_config_name_map_[tc_config_name].notify_operation 
+                                            == TC_NOTIFY_RELEASE) {
       return TC_CONFIG_NOTIFY_RELEASE_PROGRESS;
     }
   }
@@ -777,22 +945,6 @@ TcSessionOperationProgress TcLock::GetSessionOperation(uint32_t session_id) {
     return TC_READ_PROGRESS;
   }
   return TC_NO_OPERATION_PROGRESS;
-}
-
-/**
- *@brief      Set whether simultaneous read and write lock allowed or not
- *            Option read from tc.conf simultaneous_read_write_allowed param.
- *@param[in]  pfc_bool_t whether allowed or not
- *@return     None
- */
-void TcLock::TcInitWRLock(pfc_bool_t simultaneous_read_write_allowed) {
-
-  // Set session ids of DB_Mgmt and Launcher modules
-  // For these session_ids READ and WRITE are mutex
-  // Set whether simultaneous Read/Write lock allowed
-  tc_rwlock_.init(USESS_ID_DB_MGMT,
-                  USESS_ID_LAUNCHER,
-                  simultaneous_read_write_allowed); 
 }
 
 /**
@@ -813,6 +965,37 @@ void TcLock::TcSetSetupComplete(pfc_bool_t is_done) {
 pfc_bool_t TcLock::TcIsSetupCompleteDone() {
   pfc::core::ScopedMutex m(setup_complete_flag_lock_);
   return setup_complete_done_;
+}
+
+/**
+ *@brief      Return true if last op is commit or abort
+ *@param[in]  None
+ *@return     pfc_bool_t
+ */
+pfc_bool_t TcLock::IsLastOperationCandidate() {
+  pfc::core::ScopedMutex m(write_op_lock);
+  return (tc_rwlock_.last_write_op == TC_COMMIT ||
+          tc_rwlock_.last_write_op == TC_ABORT_CANDIDATE_CONFIG);
+}
+
+/**
+ *@brief      Return write operation that currently helds lock
+ *@param[in]  None
+ *@return     TcWriteOperation
+ */
+TcWriteOperation TcLock::TcGetCurrentWriteOperation() {
+  pfc::core::ScopedMutex m(write_op_lock);
+  return tc_rwlock_.w_operation;
+}
+
+/**
+ *@brief      return whether write lock can be acquired
+ *@param[in]  None
+ *@return     pfc_bool_t
+ */
+pfc_bool_t TcLock::CanWriteLock() {
+  pfc::core::ScopedMutex m(getGlobalLock());
+  return tc_rwlock_.canWriteLock();
 }
 
 }   // namespace tc

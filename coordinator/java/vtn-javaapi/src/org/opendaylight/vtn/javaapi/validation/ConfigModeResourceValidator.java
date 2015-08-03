@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -110,6 +110,7 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 	private boolean validatePost(final JsonObject requestBody) {
 		LOG.trace("Start ConfigModeResourceValidator#validatePost()");
 		boolean isValid = true;
+		boolean isVtnMode = false;
 		setInvalidParameter(VtnServiceJsonConsts.OP);
 		if (requestBody.has(VtnServiceJsonConsts.OP)
 				&& requestBody.getAsJsonPrimitive(VtnServiceJsonConsts.OP)
@@ -135,6 +136,39 @@ public class ConfigModeResourceValidator extends VtnServiceValidator {
 			
 			if (!isValid) {
 				setInvalidParameter(VtnServiceJsonConsts.TIMEOUT);
+			}
+		}
+
+		if (isValid && requestBody.has(VtnServiceJsonConsts.MODE)) {
+			setInvalidParameter(VtnServiceJsonConsts.MODE);
+			String mode = requestBody.getAsJsonPrimitive(
+							VtnServiceJsonConsts.MODE).getAsString();
+			if (mode.equalsIgnoreCase(VtnServiceJsonConsts.VIRTUAL_MODE)
+					|| mode.equalsIgnoreCase(VtnServiceJsonConsts.REAL_MODE)
+					|| mode.equalsIgnoreCase(VtnServiceJsonConsts.VTN_MODE)
+					|| mode.equalsIgnoreCase(VtnServiceJsonConsts.GLOBAL_MODE)) {
+				isValid = true;
+				if (mode.equalsIgnoreCase(VtnServiceJsonConsts.VTN_MODE)) {
+					isVtnMode = true;
+				}
+			} else {
+				isValid = false;
+			}
+		}
+
+		if (isValid && isVtnMode) {
+			setInvalidParameter(VtnServiceJsonConsts.VTNNAME);
+			if (requestBody.has(VtnServiceJsonConsts.VTNNAME)) {
+				String vtnName = requestBody.getAsJsonPrimitive(
+						VtnServiceJsonConsts.VTNNAME).getAsString();
+				if (vtnName != null && !vtnName.isEmpty()) {
+					isValid = validator.isValidMaxLengthAlphaNum(
+							vtnName, VtnServiceJsonConsts.LEN_31);
+				} else {
+					isValid = false;
+				}
+			} else {
+				isValid = false;
 			}
 		}
 		LOG.trace("Complete ConfigModeResourceValidator#validatePost()");

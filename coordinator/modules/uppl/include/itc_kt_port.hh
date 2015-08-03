@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -159,7 +159,12 @@ class Kt_Port: public Kt_State_Base {
     return PFC_FALSE;
   }
 
- private:
+  UncRespCode ReadNeighbor(OdbcmConnectionHandler *db_conn,
+      void* key_struct,
+      void* val_struct,
+      uint32_t data_type,
+      val_port_st_neighbor &obj_neighbor);
+  private:
   void PopulateDBSchemaForKtTable(OdbcmConnectionHandler *db_conn,
       DBTableSchema &kt_dbtableschema,
       void* key_struct,
@@ -170,9 +175,9 @@ class Kt_Port: public Kt_State_Base {
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
       void* &old_value_struct,
-      CsRowStatus row_status= NOTAPPLIED,
-      pfc_bool_t is_filtering= false,
-      pfc_bool_t is_state= PFC_FALSE);
+      CsRowStatus row_status,
+      pfc_bool_t is_filtering,
+      pfc_bool_t is_state);
 
   void FillPortValueStructure(OdbcmConnectionHandler *db_conn,
                               DBTableSchema &kt_port_dbtableschema,
@@ -213,11 +218,6 @@ class Kt_Port: public Kt_State_Base {
                                uint32_t data_type,
                                void* key_struct,
                                UpplPortOperStatus oper_status);
-  UncRespCode ReadNeighbor(OdbcmConnectionHandler *db_conn,
-      void* key_struct,
-      void* val_struct,
-      uint32_t data_type,
-      val_port_st_neighbor &obj_neighbor);
   void FrameValidValue(string attr_value, val_port_st &obj_val_port);
   void GetPortValStructure(OdbcmConnectionHandler *db_conn,
         val_port_st_t *obj_val_port,

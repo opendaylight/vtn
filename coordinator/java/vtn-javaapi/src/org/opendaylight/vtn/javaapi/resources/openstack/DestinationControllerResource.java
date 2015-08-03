@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -21,6 +21,7 @@ import org.opendaylight.vtn.javaapi.init.VtnServiceInitManager;
 import org.opendaylight.vtn.javaapi.ipc.enums.UncCommonEnum.UncResultCode;
 import org.opendaylight.vtn.javaapi.openstack.constants.VtnServiceOpenStackConsts;
 import org.opendaylight.vtn.javaapi.openstack.dao.DestinationControllerDao;
+import org.opendaylight.vtn.javaapi.openstack.dao.VtnDao;
 import org.opendaylight.vtn.javaapi.openstack.validation.DestinationControllerResourceValidator;
 import org.opendaylight.vtn.javaapi.resources.AbstractResource;
 
@@ -122,8 +123,7 @@ public class DestinationControllerResource extends AbstractResource {
 			 * made for current connection. Otherwise do the roll-back
 			 */
 			if (isCommitRequired) {
-				// connection.commit();
-				setOpenStackConnection(connection);
+				connection.commit();
 				LOG.info("commit successful");
 			} else {
 				connection.rollback();
@@ -189,47 +189,54 @@ public class DestinationControllerResource extends AbstractResource {
 			connection = VtnServiceInitManager.getDbConnectionPoolMap()
 					.getConnection();
 
-			LOG.info("Controller exists at UNC.");
-
-			final DestinationControllerDao destControllerDao = new DestinationControllerDao();
-			final int status = destControllerDao
-					.deleteDestinationController(connection);
-
-			if (status == 1) {
-				isCommitRequired = true;
-				errorCode = UncResultCode.UNC_SUCCESS.getValue();
-				LOG.info("Database deletion is successful for Controller id.");
+			final VtnDao vtnDao = new VtnDao();
+			if (vtnDao.isVtnExist(connection)) {
+				LOG.error("Database deletion is failed, because tenants is exist.");
+					createErrorInfo(
+							UncResultCode.UNC_METHOD_NOT_ALLOWED.getValue(),
+									UncResultCode.UNC_METHOD_NOT_ALLOWED.getMessage());
 			} else {
-				LOG.error("Database deletion is failed for Controller id.");
-				createErrorInfo(
-						UncResultCode.UNC_CTRL_NOT_FOUND.getValue(),
-						getCutomErrorMessage(
-								UncResultCode.UNC_CTRL_NOT_FOUND.getMessage(),
-								VtnServiceJsonConsts.CONTROLLERID,
-								VtnServiceConsts.EMPTY_STRING));
-			}
+				LOG.info("Tenant is not exists at UNC.");
 
-			/*
-			 * If all processing are OK, commit all the database transaction
-			 * made for current connection. Otherwise do the roll-back
-			 */
-			if (isCommitRequired) {
-				// connection.commit();
-				setOpenStackConnection(connection);
-				LOG.info("commit successful");
-			} else {
-				connection.rollback();
-				LOG.info("roll-back successful");
-			}
+				final DestinationControllerDao destControllerDao = new DestinationControllerDao();
+				final int status = destControllerDao
+						.deleteDestinationController(connection);
 
-			/*
-			 * set response, if it is not set during processing for set
-			 * destination controller
-			 */
-			if (errorCode != UncResultCode.UNC_SUCCESS.getValue()) {
-				if (getInfo() == null) {
-					createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR
-							.getValue());
+				if (status == 1) {
+					isCommitRequired = true;
+					errorCode = UncResultCode.UNC_SUCCESS.getValue();
+					LOG.info("Database deletion is successful for Controller id.");
+				} else {
+					LOG.error("Database deletion is failed for Controller id.");
+					createErrorInfo(
+							UncResultCode.UNC_CTRL_NOT_FOUND.getValue(),
+							getCutomErrorMessage(
+									UncResultCode.UNC_CTRL_NOT_FOUND.getMessage(),
+									VtnServiceJsonConsts.CONTROLLERID,
+									VtnServiceConsts.EMPTY_STRING));
+				}
+
+				/*
+			 	* If all processing are OK, commit all the database transaction
+			 	* made for current connection. Otherwise do the roll-back
+			 	*/
+				if (isCommitRequired) {
+					connection.commit();
+					LOG.info("commit successful");
+				} else {
+					connection.rollback();
+					LOG.info("roll-back successful");
+				}
+
+				/*
+			 	* set response, if it is not set during processing for set
+			 	* destination controller
+			 	*/
+				if (errorCode != UncResultCode.UNC_SUCCESS.getValue()) {
+					if (getInfo() == null) {
+						createErrorInfo(UncResultCode.UNC_INTERNAL_SERVER_ERROR
+								.getValue());
+					}
 				}
 			}
 		} catch (final SQLException exception) {

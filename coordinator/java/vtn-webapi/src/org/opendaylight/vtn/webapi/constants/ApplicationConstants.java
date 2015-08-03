@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -23,6 +23,9 @@ public final class ApplicationConstants {
 
 	/** The Constant RESPONSE_SUCCESS. */
 	public static final int SUCCESS = 200;
+	
+	/** The Constant RESPONSE_ACCEPTED. */
+	public static final int ACCEPTED = 202;
 
 	/** The Constant ZERO. */
 	public static final int ZERO = 0;
@@ -138,6 +141,12 @@ public final class ApplicationConstants {
 	
 	/** The Constant CFG_MODE_TIMEOUT. */
 	public static final String CFG_MODE_TIMEOUT = "cfg_mode_timeout";
+
+	public static final String COMMIT_TIMEOUT = "commit_timeout";
+
+	public static final String ABORT_TIMEOUT = "abort_timeout";
+
+	public static final String CANCEL_AUDIT = "cancel_audit";
 
 	/** The Constant COUNT. */
 	public static final String COUNT = "/count";
@@ -291,8 +300,60 @@ public final class ApplicationConstants {
 	/** The Constant CFG_TIMEOUT_DEFAULT. */
 	public static final String CFG_TIMEOUT_DEFAULT = "20500";
 	
+	public static final String COMMIT_TIMEOUT_DEFAULT = "20500";
+
+	public static final String ABORT_TIMEOUT_DEFAULT = "20500";
+
+	public static final String CANCEL_AUDIT_DEFAULT = "1";
+
 	/** The Space  */
 	public static final String SPACE_STRING = " ";
 	/** The quotation marks */
 	public static final String QUOTATION_MARK_STRING = "\"";
+
+	/** The Constant for Acceselog. */
+	public static final String REQ_BODY = "requestBodyName";
+
+	public static final String REQ_BODY_DEF_NAME = "org.opendaylight.vtn.unc.requestbody";
+
+        public static final String RES_ERR_MSG = "errorMsgName";
+
+        public static final String RES_ERR_MSG_DEF_NAME = "org.opendaylight.vtn.unc.errormessage";
+
+    /** 
+     * URI /configuration/diff
+     */
+    public static final String URI_DIFF = "/configuration/diff";
+
+	public static final String MODE = "mode";
+
+	public static final String VIRTUAL_MODE = "virtual";
+
+	public static final String REAL_MODE = "real";
+
+	public static final String VTN_MODE = "vtn";
+
+	public static final String GLOBAL_MODE = "global";
+
+	public static final String VTNS_STRING = "vtns";
+
+	public static final String TENANT_STRING = "tenants";
+
+	public static final String FLOWLISTS_STRING = "flowlists";
+
+	public static final String UNIFIED_NETWORKS_STRING = "unified_networks";
+
+	public static final String FILTERS_STRING = "filters";
+
+	public static final String CONTROLLERS_STRING = "controllers";
+
+	public static final String BOUNDARIES_STRING = "boundaries";
+
+	public static final String VTN = "vtn";
+
+	public static final String VTNNAME = "vtn_name";
+
+	public static final String ID = "id";
+
+	public static final String SLASH_STRING = "/";
 }

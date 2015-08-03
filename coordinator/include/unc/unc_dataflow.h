@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -72,7 +72,9 @@ typedef enum {
   /* If flow not found in target PFC */
   UNC_DF_RES_FLOW_NOT_FOUND,
   /* If any system level error at UNC */
-  UNC_DF_RES_SYSTEM_ERROR
+  UNC_DF_RES_SYSTEM_ERROR,
+  /* If domain type is leaf or spine */
+  UNC_DF_RES_DOMAIN_NOT_SUPPORTED
 }UncDataflowReason;
 
 typedef enum {

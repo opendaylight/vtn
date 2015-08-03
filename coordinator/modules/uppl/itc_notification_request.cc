@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,7 @@
 
 #include "itc_notification_request.hh"
 #include "itc_kt_port.hh"
+#include "itc_kt_port_neighbor.hh"
 #include "itc_kt_switch.hh"
 #include "itc_kt_link.hh"
 #include "itc_kt_controller.hh"
@@ -61,7 +62,7 @@ pfc_bool_t NotificationRequest::ProcessEvent(const IpcEvent &event) {
       pfc_log_error("ProcessNotificationEvents failed error no: %d", err);
       return PFC_FALSE;
     }
-  } else if (event_type == UNC_ALARMS) {
+  } else if (event_type == UNC_UPPL_ALARMS) {
     UncRespCode err = ProcessAlarmEvents(event);
     if (err != UNC_RC_SUCCESS) {
       pfc_log_error("ProcessAlarmEvents failed error no: %d", err);
@@ -101,6 +102,10 @@ UncRespCode NotificationRequest::InvokeKtDriverEvent(
   switch (key_type) {
     case UNC_KT_PORT: {
       ObjStateNotify = new Kt_Port();
+      break;
+    }
+    case UNC_KT_PORT_NEIGHBOR: {
+      ObjStateNotify = new Kt_Port_Neighbor();
       break;
     }
     case UNC_KT_SWITCH: {
@@ -197,6 +202,16 @@ UncRespCode NotificationRequest::ProcessNotificationEvents(
     case UNC_KT_PORT:
     {
       status = ProcessPortEvents(&sess,
+                                 data_type,
+                                 operation);
+      if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
+        return status;
+      }
+      break;
+    }
+    case UNC_KT_PORT_NEIGHBOR:
+    {
+      status = ProcessPortNeighborEvents(&sess,
                                  data_type,
                                  operation);
       if (status == UNC_UPPL_RC_ERR_BAD_REQUEST) {
@@ -396,7 +411,8 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
                    alarm_header.operation);
       return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
-    if (alarm_header.alarm_type ==  UNC_COREDOMAIN_SPLIT) {
+    if (alarm_header.alarm_type ==  UNC_COREDOMAIN_SPLIT ||
+        alarm_header.alarm_type ==  UNC_DOMAIN_SPLIT) {
       string controller_name = reinterpret_cast<char *>
       (key_ctr_domain.ctr_key.controller_name);
       EventAlarmDetail event_detail(TQ_ALARM);
@@ -539,7 +555,8 @@ UncRespCode NotificationRequest::ProcessAlarmEvents(const IpcEvent &event) {
       return UNC_UPPL_RC_ERR_NOTIFICATION_NOT_SUPPORTED;
     }
     if ((alarm_header.alarm_type ==  UNC_FLOW_ENT_FULL) ||
-        (alarm_header.alarm_type ==  UNC_OFS_LACK_FEATURES)) {
+        (alarm_header.alarm_type ==  UNC_OFS_LACK_FEATURES) ||
+        (alarm_header.alarm_type ==  UNC_OFS_DISABLED)) {
       string controller_name = reinterpret_cast<char *>
       (switch_key.ctr_key.controller_name);
       EventAlarmDetail event_detail(TQ_ALARM);
@@ -644,6 +661,87 @@ UncRespCode NotificationRequest::ProcessPortEvents(
     o_val_struct = (val_port_st*)malloc(sizeof(val_port_st));
     if (o_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
     memcpy(o_val_struct, &old_val_port, sizeof(val_port_st));
+  }
+  event_detail.old_val_struct = reinterpret_cast<void*>(o_val_struct);
+  //  get taskq for this controller, and dipatch a new task into taskqueue.
+  PhyEventTaskqUtil *taskq_util = NotificationManager::get_taskq_util();
+  if (taskq_util->DispatchNotificationEvent(
+                  event_detail, controller_name) != 0) {
+    pfc_log_error("Dispatch event failed ");
+    return UNC_UPPL_RC_ERR_NOTIFICATION_HANDLING_FAILED;
+  }
+  return status;
+}
+
+/**ProcessPortNeighborEvents
+ * @Description:This function processes events recieved for port
+ * @param[in]:
+ * sess-ClientSession object used to retrieve the response arguments
+ * data_type-type of database,UNC_DT_*
+ * operation-type of operation UNC_OP_CREATE/UPDATE/DELETE
+ * @return   :Success or associated error code
+ **/
+UncRespCode NotificationRequest::ProcessPortNeighborEvents(
+    ClientSession *sess,
+    uint32_t data_type,
+    uint32_t operation) {
+  UncRespCode status = UNC_RC_SUCCESS;
+  key_port_t port_key;
+  memset(&port_key, '\0', sizeof(key_port_t));
+  int read_err = sess->getResponse((uint32_t)5, port_key);
+  if (read_err != 0) {
+    pfc_log_error("Key not received for port");
+    return UNC_UPPL_RC_ERR_BAD_REQUEST;
+  }
+  pfc_log_info("%s", IpctUtil::get_string(port_key).c_str());
+  string controller_name = reinterpret_cast<char *>
+  (port_key.sw_key.ctr_key.controller_name);
+  val_port_st_neighbor old_val_port, new_val_port;
+  // val
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    read_err = sess->getResponse((uint32_t)6, new_val_port);
+    if (read_err != 0) {
+      pfc_log_error("New value not received for port");
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
+    }
+    pfc_log_info("NEWVAL: %s", IpctUtil::get_string(new_val_port).c_str());
+  }
+  // old val
+  if (operation == UNC_OP_UPDATE) {
+    read_err = sess->getResponse((uint32_t)7, old_val_port);
+    if (read_err != 0) {
+      pfc_log_error("Old value not received for port");
+      return UNC_UPPL_RC_ERR_BAD_REQUEST;
+    }
+    pfc_log_info("OLDVAL: %s",
+                 IpctUtil::get_string(old_val_port).c_str());
+  }
+  // call driver event
+  EventAlarmDetail event_detail(TQ_EVENT);
+  event_detail.operation = operation;
+  event_detail.data_type = data_type;
+  event_detail.key_type = UNC_KT_PORT_NEIGHBOR;
+  //  allocating memory for key structure - key is mandatory param
+  key_port_t* key = (key_port_t*)malloc(sizeof(key_port_t));
+  if (key == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+  memcpy(key, &port_key, sizeof(key_port_t));
+  event_detail.key_struct = reinterpret_cast<void *>(key);
+  event_detail.key_size = sizeof(key_port_t);
+  //  allocating memory for new val structure
+  val_port_st_neighbor_t* n_val_struct = NULL;
+  if (operation == UNC_OP_CREATE || operation == UNC_OP_UPDATE) {
+    n_val_struct = (val_port_st_neighbor*)malloc(sizeof(val_port_st_neighbor));
+    if (n_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(n_val_struct, &new_val_port, sizeof(val_port_st_neighbor));
+  }
+  event_detail.new_val_struct = reinterpret_cast<void*>(n_val_struct);
+  event_detail.val_size = sizeof(val_port_st_neighbor);
+  //  allocating memory for old val structure
+  val_port_st_neighbor_t* o_val_struct = NULL;
+  if (operation == UNC_OP_UPDATE) {
+    o_val_struct = (val_port_st_neighbor*)malloc(sizeof(val_port_st_neighbor));
+    if (o_val_struct == NULL) return UNC_UPPL_RC_ERR_FATAL_RESOURCE_ALLOCATION;
+    memcpy(o_val_struct, &old_val_port, sizeof(val_port_st_neighbor));
   }
   event_detail.old_val_struct = reinterpret_cast<void*>(o_val_struct);
   //  get taskq for this controller, and dipatch a new task into taskqueue.
@@ -992,6 +1090,16 @@ UncRespCode NotificationRequest:: ProcessLogicalPortEvents(
     }
     pfc_log_info("NEWVAL: %s",
                  IpctUtil::get_string(new_val_logical_port_t).c_str());
+    // When there is no member, the LP oper status will
+    // be down for SD, TP, PG and MG type
+    if (operation == UNC_OP_CREATE &&
+       (new_val_logical_port_t.logical_port.port_type == UPPL_LP_SUBDOMAIN ||
+       new_val_logical_port_t.logical_port.port_type == UPPL_LP_MAPPING_GROUP ||
+       new_val_logical_port_t.logical_port.port_type == UPPL_LP_TRUNK_PORT ||
+       new_val_logical_port_t.logical_port.port_type == UPPL_LP_PORT_GROUP)) {
+      new_val_logical_port_t.oper_status = UPPL_LOGICAL_PORT_OPER_DOWN;
+      new_val_logical_port_t.valid[kIdxLogicalPortStOperStatus] = UNC_VF_VALID;
+    }
   }
   EventAlarmDetail event_detail(TQ_EVENT);
   event_detail.operation = operation;

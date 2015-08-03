@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2012-2013 NEC Corporation
+# Copyright (c) 2012-2015 NEC Corporation
 # All rights reserved.
 # 
 # This program and the accompanying materials are made available under the
@@ -15,6 +15,7 @@ include ../defs.mk
 
 CXX_SOURCES	=	tc_operations.cc \
 			tc_read_operations.cc \
+			tc_read_status_operations.cc	\
 			tc_config_operations.cc  \
 			tc_startup_operations.cc \
 			tc_db_operations.cc \

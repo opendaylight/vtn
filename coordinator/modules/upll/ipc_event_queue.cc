@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,7 @@
 
 #include "ipc_event_queue.hh"
 #include "config_mgr.hh"
+#include "ctrlr_mgr.hh"
 
 
 namespace unc {
@@ -20,6 +21,7 @@ namespace upll {
 namespace ctrlr_events {
 
 using unc::upll::config_momgr::UpllConfigMgr;
+using unc::upll::config_momgr::CtrlrMgr;
 uint32_t UpllIpcEventQueue::events_processed = 0;
 
 UpllIpcEventQueue::~UpllIpcEventQueue() {
@@ -88,8 +90,8 @@ void UpllIpcEventQueue::AddEvent(EventArgument *event_ptr) {
     pfc_taskdtor_t dtor_func = &UpllIpcEventQueue::DtorEventArgument;
     pfc_task_t tid = PFC_TASKQ_INVALID_TASKID;
     int err = pfc_taskq_dispatch_dtor(ipc_event_taskq_, func,
-                                      (void*)(event_ptr), dtor_func,
-                                      kUpllTaskDetatched, &tid);
+                                      reinterpret_cast<void*>(event_ptr),
+                                      dtor_func, kUpllTaskDetatched, &tid);
     if (err != 0) {
       DtorEventArgument(event_ptr);
       UPLL_LOG_FATAL("Failed to dispatch ipc_event_taskq_. err=%d, tid=%u",
@@ -114,8 +116,12 @@ void UpllIpcEventQueue::EventHandler(void *event_ptr) {
     case EventArgument::UPPL_CTRLR_STATUS_EVENT:
       {
         CtrlrStatusArg *ptr = reinterpret_cast<CtrlrStatusArg *>(arg_ptr);
+        const char* ctrlr_id = ptr->ctrlr_name_.c_str();
         config_mgr->OnControllerStatusChange(ptr->ctrlr_name_.c_str(),
                                              ptr->operstatus_);
+        if (ptr->operstatus_== UPPL_CONTROLLER_OPER_DOWN &&
+            CtrlrMgr::GetInstance()->IsPathFaultOccured(ctrlr_id, "*"))
+          CtrlrMgr::GetInstance()->ClearPathfault(ctrlr_id, "*");
         pthread_yield();
       }
       break;
@@ -134,7 +140,7 @@ void UpllIpcEventQueue::EventHandler(void *event_ptr) {
         BoundaryStatusArg *ptr = reinterpret_cast<BoundaryStatusArg *>(arg_ptr);
         config_mgr->OnBoundaryStatusChange(ptr->boundary_id_.c_str(),
                                            ptr->operstatus_);
-       
+
         pthread_yield();
       }
       break;
@@ -144,7 +150,7 @@ void UpllIpcEventQueue::EventHandler(void *event_ptr) {
         config_mgr->OnPathFaultAlarm(ptr->ctrlr_name_.c_str(),
                                      ptr->domain_name_.c_str(),
                                      ptr->alarm_raised_);
-      
+
         pthread_yield();
       }
       break;
@@ -181,11 +187,22 @@ void UpllIpcEventQueue::EventHandler(void *event_ptr) {
         pthread_yield();
       }
       break;
+    case EventArgument::PFCDRV_VTNID_EXHAUSTION_ALARM:
+      {
+        VtnIdExhaustionArg *ptr =
+                       reinterpret_cast<VtnIdExhaustionArg *>(arg_ptr);
+        config_mgr->OnVtnIDExhaustionAlarm(ptr->ctrlr_name_.c_str(),
+                                       ptr->domain_name_.c_str(),
+                                       ptr->key_vtn_,
+                                       ptr->alarm_raised_);
+        pthread_yield();
+      }
+      break;
     case EventArgument::UNKNOWN_EVENT:
     default:
       UPLL_LOG_ERROR("UNKNOWN event dispatched in event queue");
   }
 }
-}  // namesapce ctrlr_events
-}  // namesapce upll
-}  // namesapce unc
+}  // namespace ctrlr_events
+}  // namespace upll
+}  // namespace unc

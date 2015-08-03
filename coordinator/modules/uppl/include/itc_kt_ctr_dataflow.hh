@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 NEC Corporation
+ * Copyright (c) 2013-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -16,12 +16,17 @@
 #ifndef KT_CTR_DATAFLOW_H
 #define KT_CTR_DATAFLOW_H
 
+#include <uncxx/dataflow.hh>
 #include <vector>
 #include <string>
 #include "itc_kt_state_base.hh"
 #include "physicallayer.hh"
 
 using unc::uppl::ODBCMOperator;
+using unc::dataflow::DataflowUtil;
+using unc::dataflow::DataflowCmn;
+using unc::dataflow::DataflowDetail;
+using unc::dataflow::kidx_val_df_data_flow_cmn;
 
 
 /* @  Ctr_Dataflow Class definition */
@@ -71,9 +76,9 @@ class Kt_Ctr_Dataflow : public Kt_State_Base {
       uint32_t option2,
       vector<ODBCMOperator> &vect_key_operations,
       void* &old_value_struct,
-      CsRowStatus row_status= NOTAPPLIED,
-      pfc_bool_t is_filtering= false,
-      pfc_bool_t is_state= PFC_FALSE) {
+      CsRowStatus row_status,
+      pfc_bool_t is_filtering,
+      pfc_bool_t is_state) {
   }
 
   UncRespCode PerformRead(OdbcmConnectionHandler *db_conn,

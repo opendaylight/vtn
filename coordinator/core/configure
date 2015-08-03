@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 
 #
-# Copyright (c) 2010-2014 NEC Corporation
+# Copyright (c) 2010-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -5807,12 +5807,13 @@ sub check_java_version($$%)
 	my ($filter) = sub {
 		my ($rh) = @_;
 
-		my $pat = qr,^$cmd.*\x22?((\d+)\.(\d+)\.[\d_]+)(-.+)?\x22?$,;
+		my $pat = qr,^($cmd|openjdk).*\x22?((\d+)\.(\d+)\.[\d_]+)
+			(-.+)?\x22?$,x;
 		while (my $line = $rh->getline()) {
 			if ($line =~ $pat) {
-				$ver = $1;
-				$major = $2;
-				$minor = $3;
+				$ver = $2;
+				$major = $3;
+				$minor = $4;
 				last;
 			}
 

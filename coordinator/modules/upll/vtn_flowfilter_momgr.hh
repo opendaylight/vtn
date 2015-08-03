@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -372,7 +372,7 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t TxCopyCandidateToRunning(
         unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
-        DalDmlIntf *dmi);
+        DalDmlIntf *dmi, TcConfigMode config_mode, string vtn_name);
 
     /**
      * @brief  Allocates Memory for the Incoming Pointer to the Class.
@@ -453,7 +453,8 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
      *
      *  @return  true if validation is successful
      **/
-    bool IsValidKey(void *key, uint64_t index);
+    bool IsValidKey(void *key, uint64_t index,
+                    MoMgrTables tbl = MAINTBL);
 
     /**
      * @brief     This API is used to check the object availability in
@@ -466,8 +467,8 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
      * @retval    UPLL_RC_SUCCESS    Successful completion.
      * @retval    UPLL_RC_ERR        Specific Error code.
      */
-    upll_rc_t IsReferenced(ConfigKeyVal *ikey,
-                           upll_keytype_datatype_t dt_type,
+    upll_rc_t IsReferenced(IpcReqRespHeader *req,
+                           ConfigKeyVal *ikey,
                            DalDmlIntf *dmi);
 
     upll_rc_t GetParentConfigKey(ConfigKeyVal *&okey,
@@ -492,14 +493,17 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
                                           unc_keytype_operation_t op,
                                           upll_keytype_datatype_t dt_type,
                                           DalDmlIntf *dmi,
-                                          uint8_t flag);
+                                          uint8_t flag,
+                                          TcConfigMode config_mode);
 
     upll_rc_t UpdateControllerTable(
         ConfigKeyVal *ikey,
         unc_keytype_operation_t op,
         upll_keytype_datatype_t dt_type,
         DalDmlIntf *dmi,
-        std::list<controller_domain_t> list_ctrlr_dom);
+        std::list<controller_domain_t> list_ctrlr_dom,
+        TcConfigMode config_mode,
+        string vtn_name);
 
     upll_rc_t GetControllerKeyval(ConfigKeyVal *&ctrlckv,
                                   ConfigKeyVal *&ikey,
@@ -527,10 +531,12 @@ class VtnFlowFilterMoMgr : public MoMgrImpl {
 
     upll_rc_t DeleteChildrenPOM(ConfigKeyVal *ikey,
                                 upll_keytype_datatype_t dt_type,
-                                DalDmlIntf *dmi);
+                                DalDmlIntf *dmi,
+                                TcConfigMode config_mode,
+                                string vtn_name);
     upll_rc_t  SetVtnFFConsolidatedStatus(ConfigKeyVal *ikey,
                                           uint8_t *ctrlr_id,
-                                          DalDmlIntf *dmi); 
+                                          DalDmlIntf *dmi);
     upll_rc_t SetValidAudit(ConfigKeyVal *&ikey);
 
     bool FilterAttributes(void *&val1,

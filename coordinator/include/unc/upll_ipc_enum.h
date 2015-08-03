@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -13,6 +13,9 @@
 #include "unc/base.h"
 
 UNC_C_BEGIN_DECL
+
+#define ANY_VLAN_ID 0xFFFE
+#define NO_VLAN_ID 0xFFFF
 
 /* specify admin status */
 enum val_admin_status {
@@ -167,7 +170,8 @@ enum val_vbr_index {
   UPLL_IDX_DOMAIN_ID_VBR,
   UPLL_IDX_DESC_VBR,
   UPLL_IDX_HOST_ADDR_VBR,
-  UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR
+  UPLL_IDX_HOST_ADDR_PREFIXLEN_VBR,
+  UPLL_IDX_LABEL_VBR
 };
 
 /* index enumeration for val_rename_vbr structure */
@@ -294,7 +298,8 @@ enum val_vrt_ip_route_st_index {
 
 /* index enumeration for val_static_ip_route structure */
 enum val_static_ip_route_index {
-  UPLL_IDX_GROUP_METRIC_SIR = 0
+  UPLL_IDX_NWM_NAME_SIR = 0,
+  UPLL_IDX_GROUP_METRIC_SIR
 };
 
 /* index enumeration for val_vrt_if structure */
@@ -390,7 +395,8 @@ enum val_vlink_index {
   UPLL_IDX_VNODE2_NAME_VLNK,
   UPLL_IDX_VNODE2_IF_NAME_VLNK,
   UPLL_IDX_BOUNDARY_NAME_VLNK,
-  UPLL_IDX_VLAN_ID_VLNK,
+  UPLL_IDX_LABEL_TYPE_VLNK,
+  UPLL_IDX_LABEL_VLNK,
   UPLL_IDX_DESCRIPTION_VLNK
 };
 
@@ -736,6 +742,182 @@ enum val_vnode_type {
   UPLL_VNODE_VTEP,
   UPLL_VNODE_VTUNNEL
 };
+
+/* enum for unified network routing type values */
+enum val_unified_nw_routing_type {
+  UPLL_ROUTING_TYPE_DIRECT_CONNECTED = 0,           /* Direct connected    */
+  UPLL_ROUTING_TYPE_QINQ_TO_QINQ,                   /* QinQ to QinQ        */
+  UPLL_ROUTING_TYPE_VLAN_CONNECTED                  /* VLAN connected      */
+};
+
+/* enum for label type values */
+enum val_label_type {
+  UPLL_LABEL_TYPE_VLAN = 1,
+  UPLL_LABEL_TYPE_QIQ,
+  UPLL_LABEL_TYPE_VNI,
+  UPLL_LABEL_TYPE_GW_VLAN = 100
+  
+};
+
+/* index enumeration for val_vbr_portmap structure */
+enum val_vbr_portmap_index {
+  UPLL_IDX_CONTROLLER_ID_VBRPM = 0,                /* controller identifier   */
+  UPLL_IDX_DOMAIN_ID_VBRPM,                        /* domain identifier       */
+  UPLL_IDX_LOGICAL_PORT_ID_VBRPM,                  /* logical port identifier */
+  UPLL_IDX_LABEL_TYPE_VBRPM,                       /* label type              */
+  UPLL_IDX_LABEL_VBRPM,                            /* label                   */
+};
+
+enum val_vbr_portmap_st_index {
+  UPLL_IDX_OPER_STATUS_VBRPMS = 0
+};
+
+
+/* index enumeration for val_unified_nw structure */
+enum val_unified_nw_index {
+  UPLL_IDX_ROUTING_TYPE_UNW = 0,                    /* routing_type        */
+  UPLL_IDX_IS_DEFAULT_UNW                           /* is_default          */
+};
+
+/* index enumeration for val_unw_spine_domain structure */
+enum val_unw_spine_domain_index {
+  UPLL_IDX_SPINE_CONTROLLER_ID_UNWS = 0,            /* spine_controller_id */
+  UPLL_IDX_SPINE_DOMAIN_ID_UNWS,                    /* spine_domain_id     */
+  UPLL_IDX_UNW_LABEL_ID_UNWS                        /* unw_label_id        */
+};
+
+/* index enumeration for val_unw_spine_domain_st structure */
+enum val_unw_spine_domain_st_index {
+  UPLL_IDX_MAX_COUNT_UNWS_ST = 0,                   /* max_count           */
+  UPLL_IDX_USED_COUNT_UNWS_ST,                      /* used_count          */
+  UPLL_IDX_ALARM_STATUS_UNWS_ST                     /* alarm_status        */
+};
+
+/* index enumeration for val_unw_spine_domain_assigned_label structure */
+enum val_unw_spine_domain_assigned_label_index {
+  UPLL_IDX_LABEL_UNWSAL = 0,                        /* label               */
+  UPLL_IDX_VTN_ID_UNWSAL,                           /* vtn_id              */
+  UPLL_IDX_VNODE_ID_UNWSAL,                         /* vnode_id            */
+};
+
+/* index enumeration for val_unw_spine_domain_fdbentry structure */
+enum val_unw_spine_domain_fdbentry_index {
+  UPLL_IDX_MAX_COUNT_UNWSDF = 0,                    /* max_count           */
+  UPLL_IDX_MAX_SWITCH_ID_UNWSDF,                    /* max_switch_id       */
+  UPLL_IDX_MIN_COUNT_UNWSDF,                        /* min_count           */
+  UPLL_IDX_MIN_SWITCH_ID_UNWSDF,                    /* min_switch_id       */
+  UPLL_IDX_AVG_COUNT_UNWSDF,                        /* avg_count           */
+  UPLL_IDX_NO_OF_SWITCHES_UNWSDF,                   /* num_of_switches     */
+  UPLL_IDX_VTN_COUNT_UNWSDF                         /* vtn_count           */
+};
+
+/* index enumeration for val_unw_spine_domain_fdbentry_vtn structure */
+enum val_unw_spine_domain_fdbentry_vtn_index {
+  UPLL_IDX_VTN_ID_UNWSDFV = 0,                      /* vtn_id              */
+  UPLL_IDX_VLAN_ID_UNWSDFV,                         /* vlan_id             */
+  UPLL_IDX_MAX_COUNT_UNWSDFV,                       /* max_count           */
+  UPLL_IDX_MAX_SWITCH_ID_UNWSDFV,                   /* max_switch_id       */
+  UPLL_IDX_MIN_COUNT_UNWSDFV,                       /* min_count           */
+  UPLL_IDX_MIN_SWITCH_ID_UNWSDFV,                   /* min_switch_id       */
+  UPLL_IDX_AVG_COUNT_UNWSDFV                        /* avg_count           */
+};
+
+/* index enumeration for val_unw_label structure */
+enum val_unw_label_index {
+  UPLL_IDX_MAX_COUNT_UNWL = 0,                      /* max_count           */
+  UPLL_IDX_RAISING_THRESHOLD_UNWL,                  /* raising_threshold   */
+  UPLL_IDX_FALLING_THRESHOLD_UNWL                   /* falling_threshold   */
+};
+
+/* index enumeration for val_vtn_unified structure */
+enum val_vtn_unified_index {
+  UPLL_IDX_SPINE_ID_VUNW = 0                        /* spine_id            */
+};
+
+/* index enumeration for val_vtn_vtn_flooding_path_st structure */
+enum val_vtn_flooding_path_st_index {
+  UPLL_IDX_CONTROLLER_ID_VFPS = 0,                  /* controller_id       */
+  UPLL_IDX_DOMAIN_ID_VFPS,                          /* domain_id           */
+  UPLL_IDX_FLOODING_PATH_ID_VFPS,                   /* flooding_path_id    */
+  UPLL_IDX_LAST_UPDATED_VFPS,                       /* last_updated        */
+  UPLL_IDX_TREE_COUNT_VFPS                          /* tree_count          */
+};
+
+/* index enumeration for val_vtn_vtn_flooding_path_tree structure */
+enum val_vtn_flooding_path_tree_index {
+  UPLL_IDX_ROOT_SWITCH_ID_VFPT = 0,                 /* root_switch_id      */
+  UPLL_IDX_PATH_COUNT_VFPT                          /* path_count          */
+};
+
+/* index enumeration for val_vtn_vtn_flooding_path_path structure */
+enum val_vtn_flooding_path_path_index {
+  UPLL_IDX_MEMBER_SWITCH_ID_VFPP = 0,               /* member_switch_id    */
+  UPLL_IDX_LINK_COUNT_VFPP                          /* link_count          */
+};
+
+/* index enumeration for val_vtn_vtn_flooding_path_link structure */
+enum val_vtn_flooding_path_link_index {
+  UPLL_IDX_SRC_SWITCH_ID_VFPL = 0,                  /* src_switch_id       */
+  UPLL_IDX_SRC_PORT_VFPL,                           /* src_port            */
+  UPLL_IDX_DEST_SWITCH_ID_VFPL,                     /* dest_switch_id      */
+  UPLL_IDX_DEST_PORT_VFPL,                          /* dest_port           */
+  UPLL_IDX_LINK_WEIGHT_VFPL                         /* link_weight         */
+};
+
+/* index enumeration for val_vbr_expand structure */
+enum val_vbr_expand_index {
+  UPLL_IDX_VBRIDGE_NAME_VBRE = 0,                  /* converted vBridge name    */
+  UPLL_IDX_CONTROLLER_ID_VBRE,                     /* controller identifier     */
+  UPLL_IDX_DOMAIN_ID_VBRE,                         /* domain identifer          */
+  UPLL_IDX_LABEL_VBRE,                             /* vBID                      */
+  UPLL_IDX_CONTROLLER_VTN_NAME_VBRE,               /* controller VTN identifier */
+  UPLL_IDX_CONTROLLER_VTN_LABEL_VBRE               /* controller VTN label      */
+};
+
+/* index enumeration for val_vbr_portmap_expand structure */
+enum val_vbr_portmap_expand_index {
+  UPLL_IDX_PORTMAP_ID_VBRPME = 0,                  /* vBridge portmap Identifier */
+  UPLL_IDX_LOGICAL_PORT_ID_VBRPME,                 /* logical_port_id Identifier */
+  UPLL_IDX_LABEL_TYPE_VBRPME,                      /* Label Type Identifier      */
+  UPLL_IDX_LABEL_VBRPME                            /* label                      */
+};
+
+/* index enumeration for val_vlink_expand structure */
+enum val_vlink_expand_index {
+  UPLL_IDX_VLINK_NAME_VLNKE = 0,                  /* vLink identifer           */
+  UPLL_IDX_VNODE1_NAME_VLNKE,                     /* vNode1 identifer           */
+  UPLL_IDX_VNODE1_IF_NAME_VLNKE,                  /* vNode1 interface identifer */
+  UPLL_IDX_VNODE2_NAME_VLNKE,                     /* vNode2 indentifier         */
+  UPLL_IDX_VNODE2_IF_NAME_VLNKE,                  /* vNode2 interface identifer */
+  UPLL_IDX_BOUNDARY_NAME_VLNKE,                   /* boundary name              */
+  UPLL_IDX_LABEL_TYPE_VLNKE,                      /* label type                 */
+  UPLL_IDX_LABEL_VLNKE                           /* label                      */
+};
+
+/* index enumeration for val_vtunnel_expand structure */
+enum val_vtunnel_expand_index {
+  UPLL_IDX_VTUNNEL_NAME_VTNLE = 0,                /* converted vTunnel name    */
+  UPLL_IDX_CONTROLLER_ID_VTNLE,                   /* controller identifier     */
+  UPLL_IDX_DOMAIN_ID_VTNLE,                       /* domain identifer          */
+  UPLL_IDX_LABEL_VTNLE                            /* label                     */
+};
+
+/* index enumeration for val_vtunnel_if_expand structure */
+enum val_vtunnel_if_expand_index {
+  UPLL_IDX_IF_NAME_VTNLIE = 0,                    /* Interface Identifier           */
+  UPLL_IDX_CONN_VNODE_NAME_VTNLIE,                /* connected vNode Identifier     */
+  UPLL_IDX_CONN_VNODE_IF_NAME_VTNLIE,             /* connected Interface Identifier */
+  UPLL_IDX_CONN_VLINK_NAME_VTNLIE                 /* connected vLink Identifier     */
+};
+
+/* index enumeration for val_vbr_if_expand structure */
+enum val_vbr_if_expand_index {
+  UPLL_IDX_IF_NAME_VBRIE = 0,                     /* Interface Identifier           */
+  UPLL_IDX_CONN_VNODE_NAME_VBRIE,                 /* connected vNode Identifier     */
+  UPLL_IDX_CONN_VNODE_IF_NAME_VBRIE,              /* connected Interface Identifier */
+  UPLL_IDX_CONN_VLINK_NAME_VBRIE                  /* connected vLink Identifier     */
+};
+
 
 UNC_C_END_DECL
 

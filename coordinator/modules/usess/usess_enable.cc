@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -53,7 +53,7 @@ bool UsessEnable::Init(void)
 
   // configuration data load.
   rtn = conf_.LoadConf();
-  RETURN_IF((rtn != USESS_E_OK), false,
+  RETURN_IF2((rtn != USESS_E_OK), false,
       "Failure configuration data load. err=%d", rtn);
 
   return true;
@@ -92,7 +92,7 @@ usess_ipc_err_e UsessEnable::Privilege(const enable_privilege_e mode,
   // Enable authority.
   case kPrivilegeEnable:
 
-    RETURN_IF((sess.user_type != USER_TYPE_ADMIN), USESS_E_INVALID_PRIVILEGE,
+    RETURN_IF2((sess.user_type != USER_TYPE_ADMIN), USESS_E_INVALID_PRIVILEGE,
         "Is not an administrative user. [%d]", sess.user_type);
     break;
 
@@ -106,12 +106,12 @@ usess_ipc_err_e UsessEnable::Privilege(const enable_privilege_e mode,
   case kPrivilegeEnablePasswd:
 
     // check session mode.
-    RETURN_IF((sess.sess_mode != USESS_MODE_ENABLE), USESS_E_INVALID_MODE,
+    RETURN_IF2((sess.sess_mode != USESS_MODE_ENABLE), USESS_E_INVALID_MODE,
         "Is not enable session mode. [%d]", sess.sess_mode);
     break;
 
   default:
-    RETURN_IF(true, USESS_E_NG, "%s", "Invalid privilege mode.");
+    RETURN_IF2(true, USESS_E_NG, "%s", "Invalid privilege mode.");
     break;
   }
 
@@ -140,7 +140,6 @@ usess_ipc_err_e UsessEnable::Authenticate(const enable_authenticate_e mode,
   mgmtdb::db_err_e db_rtn = mgmtdb::DB_E_NG;
   char primary_key[8] = {0};
 
-
   L_FUNCTION_START();
 
   switch(mode) {
@@ -158,7 +157,7 @@ usess_ipc_err_e UsessEnable::Authenticate(const enable_authenticate_e mode,
     }
 
     // Check password string.
-    RETURN_IF((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
+    RETURN_IF2((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
                 "%s", "Invalid password string.");
 
     // Get enable table record.
@@ -170,25 +169,25 @@ usess_ipc_err_e UsessEnable::Authenticate(const enable_authenticate_e mode,
 
     db_rtn = database_.Exec(sql_statement, false,
         sizeof(fetch_type)/sizeof(fetch_type[0]), fetch_type, exec_value);
-    RETURN_IF((db_rtn != mgmtdb::DB_E_OK || exec_value.size() == 0),
+    RETURN_IF2((db_rtn != mgmtdb::DB_E_OK || exec_value.size() == 0),
         USESS_E_NG, "Failure select sql exec(tbl_unc_usess_enable). err=%d",
         db_rtn);
 
     // Error, if count of columns and exec_value.size() is not equal.
-    RETURN_IF((exec_value.size() != 1 || exec_value[0].size() != 2),
+    RETURN_IF2((exec_value.size() != 1 || exec_value[0].size() != 2),
         USESS_E_NG, "Abnormal column counts. count=%" PFC_PFMT_SIZE_T ", %"
         PFC_PFMT_SIZE_T,
         exec_value.size(), exec_value[0].size());
 
     // Compare password.
-    RETURN_IF((CheckDigest(passwd, exec_value[0][1].string_val(),
+    RETURN_IF2((CheckDigest(passwd, exec_value[0][1].string_val(),
                              exec_value[0][1].string_val()) != true),
         USESS_E_INVALID_PASSWD, "%s", "Invalid password.");
 
     break;
 
   default:
-    RETURN_IF(true, USESS_E_NG, "%s", "Invalid authenticate mode.");
+    RETURN_IF2(true, USESS_E_NG, "%s", "Invalid authenticate mode.");
     break;
   }
 
@@ -219,14 +218,14 @@ usess_ipc_err_e UsessEnable::ChangePassword(const char* passwd)
   L_FUNCTION_START();
 
   // Check password string.
-    RETURN_IF((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
+    RETURN_IF2((CheckPassword(passwd) != true), USESS_E_INVALID_PASSWD,
         "%s", "Invalid modify password string");
 
   // password hash.
   pfc_clock_get_realtime(&now_time);
 
   Hash(passwd, now_time, conf_.data().hash_type, hash_passwd);
-  RETURN_IF((hash_passwd.empty() != false), USESS_E_INVALID_PASSWD,
+  RETURN_IF2((hash_passwd.empty() != false), USESS_E_INVALID_PASSWD,
         "%s", "Failure modify password hash");
 
   // Update enable table record.
@@ -240,7 +239,7 @@ usess_ipc_err_e UsessEnable::ChangePassword(const char* passwd)
                     "   WHERE mode ='" + primary_key +"'";
 
   db_rtn = database_.Exec(sql_statement, true, 0, NULL, exec_value);
-  RETURN_IF((db_rtn != mgmtdb::DB_E_OK), USESS_E_NG,
+  RETURN_IF2((db_rtn != mgmtdb::DB_E_OK), USESS_E_NG,
         "Failure update sql exec(tbl_unc_usess_enable). err=%d", db_rtn);
 
   L_FUNCTION_COMPLETE();
@@ -263,7 +262,7 @@ usess_ipc_err_e UsessEnable::LoadConf(void)
   L_FUNCTION_START();
 
   func_rtn = conf_.LoadConf();
-  RETURN_IF((func_rtn != USESS_E_OK), func_rtn,
+  RETURN_IF2((func_rtn != USESS_E_OK), func_rtn,
       "Failure configuration data load. err=%d", func_rtn);
 
   L_FUNCTION_COMPLETE();

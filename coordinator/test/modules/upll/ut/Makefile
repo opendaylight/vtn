@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013-2014 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -32,19 +32,18 @@ DAL_SRCDIR	= $(MODULE_SRCROOT)/dal
 TCLIB_SRCDIR	= $(MODULE_SRCROOT)/tclib
 ALARM_SRCDIR	= $(MODULE_SRCROOT)/alarm
 
-
 # Define a list of directories that contain source files.
 ALT_SRCDIRS	= $(CLSTAT_STUBDIR) $(UPLL_SRCDIR) $(CAPA_STUBDIR) $(DAL_STUBDIR)
 ALT_SRCDIRS	+= $(TCLIB_STUBDIR) $(MISC_STUBDIR) $(CLSTAT_SRCDIR) $(VLANMAP_STUBDIR)
 
-UT_INCDIRS_PREP		= ${COMMON_STUB_PATH} $(COMMON_STUB_PATH)/stub/include $(COMMON_STUB_PATH)/stub/include/core_include
+UT_INCDIRS_PREP		= ${COMMON_STUB_PATH} $(COMMON_STUB_PATH)/stub/include $(COMMON_STUB_PATH)/stub/include/core_include $(COMMON_STUB_PATH)/upll/ut/include
 
 UTXX_INCDIRS_PREP	= $(TCLIB_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(CAPA_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(CLSTAT_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(DAL_STUBDIR)
 UTXX_INCDIRS_PREP	+= $(DAL_STUBDIR)/include
-UTXX_INCDIRS_PREP	+= $(VLANMAP_STUBDIR)
+UTXX_INCDIRS_PREP	+= $(VLANMAP_STUBDIR)/include
 
 
 EXTRA_CXX_INCDIRS	= $(MODULE_SRCROOT)
@@ -119,6 +118,17 @@ UPLL_SOURCES  += vterminal_momgr.cc
 UPLL_SOURCES  += vterm_if_flowfilter_momgr.cc
 UPLL_SOURCES  += vterm_if_flowfilter_entry_momgr.cc
 UPLL_SOURCES  += ipc_event_queue.cc
+UPLL_SOURCES  += vbr_portmap_momgr.cc
+UPLL_SOURCES  += vbr_portmap_util.cc
+UPLL_SOURCES  += unified_nw_momgr.cc
+UPLL_SOURCES  += unw_label_momgr.cc
+UPLL_SOURCES  += unw_label_range_momgr.cc
+UPLL_SOURCES  += vtn_unified_momgr.cc
+UPLL_SOURCES  += unw_spine_domain_momgr.cc
+UPLL_SOURCES  += domain_check_util.cc
+UPLL_SOURCES  += tx_update_util.cc
+UPLL_SOURCES  += task_sched.cc
+UPLL_SOURCES  += config_yield.cc
 
 CAPA_SOURCES	= capa_module_stub.cc
 DAL_SOURCES	= dal_odbc_mgr.cc dal_bind_info.cc dal_schema.cc
@@ -127,9 +137,25 @@ MISC_SOURCES	= ipc_client.cc ipc_server.cc module.cc alarm.cc
 
 UT_SOURCES	= vtn_momgr_ut.cc
 UT_SOURCES	+= vbr_momgr_ut.cc
-UT_SOURCES	+= vbr_if_momgr_ut.cc
-UT_SOURCES  += vlanmap_ut.cc
 
+UT_SOURCES	+= vbr_if_momgr_ut.cc
+
+UT_SOURCES  += vlanmap_ut.cc
+UT_SOURCES  += flowlist_momgr_ut.cc
+UT_SOURCES += flowlist_entry_momgr_ut.cc
+UT_SOURCES += flowlist_import_ut.cc
+UT_SOURCES += vbr_flowfilter_entry_ut.cc
+UT_SOURCES += vterm_if_flowfilter_entry_ut.cc
+UT_SOURCES += vbr_flowfilter_ut.cc
+UT_SOURCES += vterm_if_momgr_ut.cc
+UT_SOURCES  += vterminal_momgr_ut.cc
+UT_SOURCES += vtn_flowfilter_entry_ut.cc
+UT_SOURCES += vtn_flowfilter_ut.cc
+UT_SOURCES += vtn_ff_import_ut.cc
+UT_SOURCES += vtn_ff_entry_import_ut.cc
+UT_SOURCES += vterm_if_flowfilter_momgr_ut.cc
+UT_SOURCES += vbr_if_flowfilter_ut.cc
+UT_SOURCES += vbr_if_flowfilter_entry_ut.cc
 CXX_SOURCES	= $(UT_SOURCES) util.cc
 CXX_SOURCES	+= $(UPLL_SOURCES) $(CAPA_SOURCES) $(DAL_SOURCES) 
 CXX_SOURCES	+= $(TCLIB_SOURCES) $(MISC_SOURCES)

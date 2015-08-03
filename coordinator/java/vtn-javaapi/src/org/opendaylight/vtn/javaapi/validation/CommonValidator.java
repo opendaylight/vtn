@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -550,11 +550,16 @@ public class CommonValidator {
 		Boolean valid = false;
 		String polc = VtnServiceInitManager.getConfigurationMap()
 				.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_POLC);
+		String hpvanc = VtnServiceInitManager.getConfigurationMap()
+				.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_HPVANC);
+		String odc = VtnServiceInitManager.getConfigurationMap()
+				.getCommonConfigValue(VtnServiceConsts.CONF_FILE_FIELD_ODC);
 		if (VtnServiceJsonConsts.BYPASS.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.PFC.equalsIgnoreCase(input)
 				|| VtnServiceJsonConsts.VNP.equalsIgnoreCase(input)
-				|| VtnServiceJsonConsts.ODC.equalsIgnoreCase(input)
-				|| polc.equalsIgnoreCase(input)) {
+				|| polc.equalsIgnoreCase(input)
+				|| hpvanc.equalsIgnoreCase(input)
+				|| odc.equalsIgnoreCase(input)) {
 			valid = true;
 		}
 		LOG.trace("Complete CommonValidator#isValidType");

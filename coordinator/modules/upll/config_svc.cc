@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -28,6 +28,7 @@
 
 #include "unc/uppl_common.h"
 #include "unc/pfcdriver_include.h"
+#include "unc/usess_ipc.h"
 
 #include "unc/upll_svc.h"
 #include "uncxx/upll_log.hh"
@@ -242,7 +243,8 @@ pfc_ipcresp_t UpllConfigSvc::KtService(pfc::core::ipc::ServerSession *sess,
     sess->setTimeout(&dataflow_tspec);
     UPLL_LOG_DEBUG("IPC Server Session timeout for data-flow set to %d",
                    kIpcTimeoutDataflow);
-    // XXX: store server session object in CKV user_data CKV for data-flow library
+    // XXX: store server session object in CKV user_data CKV
+    // for data-flow library
     ckv->set_user_data(sess);
   }
 
@@ -271,13 +273,6 @@ pfc_ipcresp_t UpllConfigSvc::KtService(pfc::core::ipc::ServerSession *sess,
     return ret;
   }
 
-  // send the response
-  // Convert driver specific error UPLL_RC_ERR_CTR_DISCONNECTED
-  // to logical specific error UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED
-  if (msghdr.result_code == UPLL_RC_ERR_CTR_DISCONNECTED) {
-    UPLL_LOG_DEBUG("UPLL_RC_ERR_RESOURCE_DISCONNECTED is sent as response");
-    msghdr.result_code = UPLL_RC_ERR_RESOURCE_DISCONNECTED;
-  }
   if (ckv->get_key_type() == UNC_KT_VTN_DATAFLOW) {
     UPLL_LOG_TRACE("KT:UNC_KT_VTN_DATAFLOW result:%d", msghdr.result_code);
     ckv->set_user_data(NULL);
@@ -322,10 +317,35 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
         sess->setTimeout(NULL);  // Shallow checking also checks DB in somecase
         UPLL_LOG_DEBUG("IPC Server Session timeout for IS_CANDIDATE_DIRTY is"
                        " set to infinite");
-        urc = config_mgr_->IsCandidateDirtyShallow(&dirty);
+
+        uint32_t session_id, config_id;
+        if ((0 != (ipc_err = sess->getArgument(arg++, session_id))) ||
+            (0 != (ipc_err = sess->getArgument(arg++, config_id)))) {
+          UPLL_LOG_INFO("Unable to read field at %u from IPC request. Err=%d",
+                        arg, ipc_err);
+          return UPLL_RC_ERR_BAD_REQUEST;
+        }
+
+        TcConfigMode cfg_mode = TC_CONFIG_INVALID;
+        std::string cfg_vtn_name;
+        if (session_id != USESS_ID_TC) {
+          urc = config_mgr_->GetConfigMode(session_id, config_id,
+                                           &cfg_mode, &cfg_vtn_name);
+          if (urc != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("Invalid session id  %u and/or config id %u",
+                           session_id, config_id);
+          }
+        } else {
+          cfg_mode = TC_CONFIG_GLOBAL;
+          cfg_vtn_name = "";
+        }
+
+        if (urc == UPLL_RC_SUCCESS) {
+          urc = config_mgr_->IsCandidateDirtyShallow(cfg_mode, cfg_vtn_name,
+                                                     &dirty);
+        }
       }
       // Write response
-      // No need to convert UPLL_RC_ERR_CTR_DISCONNECTED error code
       if ((0 != (ipc_err = sess->addOutput((uint32_t)operation))) ||
           (0 != (ipc_err = sess->addOutput((uint32_t)urc))) ||
           (0 != (ipc_err = sess->addOutput((uint8_t)dirty)))) {
@@ -367,19 +387,13 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       // Start Import
       if (urc == UPLL_RC_SUCCESS) {
         sess->setTimeout(NULL);
-        UPLL_LOG_DEBUG("IPC Server Session timeout for Import set to infinite.");
+        UPLL_LOG_DEBUG(
+            "IPC Server Session timeout for Import set to infinite.");
         urc = config_mgr_->StartImport(ctrlr_name, session_id, config_id,
                                        (upll_import_type)import_type);
         UPLL_LOG_TRACE("StartImport: urc=%d, ctrlr_name=%s,"
                        " session_id=%d, config_id=%d",
                        urc, ctrlr_name, session_id, config_id);
-
-        // Convert driver specific error UNC_RC_ERR_CTR_DISCONNECTED
-        // to logical specific error UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED
-        if (urc == UPLL_RC_ERR_CTR_DISCONNECTED) {
-          UPLL_LOG_DEBUG("UPLL_RC_ERR_RESOURCE_DISCONNECTED is sent as response");
-          urc = UPLL_RC_ERR_RESOURCE_DISCONNECTED;
-        }
       }
 
       // Write response
@@ -409,14 +423,6 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
 
         UPLL_LOG_TRACE("Merge: urc=%d, session_id=%d, config_id=%d",
                        urc, session_id, config_id);
-        // Write response
-        // Convert driver specific error UNC_RC_CTR_DISCONNECTED
-        // to logical specific error UNC_UPLL_RC_ERR_RESOURCE_DISCONNECTED
-        //  its need modify only in fatal and clear operation.
-        if (urc == UPLL_RC_ERR_CTR_DISCONNECTED) {
-          UPLL_LOG_DEBUG("UPLL_RC_ERR_RESOURCE_DISCONNECTED is sent as response");
-          urc = UPLL_RC_ERR_RESOURCE_DISCONNECTED;
-        }
       }
 
       // Write response
@@ -477,13 +483,14 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       return 0;
     }
     break;
-  
+
     case UPLL_CFG_BATCH_ALIVE_OP: {
       uint32_t session_id, config_id;
       if ((0 != (ipc_err = sess->getArgument(arg++, session_id))) ||
           (0 != (ipc_err = sess->getArgument(arg++, config_id)))) {
-        UPLL_LOG_INFO("BATCH-ALIVE: Unable to read field at %u from IPC request."
-                      " Err=%d", arg, ipc_err);
+        UPLL_LOG_INFO(
+            "BATCH-ALIVE: Unable to read field at %u from IPC request."
+            " Err=%d", arg, ipc_err);
         urc = UPLL_RC_ERR_BAD_REQUEST;
       }
       if (urc == UPLL_RC_SUCCESS) {
@@ -501,7 +508,7 @@ pfc_ipcresp_t UpllConfigSvc::GlobalConfigService(
       return 0;
     }
     break;
- 
+
     case UPLL_CFG_BATCH_END_OP: {
       uint32_t session_id, config_id;
       if ((0 != (ipc_err = sess->getArgument(arg++, session_id))) ||
@@ -582,7 +589,7 @@ pfc_ipcresp_t UpllConfigSvc::HandleIsKeyInUse(
                                   ckv, &in_use);
     delete ckv;
   } else {
-      if (ipc_st != NULL)  
+      if (ipc_st != NULL)
         ConfigKeyVal::Free(ipc_st);
   }
 
@@ -613,7 +620,7 @@ pfc_ipcresp_t UpllConfigSvc::HandleUpplUpdate(
 
   urc = config_mgr_->ContinueActiveProcess();
   if (urc != UPLL_RC_SUCCESS) {
-   return PFC_IPCRESP_FATAL;
+    return PFC_IPCRESP_FATAL;
   }
 
   if ((0 != (ipc_err = sess->getArgument(index++, datatype))) ||
@@ -729,7 +736,6 @@ pfc_ipcresp_t UpllConfigSvc::HandleUpplUpdate(
                        reinterpret_cast<char*>(ctr_key.controller_name),
                        (ctr_val.enable_audit));
       }
-
     }
   }
 
@@ -800,6 +806,11 @@ void UpllConfigSvc::HandleSystemEvent(pfc_event_t event) {
   if (type == PFC_EVTYPE_SYS_STOP) {
     UnregisterIpcEventHandlers();
   }
+  CtrlrMgr *ctr_mgr = CtrlrMgr::GetInstance();
+  ctr_mgr->DeleteFromUnknownCtrlrList("*");
+  ctr_mgr->RemoveCtrlrFromIgnoreList("*");
+  ctr_mgr->ClearVtnExhaustionMap();
+  ctr_mgr->ClearPathfault("*", "*");
   sys_state_rwlock_.unlock();
 }
 
@@ -812,8 +823,8 @@ void UpllConfigSvc::HandleClusterEventStatic(pfc_event_t event, pfc_ptr_t arg) {
 void UpllConfigSvc::HandleClusterEvent(pfc_event_t event) {
   UPLL_FUNC_TRACE;
   pfc_evtype_t type = pfc_event_type(event);
-  bool coldstart = clstat_event_isactive(event);
-  UPLL_LOG_INFO("clstat_event_isactive is %d",coldstart);
+  bool coldstart = !(clstat_event_isactive(event));
+  UPLL_LOG_INFO("clstat_event_isactive is %d", coldstart);
   /* Change the status of service. */
   sys_state_rwlock_.wrlock();
   if (type == CLSTAT_EVTYPE_ACT) {
@@ -824,8 +835,18 @@ void UpllConfigSvc::HandleClusterEvent(pfc_event_t event) {
     node_active_ = true;
     RegisterForIpcEvents();
   }
+  // For ACT, clear all the Alarm at the beginning
+  if (node_active_ == true) {
+    // Clear all the alarms in the beginning of ACT transition
+    UPLL_LOG_INFO("Clear all the alarms during ACT transition");
+    pfc::alarm::pfc_alarm_clear(UNCCID_LOGICAL);
+  }
   config_mgr_->SetClusterState(node_active_, !coldstart);
-  pfc::alarm::pfc_alarm_clear(UNCCID_LOGICAL);
+  // For SBY, Clear all the Alarm at the at the end of transition
+  if (node_active_ == false) {
+    UPLL_LOG_INFO("Clear all the alarms during SBY transition");
+    pfc::alarm::pfc_alarm_clear(UNCCID_LOGICAL);
+  }
   sys_state_rwlock_.unlock();
 }
 
@@ -836,8 +857,10 @@ bool UpllConfigSvc::RegisterForIpcEvents() {
   pfc::core::ipc::IpcEventMask phy_mask;
   phy_mask.empty();
   phy_mask.add(UPPL_ALARMS_PHYS_PATH_FAULT);
-  phy_mask.add(UPPL_EVENTS_KT_LOGICAL_PORT);
-  phy_mask.add(UPPL_EVENTS_KT_BOUNDARY);
+  if (config_mgr_->get_map_phy_resource_status() == true) {
+    phy_mask.add(UPPL_EVENTS_KT_LOGICAL_PORT);
+    phy_mask.add(UPPL_EVENTS_KT_BOUNDARY);
+  }
   phy_mask.add(UPPL_EVENTS_KT_CONTROLLER);
 
   pfc::core::ipc::IpcEventAttr phy_attr;
@@ -856,7 +879,7 @@ bool UpllConfigSvc::RegisterForIpcEvents() {
   pfc::core::ipc::IpcEventMask pfc_mask;
   pfc_mask.empty();
   // Mask adjustment needed once PFC code is checkedin
-  pfc_mask.add(UNC_ALARMS);
+  pfc_mask.add(UNC_UPLL_ALARMS);
 
   pfc::core::ipc::IpcEventAttr pfc_attr;
   pfc_attr.addTarget(PFCDRIVER_EVENT_SERVICE_NAME, pfc_mask);
@@ -932,7 +955,8 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
     const bool alarm_asserted = (operation == UNC_OP_CREATE) ? true : false;
     uuc::PathFaultArg *arg_ptr = new uuc::PathFaultArg;
     arg_ptr->event_type_ = uuc::EventArgument::UPPL_PATH_FAULT_ALARM;
-    arg_ptr->ctrlr_name_ = reinterpret_cast<char *>(kcd.ctr_key.controller_name);
+    arg_ptr->ctrlr_name_ =
+        reinterpret_cast<char *>(kcd.ctr_key.controller_name);
     arg_ptr->domain_name_ = reinterpret_cast<char *>(kcd.domain_name);
     arg_ptr->alarm_raised_ = alarm_asserted;
     event_queue_.AddEvent(arg_ptr);
@@ -944,7 +968,7 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
     case UPPL_EVENTS_KT_CONTROLLER:
       {
         if (operation == UNC_OP_DELETE) {
-          return; // not to do anything
+          return;  // not to do anything
         }
         key_ctr_t key_ctr;
         val_ctr_st_t new_ctr_st;
@@ -965,16 +989,12 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
           }
           char *ctrlr_name = reinterpret_cast<char *>
                               (key_ctr.controller_name);
-          if (old_ctr_st.oper_status == UPPL_CONTROLLER_OPER_UP) {
-            if (new_ctr_st.oper_status == UPPL_CONTROLLER_OPER_EVENTS_MERGED ||
-                new_ctr_st.oper_status == UPPL_CONTROLLER_OPER_DOWN) {
-              uuc::CtrlrStatusArg *arg_ptr = new uuc::CtrlrStatusArg;
-              arg_ptr->event_type_ = uuc::EventArgument::UPPL_CTRLR_STATUS_EVENT;
-              arg_ptr->ctrlr_name_ = ctrlr_name;
-              arg_ptr->operstatus_ = new_ctr_st.oper_status;
-              event_queue_.AddEvent(arg_ptr);
-            }
-          }
+          uuc::CtrlrStatusArg *arg_ptr = new uuc::CtrlrStatusArg;
+          arg_ptr->event_type_ =
+              uuc::EventArgument::UPPL_CTRLR_STATUS_EVENT;
+          arg_ptr->ctrlr_name_ = ctrlr_name;
+          arg_ptr->operstatus_ = new_ctr_st.oper_status;
+          event_queue_.AddEvent(arg_ptr);
         }
       }
       return;
@@ -984,16 +1004,18 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
         val_logical_port_st_t new_port_st;
         val_logical_port_st_t old_port_st;
         if (0 != (err = sess.getResponse(arg++, key_port))) {
-            UPLL_LOG_ERROR("Failed to get field at #%u in Physical event. Err=%d",
-                           arg, err);
+            UPLL_LOG_ERROR(
+                "Failed to get field at #%u in Physical event. Err=%d",
+                arg, err);
             return;
         }
         switch (operation) {
           case UNC_OP_UPDATE: {
             if ((0 != (err = sess.getResponse(arg++, new_port_st))) ||
                 (0 != (err = sess.getResponse(arg++, old_port_st)))) {
-              UPLL_LOG_ERROR("Failed to get field at #%u in Physical event. Err=%d",
-                             arg, err);
+              UPLL_LOG_ERROR(
+                  "Failed to get field at #%u in Physical event. Err=%d",
+                 arg, err);
               return;
             }
             if (new_port_st.oper_status == old_port_st.oper_status) {
@@ -1004,8 +1026,9 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
           break;
           case UNC_OP_CREATE: {
             if (0 != (err = sess.getResponse(arg++, new_port_st))) {
-              UPLL_LOG_ERROR("Failed to get field at #%u in Physical event. Err=%d",
-                             arg, err);
+              UPLL_LOG_ERROR(
+                  "Failed to get field at #%u in Physical event. Err=%d",
+                 arg, err);
               return;
             }
           }
@@ -1017,7 +1040,8 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
             return;
       }
         uuc::LogicalPortArg *arg_ptr = new uuc::LogicalPortArg;
-        arg_ptr->event_type_ = uuc::EventArgument::UPPL_LOGICAL_PORT_STATUS_EVENT;
+        arg_ptr->event_type_ =
+            uuc::EventArgument::UPPL_LOGICAL_PORT_STATUS_EVENT;
         arg_ptr->ctrlr_name_ = reinterpret_cast<char *>(
             key_port.domain_key.ctr_key.controller_name);
         arg_ptr->domain_name_ =
@@ -1058,7 +1082,8 @@ void UpllConfigSvc::PhysicalEventHandler(const IpcEvent &event) {
               return;
             }
             uuc::BoundaryStatusArg *arg_ptr = new uuc::BoundaryStatusArg;
-            arg_ptr->event_type_ = uuc::EventArgument::UPPL_BOUNDARY_STATUS_EVENT;
+            arg_ptr->event_type_ =
+                uuc::EventArgument::UPPL_BOUNDARY_STATUS_EVENT;
             arg_ptr->boundary_id_ = reinterpret_cast<char *>(
                 key_bndry.boundary_id);
             arg_ptr->operstatus_ = new_bndry_st.oper_status;
@@ -1183,6 +1208,31 @@ void UpllConfigSvc::PfcDriverAlarmHandler(const IpcEvent &event) {
         event_queue_.AddEvent(arg_ptr);
       }
       break;
+    case UNC_VTN_ID_EXHAUSTION:
+      {
+        if (config_mgr_->get_map_phy_resource_status() == false) {
+          UPLL_LOG_TRACE("Mapping flag is disabled - "
+                         "not processing VTN_ID_EXHAUSTION alarm");
+          return;
+        }
+        key_vtn key_vtn;
+        if (0 != (err = sess.getResponse(arg++, key_vtn))) {
+          UPLL_LOG_DEBUG("Failed to get header field #%u in the alarm from "
+                         "PFC Driver. Err=%d", arg, err);
+          return;
+        }
+        uuc::VtnIdExhaustionArg *arg_ptr = new uuc::VtnIdExhaustionArg;
+        arg_ptr->ctrlr_name_ = ctrlr_name;
+        arg_ptr->domain_name_ = domain_id;
+        memcpy(reinterpret_cast<void *>(&(arg_ptr->key_vtn_)),
+               reinterpret_cast<const void *>(&key_vtn),
+               sizeof(key_vtn));
+        arg_ptr->alarm_raised_ = alarm_asserted;
+        arg_ptr->event_type_ =
+                 uuc::EventArgument::PFCDRV_VTNID_EXHAUSTION_ALARM;
+        event_queue_.AddEvent(arg_ptr);
+      }
+      break;
     default:
       UPLL_LOG_DEBUG("Unknown alarm type %d in PFC Drvier alarm", alarm_type);
       return;
@@ -1226,9 +1276,9 @@ void UpllConfigSvc::UnregisterIpcEventHandlers() {
   event_queue_.Clear();
 }
                                                                        // NOLINT
-}  // namesapce config_svc
-}  // namesapce upll
-}  // namesapce unc
+}  // namespace config_svc
+}  // namespace upll
+}  // namespace unc
 
 /* Declare C++ module. */
 PFC_MODULE_IPC_DECL(unc::upll::config_svc::UpllConfigSvc,

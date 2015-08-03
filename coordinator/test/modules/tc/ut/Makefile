@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2013 NEC Corporation
+# Copyright (c) 2013-2015 NEC Corporation
 # All rights reserved.
 #
 # This program and the accompanying materials are made available under the
@@ -54,6 +54,10 @@ TC_SOURCES += tc_audit_operations.cc
 TC_SOURCES += tc_autosave_operations.cc
 TC_SOURCES += tc_config_operations.cc
 TC_SOURCES += tc_db_operations.cc
+TC_SOURCES += tc_db_handler.cc
+TC_SOURCES += tc_taskq.cc
+TC_SOURCES += tc_candidate_operations.cc
+TC_SOURCES += tc_read_status_operations.cc
 ALARM_SOURCES = alarm.cc
 
 STUB_SOURCES = stub_oper_utils.cc
@@ -86,6 +90,7 @@ UNC_LIBS += libpfc_ipcsrv
 UNC_LIBS += libpfc_ipcclnt
 UNC_LIBS += libpfcxx_ipcsrv
 UNC_LIBS += libpfcxx_ipcclnt
+UNC_LIBS += libtc_common 
 EXTRA_LDLIBS += -lgcov -lodbc
 
 include ../../rules.mk

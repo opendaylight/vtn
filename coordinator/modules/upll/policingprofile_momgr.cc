@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -8,6 +8,7 @@
  */
 
 #include <set>
+#include <sstream>
 #include "policingprofile_momgr.hh"
 #include "policingprofile_entry_momgr.hh"
 #include "vtn_policingmap_momgr.hh"
@@ -170,7 +171,7 @@ bool PolicingProfileMoMgr::GetRenameKeyBindInfo(unc_key_type_t key_type,
 PolicingProfileMoMgr::PolicingProfileMoMgr() {
   UPLL_FUNC_TRACE;
   ntable = MAX_MOMGR_TBLS;
-  table = new Table *[ntable];
+  table = new Table *[ntable]();
 
   table[MAINTBL] = new Table(uudst::kDbiPolicingProfileTbl,
       UNC_KT_POLICING_PROFILE, policingprofile_bind_info,
@@ -186,6 +187,8 @@ PolicingProfileMoMgr::PolicingProfileMoMgr() {
       UNC_KT_POLICING_PROFILE, policingprofile_controller_bind_info,
       IpctSt::kIpcStKeyPolicingprofile, IpctSt::kIpcInvalidStNum,
       uudst::policingprofile_ctrlr::kDbiPolicingProfileCtrlrNumCols);
+
+  table[CONVERTTBL] = NULL;
 
   nchild = sizeof(policingprofile_child) / sizeof(policingprofile_child[0]);
   child = policingprofile_child;
@@ -335,7 +338,7 @@ upll_rc_t PolicingProfileMoMgr::GetChildConfigKey(ConfigKeyVal *&okey,
   }
   if ((okey) && !(okey->get_key())) {
     UPLL_LOG_TRACE("okey not NULL profile name updated");
-    okey->SetKey(IpctSt::kIpcStKeyPolicingprofile, policingprofile_key);    
+    okey->SetKey(IpctSt::kIpcStKeyPolicingprofile, policingprofile_key);
   }
   if (!okey) {
     okey = new ConfigKeyVal(UNC_KT_POLICING_PROFILE,
@@ -430,10 +433,6 @@ upll_rc_t PolicingProfileMoMgr::GetRenamedControllerKey(
 
   ConfigKeyVal *okey = NULL;
   UPLL_LOG_TRACE("%s GetRenamedCtrl pp start", (ikey->ToStrAll()).c_str());
-  /* Read controller name from running rename table,
-   * since there is no rename table for audit case */
-  if (dt_type == UPLL_DT_AUDIT)
-    dt_type = UPLL_DT_RUNNING;
 
   /* PolicingProfile renamed */
   result_code = GetChildConfigKey(okey, ikey);
@@ -534,7 +533,8 @@ upll_rc_t PolicingProfileMoMgr::DupConfigKeyVal(ConfigKeyVal *&okey,
           reinterpret_cast<val_rename_policingprofile_t *>
           (ConfigKeyVal::Malloc(sizeof(val_rename_policingprofile_t)));
         memcpy(rename_val, ival, sizeof(val_rename_policingprofile_t));
-        tmp1 = new ConfigVal(IpctSt::kIpcStValRenamePolicingprofile, rename_val);
+        tmp1 =
+            new ConfigVal(IpctSt::kIpcStValRenamePolicingprofile, rename_val);
       }
     } else if (tbl == CTRLRTBL) {
       val_policingprofile_ctrl_t *ival =
@@ -669,7 +669,7 @@ upll_rc_t PolicingProfileMoMgr::MergeValidate(unc_key_type_t keytype,
         UPLL_LOG_DEBUG("GetChildConfigKey fail");
         return result_code;
       }
-      return UPLL_RC_ERR_MERGE_CONFLICT; 
+      return UPLL_RC_ERR_MERGE_CONFLICT;
     } else if (result_code != UPLL_RC_ERR_INSTANCE_EXISTS) {
       UPLL_LOG_DEBUG("Database Error");
       DELETE_IF_NOT_NULL(tmp_ckval);
@@ -688,7 +688,7 @@ upll_rc_t PolicingProfileMoMgr::SwapKeyVal(ConfigKeyVal *ikey,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (!ikey || !(ikey->get_key()) || !(strlen(reinterpret_cast<const char *>
-     (ctrlr)))){
+     (ctrlr)))) {
     UPLL_LOG_DEBUG("Input ConfigKeyVal is NULL");
     return UPLL_RC_ERR_GENERIC;
   }
@@ -759,7 +759,7 @@ upll_rc_t PolicingProfileMoMgr::SwapKeyVal(ConfigKeyVal *ikey,
 
 upll_rc_t PolicingProfileMoMgr::TxCopyCandidateToRunning(
     unc_key_type_t keytype, CtrlrCommitStatusList *ctrlr_commit_status,
-    DalDmlIntf *dmi) {
+    DalDmlIntf *dmi, TcConfigMode config_mode, std::string vtn_name) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   DalResultCode db_result = uud::kDalRcGeneralError;
@@ -770,10 +770,6 @@ upll_rc_t PolicingProfileMoMgr::TxCopyCandidateToRunning(
                *pp_ck_run = NULL;
   DalCursor *cfg1_cursor = NULL;
   uint8_t *ctrlr_id = NULL;
-#if 0
-  IpcReqRespHeader *req_header = reinterpret_cast<IpcReqRespHeader *>
-      (ConfigKeyVal::Malloc(sizeof(IpcReqRespHeader)));
-#endif
   map<string, int> ctrlr_result;
   CtrlrCommitStatusList::iterator ccsListItr;
   CtrlrCommitStatus *ccStatusPtr;
@@ -786,8 +782,8 @@ upll_rc_t PolicingProfileMoMgr::TxCopyCandidateToRunning(
         (const_cast<char*>(ccStatusPtr->ctrlr_id.c_str()));
       ctrlr_result[ccStatusPtr->ctrlr_id] = ccStatusPtr->upll_ctrlr_result;
       if (ccStatusPtr->upll_ctrlr_result != UPLL_RC_SUCCESS) {
-        for (ConfigKeyVal *ck_err = ccStatusPtr->err_ckv; ck_err != NULL; ck_err =
-            ck_err->get_next_cfg_key_val()) {
+        for (ConfigKeyVal *ck_err = ccStatusPtr->err_ckv; ck_err != NULL;
+             ck_err = ck_err->get_next_cfg_key_val()) {
           if (ck_err->get_key_type() != keytype) continue;
           result_code = GetRenamedUncKey(ck_err, UPLL_DT_CANDIDATE, dmi,
               ctrlr_id);
@@ -802,12 +798,48 @@ upll_rc_t PolicingProfileMoMgr::TxCopyCandidateToRunning(
       }
     }
   }
-  for (int i = 0; i < nop; i++) {
-    cfg1_cursor = NULL;
-    // Update the Main table
-    if (op[i] != UNC_OP_UPDATE) {
-      result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i],
-          req, nreq, &cfg1_cursor, dmi,NULL, MAINTBL, true);
+
+  if (config_mode != TC_CONFIG_VTN) {
+    for (int i = 0; i < nop; i++) {
+      cfg1_cursor = NULL;
+      // Update the Main table
+      if (op[i] != UNC_OP_UPDATE) {
+        result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i],
+            req, nreq, &cfg1_cursor, dmi, NULL, config_mode, vtn_name,
+            MAINTBL, true);
+        while (result_code == UPLL_RC_SUCCESS) {
+          db_result = dmi->GetNextRecord(cfg1_cursor);
+          result_code = DalToUpllResCode(db_result);
+          if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+            result_code = UPLL_RC_SUCCESS;
+            break;
+          }
+          result_code = UpdateMainTbl(req, op[i], UPLL_RC_SUCCESS,
+                                    nreq, dmi);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_INFO("Updating Main table Error %d", result_code);
+            dmi->CloseCursor(cfg1_cursor, true);
+            DELETE_IF_NOT_NULL(req);
+            return result_code;
+          }
+        }
+        if (cfg1_cursor) {
+          dmi->CloseCursor(cfg1_cursor, true);
+          cfg1_cursor = NULL;
+        }
+        DELETE_IF_NOT_NULL(req);
+      }
+      UPLL_LOG_DEBUG("Updating main table complete with op %d", op[i]);
+    }  // for loop
+  }  // if loop
+
+  if (config_mode != TC_CONFIG_VIRTUAL) {
+    for (int i = 0; i < nop; i++) {
+      cfg1_cursor = NULL;
+      // Update the controller table
+      result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i], req,
+        nreq, &cfg1_cursor, dmi, NULL, config_mode, vtn_name, CTRLRTBL, true);
+      ConfigKeyVal *pp_ctrlr_key = NULL;
       while (result_code == UPLL_RC_SUCCESS) {
         db_result = dmi->GetNextRecord(cfg1_cursor);
         result_code = DalToUpllResCode(db_result);
@@ -815,242 +847,226 @@ upll_rc_t PolicingProfileMoMgr::TxCopyCandidateToRunning(
           result_code = UPLL_RC_SUCCESS;
           break;
         }
-        result_code = UpdateMainTbl(req, op[i], UPLL_RC_SUCCESS,
-                                    nreq, dmi);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_INFO("Updating Main table Error %d", result_code);
-          dmi->CloseCursor(cfg1_cursor, true);
-          DELETE_IF_NOT_NULL(req);
-          return result_code;
-        }
-      }
-      if (cfg1_cursor) {
-        dmi->CloseCursor(cfg1_cursor, true);
-        cfg1_cursor = NULL;
-      }
-      DELETE_IF_NOT_NULL(req);
-    }
-    UPLL_LOG_DEBUG("Updating main table complete with op %d", op[i]);
-  }
-  for (int i = 0; i < nop; i++) {
-    cfg1_cursor = NULL;
-    // Update the controller table
-    result_code = DiffConfigDB(UPLL_DT_CANDIDATE, UPLL_DT_RUNNING, op[i], req,
-        nreq, &cfg1_cursor, dmi,NULL, CTRLRTBL, true);
-    ConfigKeyVal *pp_ctrlr_key = NULL;
-    while (result_code == UPLL_RC_SUCCESS) {
-      db_result = dmi->GetNextRecord(cfg1_cursor);
-      result_code = DalToUpllResCode(db_result);
-      if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-        
-        result_code = UPLL_RC_SUCCESS;
-        break;
-      }
-      if (op[i] == UNC_OP_CREATE ) {
-        DbSubOp dbop = { kOpReadSingle, kOpMatchNone, kOpInOutFlag |kOpInOutCs };
-        result_code = GetChildConfigKey(policingprofile_key, req);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
-              result_code);
-          DELETE_IF_NOT_NULL(req);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
+        if (op[i] == UNC_OP_CREATE) {
+          DbSubOp dbop = { kOpReadSingle, kOpMatchNone,
+              kOpInOutFlag |kOpInOutCs };
+          result_code = GetChildConfigKey(policingprofile_key, req);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
+               result_code);
+            DELETE_IF_NOT_NULL(req);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
 
-        result_code = ReadConfigDB(policingprofile_key, UPLL_DT_RUNNING /*UPLL_DT_CANDIDATE*/,
-            UNC_OP_READ, dbop, dmi, MAINTBL);
-        if ((result_code != UPLL_RC_SUCCESS) &&
-            (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE)) {
-          UPLL_LOG_DEBUG("Unable to read configuration from CandidateDb");
-          DELETE_IF_NOT_NULL(policingprofile_key);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
-        /* set consolidated config status to UNKNOWN to init vtn cs_status
-         * to the cs_status of first controller
-         */
-        uint32_t cur_instance_count;
-        ConfigKeyVal *temp_val=NULL;
-        result_code = DupConfigKeyVal(temp_val, req, CTRLRTBL);
-        if (UPLL_RC_SUCCESS != result_code) {
-          UPLL_LOG_DEBUG("DupConfigval failed %d", result_code);
-          DELETE_IF_NOT_NULL(policingprofile_key);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          DELETE_IF_NOT_NULL(temp_val);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
+          result_code = ReadConfigDB(policingprofile_key,
+                                   UPLL_DT_RUNNING /*UPLL_DT_CANDIDATE*/,
+                                   UNC_OP_READ, dbop, dmi, MAINTBL);
+          if ((result_code != UPLL_RC_SUCCESS) &&
+             (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE)) {
+            UPLL_LOG_DEBUG("Unable to read configuration from CandidateDb");
+            DELETE_IF_NOT_NULL(policingprofile_key);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
+          /* set consolidated config status to UNKNOWN to init vtn cs_status
+           * to the cs_status of first controller
+           */
+          uint32_t cur_instance_count;
+          ConfigKeyVal *temp_val = NULL;
+          result_code = DupConfigKeyVal(temp_val, req, CTRLRTBL);
+          if (UPLL_RC_SUCCESS != result_code) {
+            UPLL_LOG_DEBUG("DupConfigval failed %d", result_code);
+            DELETE_IF_NOT_NULL(policingprofile_key);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            DELETE_IF_NOT_NULL(temp_val);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
 
-        result_code = GetInstanceCount(temp_val, NULL,
-            UPLL_DT_CANDIDATE, &cur_instance_count,
-            dmi, CTRLRTBL);
-        if (UPLL_RC_SUCCESS != result_code) {
-          UPLL_LOG_INFO("GetInstanceCount failed %d", result_code);
-          DELETE_IF_NOT_NULL(policingprofile_key);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          DELETE_IF_NOT_NULL(temp_val);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
-        if (cur_instance_count == 1) {
-          reinterpret_cast<val_policingprofile *>
-            (GetVal(policingprofile_key))->cs_row_status =
-            UNC_CS_UNKNOWN;
-        }
-        result_code = DupConfigKeyVal(pp_ctrlr_key, req, CTRLRTBL);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("DupConfigVal function is failed %d", result_code);
-          DELETE_IF_NOT_NULL(policingprofile_key);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          DELETE_IF_NOT_NULL(temp_val);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
+          result_code = GetInstanceCount(temp_val, NULL,
+             UPLL_DT_CANDIDATE, &cur_instance_count,
+             dmi, CTRLRTBL);
+          if (UPLL_RC_SUCCESS != result_code) {
+            UPLL_LOG_INFO("GetInstanceCount failed %d", result_code);
+            DELETE_IF_NOT_NULL(policingprofile_key);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            DELETE_IF_NOT_NULL(temp_val);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
+          if (cur_instance_count == 1) {
+              reinterpret_cast<val_policingprofile *>
+              (GetVal(policingprofile_key))->cs_row_status =
+              UNC_CS_UNKNOWN;
+          }
+          result_code = DupConfigKeyVal(pp_ctrlr_key, req, CTRLRTBL);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("DupConfigVal function is failed %d", result_code);
+            DELETE_IF_NOT_NULL(policingprofile_key);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            DELETE_IF_NOT_NULL(temp_val);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
 
-        DELETE_IF_NOT_NULL(temp_val);
-        GET_USER_DATA_CTRLR(pp_ctrlr_key, ctrlr_id);
-        string controller(reinterpret_cast<char *>(ctrlr_id));
-        if (ctrlr_result.empty()) {
-          UPLL_LOG_TRACE("ctrlr_commit_status is NULL.");
-          result_code = UpdateConfigStatus(policingprofile_key, op[i],
-              UPLL_RC_ERR_CTR_DISCONNECTED, nreq,
-              dmi, pp_ctrlr_key);
-        } else {
-          result_code = UpdateConfigStatus(policingprofile_key, op[i],
+          DELETE_IF_NOT_NULL(temp_val);
+          GET_USER_DATA_CTRLR(pp_ctrlr_key, ctrlr_id);
+          string controller(reinterpret_cast<char *>(ctrlr_id));
+          if (ctrlr_result.empty()) {
+            UPLL_LOG_TRACE("ctrlr_commit_status is NULL.");
+            result_code = UpdateConfigStatus(policingprofile_key, op[i],
+                UPLL_RC_ERR_CTR_DISCONNECTED, nreq,
+                dmi, pp_ctrlr_key);
+          } else {
+            result_code = UpdateConfigStatus(policingprofile_key, op[i],
               ctrlr_result[controller], nreq,
               dmi, pp_ctrlr_key);
-        }
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_INFO(" UpdateConfigStatus function failed - %d ",
-                         result_code);
-          DELETE_IF_NOT_NULL(policingprofile_key);
-          DELETE_IF_NOT_NULL(pp_ctrlr_key);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
-      } else if (op[i] == UNC_OP_DELETE) {
-        //Reading Main Running DB for delete op
-        DbSubOp dbop1 = { kOpReadSingle, kOpMatchNone, kOpInOutFlag | kOpInOutCs };
-        result_code = GetChildConfigKey(pp_ck_run, req);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
-              result_code);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
-        result_code = ReadConfigDB(pp_ck_run, UPLL_DT_RUNNING,
-            UNC_OP_READ, dbop1, dmi, MAINTBL);
-        if (result_code != UPLL_RC_SUCCESS &&
-            result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
-          UPLL_LOG_DEBUG("Unable to read configuration from CandidateDb");
-          DELETE_IF_NOT_NULL(pp_ck_run);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
-        if (result_code == UPLL_RC_SUCCESS) {
-          GET_USER_DATA_CTRLR(req, ctrlr_id);
-          result_code = SetPPConsolidatedStatus(pp_ck_run, ctrlr_id, dmi);
+          }
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_DEBUG("Could not set consolidated status %d", result_code);
+            UPLL_LOG_INFO(" UpdateConfigStatus function failed - %d ",
+                          result_code);
+            DELETE_IF_NOT_NULL(policingprofile_key);
+            DELETE_IF_NOT_NULL(pp_ctrlr_key);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
+        } else if (op[i] == UNC_OP_DELETE) {
+          // Reading Main Running DB for delete op
+          DbSubOp dbop1 = { kOpReadSingle, kOpMatchNone,
+            kOpInOutFlag | kOpInOutCs };
+          result_code = GetChildConfigKey(pp_ck_run, req);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("GetChildConfigKey is failed resultcode=%d",
+                           result_code);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
+          result_code = ReadConfigDB(pp_ck_run, UPLL_DT_RUNNING,
+               UNC_OP_READ, dbop1, dmi, MAINTBL);
+          if (result_code != UPLL_RC_SUCCESS &&
+              result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+            UPLL_LOG_DEBUG("Unable to read configuration from CandidateDb");
             DELETE_IF_NOT_NULL(pp_ck_run);
             DELETE_IF_NOT_NULL(req);
             DELETE_IF_NOT_NULL(nreq);
             dmi->CloseCursor(cfg1_cursor, true);
             return result_code;
           }
+          if (result_code == UPLL_RC_SUCCESS) {
+            GET_USER_DATA_CTRLR(req, ctrlr_id);
+            result_code = SetPPConsolidatedStatus(pp_ck_run, ctrlr_id, dmi);
+            if (result_code != UPLL_RC_SUCCESS) {
+              UPLL_LOG_DEBUG("Could not set consolidated status %d",
+                             result_code);
+              DELETE_IF_NOT_NULL(pp_ck_run);
+              DELETE_IF_NOT_NULL(req);
+              DELETE_IF_NOT_NULL(nreq);
+              dmi->CloseCursor(cfg1_cursor, true);
+              return result_code;
+            }
+          }
+          DELETE_IF_NOT_NULL(pp_ck_run);
+          result_code = GetChildConfigKey(pp_ctrlr_key, req);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("GetChildConfigKey Failed  %d", result_code);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
         }
-        DELETE_IF_NOT_NULL(pp_ck_run);
-        result_code = GetChildConfigKey(pp_ctrlr_key, req);
+        if (UNC_OP_CREATE == op[i]) {
+          val_policingprofile_ctrl_t *val_ctrlr_temp = reinterpret_cast
+             <val_policingprofile_ctrl_t *>(GetVal(pp_ctrlr_key));
+          val_ctrlr_temp->valid[0] = UNC_VF_VALID;
+          val_policingprofile_ctrl_t *val_ctrlr_temp1 = reinterpret_cast
+             <val_policingprofile_ctrl_t *>(GetVal(req));
+          val_ctrlr_temp->ref_count = val_ctrlr_temp1->ref_count;
+          UPLL_LOG_DEBUG("Ref count in dupckv%d", val_ctrlr_temp->ref_count);
+          UPLL_LOG_DEBUG("Ref count in req%d", val_ctrlr_temp1->ref_count);
+        } else if (UNC_OP_UPDATE == op[i]) {
+          result_code = DupConfigKeyVal(pp_ctrlr_key, nreq, CTRLRTBL);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_DEBUG("DupConfigVal function is failed %d", result_code);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
+          val_policingprofile_ctrl_t *val_ctrlr_temp = reinterpret_cast
+             <val_policingprofile_ctrl_t *>(GetVal(pp_ctrlr_key));
+          val_ctrlr_temp->valid[0] = UNC_VF_VALID;
+          val_policingprofile_ctrl_t *val_ctrlr_temp1 = reinterpret_cast
+             <val_policingprofile_ctrl_t *>(GetVal(req));
+          val_ctrlr_temp->ref_count = val_ctrlr_temp1->ref_count;
+          UPLL_LOG_DEBUG("Ref count in dupckv%d", val_ctrlr_temp->ref_count);
+          UPLL_LOG_DEBUG("Ref count in req%d", val_ctrlr_temp1->ref_count);
+        }
+        result_code = UpdateConfigDB(pp_ctrlr_key, UPLL_DT_RUNNING, op[i],
+                                   dmi, config_mode, vtn_name, CTRLRTBL);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("GetChildConfigKey Failed  %d", result_code);
+          UPLL_LOG_DEBUG("Unable to Update Configuration at DB %d",
+                         result_code);
           DELETE_IF_NOT_NULL(req);
           DELETE_IF_NOT_NULL(nreq);
+          DELETE_IF_NOT_NULL(pp_ctrlr_key);
           dmi->CloseCursor(cfg1_cursor, true);
           return result_code;
         }
-      }
-      if (UNC_OP_CREATE == op[i]) {
-        val_policingprofile_ctrl_t *val_ctrlr_temp = reinterpret_cast
-            <val_policingprofile_ctrl_t *>(GetVal(pp_ctrlr_key));
-        val_ctrlr_temp->valid[0] = UNC_VF_VALID;
-        val_policingprofile_ctrl_t *val_ctrlr_temp1 = reinterpret_cast
-            <val_policingprofile_ctrl_t *>(GetVal(req));
-        val_ctrlr_temp->ref_count = val_ctrlr_temp1->ref_count;
-        UPLL_LOG_DEBUG("Ref count in dupckv%d", val_ctrlr_temp->ref_count);
-        UPLL_LOG_DEBUG("Ref count in req%d", val_ctrlr_temp1->ref_count);
-      } else if (UNC_OP_UPDATE == op[i]) {
-        result_code = DupConfigKeyVal(pp_ctrlr_key, nreq, CTRLRTBL);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("DupConfigVal function is failed %d", result_code);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
+        // update the consolidated config status in the Main Table
+        if (op[i] == UNC_OP_CREATE) {
+          result_code = UpdateConfigDB(policingprofile_key, UPLL_DT_RUNNING,
+             UNC_OP_UPDATE, dmi, config_mode, vtn_name, MAINTBL);
+          if (result_code != UPLL_RC_SUCCESS) {
+            UPLL_LOG_INFO("Unable to Update Configuration at DB %d",
+                          result_code);
+            DELETE_IF_NOT_NULL(req);
+            DELETE_IF_NOT_NULL(nreq);
+            DELETE_IF_NOT_NULL(policingprofile_key);
+            dmi->CloseCursor(cfg1_cursor, true);
+            return result_code;
+          }
         }
-        val_policingprofile_ctrl_t *val_ctrlr_temp = reinterpret_cast
-            <val_policingprofile_ctrl_t *>(GetVal(pp_ctrlr_key));
-        val_ctrlr_temp->valid[0] = UNC_VF_VALID;
-        val_policingprofile_ctrl_t *val_ctrlr_temp1 = reinterpret_cast
-            <val_policingprofile_ctrl_t *>(GetVal(req));
-        val_ctrlr_temp->ref_count = val_ctrlr_temp1->ref_count;
-        UPLL_LOG_DEBUG("Ref count in dupckv%d", val_ctrlr_temp->ref_count);
-        UPLL_LOG_DEBUG("Ref count in req%d", val_ctrlr_temp1->ref_count);
-      }
-      result_code = UpdateConfigDB(pp_ctrlr_key, UPLL_DT_RUNNING, op[i],
-                                   dmi, CTRLRTBL);
-      if (result_code != UPLL_RC_SUCCESS) {
-        UPLL_LOG_DEBUG("Unable to Update Configuration at DB %d", result_code);
-        DELETE_IF_NOT_NULL(req);
-        DELETE_IF_NOT_NULL(nreq);
+
+        EnqueCfgNotification(op[i], UPLL_DT_RUNNING, pp_ctrlr_key);
+        DELETE_IF_NOT_NULL(policingprofile_key);
         DELETE_IF_NOT_NULL(pp_ctrlr_key);
+        result_code = DalToUpllResCode(db_result);
+      }
+      if (cfg1_cursor) {
         dmi->CloseCursor(cfg1_cursor, true);
-        return result_code;
-      }
-
-      // update the consolidated config status in the Main Table
-      if (op[i] == UNC_OP_CREATE) {
-        result_code = UpdateConfigDB(policingprofile_key, UPLL_DT_RUNNING,
-            UNC_OP_UPDATE, dmi, MAINTBL);
-        if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_INFO("Unable to Update Configuration at DB %d",
-                        result_code);
-          DELETE_IF_NOT_NULL(req);
-          DELETE_IF_NOT_NULL(nreq);
-          DELETE_IF_NOT_NULL(policingprofile_key);
-          dmi->CloseCursor(cfg1_cursor, true);
-          return result_code;
-        }
-      }
-
-      EnqueCfgNotification(op[i], UPLL_DT_RUNNING, pp_ctrlr_key);
-      DELETE_IF_NOT_NULL(policingprofile_key);
-      DELETE_IF_NOT_NULL(pp_ctrlr_key);
-      result_code = DalToUpllResCode(db_result);
-    }
-    if (cfg1_cursor) {
-      dmi->CloseCursor(cfg1_cursor, true);
-      cfg1_cursor = NULL;
-    }
-    DELETE_IF_NOT_NULL(req);
-    DELETE_IF_NOT_NULL(nreq);
-    result_code = TxCopyRenameTableFromCandidateToRunning(keytype,
-                                                            op[i], dmi);
-    UPLL_LOG_DEBUG("TxCopyRenameTableFromCandidateToRunning returned %d",
+        cfg1_cursor = NULL;
+       }
+       DELETE_IF_NOT_NULL(req);
+       DELETE_IF_NOT_NULL(nreq);
+       result_code = TxCopyRenameTableFromCandidateToRunning(keytype,
+                                                          op[i], dmi,
+                                                          config_mode,
+                                                          vtn_name);
+       UPLL_LOG_DEBUG("TxCopyRenameTableFromCandidateToRunning returned %d",
                                                             result_code);
+     }
   }
   result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) ?
       UPLL_RC_SUCCESS : result_code;
+
+  if ((UPLL_RC_SUCCESS == result_code) &&
+      (config_mode != TC_CONFIG_VIRTUAL)) {
+    ClearScratchTbl(config_mode, vtn_name, dmi);
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG("ClearScratchTbl failed %d", result_code);
+    }
+  }
   return result_code;
 }
 
@@ -1061,6 +1077,7 @@ upll_rc_t PolicingProfileMoMgr::UpdateMainTbl(ConfigKeyVal *key_pp,
   ConfigKeyVal *ck_pp = NULL;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   val_policingprofile_t *val_pp = NULL;
+  string vtn_name = "";
 
   switch (op) {
     case UNC_OP_CREATE:
@@ -1091,7 +1108,8 @@ upll_rc_t PolicingProfileMoMgr::UpdateMainTbl(ConfigKeyVal *key_pp,
 
   DbSubOp dbop = {kOpNotRead, kOpMatchNone, kOpInOutNone};
   dbop.inoutop = kOpInOutCs | kOpInOutFlag;
-  result_code = UpdateConfigDB(ck_pp, UPLL_DT_STATE, op, dmi, &dbop, MAINTBL);
+  result_code = UpdateConfigDB(ck_pp, UPLL_DT_STATE, op, dmi, &dbop,
+                               TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
   EnqueCfgNotification(op, UPLL_DT_RUNNING, key_pp);
   delete ck_pp;
   return result_code;
@@ -1113,7 +1131,8 @@ upll_rc_t PolicingProfileMoMgr::GetDiffRecord(ConfigKeyVal *ckv_running,
     case uuc::kUpllUcpDelete:
     case uuc::kUpllUcpCreate:
       if (tbl == CTRLRTBL) {
-        UPLL_LOG_DEBUG("Created  record fot ctrlr_tbl is %s ",ckv_running->ToStrAll().c_str());
+        UPLL_LOG_DEBUG("Created  record fot ctrlr_tbl is %s ",
+                       ckv_running->ToStrAll().c_str());
         result_code = GetChildConfigKey(okey, ckv_running);
         if (result_code != UPLL_RC_SUCCESS) {
           UPLL_LOG_DEBUG("GetChildConfigKey failed. err_code & phase %d %d",
@@ -1121,7 +1140,7 @@ upll_rc_t PolicingProfileMoMgr::GetDiffRecord(ConfigKeyVal *ckv_running,
           return result_code;
         }
         upll_keytype_datatype_t dt_type = (phase == uuc::kUpllUcpDelete)?
-          UPLL_DT_AUDIT : UPLL_DT_RUNNING; 
+          UPLL_DT_AUDIT : UPLL_DT_RUNNING;
         result_code = ReadConfigDB(okey, dt_type,
                                      UNC_OP_READ, dbop, dmi, MAINTBL);
         if (result_code != UPLL_RC_SUCCESS) {
@@ -1130,7 +1149,8 @@ upll_rc_t PolicingProfileMoMgr::GetDiffRecord(ConfigKeyVal *ckv_running,
           return result_code;
         }
       } else {
-          UPLL_LOG_DEBUG("Created  record is %s ",ckv_running->ToStrAll().c_str());
+          UPLL_LOG_DEBUG("Created  record is %s ",
+                         ckv_running->ToStrAll().c_str());
           result_code = DupConfigKeyVal(okey, ckv_running, tbl);
           if (result_code != UPLL_RC_SUCCESS) {
             UPLL_LOG_DEBUG("DupConfigKeyVal failed. err_code & phase %d %d",
@@ -1141,57 +1161,62 @@ upll_rc_t PolicingProfileMoMgr::GetDiffRecord(ConfigKeyVal *ckv_running,
     break;
     case uuc::kUpllUcpUpdate:
       if (tbl == CTRLRTBL) {
-        UPLL_LOG_DEBUG("UpdateRecord  record for run Ctrlr_tbl is %s ",ckv_running->ToStrAll().c_str());
+        UPLL_LOG_DEBUG("UpdateRecord  record for run Ctrlr_tbl is %s ",
+                       ckv_running->ToStrAll().c_str());
         /*To be removed*/
-        val_policingprofile_ctrl_t *val1 = reinterpret_cast<val_policingprofile_ctrl_t *>
-          (GetVal(ckv_running));
-        UPLL_LOG_DEBUG("cs_row_status : %d flags : %d ref_count : %d", val1->cs_row_status,
-            val1->flags, val1->ref_count);
-        UPLL_LOG_DEBUG("UpdateRecord  record for audit Ctrlr_tbl is %s ",ckv_audit->ToStrAll().c_str());
-        val_policingprofile_ctrl_t *val2 = reinterpret_cast<val_policingprofile_ctrl_t *>
-          (GetVal(ckv_audit));
-        UPLL_LOG_DEBUG("cs_row_status : %d flags : %d ref_count : %d", val2->cs_row_status,
-            val2->flags, val2->ref_count);
+        val_policingprofile_ctrl_t *val1 =
+            reinterpret_cast<val_policingprofile_ctrl_t *>
+            (GetVal(ckv_running));
+        UPLL_LOG_DEBUG("cs_row_status : %d flags : %d ref_count : %d",
+                       val1->cs_row_status, val1->flags, val1->ref_count);
+        UPLL_LOG_DEBUG("UpdateRecord  record for audit Ctrlr_tbl is %s ",
+                       ckv_audit->ToStrAll().c_str());
+        val_policingprofile_ctrl_t *val2 =
+            reinterpret_cast<val_policingprofile_ctrl_t *> (GetVal(ckv_audit));
+        UPLL_LOG_DEBUG("cs_row_status : %d flags : %d ref_count : %d",
+                       val2->cs_row_status, val2->flags, val2->ref_count);
         result_code = GetChildConfigKey(okey, ckv_running);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("GetChildConfigKey for running record failed. \
-                         err_code & phase %d %d", result_code, phase);
+          UPLL_LOG_DEBUG("GetChildConfigKey for running record failed. "
+                         "err_code & phase %d %d", result_code, phase);
           return result_code;
         }
         result_code = ReadConfigDB(okey, UPLL_DT_RUNNING,
                                      UNC_OP_READ, dbop, dmi, MAINTBL);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_INFO("ReadConfigDB from running failed. \
-                           err_code & phase %d %d", result_code, phase);
+          UPLL_LOG_INFO("ReadConfigDB from running failed. "
+                           "err_code & phase %d %d", result_code, phase);
           return result_code;
         }
         result_code = GetChildConfigKey(ckv_dup, ckv_audit);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_DEBUG("GetChildConfigKey for audit record failed. \
-                            err_code & phase %d %d", result_code, phase);
+          UPLL_LOG_DEBUG("GetChildConfigKey for audit record failed. "
+                            "err_code & phase %d %d", result_code, phase);
           return result_code;
         }
         result_code = ReadConfigDB(ckv_dup, UPLL_DT_AUDIT,
                                      UNC_OP_READ, dbop, dmi, MAINTBL);
         if (result_code != UPLL_RC_SUCCESS) {
-          UPLL_LOG_INFO("ReadConfigDB from audit failed. \
-                           err_code & phase %d %d", result_code, phase);
+          UPLL_LOG_INFO("ReadConfigDB from audit failed. "
+                           "err_code & phase %d %d", result_code, phase);
           DELETE_IF_NOT_NULL(ckv_dup);
           return result_code;
         }
       } else {
-          UPLL_LOG_DEBUG("UpdateRecord  record  is %s ",ckv_running->ToStrAll().c_str());
-          UPLL_LOG_DEBUG("UpdateRecord  record  is %s ",ckv_audit->ToStrAll().c_str());
+          UPLL_LOG_DEBUG("UpdateRecord  record  is %s ",
+                         ckv_running->ToStrAll().c_str());
+          UPLL_LOG_DEBUG("UpdateRecord  record  is %s ",
+                         ckv_audit->ToStrAll().c_str());
           result_code = DupConfigKeyVal(okey, ckv_running, tbl);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_DEBUG("DupConfigKeyVal failed for running record. \
-                            err_code & phase %d %d", result_code, phase);
+            UPLL_LOG_DEBUG("DupConfigKeyVal failed for running record. "
+                            "err_code & phase %d %d", result_code, phase);
             return result_code;
           }
           result_code = DupConfigKeyVal(ckv_dup, ckv_audit, tbl);
           if (result_code != UPLL_RC_SUCCESS) {
-            UPLL_LOG_DEBUG("DupConfigKeyVal failed for audit record. \
-                           err_code & phase %d %d", result_code, phase);
+            UPLL_LOG_DEBUG("DupConfigKeyVal failed for audit record. "
+                           "err_code & phase %d %d", result_code, phase);
             return result_code;
           }
       }
@@ -1202,7 +1227,7 @@ upll_rc_t PolicingProfileMoMgr::GetDiffRecord(ConfigKeyVal *ckv_running,
                          UNC_OP_UPDATE);
       }
       if (check_audit_phase) {
-        if ((okey != NULL) && (ckv_dup!= NULL)) { 
+        if ((okey != NULL) && (ckv_dup!= NULL)) {
           ConfigVal *next_val = (ckv_dup->get_cfg_val())->DupVal();
           okey->AppendCfgVal(next_val);
         }
@@ -1219,9 +1244,8 @@ upll_rc_t PolicingProfileMoMgr::GetDiffRecord(ConfigKeyVal *ckv_running,
 }
 
 
-upll_rc_t PolicingProfileMoMgr::IsReferenced(ConfigKeyVal *ikey,
-    upll_keytype_datatype_t dt_type,
-    DalDmlIntf *dmi) {
+upll_rc_t PolicingProfileMoMgr::IsReferenced(IpcReqRespHeader *req,
+    ConfigKeyVal *ikey, DalDmlIntf *dmi) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   if (NULL == ikey) return UPLL_RC_ERR_GENERIC;
@@ -1235,7 +1259,7 @@ upll_rc_t PolicingProfileMoMgr::IsReferenced(ConfigKeyVal *ikey,
   result_code = vtnpmmgr->IsPolicingProfileConfigured(
     reinterpret_cast<const char *>
     (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
-    policingprofile_name), dmi);
+    policingprofile_name), req->datatype, dmi);
   if (UPLL_RC_SUCCESS != result_code) {
     if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
       UPLL_LOG_DEBUG("PolicingProfile is referred in VTN");
@@ -1246,65 +1270,87 @@ upll_rc_t PolicingProfileMoMgr::IsReferenced(ConfigKeyVal *ikey,
     return result_code;
   }
 
-  unc::upll::kt_momgr::VbrPolicingMapMoMgr *vbrpmmgr = reinterpret_cast
-      <unc::upll::kt_momgr::VbrPolicingMapMoMgr *>
-      (const_cast<MoManager *>(GetMoManager(UNC_KT_VBR_POLICINGMAP)));
-  if (NULL == vbrpmmgr) {
-    return UPLL_RC_ERR_GENERIC;
-  }
-  result_code = vbrpmmgr->IsPolicingProfileConfigured(
-    reinterpret_cast<const char *>
-    (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
-    policingprofile_name), dmi);
-  if (UPLL_RC_SUCCESS != result_code) {
-    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
-      UPLL_LOG_INFO("PolicingProfile is referred in vBridge");
-      return UPLL_RC_ERR_CFG_SEMANTIC;
-    }
-    UPLL_LOG_DEBUG("vBridge IsPolicingProfileConfigured failed. code(%d)",
-                   result_code);
-    return result_code;
-  }
+  // If data_type is Candidate then scratch table ref_count is tallied with
+  // controller table ref_count.
+  if (UPLL_DT_CANDIDATE == req->datatype) {
+    TcConfigMode config_mode = TC_CONFIG_INVALID;
+    std::string vtn_name = "";
+    result_code = GetConfigModeInfo(req, config_mode, vtn_name);
 
-  unc::upll::kt_momgr::VbrIfPolicingMapMoMgr *vbrifpmmgr = reinterpret_cast
-      <unc::upll::kt_momgr::VbrIfPolicingMapMoMgr *>
-      (const_cast<MoManager *>(GetMoManager(UNC_KT_VBRIF_POLICINGMAP)));
-  if (NULL == vbrifpmmgr) {
-    return UPLL_RC_ERR_GENERIC;
-  }
-  result_code = vbrifpmmgr->IsPolicingProfileConfigured(
-    reinterpret_cast<const char *>
-    (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
-    policingprofile_name), dmi);
-  if (UPLL_RC_SUCCESS != result_code) {
-    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
-      UPLL_LOG_ERROR(" PolicingProfile is referred in vBridge Interface");
-      return UPLL_RC_ERR_CFG_SEMANTIC;
+    if (result_code != UPLL_RC_SUCCESS) {
+      UPLL_LOG_DEBUG("GetConfigMode failed");
+      return result_code;
     }
-    UPLL_LOG_DEBUG("vBridge If IsPolicingProfileConfigured failed. code(%d)",
-                   result_code);
-    return result_code;
-  }
-  unc::upll::kt_momgr::VtermIfPolicingMapMoMgr *vtermifpmmgr = reinterpret_cast
-      <unc::upll::kt_momgr::VtermIfPolicingMapMoMgr *>
-      (const_cast<MoManager *>(GetMoManager(UNC_KT_VTERMIF_POLICINGMAP)));
-  if (NULL == vtermifpmmgr) {
-    return UPLL_RC_ERR_GENERIC;
-  }
-  result_code = vtermifpmmgr->IsPolicingProfileConfigured(
-    reinterpret_cast<const char *>
-    (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
-    policingprofile_name), dmi);
-  if (UPLL_RC_SUCCESS != result_code) {
-    if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
-      UPLL_LOG_INFO(" PolicingProfile is referred in vTerm Interface");
-      return UPLL_RC_ERR_CFG_SEMANTIC;
-    }
-    UPLL_LOG_DEBUG("vTerm If IsPolicingProfileConfigured failed. code(%d)",
-                   result_code);
-    return result_code;
-  }
 
+    result_code = RefCountSemanticCheck(reinterpret_cast<const char *>
+                                       (reinterpret_cast<key_policingprofile *>
+                                       (ikey->get_key())->
+                                        policingprofile_name),
+                                        dmi, config_mode, vtn_name);
+    if (result_code != UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      UPLL_LOG_DEBUG("RefCountSemanticCheck failed %d", result_code);
+      return result_code;
+    }
+  } else {
+    unc::upll::kt_momgr::VbrPolicingMapMoMgr *vbrpmmgr = reinterpret_cast
+        <unc::upll::kt_momgr::VbrPolicingMapMoMgr *>
+        (const_cast<MoManager *>(GetMoManager(UNC_KT_VBR_POLICINGMAP)));
+    if (NULL == vbrpmmgr) {
+      return UPLL_RC_ERR_GENERIC;
+    }
+    result_code = vbrpmmgr->IsPolicingProfileConfigured(
+        reinterpret_cast<const char *>
+        (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
+         policingprofile_name), req->datatype, dmi);
+    if (UPLL_RC_SUCCESS != result_code) {
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
+        UPLL_LOG_INFO("PolicingProfile is referred in vBridge");
+        return UPLL_RC_ERR_CFG_SEMANTIC;
+      }
+      UPLL_LOG_DEBUG("vBridge IsPolicingProfileConfigured failed. code(%d)",
+                     result_code);
+      return result_code;
+    }
+
+    unc::upll::kt_momgr::VbrIfPolicingMapMoMgr *vbrifpmmgr = reinterpret_cast
+        <unc::upll::kt_momgr::VbrIfPolicingMapMoMgr *>
+        (const_cast<MoManager *>(GetMoManager(UNC_KT_VBRIF_POLICINGMAP)));
+    if (NULL == vbrifpmmgr) {
+      return UPLL_RC_ERR_GENERIC;
+    }
+    result_code = vbrifpmmgr->IsPolicingProfileConfigured(
+        reinterpret_cast<const char *>
+        (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
+         policingprofile_name), req->datatype, dmi);
+    if (UPLL_RC_SUCCESS != result_code) {
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
+        UPLL_LOG_ERROR(" PolicingProfile is referred in vBridge Interface");
+        return UPLL_RC_ERR_CFG_SEMANTIC;
+      }
+      UPLL_LOG_DEBUG("vBridge If IsPolicingProfileConfigured failed. code(%d)",
+                     result_code);
+      return result_code;
+    }
+    unc::upll::kt_momgr::VtermIfPolicingMapMoMgr *vtermifpmmgr =
+        reinterpret_cast<unc::upll::kt_momgr::VtermIfPolicingMapMoMgr *>
+        (const_cast<MoManager *>(GetMoManager(UNC_KT_VTERMIF_POLICINGMAP)));
+    if (NULL == vtermifpmmgr) {
+      return UPLL_RC_ERR_GENERIC;
+    }
+    result_code = vtermifpmmgr->IsPolicingProfileConfigured(
+        reinterpret_cast<const char *>
+        (reinterpret_cast<key_policingprofile *>(ikey->get_key())->
+         policingprofile_name), req->datatype, dmi);
+    if (UPLL_RC_SUCCESS != result_code) {
+      if (UPLL_RC_ERR_INSTANCE_EXISTS == result_code) {
+        UPLL_LOG_INFO(" PolicingProfile is referred in vTerm Interface");
+        return UPLL_RC_ERR_CFG_SEMANTIC;
+      }
+      UPLL_LOG_DEBUG("vTerm If IsPolicingProfileConfigured failed. code(%d)",
+                     result_code);
+      return result_code;
+    }
+  }
   return UPLL_RC_SUCCESS;
 }
 
@@ -1371,7 +1417,8 @@ upll_rc_t PolicingProfileMoMgr::ValidateCapability(IpcReqRespHeader *req,
   switch (req->operation) {
     case UNC_OP_CREATE: {
       result_code = GetCreateCapability(ctrlr_name, ikey->get_key_type(),
-                                        &max_instance_count, &max_attrs, &attrs);
+                                        &max_instance_count,
+                                        &max_attrs, &attrs);
       break;
     }
     case UNC_OP_UPDATE: {
@@ -1420,15 +1467,15 @@ upll_rc_t PolicingProfileMoMgr::ValidateMessage(IpcReqRespHeader *req,
                   key->get_st_num());
     return UPLL_RC_ERR_BAD_REQUEST;
   }
-  if(req->option2 != UNC_OPT2_NONE) {
+  if (req->option2 != UNC_OPT2_NONE) {
     UPLL_LOG_DEBUG(" Error: option2 is not NONE");
     return UPLL_RC_ERR_INVALID_OPTION2;
   }
-  if(req->option1 != UNC_OPT1_NORMAL) {
+  if (req->option1 != UNC_OPT1_NORMAL) {
      UPLL_LOG_DEBUG(" Error: option1 is not NORMAL");
      return UPLL_RC_ERR_INVALID_OPTION1;
   }
-  
+
   /** Read key, val struct from ConfigKeyVal */
   key_policingprofile_t *key_policingprofile =
       reinterpret_cast<key_policingprofile_t *>(key->get_key());
@@ -1513,6 +1560,8 @@ upll_rc_t PolicingProfileMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
     const char *ctrlr_id, bool &renamed) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
+  string vtn_id = "";
+
   if (!ikey || !okey || NULL != rename_info
       || !(ikey->get_key()) || !(okey->get_key())) {
     UPLL_LOG_DEBUG("Input is NULL");
@@ -1605,7 +1654,7 @@ upll_rc_t PolicingProfileMoMgr::GetRenameInfo(ConfigKeyVal *ikey,
 
     DbSubOp dbop = {kOpNotRead, kOpMatchNone, kOpInOutCtrlr};
     result_code = UpdateConfigDB(ikey, UPLL_DT_IMPORT, UNC_OP_CREATE, dmi,
-        &dbop, RENAMETBL);
+        &dbop, TC_CONFIG_GLOBAL, vtn_id, RENAMETBL);
     if (UPLL_RC_SUCCESS != result_code) {
       UPLL_LOG_DEBUG("UpdateConfigDb Failed (%d)", result_code);
     }
@@ -1650,7 +1699,8 @@ upll_rc_t PolicingProfileMoMgr::CopyToConfigKey(ConfigKeyVal *&okey,
   return result_code;
 }
 
-bool PolicingProfileMoMgr::IsValidKey(void *ikey, uint64_t index) {
+bool PolicingProfileMoMgr::IsValidKey(void *ikey, uint64_t index,
+                                      MoMgrTables tbl) {
   UPLL_FUNC_TRACE;
   key_policingprofile_t *key =
       reinterpret_cast<key_policingprofile_t *>(ikey);
@@ -1684,6 +1734,8 @@ upll_rc_t PolicingProfileMoMgr::SetConsolidatedStatus(ConfigKeyVal *ikey,
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *ckv = NULL;
+  string vtn_name = "";
+
   DbSubOp dbop = {kOpReadMultiple, kOpMatchNone, kOpInOutCs};
   result_code = GetChildConfigKey(ckv, ikey);
   if (UPLL_RC_SUCCESS != result_code) {
@@ -1705,14 +1757,14 @@ upll_rc_t PolicingProfileMoMgr::SetConsolidatedStatus(ConfigKeyVal *ikey,
   for ( ; tmp_ckv != NULL ; tmp_ckv = tmp_ckv->get_next_cfg_key_val()) {
       val = reinterpret_cast<val_policingprofile_ctrl_t *>(GetVal(tmp_ckv));
       list_cs_row.push_back((unc_keytype_configstatus_t)val->cs_row_status);
-      UPLL_LOG_DEBUG("Printing Cs_attr %d",val->cs_row_status);
+      UPLL_LOG_DEBUG("Printing Cs_attr %d", val->cs_row_status);
   }
   if (ckv) delete ckv;
   val_policingprofile_t *val_temp =
       reinterpret_cast<val_policingprofile_t *>(GetVal(ikey));
   val_temp->cs_row_status = GetConsolidatedCsStatus(list_cs_row);
   result_code = UpdateConfigDB(ikey, UPLL_DT_RUNNING, UNC_OP_UPDATE, dmi,
-                               MAINTBL);
+                               TC_CONFIG_GLOBAL, vtn_name, MAINTBL);
   if (UPLL_RC_SUCCESS != result_code) {
     UPLL_LOG_DEBUG(" SetConsolidatedStatus failed. UpdateConfigDB Failed"
       " Result Code - %d", result_code);
@@ -1757,7 +1809,9 @@ upll_rc_t PolicingProfileMoMgr::GetPolicingProfileCtrlrKeyval(
 upll_rc_t PolicingProfileMoMgr::PolicingProfileCtrlrTblOper
     (const char *policingprofile_name, const char *ctrlr_id,
     DalDmlIntf *dmi, unc_keytype_operation_t oper,
-    upll_keytype_datatype_t dt_type, uint8_t pp_flag) {
+    upll_keytype_datatype_t dt_type, uint8_t pp_flag,
+    TcConfigMode config_mode, string vtn_name, uint32_t count,
+    bool is_commit) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *pp_ckv = NULL;
@@ -1773,11 +1827,13 @@ upll_rc_t PolicingProfileMoMgr::PolicingProfileCtrlrTblOper
      SET_USER_DATA_FLAGS(pp_ckv, pp_flag);
 
   if (UNC_OP_CREATE == oper) {
-    result_code = CtrlrTblCreate(pp_ckv, dmi, dt_type);
+    result_code = CtrlrTblCreate(pp_ckv, dmi, dt_type, config_mode, vtn_name,
+                                 is_commit, count);
     UPLL_LOG_DEBUG("PolicingProfileCtrlrTblOper Failed.CtrlrTblCreate failed"
                    "Result code - %d", result_code);
   } else if (UNC_OP_DELETE == oper) {
-    result_code = CtrlrTblDelete(pp_ckv, dmi, dt_type);
+    result_code = CtrlrTblDelete(pp_ckv, dmi, dt_type, config_mode, vtn_name,
+                                 is_commit, count);
     UPLL_LOG_DEBUG("PolicingProfileCtrlrTblOper Failed.CtrlrTblDelete failed"
                    "Result code - %d", result_code);
   } else {
@@ -1790,16 +1846,45 @@ upll_rc_t PolicingProfileMoMgr::PolicingProfileCtrlrTblOper
 }
 
 upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
-    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type) {
+    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+    TcConfigMode config_mode, string vtn_name, bool is_commit,
+    uint32_t count) {
   UPLL_FUNC_TRACE;
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   ConfigKeyVal *rename_key = NULL;
-
-  //  Update Ref count in policingprofile_ctrlr_tbl directly.
-  result_code = UpdateRefCountInCtrlrTbl(pp_ckv, dmi, dt_type);
+  uint8_t *ctrlr_id = NULL;
+  UPLL_LOG_DEBUG("CtrlrTblCreate input count : %d", count);
+  if ((UPLL_DT_CANDIDATE == dt_type) &&
+      (false == is_commit)) {
+    UPLL_LOG_TRACE("CtrlrTblCreate Not commit");
+    result_code = UpdateRefCountInScratchTbl(pp_ckv, dmi, dt_type,
+                                             UNC_OP_CREATE, config_mode,
+                                             vtn_name, count);
+    if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      result_code = InsertRecInScratchTbl(pp_ckv, dmi, dt_type, UNC_OP_CREATE,
+                                          config_mode, vtn_name, count);
+      if (UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("InsertRecInScratchTbl failed %d", result_code);
+        return result_code;
+      } else {
+        UPLL_LOG_DEBUG("UpdateRefCountInScratchTbl returned %d", result_code);
+        return result_code;
+      }
+    }
+  } else if ((UPLL_DT_CANDIDATE == dt_type) &&
+             (true == is_commit)) {
+    result_code = UPLL_RC_ERR_NO_SUCH_INSTANCE;
+  } else {
+    //  Update Ref count in policingprofile_ctrlr_tbl directly.
+    result_code = UpdateRefCountInCtrlrTbl(pp_ckv, dmi, dt_type, config_mode,
+                                           vtn_name);
+  }
   UPLL_LOG_DEBUG("UpdateRefCountInCtrlrTbl returns %d", result_code);
-  //  If result code  is other than UPLL_RC_ERR_NO_SUCH_INSTANCE
-  //  return result_code
+  //  If data_type is Candidate then and if error code
+  //  UPLL_RC_ERR_INSTANCE_EXISTS is returned the update the ref_count in
+  //  in scratch_tbl for the specified record.
+  //  If any other data_type and result code  is other than
+  //  UPLL_RC_ERR_NO_SUCH_INSTANCE, return result_code
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
     return result_code;
   }
@@ -1809,7 +1894,8 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
   if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
     // scenario : profile1 is renamed into profile2 and it stored into candidate
     // now user created profile1 in candidate. UNC accept this configuration.
-    // But UNC should return error, when this profile (profile1) is mapped with any 
+    // But UNC should return error, when this profile (profile1)
+    // is mapped with any
     if (dt_type == UPLL_DT_CANDIDATE) {
        uint8_t *ctrlrid = NULL;
        result_code = GetChildConfigKey(rename_key, pp_ckv);
@@ -1824,7 +1910,8 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
 
        GET_USER_DATA_CTRLR(rename_key, ctrlrid);
 
-       result_code = GetRenamedUncKey(rename_key, UPLL_DT_CANDIDATE, dmi, ctrlrid);
+       result_code = GetRenamedUncKey(rename_key, UPLL_DT_CANDIDATE,
+                                      dmi, ctrlrid);
        if (result_code == UPLL_RC_SUCCESS) {
          UPLL_LOG_ERROR("Profile name already renamed&exists, return semantic");
          DELETE_IF_NOT_NULL(rename_key);
@@ -1833,8 +1920,9 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
          UPLL_LOG_DEBUG("GetRenamedUncKey Failed err_code %d", result_code);
          DELETE_IF_NOT_NULL(rename_key);
          return result_code;
-       } else { // If NO_SUCH_INSTANCE check in RUNNING
-         result_code = GetRenamedUncKey(rename_key, UPLL_DT_RUNNING, dmi, ctrlrid);
+       } else {  // If NO_SUCH_INSTANCE check in RUNNING
+         result_code = GetRenamedUncKey(rename_key, UPLL_DT_RUNNING,
+                                        dmi, ctrlrid);
          DELETE_IF_NOT_NULL(rename_key);
          if (result_code == UPLL_RC_SUCCESS) {
            UPLL_LOG_ERROR("Profile name already renamed & exists");
@@ -1845,8 +1933,9 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
          }
        }
 
- #if 1
-     // scenario: During import/partial import the policingprofile name got renamed.
+  #if 1
+     // scenario: During import/partial import the
+     // policingprofile name got renamed.
      // merge, commit, audit done.
      // rename tbl info will be removed, when delete the policingprofile from
      // candidate and create it again and commit.
@@ -1878,10 +1967,11 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
      if (UPLL_RC_SUCCESS == result_code) {
         val_rename_policingprofile_t* rename_policingprofile = reinterpret_cast
            <val_rename_policingprofile_t *>(GetVal(ckv_running_rename));
-        rename_policingprofile->valid[UPLL_IDX_RENAME_PROFILE_RPP] = UNC_VF_VALID;
+        rename_policingprofile->valid[UPLL_IDX_RENAME_PROFILE_RPP] =
+            UNC_VF_VALID;
 
         result_code = UpdateConfigDB(ckv_running_rename, UPLL_DT_CANDIDATE,
-              UNC_OP_CREATE, dmi, RENAMETBL);
+              UNC_OP_CREATE, dmi, config_mode, vtn_name, RENAMETBL);
         if (UPLL_RC_SUCCESS != result_code &&
             UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
             UPLL_LOG_DEBUG("UpdateConfigDB failed %d", result_code)
@@ -1900,7 +1990,7 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
 
         SET_USER_DATA_FLAGS(ckv_main, 0x01);
         result_code = UpdateConfigDB(ckv_main, UPLL_DT_CANDIDATE,
-              UNC_OP_UPDATE, dmi, &dbop_1, MAINTBL);
+              UNC_OP_UPDATE, dmi, &dbop_1, config_mode, vtn_name, MAINTBL);
         DELETE_IF_NOT_NULL(ckv_main);
         DELETE_IF_NOT_NULL(ckv_running_rename);
         if (UPLL_RC_SUCCESS != result_code &&
@@ -1916,16 +2006,16 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
      // capability check
     IpcReqRespHeader *temp_req = reinterpret_cast<IpcReqRespHeader *>
       (ConfigKeyVal::Malloc(sizeof(IpcReqRespHeader)));
-    
+
     temp_req->operation = UNC_OP_CREATE;
     temp_req->datatype = dt_type;
-    uint8_t *ctrlr_id = NULL;
     val_policingprofile_ctrl_t *val_ctrlr = reinterpret_cast
        <val_policingprofile_ctrl_t *>(ConfigKeyVal::Malloc
        (sizeof(val_policingprofile_ctrl_t)));
     pp_ckv->AppendCfgVal(IpctSt::kIpcInvalidStNum, val_ctrlr);
     GET_USER_DATA_CTRLR(pp_ckv, ctrlr_id);
-    result_code = ValidateCapability(temp_req, pp_ckv, reinterpret_cast<char*>(ctrlr_id));
+    result_code = ValidateCapability(temp_req, pp_ckv,
+                                     reinterpret_cast<char*>(ctrlr_id));
 
     free(temp_req);
 
@@ -1943,9 +2033,15 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
        return result_code;
     }
     UPLL_LOG_DEBUG(" No record found. Create new record");
-    val_ctrlr->ref_count = 1;
+    if (dt_type == UPLL_DT_CANDIDATE) {
+      // ref_count will be updated during Tx start phase.
+      UPLL_LOG_DEBUG("CtrlrTblCreate in val count : %d", count);
+      val_ctrlr->ref_count = count;
+    } else {
+      val_ctrlr->ref_count = 1;
+    }
     val_ctrlr->valid[0] = UNC_VF_VALID;
-    if (UPLL_DT_AUDIT == dt_type) {
+    if ((UPLL_DT_AUDIT == dt_type)) {
       ConfigKeyVal *temp_pp_ckv = NULL;
       result_code = GetChildConfigKey(temp_pp_ckv, pp_ckv);
       if (UPLL_RC_SUCCESS != result_code) {
@@ -1958,99 +2054,37 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblCreate(ConfigKeyVal *pp_ckv,
       if (UPLL_RC_SUCCESS != result_code) {
         UPLL_LOG_DEBUG("ReadConfigDB failed %d", result_code);
         DELETE_IF_NOT_NULL(temp_pp_ckv);
+        if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)
+          result_code = UPLL_RC_SUCCESS;
         return result_code;
       }
+      if (UPLL_DT_AUDIT == dt_type) {
       val_policingprofile_t *temp_val = reinterpret_cast
           <val_policingprofile_t *>(GetVal(temp_pp_ckv));
       val_ctrlr->cs_row_status = static_cast<unc_keytype_configstatus_t>
       (temp_val->cs_row_status);
       DELETE_IF_NOT_NULL(temp_pp_ckv);
+      }
     }
-    result_code = UpdateConfigDB(pp_ckv, dt_type,
-        UNC_OP_CREATE, dmi, CTRLRTBL);
-    if (UPLL_RC_SUCCESS != result_code) {
+    val_policingprofile_ctrl_t *tmp = reinterpret_cast
+        <val_policingprofile_ctrl_t *>(GetVal(pp_ckv));
+    if (dt_type == UPLL_DT_CANDIDATE) {
+      tmp->ref_count = count;
+      tmp->valid[0] = UNC_VF_VALID;
+    }
+    upll_rc_t rt_code = UpdateConfigDB(pp_ckv, dt_type,
+                                       UNC_OP_CREATE, dmi, config_mode,
+                                       vtn_name, CTRLRTBL);
+    if ((UPLL_RC_SUCCESS != rt_code) &&
+        (UPLL_RC_ERR_INSTANCE_EXISTS != rt_code)) {
       UPLL_LOG_DEBUG(" CtrlrTblCreate Failed. Create record failed."
         " Result_code - %d", result_code);
       return result_code;
     }
-    val_policingprofile_ctrl_t *tmp = reinterpret_cast
-        <val_policingprofile_ctrl_t *>(GetVal(pp_ckv));
     UPLL_LOG_DEBUG(" refcount from ckv - %d %d", tmp->ref_count,
         tmp->valid[0]);
     UPLL_LOG_DEBUG(" refcount - %d ", val_ctrlr->ref_count);
-
-    PolicingProfileEntryMoMgr *ppe_mgr =
-      reinterpret_cast<PolicingProfileEntryMoMgr *>
-      (const_cast<MoManager *>(GetMoManager(
-      UNC_KT_POLICING_PROFILE_ENTRY)));
-    key_policingprofile_t *key_policingprofile =
-      reinterpret_cast<key_policingprofile_t *>(pp_ckv->get_key());
-    result_code = ppe_mgr->PolicingProfileEntryCtrlrTblOper(
-        reinterpret_cast<char*>(key_policingprofile->policingprofile_name),
-        reinterpret_cast<char*>(ctrlr_id), dmi, UNC_OP_CREATE, dt_type);
-    if (UPLL_RC_SUCCESS != result_code) {
-      UPLL_LOG_DEBUG("Error in PolicingProfileEntryCtrlrTblOper in CREATE (%d)",
-      result_code);
-      return result_code;
-    }
-  }
-  return UPLL_RC_SUCCESS;
-}
-
-upll_rc_t PolicingProfileMoMgr::CtrlrTblDelete(ConfigKeyVal *pp_ckv,
-    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type) {
-  UPLL_FUNC_TRACE;
-  upll_rc_t result_code = UPLL_RC_SUCCESS;
-  DbSubOp dbop = {kOpReadSingle, kOpMatchCtrlr, kOpInOutNone};
-  DbSubOp dbop1 = {kOpNotRead, kOpMatchCtrlr, kOpInOutNone};
-  uint8_t *ctrlr_id = NULL;
-  // Check whether entry is present in CTRLRTBL
-  val_policingprofile_ctrl_t *val_ctrlr;
-  result_code = ReadConfigDB(pp_ckv, dt_type,
-      UNC_OP_READ, dbop, dmi, CTRLRTBL);
-  // Doesnt exists return error
-  if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
-    UPLL_LOG_DEBUG(" CtrlrTblDelete Failed. No record found."
-                   " Result_code - %d", result_code);
-    // Success is sent to continue deleting the record
-    return UPLL_RC_SUCCESS;
-  } else if (UPLL_RC_SUCCESS ==  result_code) {
-    val_ctrlr = reinterpret_cast<val_policingprofile_ctrl_t *>(GetVal(pp_ckv));
-    UPLL_LOG_DEBUG(" Read is success in CtrlrTblDelete");
-    GET_USER_DATA_CTRLR(pp_ckv, ctrlr_id);
-    if (1 < val_ctrlr->ref_count) {
-     val_ctrlr->ref_count = val_ctrlr->ref_count-1;
-     UPLL_LOG_DEBUG(" Refcount is  - %d %d", val_ctrlr->ref_count,
-                   val_ctrlr->valid[0]);
-      val_ctrlr->valid[0] = UNC_VF_VALID;
-      result_code = UpdateConfigDB(pp_ckv, dt_type, UNC_OP_UPDATE, dmi,
-          &dbop1, CTRLRTBL);
-      if (UPLL_RC_SUCCESS != result_code) {
-        UPLL_LOG_INFO("Update record failed. Result_code - %d", result_code);
-        return result_code;
-      }
-    } else if (1 >= val_ctrlr->ref_count) {
-    // If ref_count = 0 delete the entry in ctrlrtbl
-      UPLL_LOG_DEBUG(" Refcount is less than 1 - %d %d", val_ctrlr->ref_count,
-                       val_ctrlr->valid[0]);
-      result_code = UpdateConfigDB(pp_ckv, dt_type, UNC_OP_DELETE, dmi,
-          &dbop1, CTRLRTBL);
-      if (UPLL_RC_SUCCESS != result_code) {
-        return result_code;
-      }
-
-      // Renametbl entry should be deleted when no entry in policing profile ctrlr tbl
-      result_code = UpdateConfigDB(pp_ckv, dt_type, UNC_OP_DELETE,
-                                        dmi, &dbop1, RENAMETBL);
-      if (UPLL_RC_SUCCESS != result_code &&
-          UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
-        UPLL_LOG_INFO("UpdateConfigDB Failed %d", result_code);
-        DELETE_IF_NOT_NULL(pp_ckv);
-        return result_code;
-      }
-      result_code = (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)?
-                     UPLL_RC_SUCCESS:result_code;
-
+    if (UPLL_RC_ERR_INSTANCE_EXISTS != rt_code) {
       PolicingProfileEntryMoMgr *ppe_mgr =
         reinterpret_cast<PolicingProfileEntryMoMgr *>
         (const_cast<MoManager *>(GetMoManager(
@@ -2058,16 +2092,117 @@ upll_rc_t PolicingProfileMoMgr::CtrlrTblDelete(ConfigKeyVal *pp_ckv,
       key_policingprofile_t *key_policingprofile =
         reinterpret_cast<key_policingprofile_t *>(pp_ckv->get_key());
       result_code = ppe_mgr->PolicingProfileEntryCtrlrTblOper(
-        reinterpret_cast<char*>(key_policingprofile->policingprofile_name),
-        reinterpret_cast<char*>(ctrlr_id), dmi, UNC_OP_DELETE, dt_type);
+          reinterpret_cast<char*>(key_policingprofile->policingprofile_name),
+          reinterpret_cast<char*>(ctrlr_id), dmi, UNC_OP_CREATE, dt_type,
+          config_mode, vtn_name, false);
       if (UPLL_RC_SUCCESS != result_code) {
-        UPLL_LOG_INFO("Error in PolicingProfileEntryCtrlrTblOper in DELETE (%d)",
-        result_code);
+        UPLL_LOG_DEBUG("Error in PolicingProfileEntryCtrlrTblOper in"
+                       "CREATE (%d)", result_code);
+        return result_code;
+      }
+    }
+  }
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t PolicingProfileMoMgr::CtrlrTblDelete(ConfigKeyVal *pp_ckv,
+    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+    TcConfigMode config_mode, string vtn_name, bool is_commit,
+    uint32_t count) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code = UPLL_RC_SUCCESS;
+  uint8_t *ctrlr_id = NULL;
+  if ((UPLL_DT_CANDIDATE == dt_type) &&
+      (false == is_commit)) {
+    // Ref_count in scratch tbl is decremented.
+    upll_rc_t rt_code = UpdateRefCountInScratchTbl(
+                           pp_ckv, dmi, dt_type,
+                           UNC_OP_DELETE, config_mode,
+                           vtn_name, count);
+    if (rt_code == UPLL_RC_ERR_NO_SUCH_INSTANCE) {
+      result_code = InsertRecInScratchTbl(pp_ckv, dmi, dt_type, UNC_OP_DELETE,
+                                          config_mode, vtn_name, count);
+      if (UPLL_RC_SUCCESS != result_code) {
+        UPLL_LOG_DEBUG("InsertRecInScratchTbl failed %d", result_code);
+        return result_code;
+      } else {
+        UPLL_LOG_DEBUG("UpdateRefCountInScratchTbl returned %d", result_code);
         return result_code;
       }
     }
   } else {
-    return result_code;
+    DbSubOp dbop = {kOpReadSingle, kOpMatchCtrlr, kOpInOutNone};
+    DbSubOp dbop1 = {kOpNotRead, kOpMatchCtrlr, kOpInOutNone};
+    // Check whether entry is present in CTRLRTBL
+    val_policingprofile_ctrl_t *val_ctrlr;
+    result_code = ReadConfigDB(pp_ckv, dt_type,
+                               UNC_OP_READ, dbop, dmi, CTRLRTBL);
+    // Doesnt exists return error
+    if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
+      UPLL_LOG_DEBUG(" CtrlrTblDelete Failed. No record found."
+                     " Result_code - %d", result_code);
+      // Success is sent to continue deleting the record
+      return UPLL_RC_SUCCESS;
+    } else if (UPLL_RC_SUCCESS ==  result_code) {
+      val_ctrlr = reinterpret_cast<val_policingprofile_ctrl_t *>
+          (GetVal(pp_ckv));
+      UPLL_LOG_DEBUG(" Read is success in CtrlrTblDelete");
+      GET_USER_DATA_CTRLR(pp_ckv, ctrlr_id);
+      if (1 < val_ctrlr->ref_count) {
+        val_ctrlr->ref_count = val_ctrlr->ref_count-1;
+        UPLL_LOG_DEBUG(" Refcount is  - %d %d", val_ctrlr->ref_count,
+                       val_ctrlr->valid[0]);
+        val_ctrlr->valid[0] = UNC_VF_VALID;
+        result_code = UpdateConfigDB(pp_ckv, dt_type, UNC_OP_UPDATE, dmi,
+                                     &dbop1, config_mode, vtn_name, CTRLRTBL);
+        if (UPLL_RC_SUCCESS != result_code) {
+          UPLL_LOG_INFO("Update record failed. Result_code - %d", result_code);
+          return result_code;
+        }
+      } else if (1 >= val_ctrlr->ref_count) {
+        // If ref_count = 0 delete the entry in ctrlrtbl
+        UPLL_LOG_DEBUG(" Refcount is less than 1 - %d %d", val_ctrlr->ref_count,
+                       val_ctrlr->valid[0]);
+        result_code = UpdateConfigDB(pp_ckv, dt_type, UNC_OP_DELETE, dmi,
+                                     &dbop1, config_mode, vtn_name, CTRLRTBL);
+        if (UPLL_RC_SUCCESS != result_code) {
+          return result_code;
+        }
+
+        // Renametbl entry should be deleted when no entry
+        // in policing profile ctrlr tbl
+        result_code = UpdateConfigDB(pp_ckv, dt_type, UNC_OP_DELETE,
+                                     dmi, &dbop1, config_mode, vtn_name,
+                                     RENAMETBL);
+        if (UPLL_RC_SUCCESS != result_code &&
+            UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+          UPLL_LOG_INFO("UpdateConfigDB Failed %d", result_code);
+          DELETE_IF_NOT_NULL(pp_ckv);
+          return result_code;
+        }
+        result_code = (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)?
+            UPLL_RC_SUCCESS:result_code;
+
+        PolicingProfileEntryMoMgr *ppe_mgr =
+            reinterpret_cast<PolicingProfileEntryMoMgr *>
+            (const_cast<MoManager *>(GetMoManager(
+                        UNC_KT_POLICING_PROFILE_ENTRY)));
+        key_policingprofile_t *key_policingprofile =
+            reinterpret_cast<key_policingprofile_t *>(pp_ckv->get_key());
+        result_code = ppe_mgr->PolicingProfileEntryCtrlrTblOper(
+            reinterpret_cast<char*>(key_policingprofile->policingprofile_name),
+            reinterpret_cast<char*>(ctrlr_id), dmi, UNC_OP_DELETE, dt_type,
+            config_mode, vtn_name, false);
+        if (UPLL_RC_SUCCESS != result_code) {
+          UPLL_LOG_INFO(
+              "Error in PolicingProfileEntryCtrlrTblOper in DELETE (%d)",
+              result_code);
+          return result_code;
+        }
+      }
+    } else {
+      return result_code;
+    }
   }
   return UPLL_RC_SUCCESS;
 }
@@ -2082,7 +2217,7 @@ upll_rc_t PolicingProfileMoMgr::UpdateConfigStatus(ConfigKeyVal *ckv,
   upll_rc_t result_code = UPLL_RC_SUCCESS;
   unc_keytype_configstatus_t  ctrlr_status;
   uint8_t cs_status;
-  ctrlr_status = (driver_result == UPLL_RC_SUCCESS) ? 
+  ctrlr_status = (driver_result == UPLL_RC_SUCCESS) ?
                   UNC_CS_APPLIED : UNC_CS_NOT_APPLIED;
   if ((NULL == ckv) || (NULL == ctrlr_key)) {
     UPLL_LOG_DEBUG("input struct is NULL");
@@ -2101,7 +2236,7 @@ upll_rc_t PolicingProfileMoMgr::UpdateConfigStatus(ConfigKeyVal *ckv,
   UPLL_LOG_TRACE("cs_status %d ctrlr_status %d\n", cs_status, ctrlr_status);
   if (op == UNC_OP_CREATE) {
     ctrlr_val_policingprofile->cs_row_status = ctrlr_status;
-   /* update the vtn status in main tbl */
+    /* update the vtn status in main tbl */
     if (val_policingprofile->cs_row_status == UNC_CS_UNKNOWN) {
         /* first entry in ctrlr table */
       cs_status = ctrlr_status;
@@ -2114,7 +2249,7 @@ upll_rc_t PolicingProfileMoMgr::UpdateConfigStatus(ConfigKeyVal *ckv,
           cs_status =  UNC_CS_PARTIALLY_APPLIED;
         }
     } else if (val_policingprofile->cs_row_status == UNC_CS_INVALID) {
-      cs_status = UNC_CS_INVALID;  
+      cs_status = UNC_CS_INVALID;
     } else {
         cs_status = UNC_CS_PARTIALLY_APPLIED;
     }
@@ -2176,6 +2311,8 @@ upll_rc_t PolicingProfileMoMgr::SetPPConsolidatedStatus(ConfigKeyVal *ikey,
   uint8_t *pp_exist_on_ctrlr = NULL;
   bool applied = false, not_applied = false, invalid = false;
   unc_keytype_configstatus_t c_status = UNC_CS_NOT_APPLIED;
+  string vtn_name = "";
+
   DbSubOp dbop = { kOpReadMultiple, kOpMatchNone,
                    kOpInOutCtrlr | kOpInOutCs };
   if (!ikey || !dmi) {
@@ -2221,7 +2358,7 @@ upll_rc_t PolicingProfileMoMgr::SetPPConsolidatedStatus(ConfigKeyVal *ikey,
         invalid = true;
       break;
       default:
-        UPLL_LOG_DEBUG("Invalid status");        
+        UPLL_LOG_DEBUG("Invalid status");
         DELETE_IF_NOT_NULL(ctrlr_ckv);
        //  return UPLL_RC_ERR_GENERIC;
     }
@@ -2244,16 +2381,18 @@ upll_rc_t PolicingProfileMoMgr::SetPPConsolidatedStatus(ConfigKeyVal *ikey,
   val->cs_row_status = c_status;
   DbSubOp dbop_update = {kOpNotRead, kOpMatchNone, kOpInOutCs};
   result_code = UpdateConfigDB(ikey, UPLL_DT_RUNNING, UNC_OP_UPDATE, dmi,
-                               &dbop_update, MAINTBL);
+                               &dbop_update, TC_CONFIG_GLOBAL, vtn_name,
+                               MAINTBL);
   DELETE_IF_NOT_NULL(ctrlr_ckv);
   return result_code;
 }
 
- 
+
 //  Increments the ref_count by 1 for given policingprofile_name and
 //  ctrlr_name in the given datatype.
 upll_rc_t PolicingProfileMoMgr::UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
-     DalDmlIntf *dmi, upll_keytype_datatype_t dt_type) {
+     DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+     TcConfigMode config_mode, string vtn_name) {
   UPLL_FUNC_TRACE;
 
   if (!ikey || !(ikey->get_key())) {
@@ -2264,8 +2403,8 @@ upll_rc_t PolicingProfileMoMgr::UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
   key_user_data *tuser_data  = reinterpret_cast<key_user_data_t *>
                                (ikey->get_user_data());
   if (!tuser_data) {
-   UPLL_LOG_DEBUG("UserData is NULL");
-   return UPLL_RC_ERR_GENERIC;
+    UPLL_LOG_DEBUG("UserData is NULL");
+    return UPLL_RC_ERR_GENERIC;
   }
 
   void *tkey = ikey->get_key();
@@ -2300,18 +2439,24 @@ upll_rc_t PolicingProfileMoMgr::UpdateRefCountInCtrlrTbl(ConfigKeyVal *ikey,
   } else if (dt_type == UPLL_DT_IMPORT) {
     query_string = QUERY_PP_IMP_REF_COUNT_UPDATE;
   }
+  uint8_t *vtnname = NULL;
+  if (!vtn_name.empty()) {
+    vtnname = reinterpret_cast<uint8_t *>(
+      const_cast<char *>(vtn_name.c_str()));
+  }
   upll_rc_t result_code = DalToUpllResCode(
          dmi->ExecuteAppQuery(query_string, dt_type, tbl_index,
-                              db_info, UNC_OP_UPDATE));
+                              db_info, UNC_OP_UPDATE, config_mode,
+                              vtnname));
   DELETE_IF_NOT_NULL(db_info);
   return result_code;
 }
 
 upll_rc_t PolicingProfileMoMgr::GetOperation(uuc::UpdateCtrlrPhase phase,
                                              unc_keytype_operation_t &op) {
- if (uuc::kUpllUcpDelete == phase) {
-   UPLL_LOG_DEBUG("Delete phase 1");
-   return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
+  if (uuc::kUpllUcpDelete == phase) {
+    UPLL_LOG_DEBUG("Delete phase 1");
+    return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
   } else if (uuc::kUpllUcpUpdate == phase) {
     UPLL_LOG_DEBUG("Update phase");
     return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
@@ -2319,6 +2464,9 @@ upll_rc_t PolicingProfileMoMgr::GetOperation(uuc::UpdateCtrlrPhase phase,
     op = UNC_OP_CREATE;
   } else if (uuc::kUpllUcpDelete2 == phase) {
     op = UNC_OP_DELETE;
+  } else if (uuc::kUpllUcpInit == phase) {
+    // return UPLL_RC_ERR_NOT_ALLOWED_FOR_THIS_KT;
+    // return success;
   } else {
     return UPLL_RC_ERR_GENERIC;
   }
@@ -2334,17 +2482,734 @@ upll_rc_t PolicingProfileMoMgr::CopyKeyToVal(ConfigKeyVal *ikey,
     UPLL_LOG_DEBUG("GetChildConfigKey failed");
     return result_code;
   }
-  val_rename_policingprofile *val = reinterpret_cast<val_rename_policingprofile_t *>(
-                          ConfigKeyVal::Malloc(sizeof(val_rename_policingprofile)));
+  val_rename_policingprofile *val =
+      reinterpret_cast<val_rename_policingprofile_t *>
+      (ConfigKeyVal::Malloc(sizeof(val_rename_policingprofile)));
   // Note: Validate message is take care of validate the key part
-  key_policingprofile_t *key = reinterpret_cast<key_policingprofile_t *>(ikey->get_key());
-  uuu::upll_strncpy(val->policingprofile_newname, key->policingprofile_name,(kMaxLenPolicingProfileName+1));
+  key_policingprofile_t *key =
+      reinterpret_cast<key_policingprofile_t *>(ikey->get_key());
+  uuu::upll_strncpy(val->policingprofile_newname, key->policingprofile_name,
+                    (kMaxLenPolicingProfileName+1));
   val->valid[UPLL_CTRLR_VTN_NAME_VALID] = UNC_VF_VALID;
   okey->SetCfgVal(new ConfigVal(IpctSt::kIpcStValRenamePolicingprofile, val));
   return UPLL_RC_SUCCESS;
 }
 
 
+// Update the ref_count in scratch table depending on operation.
+// If operation is create then increment the ref_count. If delete
+// decrement the ref_count.
+upll_rc_t PolicingProfileMoMgr::UpdateRefCountInScratchTbl(
+     ConfigKeyVal *ikey,
+     DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+     unc_keytype_operation_t op,
+     TcConfigMode config_mode, string vtn_name,
+     uint32_t count) {
+  UPLL_FUNC_TRACE;
+
+  if (!ikey || !(ikey->get_key())) {
+    UPLL_LOG_DEBUG("Input key is Empty");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  key_user_data *tuser_data  = reinterpret_cast<key_user_data_t *>
+                               (ikey->get_user_data());
+  if (!tuser_data) {
+    UPLL_LOG_DEBUG("UserData is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  void *tkey = ikey->get_key();
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+
+  //  Bind match policingprofile_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiPolicingProfileName,
+                     uud::kDalChar,
+                     (kMaxLenPolicingProfileName + 1),
+                     reinterpret_cast<void *>(reinterpret_cast
+                                              <key_policingprofile_t*>
+                                              (tkey)->policingprofile_name));
+
+  //  Bind match ctrlr_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiCtrlrName,
+                     uud::kDalChar,
+                     (kMaxLenCtrlrId + 1),
+                     &(tuser_data->ctrlr_id));
+
+  uint8_t *vtnname = NULL;
+  if (!vtn_name.empty()) {
+    vtnname = reinterpret_cast<uint8_t *>(
+      const_cast<char *>(vtn_name.c_str()));
+  } else {
+    UPLL_LOG_DEBUG("Invalid vtn name");
+    DELETE_IF_NOT_NULL(db_info);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  //  Bind match vtn_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiVtnName,
+                     uud::kDalChar,
+                     (kMaxLenVtnName + 1),
+                     vtnname);
+
+  //  Incrment the ref_count by 1 for the matched policingprofile_name,
+  //  ctrlr_name and vtn_name for the given datatype
+  std::stringstream ss;
+  ss << count;
+  std::string query_string;
+  UPLL_LOG_DEBUG(" Count : %s %d", (ss.str()).c_str(), count);
+  if (op == UNC_OP_CREATE) {
+    query_string += "UPDATE ca_pp_scratch_tbl SET ref_count = ref_count + ";
+    query_string += (ss.str());
+    query_string += " WHERE policingprofile_name = ? AND ctrlr_name = ?"\
+                     " AND vtn_name = ?";
+  } else if (op == UNC_OP_DELETE) {
+    query_string += "UPDATE ca_pp_scratch_tbl SET ref_count = ref_count - ";
+    query_string += (ss.str());
+    query_string += " WHERE policingprofile_name = ? AND ctrlr_name = ?"\
+                     " AND vtn_name = ?";
+  } else {
+    UPLL_LOG_DEBUG("Invalid operation");
+    DELETE_IF_NOT_NULL(db_info);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  upll_rc_t result_code = DalToUpllResCode(
+         dmi->ExecuteAppQuery(query_string, dt_type, uudst::kDbiPpScratchTbl,
+                              db_info, UNC_OP_UPDATE, config_mode,
+                              vtnname));
+  DELETE_IF_NOT_NULL(db_info);
+  return result_code;
+}
+
+//  Insert a new record in scratch table with ref_count value depending
+//  on operation.
+upll_rc_t PolicingProfileMoMgr::InsertRecInScratchTbl(ConfigKeyVal *ikey,
+     DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+     unc_keytype_operation_t op,
+     TcConfigMode config_mode, string vtn_name,
+     uint32_t count) {
+  UPLL_FUNC_TRACE;
+
+  if (!ikey || !(ikey->get_key())) {
+    UPLL_LOG_DEBUG("Input key is Empty");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  key_user_data *tuser_data  = reinterpret_cast<key_user_data_t *>
+                               (ikey->get_user_data());
+  if (!tuser_data) {
+    UPLL_LOG_DEBUG("UserData is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  void *tkey = ikey->get_key();
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+
+  //  Bind Input policingprofile_name
+  db_info->BindInput(uudst::pp_scratch::kDbiPolicingProfileName,
+                     uud::kDalChar,
+                     (kMaxLenPolicingProfileName + 1),
+                     reinterpret_cast<void *>(reinterpret_cast
+                                              <key_policingprofile_t*>
+                                              (tkey)->policingprofile_name));
+
+  //  Bind Input ctrlr_name
+  db_info->BindInput(uudst::pp_scratch::kDbiCtrlrName,
+                     uud::kDalChar,
+                     (kMaxLenCtrlrId + 1),
+                     &(tuser_data->ctrlr_id));
+
+  uint8_t *vtnname = NULL;
+  if (!vtn_name.empty()) {
+    vtnname = reinterpret_cast<uint8_t *>(
+      const_cast<char *>(vtn_name.c_str()));
+  } else {
+    UPLL_LOG_DEBUG("Invalid vtn name");
+    DELETE_IF_NOT_NULL(db_info);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  //  Bind Input vtn_name
+  db_info->BindInput(uudst::pp_scratch::kDbiVtnName,
+                     uud::kDalChar,
+                     (kMaxLenVtnName + 1),
+                     vtnname);
+
+  // Insert a new record in scratch tbl with ref_count depending on
+  // operation.
+  std::stringstream ss;
+  ss << count;
+  std::string query_string;
+  if (op == UNC_OP_CREATE) {
+    query_string += "INSERT INTO ca_pp_scratch_tbl "\
+                     "(policingprofile_name, ctrlr_name, vtn_name, ref_count) "\
+                     "VALUES (?, ?, ?, ";
+    query_string += (ss.str());
+    query_string += ")";
+  } else {
+    query_string += "INSERT INTO ca_pp_scratch_tbl "\
+                     "(policingprofile_name, ctrlr_name, vtn_name, ref_count) "\
+                     "VALUES (?, ?, ?, -";
+    query_string += (ss.str());
+    query_string += ")";
+  }
+
+  upll_rc_t result_code = DalToUpllResCode(
+         dmi->ExecuteAppQuery(query_string, dt_type, uudst::kDbiPpScratchTbl,
+                              db_info, UNC_OP_UPDATE, config_mode,
+                              vtnname));
+  DELETE_IF_NOT_NULL(db_info);
+  return result_code;
+}
+
+// Add the ref_count in scratch table for the given flowlist and
+// ctrlr_name for the given configuration mode.
+upll_rc_t PolicingProfileMoMgr::ComputeRefCountInScratchTbl(
+    ConfigKeyVal *ikey,
+    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+    TcConfigMode config_mode, string vtn_name,
+    int &ref_count) {
+  UPLL_FUNC_TRACE;
+
+  if (!ikey || !(ikey->get_key())) {
+    UPLL_LOG_DEBUG("Input key is Empty");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  key_user_data *tuser_data  = reinterpret_cast<key_user_data_t *>
+      (ikey->get_user_data());
+  if (!tuser_data) {
+    UPLL_LOG_DEBUG("UserData is NULL");
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  void *tkey = ikey->get_key();
+
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+  //  Bind Match policingprofile_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiPolicingProfileName,
+                     uud::kDalChar,
+                     (kMaxLenPolicingProfileName + 1),
+                     reinterpret_cast<void *>(reinterpret_cast
+                                              <key_policingprofile_t*>
+                                              (tkey)->policingprofile_name));
+
+  //  Bind Match ctrlr_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiCtrlrName,
+                     uud::kDalChar,
+                     (kMaxLenCtrlrId + 1),
+                     &(tuser_data->ctrlr_id));
+
+  std::string query_string;
+  query_string = QUERY_SUM_PP_SCRATCH_REF_COUNT_WITH_CTRLR;
+  uint8_t *vtnname = NULL;
+  if (config_mode == TC_CONFIG_VTN) {
+    if (!vtn_name.empty()) {
+      vtnname = reinterpret_cast<uint8_t *>(
+          const_cast<char *>(vtn_name.c_str()));
+    } else {
+      UPLL_LOG_DEBUG("vtn name is NULL");
+      DELETE_IF_NOT_NULL(db_info);
+      return UPLL_RC_ERR_GENERIC;
+    }
+
+    //  Bind Match vtn_name
+    db_info->BindMatch(uudst::pp_scratch::kDbiVtnName,
+                       uud::kDalChar,
+                       (kMaxLenVtnName + 1),
+                       vtnname);
+    query_string = QUERY_READ_REF_COUNT_PP_SCRATCH_TBL;
+  }
+
+  int db_ref_count = 0;
+  //  Bind Output ref_count
+  db_info->BindOutput(uudst::pp_scratch::kDbiRefCount,
+                      uud::kDalUint32,
+                      1,
+                      &db_ref_count);
+  //  Incrment the ref_count by 1 for the matched policingprofile_name
+  //  and ctrlr_name for the given datatype
+
+  upll_rc_t result_code = DalToUpllResCode(dmi->
+                                 ExecuteAppQuerySingleRecord(query_string,
+                                                             db_info));
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_INFO("Reading Single records failed %d", result_code);
+    DELETE_IF_NOT_NULL(db_info);
+    return result_code;
+  }
+  ref_count = db_ref_count;
+  DELETE_IF_NOT_NULL(db_info);
+  return result_code;
+}
+
+// Read Multiple records from controller table
+upll_rc_t PolicingProfileMoMgr::ReadCtrlrTbl(
+    ConfigKeyVal *&okey,
+    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type) {
+
+  UPLL_FUNC_TRACE;
+
+  DbSubOp dbop = { kOpReadMultiple, kOpMatchNone, kOpInOutCtrlr };
+  upll_rc_t result_code = ReadConfigDB(okey, dt_type, UNC_OP_READ, dbop, dmi,
+      CTRLRTBL);
+  UPLL_LOG_DEBUG("ReadConfigDB returned %d", result_code);
+  return result_code;
+}
+
+// Clear the records in scratch table depending upon config_mode
+upll_rc_t PolicingProfileMoMgr::ClearScratchTbl(
+    TcConfigMode config_mode, string vtn_name,
+    DalDmlIntf *dmi, bool is_abort) {
+
+  UPLL_FUNC_TRACE;
+
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+
+  uint8_t *vtnname = NULL;
+  std::string query_string = QUERY_DELETE_ALL_PP_SCRATCH_TBL;
+  if (config_mode == TC_CONFIG_VTN) {
+    if (!vtn_name.empty()) {
+      vtnname = reinterpret_cast<uint8_t *>(
+          const_cast<char *>(vtn_name.c_str()));
+    } else {
+      UPLL_LOG_DEBUG("Invalid vtn name");
+      DELETE_IF_NOT_NULL(db_info);
+      return UPLL_RC_ERR_GENERIC;
+    }
+    //  Bind Match vtn_name
+    db_info->BindMatch(uudst::pp_scratch::kDbiVtnName,
+                       uud::kDalChar,
+                       (kMaxLenVtnName + 1),
+                       vtnname);
+    query_string = QUERY_DELETE_VTN_PP_SCRATCH_TBL;
+  }
+  upll_rc_t result_code = DalToUpllResCode(
+      dmi->ExecuteAppQuery(query_string, UPLL_DT_CANDIDATE,
+                           uudst::kDbiPpScratchTbl, db_info, UNC_OP_DELETE,
+                           config_mode, vtnname));
+
+  DELETE_IF_NOT_NULL(db_info);
+  if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code) {
+    result_code = UPLL_RC_SUCCESS;
+  }
+  return result_code;
+}
+
+upll_rc_t PolicingProfileMoMgr::RefCountSemanticCheck(
+    const char* policingprofile_name, DalDmlIntf *dmi,
+    TcConfigMode config_mode, string vtn_name) {
+
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPolicingProfileCtrlrTbl);
+
+  db_info->BindMatch(uudst::policingprofile_ctrlr::kDbiPolicingProfileName,
+                     uud::kDalChar,
+                     (kMaxLenPolicingProfileName + 1),
+                     policingprofile_name);
+
+
+  uint32_t ct_ref_count = 0;
+  db_info->BindOutput(uudst::policingprofile_ctrlr::kDbiRefCount,
+                      uud::kDalUint32,
+                      1,
+                      &ct_ref_count);
+
+  std::string query_string = QUERY_SUM_PP_CTRLR_REF_COUNT;
+  result_code = DalToUpllResCode(
+         dmi->ExecuteAppQuerySingleRecord(query_string, db_info));
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("ExecuteAppQuery returned %d", result_code);
+    DELETE_IF_NOT_NULL(db_info);
+    return result_code;
+  }
+
+  DalBindInfo *st_db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+  st_db_info->BindMatch(uudst::pp_scratch::kDbiPolicingProfileName,
+                       uud::kDalChar,
+                       (kMaxLenPolicingProfileName + 1),
+                       policingprofile_name);
+
+  int st_ref_count = 0;
+  st_db_info->BindOutput(uudst::pp_scratch::kDbiRefCount,
+                        uud::kDalUint32,
+                        1,
+                        &st_ref_count);
+
+  query_string = QUERY_SUM_PP_SCRATCH_REF_COUNT;
+  result_code = DalToUpllResCode(
+         dmi->ExecuteAppQuerySingleRecord(query_string, st_db_info));
+  if ((UPLL_RC_SUCCESS != result_code) &&
+      (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
+    UPLL_LOG_DEBUG("ExecuteAppQuery returned %d", result_code);
+    DELETE_IF_NOT_NULL(db_info);
+    DELETE_IF_NOT_NULL(st_db_info);
+    return result_code;
+  }
+
+  if (0 != (ct_ref_count + st_ref_count)) {
+    UPLL_LOG_DEBUG("Policing profile is matched");
+    DELETE_IF_NOT_NULL(st_db_info);
+    DELETE_IF_NOT_NULL(db_info);
+    return UPLL_RC_ERR_CFG_SEMANTIC;
+  }
+
+  DELETE_IF_NOT_NULL(st_db_info);
+  DELETE_IF_NOT_NULL(db_info);
+  return UPLL_RC_ERR_NO_SUCH_INSTANCE;
+}
+
+upll_rc_t PolicingProfileMoMgr::InstanceExistsInScratchTbl(
+    ConfigKeyVal *ikey, TcConfigMode config_mode, string vtn_name,
+    DalDmlIntf *dmi) {
+
+  UPLL_FUNC_TRACE;
+
+  ConfigKeyVal *ckv = NULL;
+  upll_rc_t result_code = GetChildConfigKey(ckv, ikey);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
+    return result_code;
+  }
+  key_user_data *tuser_data  = reinterpret_cast<key_user_data_t *>
+      (ckv->get_user_data());
+  if (!tuser_data) {
+    UPLL_LOG_DEBUG("UserData is NULL");
+    DELETE_IF_NOT_NULL(ckv);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  void *tkey = ckv->get_key();
+
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+
+  //  Bind Match policingprofile_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiPolicingProfileName,
+                     uud::kDalChar,
+                     (kMaxLenPolicingProfileName + 1),
+                     reinterpret_cast<void *>(reinterpret_cast
+                                              <key_policingprofile_t*>
+                                              (tkey)->policingprofile_name));
+
+  //  Bind Match ctrlr_name
+  db_info->BindMatch(uudst::pp_scratch::kDbiCtrlrName,
+                     uud::kDalChar,
+                     (kMaxLenCtrlrId + 1),
+                     &(tuser_data->ctrlr_id));
+
+  std::string query_string;
+  query_string = QUERY_READ_NO_VTN_REF_COUNT_PP_SCRATCH_TBL;
+  uint8_t *vtnname = NULL;
+  if (config_mode == TC_CONFIG_VTN) {
+    if (!vtn_name.empty()) {
+      vtnname = reinterpret_cast<uint8_t *>(
+          const_cast<char *>(vtn_name.c_str()));
+    } else {
+      UPLL_LOG_DEBUG("Invalid vtn name");
+      DELETE_IF_NOT_NULL(db_info);
+      DELETE_IF_NOT_NULL(ckv);
+    }
+
+    //  Bind Match vtn_name
+    db_info->BindMatch(uudst::pp_scratch::kDbiVtnName,
+                       uud::kDalChar,
+                       (kMaxLenVtnName + 1),
+                       vtnname);
+    query_string = QUERY_READ_REF_COUNT_PP_SCRATCH_TBL;
+  }
+
+  result_code = DalToUpllResCode(
+      dmi->ExecuteAppQuerySingleRecord(query_string, db_info));
+  if (result_code != UPLL_RC_SUCCESS) {
+    UPLL_LOG_DEBUG("Reading scratch tbl failed %d", result_code);
+    DELETE_IF_NOT_NULL(db_info);
+    DELETE_IF_NOT_NULL(ckv);
+    return result_code;
+  }
+  DELETE_IF_NOT_NULL(ckv);
+  DELETE_IF_NOT_NULL(db_info);
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t PolicingProfileMoMgr::ClearVirtualKtDirtyInGlobal(DalDmlIntf *dmi) {
+  UPLL_FUNC_TRACE;
+  upll_rc_t result_code;
+
+  unc_keytype_operation_t op_arr[] = { UNC_OP_CREATE,
+                                       UNC_OP_DELETE,
+                                       UNC_OP_UPDATE};
+  uint32_t nop = 3;
+
+  uudst::kDalTableIndex tbl_idx = GetTable(MAINTBL, UPLL_DT_CANDIDATE);
+  for (uint32_t i = 0; i < nop; i++) {
+    result_code = DalToUpllResCode(dmi->ClearGlobalDirtyTblCacheAndDB(
+                                            tbl_idx, op_arr[i]));
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_DEBUG("ClearGlobalDirtyTblCacheAndDB failed %d", result_code);
+      return result_code;
+    }
+  }
+
+  GetTable(CTRLRTBL, UPLL_DT_CANDIDATE);
+  result_code = DalToUpllResCode(dmi->ClearGlobalDirtyTblCacheAndDB(
+                                          tbl_idx, UNC_OP_UPDATE));
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("ClearGlobalDirtyTblCacheAndDB failed %d", result_code);
+    return result_code;
+  }
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t PolicingProfileMoMgr::ComputeCtrlrTblRefCountFromScratchTbl(
+    ConfigKeyVal *ikey,
+    DalDmlIntf *dmi, upll_keytype_datatype_t dt_type,
+    TcConfigMode config_mode, string vtn_name) {
+
+  UPLL_FUNC_TRACE;
+
+  uint8_t *vtnname = NULL;
+  if (config_mode == TC_CONFIG_VTN) {
+    if (!vtn_name.empty()) {
+      vtnname = reinterpret_cast<uint8_t *>(
+          const_cast<char *>(vtn_name.c_str()));
+    } else {
+      UPLL_LOG_DEBUG("vtn name is NULL");
+      return UPLL_RC_ERR_GENERIC;
+    }
+  } else {
+    vtn_name = "global_temp_vtn";
+    vtnname = reinterpret_cast<uint8_t *>(
+          const_cast<char *>(vtn_name.c_str()));
+  }
+  // If scratch tbl is not dirty then skip the scratch tbl computation
+  if (!dmi->IsTableDirtyShallow(uudst::kDbiPpScratchTbl,
+                                config_mode, vtnname)) {
+    UPLL_LOG_DEBUG("No entries in scratch tbl");
+    return UPLL_RC_SUCCESS;
+  }
+  ConfigKeyVal *ckv = NULL;
+  upll_rc_t result_code = GetChildConfigKey(ckv, ikey);
+  if (UPLL_RC_SUCCESS != result_code) {
+    UPLL_LOG_DEBUG("GetChildConfigKey failed %d", result_code);
+    return result_code;
+  }
+  GET_USER_DATA(ckv);
+// Read records from scratch tbl
+  key_user_data *tuser_data  = reinterpret_cast<key_user_data_t *>
+      (ckv->get_user_data());
+  if (!tuser_data) {
+    UPLL_LOG_DEBUG("UserData is NULL");
+    DELETE_IF_NOT_NULL(ckv);
+    return UPLL_RC_ERR_GENERIC;
+  }
+
+  void *tkey = ckv->get_key();
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+
+  //  Bind Match policingprofile_name
+  db_info->BindOutput(uudst::pp_scratch::kDbiPolicingProfileName,
+                      uud::kDalChar,
+                      (kMaxLenPolicingProfileName + 1),
+                      reinterpret_cast<void *>(reinterpret_cast
+                                               <key_policingprofile_t*>
+                                               (tkey)->policingprofile_name));
+
+  //  Bind Match ctrlr_name
+  db_info->BindOutput(uudst::pp_scratch::kDbiCtrlrName,
+                      uud::kDalChar,
+                      (kMaxLenCtrlrId + 1),
+                      &(tuser_data->ctrlr_id));
+
+  std::string query_string;
+  query_string = QUERY_READ_AND_SUM_REF_COUNT_PP_SCRATCH_TBL;
+  if (config_mode == TC_CONFIG_VTN) {
+    //  Bind Match vtn_name
+    db_info->BindMatch(uudst::pp_scratch::kDbiVtnName,
+                       uud::kDalChar,
+                       (kMaxLenVtnName + 1),
+                       vtnname);
+    query_string = QUERY_READ_PP_SCRATCH_TBL_VTN_MODE;
+  }
+  int st_ref_count = 0;
+  db_info->BindOutput(uudst::pp_scratch::kDbiRefCount,
+                      uud::kDalUint32,
+                      1,
+                      &st_ref_count);
+  DalCursor *dal_cursor_handle = NULL;
+  result_code = DalToUpllResCode(dmi->ExecuteAppQueryMultipleRecords(
+                 query_string, 0, db_info, &dal_cursor_handle));
+  while (result_code == UPLL_RC_SUCCESS) {
+    result_code = DalToUpllResCode(dmi->GetNextRecord(dal_cursor_handle));
+    if (UPLL_RC_SUCCESS == result_code) {
+      if (st_ref_count == 0) {
+        continue;
+      }
+      ConfigKeyVal *ctrlr_ckv = NULL;
+      result_code = GetChildConfigKey(ctrlr_ckv, ckv);
+      if (result_code != UPLL_RC_SUCCESS) {
+        UPLL_LOG_DEBUG("GetChildConfigkey failed %d", result_code);
+        DELETE_IF_NOT_NULL(db_info);
+        DELETE_IF_NOT_NULL(ckv);
+        dmi->CloseCursor(dal_cursor_handle, false);
+        return result_code;
+      }
+      if (config_mode != TC_CONFIG_VTN) {
+        vtn_name = reinterpret_cast<const char *>(vtnname);
+      }
+      DbSubOp dbop = { kOpReadSingle, kOpMatchCtrlr, kOpInOutNone };
+      result_code = ReadConfigDB(ctrlr_ckv, dt_type, UNC_OP_READ, dbop, dmi,
+                                 CTRLRTBL);
+      if ((UPLL_RC_SUCCESS != result_code) &&
+          (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
+        UPLL_LOG_DEBUG("ReadConfigDB failed %d", result_code);
+        DELETE_IF_NOT_NULL(db_info);
+        DELETE_IF_NOT_NULL(ckv);
+        DELETE_IF_NOT_NULL(ctrlr_ckv);
+        dmi->CloseCursor(dal_cursor_handle, false);
+        return result_code;
+      }
+      if (UPLL_RC_SUCCESS == result_code) {
+        val_policingprofile_ctrl_t *val_ctrlr = reinterpret_cast
+            <val_policingprofile_ctrl_t *>(GetVal(ctrlr_ckv));
+        unc_keytype_operation_t op;
+        if (0 == st_ref_count + val_ctrlr->ref_count) {
+          op = UNC_OP_DELETE;
+        } else {
+          val_ctrlr->ref_count += st_ref_count;
+          val_ctrlr->valid[0] = UNC_VF_VALID;
+          op = UNC_OP_UPDATE;
+        }
+        DbSubOp dbop1 = {kOpNotRead, kOpMatchCtrlr, kOpInOutNone};
+        result_code = UpdateConfigDB(ctrlr_ckv, dt_type, op, dmi, &dbop1,
+                                     config_mode, vtn_name, CTRLRTBL);
+        if (UPLL_RC_SUCCESS != result_code) {
+          UPLL_LOG_DEBUG("UpdateConfigDB failed %d", result_code);
+          DELETE_IF_NOT_NULL(db_info);
+          DELETE_IF_NOT_NULL(ckv);
+          DELETE_IF_NOT_NULL(ctrlr_ckv);
+          dmi->CloseCursor(dal_cursor_handle, false);
+          return result_code;
+        }
+        if (op == UNC_OP_DELETE) {
+          PolicingProfileEntryMoMgr *ppe_mgr =
+              reinterpret_cast<PolicingProfileEntryMoMgr *>
+              (const_cast<MoManager *>(GetMoManager(
+                          UNC_KT_POLICING_PROFILE_ENTRY)));
+          key_policingprofile_t *key_policingprofile =
+              reinterpret_cast<key_policingprofile_t *>(ctrlr_ckv->get_key());
+          result_code = ppe_mgr->PolicingProfileEntryCtrlrTblOper(
+            reinterpret_cast<char*>(key_policingprofile->policingprofile_name),
+            reinterpret_cast<char*>(tuser_data->ctrlr_id), dmi, UNC_OP_DELETE,
+            dt_type, config_mode, vtn_name, false);
+          if (UPLL_RC_SUCCESS != result_code) {
+            UPLL_LOG_DEBUG("PolicingProfileEntryCtrlrTblOper Delete failed %d",
+                            result_code);
+            DELETE_IF_NOT_NULL(db_info);
+            DELETE_IF_NOT_NULL(ckv);
+            DELETE_IF_NOT_NULL(ctrlr_ckv);
+            dmi->CloseCursor(dal_cursor_handle, false);
+            return result_code;
+          }
+          result_code = UpdateConfigDB(ctrlr_ckv, dt_type, UNC_OP_DELETE,
+                                       dmi, &dbop1, config_mode, vtn_name,
+                                       RENAMETBL);
+          if (UPLL_RC_SUCCESS != result_code &&
+              UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+            UPLL_LOG_INFO("UpdateConfigDB Failed %d", result_code);
+            DELETE_IF_NOT_NULL(db_info);
+            DELETE_IF_NOT_NULL(ckv);
+            DELETE_IF_NOT_NULL(ctrlr_ckv);
+            dmi->CloseCursor(dal_cursor_handle, false);
+            return result_code;
+          }
+          if (UPLL_RC_ERR_NO_SUCH_INSTANCE == result_code)
+            result_code = UPLL_RC_SUCCESS;
+        }
+        DELETE_IF_NOT_NULL(ctrlr_ckv);
+      } else {
+        result_code = CtrlrTblCreate(ctrlr_ckv, dmi, dt_type, config_mode,
+                                     vtn_name, true, st_ref_count);
+        if ((UPLL_RC_SUCCESS != result_code) &&
+            (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
+          UPLL_LOG_DEBUG("CtrlrTblCreate failed %d", result_code);
+          DELETE_IF_NOT_NULL(db_info);
+          DELETE_IF_NOT_NULL(ckv);
+          DELETE_IF_NOT_NULL(ctrlr_ckv);
+          dmi->CloseCursor(dal_cursor_handle, false);
+          return result_code;
+        }
+        if (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)
+          result_code = UPLL_RC_SUCCESS;
+        DELETE_IF_NOT_NULL(ctrlr_ckv);
+      }
+    } else if (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code) {
+      UPLL_LOG_DEBUG("GetNextRecord failed");
+      dmi->CloseCursor(dal_cursor_handle, false);
+      DELETE_IF_NOT_NULL(db_info);
+      DELETE_IF_NOT_NULL(ckv);
+      return result_code;
+    }
+  }
+  if (dal_cursor_handle) {
+    dmi->CloseCursor(dal_cursor_handle, false);
+  }
+  DELETE_IF_NOT_NULL(db_info);
+  DELETE_IF_NOT_NULL(ckv);
+  return UPLL_RC_SUCCESS;
+}
+
+upll_rc_t PolicingProfileMoMgr::DeleteChildrenPOM(ConfigKeyVal *ikey,
+                      upll_keytype_datatype_t dt_type, DalDmlIntf *dmi,
+                      TcConfigMode config_mode, string vtn_name) {
+  UPLL_FUNC_TRACE;
+
+  upll_rc_t result_code = UPLL_RC_ERR_GENERIC;
+  for (int i = 0; i < ntable; i++) {
+    if (GetTable((MoMgrTables)i, UPLL_DT_CANDIDATE) >= uudst::kDalNumTables) {
+      continue;
+    }
+    // skip the deletion for convert table, it is deleted as part of vbr_portmap
+    // delete
+    DbSubOp dbop = {kOpNotRead, kOpMatchNone, kOpInOutNone};
+    result_code = UpdateConfigDB(ikey, UPLL_DT_CANDIDATE,
+             UNC_OP_DELETE, dmi, &dbop, config_mode,
+             vtn_name, (MoMgrTables)i);
+    result_code = (result_code == UPLL_RC_ERR_NO_SUCH_INSTANCE)?
+                  UPLL_RC_SUCCESS:result_code;
+    if (UPLL_RC_SUCCESS != result_code) {
+      UPLL_LOG_ERROR("Delete Operation fails with %d", result_code);
+      return result_code;
+    }
+  }
+
+  void *tkey = ikey->get_key();
+  DalBindInfo *db_info = new DalBindInfo(uudst::kDbiPpScratchTbl);
+  db_info->BindMatch(uudst::pp_scratch::kDbiPolicingProfileName,
+                     uud::kDalChar, (kMaxLenPolicingProfileName + 1),
+                     reinterpret_cast<void *>(reinterpret_cast
+                     <key_policingprofile_t*>(tkey)->policingprofile_name));
+
+  std::string query_string = QUERY_DELETE_PP_SCRATCH_TBL_MATCH_PP;
+  uint8_t *vtnname = NULL;
+  if (!vtn_name.empty()) {
+    vtnname = reinterpret_cast<uint8_t *>(
+        const_cast<char *>(vtn_name.c_str()));
+  }
+  result_code = DalToUpllResCode(
+         dmi->ExecuteAppQuery(query_string, dt_type, uudst::kDbiPpScratchTbl,
+                              db_info, UNC_OP_DELETE, config_mode,
+                              vtnname));
+  DELETE_IF_NOT_NULL(db_info);
+  if ((UPLL_RC_SUCCESS != result_code) &&
+      (UPLL_RC_ERR_NO_SUCH_INSTANCE != result_code)) {
+    return result_code;
+  }
+  return UPLL_RC_SUCCESS;
+}
 }  //  namespace kt_momgr
 }  //  namespace upll
 }  //  namespace unc

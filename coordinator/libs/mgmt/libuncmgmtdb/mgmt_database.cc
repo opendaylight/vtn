@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 NEC Corporation
+ * Copyright (c) 2012-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -187,7 +187,11 @@ db_err_e MgmtDatabase::Disconnect(void)
 
   // disconnect.
   db_rtn = SQLDisconnect(hdbc_);
-  RETURN_IF((db_rtn != SQL_SUCCESS), DB_E_NG,
+  if (db_rtn == SQL_SUCCESS_WITH_INFO)
+  {
+    L_INFO("Info ODBC database disconnect. result=%d", db_rtn);
+  }
+  RETURN_IF((db_rtn != SQL_SUCCESS && db_rtn != SQL_SUCCESS_WITH_INFO), DB_E_NG,
     "Failure ODBC database disconnect. err=%d", db_rtn);
 
   status_database_ = STATUS_TRANSACTION_NONE;

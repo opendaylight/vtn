@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 NEC Corporation
+ * Copyright (c) 2014-2015 NEC Corporation
  * All rights reserved.
  *
  * This program and the accompanying materials are made available under the
@@ -201,14 +201,14 @@ flowConditionsUtil::SetValue(json_object *out,flowcondition* in) {
     if ( *iter == NULL ) {
       pfc_log_error("No Contents in match");
     } else {
-      json_object* match_obj = JsonBuildParse::create_json_obj();
-      UncRespCode match_ret(SetValue(match_obj,*iter));
-      if ( match_ret != UNC_RC_SUCCESS ) {
-        json_object_put(match_obj);
-        json_object_put(match_array);
+       json_object* match_obj = JsonBuildParse::create_json_obj();
+       UncRespCode match_ret(SetValue(match_obj,*iter));
+       if ( match_ret != UNC_RC_SUCCESS ) {
+         json_object_put(match_obj);
+         json_object_put(match_array);
         return match_ret;
       }
-      JsonBuildParse::add_to_array(match_array,match_obj);
+       JsonBuildParse::add_to_array(match_array,match_obj);
       iter++;
     }
   }

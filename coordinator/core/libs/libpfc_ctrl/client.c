@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 NEC Corporation
+ * Copyright (c) 2010-2015 NEC Corporation
  * All rights reserved.
  * 
  * This program and the accompanying materials are made available under the
@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <sys/un.h>
 #include <pfc/path.h>
 #include <pfc/debug.h>
@@ -356,11 +357,19 @@ pfc_ctrl_client_execute(cproto_sess_t *PFC_RESTRICT sess, ctrl_cmdtype_t cmd,
 int
 pfc_ctrl_check_permission(void)
 {
+	struct stat	sbuf;
 	int	err;
 
 	PFC_ASSERT(ctrl_socket_pathlen != 0);
 
-	if (PFC_EXPECT_TRUE(access(ctrl_socket_path, R_OK | W_OK) == 0)) {
+	/*
+	 * Use stat(2) in place of access(2) to check access permission because
+	 * access(2) checks access permission using real uid/gid, not effective
+	 * uid/gid. We can use stat(2) instead because the same permission
+	 * bits are configured to the control socket file and its parent
+	 * directory.
+	 */
+	if (PFC_EXPECT_TRUE(stat(ctrl_socket_path, &sbuf) == 0)) {
 		return 0;
 	}
 

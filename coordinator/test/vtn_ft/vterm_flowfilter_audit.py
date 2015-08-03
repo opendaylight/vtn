@@ -1484,6 +1484,8 @@ def update_vtermif_flowfilter_drop_audit():
 if __name__ == '__main__':
     print '*****VTERM FLOWFILTER TESTS******'
     test_vtermif_flowfilter_audit()
+    print '*********UPDATE AUDIT FLOWFILTER TESTS***'
+#    update_vtermif_flowfilter_audit()
     print '*****VTERMIF AUDIT FLOWFILTER PASS TESTS******'
     test_vtermif_flowfilter_pass_audit()
     print '*********UPDATE AUDIT FLOWFILTER PASS TESTS***'
